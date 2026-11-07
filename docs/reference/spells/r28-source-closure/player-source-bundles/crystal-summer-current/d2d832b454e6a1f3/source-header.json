@@ -1,0 +1,36 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 120000,
+    "costs": {
+      "mana": 500
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Focus Harmony",
+    "reference_spell_id": 279,
+    "requirements": {
+      "level": 275,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "words": "utevo nia"
+  }
+}

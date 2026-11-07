@@ -1,0 +1,16 @@
+{
+  "id": 154,
+  "name": "STORE_V1",
+  "owner_decision": "Oteryn-v2 Store purchase delivery contract (Platform PR 1625), STORE-WIRE-1",
+  "owner": "Game Store catalogue and delivery codec; Platform Wallet and purchase ledger",
+  "requires": [],
+  "command_types": [
+    183,
+    184,
+    185,
+    186
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES"
+}

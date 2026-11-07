@@ -1,0 +1,42 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 25
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Fire Wave",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_fire_wave"
+    },
+    "reference_spell_id": 19,
+    "requirements": {
+      "level": 18,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "needs_direction": true
+    },
+    "words": "exevo flam hur"
+  }
+}

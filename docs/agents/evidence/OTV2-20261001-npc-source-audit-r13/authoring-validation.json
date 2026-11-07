@@ -1,0 +1,131 @@
+{
+  "baseline_head": "1a77a22cb99e31d4c77579ec26acd9cff0498f86",
+  "candidate": {
+    "Dialogue": 703,
+    "NPC": 1122,
+    "Service.Trade": 324,
+    "Service.Travel": 56,
+    "documents": 11,
+    "native_before_sha256": "ece0452da927a4802eec8bd686b72c4782413e9878e57fbf049c4de4c62c271d",
+    "schema": "R13_CANONICAL_DOCUMENT_GENERATION/v1",
+    "tree_sha256": "c09ad3f54b088cae5cc22a397161554571b9cb7da50811e94b158f83a42d7589"
+  },
+  "deterministic_repeat_documents": 11,
+  "format": "PASS",
+  "governance_tests": 36,
+  "independent_source_report_sha256": "da07e80d71c626c0b726b070286f28af4f4a96be25bb44a860ca3eb0f30231bb",
+  "limits": "Authoring validation; exact remote freeze/readback and post-freeze attestation are separate receipts. CI, formal review, main reconciliation and Merge Queue remain control-plane actions; no runtime completeness claim.",
+  "logs": [
+    {
+      "bytes": 992075,
+      "name": "server-restored.log",
+      "sha256": "4b0a2777e99f82116e83b7191cb3594b65bd94b55e3f1b9ae5cd348f05c37044"
+    },
+    {
+      "bytes": 992203,
+      "name": "server-restored-fixed.log",
+      "sha256": "1c585f2b78658027e02062888e07a7f9a21aa776e45029be6ef654edd877b476"
+    },
+    {
+      "bytes": 1197,
+      "name": "repository-test-fixed.log",
+      "sha256": "90b45171facc92b71711a7c86f46504418e5f2d877f788b5625efe5605d2d5a7"
+    },
+    {
+      "bytes": 1900233,
+      "name": "server-final-authoring.log",
+      "sha256": "2f98f50438e000a28be11fe67cc2410988e43af61df6ec48208be465280db86e"
+    },
+    {
+      "bytes": 607,
+      "name": "clippy-restored.log",
+      "sha256": "a168e188ff210d614e6d74f7796eb1f646c287c06ccc6cde9953e5cbb639a1d0"
+    },
+    {
+      "bytes": 0,
+      "name": "fmt-restored.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 273,
+      "name": "authoring-restored.log",
+      "sha256": "057b07d3fcd05a479a97467ce6dc77542f1ac32266fdfd60111c6551e1b3731a"
+    },
+    {
+      "bytes": 765,
+      "name": "migration-restored.log",
+      "sha256": "ce503840509fad00b95b80cd2e16c8c32cc8f4b20a02a85056af1ddb4665c49e"
+    },
+    {
+      "bytes": 113,
+      "name": "governance-restored.log",
+      "sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f"
+    },
+    {
+      "bytes": 135,
+      "name": "governance-tests-restored.log",
+      "sha256": "1c32ea667447be109f47ffa7c5c0180ddea8c139d2e50d7dd213a437bda04b4c"
+    },
+    {
+      "bytes": 448,
+      "name": "tree-validation-restored.log",
+      "sha256": "ce6858a03ec441251feddafb1c2596837620f36f18fdca92e92b581637e59b1a"
+    },
+    {
+      "bytes": 607,
+      "name": "tree-test-restored.log",
+      "sha256": "a51bf448332667ae7a481793ecc857e07293b12931ac7c5175f916eb9ea2de2e"
+    },
+    {
+      "bytes": 689,
+      "name": "repeat-restored.log",
+      "sha256": "a310386e7ef0dbfc63b01dee5d9833ef221f0cf37a95ce650553d54ea2cec7b9"
+    }
+  ],
+  "migration_tests": 59,
+  "native_materializer_tests": 21,
+  "npc_authoring_tests": {
+    "passed": 172,
+    "skipped": 0
+  },
+  "phase": "AUTHORING",
+  "physical_attempts": [
+    {
+      "cause": "sorted source index stale after adding subset source",
+      "log": "server-restored.log",
+      "result": "FAIL"
+    },
+    {
+      "cause": "remaining creature binding assertion used stale sorted source index",
+      "log": "server-restored-fixed.log",
+      "result": "FAIL"
+    },
+    {
+      "cause": "exact source import lookup preserves assertions",
+      "log": "repository-test-fixed.log",
+      "result": "PASS"
+    },
+    {
+      "log": "server-final-authoring.log",
+      "result": "PASS"
+    }
+  ],
+  "prepublication_review_sha256": "aa42a58d639f139507c73a91b53083ffd8ccfab4230e3a06caf0ca4a1d1d2a9c",
+  "repository_package_tests": 4,
+  "result": "PASS",
+  "schema": "NPC_R13_AUTHORING_VALIDATION/v1",
+  "server": {
+    "all_expected_cargo_targets_completed": 60,
+    "completion_evidence": "Every expected all-targets non-build-script test target has Running and final result ok; interactive exec session was no longer retained when polled.",
+    "failed": 0,
+    "ignored": 7,
+    "log_sha256": "2f98f50438e000a28be11fe67cc2410988e43af61df6ec48208be465280db86e",
+    "materializer_tests": 21,
+    "passed": 16284,
+    "result": "PASS"
+  },
+  "source_qualification_tests": 10,
+  "strict_clippy": "PASS",
+  "successor_tree_tests": "PASS",
+  "successor_tree_validation": "PASS"
+}

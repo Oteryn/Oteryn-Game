@@ -1,0 +1,10 @@
+{
+  "id": 220,
+  "name": "HIRELING",
+  "owner_decision": "HIRELING-1",
+  "capability": 165,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/hireling-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/hireling-v1.md#reply",
+  "max_payload_bytes": 6,
+  "max_result_payload_bytes": 1
+}

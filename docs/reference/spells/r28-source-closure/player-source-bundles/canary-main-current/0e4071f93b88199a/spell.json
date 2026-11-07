@@ -1,0 +1,108 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 120,
+      "soul": 1
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "random_item_grant",
+        "parameters": {
+          "always_succeeds": true,
+          "draw_order": "extra_chance_then_optional_then_guaranteed",
+          "effect_asset_binding": "canary.appearance:effect/magic_green",
+          "extra": 1,
+          "extra_chance_percent": 50,
+          "guaranteed": 1,
+          "overflow": "drop_on_caster_tile",
+          "pool": [
+            {
+              "family": "Item",
+              "key": "candidate:item/source/canary-main-current/3577",
+              "revision": "source-player-r28"
+            },
+            {
+              "family": "Item",
+              "key": "candidate:item/source/canary-main-current/3582",
+              "revision": "source-player-r28"
+            },
+            {
+              "family": "Item",
+              "key": "candidate:item/source/canary-main-current/3592",
+              "revision": "source-player-r28"
+            },
+            {
+              "family": "Item",
+              "key": "candidate:item/source/canary-main-current/3585",
+              "revision": "source-player-r28"
+            },
+            {
+              "family": "Item",
+              "key": "candidate:item/source/canary-main-current/3600",
+              "revision": "source-player-r28"
+            },
+            {
+              "family": "Item",
+              "key": "candidate:item/source/canary-main-current/3601",
+              "revision": "source-player-r28"
+            },
+            {
+              "family": "Item",
+              "key": "candidate:item/source/canary-main-current/3607",
+              "revision": "source-player-r28"
+            }
+          ],
+          "selection": "uniform_independent"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/0e4071f93b88199a",
+      "revision": "source-player-r28"
+    },
+    "name": "Food",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_food"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 42,
+    "requirements": {
+      "learning_required": false,
+      "level": 14,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exevo pan"
+  }
+}

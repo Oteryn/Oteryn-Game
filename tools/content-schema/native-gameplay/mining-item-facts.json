@@ -1,0 +1,26 @@
+{
+  "schema": "OTERYN_PICK_ITEM_SOURCE_FACTS/v1",
+  "source": {
+    "repository": "opentibiabr/canary",
+    "revision": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+    "path": "data/items/appearances.dat",
+    "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+  },
+  "rows": [
+    {
+      "id": 3028,
+      "stackable": true,
+      "pickupable": true
+    },
+    {
+      "id": 3456,
+      "stackable": false,
+      "pickupable": true
+    },
+    {
+      "id": 10310,
+      "stackable": true,
+      "pickupable": true
+    }
+  ]
+}

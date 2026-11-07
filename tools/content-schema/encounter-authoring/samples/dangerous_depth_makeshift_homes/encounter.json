@@ -1,0 +1,51 @@
+{
+  "identity": {
+    "key": "canary:encounter/dangerous_depth_makeshift_homes",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Dangerous Depth: makeshift homes",
+  "scope": "channel_shared",
+  "participants": [
+    {
+      "role": "makeshift_home",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/makeshift_home",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "makeshift_home_leaves_rubble",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "makeshift_home"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "create",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/398",
+            "revision": "canary-47dfd51f"
+          },
+          "at": "death_position",
+          "interaction": "canary:interaction/57233"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

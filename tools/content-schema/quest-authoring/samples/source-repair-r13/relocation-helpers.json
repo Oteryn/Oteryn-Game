@@ -1,0 +1,682 @@
+{
+  "schema": "LOCAL_RELOCATION_HELPER_PROFILE/v1",
+  "base_head": "1caddc0d9e65ff502c8137264391cd43d06911b6",
+  "selected_source_files": 1,
+  "changed_source_graphs": 1,
+  "removed_unresolved_statements": 6,
+  "new_typed_children": 12,
+  "all_preexisting_typed_children_preserved": true,
+  "old_child_order_and_multiplicity_preserved": true,
+  "all_conditions_and_anchors_exact": true,
+  "initial_bounded_source_scope": 117,
+  "runtime_enabled": false,
+  "full_regeneration_performed": false,
+  "changes": [
+    {
+      "provider": "canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua",
+      "blob_sha1": "6b0cbabcd8ae64212842700850c0f6e35191a47a",
+      "sha256": "4b36ad4315a63493fc5f7b78c6052333108d3e4baa5c4b25472ca6c8cd33fb5c",
+      "interaction": "canary:interaction/heart_of_destruction/movements_teleport_heart",
+      "before_unresolved": [
+        {
+          "line": 73,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 76,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 83,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 86,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 93,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 96,
+          "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 103,
+          "reason": "statement outside the transcribed vocabulary"
+        }
+      ],
+      "after_unresolved": [
+        {
+          "line": 103,
+          "reason": "statement outside the transcribed vocabulary"
+        }
+      ],
+      "before": {
+        "identity": {
+          "key": "canary:interaction/heart_of_destruction/movements_teleport_heart",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "ON_ENTER",
+          "callback": "onStepIn",
+          "target_registrations": [
+            "aid(aid)",
+            "type(\"stepin\")"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "actor_is_player": true,
+                  "negate": true
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 66
+                      }
+                    },
+                    "then": [
+                      {
+                        "owner": "Movement",
+                        "status": "blocked",
+                        "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
+                        "to_source_line": 67
+                      }
+                    ]
+                  },
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 68
+                      }
+                    },
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 69
+                              }
+                            },
+                            "then": [
+                              {
+                                "branch": [
+                                  {
+                                    "when": {
+                                      "unresolved": {
+                                        "line": 70
+                                      }
+                                    },
+                                    "then": [
+                                      {
+                                        "owner": "Movement",
+                                        "status": "blocked",
+                                        "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
+                                        "to_source_line": 71
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 78
+                      }
+                    },
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 79
+                              }
+                            },
+                            "then": [
+                              {
+                                "branch": [
+                                  {
+                                    "when": {
+                                      "unresolved": {
+                                        "line": 80
+                                      }
+                                    },
+                                    "then": [
+                                      {
+                                        "owner": "Movement",
+                                        "status": "blocked",
+                                        "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
+                                        "to_source_line": 81
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 88
+                      }
+                    },
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "all": [
+                                {
+                                  "quest_stage": {
+                                    "progress": "canary:quest-progress/storage/14330",
+                                    "op": ">=",
+                                    "value": 1
+                                  },
+                                  "negate": false
+                                },
+                                {
+                                  "quest_stage": {
+                                    "progress": "canary:quest-progress/storage/14332",
+                                    "op": ">=",
+                                    "value": 1
+                                  },
+                                  "negate": false
+                                }
+                              ]
+                            },
+                            "then": [
+                              {
+                                "branch": [
+                                  {
+                                    "when": {
+                                      "unresolved": {
+                                        "line": 90
+                                      }
+                                    },
+                                    "then": [
+                                      {
+                                        "owner": "Movement",
+                                        "request": "relocate",
+                                        "scope": "in_scope",
+                                        "target": {
+                                          "kind": "anchor",
+                                          "anchor": "p1"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 98
+                      }
+                    },
+                    "then": [
+                      {
+                        "owner": "Movement",
+                        "request": "relocate",
+                        "scope": "in_scope",
+                        "target": {
+                          "kind": "anchor",
+                          "anchor": "p2"
+                        }
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/storage/14334",
+                        "to": -1
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/storage/14335",
+                        "to": -1
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/storage/14336",
+                        "to": -1
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [
+          {
+            "key": "p1",
+            "source_position": {
+              "x": 32272,
+              "y": 31384,
+              "z": 14
+            }
+          },
+          {
+            "key": "p2",
+            "source_position": {
+              "x": 32214,
+              "y": 31376,
+              "z": 14
+            }
+          }
+        ],
+        "unresolved": [
+          {
+            "line": 73,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 76,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 83,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 86,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 93,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 96,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 103,
+            "reason": "statement outside the transcribed vocabulary"
+          }
+        ],
+        "script": "scripts/quests/heart_of_destruction/movements_teleport_heart.lua",
+        "callback_line": 58
+      },
+      "after": {
+        "identity": {
+          "key": "canary:interaction/heart_of_destruction/movements_teleport_heart",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "ON_ENTER",
+          "callback": "onStepIn",
+          "target_registrations": [
+            "aid(aid)",
+            "type(\"stepin\")"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "actor_is_player": true,
+                  "negate": true
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 66
+                      }
+                    },
+                    "then": [
+                      {
+                        "owner": "Movement",
+                        "status": "blocked",
+                        "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
+                        "to_source_line": 67
+                      }
+                    ]
+                  },
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 68
+                      }
+                    },
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 69
+                              }
+                            },
+                            "then": [
+                              {
+                                "branch": [
+                                  {
+                                    "when": {
+                                      "unresolved": {
+                                        "line": 70
+                                      }
+                                    },
+                                    "then": [
+                                      {
+                                        "owner": "Movement",
+                                        "status": "blocked",
+                                        "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
+                                        "to_source_line": 71
+                                      }
+                                    ]
+                                  }
+                                ],
+                                "otherwise": [
+                                  {
+                                    "owner": "Movement",
+                                    "request": "relocate",
+                                    "scope": "in_scope",
+                                    "target": {
+                                      "kind": "previous_position"
+                                    }
+                                  },
+                                  {
+                                    "owner": "Presentation",
+                                    "effect": "message",
+                                    "authoritative": false,
+                                    "source_line": 55
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "owner": "Movement",
+                            "request": "relocate",
+                            "scope": "in_scope",
+                            "target": {
+                              "kind": "previous_position"
+                            }
+                          },
+                          {
+                            "owner": "Presentation",
+                            "effect": "message",
+                            "authoritative": false,
+                            "source_line": 55
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 78
+                      }
+                    },
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 79
+                              }
+                            },
+                            "then": [
+                              {
+                                "branch": [
+                                  {
+                                    "when": {
+                                      "unresolved": {
+                                        "line": 80
+                                      }
+                                    },
+                                    "then": [
+                                      {
+                                        "owner": "Movement",
+                                        "status": "blocked",
+                                        "reason": "computed relocation target: no anchor named (GAME-INTERACTION-01 \u00a719.3; D37 owner accepted)",
+                                        "to_source_line": 81
+                                      }
+                                    ]
+                                  }
+                                ],
+                                "otherwise": [
+                                  {
+                                    "owner": "Movement",
+                                    "request": "relocate",
+                                    "scope": "in_scope",
+                                    "target": {
+                                      "kind": "previous_position"
+                                    }
+                                  },
+                                  {
+                                    "owner": "Presentation",
+                                    "effect": "message",
+                                    "authoritative": false,
+                                    "source_line": 55
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "owner": "Movement",
+                            "request": "relocate",
+                            "scope": "in_scope",
+                            "target": {
+                              "kind": "previous_position"
+                            }
+                          },
+                          {
+                            "owner": "Presentation",
+                            "effect": "message",
+                            "authoritative": false,
+                            "source_line": 55
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 88
+                      }
+                    },
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "all": [
+                                {
+                                  "quest_stage": {
+                                    "progress": "canary:quest-progress/storage/14330",
+                                    "op": ">=",
+                                    "value": 1
+                                  },
+                                  "negate": false
+                                },
+                                {
+                                  "quest_stage": {
+                                    "progress": "canary:quest-progress/storage/14332",
+                                    "op": ">=",
+                                    "value": 1
+                                  },
+                                  "negate": false
+                                }
+                              ]
+                            },
+                            "then": [
+                              {
+                                "branch": [
+                                  {
+                                    "when": {
+                                      "unresolved": {
+                                        "line": 90
+                                      }
+                                    },
+                                    "then": [
+                                      {
+                                        "owner": "Movement",
+                                        "request": "relocate",
+                                        "scope": "in_scope",
+                                        "target": {
+                                          "kind": "anchor",
+                                          "anchor": "p1"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                ],
+                                "otherwise": [
+                                  {
+                                    "owner": "Movement",
+                                    "request": "relocate",
+                                    "scope": "in_scope",
+                                    "target": {
+                                      "kind": "previous_position"
+                                    }
+                                  },
+                                  {
+                                    "owner": "Presentation",
+                                    "effect": "message",
+                                    "authoritative": false,
+                                    "source_line": 55
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "owner": "Movement",
+                            "request": "relocate",
+                            "scope": "in_scope",
+                            "target": {
+                              "kind": "previous_position"
+                            }
+                          },
+                          {
+                            "owner": "Presentation",
+                            "effect": "message",
+                            "authoritative": false,
+                            "source_line": 55
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 98
+                      }
+                    },
+                    "then": [
+                      {
+                        "owner": "Movement",
+                        "request": "relocate",
+                        "scope": "in_scope",
+                        "target": {
+                          "kind": "anchor",
+                          "anchor": "p2"
+                        }
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/storage/14334",
+                        "to": -1
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/storage/14335",
+                        "to": -1
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/storage/14336",
+                        "to": -1
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [
+          {
+            "key": "p1",
+            "source_position": {
+              "x": 32272,
+              "y": 31384,
+              "z": 14
+            }
+          },
+          {
+            "key": "p2",
+            "source_position": {
+              "x": 32214,
+              "y": 31376,
+              "z": 14
+            }
+          }
+        ],
+        "unresolved": [
+          {
+            "line": 103,
+            "reason": "statement outside the transcribed vocabulary"
+          }
+        ],
+        "script": "scripts/quests/heart_of_destruction/movements_teleport_heart.lua",
+        "callback_line": 58
+      }
+    }
+  ]
+}

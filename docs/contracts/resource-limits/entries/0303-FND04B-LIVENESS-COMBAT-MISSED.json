@@ -1,0 +1,21 @@
+{
+  "id": "FND04B-LIVENESS-COMBAT-MISSED",
+  "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+  "resource": "Consecutive unanswered in-combat probes that prove playable control lost",
+  "unit": "probes",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 2,
+    "maximum": 2
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Reaching the limit ends the admitted transport as control lost (about one 2 s combat tick).",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=2: the second consecutive unanswered in-combat probe ends the transport as control lost"
+  ],
+  "consumers": [
+    "combat state (not composed yet)"
+  ],
+  "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. Registered ahead of the combat state; not consumed until it exists."
+}

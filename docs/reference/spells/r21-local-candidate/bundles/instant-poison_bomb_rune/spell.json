@@ -1,0 +1,62 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/poison_bomb_rune",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Poison Bomb Rune",
+    "carrier": "instant",
+    "words": "adevo mas pox",
+    "reference_spell_id": 91,
+    "library_text": "Another product of the druids' continual research into poisons, this rune represents an advancement of the Poison Field. Like its lesser relative, the rune causes an area to be contaminated with toxic gas that will poison anybody who is caught within it. However, the area of effect of the rune has been improved - now a full 9 square metres are contaminated. Conceivable applications include the blocking of areas or the combat against fast-moving or invisible targets. Keep in mind, however, that there are a number of creatures that are immune to poison. Please note that on optional PvP game worlds this spell has no damaging effect on other characters, unless characters are war opponents.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ],
+      "level": 25,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 520,
+      "soul": 2
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "execution": {
+      "conjure": {
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/3173",
+          "revision": "spell-p2-r21"
+        },
+        "count": 2,
+        "effect_asset_binding": "canary.appearance:effect/magic_red",
+        "reagent": {
+          "family": "Item",
+          "key": "candidate:item/3147",
+          "revision": "spell-p2-r21"
+        }
+      }
+    }
+  }
+}

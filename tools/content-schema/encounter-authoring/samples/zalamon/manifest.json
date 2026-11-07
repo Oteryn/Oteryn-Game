@@ -1,0 +1,262 @@
+{
+  "encounter": "canary:encounter/zalamon",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "ZalamonDeath": [
+      "canary:creature/snake_god_essence",
+      "canary:creature/snake_thing",
+      "canary:creature/lizard_abomination",
+      "canary:creature/mutated_zalamon"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/wrath_of_the_emperor/snake_god_essence.lua",
+      "blob_sha1": "8479eeba806619c67b67207c8100eea3b938950c"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/wrath_of_the_emperor/creaturescripts_zalamon_kill.lua",
+      "blob_sha1": "db0f3e3e0f307698941357cfb725309dd28ab0fd"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/wrath_of_the_emperor/snake_thing.lua",
+      "blob_sha1": "0085b08ca098721f5026de9b6f08a6041358d2a2"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/wrath_of_the_emperor/lizard_abomination.lua",
+      "blob_sha1": "35d07338d441d6c9ce9707d1d099bb3272a0c114"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/wrath_of_the_emperor/mutated_zalamon.lua",
+      "blob_sha1": "39aa68ae966a06a2970de46b8167808d1453229b"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Snake God Essence is the snake_god_essence participant; its file registers ZalamonDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        17,
+        18,
+        23,
+        24,
+        25,
+        26,
+        27,
+        2,
+        4
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the form \"snake god essence\", whose next form is \"snake thing\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        38,
+        42,
+        4
+      ],
+      "status": "mapped",
+      "resolution": "Game.createMonster(\"snake thing\", death position, false, true): the next form with full health.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        39,
+        40,
+        3
+      ],
+      "status": "mapped",
+      "resolution": "monster:say(text, TALKTYPE_MONSTER_SAY) by the new form.",
+      "destination": "/encounter/rules/0/actions/1"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        37
+      ],
+      "status": "approved_omission",
+      "resolution": "The next form is not created when a creature of that name is already in view. In one encounter instance the next form exists only through this rule, which runs once for the single previous form, so the guard never fails."
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Snake Thing is the snake_thing participant; its file registers ZalamonDeath.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        17,
+        18,
+        23,
+        24,
+        25,
+        26,
+        27,
+        6,
+        8
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the form \"snake thing\", whose next form is \"lizard abomination\".",
+      "destination": "/encounter/rules/1/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        38,
+        42,
+        8
+      ],
+      "status": "mapped",
+      "resolution": "Game.createMonster(\"lizard abomination\", death position, false, true): the next form with full health.",
+      "destination": "/encounter/rules/1/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        39,
+        40,
+        7
+      ],
+      "status": "mapped",
+      "resolution": "monster:say(text, TALKTYPE_MONSTER_SAY) by the new form.",
+      "destination": "/encounter/rules/1/actions/1"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        37
+      ],
+      "status": "approved_omission",
+      "resolution": "The next form is not created when a creature of that name is already in view. In one encounter instance the next form exists only through this rule, which runs once for the single previous form, so the guard never fails."
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Lizard Abomination is the lizard_abomination participant; its file registers ZalamonDeath.",
+      "destination": "/encounter/participants/2/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        17,
+        18,
+        23,
+        24,
+        25,
+        26,
+        27,
+        10,
+        12
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the form \"lizard abomination\", whose next form is \"mutated zalamon\".",
+      "destination": "/encounter/rules/2/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        38,
+        42,
+        12
+      ],
+      "status": "mapped",
+      "resolution": "Game.createMonster(\"mutated zalamon\", death position, false, true): the next form with full health.",
+      "destination": "/encounter/rules/2/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        39,
+        40,
+        11
+      ],
+      "status": "mapped",
+      "resolution": "monster:say(text, TALKTYPE_MONSTER_SAY) by the new form.",
+      "destination": "/encounter/rules/2/actions/1"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        37
+      ],
+      "status": "approved_omission",
+      "resolution": "The next form is not created when a creature of that name is already in view. In one encounter instance the next form exists only through this rule, which runs once for the single previous form, so the guard never fails."
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Mutated Zalamon is the mutated_zalamon participant; its file registers ZalamonDeath.",
+      "destination": "/encounter/participants/3/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "status": "approved_omission",
+      "resolution": "The death of \"mutated zalamon\" sets the global Mission11 storage to -1, releasing the arena lock that actions_mission11_payback_time_lever.lua lines 18-24 hold for ten minutes; an instance per party (D26) replaces the shared-arena lock."
+    }
+  ],
+  "outcome_evidence": []
+}

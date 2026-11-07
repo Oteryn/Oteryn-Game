@@ -1,0 +1,16 @@
+{
+  "mechanic": "0195-weapon-proficiency",
+  "kind": "handlers",
+  "id": "0195-weapon-proficiency-392",
+  "status": "unsupported",
+  "direction": "client_to_server",
+  "capability": 195,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "State and actions are server-owned."
+  },
+  "commands": [
+    392
+  ],
+  "reason": "No native editor yet collects the weapon, level, perk, slot, revision, and shaping choices."
+}

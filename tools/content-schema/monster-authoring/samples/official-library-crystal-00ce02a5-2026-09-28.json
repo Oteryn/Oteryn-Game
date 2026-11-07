@@ -1,0 +1,399 @@
+{
+ "schema": "OTERYN_OFFICIAL_LIBRARY_FACTS/v1",
+ "decision": "D47",
+ "captured": "2026-09-28",
+ "api": "https://api.tibiadata.com/v4/creature/",
+ "library_entries": 718,
+ "news_checked": [
+  {
+   "id": 8947,
+   "date": "2026-09-28",
+   "title": "Exaltation Overload"
+  },
+  {
+   "id": 8979,
+   "date": "2026-09-28",
+   "title": "server save ticker"
+  }
+ ],
+ "monsters": [
+  {
+   "monster": "devoted_radiant_acolyte",
+   "canary_name": "Devoted Radiant Acolyte",
+   "title": "Devoted Radiant Acolytes",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=devotedradiantacolyte",
+   "captured": "2026-09-28",
+   "content_sha256": "f8097ef0d453a1c61222afe36f0fbde3438a5f09c8a8355e62f73856f21ea59f",
+   "facts": {
+    "race": "devotedradiantacolyte",
+    "name": "Devoted Radiant Acolytes",
+    "hitpoints": 39790,
+    "experience_points": 47820
+   },
+   "fields": {
+    "max_health": 39790,
+    "experience": 47820
+   }
+  },
+  {
+   "monster": "devoted_radiant_inquisitor",
+   "canary_name": "Devoted Radiant Inquisitor",
+   "title": "Devoted Radiant Inquisitors",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=devotedradiantinquisitor",
+   "captured": "2026-09-28",
+   "content_sha256": "dbcf75a1b5ff5c3b655c8da2e72f103b2a10f7ab6625e22edc71a185b38364ea",
+   "facts": {
+    "race": "devotedradiantinquisitor",
+    "name": "Devoted Radiant Inquisitors",
+    "hitpoints": 40020,
+    "experience_points": 47050
+   },
+   "fields": {
+    "max_health": 40020,
+    "experience": 47050
+   }
+  },
+  {
+   "monster": "devoted_radiant_paragon",
+   "canary_name": "Devoted Radiant Paragon",
+   "title": "Devoted Radiant Paragons",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=devotedradiantparagon",
+   "captured": "2026-09-28",
+   "content_sha256": "5285996af4ed9006d1ed65fe3c1352f2dcdf3f79163c76d5ed9cda208125dba1",
+   "facts": {
+    "race": "devotedradiantparagon",
+    "name": "Devoted Radiant Paragons",
+    "hitpoints": 41400,
+    "experience_points": 50560
+   },
+   "fields": {
+    "max_health": 41400,
+    "experience": 50560
+   }
+  },
+  {
+   "monster": "devoted_radiant_templar",
+   "canary_name": "Devoted Radiant Templar",
+   "title": "Devoted Radiant Templars",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=devotedradianttemplar",
+   "captured": "2026-09-28",
+   "content_sha256": "3e94039a5fe39f11c327bfa906e78a684ae28f28a4d139230e44eb4601be1939",
+   "facts": {
+    "race": "devotedradianttemplar",
+    "name": "Devoted Radiant Templars",
+    "hitpoints": 42550,
+    "experience_points": 49900
+   },
+   "fields": {
+    "max_health": 42550,
+    "experience": 49900
+   }
+  },
+  {
+   "monster": "devoted_radiant_warden",
+   "canary_name": "Devoted Radiant Warden",
+   "title": "Devoted Radiant Wardens",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=devotedradiantwarden",
+   "captured": "2026-09-28",
+   "content_sha256": "8d47228adc9b5dae15ea7888d2714c34e2e2a3801428c221cc9bea62e13719fd",
+   "facts": {
+    "race": "devotedradiantwarden",
+    "name": "Devoted Radiant Wardens",
+    "hitpoints": 44275,
+    "experience_points": 51280
+   },
+   "fields": {
+    "max_health": 44275,
+    "experience": 51280
+   }
+  },
+  {
+   "monster": "devoted_radiant_zealot",
+   "canary_name": "Devoted Radiant Zealot",
+   "title": "Devoted Radiant Zealots",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=devotedradiantzealot",
+   "captured": "2026-09-28",
+   "content_sha256": "d38dc4346d78c5acaeff3a6643bcc0f5bf00fc040aebfc4e2a88646d414c5358",
+   "facts": {
+    "race": "devotedradiantzealot",
+    "name": "Devoted Radiant Zealots",
+    "hitpoints": 41980,
+    "experience_points": 50500
+   },
+   "fields": {
+    "max_health": 41980,
+    "experience": 50500
+   }
+  },
+  {
+   "monster": "iceplume_strider",
+   "canary_name": "Iceplume Strider",
+   "title": "Iceplume Striders",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=iceplumestrider",
+   "captured": "2026-09-28",
+   "content_sha256": "060c004d7505939b113c49fb1f239552b5ac89dbc9f3f4764154754f72d403dd",
+   "facts": {
+    "race": "iceplumestrider",
+    "name": "Iceplume Striders",
+    "hitpoints": 8500,
+    "experience_points": 8150
+   },
+   "fields": {
+    "max_health": 8500,
+    "experience": 8150
+   }
+  },
+  {
+   "monster": "jaracal",
+   "canary_name": "Jaracal",
+   "title": "Jaracals",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=jaracal",
+   "captured": "2026-09-28",
+   "content_sha256": "64cbb781e1892107c528b25f4ffa66c0837bb69a2298d8fcc6584eb2d15f4929",
+   "facts": {
+    "race": "jaracal",
+    "name": "Jaracals",
+    "hitpoints": 3200,
+    "experience_points": 2460
+   },
+   "fields": {
+    "max_health": 3200,
+    "experience": 2460
+   }
+  },
+  {
+   "monster": "moonspawn_blightspitter",
+   "canary_name": "Moonspawn Blightspitter",
+   "title": "Moonspawn Blightspitters",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=moonspawnblightspitter",
+   "captured": "2026-09-28",
+   "content_sha256": "d50985a687a894a9a71a80993e78dadf625e7e5bdab32cb7ef8773a4902c29ef",
+   "facts": {
+    "race": "moonspawnblightspitter",
+    "name": "Moonspawn Blightspitters",
+    "hitpoints": 8500,
+    "experience_points": 6670
+   },
+   "fields": {
+    "max_health": 8500,
+    "experience": 6670
+   }
+  },
+  {
+   "monster": "moonspawn_oozecrown",
+   "canary_name": "Moonspawn Oozecrown",
+   "title": "Moonspawn Oozecrowns",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=moonspawnoozecrown",
+   "captured": "2026-09-28",
+   "content_sha256": "61796a94bcd52fd0383106370bf50e17281633f34d8486bd9abb261387c6d574",
+   "facts": {
+    "race": "moonspawnoozecrown",
+    "name": "Moonspawn Oozecrowns",
+    "hitpoints": 9200,
+    "experience_points": 7320
+   },
+   "fields": {
+    "max_health": 9200,
+    "experience": 7320
+   }
+  },
+  {
+   "monster": "moonstone_excavator",
+   "canary_name": "Moonstone Excavator",
+   "title": "Moonstone Excavators",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=moonstoneexcavator",
+   "captured": "2026-09-28",
+   "content_sha256": "292b64c7729bbac911ceec2889f981a6c3bc4c21c4465ebd9007302300b37562",
+   "facts": {
+    "race": "moonstoneexcavator",
+    "name": "Moonstone Excavators",
+    "hitpoints": 5100,
+    "experience_points": 4670
+   },
+   "fields": {
+    "max_health": 5100,
+    "experience": 4670
+   }
+  },
+  {
+   "monster": "moonstone_overseer",
+   "canary_name": "Moonstone Overseer",
+   "title": "Moonstone Overseers",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=moonstoneoverseer",
+   "captured": "2026-09-28",
+   "content_sha256": "66443498bb23c08db183769c95ece89a820090ca42bbb21f25d0b1f2e67edf79",
+   "facts": {
+    "race": "moonstoneoverseer",
+    "name": "Moonstone Overseers",
+    "hitpoints": 5450,
+    "experience_points": 4920
+   },
+   "fields": {
+    "max_health": 5450,
+    "experience": 4920
+   }
+  },
+  {
+   "monster": "radiant_acolyte",
+   "canary_name": "Radiant Acolyte",
+   "title": "Radiant Acolytes",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=radiantacolyte",
+   "captured": "2026-09-28",
+   "content_sha256": "8734a398577ca7bd51ec5b3364a21104ee0c617421fb3ceecd693b1c26499ba1",
+   "facts": {
+    "race": "radiantacolyte",
+    "name": "Radiant Acolytes",
+    "hitpoints": 34600,
+    "experience_points": 32960
+   },
+   "fields": {
+    "max_health": 34600,
+    "experience": 32960
+   }
+  },
+  {
+   "monster": "radiant_inquisitor",
+   "canary_name": "Radiant Inquisitor",
+   "title": "Radiant Inquisitors",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=radiantinquisitor",
+   "captured": "2026-09-28",
+   "content_sha256": "c62c4324bb8a4ee30e82e852faa1eb834de167fc5249afd2bf01a44b27d6cfd2",
+   "facts": {
+    "race": "radiantinquisitor",
+    "name": "Radiant Inquisitors",
+    "hitpoints": 34800,
+    "experience_points": 32460
+   },
+   "fields": {
+    "max_health": 34800,
+    "experience": 32460
+   }
+  },
+  {
+   "monster": "radiant_paragon",
+   "canary_name": "Radiant Paragon",
+   "title": "Radiant Paragons",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=radiantparagon",
+   "captured": "2026-09-28",
+   "content_sha256": "54b7bf85c34730e1609cb2c9e9c289fbd84a43d639137035dcf2b14c764ccea6",
+   "facts": {
+    "race": "radiantparagon",
+    "name": "Radiant Paragons",
+    "hitpoints": 36000,
+    "experience_points": 34780
+   },
+   "fields": {
+    "max_health": 36000,
+    "experience": 34780
+   }
+  },
+  {
+   "monster": "radiant_templar",
+   "canary_name": "Radiant Templar",
+   "title": "Radiant Templars",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=radianttemplar",
+   "captured": "2026-09-28",
+   "content_sha256": "a21bd6af4e0c712756576ad4e541e22ff1d971bc959a69652177ec3b3debed4d",
+   "facts": {
+    "race": "radianttemplar",
+    "name": "Radiant Templars",
+    "hitpoints": 37000,
+    "experience_points": 34520
+   },
+   "fields": {
+    "max_health": 37000,
+    "experience": 34520
+   }
+  },
+  {
+   "monster": "radiant_warden",
+   "canary_name": "Radiant Warden",
+   "title": "Radiant Wardens",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=radiantwarden",
+   "captured": "2026-09-28",
+   "content_sha256": "61966bbe7be0192cd50ba96470a1ceaee5e111ae4acbe38c15ff10c6bbfa622b",
+   "facts": {
+    "race": "radiantwarden",
+    "name": "Radiant Wardens",
+    "hitpoints": 38500,
+    "experience_points": 35540
+   },
+   "fields": {
+    "max_health": 38500,
+    "experience": 35540
+   }
+  },
+  {
+   "monster": "radiant_zealot",
+   "canary_name": "Radiant Zealot",
+   "title": "Radiant Zealots",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=radiantzealot",
+   "captured": "2026-09-28",
+   "content_sha256": "904e80f3f4005105f8741d8af6b425b4c33ae7c09b323e0ad615731d66390776",
+   "facts": {
+    "race": "radiantzealot",
+    "name": "Radiant Zealots",
+    "hitpoints": 36500,
+    "experience_points": 35220
+   },
+   "fields": {
+    "max_health": 36500,
+    "experience": 35220
+   }
+  },
+  {
+   "monster": "silverfrost_sentinel",
+   "canary_name": "Silverfrost Sentinel",
+   "title": "Silverfrost Sentinels",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=silverfrostsentinel",
+   "captured": "2026-09-28",
+   "content_sha256": "5d473b44c62a4a40830ad3aa971476cb676bf06c350e7fbf280ec6115ae2c4e2",
+   "facts": {
+    "race": "silverfrostsentinel",
+    "name": "Silverfrost Sentinels",
+    "hitpoints": 9500,
+    "experience_points": 8450
+   },
+   "fields": {
+    "max_health": 9500,
+    "experience": 8450
+   }
+  },
+  {
+   "monster": "true_feverbloom_asura",
+   "canary_name": "True Feverbloom Asura",
+   "title": "True Feverbloom Asuras",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=feverbloomasura",
+   "captured": "2026-09-28",
+   "content_sha256": "48a8a91b4bec30f8dc6b89c2b0446ff1ae0c0f1d5141f6ad673e2070dd5a8439",
+   "facts": {
+    "race": "feverbloomasura",
+    "name": "True Feverbloom Asuras",
+    "hitpoints": 8600,
+    "experience_points": 7850
+   },
+   "fields": {
+    "max_health": 8600,
+    "experience": 7850
+   }
+  },
+  {
+   "monster": "winged_jaracal",
+   "canary_name": "Winged Jaracal",
+   "title": "Winged Jaracals",
+   "url": "https://www.tibia.com/library/?subtopic=creatures&race=wingedjaracal",
+   "captured": "2026-09-28",
+   "content_sha256": "1b6334dda606dc1c900f1435907580adaa503fec9411e000bff79f1cf955119e",
+   "facts": {
+    "race": "wingedjaracal",
+    "name": "Winged Jaracals",
+    "hitpoints": 8200,
+    "experience_points": 7830
+   },
+   "fields": {
+    "max_health": 8200,
+    "experience": 7830
+   }
+  }
+ ]
+}

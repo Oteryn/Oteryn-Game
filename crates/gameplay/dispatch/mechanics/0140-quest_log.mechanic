@@ -1,0 +1,15 @@
+name=quest_log
+commands=22
+[route]
+match routing::quest_log::route(
+    authority,
+    session.actor,
+    &mut session.admitted,
+    command,
+    &mut session.quest_log,
+)
+.await
+{
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

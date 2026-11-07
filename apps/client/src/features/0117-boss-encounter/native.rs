@@ -1,0 +1,62 @@
+use crate::play::PlayLink;
+use oteryn_client_ui::boss_encounter::Intent;
+pub(in crate::play) fn open_window(link: &PlayLink) {
+    use crate::play::feature_0115_mail::view::native::{Form, open};
+    open(
+        link,
+        Form {
+            title: "Boss encounter / Bosstiary",
+            labels: &["Boss key", "Slot (1-2)", "Hazard level (1-12)"],
+            buttons: &[
+                "Refresh",
+                "Next page",
+                "Enter",
+                "Return after defeat",
+                "Return after timeout",
+                "Hazard query",
+                "Set hazard",
+                "Slots query",
+                "Equip slot",
+                "Remove slot",
+                "Rewards",
+                "Next rewards",
+            ],
+            snapshot: |mailbox| {
+                let panel = &mailbox.boss_encounter;
+                (
+                    panel.open,
+                    panel.pending,
+                    panel.fields.to_vec(),
+                    oteryn_client_ui::boss_encounter::panel_text(panel)
+                        .replace("\r\n", "\n")
+                        .replace('\n', "\r\n"),
+                )
+            },
+            set_open: |mailbox, value| mailbox.boss_encounter.open = value,
+            submit: |mailbox, commands, action, values| {
+                if mailbox.boss_encounter.pending {
+                    return;
+                }
+                for (index, value) in values.into_iter().enumerate() {
+                    super::super::input::edit(&mut mailbox.boss_encounter, index, value);
+                }
+                let intent = match action {
+                    0 => Intent::Refresh,
+                    1 => Intent::Next,
+                    2 => Intent::Enter,
+                    3 => Intent::Defeated,
+                    4 => Intent::Timeout,
+                    5 => Intent::HazardQuery,
+                    6 => Intent::HazardSelect,
+                    7 => Intent::SlotsQuery,
+                    8 => Intent::SlotEquip,
+                    9 => Intent::SlotRemove,
+                    10 => Intent::Rewards,
+                    11 => Intent::RewardsNext,
+                    _ => return,
+                };
+                super::super::input::enqueue(mailbox, commands, intent);
+            },
+        },
+    );
+}

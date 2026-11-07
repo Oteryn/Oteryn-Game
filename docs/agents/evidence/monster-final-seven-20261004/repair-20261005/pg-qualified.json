@@ -1,0 +1,296 @@
+{
+  "classification": "PROVEN",
+  "code_head": "a2c9e9145dba045971aff6060fa4228d5c2b8c1c",
+  "status": "PASS",
+  "migration_versions_unique": true,
+  "migrations_count": 67,
+  "migrations": [
+    {
+      "file": "0001_admission_reconnect_journal.sql",
+      "sha256": "ff7d73de2cb8c85d54166f53c9bff59c4f03658ba0b96008b3b6d5a08286edbf"
+    },
+    {
+      "file": "0002_fresh_admission_authority.sql",
+      "sha256": "72bc4d5a93448c98019c65d997b904430427ca8d053feea9960f4af8945cf6d3"
+    },
+    {
+      "file": "0003_runtime_scope_assignment.sql",
+      "sha256": "22d05d1e87d6abc8596431af877d5742ab574ebcedd96a8597bfbba33742ff14"
+    },
+    {
+      "file": "0004_native_admission_source.sql",
+      "sha256": "5eabcb29d1d59bb6847c414f7280968306a95b8c1ed9706db0d39058cd1668b4"
+    },
+    {
+      "file": "0005_character_authority.sql",
+      "sha256": "d7712c57f0d87e2db065f15e0acac170e871598049e0100f07c69c89ff8cadb8"
+    },
+    {
+      "file": "0006_node_boot_control_plane.sql",
+      "sha256": "2076318816a9381d185ec510e5d73ed2d1a33921370a295957ab86ee7fa5f612"
+    },
+    {
+      "file": "0007_character_fresh_admission_definer.sql",
+      "sha256": "f734bc82b2fdaaf9cf799d7eb6a6732d3b822243093e4f95638d91d01ee6cf18"
+    },
+    {
+      "file": "0008_native_entry_content_activation.sql",
+      "sha256": "f7976745937bfe491e479458066182d12e08110e97fa594c34bb5d2ca4727f57"
+    },
+    {
+      "file": "0009_character_progression.sql",
+      "sha256": "010a72d3fb6207d87ab1d6821b2b0c2dd23703853868d1cfd71410a7b0502302"
+    },
+    {
+      "file": "0010_item_mint_ground.sql",
+      "sha256": "71b45652c07f09170eba625ae10c40b8cdab1703c340f9d561ecdef4cb338969"
+    },
+    {
+      "file": "0011_item_transfer_backpack.sql",
+      "sha256": "3fb5ea16596cbc3fada427f71bae10db260283464cc7b60d4edd36dec1f03680"
+    },
+    {
+      "file": "0012_reward_claim_backpack_mint.sql",
+      "sha256": "01180f9b392ea78caab8e2ae5952407fed4d525e05a79004bf18dacd48aa0816"
+    },
+    {
+      "file": "0013_corpse_container_mint.sql",
+      "sha256": "1d0fe309465f6ed73e14daa25080eec0f8f28fabb17321f642c1d30d054b862e"
+    },
+    {
+      "file": "0014_corpse_container_transfer.sql",
+      "sha256": "4c6243312989ac54527c0adee76a682984db8d4e49fefcd4127c2ff3886117d2"
+    },
+    {
+      "file": "0015_corpse_decay_retire.sql",
+      "sha256": "c6fc36f306721d743e77baf31c0ce40e828335feeb3ca739c4121aa842610ecf"
+    },
+    {
+      "file": "0016_character_death_receipts.sql",
+      "sha256": "ea5cdc2e456a241aad18cbd6794127e3418fa30798c14cb5046a4770a275a4b5"
+    },
+    {
+      "file": "0017_character_stance.sql",
+      "sha256": "a076b937b39720378d8152d2e01ca741895f7d2fdcdbf50c88222c4b42757d83"
+    },
+    {
+      "file": "0018_character_death_runtime_grant.sql",
+      "sha256": "ef73d3e145014ea55fea833a32cbea7523ffb256a37461e27d9e84c297819259"
+    },
+    {
+      "file": "0019_character_bestiary_progress.sql",
+      "sha256": "e08f11df417b5ce236f42f67ff6d8a8c7e194d6d47c6bb9e9a1dc20b1521b244"
+    },
+    {
+      "file": "0020_character_charm_state.sql",
+      "sha256": "a0e655bb01d8218836c5de0d58bec7083d9cf5df57cd63b316a91cdf149cce15"
+    },
+    {
+      "file": "0021_account_achievements.sql",
+      "sha256": "c0d22fe4dbd9432ad6b6b730cda54557823b5352cd68decaa5c003f51045e90d"
+    },
+    {
+      "file": "0022_character_name.sql",
+      "sha256": "1130f5dd392dbec3dabbcaf7b57f4d0f63ab01e053fcef767db74d08ac7f9be2"
+    },
+    {
+      "file": "0023_character_gold_fee_burn.sql",
+      "sha256": "a36d41874e8a851e9a895844e1394500476853a5cf3be326b55f9b470caab3e6"
+    },
+    {
+      "file": "0024_account_characters_projection.sql",
+      "sha256": "4c295c982e2a1d158bcdac1f8cd1d66376dd5b2c7714b30a0a2f89d1e73819d2"
+    },
+    {
+      "file": "0025_house_item_custody.sql",
+      "sha256": "7172d5d9f684e88d07bf5b458a262ecb1c4c4c9140089cb9b7689c9131e8808d"
+    },
+    {
+      "file": "0026_character_monk_harmony.sql",
+      "sha256": "05942e3e0a7cbaa075b22f01b8772db3c35f39ba8ebcd3c6c7314cdefa4ace1b"
+    },
+    {
+      "file": "0028_account_characters_projection_retry.sql",
+      "sha256": "c9a09a9aca57fa0101d8b1e26858cfd386f32e132e0947c52cdcc0b8297f2e9f"
+    },
+    {
+      "file": "0029_premium_entitlement_fence.sql",
+      "sha256": "e27a63d16f68ac8a03065c9f69acacd9b78b11bf1d83ab73e274d990ad88d4ae"
+    },
+    {
+      "file": "0030_character_build_state.sql",
+      "sha256": "2273058ad128f6e1248db81628fbcfc006f25404844700a966779846385b0217"
+    },
+    {
+      "file": "0031_character_gold_fee_change_mint.sql",
+      "sha256": "a3e4cfcd3c12221110d320f2004e2166188bb2db9474cc4f3db6dc00aec6ecea"
+    },
+    {
+      "file": "0032_character_proficiency.sql",
+      "sha256": "9bde3bfcc946e18600913e295a983998321f4fdfd9dd244bf5b28a28e04142b5"
+    },
+    {
+      "file": "0033_character_familiar_state.sql",
+      "sha256": "58b5d3d74a937b9eb01ff0887efdfe493bde1172df858b857f6fcde409f8942d"
+    },
+    {
+      "file": "0034_spell_item_transactions.sql",
+      "sha256": "2888719618f1594a666b6f38fd9ef68626666d9ec423b438ac291f88a2a1ed3a"
+    },
+    {
+      "file": "0035_character_equipment.sql",
+      "sha256": "2673bc96a6a151c684b46624c168093a82a201a4bc2d641a49762c8ebfddb5c8"
+    },
+    {
+      "file": "0036_character_spell_privacy.sql",
+      "sha256": "6c7bc17d206bc0458f01846ed639abe1d03c05928f7eac5b2dbde8422e5ef131"
+    },
+    {
+      "file": "0038_house_spell_acl.sql",
+      "sha256": "296e7a7f830e2209a1a51ae75d681b61e0f7b1eb2ced1a5be781c4d33a4ca8aa"
+    },
+    {
+      "file": "0039_spell_training_transaction_proof.sql",
+      "sha256": "3ef0dc889052ebb18ca607f95e5de4d62561be2c9f0886e20703c42ec1544a33"
+    },
+    {
+      "file": "0040_spell_premium_projection.sql",
+      "sha256": "aea8ce0a351901a034fb42ba10ec87b24d5d3dcec0e18885a8bd87e8a3d43d1a"
+    },
+    {
+      "file": "0041_character_familiar_cooldown.sql",
+      "sha256": "9e94817638dc4c57fb0b4bc1d83616f5f45ec07e7030169318db7a28ba087123"
+    },
+    {
+      "file": "0042_spell_inventory_consumption.sql",
+      "sha256": "0eb2c60e28911ff737f514f3b52597a2e8a462cf5c4c86feb0e51d887fac87a5"
+    },
+    {
+      "file": "0043_spell_familiar_group.sql",
+      "sha256": "ccff33c5840d5c155090cf4f1a72fbbf448b290d78074309c983b8f75fa8b3a4"
+    },
+    {
+      "file": "0044_spell_parameter_results.sql",
+      "sha256": "2e365f580f7f9b021a7243400d63a04694996621433460d6110fc6a7d89f67aa"
+    },
+    {
+      "file": "0045_spell_item_temporal.sql",
+      "sha256": "9be66973914d1eb3b06b19166f2e455a73acdee9d21e95140ca2aa89b90e9572"
+    },
+    {
+      "file": "0046_world_parties.sql",
+      "sha256": "321890f51ec637fe5dda965af1724184fb0dde15f096d35a402994c11212e92c"
+    },
+    {
+      "file": "0047_world_house_instances.sql",
+      "sha256": "2f33680abebebc49ef70c35712bb5a773ce851ae0a81c449b36ca10da14b3b99"
+    },
+    {
+      "file": "0048_spell_field_world_policy.sql",
+      "sha256": "51d13cc9ffb5c17737c745aecc274bf362a4453bf6d426613ca956a41163210c"
+    },
+    {
+      "file": "0049_native_map_item_initialization.sql",
+      "sha256": "f1abd9974c9ac456aea372551e3248bbfd07baebd17803b87e974b65cd7b9f7d"
+    },
+    {
+      "file": "0050_spell_item_temporal_chain.sql",
+      "sha256": "0fdb6aae8a78d8807dc10f2ec76e704e6f99cd2e696bf2b75b88013f1c965b32"
+    },
+    {
+      "file": "0051_spell_item_source_description.sql",
+      "sha256": "389e6b4e570a3ff646a1fc353f8b1c4b4a62ff251814a8daab1c1db793cef55e"
+    },
+    {
+      "file": "0052_spell_direct_companion_acquisition.sql",
+      "sha256": "ec74b43bf0b38581ac51535de108361f4116a00e8187cc21004dafcc2dc33064"
+    },
+    {
+      "file": "0054_item_timed_states.sql",
+      "sha256": "ffe45c63302c2b761eb716b15c44356d39af7302808ce3a642def5d0ef62b59a"
+    },
+    {
+      "file": "0055_character_proficiency_modification.sql",
+      "sha256": "1f3826b11040cc1e12a81fe0b19303099ef81e9a535127d7b261c5247ff862e8"
+    },
+    {
+      "file": "0056_character_quest_state.sql",
+      "sha256": "23284b6997bf42eb1770431b936ea1c9a5cfe519193e220a54b550ba1367536d"
+    },
+    {
+      "file": "0057_premium_semantic_conflict.sql",
+      "sha256": "dcff53026098bfe04bf4edb8c8afd850022744b3c44e9ea9c6d66aadcbdeeb9b"
+    },
+    {
+      "file": "0058_item_timed_expiry.sql",
+      "sha256": "617b9f1aca7b7491cf0d9f9b9c5ed35bd61389047c8c348b12ef0d265820bad2"
+    },
+    {
+      "file": "0059_character_forge_dust.sql",
+      "sha256": "008efcb0a7d99e243d79b21b21394621500817acbd5efc3cf45b4e6460e3cce6"
+    },
+    {
+      "file": "0060_proficiency_modification_value_lines.sql",
+      "sha256": "9c16ef76a95984d98976defe429b67421fef9699e31729b9e1c76bf015aea95b"
+    },
+    {
+      "file": "0068_character_progression_guard_union.sql",
+      "sha256": "609c3b65a3b149432aedf8b4cda5fbe4547031eeec1b24f600f074f370dbb9d5"
+    },
+    {
+      "file": "0069_character_quest_xp_obligations.sql",
+      "sha256": "a14ae820c1af90f2f19a3bbf1959c01eac21f8b209aaf6fc2c35b4aa43a9f306"
+    },
+    {
+      "file": "0070_character_wheel_allocation.sql",
+      "sha256": "6f4d8464200376b4bfa3c90e1979be92b4cba1f075ed6281413c148f6e916e84"
+    },
+    {
+      "file": "0071_account_bank.sql",
+      "sha256": "d814dee9c02955f0a44cc3fabd2f275aa1f78552b396207270f9d04eacec44a2"
+    },
+    {
+      "file": "0072_character_gold_fee_bank_debit.sql",
+      "sha256": "b91857c6e972b76d110531c4bd1c15bd9c3795974d9da3480bcdc7673aa659d2"
+    },
+    {
+      "file": "0073_character_progression_guard_wheel_union.sql",
+      "sha256": "b24b56a1330f30ebc7342223f961382524d9ac16986a6ea7c68b4b520b12af38"
+    },
+    {
+      "file": "0075_spell_item_guard_union.sql",
+      "sha256": "cd78b1d3f3d4c07280c4c77da87eec530ce51455eb271fe74f9be91114b73bd6"
+    },
+    {
+      "file": "0076_character_inbox.sql",
+      "sha256": "3dc7ec283180bcb9f9f0a5fc08d584f4b943e9932137172c7e125bbcbd621947"
+    },
+    {
+      "file": "0077_map_item_materialization.sql",
+      "sha256": "d298b6f9c2bf1035909a5bb2f819b8dbbf1fd06d783a6e3d6738362d58b82836"
+    },
+    {
+      "file": "0078_creature_source_ground_cause.sql",
+      "sha256": "355420fec7a40cb1b1598596c16329e8233404746b0753d3654f7367a3181092"
+    }
+  ],
+  "components": [
+    {
+      "database": "monster_repair_creature_fields_v4",
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/monster_repair_creature_fields_v4.log",
+      "sha256": "9cbf8fa16d98ea2354366e6075e1a99a444e81837c30c43d0b4f38399fb564b8"
+    },
+    {
+      "database": "monster_repair_player_fields_v4",
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/monster_repair_player_fields_v4.log",
+      "sha256": "e25ba034c2eef8de7f8ce44f64d557a3b14c9de7d92debfc8233626e558ee3fc"
+    }
+  ],
+  "database": "owned disposable PostgreSQL17.6; product migrations applied through0078",
+  "limits": [
+    "Component constraints, physical writes, source occurrences and existing Player guard regression; no production activation or all82native-to-SQL path claim"
+  ],
+  "initial_superseded_attempt": "obsolete v1 fixture and wrong test search_path; v4 uses cached qualified v2 fixtures; initial failure logs preserved"
+}

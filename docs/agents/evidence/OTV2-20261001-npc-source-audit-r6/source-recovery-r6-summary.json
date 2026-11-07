@@ -1,0 +1,91 @@
+{
+  "additional_existing_literal_names": [
+    "Captain Jack",
+    "Pescadu",
+    "Thorim"
+  ],
+  "additional_proposed_literal_names": [
+    "A Skull",
+    "A Vision Of The Past",
+    "Agostina",
+    "Captain Coohan",
+    "Cheaty",
+    "Fabiana",
+    "Fernlor",
+    "Ghost Captain",
+    "Heliodor",
+    "Lai",
+    "Nihaka",
+    "Om'Wake Naha",
+    "Rhargu",
+    "Tik'hi Tak'he",
+    "Timira"
+  ],
+  "counts": {
+    "acquisition_failures": 57,
+    "attempts": 449,
+    "existing_no_primary": {
+      "identities_with_literal_lines": 3,
+      "literal_lines": 5,
+      "nonresponse_lines": 5,
+      "source_pages": 195
+    },
+    "existing_no_primary_variant": {
+      "identities_with_literal_lines": 0,
+      "literal_lines": 0,
+      "nonresponse_lines": 0,
+      "source_pages": 54
+    },
+    "literal_actor_lines": 546,
+    "nonresponse_actor_lines": 7,
+    "page_missing": 193,
+    "proposed_already_literal_r5": {
+      "identities_with_literal_lines": 35,
+      "literal_lines": 203,
+      "nonresponse_lines": 0,
+      "source_pages": 35
+    },
+    "proposed_no_literal_r5": {
+      "identities_with_literal_lines": 15,
+      "literal_lines": 338,
+      "nonresponse_lines": 2,
+      "source_pages": 108
+    },
+    "source_acquired": 392,
+    "source_pages_with_literal_actor_lines": 55,
+    "unique_existing_no_primary_with_literal_actor_lines": 3,
+    "unique_proposed_already_literal_r5_with_literal_actor_lines": 35,
+    "unique_proposed_no_literal_r5_with_literal_actor_lines": 15
+  },
+  "global_complete": false,
+  "identity_binding_qualified": false,
+  "independent_confirmation": false,
+  "packet": "source-recovery-r6.json",
+  "packet_bytes": 1100349,
+  "packet_sha256": "00bdc469e59f46cbc6d49df331b32c48b50fce34b6c07b43ab93974dccb6aac1",
+  "qualification_holds": [
+    "IDENTITY_LOCATION_VARIANT_BINDING_UNPROVEN",
+    "MATCHER_PRECEDENCE_GUARDS_ACTIONS_UNPROVEN",
+    "CURRENT_GLOBAL_BRANCH_COMPLETENESS_UNKNOWN",
+    "NONRESPONSE_OR_NARRATIVE_REQUIRES_SEPARATE_SEMANTICS"
+  ],
+  "r5_baseline": {
+    "additional_existing_with_literal_lines": 3,
+    "additional_proposed_with_literal_lines": 15,
+    "missing_existing_no_primary": 170,
+    "missing_new_no_literal": 64,
+    "remaining_existing_without_fresh_literal_observations": 167,
+    "remaining_proposed_without_fresh_literal_observations": 49,
+    "runtime_qualified": false,
+    "source_program_completeness_proven": false
+  },
+  "runtime_qualified": false,
+  "schema": "NPC_WEB_SOURCE_RECOVERY_SUMMARY/v1",
+  "source_dependence": "TibiaSecrets explicitly references s2ward/tibia and Tibiopedia; no independent confirmation.",
+  "verification": {
+    "all_553_source_fragment_sha256_and_utf8_byte_ranges_match": true,
+    "all_source_packets_parse": true,
+    "article_prose_leakage_check": true,
+    "checks_source_only_not_native_admission": true
+  }
+}

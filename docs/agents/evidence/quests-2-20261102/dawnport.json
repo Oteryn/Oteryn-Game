@@ -1,0 +1,2515 @@
+{
+  "schema": "OTERYN_QUESTS_2_REVIEW_SNAPSHOT/v1",
+  "classification": "DERIVED",
+  "quest": "dawnport",
+  "lane": "classic",
+  "batch": "quests-2-20261102",
+  "scope": "Frozen source rows and author dispositions preserved verbatim as JSON values. IMPLEMENTED means the named code/data subset only; all limitations and validation claims remain in the source disposition.",
+  "input_documents": [
+    {
+      "path": "inventory_donor.json",
+      "sha256": "17c874ce448998e1f01793fd8e3775691b78e465b75a4fc2c341492f9f595ab9"
+    },
+    {
+      "path": "implementation-disposition-classic.json",
+      "sha256": "4a89189d7b66ee039cb556153a0b052550bc5996516ca0f5d07cbb8291720a42"
+    }
+  ],
+  "source_context": {
+    "inventory": {
+      "status": "REPORT_ETAP1_CURRENT_MAIN_VERIFIED",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+      "summary": [
+        {
+          "quest": "dawnport",
+          "steps": 35,
+          "auto": 1,
+          "manual": 34,
+          "already": "CZĘŚCIOWO: logbook/key claims, statyczne dialogi, vocation owner; bez Morris quest adapterów",
+          "dependencies": "Dawnport/rookgaard mapa; 4 vocation chests; shovel/fishing; NPC Morris/Woblin/Menesto/Oressa/Inigo/Captain; Morris death events",
+          "difficulty": "XL",
+          "notes": "Historyczny Sanctuary i istniejąca nazwa Newhaven mają konflikt zakresu CLASSIC-1; pełny onboarding wymaga osobnej zgodności ownerów."
+        },
+        {
+          "quest": "devil_helmet",
+          "steps": 5,
+          "auto": 3,
+          "manual": 2,
+          "already": "CZĘŚCIOWO: 3 leaf reward claims",
+          "dependencies": "mapa uid25030; StepOut i utworzenie435; chest6139..6141",
+          "difficulty": "S",
+          "notes": "StepIn i StepOut są jedną parą; same nagrody nie kończą implementacji płyty."
+        },
+        {
+          "quest": "draconia",
+          "steps": 7,
+          "auto": 3,
+          "manual": 4,
+          "already": "CZĘŚCIOWO: 2 claims; draconia2 supported_unqualified; draconia1 hold",
+          "dependencies": "levers30006/30035; old dragonlord; offering3206/3723; item3284; mapowe4dźwignie",
+          "difficulty": "M",
+          "notes": "CLASSIC-5 item3284; source reward3081 operand5 to charge, nie pięć egzemplarzy."
+        },
+        {
+          "quest": "extension_mota",
+          "steps": 2,
+          "auto": 0,
+          "manual": 2,
+          "already": "NIE: brak natywnego wpisu tej nazwy",
+          "dependencies": "2 actionids64015/64016; brak źródła placementów i canonical identity",
+          "difficulty": "S",
+          "notes": "To katalog techniczny, niepotwierdzona 1:1 nazwa Global; CLASSIC-2."
+        },
+        {
+          "quest": "mintwallin_quest",
+          "steps": 2,
+          "auto": 1,
+          "manual": 1,
+          "already": "CZĘŚCIOWO: mintwallincyclops reward claim",
+          "dependencies": "aid30008 (nie uid30008); 11 obiektów mostu; chest6138",
+          "difficulty": "M",
+          "notes": "Katalog łączy lever nazwany Devil Helmet i claim Mintwallin Cyclops; nie zakładać 1:1 katalog=tytuł."
+        },
+        {
+          "quest": "mysterious_ornate",
+          "steps": 1,
+          "auto": 0,
+          "manual": 1,
+          "already": "NIE: tylko źródłowy stub speech wymaga adaptera",
+          "dependencies": "carried item19065/22739; pusty NPC; folder monster nie dowodzi encounter",
+          "difficulty": "S",
+          "notes": "CLASSIC-3: brak pełnego scenariusza w donorze; UglyMonsterDeath/Drop należy grave_danger."
+        },
+        {
+          "quest": "rookgaard_quests",
+          "steps": 1,
+          "auto": 0,
+          "manual": 1,
+          "already": "NIE: brak natywnego bindingu quiver58103",
+          "dependencies": "mapa chest58103; quiver35562; jednorazowy storage58103",
+          "difficulty": "S",
+          "notes": "Agregat: tylko quiver w tym katalogu; nie przypisywać Katana/Rapier z innych katalogów; CLASSIC-4."
+        },
+        {
+          "quest": "rottin_wood_and_married_men",
+          "steps": 24,
+          "auto": 0,
+          "manual": 24,
+          "already": "CZĘŚCIOWO: katalog i greet NPC; brak wykonawcy misji",
+          "dependencies": "NPC; skinning/hammer/lucky charm; 6 napraw; net/mapa7merchants; timery; losowe nagrody; achievements",
+          "difficulty": "L",
+          "notes": "Między misjami są repeatable tasks z cooldown20h; nie zastępować stałą nagrodą ani last-hit."
+        },
+        {
+          "quest": "the_outlaw_camp",
+          "steps": 5,
+          "auto": 1,
+          "manual": 4,
+          "already": "CZĘŚCIOWO: katalog i4key claims; brak docelowego reward14091",
+          "dependencies": "przesuwanie pieca; coal3050; wall1270/1271; bag2853/items3295+3039; questKV+legacy",
+          "difficulty": "M",
+          "notes": "Istniejący callback outlaw-camp-door należy The Travelling Trader, więc nie liczy się jako ta implementacja."
+        },
+        {
+          "quest": "the_queen_of_the_banshees",
+          "steps": 51,
+          "auto": 16,
+          "manual": 35,
+          "already": "CZĘŚCIOWO:5supported claims,1item hold, standardowe drzwi; bez seal graph",
+          "dependencies": "wspólna sekwencja świata;120s/100s/3s timery według źródła;2Ghost+Skeleton+Warlocks; NPC;8door bindings;6chests",
+          "difficulty": "XL",
+          "notes": "CLASSIC-6 item3081; donorowe global storage, omission guards i spawn nie mieszczą się w samych callbackach."
+        },
+        {
+          "quest": "troll_sabotage",
+          "steps": 7,
+          "auto": 0,
+          "manual": 7,
+          "already": "CZĘŚCIOWO: statyczne dialogi, bez state/equipment/timer adaptera",
+          "dependencies": "NPC Jerom/Chief; head5460/11585/13995; feet3079;mapa50365;item7754/646",
+          "difficulty": "M",
+          "notes": "Chief współdzielony z Threatened Dreams; root scala, nie nadpisywać."
+        }
+      ],
+      "oteryn_revision": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348"
+    },
+    "disposition": {
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+      "test_status": "ROOT_PG_PENDING_NOT_A_COMPLETION_CLAIM",
+      "summary": [
+        {
+          "quest": "dawnport",
+          "steps": 35,
+          "NEW_NATIVE_NPC": 8,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 27
+        },
+        {
+          "quest": "devil_helmet",
+          "steps": 5,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 3,
+          "LEFT_OUT": 2
+        },
+        {
+          "quest": "draconia",
+          "steps": 7,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 2,
+          "EXISTING_QUALIFIED_DATA": 1,
+          "LEFT_OUT": 4
+        },
+        {
+          "quest": "extension_mota",
+          "steps": 2,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 2
+        },
+        {
+          "quest": "mintwallin_quest",
+          "steps": 2,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 1,
+          "LEFT_OUT": 1
+        },
+        {
+          "quest": "mysterious_ornate",
+          "steps": 1,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 1
+        },
+        {
+          "quest": "rookgaard_quests",
+          "steps": 1,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 1
+        },
+        {
+          "quest": "rottin_wood_and_married_men",
+          "steps": 24,
+          "NEW_NATIVE_NPC": 1,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 23
+        },
+        {
+          "quest": "the_outlaw_camp",
+          "steps": 5,
+          "NEW_NATIVE_NPC": 0,
+          "NEW_EXISTING_CALLBACK": 1,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 4
+        },
+        {
+          "quest": "the_queen_of_the_banshees",
+          "steps": 51,
+          "NEW_NATIVE_NPC": 6,
+          "NEW_EXISTING_CALLBACK": 3,
+          "EXISTING_QUALIFIED_DATA": 13,
+          "LEFT_OUT": 29
+        },
+        {
+          "quest": "troll_sabotage",
+          "steps": 7,
+          "NEW_NATIVE_NPC": 1,
+          "NEW_EXISTING_CALLBACK": 0,
+          "EXISTING_QUALIFIED_DATA": 0,
+          "LEFT_OUT": 6
+        }
+      ]
+    }
+  },
+  "source_rows_sha256": "e368430d8ed0284043a56e4b604db5c19cee68ed3c10652d4492f867fdeb594b",
+  "source_dispositions_sha256": "1bfa58fb86d226bd46946ab57bd323e26db54a33d45fb3a3a9946e195c538c6c",
+  "summary": {
+    "inventory_rows": 35,
+    "new_pattern_rows_without_assigned_id": 0,
+    "import_kinds": {
+      "AUTO": 1,
+      "RĘCZNIE": 34
+    },
+    "normalized_status": {
+      "IMPLEMENTED": 8,
+      "LEFT_OUT": 27
+    },
+    "source_status": {
+      "LEFT_OUT": 27,
+      "NEW_NATIVE_NPC": 8
+    },
+    "complete_playable_quest_claimed": false
+  },
+  "rows": [
+    {
+      "ordinal": 1,
+      "element": "Mr Morris: rozpoczęcie The Lost Amulet",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Mr Morris: rozpoczęcie The Lost Amulet",
+        "patterns": [
+          "P09"
+        ],
+        "trigger": "Mr Morris: amulet → yes; topic 1",
+        "condition": "TheLostAmulet < 1",
+        "effect": "TheLostAmulet=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:77-84",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:153-162"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 1,
+        "quest": "dawnport",
+        "step": "Mr Morris: rozpoczęcie The Lost Amulet",
+        "original_import": "RĘCZNIE",
+        "status": "NEW_NATIVE_NPC",
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:77-84",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:153-162"
+        ],
+        "answer": null
+      },
+      "normalized": {
+        "status": "IMPLEMENTED",
+        "delivery_kind": "NATIVE_NPC",
+        "source_status": "NEW_NATIVE_NPC",
+        "left_out": false,
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "question_or_answer_links": [],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 77,
+          "end_line": 84,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "0235a04ffcd92f02efc35ae05e6f10315e07e33dcfb7a6d7ec3f0cde4591a5b0",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L77-L84"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 153,
+          "end_line": 162,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "db3c326a429d4b9e4bab9905ba35c09661c6c74a63de80d31bf7be54935ea5e1",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L153-L162"
+        }
+      ]
+    },
+    {
+      "ordinal": 2,
+      "element": "Odkopanie zaginionego amuletu",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Odkopanie zaginionego amuletu",
+        "patterns": [
+          "P02",
+          "P30"
+        ],
+        "trigger": "shovel na (32099,31933,7), obiekt 19401",
+        "condition": "TheLostAmulet=1; los 1..100",
+        "effect": "1..10: item 21379×1 i TheLostAmulet=2; 11..80: 21395×1; 81..95: brak nagrody; 96..100: 3492×los(1..10)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:363-389"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw bez wpisu tego kroku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22-119",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 2,
+        "quest": "dawnport",
+        "step": "Odkopanie zaginionego amuletu",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Brak atomowego połączenia źródłowego losowania shovel/fishing, mintu i QuestState w obecnym callbacku; nowy wspólny owner poza zakresem (ANSWER5).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/register_actions.lua:363-389"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Brak atomowego połączenia źródłowego losowania shovel/fishing, mintu i QuestState w obecnym callbacku; nowy wspólny owner poza zakresem (ANSWER5).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/lib/register_actions.lua",
+          "start_line": 363,
+          "end_line": 389,
+          "blob_sha256": "5121124402c29aead613174c80e94e6b8d5c7db1e62ad152ad68f1280fc3df6d",
+          "blob_line_count": 1214,
+          "excerpt_sha256": "6c3e2a1b055bb6b2656fa158131118e065e0dcaf692fdc6adf1ee0919a14a37d",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/lib/register_actions.lua#L363-L389"
+        }
+      ]
+    },
+    {
+      "ordinal": 3,
+      "element": "Mr Morris: zwrot amuletu",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Mr Morris: zwrot amuletu",
+        "patterns": [
+          "P10",
+          "P11"
+        ],
+        "trigger": "Mr Morris: amulet",
+        "condition": "TheLostAmulet=2 i 21379≥1",
+        "effect": "−21379×1; +3031×50; TheLostAmulet=3",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:85-94"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 3,
+        "quest": "dawnport",
+        "step": "Mr Morris: zwrot amuletu",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:85-94"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 85,
+          "end_line": 94,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "a25e733154b058ae995792d2b5ef0d7e1c21f9de2d67cd99bac2cf2b63204906",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L85-L94"
+        }
+      ]
+    },
+    {
+      "ordinal": 4,
+      "element": "Mr Morris: rozpoczęcie The Stolen Log Book",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Mr Morris: rozpoczęcie The Stolen Log Book",
+        "patterns": [
+          "P09"
+        ],
+        "trigger": "Mr Morris: log book → yes; topic 2",
+        "condition": "TornLogBook<1 przy ofercie",
+        "effect": "TheStolenLogBook=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:96-105",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:163-171"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 4,
+        "quest": "dawnport",
+        "step": "Mr Morris: rozpoczęcie The Stolen Log Book",
+        "original_import": "RĘCZNIE",
+        "status": "NEW_NATIVE_NPC",
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:96-105",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:163-171"
+        ],
+        "answer": null
+      },
+      "normalized": {
+        "status": "IMPLEMENTED",
+        "delivery_kind": "NATIVE_NPC",
+        "source_status": "NEW_NATIVE_NPC",
+        "left_out": false,
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "question_or_answer_links": [],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 96,
+          "end_line": 105,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "c06db9b3d29b4657b09105f675d6c2fb16cf81abac850f5dd56d90d8f5f1129b",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L96-L105"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 163,
+          "end_line": 171,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "0c90566972e8778dcf0674dd9f22359e8fb87647103a4de4f8b2d73bc0ff220b",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L163-L171"
+        }
+      ]
+    },
+    {
+      "ordinal": 5,
+      "element": "Torn log book ze skrzyni",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Torn log book ze skrzyni",
+        "patterns": [
+          "P05"
+        ],
+        "trigger": "uid 6007, item 2472 na (32059,31800,10)",
+        "condition": "jednorazowy storage TornLogBook",
+        "effect": "+21378×1; TornLogBook=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:632-637"
+        ],
+        "oteryn": "CZĘŚCIOWO — istnieją dane i supported_unqualified, brak testu tego World; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:docs/repository/QUEST_CALLBACK_COVERAGE.json:1; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:34-224",
+        "import_method": "AUTO",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 5,
+        "quest": "dawnport",
+        "step": "Torn log book ze skrzyni",
+        "original_import": "AUTO",
+        "status": "LEFT_OUT",
+        "reason": "Istnieje leaf claim6007 wydający21378. Brak potwierdzonego atomowego wiązania tego claimu do nowego canonical TornLogBook; nie uznaję samego claimu za pełny krok. Rozszerzenie RewardClaimMint poza zakresem (ANSWER5).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:632-637"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Istnieje leaf claim6007 wydający21378. Brak potwierdzonego atomowego wiązania tego claimu do nowego canonical TornLogBook; nie uznaję samego claimu za pełny krok. Rozszerzenie RewardClaimMint poza zakresem (ANSWER5).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/startup/tables/chest.lua",
+          "start_line": 632,
+          "end_line": 637,
+          "blob_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+          "blob_line_count": 3669,
+          "excerpt_sha256": "45649fa31f88adb9e3016e2bb60df7a6f3bee3884a78eadf81c1bb256d896a6d",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L632-L637"
+        }
+      ]
+    },
+    {
+      "ordinal": 6,
+      "element": "Mr Morris: zwrot log book",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Mr Morris: zwrot log book",
+        "patterns": [
+          "P10",
+          "P11"
+        ],
+        "trigger": "Mr Morris: log book",
+        "condition": "TornLogBook=1; TheStolenLogBook=1; 21378≥1",
+        "effect": "−21378×1; +3031×50; TheStolenLogBook=2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:106-116"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 6,
+        "quest": "dawnport",
+        "step": "Mr Morris: zwrot log book",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:106-116"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 106,
+          "end_line": 116,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "7bf5590883b79fada10e2931b0cf8bd6a08e1f954529d67fea1c7ef84c43c094",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L106-L116"
+        }
+      ]
+    },
+    {
+      "ordinal": 7,
+      "element": "Mr Morris: rozpoczęcie The Rare Herb",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Mr Morris: rozpoczęcie The Rare Herb",
+        "patterns": [
+          "P09"
+        ],
+        "trigger": "Mr Morris: herbs → yes; topic 3",
+        "condition": "TheRareHerb<1 przy ofercie",
+        "effect": "TheRareHerb=1; HerbFlower=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:118-126",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:172-182"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 7,
+        "quest": "dawnport",
+        "step": "Mr Morris: rozpoczęcie The Rare Herb",
+        "original_import": "RĘCZNIE",
+        "status": "NEW_NATIVE_NPC",
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:118-126",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:172-182"
+        ],
+        "answer": null
+      },
+      "normalized": {
+        "status": "IMPLEMENTED",
+        "delivery_kind": "NATIVE_NPC",
+        "source_status": "NEW_NATIVE_NPC",
+        "left_out": false,
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "question_or_answer_links": [],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 118,
+          "end_line": 126,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "f4f49f12c38fc23d1fc05a7706089f2b6d5f3917ea6a92d830d42d07ddbe72af",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L118-L126"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 172,
+          "end_line": 182,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "c417e2646abdde3061e245bb8e9ae20015737ad339fc9345b1bf702066ac7759",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L172-L182"
+        }
+      ]
+    },
+    {
+      "ordinal": 8,
+      "element": "Zebranie kwiatu",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Zebranie kwiatu",
+        "patterns": [
+          "P02"
+        ],
+        "trigger": "uid 40027; item 21377 na (32028,31882,7)",
+        "condition": "TheRareHerb=1 i ItemUnique[uid] istnieje",
+        "effect": "TheRareHerb=2; komunikat; donor nie wydaje przedmiotu",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_the_rare_herb.lua:3-16",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4658-4661"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw bez wpisu tego kroku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22-119",
+        "import_method": "RĘCZNIE",
+        "notes": "Donor daje tylko stan i komunikat; nie tworzy itemu z kwiatem."
+      },
+      "source_disposition": {
+        "index": 8,
+        "quest": "dawnport",
+        "step": "Zebranie kwiatu",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "UID40027 ma dokładny stan1→2 i literalny komunikat. Obecny callback nie ma success_message; proponowane rozszerzenie kontraktu odłożone zgodnie z ANSWER5. Nie emitować sukcesu przed commitem ani nie pomijać tekstu.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_the_rare_herb.lua:3-16",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:4658-4661"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "UID40027 ma dokładny stan1→2 i literalny komunikat. Obecny callback nie ma success_message; proponowane rozszerzenie kontraktu odłożone zgodnie z ANSWER5. Nie emitować sukcesu przed commitem ani nie pomijać tekstu.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/dawnport/actions_the_rare_herb.lua",
+          "start_line": 3,
+          "end_line": 16,
+          "blob_sha256": "86dc6a30f8ba118b8d5bcdd08f43f5a136c85b55437102e9ed7bc9211635910d",
+          "blob_line_count": 17,
+          "excerpt_sha256": "f5d83d2b1f20f402f438f9d4f4d0aaf415cdb6454d762f00dd613ee6a485f208",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dawnport/actions_the_rare_herb.lua#L3-L16"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/startup/tables/item.lua",
+          "start_line": 4658,
+          "end_line": 4661,
+          "blob_sha256": "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad",
+          "blob_line_count": 5196,
+          "excerpt_sha256": "6745283c7c39e3932d11cabcbfeda66e147c71b9b6545e7ef4fde85713aed385",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/item.lua#L4658-L4661"
+        }
+      ]
+    },
+    {
+      "ordinal": 9,
+      "element": "Mr Morris: nagroda za herbs",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Mr Morris: nagroda za herbs",
+        "patterns": [
+          "P11"
+        ],
+        "trigger": "Mr Morris: herbs",
+        "condition": "TheRareHerb=2",
+        "effect": "+3031×50; TheRareHerb=3",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:127-136"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 9,
+        "quest": "dawnport",
+        "step": "Mr Morris: nagroda za herbs",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:127-136"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 127,
+          "end_line": 136,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "b652aaf0b264366aa874eb9fc7e94a7cecf4c0e3d206839c3fcbb39401ff022e",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L127-L136"
+        }
+      ]
+    },
+    {
+      "ordinal": 10,
+      "element": "Mr Morris: rozpoczęcie Dorm Key",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Mr Morris: rozpoczęcie Dorm Key",
+        "patterns": [
+          "P09"
+        ],
+        "trigger": "Mr Morris: key → yes; topic 4",
+        "condition": "TheDormKey<1 przy ofercie",
+        "effect": "TheDormKey=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:138-147",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:183-186"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 10,
+        "quest": "dawnport",
+        "step": "Mr Morris: rozpoczęcie Dorm Key",
+        "original_import": "RĘCZNIE",
+        "status": "NEW_NATIVE_NPC",
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:138-147",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:183-186"
+        ],
+        "answer": null
+      },
+      "normalized": {
+        "status": "IMPLEMENTED",
+        "delivery_kind": "NATIVE_NPC",
+        "source_status": "NEW_NATIVE_NPC",
+        "left_out": false,
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "question_or_answer_links": [],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 138,
+          "end_line": 147,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "292c33fafa4146818700035f76b707634ba35f87f8e4e18768ad9cf3b01cf195",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L138-L147"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 183,
+          "end_line": 186,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "4e390805ba17ba9526c0826ba0816423b7aa59cf62a6f204196d388f4e5c5546",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L183-L186"
+        }
+      ]
+    },
+    {
+      "ordinal": 11,
+      "element": "Woblin: warunek wydania klucza",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Woblin: warunek wydania klucza",
+        "patterns": [
+          "P09"
+        ],
+        "trigger": "Woblin: precious → reward",
+        "condition": "TheDormKey=1; topic 1",
+        "effect": "TheDormKey=2; prośba o Old Nasty",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/woblin.lua:63-94"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 11,
+        "quest": "dawnport",
+        "step": "Woblin: warunek wydania klucza",
+        "original_import": "RĘCZNIE",
+        "status": "NEW_NATIVE_NPC",
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/woblin.lua:63-94"
+        ],
+        "answer": null
+      },
+      "normalized": {
+        "status": "IMPLEMENTED",
+        "delivery_kind": "NATIVE_NPC",
+        "source_status": "NEW_NATIVE_NPC",
+        "left_out": false,
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "question_or_answer_links": [],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/woblin.lua",
+          "start_line": 63,
+          "end_line": 94,
+          "blob_sha256": "2d8affe3aec52b6501f272cde572b9f2c62c9513ac0f2f84f20d7bd2e428e8ac",
+          "blob_line_count": 170,
+          "excerpt_sha256": "cffb073e2ca30c042c73c235793febcf12c388e85bd4c4c82f18ea448e0a7aa3",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/woblin.lua#L63-L94"
+        }
+      ]
+    },
+    {
+      "ordinal": 12,
+      "element": "Połów Old Nasty",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Połów Old Nasty",
+        "patterns": [
+          "P02",
+          "P30"
+        ],
+        "trigger": "wędka na item 21414; useWorms=true",
+        "condition": "TheDormKey=2; usunięcie jednego worm; los 1..100≥97",
+        "effect": "+21402×1; TheDormKey=3",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/fishing.lua:263-269"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw bez wpisu tego kroku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22-119",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 12,
+        "quest": "dawnport",
+        "step": "Połów Old Nasty",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Brak atomowego połączenia źródłowego losowania shovel/fishing, mintu i QuestState w obecnym callbacku; nowy wspólny owner poza zakresem (ANSWER5).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/fishing.lua:263-269"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Brak atomowego połączenia źródłowego losowania shovel/fishing, mintu i QuestState w obecnym callbacku; nowy wspólny owner poza zakresem (ANSWER5).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/actions/other/fishing.lua",
+          "start_line": 263,
+          "end_line": 269,
+          "blob_sha256": "75bde535d8b9530fd57b4dde5f741e19264f6ed118789d4641321933a628e02f",
+          "blob_line_count": 322,
+          "excerpt_sha256": "260ab0f843d6e14c117b0fbd0308c25503f835c730fcc725cbf91827d10f7991",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/other/fishing.lua#L263-L269"
+        }
+      ]
+    },
+    {
+      "ordinal": 13,
+      "element": "Woblin: Old Nasty za klucz",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Woblin: Old Nasty za klucz",
+        "patterns": [
+          "P10",
+          "P11"
+        ],
+        "trigger": "Woblin: old nasty → yes; topic 2",
+        "condition": "TheDormKey≥2; item 21402≥1 i udane removeItem",
+        "effect": "−21402×1; +21392×1 z actionid 103; TheDormKey=4",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/woblin.lua:97-117"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 13,
+        "quest": "dawnport",
+        "step": "Woblin: Old Nasty za klucz",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/woblin.lua:97-117"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/woblin.lua",
+          "start_line": 97,
+          "end_line": 117,
+          "blob_sha256": "2d8affe3aec52b6501f272cde572b9f2c62c9513ac0f2f84f20d7bd2e428e8ac",
+          "blob_line_count": 170,
+          "excerpt_sha256": "c0f5325584f3dff44cd05589975df73a02d70b6cdd87deadc5baac5c4b73f19f",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/woblin.lua#L97-L117"
+        }
+      ]
+    },
+    {
+      "ordinal": 14,
+      "element": "Mr Morris: odbiór Dorm Key",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Mr Morris: odbiór Dorm Key",
+        "patterns": [
+          "P10",
+          "P11"
+        ],
+        "trigger": "Mr Morris: key → yes; topic 5",
+        "condition": "TheDormKey=4 przy ofercie; return removeItem niekontrolowany",
+        "effect": "próba −21392×1; +3031×50; TheDormKey=5",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:148-151",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:187-192"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": "Nie wolno uznać sprawdzenia possession za obecne: donor ignoruje wynik removeItem."
+      },
+      "source_disposition": {
+        "index": 14,
+        "quest": "dawnport",
+        "step": "Mr Morris: odbiór Dorm Key",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:148-151",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:187-192"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 148,
+          "end_line": 151,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "e46391ae09acce83076a5fdbe797412b41ddd80ff6f3406192dcd64e06f31dbb",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L148-L151"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 187,
+          "end_line": 192,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "37d56e020b39870f23f144da6876b7146efe915fdac85aec1a24f450d374da31",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L187-L192"
+        }
+      ]
+    },
+    {
+      "ordinal": 15,
+      "element": "Mr Morris: start Mountain Trolls",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Mr Morris: start Mountain Trolls",
+        "patterns": [
+          "P09"
+        ],
+        "trigger": "Mr Morris: trolls → yes; topic 6",
+        "condition": "MorriskTroll<1",
+        "effect": "MorriskTroll=1; MorrisTrollCount=0",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:226-235",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:193-202"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 15,
+        "quest": "dawnport",
+        "step": "Mr Morris: start Mountain Trolls",
+        "original_import": "RĘCZNIE",
+        "status": "NEW_NATIVE_NPC",
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:226-235",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:193-202"
+        ],
+        "answer": null
+      },
+      "normalized": {
+        "status": "IMPLEMENTED",
+        "delivery_kind": "NATIVE_NPC",
+        "source_status": "NEW_NATIVE_NPC",
+        "left_out": false,
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "question_or_answer_links": [],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 226,
+          "end_line": 235,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "5de1444be6ad6458d39d9811b5f70c6720c47504fd9925f45f532ac0ff3b7b2c",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L226-L235"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 193,
+          "end_line": 202,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "bd1bc245e929e8688d0aaabeb4daa49cf0e7b0bf788c7a4788dfea23c7760679",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L193-L202"
+        }
+      ]
+    },
+    {
+      "ordinal": 16,
+      "element": "Licznik Mountain Trolls",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Licznik Mountain Trolls",
+        "patterns": [
+          "P07",
+          "P08",
+          "P21"
+        ],
+        "trigger": "MorrisTrollDeath",
+        "condition": "MorriskTroll=1; MorrisTrollCount<20; mostDamageKiller jest Player",
+        "effect": "MorrisTrollCount+=1 dla mostDamageKiller lub wszystkich uczestników party z aktywnym shared experience",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/creaturescripts_troll_kill.lua:1-12",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/functions.lua:1064-1073",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/party.lua:129-139"
+        ],
+        "oteryn": "CZĘŚCIOWO — owner Grizzly nie implementuje tych Morris eventów; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills.rs:74-341",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 16,
+        "quest": "dawnport",
+        "step": "Licznik Mountain Trolls",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Morris death events wymagają present mostDamageKiller oraz snapshotu aktywnego shared-XP party. Istniejący proof i commit_grizzly_kill są związane z typed GrizzlyAction/task-start; rozszerzenie wspólnego kill ownera odłożone (ANSWER5), bez last-hit fallback.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/creaturescripts_troll_kill.lua:1-12",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/functions.lua:1064-1073",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/party.lua:129-139"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Morris death events wymagają present mostDamageKiller oraz snapshotu aktywnego shared-XP party. Istniejący proof i commit_grizzly_kill są związane z typed GrizzlyAction/task-start; rozszerzenie wspólnego kill ownera odłożone (ANSWER5), bez last-hit fallback.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/dawnport/creaturescripts_troll_kill.lua",
+          "start_line": 1,
+          "end_line": 12,
+          "blob_sha256": "f5d3d860528ab13857c4ee792682e25b86217fbb57105deec787c32a876a59bd",
+          "blob_line_count": 12,
+          "excerpt_sha256": "f5d3d860528ab13857c4ee792682e25b86217fbb57105deec787c32a876a59bd",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dawnport/creaturescripts_troll_kill.lua#L1-L12"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/libs/functions/functions.lua",
+          "start_line": 1064,
+          "end_line": 1073,
+          "blob_sha256": "6a6f06d48a5b541c52ea3db6bcc68c934c1771e63a3db612e0e93df229ff110a",
+          "blob_line_count": 1082,
+          "excerpt_sha256": "5bd4feafab215a0b4f71cc399b6ef65f380806c1f25170a762969f45e91d193f",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/functions/functions.lua#L1064-L1073"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/libs/functions/party.lua",
+          "start_line": 129,
+          "end_line": 139,
+          "blob_sha256": "f2db68fb466c2b4fcee7b4c9a0fc4e30ce551d30bf2f761365d8225eaee35202",
+          "blob_line_count": 151,
+          "excerpt_sha256": "8bd62e0dd7c666af7896aa0b4b36bac8eeefe70f9bd3a074ae33a319d141af7d",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/functions/party.lua#L129-L139"
+        }
+      ]
+    },
+    {
+      "ordinal": 17,
+      "element": "Mr Morris: rozliczenie Mountain Trolls",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Mr Morris: rozliczenie Mountain Trolls",
+        "patterns": [
+          "P11"
+        ],
+        "trigger": "Mr Morris: trolls",
+        "condition": "MorriskTroll=1 i MorrisTrollCount≥20",
+        "effect": "MorriskTroll=2; storage 14898=1; +3031×50",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:234-244"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 17,
+        "quest": "dawnport",
+        "step": "Mr Morris: rozliczenie Mountain Trolls",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:234-244"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 234,
+          "end_line": 244,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "4437f76c9a688510ac006dafcddf23b6b282208cf4502fdedc941e882998ea2e",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L234-L244"
+        }
+      ]
+    },
+    {
+      "ordinal": 18,
+      "element": "Mr Morris: start Muglex Clan Footmen",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Mr Morris: start Muglex Clan Footmen",
+        "patterns": [
+          "P09"
+        ],
+        "trigger": "Mr Morris: goblins → yes; topic 7",
+        "condition": "MorrisGoblin<1",
+        "effect": "MorrisGoblin=1; MorrisGoblinCount=0",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:244-253",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:203-212"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 18,
+        "quest": "dawnport",
+        "step": "Mr Morris: start Muglex Clan Footmen",
+        "original_import": "RĘCZNIE",
+        "status": "NEW_NATIVE_NPC",
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:244-253",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:203-212"
+        ],
+        "answer": null
+      },
+      "normalized": {
+        "status": "IMPLEMENTED",
+        "delivery_kind": "NATIVE_NPC",
+        "source_status": "NEW_NATIVE_NPC",
+        "left_out": false,
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "question_or_answer_links": [],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 244,
+          "end_line": 253,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "c7efd65d6bd063cb1fdaa8e7dcd9e06145703b13901ea705451ec143acfc44ff",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L244-L253"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 203,
+          "end_line": 212,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "09862aa9f60e4eb492464a4587e9d0f2cb78a5278575949ac41936f1c1914dc3",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L203-L212"
+        }
+      ]
+    },
+    {
+      "ordinal": 19,
+      "element": "Licznik Muglex Clan Footmen",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Licznik Muglex Clan Footmen",
+        "patterns": [
+          "P07",
+          "P08",
+          "P21"
+        ],
+        "trigger": "MorrisGoblinDeath",
+        "condition": "MorrisGoblin=1; MorrisGoblinCount<20; mostDamageKiller jest Player",
+        "effect": "MorrisGoblinCount+=1 dla mostDamageKiller lub wszystkich uczestników party z aktywnym shared experience",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/creaturescripts_goblin_kill.lua:1-12",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/functions.lua:1064-1073",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/party.lua:129-139"
+        ],
+        "oteryn": "CZĘŚCIOWO — owner Grizzly nie implementuje tych Morris eventów; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills.rs:74-341",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 19,
+        "quest": "dawnport",
+        "step": "Licznik Muglex Clan Footmen",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Morris death events wymagają present mostDamageKiller oraz snapshotu aktywnego shared-XP party. Istniejący proof i commit_grizzly_kill są związane z typed GrizzlyAction/task-start; rozszerzenie wspólnego kill ownera odłożone (ANSWER5), bez last-hit fallback.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/creaturescripts_goblin_kill.lua:1-12",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/functions.lua:1064-1073",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/party.lua:129-139"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Morris death events wymagają present mostDamageKiller oraz snapshotu aktywnego shared-XP party. Istniejący proof i commit_grizzly_kill są związane z typed GrizzlyAction/task-start; rozszerzenie wspólnego kill ownera odłożone (ANSWER5), bez last-hit fallback.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/dawnport/creaturescripts_goblin_kill.lua",
+          "start_line": 1,
+          "end_line": 12,
+          "blob_sha256": "7ec922c9d71ce3eb37ca17d2a5de1284b3088412bf7bfcdadd5a3e31ad6cbf48",
+          "blob_line_count": 12,
+          "excerpt_sha256": "7ec922c9d71ce3eb37ca17d2a5de1284b3088412bf7bfcdadd5a3e31ad6cbf48",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dawnport/creaturescripts_goblin_kill.lua#L1-L12"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/libs/functions/functions.lua",
+          "start_line": 1064,
+          "end_line": 1073,
+          "blob_sha256": "6a6f06d48a5b541c52ea3db6bcc68c934c1771e63a3db612e0e93df229ff110a",
+          "blob_line_count": 1082,
+          "excerpt_sha256": "5bd4feafab215a0b4f71cc399b6ef65f380806c1f25170a762969f45e91d193f",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/functions/functions.lua#L1064-L1073"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/libs/functions/party.lua",
+          "start_line": 129,
+          "end_line": 139,
+          "blob_sha256": "f2db68fb466c2b4fcee7b4c9a0fc4e30ce551d30bf2f761365d8225eaee35202",
+          "blob_line_count": 151,
+          "excerpt_sha256": "8bd62e0dd7c666af7896aa0b4b36bac8eeefe70f9bd3a074ae33a319d141af7d",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/functions/party.lua#L129-L139"
+        }
+      ]
+    },
+    {
+      "ordinal": 20,
+      "element": "Mr Morris: rozliczenie Muglex Clan Footmen",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Mr Morris: rozliczenie Muglex Clan Footmen",
+        "patterns": [
+          "P11"
+        ],
+        "trigger": "Mr Morris: goblins",
+        "condition": "MorrisGoblin=1 i MorrisGoblinCount≥20",
+        "effect": "MorrisGoblin=2; storage 14899=1; +3031×50",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:252-262"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 20,
+        "quest": "dawnport",
+        "step": "Mr Morris: rozliczenie Muglex Clan Footmen",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:252-262"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 252,
+          "end_line": 262,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "d31b2fda37bf59760ba8f2187218252635f3f914bb1c800e1853097786b05333",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L252-L262"
+        }
+      ]
+    },
+    {
+      "ordinal": 21,
+      "element": "Mr Morris: start Minotaur Bruisers",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Mr Morris: start Minotaur Bruisers",
+        "patterns": [
+          "P09"
+        ],
+        "trigger": "Mr Morris: minotaur → yes; topic 8",
+        "condition": "MorrisMinos<1",
+        "effect": "MorrisMinos=1; MorrisMinosCount=0",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:262-271",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:213-222"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 21,
+        "quest": "dawnport",
+        "step": "Mr Morris: start Minotaur Bruisers",
+        "original_import": "RĘCZNIE",
+        "status": "NEW_NATIVE_NPC",
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:262-271",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:213-222"
+        ],
+        "answer": null
+      },
+      "normalized": {
+        "status": "IMPLEMENTED",
+        "delivery_kind": "NATIVE_NPC",
+        "source_status": "NEW_NATIVE_NPC",
+        "left_out": false,
+        "reason": "Nowy prywatny adapter wybiera literalny source branch i istniejący QuestState; wynik PG kwalifikuje root.",
+        "question_or_answer_links": [],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 262,
+          "end_line": 271,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "7d02d796a8d0d0b3d1d66c32cfff229d49e166d2f7e5d09ce3106a81625560b5",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L262-L271"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 213,
+          "end_line": 222,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "28cefe2891faad8b0acc26358473f7cf8f566935a446abd47b6443a9568ddffd",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L213-L222"
+        }
+      ]
+    },
+    {
+      "ordinal": 22,
+      "element": "Licznik Minotaur Bruisers",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Licznik Minotaur Bruisers",
+        "patterns": [
+          "P07",
+          "P08",
+          "P21"
+        ],
+        "trigger": "MorrisMinotaurDeath",
+        "condition": "MorrisMinos=1; MorrisMinosCount<20; mostDamageKiller jest Player",
+        "effect": "MorrisMinosCount+=1 dla mostDamageKiller lub wszystkich uczestników party z aktywnym shared experience",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/creaturescripts_minotaur_kill.lua:1-12",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/functions.lua:1064-1073",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/party.lua:129-139"
+        ],
+        "oteryn": "CZĘŚCIOWO — owner Grizzly nie implementuje tych Morris eventów; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/grizzly_kills.rs:74-341",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 22,
+        "quest": "dawnport",
+        "step": "Licznik Minotaur Bruisers",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Morris death events wymagają present mostDamageKiller oraz snapshotu aktywnego shared-XP party. Istniejący proof i commit_grizzly_kill są związane z typed GrizzlyAction/task-start; rozszerzenie wspólnego kill ownera odłożone (ANSWER5), bez last-hit fallback.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/creaturescripts_minotaur_kill.lua:1-12",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/functions.lua:1064-1073",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/party.lua:129-139"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Morris death events wymagają present mostDamageKiller oraz snapshotu aktywnego shared-XP party. Istniejący proof i commit_grizzly_kill są związane z typed GrizzlyAction/task-start; rozszerzenie wspólnego kill ownera odłożone (ANSWER5), bez last-hit fallback.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/dawnport/creaturescripts_minotaur_kill.lua",
+          "start_line": 1,
+          "end_line": 12,
+          "blob_sha256": "24a4a9595e89f4edf9bf405247304ffd733496e8285377d6d77f8b711124d076",
+          "blob_line_count": 12,
+          "excerpt_sha256": "24a4a9595e89f4edf9bf405247304ffd733496e8285377d6d77f8b711124d076",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dawnport/creaturescripts_minotaur_kill.lua#L1-L12"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/libs/functions/functions.lua",
+          "start_line": 1064,
+          "end_line": 1073,
+          "blob_sha256": "6a6f06d48a5b541c52ea3db6bcc68c934c1771e63a3db612e0e93df229ff110a",
+          "blob_line_count": 1082,
+          "excerpt_sha256": "5bd4feafab215a0b4f71cc399b6ef65f380806c1f25170a762969f45e91d193f",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/functions/functions.lua#L1064-L1073"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/libs/functions/party.lua",
+          "start_line": 129,
+          "end_line": 139,
+          "blob_sha256": "f2db68fb466c2b4fcee7b4c9a0fc4e30ce551d30bf2f761365d8225eaee35202",
+          "blob_line_count": 151,
+          "excerpt_sha256": "8bd62e0dd7c666af7896aa0b4b36bac8eeefe70f9bd3a074ae33a319d141af7d",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/functions/party.lua#L129-L139"
+        }
+      ]
+    },
+    {
+      "ordinal": 23,
+      "element": "Mr Morris: rozliczenie Minotaur Bruisers",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Mr Morris: rozliczenie Minotaur Bruisers",
+        "patterns": [
+          "P11"
+        ],
+        "trigger": "Mr Morris: minotaur",
+        "condition": "MorrisMinos=1 i MorrisMinosCount≥20",
+        "effect": "MorrisMinos=2; storage 14900=1; +3031×50",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:270-280"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 23,
+        "quest": "dawnport",
+        "step": "Mr Morris: rozliczenie Minotaur Bruisers",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/mr_morris.lua:270-280"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Wymaga jednego ownera atomowej konsumpcji/grantu przedmiotu lub pieniędzy wraz ze stanem/XP. Projekt0832 i caller zostały odłożone poza aktywną gałąź zgodnie z ANSWER4–5. Bez flag-only sukcesu i bez dwóch osobnych writerów.",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/mr_morris.lua",
+          "start_line": 270,
+          "end_line": 280,
+          "blob_sha256": "36b1b096725227ba3fceb8b926bde379ced2f8c88b28f8234186bb666fadcf54",
+          "blob_line_count": 411,
+          "excerpt_sha256": "b22dfdb99baa0caf16a4d498d99e846cfe3e84ec80063affe5275ecd08662094",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/mr_morris.lua#L270-L280"
+        }
+      ]
+    },
+    {
+      "ordinal": 24,
+      "element": "Skrzynia ekwipunku Sorcerer",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Skrzynia ekwipunku Sorcerer",
+        "patterns": [
+          "P05",
+          "P14"
+        ],
+        "trigger": "uid 14025",
+        "condition": "VocationReward≠1; wystarczająca capacity na całość i co najmniej 1 slot w plecaku; donor onUse nie sprawdza vocation",
+        "effect": "container 2854, dzieci: 7992,7991,3559,3552,3074,3059 (po 1), 16277×1 i 2819×1 z pełnym tekstem listu; VocationReward=1 tylko po udanym addItemEx",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_vocation_reward.lua:22-62",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_vocation_reward.lua:66-117"
+        ],
+        "oteryn": "CZĘŚCIOWO — istnieje wykonawca reward claim, potrzebna kwalifikacja konkretnego wiązania; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:34-224",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 24,
+        "quest": "dawnport",
+        "step": "Skrzynia ekwipunku Sorcerer",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Custom vocation chest14025–14028 obejmuje root, pełne wyposażenie i teksty. Brak kwalifikowanego natywnego recipe/bindingu tego custom wydania; rozszerzenie RewardClaimMint/item semantics poza zakresem (ANSWER5,8).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_vocation_reward.lua:22-62",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_vocation_reward.lua:66-117"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Custom vocation chest14025–14028 obejmuje root, pełne wyposażenie i teksty. Brak kwalifikowanego natywnego recipe/bindingu tego custom wydania; rozszerzenie RewardClaimMint/item semantics poza zakresem (ANSWER5,8).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/dawnport/actions_vocation_reward.lua",
+          "start_line": 22,
+          "end_line": 62,
+          "blob_sha256": "30223d6371c3c83da9640092649e4ad55b67581190074ade7dc22f44a6edd12b",
+          "blob_line_count": 125,
+          "excerpt_sha256": "e370c74711bfae62d23bbd35d6daf9d6703f3d799fc1f64c3fee2d46dbe663d7",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dawnport/actions_vocation_reward.lua#L22-L62"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/dawnport/actions_vocation_reward.lua",
+          "start_line": 66,
+          "end_line": 117,
+          "blob_sha256": "30223d6371c3c83da9640092649e4ad55b67581190074ade7dc22f44a6edd12b",
+          "blob_line_count": 125,
+          "excerpt_sha256": "66d5baccc70266f1e80bc48623f89c5c2207347e795b89819c192f515ed58641",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dawnport/actions_vocation_reward.lua#L66-L117"
+        }
+      ]
+    },
+    {
+      "ordinal": 25,
+      "element": "Skrzynia ekwipunku Druid",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Skrzynia ekwipunku Druid",
+        "patterns": [
+          "P05",
+          "P14"
+        ],
+        "trigger": "uid 14026",
+        "condition": "VocationReward≠1; wystarczająca capacity na całość i co najmniej 1 slot w plecaku; donor onUse nie sprawdza vocation",
+        "effect": "container 2854, dzieci: 7992,7991,3559,3552,3066,3059 (po 1), 16277×1 i 2819×1 z pełnym tekstem listu; VocationReward=1 tylko po udanym addItemEx",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_vocation_reward.lua:31-62",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_vocation_reward.lua:66-117"
+        ],
+        "oteryn": "CZĘŚCIOWO — istnieje wykonawca reward claim, potrzebna kwalifikacja konkretnego wiązania; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:34-224",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 25,
+        "quest": "dawnport",
+        "step": "Skrzynia ekwipunku Druid",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Custom vocation chest14025–14028 obejmuje root, pełne wyposażenie i teksty. Brak kwalifikowanego natywnego recipe/bindingu tego custom wydania; rozszerzenie RewardClaimMint/item semantics poza zakresem (ANSWER5,8).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_vocation_reward.lua:31-62",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_vocation_reward.lua:66-117"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Custom vocation chest14025–14028 obejmuje root, pełne wyposażenie i teksty. Brak kwalifikowanego natywnego recipe/bindingu tego custom wydania; rozszerzenie RewardClaimMint/item semantics poza zakresem (ANSWER5,8).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/dawnport/actions_vocation_reward.lua",
+          "start_line": 31,
+          "end_line": 62,
+          "blob_sha256": "30223d6371c3c83da9640092649e4ad55b67581190074ade7dc22f44a6edd12b",
+          "blob_line_count": 125,
+          "excerpt_sha256": "ee68f4d4b4496d9e1383a875c744ab2d8951e85a804ce697b06bc41e66cf9d4b",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dawnport/actions_vocation_reward.lua#L31-L62"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/dawnport/actions_vocation_reward.lua",
+          "start_line": 66,
+          "end_line": 117,
+          "blob_sha256": "30223d6371c3c83da9640092649e4ad55b67581190074ade7dc22f44a6edd12b",
+          "blob_line_count": 125,
+          "excerpt_sha256": "66d5baccc70266f1e80bc48623f89c5c2207347e795b89819c192f515ed58641",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dawnport/actions_vocation_reward.lua#L66-L117"
+        }
+      ]
+    },
+    {
+      "ordinal": 26,
+      "element": "Skrzynia ekwipunku Paladin",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Skrzynia ekwipunku Paladin",
+        "patterns": [
+          "P05",
+          "P14"
+        ],
+        "trigger": "uid 14027",
+        "condition": "VocationReward≠1; wystarczająca capacity na całość i co najmniej 1 slot w plecaku; donor onUse nie sprawdza vocation",
+        "effect": "container 2854, dzieci: 3355,3571,8095,3552,3350,3277,35562 (po 1),3447×100, 16277×1 i 2819×1 z pełnym tekstem listu; VocationReward=1 tylko po udanym addItemEx",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_vocation_reward.lua:40-62",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_vocation_reward.lua:66-117"
+        ],
+        "oteryn": "CZĘŚCIOWO — istnieje wykonawca reward claim, potrzebna kwalifikacja konkretnego wiązania; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:34-224",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 26,
+        "quest": "dawnport",
+        "step": "Skrzynia ekwipunku Paladin",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Custom vocation chest14025–14028 obejmuje root, pełne wyposażenie i teksty. Brak kwalifikowanego natywnego recipe/bindingu tego custom wydania; rozszerzenie RewardClaimMint/item semantics poza zakresem (ANSWER5,8).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_vocation_reward.lua:40-62",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_vocation_reward.lua:66-117"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Custom vocation chest14025–14028 obejmuje root, pełne wyposażenie i teksty. Brak kwalifikowanego natywnego recipe/bindingu tego custom wydania; rozszerzenie RewardClaimMint/item semantics poza zakresem (ANSWER5,8).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/dawnport/actions_vocation_reward.lua",
+          "start_line": 40,
+          "end_line": 62,
+          "blob_sha256": "30223d6371c3c83da9640092649e4ad55b67581190074ade7dc22f44a6edd12b",
+          "blob_line_count": 125,
+          "excerpt_sha256": "c34ee3f7fd32bc3c522f6847f3b0f83f975f49a4e51d1746850fda98435621e9",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dawnport/actions_vocation_reward.lua#L40-L62"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/dawnport/actions_vocation_reward.lua",
+          "start_line": 66,
+          "end_line": 117,
+          "blob_sha256": "30223d6371c3c83da9640092649e4ad55b67581190074ade7dc22f44a6edd12b",
+          "blob_line_count": 125,
+          "excerpt_sha256": "66d5baccc70266f1e80bc48623f89c5c2207347e795b89819c192f515ed58641",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dawnport/actions_vocation_reward.lua#L66-L117"
+        }
+      ]
+    },
+    {
+      "ordinal": 27,
+      "element": "Skrzynia ekwipunku Knight",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Skrzynia ekwipunku Knight",
+        "patterns": [
+          "P05",
+          "P14"
+        ],
+        "trigger": "uid 14028",
+        "condition": "VocationReward≠1; wystarczająca capacity na całość i co najmniej 1 slot w plecaku; donor onUse nie sprawdza vocation",
+        "effect": "container 2854, dzieci: 3375,3359,3372,3552,7774,17824,7773,3409 (po 1), 16277×1 i 2819×1 z pełnym tekstem listu; VocationReward=1 tylko po udanym addItemEx",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_vocation_reward.lua:51-62",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_vocation_reward.lua:66-117"
+        ],
+        "oteryn": "CZĘŚCIOWO — istnieje wykonawca reward claim, potrzebna kwalifikacja konkretnego wiązania; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:34-224",
+        "import_method": "RĘCZNIE",
+        "notes": ""
+      },
+      "source_disposition": {
+        "index": 27,
+        "quest": "dawnport",
+        "step": "Skrzynia ekwipunku Knight",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Custom vocation chest14025–14028 obejmuje root, pełne wyposażenie i teksty. Brak kwalifikowanego natywnego recipe/bindingu tego custom wydania; rozszerzenie RewardClaimMint/item semantics poza zakresem (ANSWER5,8).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_vocation_reward.lua:51-62",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_vocation_reward.lua:66-117"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Custom vocation chest14025–14028 obejmuje root, pełne wyposażenie i teksty. Brak kwalifikowanego natywnego recipe/bindingu tego custom wydania; rozszerzenie RewardClaimMint/item semantics poza zakresem (ANSWER5,8).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/dawnport/actions_vocation_reward.lua",
+          "start_line": 51,
+          "end_line": 62,
+          "blob_sha256": "30223d6371c3c83da9640092649e4ad55b67581190074ade7dc22f44a6edd12b",
+          "blob_line_count": 125,
+          "excerpt_sha256": "c3105af583058264d21144bcf12a522efc1da47aecf33a4370b92affa2ebf6e5",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dawnport/actions_vocation_reward.lua#L51-L62"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/dawnport/actions_vocation_reward.lua",
+          "start_line": 66,
+          "end_line": 117,
+          "blob_sha256": "30223d6371c3c83da9640092649e4ad55b67581190074ade7dc22f44a6edd12b",
+          "blob_line_count": 125,
+          "excerpt_sha256": "66d5baccc70266f1e80bc48623f89c5c2207347e795b89819c192f515ed58641",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dawnport/actions_vocation_reward.lua#L66-L117"
+        }
+      ]
+    },
+    {
+      "ordinal": 28,
+      "element": "Sanctuary of the Lizard God: ofiara",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Sanctuary of the Lizard God: ofiara",
+        "patterns": [
+          "P02",
+          "P29"
+        ],
+        "trigger": "21469 na (32111,31933,8) lub (32112,31933,8)",
+        "condition": "brak KV lizard-god-teleport/discovered",
+        "effect": "player:removeItem(21469,1), KV discovered=true, item:remove(1), efekty MORTAREA/FIREAREA",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_legion_helmet.lua:1-38"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw bez wpisu tego kroku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22-119",
+        "import_method": "RĘCZNIE",
+        "notes": "Scope historyczny: prompt0 oznacza Sanctuary Deprecated; donor ma dwa odrębne wywołania usuwania."
+      },
+      "source_disposition": {
+        "index": 28,
+        "quest": "dawnport",
+        "step": "Sanctuary of the Lizard God: ofiara",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "CLASSIC-1: historyczny Sanctuary przecina canonical Newhaven claim legiondawnport. Zależność od innej tożsamości questa pozostaje strzeżona; bez przepisywania Newhaven i bez podwójnej nagrody (ANSWER6,9).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/actions_legion_helmet.lua:1-38"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "CLASSIC-1: historyczny Sanctuary przecina canonical Newhaven claim legiondawnport. Zależność od innej tożsamości questa pozostaje strzeżona; bez przepisywania Newhaven i bez podwójnej nagrody (ANSWER6,9).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/dawnport/actions_legion_helmet.lua",
+          "start_line": 1,
+          "end_line": 38,
+          "blob_sha256": "0c3a43b1151083ead0f4f3b80f607be9f3b703478adb06230f54b8b69ba8c31b",
+          "blob_line_count": 38,
+          "excerpt_sha256": "0c3a43b1151083ead0f4f3b80f607be9f3b703478adb06230f54b8b69ba8c31b",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dawnport/actions_legion_helmet.lua#L1-L38"
+        }
+      ]
+    },
+    {
+      "ordinal": 29,
+      "element": "Sanctuary: teleport wejściowy",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Sanctuary: teleport wejściowy",
+        "patterns": [
+          "P03",
+          "P29"
+        ],
+        "trigger": "uid 35010 na (32112,31936,8)",
+        "condition": "KV lizard-god-teleport/discovered",
+        "effect": "true→(32124,31938,8); false→fromPosition i komunikat",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/movements_legion_helmet.lua:3-21",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:543-546"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw bez wpisu tego kroku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22-119",
+        "import_method": "RĘCZNIE",
+        "notes": "Scope historyczny wymagający rozstrzygnięcia."
+      },
+      "source_disposition": {
+        "index": 29,
+        "quest": "dawnport",
+        "step": "Sanctuary: teleport wejściowy",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "CLASSIC-1: historyczny Sanctuary przecina canonical Newhaven claim legiondawnport. Zależność od innej tożsamości questa pozostaje strzeżona; bez przepisywania Newhaven i bez podwójnej nagrody (ANSWER6,9).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dawnport/movements_legion_helmet.lua:3-21",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:543-546"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "CLASSIC-1: historyczny Sanctuary przecina canonical Newhaven claim legiondawnport. Zależność od innej tożsamości questa pozostaje strzeżona; bez przepisywania Newhaven i bez podwójnej nagrody (ANSWER6,9).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/scripts/quests/dawnport/movements_legion_helmet.lua",
+          "start_line": 3,
+          "end_line": 21,
+          "blob_sha256": "b56229ae037e3b843278caa578e3752cd3d55e96cbaeabdca759a81e7068019f",
+          "blob_line_count": 21,
+          "excerpt_sha256": "823d564c3c0503a3c549234735ed115c99bee7934dcc064e795ebf6ae77186c4",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/dawnport/movements_legion_helmet.lua#L3-L21"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/startup/tables/teleport.lua",
+          "start_line": 543,
+          "end_line": 546,
+          "blob_sha256": "9e8f807264ec6ab85e263976136666ff38c195f1921cc30e73fd4431370fe87e",
+          "blob_line_count": 810,
+          "excerpt_sha256": "df8d05158716df3296dbabb6fc051a72b09fb29df79eb004628a798891101457",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/teleport.lua#L543-L546"
+        }
+      ]
+    },
+    {
+      "ordinal": 30,
+      "element": "Sanctuary: Legion Helmet",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Sanctuary: Legion Helmet",
+        "patterns": [
+          "P05",
+          "P29"
+        ],
+        "trigger": "uid 6006, item 4240 na (32143,31910,8)",
+        "condition": "jednorazowy questKV legiondawnport",
+        "effect": "+3374×1; completed=true",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:623-629"
+        ],
+        "oteryn": "CZĘŚCIOWO — istniejący claim legiondawnport jest przypisany do newhaven_legion_helmet_quest; scope QUESTION CLASSIC-1; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/interactions/reward_claims/reward-claims-00000-00099.json:1",
+        "import_method": "RĘCZNIE",
+        "notes": "Scope historyczny; nie jest to Newhaven Legion Helmet."
+      },
+      "source_disposition": {
+        "index": 30,
+        "quest": "dawnport",
+        "step": "Sanctuary: Legion Helmet",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "CLASSIC-1: historyczny Sanctuary przecina canonical Newhaven claim legiondawnport. Zależność od innej tożsamości questa pozostaje strzeżona; bez przepisywania Newhaven i bez podwójnej nagrody (ANSWER6,9).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:623-629"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "CLASSIC-1: historyczny Sanctuary przecina canonical Newhaven claim legiondawnport. Zależność od innej tożsamości questa pozostaje strzeżona; bez przepisywania Newhaven i bez podwójnej nagrody (ANSWER6,9).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/startup/tables/chest.lua",
+          "start_line": 623,
+          "end_line": 629,
+          "blob_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+          "blob_line_count": 3669,
+          "excerpt_sha256": "81c958bf907edddbad754f5161799967b8d0691eeb824eb403d205fc80db8684",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L623-L629"
+        }
+      ]
+    },
+    {
+      "ordinal": 31,
+      "element": "Menesto: powitanie tutorialu",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Menesto: powitanie tutorialu",
+        "patterns": [
+          "P09",
+          "P11"
+        ],
+        "trigger": "Menesto: greet",
+        "condition": "Storage.Tutorial<1 (inny symbol od zapisywanego)",
+        "effect": "+3577×1; Storage.Dawnport.Tutorial=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/menesto.lua:53-70"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": "Zależność onboarding; donor sprawdza Storage.Tutorial, zapisuje Storage.Dawnport.Tutorial."
+      },
+      "source_disposition": {
+        "index": 31,
+        "quest": "dawnport",
+        "step": "Menesto: powitanie tutorialu",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Onboarding łączy tutorial, powitanie/leave, trwałą profesję, stan startowy, ekwipunek i rejs. Istniejące qualified Oteryn/Dawnport onboarding pozostają zachowane; pełna donorowa kompozycja wymaga odrębnej kwalifikacji wspólnych ownerów (ANSWER5,6,9).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/menesto.lua:53-70"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Onboarding łączy tutorial, powitanie/leave, trwałą profesję, stan startowy, ekwipunek i rejs. Istniejące qualified Oteryn/Dawnport onboarding pozostają zachowane; pełna donorowa kompozycja wymaga odrębnej kwalifikacji wspólnych ownerów (ANSWER5,6,9).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/menesto.lua",
+          "start_line": 53,
+          "end_line": 70,
+          "blob_sha256": "fe5d29600e2428b691000edbf43eeafcc4b9a59ae2d938ec3b7bd27c38ec4541",
+          "blob_line_count": 101,
+          "excerpt_sha256": "5844b1f2bf05e5590607d5c84191bbb3cabadcf85563fa98da9805c60aa8477d",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/menesto.lua#L53-L70"
+        }
+      ]
+    },
+    {
+      "ordinal": 32,
+      "element": "Menesto: zakończenie rozmowy tutorialu",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Menesto: zakończenie rozmowy tutorialu",
+        "patterns": [
+          "P09"
+        ],
+        "trigger": "Menesto: ready",
+        "condition": "Storage.Dawnport.Tutorial=1",
+        "effect": "Storage.Dawnport.Tutorial=2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/menesto.lua:73-91"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": "Zależność onboarding, nie należy nadpisywać Newhaven."
+      },
+      "source_disposition": {
+        "index": 32,
+        "quest": "dawnport",
+        "step": "Menesto: zakończenie rozmowy tutorialu",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Onboarding łączy tutorial, powitanie/leave, trwałą profesję, stan startowy, ekwipunek i rejs. Istniejące qualified Oteryn/Dawnport onboarding pozostają zachowane; pełna donorowa kompozycja wymaga odrębnej kwalifikacji wspólnych ownerów (ANSWER5,6,9).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/menesto.lua:73-91"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Onboarding łączy tutorial, powitanie/leave, trwałą profesję, stan startowy, ekwipunek i rejs. Istniejące qualified Oteryn/Dawnport onboarding pozostają zachowane; pełna donorowa kompozycja wymaga odrębnej kwalifikacji wspólnych ownerów (ANSWER5,6,9).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/menesto.lua",
+          "start_line": 73,
+          "end_line": 91,
+          "blob_sha256": "fe5d29600e2428b691000edbf43eeafcc4b9a59ae2d938ec3b7bd27c38ec4541",
+          "blob_line_count": 101,
+          "excerpt_sha256": "06061cb7c188123d4577e5cc76bfba76320bcaed186d0e97bdbe2fe17a70a81d",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/menesto.lua#L73-L91"
+        }
+      ]
+    },
+    {
+      "ordinal": 33,
+      "element": "Oressa: potwierdzenie profesji",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Oressa: potwierdzenie profesji",
+        "patterns": [
+          "P09",
+          "P13"
+        ],
+        "trigger": "Oressa: wybór zawodu → yes; topics 5..8",
+        "condition": "Storage.Dawnport.DoorVocation=-1; bramki level/topic w gałęziach donora",
+        "effect": "changeVocation(value), DoorVocation=value; opcjonalny teleport do pokoju; removeMainlandSmugglingItems",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/oressa.lua:280-385"
+        ],
+        "oteryn": "CZĘŚCIOWO — owner wyboru profesji istnieje, pełna donorowa gałąź jeszcze nie; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/vocation_choice.rs:266-422",
+        "import_method": "RĘCZNIE",
+        "notes": "Zależność onboarding; nie przenosić automatycznie na Newhaven; ścieżka knight w donorze wymaga osobnej weryfikacji."
+      },
+      "source_disposition": {
+        "index": 33,
+        "quest": "dawnport",
+        "step": "Oressa: potwierdzenie profesji",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Onboarding łączy tutorial, powitanie/leave, trwałą profesję, stan startowy, ekwipunek i rejs. Istniejące qualified Oteryn/Dawnport onboarding pozostają zachowane; pełna donorowa kompozycja wymaga odrębnej kwalifikacji wspólnych ownerów (ANSWER5,6,9).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/oressa.lua:280-385"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Onboarding łączy tutorial, powitanie/leave, trwałą profesję, stan startowy, ekwipunek i rejs. Istniejące qualified Oteryn/Dawnport onboarding pozostają zachowane; pełna donorowa kompozycja wymaga odrębnej kwalifikacji wspólnych ownerów (ANSWER5,6,9).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/oressa.lua",
+          "start_line": 280,
+          "end_line": 385,
+          "blob_sha256": "4b23cedf4ba430e504832dd29dbcdc62aeb1082f919a22847039046ead593168",
+          "blob_line_count": 432,
+          "excerpt_sha256": "d985406caca130700a86142211eec5247062bbb876b1463b4e6e91ea67a0af5c",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/oressa.lua#L280-L385"
+        }
+      ]
+    },
+    {
+      "ordinal": 34,
+      "element": "Captain Dreadnought: rejs na Mainland",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Captain Dreadnought: rejs na Mainland",
+        "patterns": [
+          "P09",
+          "P13"
+        ],
+        "trigger": "Captain: city → yes",
+        "condition": "miasto canBeSailed; premium wymagane dla 5 miast; money≤moneyToNeedDonation przy confirm",
+        "effect": "setTown, teleport do destination z tabeli towns; Storage.Dawnport.Mainland=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_dreadnought.lua:255-301"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": "Zależność onboarding/travel, stałe oraz tabela towns w tym pliku; bez przejmowania aktualnego Newhaven."
+      },
+      "source_disposition": {
+        "index": 34,
+        "quest": "dawnport",
+        "step": "Captain Dreadnought: rejs na Mainland",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Onboarding łączy tutorial, powitanie/leave, trwałą profesję, stan startowy, ekwipunek i rejs. Istniejące qualified Oteryn/Dawnport onboarding pozostają zachowane; pełna donorowa kompozycja wymaga odrębnej kwalifikacji wspólnych ownerów (ANSWER5,6,9).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_dreadnought.lua:255-301"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Onboarding łączy tutorial, powitanie/leave, trwałą profesję, stan startowy, ekwipunek i rejs. Istniejące qualified Oteryn/Dawnport onboarding pozostają zachowane; pełna donorowa kompozycja wymaga odrębnej kwalifikacji wspólnych ownerów (ANSWER5,6,9).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/captain_dreadnought.lua",
+          "start_line": 255,
+          "end_line": 301,
+          "blob_sha256": "5071369fd2da43ba6de74dcf07aff717a5c6a94f31bc5d43f72a21b26ea24402",
+          "blob_line_count": 474,
+          "excerpt_sha256": "abc2e65ca959bfe99fc3a6ffac728e6e251719d2eddd5e4105a0d0221e0243a0",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/captain_dreadnought.lua#L255-L301"
+        }
+      ]
+    },
+    {
+      "ordinal": 35,
+      "element": "Inigo: powrót na Rookgaard",
+      "source_row": {
+        "quest": "dawnport",
+        "step": "Inigo: powrót na Rookgaard",
+        "patterns": [
+          "P09",
+          "P13"
+        ],
+        "trigger": "Inigo: rookgaard → yes → yes/sure/leave",
+        "condition": "level≤9 i account Dawnport.Mainland=1 przy ofercie; rzeczywista gałąź confirm ma luźny OR",
+        "effect": "town Rookgaard, vocation NONE, temple teleport, usunięcie niewyjątkowego ekwipunku i limit gotówki 21465",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/inigo.lua:532-619"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie wykonuje tego przejścia; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703-725",
+        "import_method": "RĘCZNIE",
+        "notes": "Zależność onboarding; wymaga jawnej decyzji scope/fidelity, nie dodawać obejścia autoryzacji."
+      },
+      "source_disposition": {
+        "index": 35,
+        "quest": "dawnport",
+        "step": "Inigo: powrót na Rookgaard",
+        "original_import": "RĘCZNIE",
+        "status": "LEFT_OUT",
+        "reason": "Onboarding łączy tutorial, powitanie/leave, trwałą profesję, stan startowy, ekwipunek i rejs. Istniejące qualified Oteryn/Dawnport onboarding pozostają zachowane; pełna donorowa kompozycja wymaga odrębnej kwalifikacji wspólnych ownerów (ANSWER5,6,9).",
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/inigo.lua:532-619"
+        ],
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+      },
+      "normalized": {
+        "status": "LEFT_OUT",
+        "delivery_kind": "REFERENCE_ONLY",
+        "source_status": "LEFT_OUT",
+        "left_out": true,
+        "reason": "Onboarding łączy tutorial, powitanie/leave, trwałą profesję, stan startowy, ekwipunek i rejs. Istniejące qualified Oteryn/Dawnport onboarding pozostają zachowane; pełna donorowa kompozycja wymaga odrębnej kwalifikacji wspólnych ownerów (ANSWER5,6,9).",
+        "question_or_answer_links": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589521017"
+        ],
+        "validation_claim": null,
+        "runtime_availability": "NOT_CERTIFIED_BY_THIS_REVIEW_SNAPSHOT"
+      },
+      "donor_witnesses": [
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data-global/npc/inigo.lua",
+          "start_line": 532,
+          "end_line": 619,
+          "blob_sha256": "bfeee0641b185ecd18c6777488da06dcae9ba947d0d4c904e9b5664980b595db",
+          "blob_line_count": 633,
+          "excerpt_sha256": "6b6cac23ec3a86ee875a8ed3471fb3eb13f33df9a4f6983c60a08bb3614634e0",
+          "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/inigo.lua#L532-L619"
+        }
+      ]
+    }
+  ]
+}

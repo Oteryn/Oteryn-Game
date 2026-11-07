@@ -1,0 +1,101 @@
+// QUEST-GATE-0 §7 (docs/architecture/reviews/
+// OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md): typed payloads of
+// capability 16 QUEST_LOG_V1, state domain 16 QUEST_LOG (snapshot type 1, delta type 1) and command
+// type 22 QUEST_LOG_QUERY. Numbers allocated by the #1622 control plane (D485) and registered by
+// QUEST-LOG-WIRE-1; the server does not offer the capability before the quest log content and the
+// production session copy are composed.
+//
+// Without the capability domain 16 is never sent and command type 22 is refused as unsupported.
+//
+// The domain is computed from the session's quest copy and never stored. Quests and missions are
+// canonical uint32 indexes per content generation. Nothing else of quest state leaves the server:
+// track keys, track values (other than the template counters filled into a journal text),
+// transitions, gates and claims never do. Search, sort, "Show completed" and "Show hidden" are
+// client features.
+//
+// FND-02 envelopes own CommandRef, the domain ID and revisions; these payloads never duplicate them.
+// Unknown fields, repeated singular fields, an empty or repeated oneof, packed repeated scalars,
+// bools other than 0 and 1, invalid UTF-8, an empty mission name, list entries or missions out of
+// strictly ascending index, a tracked quest repeated, and counts and bytes over their registered
+// bounds fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.quest_log;
+
+// One listed quest. At most 8 bytes.
+message QuestListEntryV1 {
+  uint32 quest_index = 1;
+  // The quest state has its completed receipt.
+  bool completed = 2;
+}
+
+// The quest list: every quest shown in the log whose start track reached its start value, in
+// strictly ascending quest index, at most 1,024 (QUESTGATE0-RL-07), at most 10,240 bytes. A
+// completed quest flagged hide_when_completed is not listed.
+message QuestListV1 {
+  repeated QuestListEntryV1 quests = 1;
+}
+
+// One visible mission: its track lies in [start_value, end_value].
+message QuestMissionV1 {
+  // The mission's index within the content revision its quest resolves against.
+  uint32 mission_index = 1;
+  // Required, at most 128 UTF-8 bytes (QUESTGATE0-RL-08-NAME).
+  string name = 2;
+  // The journal entry for the track's current value, template counters filled in; empty when the
+  // mission has none. At most 1,024 UTF-8 bytes (QUESTGATE0-RL-08-TEXT).
+  string text = 3;
+  // The track is at end_value.
+  bool done = 4;
+}
+
+// One quest line: the quest's visible missions in strictly ascending mission index, at most 128
+// (QUESTGATE0-RL-08), at most 16,384 bytes (QUESTGATE0-RL-08-BYTES). An in-progress quest
+// resolves against its pinned content revision; a completed one against the active revision.
+message QuestLineV1 {
+  uint32 quest_index = 1;
+  bool completed = 2;
+  repeated QuestMissionV1 missions = 3;
+}
+
+// StateDomainSnapshot.payload of domain 16, snapshot type 1, and StateDelta.payload of domain 16,
+// delta type 1: the whole domain. At most 180,268 bytes (QUESTGATE0-RL-08-DOMAIN-BYTES). Every
+// admission, reconnect, resume and transfer sends a snapshot with no view and the tracked quests;
+// a delta follows each accepted query, and each committed receipt that changes the view or a
+// tracked quest.
+message QuestLogV1 {
+  // The last requested list or quest line; absent when none was requested on this connection or
+  // the requested quest is no longer listed.
+  oneof view {
+    QuestListV1 list = 1;
+    QuestLineV1 quest = 2;
+  }
+  // The tracked quests in the order the client tracked them, at most 10 (QUESTGATE0-RL-06), each
+  // with its visible missions. A tracked quest no longer listed is not shown.
+  repeated QuestLineV1 tracked = 3;
+}
+
+// Request the quest list.
+message QuestLogListV1 {}
+
+// Request one listed quest's line.
+message QuestLogQuestV1 {
+  uint32 quest_index = 1;
+}
+
+// Replace the tracked set: at most 10 distinct listed quest indexes, empty for none.
+message QuestLogTrackV1 {
+  repeated uint32 quest_indexes = 1 [packed = false];
+}
+
+// ClientCommand.payload of command type 22. At most 62 bytes. An empty oneof, an unknown or
+// unlisted quest index and a query over QUESTGATE0-RL-09 (2 per second per GameSession) are
+// REJECTED and change nothing. An accepted query has no result payload; the domain 16 delta
+// follows its result.
+message QuestLogQueryV1 {
+  oneof query {
+    QuestLogListV1 list = 1;
+    QuestLogQuestV1 quest = 2;
+    QuestLogTrackV1 track = 3;
+  }
+}

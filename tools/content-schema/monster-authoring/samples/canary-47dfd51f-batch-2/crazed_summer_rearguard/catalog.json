@@ -1,0 +1,107 @@
+{
+  "definitions": [
+    {
+      "family": "Item",
+      "key": "canary:item/16120",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/16126",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/16163",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/23529",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/23542",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/25735",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/2886",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/29995",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/30005",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3028",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3035",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3037",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3450",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3575",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/5921",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/675",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/676",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/9635",
+      "revision": "canary-47dfd51f"
+    }
+  ],
+  "assets": [
+    "canary.appearance:effect/firearea",
+    "canary.appearance:effect/fireattack",
+    "canary.appearance:object/30078",
+    "canary.appearance:object/30079",
+    "canary.appearance:object/30080",
+    "canary.appearance:object/30081",
+    "canary.appearance:outfit/1136",
+    "canary.appearance:palette/114",
+    "canary.appearance:palette/121",
+    "canary.appearance:palette/3",
+    "canary.appearance:palette/94"
+  ]
+}

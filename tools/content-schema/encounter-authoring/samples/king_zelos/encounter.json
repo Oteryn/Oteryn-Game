@@ -1,0 +1,595 @@
+{
+  "identity": {
+    "key": "canary:encounter/king_zelos",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Grave Danger: King Zelos",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "king_zelos",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/king_zelos",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "rewar_the_bloody",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/rewar_the_bloody",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/rewar_the_bloody_inv",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "fetter",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/fetter",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "magnor_mournbringer",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/magnor_mournbringer",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "shard_of_magnor",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/shard_of_magnor",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "nargol_the_impaler",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/nargol_the_impaler",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "regenerating_mass",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/regenerating_mass",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "the_red_knight",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_red_knight",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "vampiric_blood",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/vampiric_blood",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "knights_hall",
+      "kind": "area",
+      "description": "Canary (33414, 31520, 13) to (33474, 31574, 13): the four knight rooms and the room of King Zelos.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33414,
+              33474
+            ],
+            "y": [
+              31520,
+              31574
+            ],
+            "floor": 13
+          }
+        ]
+      }
+    },
+    {
+      "key": "rewar_room",
+      "kind": "area",
+      "description": "Canary (33458, 31556, 13) to (33467, 31566, 13), where the fetters appear.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33458,
+              33467
+            ],
+            "y": [
+              31556,
+              31566
+            ],
+            "floor": 13
+          }
+        ]
+      }
+    },
+    {
+      "key": "nargol_post",
+      "kind": "point",
+      "description": "Canary (33423, 31529, 13), where Nargol the Impaler and his regenerating mass appear.",
+      "location": {
+        "x": 33423,
+        "y": 31529,
+        "floor": 13
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "knights_defeated",
+        "initial": 0
+      }
+    ],
+    "flags": [
+      {
+        "name": "shards_defeated",
+        "initial": false
+      }
+    ],
+    "timers": [
+      {
+        "name": "zelos_ritual",
+        "duration_ms": 800000,
+        "repeat": false
+      },
+      {
+        "name": "mass_regenerates",
+        "duration_ms": 30000,
+        "repeat": false
+      }
+    ]
+  },
+  "rules": [
+    {
+      "key": "ritual_begins",
+      "trigger": {
+        "kind": "encounter_started"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "zelos_ritual",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "rewar_the_bloody_defeated",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "rewar_the_bloody"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "rewar_the_bloody",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "knights_defeated",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "the_red_knight_defeated",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_red_knight"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "the_red_knight",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "knights_defeated",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "regenerating_mass_defeated",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "regenerating_mass"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "regenerating_mass",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "knights_defeated",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "shard_of_magnor_defeated",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "shard_of_magnor"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "shard_of_magnor",
+          "value": false
+        },
+        {
+          "kind": "flag",
+          "flag": "shards_defeated",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "shards_defeated",
+          "value": true
+        },
+        {
+          "kind": "counter",
+          "counter": "knights_defeated",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "knights_defeated",
+      "trigger": {
+        "kind": "counter_reached",
+        "counter": "knights_defeated",
+        "value": 4
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "king_zelos",
+          "multiplier_percent": {
+            "timer_remaining": "zelos_ritual",
+            "floor": 1
+          },
+          "component": "all",
+          "sources": "any",
+          "until": "reset"
+        }
+      ]
+    },
+    {
+      "key": "vampiric_blood_explodes",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "vampiric_blood"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "vampiric_blood",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "cast",
+          "encounter_ability": "blood_explosion",
+          "at": "death_position"
+        }
+      ]
+    },
+    {
+      "key": "nargol_regenerates",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "nargol_the_impaler"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "nargol_the_impaler",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/regenerating_mass",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "regenerating_mass",
+          "count": 1,
+          "at": {
+            "anchor": "nargol_post"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "timer",
+          "timer": "mass_regenerates",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "nargol_returns",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "mass_regenerates"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "regenerating_mass",
+          "anchor": "knights_hall",
+          "present": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "regenerating_mass"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/nargol_the_impaler",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "nargol_the_impaler",
+          "count": 1,
+          "at": {
+            "anchor": "nargol_post"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "mass_destroyed",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "regenerating_mass"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "mass_regenerates",
+          "operation": "stop"
+        }
+      ]
+    },
+    {
+      "key": "magnor_shatters",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "magnor_mournbringer"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "magnor_mournbringer",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/shard_of_magnor",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "shard_of_magnor",
+          "count": 4,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "shared_life",
+          "role": "shard_of_magnor"
+        }
+      ]
+    },
+    {
+      "key": "shard_explodes",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "shard_of_magnor"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "shard_of_magnor",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "cast",
+          "encounter_ability": "shard_explosion",
+          "at": "death_position"
+        }
+      ]
+    },
+    {
+      "key": "rewar_calls_fetters",
+      "trigger": {
+        "kind": "damage_accumulated",
+        "role": "rewar_the_bloody",
+        "percent": 5
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/fetter",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "fetter",
+          "count": {
+            "min": 1,
+            "max": 3
+          },
+          "at": {
+            "random_in": "rewar_room"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "transform",
+          "role": "rewar_the_bloody",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/rewar_the_bloody_inv",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "keep_absolute"
+        }
+      ]
+    },
+    {
+      "key": "rewar_unfettered",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "fetter"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "fetter",
+          "value": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "fetter",
+          "anchor": "rewar_room",
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "rewar_the_bloody",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/rewar_the_bloody",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "keep_absolute"
+        }
+      ]
+    }
+  ],
+  "outcomes": [],
+  "abilities": [
+    {
+      "key": "blood_explosion",
+      "area": {
+        "shape": "square",
+        "radius": 1
+      },
+      "damage": {
+        "damage_type": "drowning",
+        "min": 20000,
+        "max": 25000
+      },
+      "affects": {
+        "players": true,
+        "creatures": [
+          {
+            "family": "Creature",
+            "key": "canary:creature/the_red_knight",
+            "revision": "canary-47dfd51f"
+          }
+        ]
+      }
+    },
+    {
+      "key": "shard_explosion",
+      "area": {
+        "shape": "circle",
+        "radius": 2
+      },
+      "damage": {
+        "damage_type": "life_drain",
+        "min": 2000,
+        "max": 2500
+      },
+      "affects": {
+        "players": true,
+        "creatures": []
+      },
+      "effect": "canary.appearance:effect/magic_red"
+    }
+  ]
+}

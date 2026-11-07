@@ -1,0 +1,19 @@
+{
+  "id": 7,
+  "name": "CHAT_V1",
+  "constant": "chat::CAPABILITY_CHAT_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    13
+  ],
+  "domains": [
+    12
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

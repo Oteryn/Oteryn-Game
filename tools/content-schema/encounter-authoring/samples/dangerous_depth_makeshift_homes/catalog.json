@@ -1,0 +1,14 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/makeshift_home",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/398",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

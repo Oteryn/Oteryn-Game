@@ -1,0 +1,43 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 1000,
+    "costs": {
+      "mana": 10
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "name": "Bruise Bane",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_bruise_bane"
+    },
+    "reference_spell_id": 170,
+    "requirements": {
+      "level": 1,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "exura infir ico"
+  }
+}

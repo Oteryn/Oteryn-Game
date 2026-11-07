@@ -1,0 +1,64 @@
+{
+  "spell": {
+    "base_power": 500,
+    "carrier": "instant",
+    "cooldown_ms": 1000,
+    "costs": {
+      "mana": 210,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/ac27d481eacfde75/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/ac27d481eacfde75",
+      "revision": "source-player-r28"
+    },
+    "name": "Salvation",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_salvation"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 36,
+    "requirements": {
+      "learning_required": false,
+      "level": 60,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "exura gran san"
+  }
+}

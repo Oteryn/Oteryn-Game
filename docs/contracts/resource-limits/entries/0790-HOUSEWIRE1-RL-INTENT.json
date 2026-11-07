@@ -1,0 +1,21 @@
+{
+  "id": "HOUSEWIRE1-RL-INTENT",
+  "owner_contract": "protocol-oteryn/v1/house_v1.proto",
+  "resource": "Management intent body",
+  "unit": "bytes",
+  "hard_maximum": 4168,
+  "configurable_range": {
+    "minimum": 4168,
+    "maximum": 4168
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bound before allocation or mutation; refuse excess.",
+  "client_visible": true,
+  "boundary_tests": [
+    "at limit accepted",
+    "above limit rejected"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/house.rs"
+  ]
+}

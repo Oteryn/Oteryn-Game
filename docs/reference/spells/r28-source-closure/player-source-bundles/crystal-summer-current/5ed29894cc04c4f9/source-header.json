@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 200,
+      "soul": 3
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Disintegrate Rune",
+    "requirements": {
+      "level": 21,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false
+    },
+    "words": "adito tera"
+  }
+}

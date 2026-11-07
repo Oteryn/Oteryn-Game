@@ -1,0 +1,98 @@
+{
+  "encounter": "canary:encounter/professor_maxxen",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "RathletonBossDeath": [
+      "canary:creature/professor_maxxen"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/hero_of_rathleton/professor_maxxen.lua",
+      "blob_sha1": "4085e5eab867b7963a079aa7895058a712e4d68a"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua",
+      "blob_sha1": "4a0687ee05916c4f9607395212fbd00b2accdbf5"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Professor Maxxen is the professor_maxxen participant; its file registers RathletonBossDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        12,
+        13
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the configured boss \"professor maxxen\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        60,
+        61,
+        62,
+        63,
+        65,
+        66,
+        67,
+        68,
+        69,
+        71,
+        72,
+        13,
+        14
+      ],
+      "status": "mapped",
+      "resolution": "Teleporter 1949 on (33718, 32047, 15) becomes 22761 leading to (33707, 32107, 15); after 2 minutes revertTeleport turns it back into 1949 with the destination it had before (oldPos): the revert restores the original item and its attributes.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        70
+      ],
+      "status": "approved_omission",
+      "resolution": "The thunder effect on the boss position is cosmetic."
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        73,
+        15
+      ],
+      "status": "approved_omission",
+      "resolution": "Game.setStorageValue(<running flag>, 0) frees the shared arena that actions_machines_professor_maxxen.lua locks; an instance per party (D26) replaces the lock."
+    }
+  ],
+  "outcome_evidence": []
+}

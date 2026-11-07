@@ -1,0 +1,2426 @@
+{
+  "active_content_modified": false,
+  "counts": {
+    "NO_EXACT_ITEM_PRICE": 20,
+    "RENDERED_PRICE_CONFLICT": 12,
+    "RENDERED_SUPPORTS_RETAINED_PRICE": 46
+  },
+  "global_complete": false,
+  "records": [
+    {
+      "historical_dissent": {
+        "tibiopedia": 410
+      },
+      "name": "Alaistar",
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21198",
+          "revision": "definition-r1"
+        },
+        "unit_price": 430
+      },
+      "npc": "oteryn:npc.alaistar",
+      "observations": [
+        {
+          "capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+          "price": 430,
+          "row_index": 21,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Alaistar"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "metal toe",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.alaistar",
+      "source_candidate_pointer": "/candidates/53/trade_service/offers/7",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 3,
+        "tibiopedia": 2
+      },
+      "name": "Asnarus",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3447",
+          "revision": "definition-r1"
+        },
+        "unit_price": 2
+      },
+      "npc": "oteryn:npc.asnarus",
+      "observations": [
+        {
+          "capture_sha256": "12cfa2e8f7cb47f9af505685ca23f18f1c4a58d2d1ca61f4314773a7cd13d9ca",
+          "price": 3,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Asnarus"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "arrow",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.asnarus",
+      "source_candidate_pointer": "/candidates/105/trade_service/offers/52",
+      "status": "RENDERED_PRICE_CONFLICT"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 4
+      },
+      "name": "Aurelia",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3174",
+          "revision": "definition-r1"
+        },
+        "unit_price": 20
+      },
+      "npc": "oteryn:npc.aurelia",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "light magic missile rune",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.aurelia",
+      "source_candidate_pointer": "/candidates/112/trade_service/offers/12",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 10
+      },
+      "name": "Aurelia",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3277",
+          "revision": "definition-r1"
+        },
+        "unit_price": 9
+      },
+      "npc": "oteryn:npc.aurelia",
+      "observations": [
+        {
+          "capture_sha256": "769931105706c38b9d273e74a1939a416d16039dc30fff02d57deeca270a2431",
+          "price": 9,
+          "row_index": 15,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Aurelia"
+        },
+        {
+          "capture_sha256": "b23bf25bec15c5e8d47cb07ea8df9f3036a879553a417d74ed797fbf5ede1511",
+          "price": 10,
+          "row_index": 63,
+          "source": "fandom",
+          "url": "https://tibia.fandom.com/wiki/Aurelia"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "spear",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.aurelia",
+      "source_candidate_pointer": "/candidates/112/trade_service/offers/18",
+      "status": "RENDERED_PRICE_CONFLICT"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 30
+      },
+      "name": "Aurelia",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3294",
+          "revision": "definition-r1"
+        },
+        "unit_price": 26
+      },
+      "npc": "oteryn:npc.aurelia",
+      "observations": [
+        {
+          "capture_sha256": "769931105706c38b9d273e74a1939a416d16039dc30fff02d57deeca270a2431",
+          "price": 26,
+          "row_index": 13,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Aurelia"
+        },
+        {
+          "capture_sha256": "b23bf25bec15c5e8d47cb07ea8df9f3036a879553a417d74ed797fbf5ede1511",
+          "price": 30,
+          "row_index": 61,
+          "source": "fandom",
+          "url": "https://tibia.fandom.com/wiki/Aurelia"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "short sword",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.aurelia",
+      "source_candidate_pointer": "/candidates/112/trade_service/offers/21",
+      "status": "RENDERED_PRICE_CONFLICT"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 10
+      },
+      "name": "Aurelia",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3457",
+          "revision": "definition-r1"
+        },
+        "unit_price": 9
+      },
+      "npc": "oteryn:npc.aurelia",
+      "observations": [
+        {
+          "capture_sha256": "769931105706c38b9d273e74a1939a416d16039dc30fff02d57deeca270a2431",
+          "price": 9,
+          "row_index": 14,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Aurelia"
+        },
+        {
+          "capture_sha256": "b23bf25bec15c5e8d47cb07ea8df9f3036a879553a417d74ed797fbf5ede1511",
+          "price": 10,
+          "row_index": 62,
+          "source": "fandom",
+          "url": "https://tibia.fandom.com/wiki/Aurelia"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "shovel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.aurelia",
+      "source_candidate_pointer": "/candidates/112/trade_service/offers/36",
+      "status": "RENDERED_PRICE_CONFLICT"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 350
+      },
+      "name": "Aurelia",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i35562",
+          "revision": "definition-r1"
+        },
+        "unit_price": 400
+      },
+      "npc": "oteryn:npc.aurelia",
+      "observations": [
+        {
+          "capture_sha256": "769931105706c38b9d273e74a1939a416d16039dc30fff02d57deeca270a2431",
+          "price": 400,
+          "row_index": 10,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Aurelia"
+        },
+        {
+          "capture_sha256": "b23bf25bec15c5e8d47cb07ea8df9f3036a879553a417d74ed797fbf5ede1511",
+          "price": 350,
+          "row_index": 58,
+          "source": "fandom",
+          "url": "https://tibia.fandom.com/wiki/Aurelia"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "quiver",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.aurelia",
+      "source_candidate_pointer": "/candidates/112/trade_service/offers/38",
+      "status": "RENDERED_PRICE_CONFLICT"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Auron",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.auron",
+      "observations": [
+        {
+          "capture_sha256": "b8c338cde74d8d8377a123f999045e32d0ebcb8a9606d22292f8676aa1fbf691",
+          "price": 15,
+          "row_index": 0,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Auron"
+        },
+        {
+          "capture_sha256": "8ed32d04bfc162558782b15b62a16afebe398557da8e997b84f375880a975ab7",
+          "price": 15,
+          "row_index": 2,
+          "source": "fandom",
+          "url": "https://tibia.fandom.com/wiki/Auron"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.auron",
+      "source_candidate_pointer": "/candidates/114/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 5,
+        "tibiopedia": 8
+      },
+      "name": "Auron",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.auron",
+      "observations": [
+        {
+          "capture_sha256": "b8c338cde74d8d8377a123f999045e32d0ebcb8a9606d22292f8676aa1fbf691",
+          "price": 8,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Auron"
+        },
+        {
+          "capture_sha256": "8ed32d04bfc162558782b15b62a16afebe398557da8e997b84f375880a975ab7",
+          "price": 8,
+          "row_index": 1,
+          "source": "fandom",
+          "url": "https://tibia.fandom.com/wiki/Auron"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "letter",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.auron",
+      "source_candidate_pointer": "/candidates/114/trade_service/offers/1",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 4
+      },
+      "name": "Avriel",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3174",
+          "revision": "definition-r1"
+        },
+        "unit_price": 20
+      },
+      "npc": "oteryn:npc.avriel",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "light magic missile rune",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.avriel",
+      "source_candidate_pointer": "/candidates/116/trade_service/offers/12",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 3,
+        "tibiopedia": 4
+      },
+      "name": "Beatrice",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2875",
+          "revision": "definition-r1"
+        },
+        "unit_price": 3
+      },
+      "npc": "oteryn:npc.beatrice",
+      "observations": [
+        {
+          "capture_sha256": "99ecf1b96e60dbc30529e53037ffb5e84034a00a0f6d7f0c07a6068d6a59cb61",
+          "price": 3,
+          "row_index": 3,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Beatrice"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "bottle",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.beatrice",
+      "source_candidate_pointer": "/candidates/134/trade_service/offers/5",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Benjamin",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.benjamin",
+      "observations": [
+        {
+          "capture_sha256": "e4020f6b8cb97101fde7a0602e303d252c1cad93b1ecb92965fdeb1725e9f87f",
+          "price": 15,
+          "row_index": 2,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Benjamin"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.benjamin",
+      "source_candidate_pointer": "/candidates/136/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 5,
+        "tibiopedia": 8
+      },
+      "name": "Benjamin",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.benjamin",
+      "observations": [
+        {
+          "capture_sha256": "e4020f6b8cb97101fde7a0602e303d252c1cad93b1ecb92965fdeb1725e9f87f",
+          "price": 8,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Benjamin"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "letter",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.benjamin",
+      "source_candidate_pointer": "/candidates/136/trade_service/offers/1",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 1500
+      },
+      "name": "Black Bert",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i8774",
+          "revision": "definition-r1"
+        },
+        "unit_price": 7000
+      },
+      "npc": "oteryn:npc.black_bert",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "cask of brown ale",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.black_bert",
+      "source_candidate_pointer": "/candidates/147/trade_service/offers/100",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Chemar",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.chemar",
+      "observations": [
+        {
+          "capture_sha256": "e8fb56ee147feab9274ffe8dca448f2fe0842eadbf2812eff157b19b772d36a3",
+          "price": 15,
+          "row_index": 0,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Chemar"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.chemar",
+      "source_candidate_pointer": "/candidates/230/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 5,
+        "tibiopedia": 8
+      },
+      "name": "Chemar",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.chemar",
+      "observations": [
+        {
+          "capture_sha256": "e8fb56ee147feab9274ffe8dca448f2fe0842eadbf2812eff157b19b772d36a3",
+          "price": 8,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Chemar"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "letter",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.chemar",
+      "source_candidate_pointer": "/candidates/230/trade_service/offers/1",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Chrystal",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.chrystal",
+      "observations": [
+        {
+          "capture_sha256": "89aeb8239f5f8690f8afdd2ad0830405fdc0753192b740278d79cbaa23e0a798",
+          "price": 15,
+          "row_index": 0,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Chrystal"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.chrystal",
+      "source_candidate_pointer": "/candidates/239/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 5,
+        "tibiopedia": 8
+      },
+      "name": "Chrystal",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.chrystal",
+      "observations": [
+        {
+          "capture_sha256": "89aeb8239f5f8690f8afdd2ad0830405fdc0753192b740278d79cbaa23e0a798",
+          "price": 8,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Chrystal"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "letter",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.chrystal",
+      "source_candidate_pointer": "/candidates/239/trade_service/offers/1",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 7500,
+        "tibiopedia": 5000
+      },
+      "name": "Chuckles",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i8093",
+          "revision": "definition-r1"
+        },
+        "unit_price": 7500
+      },
+      "npc": "oteryn:npc.chuckles",
+      "observations": [
+        {
+          "capture_sha256": "9442ca3a7bd745546419aacdcec48d399661fdddfe49990a172a12d7ee9275a3",
+          "price": 7500,
+          "row_index": 52,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Chuckles"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "wand of draconia",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.chuckles",
+      "source_candidate_pointer": "/candidates/241/trade_service/offers/58",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Dove",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.dove",
+      "observations": [
+        {
+          "capture_sha256": "dd03a9cb94962ba3c211887d57a009b512e92a1a86f665eae5d3e1650013ff47",
+          "price": 15,
+          "row_index": 0,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Dove"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.dove",
+      "source_candidate_pointer": "/candidates/298/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 5,
+        "tibiopedia": 8
+      },
+      "name": "Dove",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.dove",
+      "observations": [
+        {
+          "capture_sha256": "dd03a9cb94962ba3c211887d57a009b512e92a1a86f665eae5d3e1650013ff47",
+          "price": 8,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Dove"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "letter",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.dove",
+      "source_candidate_pointer": "/candidates/298/trade_service/offers/1",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10
+      },
+      "name": "Elgar",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.elgar",
+      "observations": [
+        {
+          "capture_sha256": "1270967d05d181061c1c5159dd0366dcf062726a78a5e299816329640c9a2925",
+          "price": 15,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Elgar"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.elgar",
+      "source_candidate_pointer": "/candidates/332/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Ezean",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.ezean",
+      "observations": [
+        {
+          "capture_sha256": "78238e1dd1bc9684021811b0cda206de7c61da2ff76d71f5796fa5072ecdbe61",
+          "price": 15,
+          "row_index": 0,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Ezean"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.ezean",
+      "source_candidate_pointer": "/candidates/362/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Fyodor",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.fyodor",
+      "observations": [
+        {
+          "capture_sha256": "567e80ab72791c45b79bad92275cfac62650f2542dbf6498e2c9ea7a04e4e956",
+          "price": 15,
+          "row_index": 3,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Fyodor"
+        },
+        {
+          "capture_sha256": "8c6b821561763a9db151f9b2b7c27e930719d8925ecc22c0ab6fc3d84ddc145e",
+          "price": 15,
+          "row_index": 7,
+          "source": "fandom",
+          "url": "https://tibia.fandom.com/wiki/Fyodor"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.fyodor",
+      "source_candidate_pointer": "/candidates/402/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 5,
+        "tibiopedia": 8
+      },
+      "name": "Fyodor",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.fyodor",
+      "observations": [
+        {
+          "capture_sha256": "567e80ab72791c45b79bad92275cfac62650f2542dbf6498e2c9ea7a04e4e956",
+          "price": 8,
+          "row_index": 2,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Fyodor"
+        },
+        {
+          "capture_sha256": "8c6b821561763a9db151f9b2b7c27e930719d8925ecc22c0ab6fc3d84ddc145e",
+          "price": 8,
+          "row_index": 6,
+          "source": "fandom",
+          "url": "https://tibia.fandom.com/wiki/Fyodor"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "letter",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.fyodor",
+      "source_candidate_pointer": "/candidates/402/trade_service/offers/1",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 40,
+        "tibiopedia": 335
+      },
+      "name": "Gamel",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3289",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.gamel",
+      "observations": [
+        {
+          "capture_sha256": "fbdb2e7c4e7663ea15a2341120ddaf202712fc3875b032caebd9ad8cb4ef4f37",
+          "price": 40,
+          "row_index": 40,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Gamel"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "staff",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.gamel",
+      "source_candidate_pointer": "/candidates/406/trade_service/offers/33",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 500
+      },
+      "name": "Giri",
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i25737",
+          "revision": "definition-r1"
+        },
+        "unit_price": 800
+      },
+      "npc": "oteryn:npc.giri",
+      "observations": [
+        {
+          "capture_sha256": "8aac9fca73a34d78324fff8f7a65f042e92debdc5f35ef9604ef416403cd0f37",
+          "price": 500,
+          "row_index": 44,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Giri"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "rainbow quartz",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.giri",
+      "source_candidate_pointer": "/candidates/421/trade_service/offers/16",
+      "status": "RENDERED_PRICE_CONFLICT"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 50000
+      },
+      "name": "Giri",
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i30061",
+          "revision": "definition-r1"
+        },
+        "unit_price": 60000
+      },
+      "npc": "oteryn:npc.giri",
+      "observations": [
+        {
+          "capture_sha256": "8aac9fca73a34d78324fff8f7a65f042e92debdc5f35ef9604ef416403cd0f37",
+          "price": 50000,
+          "row_index": 31,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Giri"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "giant sapphire",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.giri",
+      "source_candidate_pointer": "/candidates/421/trade_service/offers/27",
+      "status": "RENDERED_PRICE_CONFLICT"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 40,
+        "tibiopedia": 30
+      },
+      "name": "Gladys",
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3483",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.gladys",
+      "observations": [
+        {
+          "capture_sha256": "7271e73e99477dd49572d242c002bf8542a19c3d792bef4d6f671449f3cdb2b4",
+          "price": 40,
+          "row_index": 21,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Gladys"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "fishing rod",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.gladys",
+      "source_candidate_pointer": "/candidates/422/trade_service/offers/40",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Gnomailion",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.gnomailion",
+      "observations": [
+        {
+          "capture_sha256": "ed15f77489246e673edd5c576ce9bb086fb8e36e9bd1052cd36d382bbc6ab2b0",
+          "price": 15,
+          "row_index": 0,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Gnomailion"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.gnomailion",
+      "source_candidate_pointer": "/candidates/425/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 5,
+        "tibiopedia": 8
+      },
+      "name": "Gnomailion",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.gnomailion",
+      "observations": [
+        {
+          "capture_sha256": "ed15f77489246e673edd5c576ce9bb086fb8e36e9bd1052cd36d382bbc6ab2b0",
+          "price": 8,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Gnomailion"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "letter",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.gnomailion",
+      "source_candidate_pointer": "/candidates/425/trade_service/offers/1",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 20
+      },
+      "name": "Haani",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32477",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "cot headboard",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/78",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 25
+      },
+      "name": "Haani",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32478",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "hammock head section",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/79",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 20
+      },
+      "name": "Haani",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32479",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "simple headboard",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/80",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 10
+      },
+      "name": "Haani",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32480",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "straw mat head section",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/81",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 100
+      },
+      "name": "Haani",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32481",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "canopy headboard",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/82",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 20
+      },
+      "name": "Haani",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32486",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "cot footboard",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/87",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 25
+      },
+      "name": "Haani",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32487",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "hammock foot section",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/88",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 20
+      },
+      "name": "Haani",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32488",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "simple footboard",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/89",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 10
+      },
+      "name": "Haani",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32489",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "straw bed foot section",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/90",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 100
+      },
+      "name": "Haani",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32490",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "canopy footboard",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/91",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 30
+      },
+      "name": "Hector The Mentor",
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3409",
+          "revision": "definition-r1"
+        },
+        "unit_price": 80
+      },
+      "npc": "oteryn:npc.hector_the_mentor",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "steel shield",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.hector_the_mentor",
+      "source_candidate_pointer": "/candidates/516/trade_service/offers/34",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 4
+      },
+      "name": "Hector The Mentor",
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3582",
+          "revision": "definition-r1"
+        },
+        "unit_price": 3
+      },
+      "npc": "oteryn:npc.hector_the_mentor",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "ham",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.hector_the_mentor",
+      "source_candidate_pointer": "/candidates/516/trade_service/offers/52",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 50
+      },
+      "name": "Hector The Mentor",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i7644",
+          "revision": "definition-r1"
+        },
+        "unit_price": 7
+      },
+      "npc": "oteryn:npc.hector_the_mentor",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "antidote potion",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.hector_the_mentor",
+      "source_candidate_pointer": "/candidates/516/trade_service/offers/58",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Herbert",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.herbert",
+      "observations": [
+        {
+          "capture_sha256": "19d0a5621c8b0ec5e09e1c95e4630e54f649d864b1ddbf866dfc5ca51b248d29",
+          "price": 15,
+          "row_index": 0,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Herbert"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.herbert",
+      "source_candidate_pointer": "/candidates/520/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 5,
+        "tibiopedia": 8
+      },
+      "name": "Herbert",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.herbert",
+      "observations": [
+        {
+          "capture_sha256": "19d0a5621c8b0ec5e09e1c95e4630e54f649d864b1ddbf866dfc5ca51b248d29",
+          "price": 8,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Herbert"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "letter",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.herbert",
+      "source_candidate_pointer": "/candidates/520/trade_service/offers/1",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 11
+      },
+      "name": "Imalas",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3594",
+          "revision": "definition-r1"
+        },
+        "unit_price": 10
+      },
+      "npc": "oteryn:npc.imalas",
+      "observations": [
+        {
+          "capture_sha256": "776822bce3fb867f94ba25ff7a0c1facb88465a4543a61118c61ce169598b503",
+          "price": 10,
+          "row_index": 10,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Imalas"
+        },
+        {
+          "capture_sha256": "35a510d4b432c96dfcc2a4d12986dca0e4853cdb4fadd25c9120ecd0887ed633",
+          "price": 10,
+          "row_index": 15,
+          "source": "fandom",
+          "url": "https://tibia.fandom.com/wiki/Imalas"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "pumpkin",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.imalas",
+      "source_candidate_pointer": "/candidates/532/trade_service/offers/5",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Jakahr",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.jakahr",
+      "observations": [
+        {
+          "capture_sha256": "b5c23eaf1241ad7bc7d7aa21a7d73a23a6bd08ca704a9863b0cff352dcaffe1d",
+          "price": 15,
+          "row_index": 0,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Jakahr"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.jakahr",
+      "source_candidate_pointer": "/candidates/561/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 5,
+        "tibiopedia": 8
+      },
+      "name": "Jakahr",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.jakahr",
+      "observations": [
+        {
+          "capture_sha256": "b5c23eaf1241ad7bc7d7aa21a7d73a23a6bd08ca704a9863b0cff352dcaffe1d",
+          "price": 8,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Jakahr"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "letter",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.jakahr",
+      "source_candidate_pointer": "/candidates/561/trade_service/offers/1",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "tibiopedia": 260
+      },
+      "name": "Khanna",
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i31561",
+          "revision": "definition-r1"
+        },
+        "unit_price": 950
+      },
+      "npc": "oteryn:npc.khanna",
+      "observations": [
+        {
+          "capture_sha256": "ac8d16953d6b34db1d343508bf3ffe69e617ea85e471797f7d9ccb2e562e4d47",
+          "price": 260,
+          "row_index": 66,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Khanna"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "goanna claw",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.khanna",
+      "source_candidate_pointer": "/candidates/605/trade_service/offers/34",
+      "status": "RENDERED_PRICE_CONFLICT"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Liane",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.liane",
+      "observations": [
+        {
+          "capture_sha256": "ba195572287d38a22a2eb979e7e389cb6073fb2b40ded460a85db9ec5aff7f03",
+          "price": 15,
+          "row_index": 2,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Liane"
+        },
+        {
+          "capture_sha256": "608f353cc2af2ac4a4197aa4938c108b562fc20cf9196f4439c5bbfd6677de42",
+          "price": 15,
+          "row_index": 2,
+          "source": "fandom",
+          "url": "https://tibia.fandom.com/wiki/Liane"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.liane",
+      "source_candidate_pointer": "/candidates/632/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 5,
+        "tibiopedia": 8
+      },
+      "name": "Liane",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.liane",
+      "observations": [
+        {
+          "capture_sha256": "ba195572287d38a22a2eb979e7e389cb6073fb2b40ded460a85db9ec5aff7f03",
+          "price": 8,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Liane"
+        },
+        {
+          "capture_sha256": "608f353cc2af2ac4a4197aa4938c108b562fc20cf9196f4439c5bbfd6677de42",
+          "price": 8,
+          "row_index": 1,
+          "source": "fandom",
+          "url": "https://tibia.fandom.com/wiki/Liane"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "letter",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.liane",
+      "source_candidate_pointer": "/candidates/632/trade_service/offers/1",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 0
+      },
+      "name": "Lily",
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3588",
+          "revision": "definition-r1"
+        },
+        "unit_price": 1
+      },
+      "npc": "oteryn:npc.lily",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "blueberry",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.lily",
+      "source_candidate_pointer": "/candidates/635/trade_service/offers/5",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 50,
+        "tibiopedia": 60
+      },
+      "name": "Lubo",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3003",
+          "revision": "definition-r1"
+        },
+        "unit_price": 50
+      },
+      "npc": "oteryn:npc.lubo",
+      "observations": [
+        {
+          "capture_sha256": "6970dc7da85ce4ca9a3da3a40e5bd8f5952520e688fe2e17dfa511bcc212baa5",
+          "price": 50,
+          "row_index": 14,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Lubo"
+        },
+        {
+          "capture_sha256": "9d29d42e73dd41eb974d45ffd70216527de6a376f9cfbc60292483945a4d9352",
+          "price": 50,
+          "row_index": 26,
+          "source": "fandom",
+          "url": "https://tibia.fandom.com/wiki/Lubo"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "rope",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.lubo",
+      "source_candidate_pointer": "/candidates/650/trade_service/offers/10",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 20
+      },
+      "name": "Maro",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2854",
+          "revision": "definition-r1"
+        },
+        "unit_price": 20
+      },
+      "npc": "oteryn:npc.maro",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "backpack",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.maro",
+      "source_candidate_pointer": "/candidates/674/trade_service/offers/0",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 1,
+        "tibiopedia": 4
+      },
+      "name": "Maro",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2880",
+          "revision": "definition-r1"
+        },
+        "unit_price": 4
+      },
+      "npc": "oteryn:npc.maro",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "mug",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.maro",
+      "source_candidate_pointer": "/candidates/674/trade_service/offers/5",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 25,
+        "tibiopedia": 50
+      },
+      "name": "Maro",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3453",
+          "revision": "definition-r1"
+        },
+        "unit_price": 50
+      },
+      "npc": "oteryn:npc.maro",
+      "observations": [
+        {
+          "capture_sha256": "062d3d3ac844fec76fee4e58b43652d729f696ec2921d3a54163e60e52dff14f",
+          "price": 10,
+          "row_index": 14,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Maro"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "scythe",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.maro",
+      "source_candidate_pointer": "/candidates/674/trade_service/offers/22",
+      "status": "RENDERED_PRICE_CONFLICT"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 20,
+        "tibiopedia": 50
+      },
+      "name": "Maro",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3457",
+          "revision": "definition-r1"
+        },
+        "unit_price": 50
+      },
+      "npc": "oteryn:npc.maro",
+      "observations": [
+        {
+          "capture_sha256": "062d3d3ac844fec76fee4e58b43652d729f696ec2921d3a54163e60e52dff14f",
+          "price": 9,
+          "row_index": 15,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Maro"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "shovel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.maro",
+      "source_candidate_pointer": "/candidates/674/trade_service/offers/27",
+      "status": "RENDERED_PRICE_CONFLICT"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Murim",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.murim",
+      "observations": [
+        {
+          "capture_sha256": "2316d0d738b855d395d26b17556cd409e1f5eebc333a5687b57ca674fcc7089e",
+          "price": 15,
+          "row_index": 2,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Murim"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.murim",
+      "source_candidate_pointer": "/candidates/712/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 5,
+        "tibiopedia": 8
+      },
+      "name": "Murim",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.murim",
+      "observations": [
+        {
+          "capture_sha256": "2316d0d738b855d395d26b17556cd409e1f5eebc333a5687b57ca674fcc7089e",
+          "price": 8,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Murim"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "letter",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.murim",
+      "source_candidate_pointer": "/candidates/712/trade_service/offers/1",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Nelly",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.nelly",
+      "observations": [
+        {
+          "capture_sha256": "22131d77c110abb040674c2f8e4f2a7c7091b8df0d88c814a9fa44bc6731112a",
+          "price": 15,
+          "row_index": 2,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Nelly"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.nelly",
+      "source_candidate_pointer": "/candidates/723/trade_service/offers/47",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 5,
+        "tibiopedia": 8
+      },
+      "name": "Nelly",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.nelly",
+      "observations": [
+        {
+          "capture_sha256": "22131d77c110abb040674c2f8e4f2a7c7091b8df0d88c814a9fa44bc6731112a",
+          "price": 8,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Nelly"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "letter",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.nelly",
+      "source_candidate_pointer": "/candidates/723/trade_service/offers/48",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Ninos",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.ninos",
+      "observations": [
+        {
+          "capture_sha256": "17fb07a4c5204df5e68cd3929d5d82edc63ba0e26019188d6194a027fc63ea7e",
+          "price": 15,
+          "row_index": 2,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Ninos"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.ninos",
+      "source_candidate_pointer": "/candidates/733/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 5,
+        "tibiopedia": 8
+      },
+      "name": "Ninos",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.ninos",
+      "observations": [
+        {
+          "capture_sha256": "17fb07a4c5204df5e68cd3929d5d82edc63ba0e26019188d6194a027fc63ea7e",
+          "price": 8,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Ninos"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "letter",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.ninos",
+      "source_candidate_pointer": "/candidates/733/trade_service/offers/1",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Olrik",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.olrik",
+      "observations": [
+        {
+          "capture_sha256": "ae72ac51eee560a07ddee4b92840cfddea085e6f2d3af9b7cd124f1d00cde44f",
+          "price": 15,
+          "row_index": 0,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Olrik"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.olrik",
+      "source_candidate_pointer": "/candidates/762/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 5,
+        "tibiopedia": 8
+      },
+      "name": "Olrik",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.olrik",
+      "observations": [
+        {
+          "capture_sha256": "ae72ac51eee560a07ddee4b92840cfddea085e6f2d3af9b7cd124f1d00cde44f",
+          "price": 8,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Olrik"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "letter",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.olrik",
+      "source_candidate_pointer": "/candidates/762/trade_service/offers/1",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 7500,
+        "tibiopedia": 5000
+      },
+      "name": "Rabaz",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i8093",
+          "revision": "definition-r1"
+        },
+        "unit_price": 7500
+      },
+      "npc": "oteryn:npc.rabaz",
+      "observations": [
+        {
+          "capture_sha256": "b7896ca28ee601272ea1ff4d663dad7bdac78cb34338acf83b9c054fb577b538",
+          "price": 7500,
+          "row_index": 52,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Rabaz"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "wand of draconia",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.rabaz",
+      "source_candidate_pointer": "/candidates/820/trade_service/offers/58",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Ray",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.ray",
+      "observations": [
+        {
+          "capture_sha256": "97c84d8f4a616e623ac9bffbe732325cd9325efa6bca1d3de376be86241ca3be",
+          "price": 15,
+          "row_index": 0,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Ray"
+        },
+        {
+          "capture_sha256": "25b9391a12bdf411f96c57e078a2fea875cc77a4cd069567f72f09307debd605",
+          "price": 15,
+          "row_index": 2,
+          "source": "fandom",
+          "url": "https://tibia.fandom.com/wiki/Ray"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.ray",
+      "source_candidate_pointer": "/candidates/844/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 5,
+        "tibiopedia": 8
+      },
+      "name": "Ray",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.ray",
+      "observations": [
+        {
+          "capture_sha256": "97c84d8f4a616e623ac9bffbe732325cd9325efa6bca1d3de376be86241ca3be",
+          "price": 8,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Ray"
+        },
+        {
+          "capture_sha256": "25b9391a12bdf411f96c57e078a2fea875cc77a4cd069567f72f09307debd605",
+          "price": 8,
+          "row_index": 1,
+          "source": "fandom",
+          "url": "https://tibia.fandom.com/wiki/Ray"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "letter",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.ray",
+      "source_candidate_pointer": "/candidates/844/trade_service/offers/1",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Redward",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.redward",
+      "observations": [
+        {
+          "capture_sha256": "0eb862a1db7068dac8f40cdb5123cc8b489cd2d888fe59fa4df61c76d9fad22e",
+          "price": 15,
+          "row_index": 0,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Redward"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.redward",
+      "source_candidate_pointer": "/candidates/849/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 5,
+        "tibiopedia": 8
+      },
+      "name": "Redward",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.redward",
+      "observations": [
+        {
+          "capture_sha256": "0eb862a1db7068dac8f40cdb5123cc8b489cd2d888fe59fa4df61c76d9fad22e",
+          "price": 8,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Redward"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "letter",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.redward",
+      "source_candidate_pointer": "/candidates/849/trade_service/offers/1",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 40,
+        "tibiopedia": 335
+      },
+      "name": "Shanar",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3289",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.shanar",
+      "observations": [
+        {
+          "capture_sha256": "f282f4267f7b9e9024c20607ed6345717bbaaed6b2b3b89ba51b63eae67c7d02",
+          "price": 40,
+          "row_index": 54,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Shanar"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "staff",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.shanar",
+      "source_candidate_pointer": "/candidates/904/trade_service/offers/19",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 9
+      },
+      "name": "The Librarian",
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i28568",
+          "revision": "definition-r1"
+        },
+        "unit_price": 720
+      },
+      "npc": "oteryn:npc.the_librarian",
+      "observations": [
+        {
+          "capture_sha256": "ec7dd790321e2b5a92df53f8059e7d457baa75b50e99e19ee772ddfb1f0124fc",
+          "price": 8,
+          "row_index": 20,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/The_Librarian"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "inkwell",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.the_librarian",
+      "source_candidate_pointer": "/candidates/987/trade_service/offers/14",
+      "status": "RENDERED_PRICE_CONFLICT"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 10,
+        "tibiopedia": 15
+      },
+      "name": "Wally",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.wally",
+      "observations": [
+        {
+          "capture_sha256": "afa01e0f5a85027c451328a5398fec696f2309a366ec20435aa6db2abccc0157",
+          "price": 15,
+          "row_index": 2,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Wally"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "parcel",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.wally",
+      "source_candidate_pointer": "/candidates/1056/trade_service/offers/0",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 5,
+        "tibiopedia": 8
+      },
+      "name": "Wally",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.wally",
+      "observations": [
+        {
+          "capture_sha256": "afa01e0f5a85027c451328a5398fec696f2309a366ec20435aa6db2abccc0157",
+          "price": 8,
+          "row_index": 1,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Wally"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "letter",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.wally",
+      "source_candidate_pointer": "/candidates/1056/trade_service/offers/1",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 250
+      },
+      "name": "Yasir",
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32596",
+          "revision": "definition-r1"
+        },
+        "unit_price": 310000
+      },
+      "npc": "oteryn:npc.yasir",
+      "observations": [
+        {
+          "capture_sha256": "df19bb10950609715c8422aad2148d3ab4d60e92ae81f2f0f89f63bc19d6ae2e",
+          "price": 250,
+          "row_index": 177,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Yasir"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "dark bell",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.yasir",
+      "source_candidate_pointer": "/candidates/1084/trade_service/offers/369",
+      "status": "RENDERED_PRICE_CONFLICT"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 7500,
+        "tibiopedia": 95000
+      },
+      "name": "Yasir",
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i48256",
+          "revision": "definition-r1"
+        },
+        "unit_price": 95000
+      },
+      "npc": "oteryn:npc.yasir",
+      "observations": [],
+      "price_parity_qualified": false,
+      "registered_item_name": "pastry dragon",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.yasir",
+      "source_candidate_pointer": "/candidates/1084/trade_service/offers/581",
+      "status": "NO_EXACT_ITEM_PRICE"
+    },
+    {
+      "historical_dissent": {
+        "fandom": 3,
+        "tibiopedia": 2
+      },
+      "name": "Zora",
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2884",
+          "revision": "definition-r1"
+        },
+        "unit_price": 2
+      },
+      "npc": "oteryn:npc.zora",
+      "observations": [
+        {
+          "capture_sha256": "9ef17e7679a566e1c81e83e9a20ed29aed48003bb6dfa38ebe1fc91d98332f72",
+          "price": 2,
+          "row_index": 11,
+          "source": "br",
+          "url": "https://www.tibiawiki.com.br/wiki/Zora"
+        },
+        {
+          "capture_sha256": "aafe80d55a11d2db67391d8a489f502cd89b04dca7cd73100c1724a3223866ae",
+          "price": 2,
+          "row_index": 23,
+          "source": "fandom",
+          "url": "https://tibia.fandom.com/wiki/Zora"
+        }
+      ],
+      "price_parity_qualified": false,
+      "registered_item_name": "cup",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.zora",
+      "source_candidate_pointer": "/candidates/1106/trade_service/offers/13",
+      "status": "RENDERED_SUPPORTS_RETAINED_PRICE"
+    }
+  ],
+  "schema": "NPC_RENDERED_PRICE_COMPARISON/v1",
+  "scope": "ALL_R5_PENDING_OFFERS"
+}

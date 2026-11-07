@@ -1,0 +1,10 @@
+{
+  "id": 430,
+  "name": "BOSS_REWARD_COLLECT_ALL",
+  "owner_decision": "W03; Crystal 201189f personal reward chest",
+  "capability": 224,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/boss-rewards-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/boss-rewards-v1.md#reply",
+  "max_payload_bytes": 17,
+  "max_result_payload_bytes": 1024
+}

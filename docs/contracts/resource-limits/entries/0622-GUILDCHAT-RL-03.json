@@ -1,0 +1,23 @@
+{
+  "id": "GUILDCHAT-RL-03",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md",
+  "resource": "Guild relay standard base64 bytes",
+  "unit": "bytes",
+  "hard_maximum": 1624,
+  "configurable_range": {
+    "minimum": 1624,
+    "maximum": 1624
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Validate before allocation; reject rather than truncate. Existing NOTIFY bound 2048 and per-session 64-line egress bound remain. Guild lines shed with public room lines. Recipient reads are serial, at most 64 per connection refresh.",
+  "client_visible": false,
+  "boundary_tests": [
+    "guild_room codec roundtrip rank 1/2/20",
+    "guild_room malformed/truncated/extra payload refused",
+    "guild_room widest payload within bounds"
+  ],
+  "consumers": [
+    "crates/gameplay/social/src/chat/guild_room.rs",
+    "crates/protocol-oteryn/src/chat/guild_room.rs"
+  ]
+}

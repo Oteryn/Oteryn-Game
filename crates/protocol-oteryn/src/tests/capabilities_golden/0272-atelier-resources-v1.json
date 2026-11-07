@@ -1,0 +1,19 @@
+{
+  "id": 272,
+  "name": "ATELIER_RESOURCES_V1",
+  "constant": "atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1",
+  "requires": [
+    148
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    484
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "NRS-REPORT-BYTES",
+  "owner_contract": "OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md",
+  "resource": "Encoded ReportRuntimeStatusV1 request body",
+  "unit": "bytes",
+  "hard_maximum": 2048,
+  "configurable_range": {
+    "minimum": 2048,
+    "maximum": 2048
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The body is encoded from grammar-checked fields (revisions at most 64 bytes, identities at most 128) and its length is checked before the exchange opens a connection; nothing is retained after the exchange.",
+  "client_visible": false,
+  "boundary_tests": [
+    "the largest grammar-valid report (every field at its maximum) encodes within 2048 bytes",
+    "a body above 2048 bytes is refused before the exchange opens a connection"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/runtime_status.rs"
+  ],
+  "notes": "Contract sections 3 and 11. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered' and never gates boot, serving, admission or shutdown. Registered by OTV2-20260929-runtime-status-producer (#162 owner-accepted package Q21, 5900403086)."
+}

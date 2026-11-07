@@ -1,0 +1,21 @@
+{
+  "id": "HOUSE1B-RL-05",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md",
+  "resource": "House move-out wire reply",
+  "unit": "bytes",
+  "hard_maximum": 64,
+  "configurable_range": {
+    "minimum": 64,
+    "maximum": 64
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Bounded before mutation; oversized census and malformed wire refuse without partial effects.",
+  "client_visible": true,
+  "boundary_tests": [
+    "house_move_out_strict_codec"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/house_move_out.rs"
+  ],
+  "notes": "HOUSE-1b server basic form. The immutable census is never truncated to fit."
+}

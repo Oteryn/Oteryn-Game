@@ -1,0 +1,20 @@
+{
+  "status": "PASS_EXISTING_KNOWN_CHARGES_127_IDENTICAL_MAIN_AND_LOCAL",
+  "main_sha": "7358a14d00cf884ad81f6b2472db5b6e965cc1d7",
+  "local_head": "12d6508087373524d6d87fc823d37725b54405e1",
+  "count": 127,
+  "canonical_payload_sha256": "7c4bd1b649d28d8e6fe900e359acd21528e3d3718fe2b29cce7cb4e758bfa9e5",
+  "Native_charges_to_reimport": 0,
+  "Source_conditional_default_and_XML_observations": "SEPARATE_PROPOSAL_PENDING_OVERLAP_REVIEW",
+  "new_main_only_item": [
+    [
+      "oteryn:item.tibia.i40450",
+      "definition-r1"
+    ]
+  ],
+  "main_consumption_data_known": 0,
+  "main_consumption_schema": "PRESENT_FROM_ACCEPTED_ITEM_SEM_USE_1",
+  "main_native_spell_item_profiles": 118,
+  "local_Source_ability_field": "ABSENT",
+  "current_Source_576_skill_and_resistance_tables": "EXISTS_REUSE_NOT_DUPLICATE"
+}

@@ -1,0 +1,87 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+
+// BOSS-ENCOUNTER-1, owner decisions 23 and 24. Capability 117, command 133.
+// Server-only implementation. This capability exposes the cooldown read path;
+// it does not advertise activity-instance admission or reward delivery.
+message BossCooldownQueryV1 {
+  // Empty starts the list. Otherwise the previous page's next_after_boss_key.
+  // Strictly bounded to a production key (512 UTF-8 bytes), in C sort order.
+  string after_boss_key = 1;
+  // SRX-3 opt-in; encode true last. Older requests retain their exact reply.
+  // 517 bytes maximum with the full cursor; explicit false/duplicate fields refuse.
+  bool include_taints = 2;
+}
+message BossCooldownEntryV1 {
+  string boss_key = 1;
+  uint64 available_at_unix_ms = 2;
+}
+message BossCooldownListV1 {
+  uint64 now_unix_ms = 1;
+  // At most 64 rows of this admitted Character, including expired cooldowns.
+  repeated BossCooldownEntryV1 entries = 2;
+  // Empty if exhausted; otherwise the last key returned. Live keyset pagination:
+  // concurrent admissions may appear on later queries, no snapshot is promised.
+  string next_after_boss_key = 3;
+  // Bosstiary progress of the same Character, read in the same transaction as the
+  // cooldown page. At most 64 rows, strictly ascending by boss_key, paged with the
+  // same next_after_boss_key cursor as the request.
+  repeated BosstiaryProgressEntryV1 progress = 4;
+  // Sum of the Character's earned boss points.
+  uint64 boss_points = 5;
+  // Empty if exhausted; otherwise the last progress key returned.
+  string next_after_progress_key = 6;
+  // Present only when explicitly requested. Same Character and transaction.
+  BossTaintsV1 taints = 7;
+}
+// Four required bounded scalars in canonical field order, including zeros.
+// Counts are calculated by Quest owners using server time, never by the client.
+message BossTaintsV1 {
+  uint32 soul_war = 1; // 0..5, after fourteen-day expiry
+  uint32 rotten_blood = 2; // 0..4 regular taints
+  uint32 rotten_blood_flags = 3; // 0..15: Ichgahal, Murcion, Vemiath, Chagorz
+  bool rotten_blood_final = 4;
+}
+message BosstiaryProgressEntryV1 {
+  string boss_key = 1;
+  uint64 kill_count = 2;
+}
+
+// Command 340. Identity and World come exclusively from the admitted session.
+message BossRewardOpenV1 {
+  // Empty remains the legacy first page. Only when capability 224 is selected,
+  // a full page may be continued with its last death id (exactly 16 nonzero bytes).
+  // The server resolves the retained cursor only within this Character and World.
+  bytes after_death_id = 1;
+}
+message BossRewardGroupV1 {
+  bytes death_id = 1;
+  string boss_key = 2;
+  uint64 minted_at_unix_ms = 3;
+  uint64 expires_at_unix_ms = 4;
+  uint32 item_count = 5;
+}
+message BossRewardChestV1 {
+  uint64 now_unix_ms = 1;
+  // Oldest first, at most 64 live nonempty groups. When 64 are returned, the
+  // last death id can continue the list. Fewer than 64 means currently exhausted.
+  // This is live keyset pagination, not a snapshot; expired groups stay hidden.
+  repeated BossRewardGroupV1 entries = 2;
+}
+
+// Command 178 (lever) uses the shared native activity owner. W10/W11 keys first
+// validate their Character prerequisites and remain unavailable until their source
+// content and Instance death consumers are composed; they allocate no Instance.
+// Commands 179 (defeated) and 180 (timeout) request the native defeat/deadline
+// owner, which independently proves the terminal outcome. Client keys confer no
+// terminal authority. Capability 117 also retains hazard 169.
+// The client supplies no party, policy, position, level, cooldown, death or timeout facts.
+message BossLeverRequestV1 { string boss_key = 1; }
+message BossInstanceReceiptV1 {
+  bytes instance_id = 1; // opaque 16-byte UUID
+  uint64 deadline_unix_ms = 2;
+}
+// Reserved terminal schemas are not client authority to manufacture a death or timeout.
+// A future runtime owner must bind the exact instance, live boss generation and occurrence.
+message BossTerminalRequestV1 { string boss_key = 1; }
+message BossTerminalResultV1 { bool settled = 1; }

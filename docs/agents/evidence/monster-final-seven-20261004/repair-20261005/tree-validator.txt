@@ -1,0 +1,2 @@
+PASS imbuement static import: 24 families, 72 tiers; runtime admission blocked
+PASS items=34043 mounts=252 item_editors=165 mount_editors=252 item_bindings=476 mount_bindings=252 item_authoring=700 taxonomy=12252 relations=1093 provenance_facts=1022 creature_records=28758 creature_profiles=27508 creature_bindings=1863 npc_records=1282 npc_bindings=2747 service_records=380 dialogue_records=836 encounter_records=108 charm_records=25 proficiency_records=443 proficiency_bindings=665 reward_claim_records=336 starter_kit_records=1

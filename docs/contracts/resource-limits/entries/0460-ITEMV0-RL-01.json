@@ -1,0 +1,22 @@
+{
+  "id": "ITEMV0-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md",
+  "resource": "Items in one CHARACTER_INVENTORY view (domain 9 snapshot type 1 or delta type 1), the main backpack slot included",
+  "unit": "items per view",
+  "hard_maximum": 30,
+  "configurable_range": {
+    "minimum": 30,
+    "maximum": 30
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The decoder refuses the 30th direct entry (31st item) before decoding it and any payload over 930 bytes (30 entries of at most 31 bytes) before reading it; the encoder refuses the same view before emitting a byte.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=30: the main backpack and 29 entries round-trip within 930 bytes",
+    "max+1=31: 31 items are refused in both directions"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/item_view.rs MAX_CHARACTER_INVENTORY_ITEMS, MAX_CHARACTER_INVENTORY_BYTES"
+  ],
+  "notes": "ITEM-MOVE-WIRE-0 \u00a74.4; the value 30 is ITEM-MOVE-WIRE-1 \u00a76.3 (the main backpack, 20 entries and later the nine equipment slots), superseding WIRE-0's 21. Within FND02-STATE-DELTA-PAYLOAD-BYTES and FND02-SNAPSHOT-CHUNK-BYTES. Registered by OTV2-20261003-item-view-1a."
+}

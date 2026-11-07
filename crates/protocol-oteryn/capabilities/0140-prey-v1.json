@@ -1,0 +1,11 @@
+{
+  "id": 140,
+  "name": "PREY_V1",
+  "constant": "prey::CAPABILITY_PREY_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [160],
+  "domains": [],
+  "supersedes": [],
+  "offers": { "production": false, "item_view": false, "bundle_world": false }
+}

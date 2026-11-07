@@ -1,0 +1,22 @@
+{
+  "id": "GUILDWIRE-RL-07",
+  "owner_contract": "protocol-oteryn/v1/guild_v1.proto",
+  "resource": "Guild intent result payload",
+  "unit": "bytes",
+  "hard_maximum": 128,
+  "configurable_range": {
+    "minimum": 128,
+    "maximum": 128
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject before untrusted allocation; no truncation. Roster reads at most 101 rows and returns 100 with a guild-bound keyset cursor.",
+  "client_visible": true,
+  "boundary_tests": [
+    "guild codec bounds and malformed fields",
+    "guild_wire_postgres_real_dispatch"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/guild.rs",
+    "crates/gameplay/durability/src/durability/guild/query.rs"
+  ]
+}

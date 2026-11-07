@@ -1,0 +1,193 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "canary:ability/druid_familiar/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "melee",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/druid_familiar/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/druid_familiar/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 5,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/druid_familiar/attack-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/druid_familiar/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": true,
+      "area": {
+        "length_tiles": 2,
+        "spread_tiles": 0
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/druid_familiar/attack-3",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/druid_familiar/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/druid_familiar/defense-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "canary:effect/druid_familiar/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/druid_familiar/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "mitigated_by": [
+        "armor",
+        "shield"
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:effect/druid_familiar/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "earth",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/druid_familiar/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/stones",
+        "projectile_asset_binding": "canary.appearance:missile/earth"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/druid_familiar/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "earth",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/druid_familiar/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/groundshaker"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/druid_familiar/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "heal",
+      "damage_type": "healing",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/druid_familiar/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_green"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "canary:formula/druid_familiar/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 300
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/druid_familiar/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 230,
+        "maximum": 260
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/druid_familiar/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 90,
+        "maximum": 150
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/druid_familiar/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 600,
+        "maximum": 600
+      }
+    }
+  ],
+  "documents": [],
+  "items": [],
+  "loot_tables": []
+}

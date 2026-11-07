@@ -1,0 +1,23 @@
+{
+  "allocation_impact": "Running total checked per row before that sector is decompressed.",
+  "boundary_tests": [
+    "a bundle is accepted at a reduced total_raw_bytes cap equal to its payload total (ReadCaps)",
+    "at a cap one byte smaller, the row that takes the total over it is rejected before decompression"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "maximum": 1073741824,
+    "minimum": 1073741824
+  },
+  "consumers": [
+    "world bundle compiler",
+    "game server World runtime (MAP-LOAD-1)"
+  ],
+  "failure_category": "INVALID_INPUT",
+  "hard_maximum": 1073741824,
+  "id": "MAP01-BUNDLE-TOTAL-RAW-BYTES",
+  "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79. Aligned with MAP01-BASE-RSS-BYTES.",
+  "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+  "resource": "Sum of the decompressed sector payloads of one bundle",
+  "unit": "bytes"
+}

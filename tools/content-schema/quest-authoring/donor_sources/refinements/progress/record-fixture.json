@@ -1,0 +1,507 @@
+{
+  "source_component_id": "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/aurita.lua",
+  "quest_keys": [
+    "oteryn:quest.threatened_dreams_quest"
+  ],
+  "source_target": "canary:quest-progress/quest/u11_40/threatened_dreams/mission03_1",
+  "source_storage_expression": "Storage.Quest.U11_40.ThreatenedDreams.Mission03[1]",
+  "canonical_mission_refs": [
+    {
+      "quest_key": "oteryn:quest.threatened_dreams_quest",
+      "source_quest_identity": {
+        "key": "canary:quest/threatened_dreams_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "mission_key": "an_unlikely_couple",
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "json_pointer": "/records/51/definition/source_data/quest/missions/2",
+      "mission_sha256": "8d769d20367ccc694a0f4d6b1338f1a88ea9b20875c7c053c0f84cf29f41b116",
+      "mission": {
+        "end_value": 4,
+        "journal": {
+          "kind": "per_stage",
+          "stages": [
+            {
+              "text_ref": {
+                "length": 169,
+                "placeholders": [],
+                "sha256": "88268ef2558c66096bf58fa12c478bcd85126a2ffc1472907fa69f7654c1eb6e"
+              },
+              "value": 1
+            },
+            {
+              "text_ref": {
+                "length": 126,
+                "placeholders": [],
+                "sha256": "43667e0dab22e03247d949468961e7123b6189ff2c728f2f778c237cfd9be4d3"
+              },
+              "value": 2
+            },
+            {
+              "text_ref": {
+                "length": 188,
+                "placeholders": [],
+                "sha256": "2729766e9be10a73330739a0ba38121eb97ee2e35597c2dcf03616cc17e49cb7"
+              },
+              "value": 3
+            },
+            {
+              "text_ref": {
+                "length": 146,
+                "placeholders": [],
+                "sha256": "449fd47456d0ce956445e421b97cd8c4d956aed407cae309bd6b55e35276511b"
+              },
+              "value": 4
+            }
+          ]
+        },
+        "key": "an_unlikely_couple",
+        "name": "An Unlikely Couple",
+        "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission03_1",
+        "start_value": 1,
+        "transitions": []
+      }
+    }
+  ],
+  "status": "SOURCE_MISSION_WRITE_SPEC_EXECUTION_UNPROVEN",
+  "provenance": {
+    "source": "canary",
+    "repository": "opentibiabr/canary",
+    "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "path": "data-otservbr-global/npc/aurita.lua",
+    "sha256": "1aad68fa39c4a3c540548442487cfaf8197185e51d13e3d88bd5d0ec2dc99ad8",
+    "git_blob_sha1": "a353adfce3c7476f2fbf3c4e10ed4382dfcc7452",
+    "byte_count": 5140
+  },
+  "write_ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/orelse/fields/orelse/fields/body/fields/body/0/fields/body/fields/body/1",
+  "write_witness": {
+    "provenance": {
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/npc/aurita.lua",
+      "sha256": "1aad68fa39c4a3c540548442487cfaf8197185e51d13e3d88bd5d0ec2dc99ad8",
+      "git_blob_sha1": "a353adfce3c7476f2fbf3c4e10ed4382dfcc7452",
+      "byte_count": 5140
+    },
+    "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/orelse/fields/orelse/fields/body/fields/body/0/fields/body/fields/body/1",
+    "span": {
+      "column": 3,
+      "end_char_exclusive": 4457,
+      "end_token_column": 58,
+      "end_token_line": 105,
+      "line": 105,
+      "start_char": 4401
+    },
+    "raw_expression": "player:setStorageValue(ThreatenedDreams.Mission03[1], 1)",
+    "slice_sha256": "f061304a6ad127a7fab7fc5905fcb5d1628205b23a72ec57962527f27b3e6594",
+    "byte_start": 4401,
+    "byte_end_exclusive": 4457
+  },
+  "scoped_alias_witnesses": [
+    {
+      "binding": {
+        "kind": "local_declaration",
+        "name": "ThreatenedDreams",
+        "declaration_pointer": "/fields/body/fields/body/20/fields/targets/0",
+        "scope_pointer": "/fields/body/fields/body"
+      },
+      "assignment_witness": {
+        "provenance": {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/aurita.lua",
+          "sha256": "1aad68fa39c4a3c540548442487cfaf8197185e51d13e3d88bd5d0ec2dc99ad8",
+          "git_blob_sha1": "a353adfce3c7476f2fbf3c4e10ed4382dfcc7452",
+          "byte_count": 5140
+        },
+        "ast_pointer": "/fields/body/fields/body/20",
+        "span": {
+          "column": 0,
+          "end_char_exclusive": 1202,
+          "end_token_column": 46,
+          "end_token_line": 50,
+          "line": 50,
+          "start_char": 1140
+        },
+        "raw_expression": "local ThreatenedDreams = Storage.Quest.U11_40.ThreatenedDreams",
+        "slice_sha256": "312f9e546006fcfc8b768f126ab7ff431b9185526654becfc2dde0f902b42c8e",
+        "byte_start": 1140,
+        "byte_end_exclusive": 1202
+      },
+      "alias_target_witness": {
+        "provenance": {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/aurita.lua",
+          "sha256": "1aad68fa39c4a3c540548442487cfaf8197185e51d13e3d88bd5d0ec2dc99ad8",
+          "git_blob_sha1": "a353adfce3c7476f2fbf3c4e10ed4382dfcc7452",
+          "byte_count": 5140
+        },
+        "ast_pointer": "/fields/body/fields/body/20/fields/values/0",
+        "span": {
+          "column": 25,
+          "end_char_exclusive": 1202,
+          "end_token_column": 46,
+          "end_token_line": 50,
+          "line": 50,
+          "start_char": 1165
+        },
+        "raw_expression": "Storage.Quest.U11_40.ThreatenedDreams",
+        "slice_sha256": "714a2476853c34f435a0857295cc657759004acc1fdbd05d07e6508be79cebdc",
+        "byte_start": 1165,
+        "byte_end_exclusive": 1202
+      },
+      "execution_alias_mutation_or_library_activation": "NOT_PROVEN"
+    }
+  ],
+  "operation": {
+    "kind": "source_storage_write",
+    "evaluation_order": [
+      "READ_RECEIVER_ONCE",
+      "LOOKUP_METHOD",
+      "EVALUATE_STORAGE_KEY",
+      "EVALUATE_VALUE",
+      "CALL_WITH_RECEIVER_SELF"
+    ],
+    "lookup_and_errors": [
+      "METHOD_LOOKUP_CAN_RUN_INDEX_METAMETHOD_BEFORE_ARGUMENTS",
+      "INDEX_ERRORS_PREVENT_ARGUMENT_EVALUATION",
+      "NONCALLABLE_METHOD_CALL_ERROR_OCCURS_AFTER_ARGUMENTS",
+      "ARGUMENT_SIDE_EFFECTS_AND_METHOD_LOOKUP_MUTATION_PRESERVED"
+    ],
+    "receiver": {
+      "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/orelse/fields/orelse/fields/body/fields/body/0/fields/body/fields/body/1/fields/source",
+      "witness": {
+        "provenance": {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/aurita.lua",
+          "sha256": "1aad68fa39c4a3c540548442487cfaf8197185e51d13e3d88bd5d0ec2dc99ad8",
+          "git_blob_sha1": "a353adfce3c7476f2fbf3c4e10ed4382dfcc7452",
+          "byte_count": 5140
+        },
+        "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/orelse/fields/orelse/fields/body/fields/body/0/fields/body/fields/body/1/fields/source",
+        "span": null,
+        "missing_span_reason": "UPSTREAM_AST_NULL_SPAN_FULL_NODE_AND_SOURCE_WITNESS_RETAINED"
+      },
+      "actual_entity_binding": "NOT_PROVEN"
+    },
+    "storage_key_operand": {
+      "kind": "source_index_read_reference",
+      "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/orelse/fields/orelse/fields/body/fields/body/0/fields/body/fields/body/1/fields/args/0",
+      "witness": {
+        "provenance": {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/aurita.lua",
+          "sha256": "1aad68fa39c4a3c540548442487cfaf8197185e51d13e3d88bd5d0ec2dc99ad8",
+          "git_blob_sha1": "a353adfce3c7476f2fbf3c4e10ed4382dfcc7452",
+          "byte_count": 5140
+        },
+        "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/orelse/fields/orelse/fields/body/fields/body/0/fields/body/fields/body/1/fields/args/0",
+        "span": {
+          "column": 26,
+          "end_char_exclusive": 4453,
+          "end_token_column": 54,
+          "end_token_line": 105,
+          "line": 105,
+          "start_char": 4424
+        },
+        "raw_expression": "ThreatenedDreams.Mission03[1]",
+        "slice_sha256": "c13d6cba05ce5f2aaece4bfcb008eb5768c792b6d37bc381a8a05b0a38d1f301",
+        "byte_start": 4424,
+        "byte_end_exclusive": 4453
+      },
+      "native_storage_slot": null,
+      "table_metatable_and_alias_runtime_uncertainty_preserved": true
+    },
+    "value_operand": {
+      "kind": "literal_number",
+      "witness": {
+        "provenance": {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/npc/aurita.lua",
+          "sha256": "1aad68fa39c4a3c540548442487cfaf8197185e51d13e3d88bd5d0ec2dc99ad8",
+          "git_blob_sha1": "a353adfce3c7476f2fbf3c4e10ed4382dfcc7452",
+          "byte_count": 5140
+        },
+        "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/orelse/fields/orelse/fields/body/fields/body/0/fields/body/fields/body/1/fields/args/1",
+        "span": {
+          "column": 57,
+          "end_char_exclusive": 4456,
+          "end_token_column": 57,
+          "end_token_line": 105,
+          "line": 105,
+          "start_char": 4455
+        },
+        "raw_expression": "1",
+        "slice_sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+        "byte_start": 4455,
+        "byte_end_exclusive": 4456
+      },
+      "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/orelse/fields/orelse/fields/body/fields/body/0/fields/body/fields/body/1/fields/args/1",
+      "value_kind": "Number",
+      "runtime_type_not_inferred": true,
+      "value": 1
+    },
+    "exact_source_guards_and_early_returns": [
+      {
+        "kind": "LocalFunction",
+        "ast_pointer": "/fields/body/fields/body/21",
+        "source_witness": {
+          "provenance": {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/aurita.lua",
+            "sha256": "1aad68fa39c4a3c540548442487cfaf8197185e51d13e3d88bd5d0ec2dc99ad8",
+            "git_blob_sha1": "a353adfce3c7476f2fbf3c4e10ed4382dfcc7452",
+            "byte_count": 5140
+          },
+          "ast_pointer": "/fields/body/fields/body/21",
+          "span": {
+            "column": 0,
+            "end_char_exclusive": 4713,
+            "end_token_column": 0,
+            "end_token_line": 114,
+            "line": 51,
+            "start_char": 1203
+          },
+          "raw_expression": "local function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") then\n\t\tif player:getStorageValue(ThreatenedDreams.Mission03[1]) < 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Yes, there is something. I'm in love with Taegen, but he is a faun. As such he's inhabiting the forests, dancing with fairies. And I, being a mermaid, am living in the ocean, swimming with the fish between coral reefs. ...\",\n\t\t\t\t\"But I lost my heart to Taegen, I can't help it. We would love to spend some time together, but not just sitting on the beach. ...\",\n\t\t\t\t\"I'd love to show him my homestead beneath the waves. I have an idea but I can't do it alone. Would you help me?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telseif player:getStorageValue(ThreatenedDreams.Mission03[1]) == 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"There is a fairy who once told me about this spell. Perhaps she will share her knowledge. You can find her in a small fairy village in the southwest of Feyrist.\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(ThreatenedDreams.Mission03[1]) >= 2 and player:getStorageValue(ThreatenedDreams.Mission03[1]) <= 3 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"The spell works! I already took a walk on the beach last night in the moonlight. Please talk to Taegen now, he may have another request.\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telse\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Thank you again, friend! Taegen and I we're so happy now.\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"starlight vial\") or MsgContains(message, \"empty starlight vial\") then\n\t\tif player:getStorageValue(ThreatenedDreams.Mission03[1]) == 4 then\n\t\t\tif player:getStorageValue(ThreatenedDreams.Mission03.EmptyStarlightVial) < 1 then\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"Thank you, friend! Please take the starlight vial. It is made of a very rare kind of enchanted glass and magical metals, so it is able to preserve starlight. ...\",\n\t\t\t\t\t\"A long time ago a pixie knight of Maelyrra carried it with her. But when she was flying above the waves she accidentally dropped it and it sunk. I found it but now you may take it and use it to help Feyrist.\",\n\t\t\t\t}, npc, creature)\n\t\t\t\tplayer:addItem(25731, 1)\n\t\t\t\tplayer:setStorageValue(ThreatenedDreams.Mission03.EmptyStarlightVial, 1)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\telse\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"I already gave you the empty starlight vial.\",\n\t\t\t\t}, npc, creature)\n\t\t\tend\n\t\tend\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"That's very kind of you, my friend! Listen: I know there is a spell to transform my fishtail into legs. It is a temporary effect, so I could return to the ocean as soon as the spell ends. Unfortunately I don't know how to cast this spell. ...\",\n\t\t\t\t\"But there is a fairy who once told me about it. Perhaps she will share her knowledge. You can find her in a small fairy village in the southwest of Feyrist.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(ThreatenedDreams.Mission03[1], 1)\n\t\t\tplayer:setStorageValue(ThreatenedDreams.Mission03.UnlikelyCouple, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"no\") then\n\t\tnpcHandler:say(\"Then not.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\tend\n\treturn true\nend",
+          "slice_sha256": "10aa74a88ca6cb568cb2611acec2dbc7caa2dc59a13ce657ee623536a9cae825",
+          "byte_start": 1203,
+          "byte_end_exclusive": 4713
+        },
+        "path_to_write": "/fields/body/fields/body/3/fields/orelse/fields/orelse/fields/body/fields/body/0/fields/body/fields/body/1",
+        "is_orelse_path": false
+      },
+      {
+        "kind": "If",
+        "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3",
+        "source_witness": {
+          "provenance": {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/aurita.lua",
+            "sha256": "1aad68fa39c4a3c540548442487cfaf8197185e51d13e3d88bd5d0ec2dc99ad8",
+            "git_blob_sha1": "a353adfce3c7476f2fbf3c4e10ed4382dfcc7452",
+            "byte_count": 5140
+          },
+          "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3",
+          "span": {
+            "column": 1,
+            "end_char_exclusive": 4696,
+            "end_token_column": 1,
+            "end_token_line": 112,
+            "line": 59,
+            "start_char": 1413
+          },
+          "raw_expression": "if MsgContains(message, \"mission\") then\n\t\tif player:getStorageValue(ThreatenedDreams.Mission03[1]) < 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Yes, there is something. I'm in love with Taegen, but he is a faun. As such he's inhabiting the forests, dancing with fairies. And I, being a mermaid, am living in the ocean, swimming with the fish between coral reefs. ...\",\n\t\t\t\t\"But I lost my heart to Taegen, I can't help it. We would love to spend some time together, but not just sitting on the beach. ...\",\n\t\t\t\t\"I'd love to show him my homestead beneath the waves. I have an idea but I can't do it alone. Would you help me?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telseif player:getStorageValue(ThreatenedDreams.Mission03[1]) == 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"There is a fairy who once told me about this spell. Perhaps she will share her knowledge. You can find her in a small fairy village in the southwest of Feyrist.\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(ThreatenedDreams.Mission03[1]) >= 2 and player:getStorageValue(ThreatenedDreams.Mission03[1]) <= 3 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"The spell works! I already took a walk on the beach last night in the moonlight. Please talk to Taegen now, he may have another request.\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telse\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Thank you again, friend! Taegen and I we're so happy now.\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"starlight vial\") or MsgContains(message, \"empty starlight vial\") then\n\t\tif player:getStorageValue(ThreatenedDreams.Mission03[1]) == 4 then\n\t\t\tif player:getStorageValue(ThreatenedDreams.Mission03.EmptyStarlightVial) < 1 then\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"Thank you, friend! Please take the starlight vial. It is made of a very rare kind of enchanted glass and magical metals, so it is able to preserve starlight. ...\",\n\t\t\t\t\t\"A long time ago a pixie knight of Maelyrra carried it with her. But when she was flying above the waves she accidentally dropped it and it sunk. I found it but now you may take it and use it to help Feyrist.\",\n\t\t\t\t}, npc, creature)\n\t\t\t\tplayer:addItem(25731, 1)\n\t\t\t\tplayer:setStorageValue(ThreatenedDreams.Mission03.EmptyStarlightVial, 1)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\telse\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"I already gave you the empty starlight vial.\",\n\t\t\t\t}, npc, creature)\n\t\t\tend\n\t\tend\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"That's very kind of you, my friend! Listen: I know there is a spell to transform my fishtail into legs. It is a temporary effect, so I could return to the ocean as soon as the spell ends. Unfortunately I don't know how to cast this spell. ...\",\n\t\t\t\t\"But there is a fairy who once told me about it. Perhaps she will share her knowledge. You can find her in a small fairy village in the southwest of Feyrist.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(ThreatenedDreams.Mission03[1], 1)\n\t\t\tplayer:setStorageValue(ThreatenedDreams.Mission03.UnlikelyCouple, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"no\") then\n\t\tnpcHandler:say(\"Then not.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\tend",
+          "slice_sha256": "9d53cc151f82990abffc470f9d5356973faa199d1c169fdd736ce634da9eea9c",
+          "byte_start": 1413,
+          "byte_end_exclusive": 4696
+        },
+        "path_to_write": "/fields/orelse/fields/orelse/fields/body/fields/body/0/fields/body/fields/body/1",
+        "is_orelse_path": true,
+        "test_witness": {
+          "provenance": {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/aurita.lua",
+            "sha256": "1aad68fa39c4a3c540548442487cfaf8197185e51d13e3d88bd5d0ec2dc99ad8",
+            "git_blob_sha1": "a353adfce3c7476f2fbf3c4e10ed4382dfcc7452",
+            "byte_count": 5140
+          },
+          "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/test",
+          "span": {
+            "column": 4,
+            "end_char_exclusive": 1447,
+            "end_token_column": 34,
+            "end_token_line": 59,
+            "line": 59,
+            "start_char": 1416
+          },
+          "raw_expression": "MsgContains(message, \"mission\")",
+          "slice_sha256": "ffa9ce3592d59d2fd02b230b0d4aa717b90dedb6f8b2d4a05e2d61d4c484ec34",
+          "byte_start": 1416,
+          "byte_end_exclusive": 1447
+        }
+      },
+      {
+        "kind": "ElseIf",
+        "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/orelse",
+        "source_witness": {
+          "provenance": {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/aurita.lua",
+            "sha256": "1aad68fa39c4a3c540548442487cfaf8197185e51d13e3d88bd5d0ec2dc99ad8",
+            "git_blob_sha1": "a353adfce3c7476f2fbf3c4e10ed4382dfcc7452",
+            "byte_count": 5140
+          },
+          "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/orelse",
+          "span": {
+            "column": 1,
+            "end_char_exclusive": 3856,
+            "end_token_column": 2,
+            "end_token_line": 98,
+            "line": 83,
+            "start_char": 2915
+          },
+          "raw_expression": "elseif MsgContains(message, \"starlight vial\") or MsgContains(message, \"empty starlight vial\") then\n\t\tif player:getStorageValue(ThreatenedDreams.Mission03[1]) == 4 then\n\t\t\tif player:getStorageValue(ThreatenedDreams.Mission03.EmptyStarlightVial) < 1 then\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"Thank you, friend! Please take the starlight vial. It is made of a very rare kind of enchanted glass and magical metals, so it is able to preserve starlight. ...\",\n\t\t\t\t\t\"A long time ago a pixie knight of Maelyrra carried it with her. But when she was flying above the waves she accidentally dropped it and it sunk. I found it but now you may take it and use it to help Feyrist.\",\n\t\t\t\t}, npc, creature)\n\t\t\t\tplayer:addItem(25731, 1)\n\t\t\t\tplayer:setStorageValue(ThreatenedDreams.Mission03.EmptyStarlightVial, 1)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\telse\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"I already gave you the empty starlight vial.\",\n\t\t\t\t}, npc, creature)\n\t\t\tend\n\t\tend",
+          "slice_sha256": "4998beb19b8892c2a35071a465741c0436ff012fa3fd047a5eaafcd9fe3233e8",
+          "byte_start": 2915,
+          "byte_end_exclusive": 3856
+        },
+        "path_to_write": "/fields/orelse/fields/body/fields/body/0/fields/body/fields/body/1",
+        "is_orelse_path": true,
+        "test_witness": {
+          "provenance": {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/aurita.lua",
+            "sha256": "1aad68fa39c4a3c540548442487cfaf8197185e51d13e3d88bd5d0ec2dc99ad8",
+            "git_blob_sha1": "a353adfce3c7476f2fbf3c4e10ed4382dfcc7452",
+            "byte_count": 5140
+          },
+          "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/orelse/fields/test",
+          "span": {
+            "column": 8,
+            "end_char_exclusive": 3008,
+            "end_token_column": 93,
+            "end_token_line": 83,
+            "line": 83,
+            "start_char": 2922
+          },
+          "raw_expression": "MsgContains(message, \"starlight vial\") or MsgContains(message, \"empty starlight vial\")",
+          "slice_sha256": "709ebe5f96993b7a6a9939dfa7eb447af90c6819b5fd9369527364ebe25aa5b9",
+          "byte_start": 2922,
+          "byte_end_exclusive": 3008
+        }
+      },
+      {
+        "kind": "ElseIf",
+        "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/orelse/fields/orelse",
+        "source_witness": {
+          "provenance": {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/aurita.lua",
+            "sha256": "1aad68fa39c4a3c540548442487cfaf8197185e51d13e3d88bd5d0ec2dc99ad8",
+            "git_blob_sha1": "a353adfce3c7476f2fbf3c4e10ed4382dfcc7452",
+            "byte_count": 5140
+          },
+          "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/orelse/fields/orelse",
+          "span": {
+            "column": 1,
+            "end_char_exclusive": 4571,
+            "end_token_column": 2,
+            "end_token_line": 108,
+            "line": 99,
+            "start_char": 3858
+          },
+          "raw_expression": "elseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"That's very kind of you, my friend! Listen: I know there is a spell to transform my fishtail into legs. It is a temporary effect, so I could return to the ocean as soon as the spell ends. Unfortunately I don't know how to cast this spell. ...\",\n\t\t\t\t\"But there is a fairy who once told me about it. Perhaps she will share her knowledge. You can find her in a small fairy village in the southwest of Feyrist.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(ThreatenedDreams.Mission03[1], 1)\n\t\t\tplayer:setStorageValue(ThreatenedDreams.Mission03.UnlikelyCouple, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend",
+          "slice_sha256": "47868613cb07b12778e669ba6c766df974f690159e724d99bd61ac680da961b6",
+          "byte_start": 3858,
+          "byte_end_exclusive": 4571
+        },
+        "path_to_write": "/fields/body/fields/body/0/fields/body/fields/body/1",
+        "is_orelse_path": false,
+        "test_witness": {
+          "provenance": {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/aurita.lua",
+            "sha256": "1aad68fa39c4a3c540548442487cfaf8197185e51d13e3d88bd5d0ec2dc99ad8",
+            "git_blob_sha1": "a353adfce3c7476f2fbf3c4e10ed4382dfcc7452",
+            "byte_count": 5140
+          },
+          "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/orelse/fields/orelse/fields/test",
+          "span": {
+            "column": 8,
+            "end_char_exclusive": 3892,
+            "end_token_column": 34,
+            "end_token_line": 99,
+            "line": 99,
+            "start_char": 3865
+          },
+          "raw_expression": "MsgContains(message, \"yes\")",
+          "slice_sha256": "d6111fa448b84abbb9b0d840e08568a0796296c564ebd57a778672f98a5f74f6",
+          "byte_start": 3865,
+          "byte_end_exclusive": 3892
+        }
+      },
+      {
+        "kind": "If",
+        "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/orelse/fields/orelse/fields/body/fields/body/0",
+        "source_witness": {
+          "provenance": {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/aurita.lua",
+            "sha256": "1aad68fa39c4a3c540548442487cfaf8197185e51d13e3d88bd5d0ec2dc99ad8",
+            "git_blob_sha1": "a353adfce3c7476f2fbf3c4e10ed4382dfcc7452",
+            "byte_count": 5140
+          },
+          "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/orelse/fields/orelse/fields/body/fields/body/0",
+          "span": {
+            "column": 2,
+            "end_char_exclusive": 4571,
+            "end_token_column": 2,
+            "end_token_line": 108,
+            "line": 100,
+            "start_char": 3900
+          },
+          "raw_expression": "if npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"That's very kind of you, my friend! Listen: I know there is a spell to transform my fishtail into legs. It is a temporary effect, so I could return to the ocean as soon as the spell ends. Unfortunately I don't know how to cast this spell. ...\",\n\t\t\t\t\"But there is a fairy who once told me about it. Perhaps she will share her knowledge. You can find her in a small fairy village in the southwest of Feyrist.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(ThreatenedDreams.Mission03[1], 1)\n\t\t\tplayer:setStorageValue(ThreatenedDreams.Mission03.UnlikelyCouple, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend",
+          "slice_sha256": "d3021257ff09b37d48df2aaef795f0523f2fe6a40fd39607ddc90cf3eabfbc65",
+          "byte_start": 3900,
+          "byte_end_exclusive": 4571
+        },
+        "path_to_write": "/fields/body/fields/body/1",
+        "is_orelse_path": false,
+        "test_witness": {
+          "provenance": {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/aurita.lua",
+            "sha256": "1aad68fa39c4a3c540548442487cfaf8197185e51d13e3d88bd5d0ec2dc99ad8",
+            "git_blob_sha1": "a353adfce3c7476f2fbf3c4e10ed4382dfcc7452",
+            "byte_count": 5140
+          },
+          "ast_pointer": "/fields/body/fields/body/21/fields/body/fields/body/3/fields/orelse/fields/orelse/fields/body/fields/body/0/fields/test",
+          "span": {
+            "column": 5,
+            "end_char_exclusive": 3937,
+            "end_token_column": 38,
+            "end_token_line": 100,
+            "line": 100,
+            "start_char": 3903
+          },
+          "raw_expression": "npcHandler:getTopic(playerId) == 1",
+          "slice_sha256": "034c2342fc0282a3896e993e0095b147f0d8d5b7e17b20eb6e860cc8ab5bffbd",
+          "byte_start": 3903,
+          "byte_end_exclusive": 3937
+        }
+      }
+    ],
+    "source_method_implementation_activation": "NOT_PROVEN"
+  },
+  "runtime_enabled": false,
+  "native_admission": false,
+  "canonical_gap_replaced": false
+}

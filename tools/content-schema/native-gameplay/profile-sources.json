@@ -1,0 +1,13 @@
+{
+  "classification": "OtsHypothesisOnly; local candidate projection",
+  "sources": [
+    {
+      "path": "tools/content-schema/monster-authoring/samples/canary-47dfd51f/rat/monster.json",
+      "sha256": "a30591eced945f260fc7ad53ea820e5131cd52333830aeaf570e0e536b4cd124"
+    },
+    {
+      "path": "tools/content-schema/monster-authoring/samples/canary-47dfd51f-batch-2/knight_familiar/monster.json",
+      "sha256": "103bc6aab3d806c8d35248297497f40c492350533c9597375b30aff15efaed6b"
+    }
+  ]
+}

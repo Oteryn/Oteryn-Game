@@ -1,0 +1,9 @@
+{
+  "mechanic": "0170-arena",
+  "kind": "keybindings",
+  "id": "0170-arena-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+SHIFT+Z",
+  "entry": "input.rs::open_key"
+}

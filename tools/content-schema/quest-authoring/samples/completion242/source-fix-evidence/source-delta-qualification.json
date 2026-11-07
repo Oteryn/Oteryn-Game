@@ -1,0 +1,527 @@
+{
+  "status": "PASS",
+  "mode": "AUTHORING_SNAPSHOT_PENDING_FINAL_FREEZE_READBACK",
+  "base_head": "0bc47074fb10eb03a38aaff75508937e99258ed2",
+  "graphs": 1221,
+  "changed_graphs": 24,
+  "existing_typed_children_preserved": 5354,
+  "children_before": {
+    "Presentation": 2681,
+    "Movement": 801,
+    "Item": 368,
+    "Achievement": 28,
+    "WorldObject": 874,
+    "Quest": 856,
+    "Ability": 211,
+    "Mount": 2,
+    "Outfit": 10,
+    "Experience": 9
+  },
+  "children_after": {
+    "Presentation": 2681,
+    "Movement": 801,
+    "Item": 368,
+    "Achievement": 28,
+    "WorldObject": 874,
+    "Ability": 222,
+    "Quest": 856,
+    "Mount": 2,
+    "Outfit": 10,
+    "Experience": 9
+  },
+  "joined_changes": [
+    {
+      "key": "canary:interaction/dreamers_challenge_quest/actions_lever_brotherhood",
+      "before": [
+        "canary:quest/dreamer_s_challenge_quest"
+      ],
+      "after": [
+        "canary:quest/brotherhood_outfits_quest",
+        "canary:quest/dreamer_s_challenge_quest"
+      ]
+    },
+    {
+      "key": "canary:interaction/dreamers_challenge_quest/actions_lever_nightmare",
+      "before": [
+        "canary:quest/dreamer_s_challenge_quest"
+      ],
+      "after": [
+        "canary:quest/brotherhood_outfits_quest",
+        "canary:quest/dreamer_s_challenge_quest"
+      ]
+    }
+  ],
+  "canonical_core_delta_quest_count": 10,
+  "canonical_core_allowed_fields": [
+    "reported_source_readiness",
+    "missing_data entries with code reported_source_gap",
+    "source_data.interactions exact accepted graphs/join"
+  ],
+  "source_pins_manifest_blob_bindings_unchanged": true,
+  "claims_questlog_gates_progress_reference_holds_unchanged": true,
+  "tracked_content_files_byte_identical": 7729,
+  "recipe_runtime_native_state_unchanged": true,
+  "source_readiness": "UNKNOWN",
+  "canonical_admission": "NOT_ASSESSED",
+  "owned_file_hashes": [
+    {
+      "path": "tools/content-schema/quest-authoring/lua_writers.py",
+      "sha256": "b1e6a164a3c2941b77eb3a0faabee5f5b7adeadf28e46091f7b7bb483105c4a2"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/ots_interactions.py",
+      "sha256": "3508160258fc2a02821999fe5182968177dda36b58f461bed4395a08e5d65551"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_tile_copy_proof.py",
+      "sha256": "c39e0d5a8b5d2f1ca0963d22f9ac8bef645ca1b2b6ae933d0a4918c084629776"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/catalogue/catalogue.json",
+      "sha256": "05c4804837d243fa551733173a2c8b139fe6a79f83cce871847bad5a8a42c537"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/gap-triage/triage.json",
+      "sha256": "86c49c393a3bfff338b3d31e842ec458324908056c9b5317bfb1967f9862527c"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/interactions/interactions.json",
+      "sha256": "b1464bb78a8a61552325c3352688442204ba60b2f2717deaea4947c04654ad12"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/interactions/manifest.json",
+      "sha256": "9b41fc84c8ae9877df0f078c991581b62ef6923f4db98a1c9677dc8694156ced"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
+      "sha256": "b0a290a5d236730e3a6c6cb7f788864493a5f2f8209159f6b42a10c7ece515ab"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/source_migration/bundle.json",
+      "sha256": "1991ea186f6b03041a1a570466118485e98fffb1977759c5ae8e75963cb2a0b8"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/source_texts/source_texts.json",
+      "sha256": "0113c4f300d773d24ab01141c7767122511446298f2c660cee092aab2cc3b732"
+    }
+  ],
+  "changes": [
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle1",
+      "before_sha256": "8bdfce51b797d32a08dbddc89ca84c4e7aee20b9c6b14b771749713500ea41c5",
+      "after_sha256": "cb4914a79eacd94dba5e5dbc637c662f72070e857a667e5b8530bf903be13c96",
+      "added_typed_children": [
+        "{\"anchor_source_line\":58,\"creature\":{\"family\":\"Creature\",\"key\":\"crystalserver:creature/tentacle\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"effect\":\"summon\",\"owner\":\"Ability\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 0
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle10",
+      "before_sha256": "b5f89289d1c584c7354d2ac9a242cd9e4f9a11d0cebb38b95724f8f405fd0cae",
+      "after_sha256": "0fe50660574d23c6bb95ead800cf91f7d9e8ca208a42ff5fd5c211c481e38482",
+      "added_typed_children": [
+        "{\"anchor_source_line\":58,\"creature\":{\"family\":\"Creature\",\"key\":\"crystalserver:creature/tentacle10\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"effect\":\"summon\",\"owner\":\"Ability\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 0
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle2",
+      "before_sha256": "81b60c6509fb37cdbe44acfc4d5752e8e695a01d18cdc505939f308297f77bcf",
+      "after_sha256": "9fcea62d8a13b433370273ebe925611634c922b18b5f955e385f67e7ce3cf01e",
+      "added_typed_children": [
+        "{\"anchor_source_line\":63,\"creature\":{\"family\":\"Creature\",\"key\":\"crystalserver:creature/tentacle2\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"effect\":\"summon\",\"owner\":\"Ability\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 0
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle3",
+      "before_sha256": "61d0a34d640c294f876934b90690382dcc03c7f335bee2006e5a59b64fb5ddba",
+      "after_sha256": "0215f6e19e38a262e9b7f6e997ffd135f493c26adec52ea51fdea963358e0dc5",
+      "added_typed_children": [
+        "{\"anchor_source_line\":58,\"creature\":{\"family\":\"Creature\",\"key\":\"crystalserver:creature/tentacle3\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"effect\":\"summon\",\"owner\":\"Ability\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 0
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle4",
+      "before_sha256": "3feec7d975f235e8b51e9a467b689701b008ade19caa5313d246d99c5280c470",
+      "after_sha256": "1369140e295d02525287a3c5e5af721077ae164d944584434a80d610cca1a347",
+      "added_typed_children": [
+        "{\"anchor_source_line\":58,\"creature\":{\"family\":\"Creature\",\"key\":\"crystalserver:creature/tentacle4\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"effect\":\"summon\",\"owner\":\"Ability\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 0
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle5",
+      "before_sha256": "b543ce0cc582929037325e7be4bb43c10024ab067495f760185e65381faa50f1",
+      "after_sha256": "a9e409d8c5277137a6d1ae3f8ab53a85a4bab3904d758749c0618996f27a3b1f",
+      "added_typed_children": [
+        "{\"anchor_source_line\":65,\"creature\":{\"family\":\"Creature\",\"key\":\"crystalserver:creature/tentacle5\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"effect\":\"summon\",\"owner\":\"Ability\"}",
+        "{\"anchor\":\"p1\",\"def\":{\"family\":\"Item\",\"key\":\"crystalserver:item/35107\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 1
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle6",
+      "before_sha256": "d45e378c29ece2ae598295df743225afcb1cd689afc1f890804e776e87426901",
+      "after_sha256": "4518f130a9c7f6593e8abea4c0860fd37d9b96a000d3f7694cdf9482a24a9256",
+      "added_typed_children": [
+        "{\"anchor_source_line\":65,\"creature\":{\"family\":\"Creature\",\"key\":\"crystalserver:creature/tentacle6\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"effect\":\"summon\",\"owner\":\"Ability\"}",
+        "{\"anchor\":\"p1\",\"def\":{\"family\":\"Item\",\"key\":\"crystalserver:item/35107\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 1
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle7",
+      "before_sha256": "8520c9b5cd517c1f34022ea2ec8dc1091d2294295210c845b18ddfa2887d1bd0",
+      "after_sha256": "bf5256ac38a333d6457e28b786e3f60e8af5829847d3d5bd9e175c6bcf510ba3",
+      "added_typed_children": [
+        "{\"anchor_source_line\":65,\"creature\":{\"family\":\"Creature\",\"key\":\"crystalserver:creature/tentacle7\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"effect\":\"summon\",\"owner\":\"Ability\"}",
+        "{\"anchor\":\"p1\",\"def\":{\"family\":\"Item\",\"key\":\"crystalserver:item/35107\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 1
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle8",
+      "before_sha256": "ccb5cc1111351a8be9e47ba85fbca905529fc8c775a6cbb64a3220ece1dba032",
+      "after_sha256": "2619d7e3a485f6f6fc4ff69073982d2d8c645e852cdfdd6dfed15582f06fe38c",
+      "added_typed_children": [
+        "{\"anchor_source_line\":58,\"creature\":{\"family\":\"Creature\",\"key\":\"crystalserver:creature/tentacle8\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"effect\":\"summon\",\"owner\":\"Ability\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 0
+    },
+    {
+      "key": "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle9",
+      "before_sha256": "2e67cc51407640c3be70a901f996e36fdf2109c3b010bb2649a7a79a684cd1bf",
+      "after_sha256": "6ef50e7510434f445ae95b2e0a196935b9395dda31a730f6271f4fed95f3f747",
+      "added_typed_children": [
+        "{\"anchor_source_line\":65,\"creature\":{\"family\":\"Creature\",\"key\":\"crystalserver:creature/tentacle9\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"effect\":\"summon\",\"owner\":\"Ability\"}",
+        "{\"anchor\":\"p1\",\"def\":{\"family\":\"Item\",\"key\":\"crystalserver:item/35122\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 1
+    },
+    {
+      "key": "canary:interaction/bigfoot_burden/creaturescripts_versperoth_kill",
+      "before_sha256": "5270a37425b5340bf2335fd3649ea4c85325affd7db89724ee0cec8e32e789dc",
+      "after_sha256": "b5f3de48f477c58d85fd3ba0c02ae1cea2e894a2264af389104c744a0b67f4b7",
+      "added_typed_children": [
+        "{\"anchor\":\"p1\",\"def\":{\"family\":\"Item\",\"key\":\"canary:item/1949\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 1
+    },
+    {
+      "key": "canary:interaction/demon_helmet/action_lever",
+      "before_sha256": "4dd8826e1fd6b1ed61a65980f0a0559cf36a47e0c7333204871fa3ff06a8ad9a",
+      "after_sha256": "522d6695dfb31ba8dbf24d45e92aab6abd9425165db63b04f1249d84ea908a62",
+      "added_typed_children": [
+        "{\"anchor\":\"p1\",\"def\":{\"family\":\"Item\",\"key\":\"canary:item/1949\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}",
+        "{\"anchor\":\"p2\",\"def\":{\"family\":\"Item\",\"key\":\"canary:item/1842\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 2
+    },
+    {
+      "key": "canary:interaction/devil_helmet/movements_sewer_sewer",
+      "before_sha256": "7f3fba86f0196cb3d21248535422b85be9eb013ac8c0aa684987563e73afb1d1",
+      "after_sha256": "cfdba15e0aee2ec29f1003b64233357be1b3bac2a9b7a066060b61aa7d4f4166",
+      "added_typed_children": [
+        "{\"anchor\":\"p1\",\"def\":{\"family\":\"Item\",\"key\":\"canary:item/435\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 1
+    },
+    {
+      "key": "canary:interaction/dreamers_challenge_quest/actions_lever_brotherhood",
+      "before_sha256": "07d5a1e1faf4ed08b9a42bc06684242a6518de3ec820fae26aa130e0601abb69",
+      "after_sha256": "1390d13fadac313512c62847bd9e358d4cbaa25edc86ff2e667ca43d0b128494",
+      "added_typed_children": [
+        "{\"anchor\":\"p1\",\"def\":{\"family\":\"Item\",\"key\":\"canary:item/7844\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}",
+        "{\"anchor\":\"p2\",\"def\":{\"family\":\"Item\",\"key\":\"canary:item/7846\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}",
+        "{\"anchor\":\"p3\",\"def\":{\"family\":\"Item\",\"key\":\"canary:item/7845\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}"
+      ],
+      "added_conditions": [
+        "{\"negate\":false,\"object\":{\"field\":\"unique_id\",\"op\":\"==\",\"role\":\"source\",\"value\":3045}}",
+        "{\"negate\":false,\"quest_stage\":{\"op\":\">=\",\"progress\":\"canary:quest-progress/quest/u7_9/brotherhood_outfits/outfits\",\"value\":2}}",
+        "{\"negate\":false,\"object\":{\"field\":\"unique_id\",\"op\":\"==\",\"role\":\"source\",\"value\":3046}}",
+        "{\"negate\":false,\"quest_stage\":{\"op\":\">=\",\"progress\":\"canary:quest-progress/quest/u7_9/brotherhood_outfits/outfits\",\"value\":3}}",
+        "{\"negate\":false,\"object\":{\"field\":\"unique_id\",\"op\":\"==\",\"role\":\"source\",\"value\":3047}}",
+        "{\"negate\":false,\"quest_stage\":{\"op\":\">=\",\"progress\":\"canary:quest-progress/quest/u7_9/brotherhood_outfits/outfits\",\"value\":4}}"
+      ],
+      "new_anchor_count": 3
+    },
+    {
+      "key": "canary:interaction/dreamers_challenge_quest/actions_lever_nightmare",
+      "before_sha256": "b5566f352a0e03d8d45fb5d5181cbee86c09719e4335f646dede2aa16a19ee2a",
+      "after_sha256": "069b679ca59ff847298683bbda42b403cf57708785b89e16ad2122c3611fe020",
+      "added_typed_children": [
+        "{\"anchor\":\"p1\",\"def\":{\"family\":\"Item\",\"key\":\"canary:item/7844\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}",
+        "{\"anchor\":\"p2\",\"def\":{\"family\":\"Item\",\"key\":\"canary:item/7846\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}",
+        "{\"anchor\":\"p3\",\"def\":{\"family\":\"Item\",\"key\":\"canary:item/7845\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}"
+      ],
+      "added_conditions": [
+        "{\"negate\":false,\"object\":{\"field\":\"unique_id\",\"op\":\"==\",\"role\":\"source\",\"value\":3041}}",
+        "{\"negate\":false,\"quest_stage\":{\"op\":\">=\",\"progress\":\"canary:quest-progress/quest/u7_9/brotherhood_outfits/outfits\",\"value\":2}}",
+        "{\"negate\":false,\"object\":{\"field\":\"unique_id\",\"op\":\"==\",\"role\":\"source\",\"value\":3042}}",
+        "{\"negate\":false,\"quest_stage\":{\"op\":\">=\",\"progress\":\"canary:quest-progress/quest/u7_9/brotherhood_outfits/outfits\",\"value\":3}}",
+        "{\"negate\":false,\"object\":{\"field\":\"unique_id\",\"op\":\"==\",\"role\":\"source\",\"value\":3043}}",
+        "{\"negate\":false,\"quest_stage\":{\"op\":\">=\",\"progress\":\"canary:quest-progress/quest/u7_9/brotherhood_outfits/outfits\",\"value\":4}}"
+      ],
+      "new_anchor_count": 3
+    },
+    {
+      "key": "canary:interaction/dreamers_challenge_quest/actions_stone_teleport",
+      "before_sha256": "c686efeba8b47a6a7651a030e1d1a2ca1ecde22253055011921a228a7a85ea18",
+      "after_sha256": "fff09b9f230a63a5da95a47f5a9e9adada53c7b5e17ef0b37069f62b44fb343e",
+      "added_typed_children": [
+        "{\"anchor\":\"p1\",\"def\":{\"family\":\"Item\",\"key\":\"canary:item/1949\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 1
+    },
+    {
+      "key": "canary:interaction/forgotten_knowledge/creaturescripts_melting_death",
+      "before_sha256": "8ff9fd636f0fbc16b49c0af8a8b7b3f2f5d94a5bd1bc03e7e94171defcc0abda",
+      "after_sha256": "0c7f21eb9249c5bc9bbbc5ce43cce4ec92dcb6ec0f1199a307d417c4b6c5674b",
+      "added_typed_children": [
+        "{\"anchor\":\"p1\",\"creature\":{\"family\":\"Creature\",\"key\":\"canary:creature/baby_dragon\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"effect\":\"summon\",\"owner\":\"Ability\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 1
+    },
+    {
+      "key": "crystalserver:interaction/kilmaresh/movements_firetp",
+      "before_sha256": "0a7bbaec107f128016ae5cc2ae54ff41986649f3a49f54ef6616b79cc28b1a22",
+      "after_sha256": "470da138ea03c503e6581a84508ebb634ffb23f2fc975435e195a5fa9043fc8f",
+      "added_typed_children": [],
+      "added_conditions": [
+        "{\"negate\":false,\"object\":{\"field\":\"action_id\",\"op\":\"==\",\"role\":\"source\",\"value\":57539}}",
+        "{\"negate\":false,\"object\":{\"field\":\"action_id\",\"op\":\"==\",\"role\":\"source\",\"value\":57540}}",
+        "{\"negate\":false,\"object\":{\"field\":\"action_id\",\"op\":\"==\",\"role\":\"source\",\"value\":57541}}",
+        "{\"negate\":false,\"object\":{\"field\":\"action_id\",\"op\":\"==\",\"role\":\"source\",\"value\":57542}}"
+      ],
+      "new_anchor_count": 0
+    },
+    {
+      "key": "canary:interaction/kilmaresh_quest/movements_firetp",
+      "before_sha256": "d8957b06f7f7ca36a936d043bca7c7e685cddf324df78de8bccf9f2d9b43a142",
+      "after_sha256": "bccd2e089e9e27de91f75ad68eb398f73c0637ee1f0198951dae43ce5e5365db",
+      "added_typed_children": [],
+      "added_conditions": [
+        "{\"negate\":false,\"object\":{\"field\":\"action_id\",\"op\":\"==\",\"role\":\"source\",\"value\":57539}}",
+        "{\"negate\":false,\"object\":{\"field\":\"action_id\",\"op\":\"==\",\"role\":\"source\",\"value\":57540}}",
+        "{\"negate\":false,\"object\":{\"field\":\"action_id\",\"op\":\"==\",\"role\":\"source\",\"value\":57541}}",
+        "{\"negate\":false,\"object\":{\"field\":\"action_id\",\"op\":\"==\",\"role\":\"source\",\"value\":57542}}"
+      ],
+      "new_anchor_count": 0
+    },
+    {
+      "key": "crystalserver:interaction/targuna/creaturescripts_herald_of_fire",
+      "before_sha256": "e06c10db28ca09eee1160a47f0e35144d4de0550242c219efefe3297d610d278",
+      "after_sha256": "c76ddb3ab43adf85a2023d79cb6ee89275eefa1c9d159070ad697a1a9a5dbdc7",
+      "added_typed_children": [
+        "{\"anchor\":\"p1\",\"def\":{\"family\":\"Item\",\"key\":\"crystalserver:item/25051\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 1
+    },
+    {
+      "key": "canary:interaction/the_pits_of_inferno_quest/movements_drawbridge_drawbridge_2",
+      "before_sha256": "07133b7e49705f4b4c81a10029d94a2a726bd97221e12f7528ae30b68f042aa0",
+      "after_sha256": "cc0fe019164e1e4fd0518098eb3c8d820e1624ad77a930f073c3769766d682d2",
+      "added_typed_children": [
+        "{\"anchor\":\"p1\",\"operation\":\"CREATE\",\"owner\":\"WorldObject\",\"repeated\":true,\"value_source_line\":47}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 1
+    },
+    {
+      "key": "canary:interaction/the_pits_of_inferno_quest/movements_ladder_ladder",
+      "before_sha256": "b2aa0c6181ee7848c5c833e01991cbc1979875433df8c6f6349f890ebb67e1d6",
+      "after_sha256": "602a1003917767e6e3d1e075938730ebd718f9a2ac8e0270a946650e3668c41a",
+      "added_typed_children": [
+        "{\"anchor\":\"p1\",\"def\":{\"family\":\"Item\",\"key\":\"canary:item/5542\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 1
+    },
+    {
+      "key": "canary:interaction/the_pits_of_inferno_quest/movements_second_trap",
+      "before_sha256": "b22e5a60ad3787954409ad79d03220dcb98a5c2583ab5470bf1495cf81c211be",
+      "after_sha256": "f03a773a8a7d6e933bbbfa3e63f96f716e46e9373e43b9b74d01660a016c3c14",
+      "added_typed_children": [
+        "{\"anchor\":\"p2\",\"def\":{\"family\":\"Item\",\"key\":\"canary:item/1772\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 1
+    },
+    {
+      "key": "canary:interaction/the_pits_of_inferno_quest/movements_stone",
+      "before_sha256": "2baeb327c40cab8f91e71fedd3ede2d3b963c45b8fdc1f143fc704c6a1f17b9e",
+      "after_sha256": "27b26ea2ba882612ae4e531b46766b646fbbaa6fe65d0d401d5ac5fcfcf683da",
+      "added_typed_children": [
+        "{\"anchor\":\"p1\",\"def\":{\"family\":\"Item\",\"key\":\"canary:item/1791\",\"revision\":\"canary-04b83b51+crystalserver-9f5a72c6\"},\"operation\":\"CREATE\",\"owner\":\"WorldObject\"}"
+      ],
+      "added_conditions": [],
+      "new_anchor_count": 1
+    }
+  ],
+  "tests_rerun": false,
+  "limitations": [
+    "Independent exact existing typed child, known condition, anchor and production-join delta checks; parser negative tests qualified separately by ots_comparison.",
+    "This receipt binds listed authoring snapshot bytes and requires exact readback after freeze; no final frozen head exists yet."
+  ],
+  "brotherhood_join_pinned_witnesses": [
+    {
+      "interaction_key": "canary:interaction/dreamers_challenge_quest/actions_lever_brotherhood",
+      "source": "canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/actions_lever_brotherhood.lua",
+      "blob_sha1": "647373fac09840d6943e29ae707d0404de892c1e",
+      "body_sha256": "67b14fa0e4ab8694a9bf3cb9bc24e0ad2c677b3bfb4579dcdd7960bdfd677670",
+      "owner_witnesses": [
+        {
+          "line": 2,
+          "sha256": "7d4759626c1171a093813b4244345e0500cc85a395f97605d3acd75f32ed4891"
+        },
+        {
+          "line": 3,
+          "sha256": "30041802ff7a3f96b6f86f9d54ebb919bfdd9c225b31bf87500a5fb85c1b3c13"
+        },
+        {
+          "line": 4,
+          "sha256": "05d5f036bd0bede489a34cb4622120f936f5c47853bf8650fc16ce1806d6df56"
+        },
+        {
+          "line": 21,
+          "sha256": "4208ae9d462b7ab78431a25c97ee30ccff1b34e7911385fbbf024edda9d87937"
+        },
+        {
+          "line": 38,
+          "sha256": "6d14ee3b6b0569c1e5d09fbad23fcbeb1d421b2bf65b5a1e7d72a18d153c1a2f"
+        },
+        {
+          "line": 56,
+          "sha256": "5a299b1abe679ed2d8c149570c306836155ce9fbcee16f98d8d01f4fbb2f06fc"
+        }
+      ],
+      "interpretation": "Both callback names actually read BrotherhoodOutfits.Outfits tiers2/3/4; directory Dreamers owner retained; extra Brotherhood dependency is explicit source track join."
+    },
+    {
+      "interaction_key": "canary:interaction/dreamers_challenge_quest/actions_lever_brotherhood",
+      "source": "crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/scripts/quests/dreamers_challenge_quest/actions_lever_brotherhood.lua",
+      "blob_sha1": "647373fac09840d6943e29ae707d0404de892c1e",
+      "body_sha256": "67b14fa0e4ab8694a9bf3cb9bc24e0ad2c677b3bfb4579dcdd7960bdfd677670",
+      "owner_witnesses": [
+        {
+          "line": 2,
+          "sha256": "7d4759626c1171a093813b4244345e0500cc85a395f97605d3acd75f32ed4891"
+        },
+        {
+          "line": 3,
+          "sha256": "30041802ff7a3f96b6f86f9d54ebb919bfdd9c225b31bf87500a5fb85c1b3c13"
+        },
+        {
+          "line": 4,
+          "sha256": "05d5f036bd0bede489a34cb4622120f936f5c47853bf8650fc16ce1806d6df56"
+        },
+        {
+          "line": 21,
+          "sha256": "4208ae9d462b7ab78431a25c97ee30ccff1b34e7911385fbbf024edda9d87937"
+        },
+        {
+          "line": 38,
+          "sha256": "6d14ee3b6b0569c1e5d09fbad23fcbeb1d421b2bf65b5a1e7d72a18d153c1a2f"
+        },
+        {
+          "line": 56,
+          "sha256": "5a299b1abe679ed2d8c149570c306836155ce9fbcee16f98d8d01f4fbb2f06fc"
+        }
+      ],
+      "interpretation": "Both callback names actually read BrotherhoodOutfits.Outfits tiers2/3/4; directory Dreamers owner retained; extra Brotherhood dependency is explicit source track join."
+    },
+    {
+      "interaction_key": "canary:interaction/dreamers_challenge_quest/actions_lever_nightmare",
+      "source": "canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/scripts/quests/dreamers_challenge_quest/actions_lever_nightmare.lua",
+      "blob_sha1": "bf820c21dad1b6c16853875fc7d86f6e0b65963d",
+      "body_sha256": "f6f7f25473bcc5975448eed3e507c0fe6be08516371ef586c281ade0aec25c36",
+      "owner_witnesses": [
+        {
+          "line": 2,
+          "sha256": "869f920be3a639190594f15e65086093c241e53e05daebff93cbe911ea6e7503"
+        },
+        {
+          "line": 3,
+          "sha256": "a2dc1336419268a0dd104b695236fe8c3e51edda1dc26c6ce723bf3242c8846b"
+        },
+        {
+          "line": 4,
+          "sha256": "869d97cb938c25a4d58784ecaf42ed1a44ef74fae16fe6845710436339b1cf45"
+        },
+        {
+          "line": 21,
+          "sha256": "4208ae9d462b7ab78431a25c97ee30ccff1b34e7911385fbbf024edda9d87937"
+        },
+        {
+          "line": 38,
+          "sha256": "6d14ee3b6b0569c1e5d09fbad23fcbeb1d421b2bf65b5a1e7d72a18d153c1a2f"
+        },
+        {
+          "line": 56,
+          "sha256": "5a299b1abe679ed2d8c149570c306836155ce9fbcee16f98d8d01f4fbb2f06fc"
+        }
+      ],
+      "interpretation": "Both callback names actually read BrotherhoodOutfits.Outfits tiers2/3/4; directory Dreamers owner retained; extra Brotherhood dependency is explicit source track join."
+    },
+    {
+      "interaction_key": "canary:interaction/dreamers_challenge_quest/actions_lever_nightmare",
+      "source": "crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/scripts/quests/dreamers_challenge_quest/actions_lever_nightmare.lua",
+      "blob_sha1": "bf820c21dad1b6c16853875fc7d86f6e0b65963d",
+      "body_sha256": "f6f7f25473bcc5975448eed3e507c0fe6be08516371ef586c281ade0aec25c36",
+      "owner_witnesses": [
+        {
+          "line": 2,
+          "sha256": "869f920be3a639190594f15e65086093c241e53e05daebff93cbe911ea6e7503"
+        },
+        {
+          "line": 3,
+          "sha256": "a2dc1336419268a0dd104b695236fe8c3e51edda1dc26c6ce723bf3242c8846b"
+        },
+        {
+          "line": 4,
+          "sha256": "869d97cb938c25a4d58784ecaf42ed1a44ef74fae16fe6845710436339b1cf45"
+        },
+        {
+          "line": 21,
+          "sha256": "4208ae9d462b7ab78431a25c97ee30ccff1b34e7911385fbbf024edda9d87937"
+        },
+        {
+          "line": 38,
+          "sha256": "6d14ee3b6b0569c1e5d09fbad23fcbeb1d421b2bf65b5a1e7d72a18d153c1a2f"
+        },
+        {
+          "line": 56,
+          "sha256": "5a299b1abe679ed2d8c149570c306836155ce9fbcee16f98d8d01f4fbb2f06fc"
+        }
+      ],
+      "interpretation": "Both callback names actually read BrotherhoodOutfits.Outfits tiers2/3/4; directory Dreamers owner retained; extra Brotherhood dependency is explicit source track join."
+    }
+  ],
+  "ten_core_delta_file_sha256": "58c97caf78b7e6ecdac5292d71d956fc123e6c45df5e20c531160474255d3dd3"
+}

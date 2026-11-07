@@ -1,0 +1,46 @@
+{
+  "spell": {
+    "base_power": 55,
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 30
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Shield Bash",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_brutal_strike"
+    },
+    "reference_spell_id": 315,
+    "requirements": {
+      "learning_required": false,
+      "level": 18,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "needs_target": true,
+      "range_tiles": 1
+    },
+    "words": "exori ico scu"
+  }
+}

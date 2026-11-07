@@ -1,0 +1,22 @@
+{
+  "id": "DUR03-RL-07-ITEM-USE-ENVELOPE-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md",
+  "resource": "One encoded normative ANL-01 EventEnvelope carrying event type 2 operation item_use, including payload",
+  "unit": "bytes",
+  "hard_maximum": 5754,
+  "configurable_range": {
+    "minimum": 5754,
+    "maximum": 5754
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check the encoded or borrowed envelope length before retaining, decoding, batching or publishing; stays within the one-item envelope of 9,216 B.",
+  "client_visible": false,
+  "boundary_tests": [
+    "the measured worst-case envelope (128-byte build id) is exactly 5,754 B and accepted",
+    "9,217 bytes (above the one-item envelope ceiling) rejected before decode"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/item_use_audit.rs ItemUseUsage::check and the payload gate"
+  ],
+  "notes": "ITEM-USE-0 \u00a74.4 (DUR-03 \u00a739.3 item-use amendment); item-use shapes only, the one-item DUR03-RL-01..08 rows are unchanged. Registered by OTV2-20261013-item-use-1a-contract."
+}

@@ -1,0 +1,22 @@
+{
+  "id": "PROF1B-RL-03",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+  "resource": "New perk modification occurrences per character",
+  "unit": "occurrences per second",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 2,
+    "maximum": 2
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A per-character window of at most 2 reservation instants, charged only for an unseen occurrence after the replay lookup.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=2: two reservations in one second are charged",
+    "max+1=3: a third reservation in the same second is RATE_LIMITED; one a second later is charged"
+  ],
+  "consumers": [
+    "apps/game-server/src/domain/weapon_proficiency.rs ProficiencyModificationRateCap"
+  ],
+  "notes": "PROFICIENCY-1B \u00a75 and \u00a712; test: weapon_proficiency::modification_tests::limits_hold_at_max_and_refuse_max_plus_one. Registered by OTV2-20261003-prof-shape-1."
+}

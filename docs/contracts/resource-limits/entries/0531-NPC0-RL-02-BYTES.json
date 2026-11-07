@@ -1,0 +1,22 @@
+{
+  "id": "NPC0-RL-02-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+  "resource": "One encoded NpcConversationV1 (domain 7 snapshot and delta)",
+  "unit": "bytes",
+  "hard_maximum": 65665,
+  "configurable_range": {
+    "minimum": 65665,
+    "maximum": 65665
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The NPC 31, the state 2 and 32 line elements of 2,051 bytes: 65,665, within the FND-02 snapshot chunk bound of 524,288.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=65665: a payload of 32 lines of 2,048 bytes encodes within the bound and decodes",
+    "max+1: a 33rd line or one more line byte is refused"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/npc_service.rs MAX_NPC_CONVERSATION_BYTES"
+  ],
+  "notes": "NPC-0 \u00a74. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+}

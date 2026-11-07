@@ -1,0 +1,21 @@
+{
+  "schema": "OTERYN_PARTY_SHARED_EXPERIENCE/v1",
+  "scope": "CHANNEL_LOCAL",
+  "leader_present": true,
+  "leader_pz_blocked": false,
+  "distance_chebyshev_tiles": 30,
+  "any_floor": true,
+  "lowest_level_multiplier": 3,
+  "highest_level_multiplier": 2,
+  "activity_window_ms": 120000,
+  "activity": ["HEAL_MEMBER", "ATTACK_AGGRESSIVE_MONSTER"],
+  "split_rounding": "CEILING",
+  "bonus_minimum_base_xp": 20,
+  "bonus_percent_by_distinct_vocations": [20, 30, 60, 100],
+  "provenance": {
+    "distance_level_and_split": "OFFICIAL_MANUAL",
+    "activity_window_and_pz_interpretation": "OTERYN_DECISION:PARITY_PENDING"
+  },
+  "runtime_consumer": null,
+  "source": "docs/architecture/reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md#51-shared-experience"
+}

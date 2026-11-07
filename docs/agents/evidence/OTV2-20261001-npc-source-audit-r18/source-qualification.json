@@ -1,0 +1,4990 @@
+{
+  "authoring_only": true,
+  "boundary": "Nine definitions only. Whole donor dialogue, callbacks, services, quest effects, placement, and runtime admission excluded. Mount omission remains unknown; no attachment assertion inferred.",
+  "candidate_overlay": [
+    {
+      "arbitration": [
+        {
+          "chosen": "br",
+          "fact": "identity",
+          "pages": {
+            "br": {
+              "pageid": 62168,
+              "revid": 428493
+            },
+            "tibiopedia": {
+              "sha256": "2e5e82934533c19c997bcb3a1bd32608120d8889793b0b394f47698f3ed5fd25",
+              "url": "https://tibiopedia.pl/npcs/Coco"
+            }
+          },
+          "rule": "FAN_WIKI_CONFIRMED",
+          "wikis": [
+            "br",
+            "tibiopedia"
+          ]
+        }
+      ],
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.coco",
+        "revision": "definition-r1"
+      },
+      "left_out": [],
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 2000,
+        "walk_radius": 2
+      },
+      "name": "Coco",
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 0,
+          "body": 19,
+          "feet": 68,
+          "head": 86,
+          "legs": 110,
+          "look_type": 1747,
+          "mount": null
+        },
+        "speech_bubble": null
+      },
+      "profession": null,
+      "provenance": {
+        "dakbugs": {
+          "key": "dakbugs:npc/data-otservbr-global/npc/coco.lua",
+          "sha256": "6cb58c1e3d7934133eb36b52b40e30bee4518e2ffc0eab7b806798d4ff02bfa8"
+        }
+      },
+      "source_unconfirmed": [
+        "dialogue",
+        "services",
+        "placements",
+        "quests",
+        "runtime"
+      ],
+      "trade_service": null,
+      "travel_service": null,
+      "wiki": null
+    },
+    {
+      "arbitration": [
+        {
+          "chosen": "br",
+          "fact": "identity",
+          "pages": {
+            "br": {
+              "pageid": 62158,
+              "revid": 419325
+            },
+            "tibiopedia": {
+              "sha256": "49e5e55e27173a31553c06d90e8232d02d8cd42ca5c3ff8329021ea91e48cf44",
+              "url": "https://tibiopedia.pl/npcs/Gunther"
+            }
+          },
+          "rule": "FAN_WIKI_CONFIRMED",
+          "wikis": [
+            "br",
+            "tibiopedia"
+          ]
+        }
+      ],
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.gunther",
+        "revision": "definition-r1"
+      },
+      "left_out": [],
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 2000,
+        "walk_radius": 2
+      },
+      "name": "Gunther",
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 0,
+          "body": 79,
+          "feet": 49,
+          "head": 40,
+          "legs": 104,
+          "look_type": 128,
+          "mount": null
+        },
+        "speech_bubble": null
+      },
+      "profession": null,
+      "provenance": {
+        "dakbugs": {
+          "key": "dakbugs:npc/data-otservbr-global/npc/gunther.lua",
+          "sha256": "3d94fa8dcc167088392cf4aebf3b008fc83f5678e55096c0eb84ecd2c3846303"
+        }
+      },
+      "source_unconfirmed": [
+        "dialogue",
+        "services",
+        "placements",
+        "quests",
+        "runtime"
+      ],
+      "trade_service": null,
+      "travel_service": null,
+      "wiki": null
+    },
+    {
+      "arbitration": [
+        {
+          "chosen": "br",
+          "fact": "identity",
+          "pages": {
+            "br": {
+              "pageid": 59877,
+              "revid": 401291
+            },
+            "tibiopedia": {
+              "sha256": "2a2cf0250318bb36632266ba9546b81a8aa33b6aa2fac8c1cf6c05e9fb468061",
+              "url": "https://tibiopedia.pl/npcs/Kiru"
+            }
+          },
+          "rule": "FAN_WIKI_CONFIRMED",
+          "wikis": [
+            "br",
+            "tibiopedia"
+          ]
+        }
+      ],
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.kiru",
+        "revision": "definition-r1"
+      },
+      "left_out": [],
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 2000,
+        "walk_radius": 2
+      },
+      "name": "Kiru",
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 0,
+          "body": 43,
+          "feet": 124,
+          "head": 115,
+          "legs": 20,
+          "look_type": 1647,
+          "mount": 0
+        },
+        "speech_bubble": null
+      },
+      "profession": null,
+      "provenance": {
+        "happen": {
+          "key": "happen:npc/data/npc/kiru.lua",
+          "sha256": "96e744f6bf5732117c282f0c02ab68db5e2abaed305365f4f3343fbb5bb60e95"
+        }
+      },
+      "source_unconfirmed": [
+        "dialogue",
+        "services",
+        "placements",
+        "quests",
+        "runtime"
+      ],
+      "trade_service": null,
+      "travel_service": null,
+      "wiki": null
+    },
+    {
+      "arbitration": [
+        {
+          "chosen": "br",
+          "fact": "identity",
+          "pages": {
+            "br": {
+              "pageid": 50712,
+              "revid": 367577
+            },
+            "tibiopedia": {
+              "sha256": "515aa0dd4cd610bf7b141abd9967816d44202ee7424e0ad6e29326129dbb3cd5",
+              "url": "https://tibiopedia.pl/npcs/Ra'Clette"
+            }
+          },
+          "rule": "FAN_WIKI_CONFIRMED",
+          "wikis": [
+            "br",
+            "tibiopedia"
+          ]
+        }
+      ],
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.ra_clette",
+        "revision": "definition-r1"
+      },
+      "left_out": [],
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 2000,
+        "walk_radius": 2
+      },
+      "name": "Ra'Clette",
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 0,
+          "body": 113,
+          "feet": 0,
+          "head": 0,
+          "legs": 19,
+          "look_type": 533,
+          "mount": 0
+        },
+        "speech_bubble": null
+      },
+      "profession": null,
+      "provenance": {
+        "dakbugs": {
+          "key": "dakbugs:npc/data-otservbr-global/npc/Ra'Clette.lua",
+          "sha256": "c0371b93a4c69c6e41c6e8fbceca17c4448c28c8c20a68d49df586e7e68d4658"
+        }
+      },
+      "source_unconfirmed": [
+        "dialogue",
+        "services",
+        "placements",
+        "quests",
+        "runtime"
+      ],
+      "trade_service": null,
+      "travel_service": null,
+      "wiki": null
+    },
+    {
+      "arbitration": [
+        {
+          "chosen": "br",
+          "fact": "identity",
+          "pages": {
+            "br": {
+              "pageid": 50710,
+              "revid": 357215
+            },
+            "tibiopedia": {
+              "sha256": "d2d4c69cec85f424a3f7299c7691c88e124386150b17231086662d9d291d34f5",
+              "url": "https://tibiopedia.pl/npcs/Sniff"
+            }
+          },
+          "rule": "FAN_WIKI_CONFIRMED",
+          "wikis": [
+            "br",
+            "tibiopedia"
+          ]
+        }
+      ],
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.sniff",
+        "revision": "definition-r1"
+      },
+      "left_out": [],
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 2000,
+        "walk_radius": 2
+      },
+      "name": "Sniff",
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 1,
+          "body": 19,
+          "feet": 96,
+          "head": 38,
+          "legs": 78,
+          "look_type": 1346,
+          "mount": 0
+        },
+        "speech_bubble": null
+      },
+      "profession": null,
+      "provenance": {
+        "dakbugs": {
+          "key": "dakbugs:npc/data-otservbr-global/npc/sniff.lua",
+          "sha256": "039035e972a75d111dd2b8114236eb6121e76569e62cc837b08afb9b302f61be"
+        }
+      },
+      "source_unconfirmed": [
+        "dialogue",
+        "services",
+        "placements",
+        "quests",
+        "runtime"
+      ],
+      "trade_service": null,
+      "travel_service": null,
+      "wiki": null
+    },
+    {
+      "arbitration": [
+        {
+          "chosen": "br",
+          "fact": "identity",
+          "pages": {
+            "br": {
+              "pageid": 59878,
+              "revid": 408357
+            },
+            "tibiopedia": {
+              "sha256": "34a513cca6aed2a394a88692051cc91d9df97f1a2e0393a2df313c96e29893c4",
+              "url": "https://tibiopedia.pl/npcs/Tamru"
+            }
+          },
+          "rule": "FAN_WIKI_CONFIRMED",
+          "wikis": [
+            "br",
+            "tibiopedia"
+          ]
+        }
+      ],
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.tamru",
+        "revision": "definition-r1"
+      },
+      "left_out": [],
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 2000,
+        "walk_radius": 2
+      },
+      "name": "Tamru",
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 0,
+          "body": 71,
+          "feet": 0,
+          "head": 95,
+          "legs": 128,
+          "look_type": 146,
+          "mount": null
+        },
+        "speech_bubble": null
+      },
+      "profession": null,
+      "provenance": {
+        "happen": {
+          "key": "happen:npc/data/npc/tamru.lua",
+          "sha256": "ac0cc0540a2c7ffd570ccce0344795383cf1bb252cc1277c1d0a85fe77eabaa9"
+        }
+      },
+      "source_unconfirmed": [
+        "dialogue",
+        "services",
+        "placements",
+        "quests",
+        "runtime"
+      ],
+      "trade_service": null,
+      "travel_service": null,
+      "wiki": null
+    },
+    {
+      "arbitration": [
+        {
+          "chosen": "br",
+          "fact": "identity",
+          "pages": {
+            "br": {
+              "pageid": 61322,
+              "revid": 416298
+            },
+            "tibiopedia": {
+              "sha256": "5a78a052e1c73619987cb2f2d8a94a11d407fc2881649d494a28e85f0067571d",
+              "url": "https://tibiopedia.pl/npcs/The_Draccoon"
+            }
+          },
+          "rule": "FAN_WIKI_CONFIRMED",
+          "wikis": [
+            "br",
+            "tibiopedia"
+          ]
+        }
+      ],
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.the_draccoon_npc",
+        "revision": "definition-r1"
+      },
+      "left_out": [],
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 2000,
+        "walk_radius": 2
+      },
+      "name": "The Draccoon",
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 0,
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0,
+          "look_type": 1703,
+          "mount": null
+        },
+        "speech_bubble": null
+      },
+      "profession": null,
+      "provenance": {
+        "dakbugs": {
+          "key": "dakbugs:npc/data-otservbr-global/npc/The Draccoon.lua",
+          "sha256": "32154735d97f9357cf82ed011698bf849778fa2dbb973647d65abd0092c34073"
+        }
+      },
+      "source_unconfirmed": [
+        "dialogue",
+        "services",
+        "placements",
+        "quests",
+        "runtime"
+      ],
+      "trade_service": null,
+      "travel_service": null,
+      "wiki": null
+    },
+    {
+      "arbitration": [
+        {
+          "chosen": "br",
+          "fact": "identity",
+          "pages": {
+            "br": {
+              "pageid": 62172,
+              "revid": 443790
+            },
+            "tibiopedia": {
+              "sha256": "3bbf0f5bc65d45bd016a8b23cd297d6ca8ad2bd4bac5dc7df175445f0cc57c9a",
+              "url": "https://tibiopedia.pl/npcs/Toffee"
+            }
+          },
+          "rule": "FAN_WIKI_CONFIRMED",
+          "wikis": [
+            "br",
+            "tibiopedia"
+          ]
+        }
+      ],
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.toffee",
+        "revision": "definition-r1"
+      },
+      "left_out": [],
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 0,
+        "walk_radius": 2
+      },
+      "name": "Toffee",
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 0,
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0,
+          "look_type": 1751,
+          "mount": null
+        },
+        "speech_bubble": null
+      },
+      "profession": null,
+      "provenance": {
+        "fencore": {
+          "key": "fencore:npc/data-otservbr-global/npc/toffee.lua",
+          "sha256": "bec8dcc5681ca2afd6c6f5b099a81cad5a16b933d32f8935b0d704aa59a09581"
+        }
+      },
+      "source_unconfirmed": [
+        "dialogue",
+        "services",
+        "placements",
+        "quests",
+        "runtime"
+      ],
+      "trade_service": null,
+      "travel_service": null,
+      "wiki": null
+    },
+    {
+      "arbitration": [
+        {
+          "chosen": "br",
+          "fact": "identity",
+          "pages": {
+            "br": {
+              "pageid": 59876,
+              "revid": 429318
+            },
+            "tibiopedia": {
+              "sha256": "8576260ff599d86acc4225dd3dd8cb4cd48ed819b7d0a09762fd4adc922e7bc4",
+              "url": "https://tibiopedia.pl/npcs/Yerga"
+            }
+          },
+          "rule": "FAN_WIKI_CONFIRMED",
+          "wikis": [
+            "br",
+            "tibiopedia"
+          ]
+        }
+      ],
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.yerga",
+        "revision": "definition-r1"
+      },
+      "left_out": [],
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 2000,
+        "walk_radius": 2
+      },
+      "name": "Yerga",
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 2,
+          "body": 76,
+          "feet": 71,
+          "head": 53,
+          "legs": 104,
+          "look_type": 1648,
+          "mount": null
+        },
+        "speech_bubble": null
+      },
+      "profession": null,
+      "provenance": {
+        "happen": {
+          "key": "happen:npc/data/npc/yerga.lua",
+          "sha256": "6fba061d53d9d9b4b8337f34b1e60bf693644c9e75ac4a04c1470975e4f99162"
+        }
+      },
+      "source_unconfirmed": [
+        "dialogue",
+        "services",
+        "placements",
+        "quests",
+        "runtime"
+      ],
+      "trade_service": null,
+      "travel_service": null,
+      "wiki": null
+    }
+  ],
+  "from_project_revision": "g4-npc-qualified-summer-object-r16",
+  "historical_baseline_unchanged": true,
+  "literal_parser": {
+    "path": "/workspace/npc-r17-research/definitions/build_definition_bridge.py",
+    "sha256": "e0e892a98a88a6c6c14872d4f5211ee4002674beffc1dda98f78db8f4645a9ed"
+  },
+  "new_imports": [
+    {
+      "access_disposition": "PENDING",
+      "batch_id": "g4-npc-r18-definition-dakbugs",
+      "candidates": [],
+      "importer": "NPC_BOUNDED_D15_D16_NINE_DEFINITION_BRIDGE/v1",
+      "mapper": "NPC_BOUNDED_D15_D16_NINE_DEFINITION_BRIDGE/v1",
+      "mapper_revision": "npc-nine-qualified-definitions-r18",
+      "mapper_sha256": "eee39beed27c1b5fad1f7e0beaaea9d3978834752d3dbe85586f03ddb7600066",
+      "reimport_states": [],
+      "source_artifact_sha256": "4fe736b2e627a03a226ee1aa41c8ba1967b685392cf728a47490bc1260e823ad",
+      "source_generation_profile": "NPC_R18_QUALIFIED_DEFINITION_SOURCE_FACTS/v1",
+      "source_repository": "dakotaotserver-glitch/dakbugs",
+      "source_revision": "npc-definition-r18-4fe736b2e627a03a"
+    },
+    {
+      "access_disposition": "PENDING",
+      "batch_id": "g4-npc-r18-definition-happen",
+      "candidates": [],
+      "importer": "NPC_BOUNDED_D15_D16_NINE_DEFINITION_BRIDGE/v1",
+      "mapper": "NPC_BOUNDED_D15_D16_NINE_DEFINITION_BRIDGE/v1",
+      "mapper_revision": "npc-nine-qualified-definitions-r18",
+      "mapper_sha256": "eee39beed27c1b5fad1f7e0beaaea9d3978834752d3dbe85586f03ddb7600066",
+      "reimport_states": [],
+      "source_artifact_sha256": "fb3d7643d00af4f50e0d254db76df38a17e225b84738abe752bc8bbe8421b7b3",
+      "source_generation_profile": "NPC_R18_QUALIFIED_DEFINITION_SOURCE_FACTS/v1",
+      "source_repository": "Brunowots/Happen",
+      "source_revision": "npc-definition-r18-fb3d7643d00af4f5"
+    },
+    {
+      "access_disposition": "PENDING",
+      "batch_id": "g4-npc-r18-definition-fencore",
+      "candidates": [],
+      "importer": "NPC_BOUNDED_D15_D16_NINE_DEFINITION_BRIDGE/v1",
+      "mapper": "NPC_BOUNDED_D15_D16_NINE_DEFINITION_BRIDGE/v1",
+      "mapper_revision": "npc-nine-qualified-definitions-r18",
+      "mapper_sha256": "eee39beed27c1b5fad1f7e0beaaea9d3978834752d3dbe85586f03ddb7600066",
+      "reimport_states": [],
+      "source_artifact_sha256": "0998d347997d2896b118bbc2cdfaf5c8a7b7fc7f5aacb10b65b41fab89567529",
+      "source_generation_profile": "NPC_R18_QUALIFIED_DEFINITION_SOURCE_FACTS/v1",
+      "source_repository": "fifth-empearl/fencore",
+      "source_revision": "npc-definition-r18-0998d347997d2896"
+    }
+  ],
+  "new_sources": [
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "g4-npc-r18-definition-dakbugs",
+      "key": "oteryn:source.dakbugs",
+      "revision": "npc-definition-r18-4fe736b2e627a03a",
+      "sha256": "4fe736b2e627a03a226ee1aa41c8ba1967b685392cf728a47490bc1260e823ad"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "g4-npc-r18-definition-happen",
+      "key": "oteryn:source.happen",
+      "revision": "npc-definition-r18-fb3d7643d00af4f5",
+      "sha256": "fb3d7643d00af4f50e0d254db76df38a17e225b84738abe752bc8bbe8421b7b3"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "g4-npc-r18-definition-fencore",
+      "key": "oteryn:source.fencore",
+      "revision": "npc-definition-r18-0998d347997d2896",
+      "sha256": "0998d347997d2896b118bbc2cdfaf5c8a7b7fc7f5aacb10b65b41fab89567529"
+    }
+  ],
+  "predecessor_fences": {
+    "freeze_sha256": "ae0cbdfdcd7532e2c271503d01b2551cc07bfda05c11f1aa8b26c69619c86035",
+    "frozen_validation_sha256": "0faad41da39874bdd4b7fb4c26007db0ea794679c0bcb096e6d15db69da3b95a",
+    "head": "c2f9cf880a014ca494a32cce97bb0a19ed8b80c9",
+    "independent_review_sha256": "972c2eed9bb6eec2e05c6f8b89b32762f42f04ec9ebce2a5a79076f016e19f75",
+    "kind": "PUBLISHED_FROZEN_NATIVE_STAGE",
+    "native_sha256": "f4e25dc633af56ecd9e38ea5cf8d84f47a12122dae17e988ed7ad344f53f199e",
+    "npc_count": 1132,
+    "project_revision": "g4-npc-qualified-summer-object-r16",
+    "reference_sha256": "d3b66ce0b06c6ff61e6bbdac586e57f0ecdede3e24ef4487820db0ed031f6956",
+    "status": "QUALIFIED"
+  },
+  "project_revision": "g4-npc-qualified-nine-definitions-r17",
+  "reused_wiki_sources": [
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-npc-prices-tibiawiki-br-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-br-npc-0773232ddd356be2",
+      "sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-npc-prices-tibiopedia-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiopedia-npc-43bfc91ec7721df1",
+      "sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651"
+    }
+  ],
+  "runtime_eligible": false,
+  "schema": "NPC_BOUNDED_D15_D16_NINE_DEFINITION_BRIDGE/v1",
+  "source_artifacts": [
+    {
+      "artifact": {
+        "dependence": "same donor family as retained source; no independent corroboration claim",
+        "kind": "LOCALLY_DERIVED_QUALIFIED_COMPOSITE_SNAPSHOT",
+        "movement_engine_qualification": {
+          "path": "/workspace/npc-r18-research/presentation/dakbugs-positive-walk-qualified.json",
+          "scope": "Literal registered interval/radius/floor flags only; runtime interaction and external-script conditions retained in source.",
+          "sha256": "9807f00ea9243372d6c3e23b261c71465eca9218368ef8bd25653914cdc2a974",
+          "source_default_facts_admitted": false
+        },
+        "records": [
+          {
+            "all_source_text_services_quest_effects_and_placements_excluded": true,
+            "current_actor_image_receipt": {
+              "path": "/workspace/npc-r18-research/wiki_captures/additional-current/current-br-additional-actor-image-custody.json",
+              "pointer": "/records/0",
+              "sha256": "4506d2bb26fcf076908df3498dcc2e5c2d7d7f1322968a77765c3ecd94de4ef6"
+            },
+            "definition_spans": [
+              {
+                "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+                "line_end": 5,
+                "line_start": 5
+              },
+              {
+                "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+                "line_end": 10,
+                "line_start": 10
+              },
+              {
+                "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+                "line_end": 11,
+                "line_start": 11
+              },
+              {
+                "byte_sha256": "bac5a2cb06a2316ee42d72f729db135a42fac99dd7669b0252f6b05de65e706d",
+                "line_end": 20,
+                "line_start": 13
+              },
+              {
+                "byte_sha256": "49e458c3d2a1f04d619cb757a7689af13522a1a6cddccd8d1376637d6612130e",
+                "line_end": 24,
+                "line_start": 22
+              }
+            ],
+            "donor": "dakbugs",
+            "excluded_callbacks": [
+              {
+                "callback_slot": "CALLBACK_SET_INTERACTION",
+                "effect_or_opaque_call_count": 0,
+                "function_symbol": "onAddFocus",
+                "guard_count": 0,
+                "status": "UNRESOLVED_SOURCE_SYMBOL"
+              },
+              {
+                "callback_slot": "CALLBACK_REMOVE_INTERACTION",
+                "effect_or_opaque_call_count": 0,
+                "function_symbol": "onReleaseFocus",
+                "guard_count": 0,
+                "status": "UNRESOLVED_SOURCE_SYMBOL"
+              },
+              {
+                "callback_slot": "CALLBACK_GREET",
+                "effect_or_opaque_call_count": 2,
+                "function_symbol": "greetCallback",
+                "guard_count": 0,
+                "status": "SOURCE_CALLBACK_IR_ONLY"
+              },
+              {
+                "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+                "effect_or_opaque_call_count": 22,
+                "function_symbol": "creatureSayCallback",
+                "guard_count": 12,
+                "status": "SOURCE_CALLBACK_IR_ONLY"
+              }
+            ],
+            "image": {
+              "bytes": 14274,
+              "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+              "path": "/workspace/npc-r18-research/wiki_captures/additional-current/coco.gif",
+              "sha256": "4a1d261b7dad0e392a40ee2b0269455e798f3a59435e8f0cb03cd3557cd86e92",
+              "url": "https://www.tibiawiki.com.br/images/b/b3/Coco.gif"
+            },
+            "literal_actor_name": "Coco",
+            "literal_config": {
+              "flags": {
+                "floorchange": false
+              },
+              "name": "Coco",
+              "outfit": {
+                "lookAddons": 2,
+                "lookBody": 57,
+                "lookFeet": 68,
+                "lookHead": 0,
+                "lookLegs": 0,
+                "lookType": 1747
+              },
+              "walkInterval": 2000,
+              "walkRadius": 2
+            },
+            "name": "Coco",
+            "pageid": 62168,
+            "qualification_file": {
+              "path": "/workspace/npc-r16-research/presentation/coco-current-appearance-correction.json",
+              "sha256": "6c5f9c23f04b11ce2488b1ec4901566c170d86286816bfb4fa462436b4abce85"
+            },
+            "qualified_probe": {
+              "accepted": true,
+              "addons": 0,
+              "align": [
+                0,
+                0,
+                -3
+              ],
+              "arbitrated_palette": {
+                "body": 19,
+                "feet": 68,
+                "head": 86,
+                "legs": 110
+              },
+              "arbitrated_score": 3.7088706411966466,
+              "arbitration_reasons": {
+                "body": "wiki",
+                "feet": "few_pixels",
+                "head": "wiki",
+                "legs": "wiki"
+              },
+              "colour_overrides_have_30_visible_pixels": true,
+              "cost_fit_visible_region_px": {
+                "body": 346,
+                "feet": 27,
+                "head": 40,
+                "legs": 155
+              },
+              "direction": "south",
+              "fit": {
+                "align": {
+                  "dx": -3,
+                  "dy": 0,
+                  "frame": 0
+                },
+                "body": 19,
+                "feet": 38,
+                "head": 86,
+                "legs": 110,
+                "region_dist": {
+                  "body": 0.48,
+                  "feet": 0.41,
+                  "head": 0.26,
+                  "legs": 0.41
+                },
+                "region_px": {
+                  "body": 346,
+                  "feet": 27,
+                  "head": 40,
+                  "legs": 155
+                },
+                "score": 0.39
+              },
+              "frame_group": 1,
+              "look_type": 1747,
+              "opaque_coverage": 1.0,
+              "override_visible_pixels_valid": true,
+              "phase": 0,
+              "score": 3.7088706411966466,
+              "source_addons": 2,
+              "source_palette": {
+                "body": 57,
+                "feet": 68,
+                "head": 0,
+                "legs": 0
+              },
+              "visible_region_px": {
+                "body": 346,
+                "feet": 27,
+                "head": 40,
+                "legs": 155
+              }
+            },
+            "registration_witnesses": [
+              {
+                "byte_end": 82,
+                "byte_start": 31,
+                "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+                "line_end": 2,
+                "line_start": 2
+              },
+              {
+                "byte_end": 9474,
+                "byte_start": 9447,
+                "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+                "line_end": 225,
+                "line_start": 225
+              }
+            ],
+            "revid": 428493,
+            "selector_review": {
+              "bounded_selector_domain": [
+                0,
+                1,
+                2,
+                3
+              ],
+              "chosen_probe": {
+                "accepted": true,
+                "addons": 0,
+                "align": [
+                  0,
+                  0,
+                  -3
+                ],
+                "arbitrated_palette": {
+                  "body": 19,
+                  "feet": 68,
+                  "head": 86,
+                  "legs": 110
+                },
+                "arbitration_reasons": {
+                  "body": "wiki",
+                  "feet": "few_pixels",
+                  "head": "wiki",
+                  "legs": "wiki"
+                },
+                "direction": "south",
+                "fit": {
+                  "align": {
+                    "dx": -3,
+                    "dy": 0,
+                    "frame": 0
+                  },
+                  "body": 19,
+                  "feet": 38,
+                  "head": 86,
+                  "legs": 110,
+                  "region_dist": {
+                    "body": 0.48,
+                    "feet": 0.41,
+                    "head": 0.26,
+                    "legs": 0.41
+                  },
+                  "region_px": {
+                    "body": 346,
+                    "feet": 27,
+                    "head": 40,
+                    "legs": 155
+                  },
+                  "score": 0.39
+                },
+                "frame_group": 1,
+                "look_type": 1747,
+                "opaque_coverage": 1.0,
+                "override_visible_pixels_valid": true,
+                "phase": 0,
+                "score": 3.7088706411966466,
+                "source_addons": 2,
+                "source_palette": {
+                  "body": 57,
+                  "feet": 68,
+                  "head": 0,
+                  "legs": 0
+                },
+                "visible_region_px": {
+                  "body": 346,
+                  "feet": 27,
+                  "head": 40,
+                  "legs": 155
+                }
+              },
+              "cost_fit_alignment": [
+                0,
+                0,
+                -3
+              ],
+              "cost_fit_alignment_equals_actual_alignment": true,
+              "cost_fit_visible_region_px": {
+                "body": 346,
+                "feet": 27,
+                "head": 40,
+                "legs": 155
+              },
+              "current_image_qualified_addons_candidate": 0,
+              "dialogue_admission": false,
+              "explicit_donor_addons": 2,
+              "native_appearance": {
+                "direction": "south",
+                "frame_group": 1,
+                "id": 1747,
+                "kind": "Outfit",
+                "phase": 0
+              },
+              "native_writes": 0,
+              "other_source_variant": {
+                "blob_sha1": "39a360da5eab28497a195ad2a3510659895797b5",
+                "explicit_addons": 3,
+                "repository": "fifth-empearl/fencore",
+                "revision": "00484ac96d3379fd7f18a3a410e53c2ae31fc981",
+                "score": 132.829548,
+                "source_palette": [
+                  38,
+                  113,
+                  67,
+                  95
+                ],
+                "status": "FAIL"
+              },
+              "palette_qualification": {
+                "body": "WIKI_IMAGE_FIT >=30 visible pixels",
+                "feet": "source literal68 retained;27px below30; image does not prove68",
+                "head": "WIKI_IMAGE_FIT >=30 visible pixels",
+                "legs": "WIKI_IMAGE_FIT >=30 visible pixels"
+              },
+              "probe_packet": {
+                "path": "/workspace/npc-r16-research/presentation/coco-addon-probes.json",
+                "sha256": "c8596a3df34a86c356b5a85749306cb5c5931724d4ee53b4857c11820a2bc1ea"
+              },
+              "qualified_palette": {
+                "body": 19,
+                "feet": 68,
+                "head": 86,
+                "legs": 110
+              },
+              "review_rule": "D16(c) WIKI_IMAGE for addon selector; WIKI_IMAGE_FIT for palette; requires root definition review",
+              "schema": "NPC_CURRENT_IMAGE_ADDON_CORRECTION_FACTS/v1",
+              "selector_scores": {
+                "0": 3.7088706411966466,
+                "1": 103.18042355371901,
+                "2": 109.50958867521368,
+                "3": 133.99736306439675
+              },
+              "source": {
+                "blob_sha1": "d139ecf5077d024a5fcfcae7d97870b529d979df",
+                "bytes": 9475,
+                "git_blob_verified": true,
+                "name": "Coco",
+                "path": "/workspace/npc-r16-research/presentation/coco.lua",
+                "repository": "dakotaotserver-glitch/dakbugs",
+                "repository_path": "data-otservbr-global/npc/coco.lua",
+                "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+                "sha256": "6cb58c1e3d7934133eb36b52b40e30bee4518e2ffc0eab7b806798d4ff02bfa8",
+                "status": 200,
+                "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/coco.lua"
+              },
+              "source_image": {
+                "bytes": 14274,
+                "name": "Coco",
+                "pageid": 62168,
+                "path": "/workspace/npc-r16-research/presentation/coco.gif",
+                "r15_actor_image_binding": "previous public browser literal two anchors; actor/pageid/revid qualified",
+                "r15_digest_match": true,
+                "revid": 428493,
+                "sha256": "4a1d261b7dad0e392a40ee2b0269455e798f3a59435e8f0cb03cd3557cd86e92",
+                "status": 200,
+                "url": "https://www.tibiawiki.com.br/images/b/b3/Coco.gif"
+              },
+              "source_mount": null,
+              "status": "QUALIFIED_CORRECTION_CANDIDATE_PENDING_ROOT_REVIEW",
+              "toolchain": {
+                "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+                "appearances_file": "appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+                "helper_path": "/workspace/Oteryn-Game/tools/content-schema/npc-authoring/wiki_outfit_fit.py",
+                "helper_sha256": "9e39d1d0f1da25e80cf843c779d17985ad3376e47fe258d7078948200c8fa594",
+                "numpy": "2.4.6",
+                "pillow": "12.3.0"
+              }
+            },
+            "source": {
+              "blob_sha1": "d139ecf5077d024a5fcfcae7d97870b529d979df",
+              "bytes": 9475,
+              "git_blob_verified": true,
+              "name": "Coco",
+              "path": "/workspace/npc-r16-research/presentation/coco.lua",
+              "repository": "dakotaotserver-glitch/dakbugs",
+              "repository_path": "data-otservbr-global/npc/coco.lua",
+              "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+              "sha256": "6cb58c1e3d7934133eb36b52b40e30bee4518e2ffc0eab7b806798d4ff02bfa8",
+              "status": 200,
+              "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/coco.lua"
+            },
+            "source_mount_omitted": true,
+            "target_key": "oteryn:npc.coco"
+          },
+          {
+            "all_source_text_services_quest_effects_and_placements_excluded": true,
+            "current_actor_image_receipt": {
+              "path": "/workspace/npc-r18-research/wiki_captures/current-br-actor-image-custody.json",
+              "pointer": "/records/2",
+              "sha256": "a2f27227bcfd4fdf44c92d3e90f8671b0fb08cd844b39971bf30b78645dc0395"
+            },
+            "definition_spans": [
+              {
+                "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+                "line_end": 5,
+                "line_start": 5
+              },
+              {
+                "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+                "line_end": 10,
+                "line_start": 10
+              },
+              {
+                "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+                "line_end": 11,
+                "line_start": 11
+              },
+              {
+                "byte_sha256": "6f92341a652d22ab92a5fd49c7b0de28e2414e80bb27fdbb17d50a00f2db2750",
+                "line_end": 20,
+                "line_start": 13
+              },
+              {
+                "byte_sha256": "49e458c3d2a1f04d619cb757a7689af13522a1a6cddccd8d1376637d6612130e",
+                "line_end": 24,
+                "line_start": 22
+              }
+            ],
+            "donor": "dakbugs",
+            "excluded_callbacks": [
+              {
+                "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+                "effect_or_opaque_call_count": 28,
+                "function_symbol": "creatureSayCallback",
+                "guard_count": 12,
+                "status": "SOURCE_CALLBACK_IR_ONLY"
+              }
+            ],
+            "image": {
+              "bytes": 6718,
+              "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+              "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/gunther.gif",
+              "sha256": "e4c43c334247ec6b9b188cbf7933c40dc595f4b92bb5553466498c51431d9c4b",
+              "url": "https://www.tibiawiki.com.br/images/f/fe/Gunther.gif"
+            },
+            "literal_actor_name": "Gunther",
+            "literal_config": {
+              "flags": {
+                "floorchange": false
+              },
+              "name": "Gunther",
+              "outfit": {
+                "lookAddons": 0,
+                "lookBody": 79,
+                "lookFeet": 106,
+                "lookHead": 59,
+                "lookLegs": 104,
+                "lookType": 128
+              },
+              "walkInterval": 2000,
+              "walkRadius": 2
+            },
+            "name": "Gunther",
+            "pageid": 62158,
+            "qualification_file": {
+              "path": "/workspace/npc-r18-research/presentation/gunther-current-br-qualified-presentation.json",
+              "sha256": "c3256e63ed73f62238c955a9d929156a4197c205fbd4a73464be60ef748456f8"
+            },
+            "qualified_probe": {
+              "accepted": true,
+              "addons": 0,
+              "arbitrated_align": [
+                0,
+                -8,
+                -16
+              ],
+              "arbitrated_palette": {
+                "body": 79,
+                "feet": 49,
+                "head": 40,
+                "legs": 104
+              },
+              "arbitrated_score": 0.47091,
+              "arbitration_reasons": {
+                "body": "source",
+                "feet": "wiki",
+                "head": "wiki",
+                "legs": "source"
+              },
+              "colour_overrides_have_30_visible_pixels": true,
+              "cost_fit_visible_region_px": {
+                "body": 220,
+                "feet": 46,
+                "head": 77,
+                "legs": 118
+              },
+              "direction": "south",
+              "fit": {
+                "align": {
+                  "dx": -16,
+                  "dy": -8,
+                  "frame": 0
+                },
+                "body": 79,
+                "feet": 49,
+                "head": 40,
+                "legs": 104,
+                "region_dist": {
+                  "body": 0.0,
+                  "feet": 0.65,
+                  "head": 0.92,
+                  "legs": 0.49
+                },
+                "region_px": {
+                  "body": 220,
+                  "feet": 46,
+                  "head": 77,
+                  "legs": 118
+                },
+                "score": 0.47
+              },
+              "frame_group": 1,
+              "mount_pattern": 0,
+              "opaque_coverage": 1.0,
+              "phase": 0,
+              "source_align": [
+                0,
+                -8,
+                -16
+              ],
+              "source_score": 6.104932,
+              "visible_region_px": {
+                "body": 220,
+                "feet": 46,
+                "head": 77,
+                "legs": 118
+              }
+            },
+            "registration_witnesses": [
+              {
+                "byte_end": 85,
+                "byte_start": 34,
+                "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+                "line_end": 2,
+                "line_start": 2
+              },
+              {
+                "byte_end": 5384,
+                "byte_start": 5357,
+                "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+                "line_end": 129,
+                "line_start": 129
+              }
+            ],
+            "revid": 419325,
+            "selector_review": null,
+            "source": {
+              "blob_sha1": "fc2cda82500817e37365628ecb0e6828d4f70cec",
+              "bytes": 5385,
+              "git_blob_verified": true,
+              "name": "Gunther",
+              "path": "/workspace/npc-r18-research/lane_b/gunther.lua",
+              "repository": "dakotaotserver-glitch/dakbugs",
+              "repository_path": "data-otservbr-global/npc/gunther.lua",
+              "reused_capture": null,
+              "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+              "sha256": "3d94fa8dcc167088392cf4aebf3b008fc83f5678e55096c0eb84ecd2c3846303",
+              "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/gunther.lua"
+            },
+            "source_mount_omitted": true,
+            "target_key": "oteryn:npc.gunther"
+          },
+          {
+            "all_source_text_services_quest_effects_and_placements_excluded": true,
+            "current_actor_image_receipt": {
+              "path": "/workspace/npc-r18-research/wiki_captures/current-br-actor-image-custody.json",
+              "pointer": "/records/4",
+              "sha256": "a2f27227bcfd4fdf44c92d3e90f8671b0fb08cd844b39971bf30b78645dc0395"
+            },
+            "definition_spans": [
+              {
+                "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+                "line_end": 5,
+                "line_start": 5
+              },
+              {
+                "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+                "line_end": 10,
+                "line_start": 10
+              },
+              {
+                "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+                "line_end": 11,
+                "line_start": 11
+              },
+              {
+                "byte_sha256": "69c02f2b62c4d588ad5ebfb15a9789d68e00712e8c6fd7949a11e8944bc4d06c",
+                "line_end": 21,
+                "line_start": 13
+              },
+              {
+                "byte_sha256": "49e458c3d2a1f04d619cb757a7689af13522a1a6cddccd8d1376637d6612130e",
+                "line_end": 25,
+                "line_start": 23
+              }
+            ],
+            "donor": "dakbugs",
+            "excluded_callbacks": [
+              {
+                "callback_slot": "CALLBACK_GREET",
+                "effect_or_opaque_call_count": 3,
+                "function_symbol": "greetCallback",
+                "guard_count": 1,
+                "status": "SOURCE_CALLBACK_IR_ONLY"
+              },
+              {
+                "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+                "effect_or_opaque_call_count": 19,
+                "function_symbol": "creatureSayCallback",
+                "guard_count": 7,
+                "status": "SOURCE_CALLBACK_IR_ONLY"
+              }
+            ],
+            "image": {
+              "bytes": 7023,
+              "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+              "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/raclette.gif",
+              "sha256": "1d134d231b970637741a3701be5d85e09b50a5182194a3194fffa728c6cd177d",
+              "url": "https://www.tibiawiki.com.br/images/8/87/Ra%27Clette.gif"
+            },
+            "literal_actor_name": "Ra'Clette",
+            "literal_config": {
+              "flags": {
+                "floorchange": false
+              },
+              "name": "Ra'Clette",
+              "outfit": {
+                "lookAddons": 0,
+                "lookBody": 132,
+                "lookFeet": 0,
+                "lookHead": 0,
+                "lookLegs": 76,
+                "lookMount": 0,
+                "lookType": 533
+              },
+              "walkInterval": 2000,
+              "walkRadius": 2
+            },
+            "name": "Ra'Clette",
+            "pageid": 50712,
+            "qualification_file": {
+              "path": "/workspace/npc-r18-research/presentation/three-current-br-qualified-presentations.json",
+              "sha256": "bc5f15f4b6f8cd2f066276cc6c51514499a364fa94fa8c190a8f581fab7c704d"
+            },
+            "qualified_probe": {
+              "accepted": true,
+              "addons": 0,
+              "arbitrated_align": [
+                7,
+                0,
+                -11
+              ],
+              "arbitrated_palette": {
+                "body": 113,
+                "feet": 0,
+                "head": 0,
+                "legs": 19
+              },
+              "arbitrated_score": 0.989819,
+              "arbitration_reasons": {
+                "body": "wiki",
+                "feet": "few_pixels",
+                "head": "few_pixels",
+                "legs": "wiki"
+              },
+              "colour_overrides_have_30_visible_pixels": true,
+              "cost_fit_visible_region_px": {
+                "body": 66,
+                "feet": 0,
+                "head": 0,
+                "legs": 63
+              },
+              "direction": "south",
+              "fit": {
+                "align": {
+                  "dx": -11,
+                  "dy": 0,
+                  "frame": 7
+                },
+                "body": 113,
+                "feet": 0,
+                "head": 0,
+                "legs": 19,
+                "region_dist": {
+                  "body": 0.38,
+                  "feet": null,
+                  "head": null,
+                  "legs": 0.81
+                },
+                "region_px": {
+                  "body": 66,
+                  "feet": 0,
+                  "head": 0,
+                  "legs": 63
+                },
+                "score": 0.99
+              },
+              "frame_group": 1,
+              "mount_pattern": 0,
+              "opaque_coverage": 1.0,
+              "phase": 0,
+              "source_align": [
+                7,
+                0,
+                -11
+              ],
+              "source_score": 6.152056,
+              "visible_region_px": {
+                "body": 66,
+                "feet": 0,
+                "head": 0,
+                "legs": 63
+              }
+            },
+            "registration_witnesses": [
+              {
+                "byte_end": 87,
+                "byte_start": 36,
+                "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+                "line_end": 2,
+                "line_start": 2
+              },
+              {
+                "byte_end": 4432,
+                "byte_start": 4405,
+                "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+                "line_end": 121,
+                "line_start": 121
+              }
+            ],
+            "revid": 367577,
+            "selector_review": null,
+            "source": {
+              "blob_sha1": "2039ff364011fb5045f174105f66bbd5036915fd",
+              "bytes": 4433,
+              "git_blob_verified": true,
+              "name": "Ra'Clette",
+              "path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__Ra'Clette.lua",
+              "raw_path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__Ra'Clette.lua",
+              "repository": "dakotaotserver-glitch/dakbugs",
+              "repository_path": "data-otservbr-global/npc/Ra'Clette.lua",
+              "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+              "sha256": "c0371b93a4c69c6e41c6e8fbceca17c4448c28c8c20a68d49df586e7e68d4658",
+              "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/Ra%27Clette.lua"
+            },
+            "source_mount_omitted": false,
+            "target_key": "oteryn:npc.ra_clette"
+          },
+          {
+            "all_source_text_services_quest_effects_and_placements_excluded": true,
+            "current_actor_image_receipt": {
+              "path": "/workspace/npc-r18-research/wiki_captures/current-br-actor-image-custody.json",
+              "pointer": "/records/5",
+              "sha256": "a2f27227bcfd4fdf44c92d3e90f8671b0fb08cd844b39971bf30b78645dc0395"
+            },
+            "definition_spans": [
+              {
+                "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+                "line_end": 5,
+                "line_start": 5
+              },
+              {
+                "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+                "line_end": 10,
+                "line_start": 10
+              },
+              {
+                "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+                "line_end": 11,
+                "line_start": 11
+              },
+              {
+                "byte_sha256": "b12d624a8dde07dd04dc49068caa95128e3dff9c6d7f2566f566f444431d7fe0",
+                "line_end": 21,
+                "line_start": 13
+              },
+              {
+                "byte_sha256": "49e458c3d2a1f04d619cb757a7689af13522a1a6cddccd8d1376637d6612130e",
+                "line_end": 25,
+                "line_start": 23
+              }
+            ],
+            "donor": "dakbugs",
+            "excluded_callbacks": [
+              {
+                "callback_slot": "CALLBACK_GREET",
+                "effect_or_opaque_call_count": 3,
+                "function_symbol": "greetCallback",
+                "guard_count": 1,
+                "status": "SOURCE_CALLBACK_IR_ONLY"
+              },
+              {
+                "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+                "effect_or_opaque_call_count": 18,
+                "function_symbol": "creatureSayCallback",
+                "guard_count": 8,
+                "status": "SOURCE_CALLBACK_IR_ONLY"
+              }
+            ],
+            "image": {
+              "bytes": 5853,
+              "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+              "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/sniff.gif",
+              "sha256": "b3c8f4d384b1e3c2207796fff51e3f73ab061d8eb44006acc0e10c3ff9a17fef",
+              "url": "https://www.tibiawiki.com.br/images/6/63/Sniff.gif"
+            },
+            "literal_actor_name": "Sniff",
+            "literal_config": {
+              "flags": {
+                "floorchange": false
+              },
+              "name": "Sniff",
+              "outfit": {
+                "lookAddons": 1,
+                "lookBody": 57,
+                "lookFeet": 96,
+                "lookHead": 2,
+                "lookLegs": 78,
+                "lookMount": 0,
+                "lookType": 1346
+              },
+              "walkInterval": 2000,
+              "walkRadius": 2
+            },
+            "name": "Sniff",
+            "pageid": 50710,
+            "qualification_file": {
+              "path": "/workspace/npc-r18-research/presentation/three-current-br-qualified-presentations.json",
+              "sha256": "bc5f15f4b6f8cd2f066276cc6c51514499a364fa94fa8c190a8f581fab7c704d"
+            },
+            "qualified_probe": {
+              "accepted": true,
+              "addons": 1,
+              "arbitrated_align": [
+                7,
+                0,
+                -14
+              ],
+              "arbitrated_palette": {
+                "body": 19,
+                "feet": 96,
+                "head": 38,
+                "legs": 78
+              },
+              "arbitrated_score": 1.679514,
+              "arbitration_reasons": {
+                "body": "wiki",
+                "feet": "few_pixels",
+                "head": "wiki",
+                "legs": "few_pixels"
+              },
+              "colour_overrides_have_30_visible_pixels": true,
+              "cost_fit_visible_region_px": {
+                "body": 72,
+                "feet": 5,
+                "head": 142,
+                "legs": 3
+              },
+              "direction": "south",
+              "fit": {
+                "align": {
+                  "dx": -14,
+                  "dy": 0,
+                  "frame": 7
+                },
+                "body": 19,
+                "feet": 113,
+                "head": 38,
+                "legs": 76,
+                "region_dist": {
+                  "body": 0.53,
+                  "feet": 0.09,
+                  "head": 0.26,
+                  "legs": 0.42
+                },
+                "region_px": {
+                  "body": 72,
+                  "feet": 5,
+                  "head": 142,
+                  "legs": 3
+                },
+                "score": 0.28
+              },
+              "frame_group": 1,
+              "mount_pattern": 0,
+              "opaque_coverage": 1.0,
+              "phase": 0,
+              "source_align": [
+                7,
+                0,
+                -14
+              ],
+              "source_score": 16.294777,
+              "visible_region_px": {
+                "body": 72,
+                "feet": 5,
+                "head": 142,
+                "legs": 3
+              }
+            },
+            "registration_witnesses": [
+              {
+                "byte_end": 83,
+                "byte_start": 32,
+                "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+                "line_end": 2,
+                "line_start": 2
+              },
+              {
+                "byte_end": 4607,
+                "byte_start": 4580,
+                "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+                "line_end": 122,
+                "line_start": 122
+              }
+            ],
+            "revid": 357215,
+            "selector_review": null,
+            "source": {
+              "blob_sha1": "2b1b4fc65d3d3071c7e0c97aa9d658a83c18643c",
+              "bytes": 4608,
+              "git_blob_verified": true,
+              "name": "Sniff",
+              "path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__sniff.lua",
+              "raw_path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__sniff.lua",
+              "repository": "dakotaotserver-glitch/dakbugs",
+              "repository_path": "data-otservbr-global/npc/sniff.lua",
+              "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+              "sha256": "039035e972a75d111dd2b8114236eb6121e76569e62cc837b08afb9b302f61be",
+              "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/sniff.lua"
+            },
+            "source_mount_omitted": false,
+            "target_key": "oteryn:npc.sniff"
+          },
+          {
+            "all_source_text_services_quest_effects_and_placements_excluded": true,
+            "current_actor_image_receipt": {
+              "path": "/workspace/npc-r18-research/wiki_captures/current-br-actor-image-custody.json",
+              "pointer": "/records/6",
+              "sha256": "a2f27227bcfd4fdf44c92d3e90f8671b0fb08cd844b39971bf30b78645dc0395"
+            },
+            "definition_spans": [
+              {
+                "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+                "line_end": 5,
+                "line_start": 5
+              },
+              {
+                "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+                "line_end": 10,
+                "line_start": 10
+              },
+              {
+                "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+                "line_end": 11,
+                "line_start": 11
+              },
+              {
+                "byte_sha256": "bdc54711fd6fb7f168ef0b6fe316e3c42036473a298fe3a2d8afff785daabffd",
+                "line_end": 20,
+                "line_start": 13
+              },
+              {
+                "byte_sha256": "26590c6f6aa93d2eac18e3930cf26cbc983f167f10e4cc8848a6ce3087655c27",
+                "line_end": 24,
+                "line_start": 22
+              }
+            ],
+            "donor": "dakbugs",
+            "excluded_callbacks": [
+              {
+                "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+                "effect_or_opaque_call_count": 18,
+                "function_symbol": "creatureSayCallback",
+                "guard_count": 6,
+                "status": "SOURCE_CALLBACK_IR_ONLY"
+              }
+            ],
+            "image": {
+              "bytes": 25404,
+              "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+              "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/thedraccoonnpc.gif",
+              "sha256": "3882639caa448a3a026e36dacfb7ac3888eef233da5dcf19ef2a05b3ea8800a6",
+              "url": "https://www.tibiawiki.com.br/images/b/bc/The_Draccoon_%28NPC%29.gif"
+            },
+            "literal_actor_alias_binding": {
+              "br_title": "The Draccoon (NPC)",
+              "canonical_npc_key": "oteryn:npc.the_draccoon_npc",
+              "dialogue_admitted": false,
+              "general_suffix_normalization": false,
+              "literal_actor_name": "The Draccoon",
+              "pageid": 61322,
+              "revid": 416298,
+              "rule": "D8_EXACT_ACTOR_DISAMBIGUATION_CORROBORATED_BY_ATTRIBUTED_SPEECH",
+              "source_capture": {
+                "bytes": 3843,
+                "derived_from": "/parse/wikitext/*",
+                "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/the_draccoon__npc_.wikitext.txt",
+                "sha256": "90adb85049eab4c3dc9b8eed74e065ca552b10a0f46d6d2f8bdcd8032f251c74"
+              },
+              "wiki_prose_copied": false,
+              "witnesses": [
+                {
+                  "byte_end": 239,
+                  "byte_start": 0,
+                  "fragment_sha256": "12b5336c9a5f70dbb81d7f2f5921e8f44cb03b2f3254445e0c5e619caac6edac",
+                  "line": 1
+                },
+                {
+                  "byte_end": 745,
+                  "byte_start": 683,
+                  "fragment_sha256": "f5da4a8b3d393ba41c50a0cdd7264a8fb4fc1f485219dc4953b96df2dec81b42",
+                  "line": 16
+                },
+                {
+                  "byte_end": 909,
+                  "byte_start": 792,
+                  "fragment_sha256": "549567214dd7f2e783494e946c27c3b443d490e20e41935389567818a8653578",
+                  "line": 19
+                }
+              ]
+            },
+            "literal_actor_name": "The Draccoon",
+            "literal_config": {
+              "flags": {
+                "floorchange": false
+              },
+              "name": "The Draccoon",
+              "outfit": {
+                "lookAddons": 0,
+                "lookBody": 0,
+                "lookFeet": 0,
+                "lookHead": 0,
+                "lookLegs": 0,
+                "lookType": 1703
+              },
+              "walkInterval": 2000,
+              "walkRadius": 2
+            },
+            "name": "The Draccoon (NPC)",
+            "pageid": 61322,
+            "qualification_file": {
+              "path": "/workspace/npc-r18-research/presentation/three-current-br-qualified-presentations.json",
+              "sha256": "bc5f15f4b6f8cd2f066276cc6c51514499a364fa94fa8c190a8f581fab7c704d"
+            },
+            "qualified_probe": {
+              "accepted": true,
+              "addons": 0,
+              "arbitrated_align": [
+                0,
+                0,
+                15
+              ],
+              "arbitrated_palette": {
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0
+              },
+              "arbitrated_score": 11.030914,
+              "arbitration_reasons": {
+                "body": "few_pixels",
+                "feet": "few_pixels",
+                "head": "few_pixels",
+                "legs": "few_pixels"
+              },
+              "colour_overrides_have_30_visible_pixels": true,
+              "cost_fit_visible_region_px": {
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0
+              },
+              "direction": "south",
+              "fit": {
+                "align": {
+                  "dx": 15,
+                  "dy": 0,
+                  "frame": 0
+                },
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0,
+                "region_dist": {
+                  "body": null,
+                  "feet": null,
+                  "head": null,
+                  "legs": null
+                },
+                "region_px": {
+                  "body": 0,
+                  "feet": 0,
+                  "head": 0,
+                  "legs": 0
+                },
+                "score": 11.03
+              },
+              "frame_group": 1,
+              "mount_pattern": 0,
+              "opaque_coverage": 1.0,
+              "phase": 0,
+              "source_align": [
+                0,
+                0,
+                15
+              ],
+              "source_score": 11.030914,
+              "visible_region_px": {
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0
+              }
+            },
+            "registration_witnesses": [
+              {
+                "byte_end": 90,
+                "byte_start": 39,
+                "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+                "line_end": 2,
+                "line_start": 2
+              },
+              {
+                "byte_end": 4298,
+                "byte_start": 4271,
+                "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+                "line_end": 99,
+                "line_start": 99
+              }
+            ],
+            "revid": 416298,
+            "selector_review": null,
+            "source": {
+              "blob_sha1": "4baeacc7b5ab2d9793beadfbe8dd46c59dcc2ff0",
+              "bytes": 4299,
+              "git_blob_verified": true,
+              "name": "The Draccoon (NPC)",
+              "path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__The Draccoon.lua",
+              "raw_path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__The Draccoon.lua",
+              "repository": "dakotaotserver-glitch/dakbugs",
+              "repository_path": "data-otservbr-global/npc/The Draccoon.lua",
+              "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+              "sha256": "32154735d97f9357cf82ed011698bf849778fa2dbb973647d65abd0092c34073",
+              "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/The%20Draccoon.lua"
+            },
+            "source_mount_omitted": true,
+            "target_key": "oteryn:npc.the_draccoon_npc"
+          }
+        ],
+        "repository_git_revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+        "schema": "NPC_R18_QUALIFIED_DEFINITION_SOURCE_FACTS/v1",
+        "source_repository": "dakotaotserver-glitch/dakbugs"
+      },
+      "donor": "dakbugs",
+      "sha256": "4fe736b2e627a03a226ee1aa41c8ba1967b685392cf728a47490bc1260e823ad"
+    },
+    {
+      "artifact": {
+        "dependence": "same donor family as retained source; no independent corroboration claim",
+        "kind": "LOCALLY_DERIVED_QUALIFIED_COMPOSITE_SNAPSHOT",
+        "movement_engine_qualification": {
+          "path": "/workspace/npc-r18-research/definitions/happen-engine-custody.json",
+          "scope": "Literal registered interval/radius/floor flags only; runtime interaction and external-script conditions retained in source.",
+          "sha256": "ae233f2b12f4f73b15ef22a04d28bfb7e96005c2c096b7696b645fc48a4c97fc",
+          "source_default_facts_admitted": false
+        },
+        "records": [
+          {
+            "all_source_text_services_quest_effects_and_placements_excluded": true,
+            "current_actor_image_receipt": {
+              "path": "/workspace/npc-r18-research/wiki_captures/additional-current/current-br-additional-actor-image-custody.json",
+              "pointer": "/records/1",
+              "sha256": "4506d2bb26fcf076908df3498dcc2e5c2d7d7f1322968a77765c3ecd94de4ef6"
+            },
+            "definition_spans": [
+              {
+                "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+                "line_end": 5,
+                "line_start": 5
+              },
+              {
+                "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+                "line_end": 10,
+                "line_start": 10
+              },
+              {
+                "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+                "line_end": 11,
+                "line_start": 11
+              },
+              {
+                "byte_sha256": "ac6f3057b8e81ff7b066649d80de200633b05ccd70f964f46a8b178e89d3525e",
+                "line_end": 21,
+                "line_start": 13
+              },
+              {
+                "byte_sha256": "e9039ce60195f29b7842eec53222b90622cd38d9159c478ecd9d00c19f38c86a",
+                "line_end": 25,
+                "line_start": 23
+              }
+            ],
+            "donor": "happen",
+            "excluded_callbacks": [],
+            "image": {
+              "bytes": 16580,
+              "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+              "path": "/workspace/npc-r18-research/wiki_captures/additional-current/kiru.gif",
+              "sha256": "d5245ed56345eb802387b3ba168714dfea88502beb7b835a5f9c465a1be9cd17",
+              "url": "https://www.tibiawiki.com.br/images/0/00/Kiru.gif"
+            },
+            "literal_actor_name": "Kiru",
+            "literal_config": {
+              "flags": {
+                "floorchange": false
+              },
+              "name": "Kiru",
+              "outfit": {
+                "lookAddons": 0,
+                "lookBody": 99,
+                "lookFeet": 87,
+                "lookHead": 115,
+                "lookLegs": 20,
+                "lookMount": 0,
+                "lookType": 1647
+              },
+              "walkInterval": 2000,
+              "walkRadius": 2
+            },
+            "name": "Kiru",
+            "pageid": 59877,
+            "qualification_file": {
+              "path": "/workspace/npc-r16-research/presentation/three-merchant-qualified-presentations.json",
+              "sha256": "f976d1abff103d0259df35712c0a7b993928653938e7f624d2e2aa285651d21a"
+            },
+            "qualified_probe": {
+              "accepted": true,
+              "addons": 0,
+              "arbitrated_align": [
+                0,
+                0,
+                -4
+              ],
+              "arbitrated_palette": {
+                "body": 43,
+                "feet": 124,
+                "head": 115,
+                "legs": 20
+              },
+              "arbitrated_score": 1.385666,
+              "arbitration_reasons": {
+                "body": "wiki",
+                "feet": "wiki",
+                "head": "source",
+                "legs": "source"
+              },
+              "colour_overrides_have_30_visible_pixels": true,
+              "cost_fit_visible_region_px": {
+                "body": 857,
+                "feet": 207,
+                "head": 129,
+                "legs": 200
+              },
+              "direction": "south",
+              "fit": {
+                "align": {
+                  "dx": -4,
+                  "dy": 0,
+                  "frame": 0
+                },
+                "body": 43,
+                "feet": 124,
+                "head": 115,
+                "legs": 20,
+                "region_dist": {
+                  "body": 1.75,
+                  "feet": 0.3,
+                  "head": 0.41,
+                  "legs": 0.52
+                },
+                "region_px": {
+                  "body": 857,
+                  "feet": 207,
+                  "head": 129,
+                  "legs": 200
+                },
+                "score": 1.39
+              },
+              "frame_group": 1,
+              "mount_pattern": 0,
+              "opaque_coverage": 1.0,
+              "phase": 0,
+              "source_align": [
+                0,
+                0,
+                -4
+              ],
+              "source_score": 30.112927,
+              "visible_region_px": {
+                "body": 857,
+                "feet": 207,
+                "head": 129,
+                "legs": 200
+              }
+            },
+            "registration_witnesses": [
+              {
+                "byte_end": 82,
+                "byte_start": 31,
+                "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+                "line_end": 2,
+                "line_start": 2
+              },
+              {
+                "byte_end": 4103,
+                "byte_start": 4076,
+                "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+                "line_end": 114,
+                "line_start": 114
+              }
+            ],
+            "revid": 401291,
+            "selector_review": null,
+            "source": {
+              "blob_sha1": "7cd14ca4f5e70278e1ea2664924de826b61bc9d9",
+              "bytes": 4104,
+              "git_blob_verified": true,
+              "name": "Kiru",
+              "path": "/workspace/npc-r16-research/presentation/kiru-Happen.lua",
+              "repository": "Brunowots/Happen",
+              "repository_path": "data/npc/kiru.lua",
+              "revision": "d836d29186dbcbc1c1ae852048884f9612653364",
+              "sha256": "96e744f6bf5732117c282f0c02ab68db5e2abaed305365f4f3343fbb5bb60e95",
+              "url": "https://raw.githubusercontent.com/Brunowots/Happen/d836d29186dbcbc1c1ae852048884f9612653364/data/npc/kiru.lua"
+            },
+            "source_mount_omitted": false,
+            "target_key": "oteryn:npc.kiru"
+          },
+          {
+            "all_source_text_services_quest_effects_and_placements_excluded": true,
+            "current_actor_image_receipt": {
+              "path": "/workspace/npc-r18-research/wiki_captures/additional-current/current-br-additional-actor-image-custody.json",
+              "pointer": "/records/2",
+              "sha256": "4506d2bb26fcf076908df3498dcc2e5c2d7d7f1322968a77765c3ecd94de4ef6"
+            },
+            "definition_spans": [
+              {
+                "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+                "line_end": 5,
+                "line_start": 5
+              },
+              {
+                "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+                "line_end": 10,
+                "line_start": 10
+              },
+              {
+                "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+                "line_end": 11,
+                "line_start": 11
+              },
+              {
+                "byte_sha256": "4ce25d228030f5eff775bcf3795138652acf65285362429455985a6a95b8f204",
+                "line_end": 20,
+                "line_start": 13
+              },
+              {
+                "byte_sha256": "e9039ce60195f29b7842eec53222b90622cd38d9159c478ecd9d00c19f38c86a",
+                "line_end": 24,
+                "line_start": 22
+              }
+            ],
+            "donor": "happen",
+            "excluded_callbacks": [
+              {
+                "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+                "effect_or_opaque_call_count": 13,
+                "function_symbol": "creatureSayCallback",
+                "guard_count": 5,
+                "status": "SOURCE_CALLBACK_IR_ONLY"
+              }
+            ],
+            "image": {
+              "bytes": 6893,
+              "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+              "path": "/workspace/npc-r18-research/wiki_captures/additional-current/tamru.gif",
+              "sha256": "1c9722433b9927ea800b8df06d6733c002f43f7ed8d0e99d56078b08999d9637",
+              "url": "https://www.tibiawiki.com.br/images/2/2a/Tamru.gif"
+            },
+            "literal_actor_name": "Tamru",
+            "literal_config": {
+              "flags": {
+                "floorchange": false
+              },
+              "name": "Tamru",
+              "outfit": {
+                "lookAddons": 0,
+                "lookBody": 71,
+                "lookFeet": 19,
+                "lookHead": 95,
+                "lookLegs": 128,
+                "lookType": 146
+              },
+              "walkInterval": 2000,
+              "walkRadius": 2
+            },
+            "name": "Tamru",
+            "pageid": 59878,
+            "qualification_file": {
+              "path": "/workspace/npc-r16-research/presentation/three-merchant-qualified-presentations.json",
+              "sha256": "f976d1abff103d0259df35712c0a7b993928653938e7f624d2e2aa285651d21a"
+            },
+            "qualified_probe": {
+              "accepted": true,
+              "addons": 0,
+              "arbitrated_align": [
+                0,
+                -8,
+                -16
+              ],
+              "arbitrated_palette": {
+                "body": 71,
+                "feet": 0,
+                "head": 95,
+                "legs": 128
+              },
+              "arbitrated_score": 0.446796,
+              "arbitration_reasons": {
+                "body": "source",
+                "feet": "wiki",
+                "head": "source",
+                "legs": "source"
+              },
+              "colour_overrides_have_30_visible_pixels": true,
+              "cost_fit_visible_region_px": {
+                "body": 63,
+                "feet": 31,
+                "head": 87,
+                "legs": 115
+              },
+              "direction": "south",
+              "fit": {
+                "align": {
+                  "dx": -16,
+                  "dy": -8,
+                  "frame": 0
+                },
+                "body": 71,
+                "feet": 0,
+                "head": 95,
+                "legs": 128,
+                "region_dist": {
+                  "body": 0.69,
+                  "feet": 0.56,
+                  "head": 0.47,
+                  "legs": 0.36
+                },
+                "region_px": {
+                  "body": 63,
+                  "feet": 31,
+                  "head": 87,
+                  "legs": 115
+                },
+                "score": 0.45
+              },
+              "frame_group": 1,
+              "mount_pattern": 0,
+              "opaque_coverage": 1.0,
+              "phase": 0,
+              "source_align": [
+                0,
+                -8,
+                -16
+              ],
+              "source_score": 2.770735,
+              "visible_region_px": {
+                "body": 63,
+                "feet": 31,
+                "head": 87,
+                "legs": 115
+              }
+            },
+            "registration_witnesses": [
+              {
+                "byte_end": 83,
+                "byte_start": 32,
+                "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+                "line_end": 2,
+                "line_start": 2
+              },
+              {
+                "byte_end": 6470,
+                "byte_start": 6443,
+                "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+                "line_end": 162,
+                "line_start": 162
+              }
+            ],
+            "revid": 408357,
+            "selector_review": null,
+            "source": {
+              "blob_sha1": "8a41d8266c986e4c3fbd7d64fc8b1cc53bedf6e8",
+              "bytes": 6471,
+              "git_blob_verified": true,
+              "name": "Tamru",
+              "path": "/workspace/npc-r16-research/presentation/tamru-Happen.lua",
+              "repository": "Brunowots/Happen",
+              "repository_path": "data/npc/tamru.lua",
+              "revision": "d836d29186dbcbc1c1ae852048884f9612653364",
+              "sha256": "ac0cc0540a2c7ffd570ccce0344795383cf1bb252cc1277c1d0a85fe77eabaa9",
+              "url": "https://raw.githubusercontent.com/Brunowots/Happen/d836d29186dbcbc1c1ae852048884f9612653364/data/npc/tamru.lua"
+            },
+            "source_mount_omitted": true,
+            "target_key": "oteryn:npc.tamru"
+          },
+          {
+            "all_source_text_services_quest_effects_and_placements_excluded": true,
+            "current_actor_image_receipt": {
+              "path": "/workspace/npc-r18-research/wiki_captures/additional-current/current-br-additional-actor-image-custody.json",
+              "pointer": "/records/4",
+              "sha256": "4506d2bb26fcf076908df3498dcc2e5c2d7d7f1322968a77765c3ecd94de4ef6"
+            },
+            "definition_spans": [
+              {
+                "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+                "line_end": 5,
+                "line_start": 5
+              },
+              {
+                "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+                "line_end": 10,
+                "line_start": 10
+              },
+              {
+                "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+                "line_end": 11,
+                "line_start": 11
+              },
+              {
+                "byte_sha256": "189669a8ce95bdbad1f2c274ba9b65a315a5f1ec745584ad08ca2a0a5fa8286b",
+                "line_end": 20,
+                "line_start": 13
+              },
+              {
+                "byte_sha256": "e9039ce60195f29b7842eec53222b90622cd38d9159c478ecd9d00c19f38c86a",
+                "line_end": 24,
+                "line_start": 22
+              }
+            ],
+            "donor": "happen",
+            "excluded_callbacks": [],
+            "image": {
+              "bytes": 14202,
+              "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+              "path": "/workspace/npc-r18-research/wiki_captures/additional-current/yerga.gif",
+              "sha256": "867167eb41d9ebbd9f4f79c2f39922b5cd9dbe607334534dc18fe8e94ab9133a",
+              "url": "https://www.tibiawiki.com.br/images/7/7a/Yerga.gif"
+            },
+            "literal_actor_name": "Yerga",
+            "literal_config": {
+              "flags": {
+                "floorchange": false
+              },
+              "name": "Yerga",
+              "outfit": {
+                "lookAddons": 2,
+                "lookBody": 95,
+                "lookFeet": 71,
+                "lookHead": 104,
+                "lookLegs": 123,
+                "lookType": 1648
+              },
+              "walkInterval": 2000,
+              "walkRadius": 2
+            },
+            "name": "Yerga",
+            "pageid": 59876,
+            "qualification_file": {
+              "path": "/workspace/npc-r16-research/presentation/three-merchant-qualified-presentations.json",
+              "sha256": "f976d1abff103d0259df35712c0a7b993928653938e7f624d2e2aa285651d21a"
+            },
+            "qualified_probe": {
+              "accepted": true,
+              "addons": 2,
+              "arbitrated_align": [
+                0,
+                -4,
+                -9
+              ],
+              "arbitrated_palette": {
+                "body": 76,
+                "feet": 71,
+                "head": 53,
+                "legs": 104
+              },
+              "arbitrated_score": 1.370678,
+              "arbitration_reasons": {
+                "body": "wiki",
+                "feet": "few_pixels",
+                "head": "wiki",
+                "legs": "wiki"
+              },
+              "colour_overrides_have_30_visible_pixels": true,
+              "cost_fit_visible_region_px": {
+                "body": 408,
+                "feet": 2,
+                "head": 178,
+                "legs": 87
+              },
+              "direction": "south",
+              "fit": {
+                "align": {
+                  "dx": -9,
+                  "dy": -4,
+                  "frame": 0
+                },
+                "body": 76,
+                "feet": 85,
+                "head": 53,
+                "legs": 104,
+                "region_dist": {
+                  "body": 0.43,
+                  "feet": 0.0,
+                  "head": 0.6,
+                  "legs": 0.27
+                },
+                "region_px": {
+                  "body": 408,
+                  "feet": 2,
+                  "head": 178,
+                  "legs": 87
+                },
+                "score": 0.8
+              },
+              "frame_group": 1,
+              "mount_pattern": 0,
+              "opaque_coverage": 1.0,
+              "phase": 0,
+              "source_align": [
+                0,
+                -4,
+                -9
+              ],
+              "source_score": 36.614113,
+              "visible_region_px": {
+                "body": 408,
+                "feet": 2,
+                "head": 178,
+                "legs": 87
+              }
+            },
+            "registration_witnesses": [
+              {
+                "byte_end": 83,
+                "byte_start": 32,
+                "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+                "line_end": 2,
+                "line_start": 2
+              },
+              {
+                "byte_end": 6448,
+                "byte_start": 6421,
+                "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+                "line_end": 144,
+                "line_start": 144
+              }
+            ],
+            "revid": 429318,
+            "selector_review": {
+              "bounded_probes": [
+                {
+                  "accepted": true,
+                  "addons": 0,
+                  "align": [
+                    0,
+                    -4,
+                    -9
+                  ],
+                  "arbitrated_palette": {
+                    "body": 76,
+                    "feet": 71,
+                    "head": 104,
+                    "legs": 104
+                  },
+                  "arbitration_reasons": {
+                    "body": "wiki",
+                    "feet": "few_pixels",
+                    "head": "few_pixels",
+                    "legs": "wiki"
+                  },
+                  "cost_fit_visible_region_px": {
+                    "body": 564,
+                    "feet": 2,
+                    "head": 1,
+                    "legs": 88
+                  },
+                  "direction": "south",
+                  "fit": {
+                    "align": {
+                      "dx": -9,
+                      "dy": -4,
+                      "frame": 0
+                    },
+                    "body": 76,
+                    "feet": 85,
+                    "head": 53,
+                    "legs": 104,
+                    "region_dist": {
+                      "body": 20.53,
+                      "feet": 0.0,
+                      "head": 0.35,
+                      "legs": 0.52
+                    },
+                    "region_px": {
+                      "body": 564,
+                      "feet": 2,
+                      "head": 1,
+                      "legs": 88
+                    },
+                    "score": 16.68
+                  },
+                  "frame_group": 1,
+                  "look_type": 1648,
+                  "opaque_coverage": 1.0,
+                  "override_visible_pixels_valid": true,
+                  "phase": 0,
+                  "score": 17.3218684256662,
+                  "source_addons": 2,
+                  "source_palette": {
+                    "body": 95,
+                    "feet": 71,
+                    "head": 104,
+                    "legs": 123
+                  },
+                  "visible_region_px": {
+                    "body": 564,
+                    "feet": 2,
+                    "head": 1,
+                    "legs": 88
+                  }
+                },
+                {
+                  "accepted": false,
+                  "addons": 1,
+                  "align": [
+                    0,
+                    -4,
+                    -9
+                  ],
+                  "arbitrated_palette": {
+                    "body": 76,
+                    "feet": 71,
+                    "head": 104,
+                    "legs": 104
+                  },
+                  "arbitration_reasons": {
+                    "body": "wiki",
+                    "feet": "few_pixels",
+                    "head": "few_pixels",
+                    "legs": "wiki"
+                  },
+                  "cost_fit_visible_region_px": {
+                    "body": 466,
+                    "feet": 2,
+                    "head": 1,
+                    "legs": 88
+                  },
+                  "direction": "south",
+                  "fit": {
+                    "align": {
+                      "dx": -9,
+                      "dy": -4,
+                      "frame": 0
+                    },
+                    "body": 76,
+                    "feet": 85,
+                    "head": 53,
+                    "legs": 104,
+                    "region_dist": {
+                      "body": 16.63,
+                      "feet": 0.0,
+                      "head": 0.35,
+                      "legs": 0.52
+                    },
+                    "region_px": {
+                      "body": 466,
+                      "feet": 2,
+                      "head": 1,
+                      "legs": 88
+                    },
+                    "score": 55.44
+                  },
+                  "frame_group": 1,
+                  "look_type": 1648,
+                  "opaque_coverage": 1.0,
+                  "override_visible_pixels_valid": true,
+                  "phase": 0,
+                  "score": 55.996236313868614,
+                  "source_addons": 2,
+                  "source_palette": {
+                    "body": 95,
+                    "feet": 71,
+                    "head": 104,
+                    "legs": 123
+                  },
+                  "visible_region_px": {
+                    "body": 466,
+                    "feet": 2,
+                    "head": 1,
+                    "legs": 88
+                  }
+                },
+                {
+                  "accepted": true,
+                  "addons": 2,
+                  "align": [
+                    0,
+                    -4,
+                    -9
+                  ],
+                  "arbitrated_palette": {
+                    "body": 76,
+                    "feet": 71,
+                    "head": 53,
+                    "legs": 104
+                  },
+                  "arbitration_reasons": {
+                    "body": "wiki",
+                    "feet": "few_pixels",
+                    "head": "wiki",
+                    "legs": "wiki"
+                  },
+                  "cost_fit_visible_region_px": {
+                    "body": 408,
+                    "feet": 2,
+                    "head": 178,
+                    "legs": 87
+                  },
+                  "direction": "south",
+                  "fit": {
+                    "align": {
+                      "dx": -9,
+                      "dy": -4,
+                      "frame": 0
+                    },
+                    "body": 76,
+                    "feet": 85,
+                    "head": 53,
+                    "legs": 104,
+                    "region_dist": {
+                      "body": 0.43,
+                      "feet": 0.0,
+                      "head": 0.6,
+                      "legs": 0.27
+                    },
+                    "region_px": {
+                      "body": 408,
+                      "feet": 2,
+                      "head": 178,
+                      "legs": 87
+                    },
+                    "score": 0.8
+                  },
+                  "frame_group": 1,
+                  "look_type": 1648,
+                  "opaque_coverage": 1.0,
+                  "override_visible_pixels_valid": true,
+                  "phase": 0,
+                  "score": 1.3706782446388983,
+                  "source_addons": 2,
+                  "source_palette": {
+                    "body": 95,
+                    "feet": 71,
+                    "head": 104,
+                    "legs": 123
+                  },
+                  "visible_region_px": {
+                    "body": 408,
+                    "feet": 2,
+                    "head": 178,
+                    "legs": 87
+                  }
+                },
+                {
+                  "accepted": false,
+                  "addons": 3,
+                  "align": [
+                    0,
+                    -4,
+                    -9
+                  ],
+                  "arbitrated_palette": {
+                    "body": 95,
+                    "feet": 71,
+                    "head": 101,
+                    "legs": 123
+                  },
+                  "arbitration_reasons": {
+                    "body": "source",
+                    "feet": "few_pixels",
+                    "head": "wiki",
+                    "legs": "source"
+                  },
+                  "cost_fit_visible_region_px": {
+                    "body": 346,
+                    "feet": 2,
+                    "head": 178,
+                    "legs": 87
+                  },
+                  "direction": "south",
+                  "fit": {
+                    "align": {
+                      "dx": -9,
+                      "dy": -4,
+                      "frame": 0
+                    },
+                    "body": 114,
+                    "feet": 0,
+                    "head": 101,
+                    "legs": 95,
+                    "region_dist": {
+                      "body": 234.87,
+                      "feet": 255.0,
+                      "head": 163.0,
+                      "legs": 234.41
+                    },
+                    "region_px": {
+                      "body": 372,
+                      "feet": 2,
+                      "head": 178,
+                      "legs": 87
+                    },
+                    "score": 86.08
+                  },
+                  "frame_group": 1,
+                  "look_type": 1648,
+                  "opaque_coverage": 1.0,
+                  "override_visible_pixels_valid": true,
+                  "phase": 0,
+                  "score": 73.90577396953405,
+                  "source_addons": 2,
+                  "source_palette": {
+                    "body": 95,
+                    "feet": 71,
+                    "head": 104,
+                    "legs": 123
+                  },
+                  "visible_region_px": {
+                    "body": 372,
+                    "feet": 2,
+                    "head": 178,
+                    "legs": 87
+                  }
+                }
+              ],
+              "chosen": 2,
+              "qualification": "Addon2 retains donor Happen literal selector and shows native178-pixel head decoration present on current source GIF; addon0 loses head decoration and scores17.321868 while2scores1.370678. Both0and2 are below35; threshold alone does not uniquely select2. Actual visual review confirms decoration shape.",
+              "rule": "D16(c) WIKI_IMAGE",
+              "scores": {
+                "0": 17.3218684256662,
+                "1": 55.996236313868614,
+                "2": 1.3706782446388983,
+                "3": 73.90577396953405
+              },
+              "source_foot_palette_qualification": "71 literal selected Happen source;2pixels insufficient to replace or image-confirm;fencore122 source separately retained in its fit"
+            },
+            "source": {
+              "blob_sha1": "c37a08a72b12dcef967ffa2bd2c8b33a35bef01f",
+              "bytes": 6449,
+              "git_blob_verified": true,
+              "name": "Yerga",
+              "path": "/workspace/npc-r16-research/presentation/yerga-Happen.lua",
+              "repository": "Brunowots/Happen",
+              "repository_path": "data/npc/yerga.lua",
+              "revision": "d836d29186dbcbc1c1ae852048884f9612653364",
+              "sha256": "6fba061d53d9d9b4b8337f34b1e60bf693644c9e75ac4a04c1470975e4f99162",
+              "url": "https://raw.githubusercontent.com/Brunowots/Happen/d836d29186dbcbc1c1ae852048884f9612653364/data/npc/yerga.lua"
+            },
+            "source_mount_omitted": true,
+            "target_key": "oteryn:npc.yerga"
+          }
+        ],
+        "repository_git_revision": "d836d29186dbcbc1c1ae852048884f9612653364",
+        "schema": "NPC_R18_QUALIFIED_DEFINITION_SOURCE_FACTS/v1",
+        "source_repository": "Brunowots/Happen"
+      },
+      "donor": "happen",
+      "sha256": "fb3d7643d00af4f50e0d254db76df38a17e225b84738abe752bc8bbe8421b7b3"
+    },
+    {
+      "artifact": {
+        "dependence": "same donor family as retained source; no independent corroboration claim",
+        "kind": "LOCALLY_DERIVED_QUALIFIED_COMPOSITE_SNAPSHOT",
+        "movement_engine_qualification": {
+          "path": "/workspace/npc-r18-research/lane_c/toffee-zero-walk-proof.json",
+          "scope": "Literal registered interval/radius/floor flags only; runtime interaction and external-script conditions retained in source.",
+          "sha256": "26cdbaf6608f4ea089fa2fd013e8927ec23f0b9be9e7da1586ebe8581c2a65b7",
+          "source_default_facts_admitted": false
+        },
+        "records": [
+          {
+            "all_source_text_services_quest_effects_and_placements_excluded": true,
+            "current_actor_image_receipt": {
+              "path": "/workspace/npc-r18-research/wiki_captures/additional-current/current-br-additional-actor-image-custody.json",
+              "pointer": "/records/3",
+              "sha256": "4506d2bb26fcf076908df3498dcc2e5c2d7d7f1322968a77765c3ecd94de4ef6"
+            },
+            "definition_spans": [
+              {
+                "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+                "line_end": 5,
+                "line_start": 5
+              },
+              {
+                "byte_sha256": "668f8485cf94308a47ee23e789f7143f42121ef9b20666262632bd4671be54df",
+                "line_end": 10,
+                "line_start": 10
+              },
+              {
+                "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+                "line_end": 11,
+                "line_start": 11
+              },
+              {
+                "byte_sha256": "c6a846cab402d658c24d0bcbe2c2a7a6fd2c35ed320a6c0a342604cdb85acb72",
+                "line_end": 20,
+                "line_start": 13
+              },
+              {
+                "byte_sha256": "26fcae1277dbb45a391c6ae3126b9cc99808f9b636242be66a36f09314bed2de",
+                "line_end": 24,
+                "line_start": 22
+              }
+            ],
+            "donor": "fencore",
+            "excluded_callbacks": [],
+            "image": {
+              "bytes": 17000,
+              "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+              "path": "/workspace/npc-r18-research/wiki_captures/additional-current/toffee.gif",
+              "sha256": "10d95232b3d7e607db8e2a23277b9557933d30d059f1553f56cf47631d40f99a",
+              "url": "https://www.tibiawiki.com.br/images/4/42/Toffee.gif"
+            },
+            "literal_actor_name": "Toffee",
+            "literal_config": {
+              "flags": {
+                "floorchange": false
+              },
+              "name": "Toffee",
+              "outfit": {
+                "lookAddons": 0,
+                "lookBody": 0,
+                "lookFeet": 0,
+                "lookHead": 0,
+                "lookLegs": 0,
+                "lookType": 1751
+              },
+              "walkInterval": 0,
+              "walkRadius": 2
+            },
+            "name": "Toffee",
+            "pageid": 62172,
+            "qualification_file": {
+              "path": "/workspace/npc-r18-research/presentation/toffee-current-br-qualified-presentation.json",
+              "sha256": "6f7bf3644e1e67f87f9df903beec13d84c30e8ef45eee017fde08fb70d977157"
+            },
+            "qualified_probe": {
+              "accepted": true,
+              "addons": 0,
+              "arbitrated_align": [
+                0,
+                1,
+                -3
+              ],
+              "arbitrated_palette": {
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0
+              },
+              "arbitrated_score": 0.006245,
+              "arbitration_reasons": {
+                "body": "few_pixels",
+                "feet": "few_pixels",
+                "head": "few_pixels",
+                "legs": "few_pixels"
+              },
+              "colour_overrides_have_30_visible_pixels": true,
+              "cost_fit_visible_region_px": {
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0
+              },
+              "direction": "south",
+              "fit": {
+                "align": {
+                  "dx": -3,
+                  "dy": 1,
+                  "frame": 0
+                },
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0,
+                "region_dist": {
+                  "body": null,
+                  "feet": null,
+                  "head": null,
+                  "legs": null
+                },
+                "region_px": {
+                  "body": 0,
+                  "feet": 0,
+                  "head": 0,
+                  "legs": 0
+                },
+                "score": 0.01
+              },
+              "frame_group": 1,
+              "mount_pattern": 0,
+              "opaque_coverage": 1.0,
+              "phase": 0,
+              "source_align": [
+                0,
+                1,
+                -3
+              ],
+              "source_score": 0.006245,
+              "visible_region_px": {
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0
+              }
+            },
+            "registration_witnesses": [
+              {
+                "byte_end": 84,
+                "byte_start": 33,
+                "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+                "line_end": 2,
+                "line_start": 2
+              },
+              {
+                "byte_end": 3519,
+                "byte_start": 3492,
+                "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+                "line_end": 100,
+                "line_start": 100
+              }
+            ],
+            "revid": 443790,
+            "selector_review": null,
+            "source": {
+              "blob_sha1": "1ce1fd2e5da008e1909abcacb7a4d0dab087ee3a",
+              "bytes": 3520,
+              "git_blob_verified": true,
+              "name": "Toffee",
+              "path": "/workspace/npc-r18-research/lane_c/raw/fifth-empearl__fencore__toffee.lua",
+              "repository": "fifth-empearl/fencore",
+              "repository_path": "data-otservbr-global/npc/toffee.lua",
+              "revision": "00484ac96d3379fd7f18a3a410e53c2ae31fc981",
+              "sha256": "bec8dcc5681ca2afd6c6f5b099a81cad5a16b933d32f8935b0d704aa59a09581",
+              "url": "https://raw.githubusercontent.com/fifth-empearl/fencore/00484ac96d3379fd7f18a3a410e53c2ae31fc981/data-otservbr-global/npc/toffee.lua"
+            },
+            "source_mount_omitted": true,
+            "target_key": "oteryn:npc.toffee"
+          }
+        ],
+        "repository_git_revision": "00484ac96d3379fd7f18a3a410e53c2ae31fc981",
+        "schema": "NPC_R18_QUALIFIED_DEFINITION_SOURCE_FACTS/v1",
+        "source_repository": "fifth-empearl/fencore"
+      },
+      "donor": "fencore",
+      "sha256": "0998d347997d2896b118bbc2cdfaf5c8a7b7fc7f5aacb10b65b41fab89567529"
+    }
+  ],
+  "source_proofs": [
+    {
+      "all_source_text_services_quest_effects_and_placements_excluded": true,
+      "current_actor_image_receipt": {
+        "path": "/workspace/npc-r18-research/wiki_captures/additional-current/current-br-additional-actor-image-custody.json",
+        "pointer": "/records/0",
+        "sha256": "4506d2bb26fcf076908df3498dcc2e5c2d7d7f1322968a77765c3ecd94de4ef6"
+      },
+      "definition_spans": [
+        {
+          "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+          "line_end": 5,
+          "line_start": 5
+        },
+        {
+          "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+          "line_end": 10,
+          "line_start": 10
+        },
+        {
+          "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+          "line_end": 11,
+          "line_start": 11
+        },
+        {
+          "byte_sha256": "bac5a2cb06a2316ee42d72f729db135a42fac99dd7669b0252f6b05de65e706d",
+          "line_end": 20,
+          "line_start": 13
+        },
+        {
+          "byte_sha256": "49e458c3d2a1f04d619cb757a7689af13522a1a6cddccd8d1376637d6612130e",
+          "line_end": 24,
+          "line_start": 22
+        }
+      ],
+      "donor": "dakbugs",
+      "excluded_callbacks": [
+        {
+          "callback_slot": "CALLBACK_SET_INTERACTION",
+          "effect_or_opaque_call_count": 0,
+          "function_symbol": "onAddFocus",
+          "guard_count": 0,
+          "status": "UNRESOLVED_SOURCE_SYMBOL"
+        },
+        {
+          "callback_slot": "CALLBACK_REMOVE_INTERACTION",
+          "effect_or_opaque_call_count": 0,
+          "function_symbol": "onReleaseFocus",
+          "guard_count": 0,
+          "status": "UNRESOLVED_SOURCE_SYMBOL"
+        },
+        {
+          "callback_slot": "CALLBACK_GREET",
+          "effect_or_opaque_call_count": 2,
+          "function_symbol": "greetCallback",
+          "guard_count": 0,
+          "status": "SOURCE_CALLBACK_IR_ONLY"
+        },
+        {
+          "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+          "effect_or_opaque_call_count": 22,
+          "function_symbol": "creatureSayCallback",
+          "guard_count": 12,
+          "status": "SOURCE_CALLBACK_IR_ONLY"
+        }
+      ],
+      "image": {
+        "bytes": 14274,
+        "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+        "path": "/workspace/npc-r18-research/wiki_captures/additional-current/coco.gif",
+        "sha256": "4a1d261b7dad0e392a40ee2b0269455e798f3a59435e8f0cb03cd3557cd86e92",
+        "url": "https://www.tibiawiki.com.br/images/b/b3/Coco.gif"
+      },
+      "literal_actor_name": "Coco",
+      "literal_config": {
+        "flags": {
+          "floorchange": false
+        },
+        "name": "Coco",
+        "outfit": {
+          "lookAddons": 2,
+          "lookBody": 57,
+          "lookFeet": 68,
+          "lookHead": 0,
+          "lookLegs": 0,
+          "lookType": 1747
+        },
+        "walkInterval": 2000,
+        "walkRadius": 2
+      },
+      "name": "Coco",
+      "pageid": 62168,
+      "qualification_file": {
+        "path": "/workspace/npc-r16-research/presentation/coco-current-appearance-correction.json",
+        "sha256": "6c5f9c23f04b11ce2488b1ec4901566c170d86286816bfb4fa462436b4abce85"
+      },
+      "qualified_probe": {
+        "accepted": true,
+        "addons": 0,
+        "align": [
+          0,
+          0,
+          -3
+        ],
+        "arbitrated_palette": {
+          "body": 19,
+          "feet": 68,
+          "head": 86,
+          "legs": 110
+        },
+        "arbitrated_score": 3.7088706411966466,
+        "arbitration_reasons": {
+          "body": "wiki",
+          "feet": "few_pixels",
+          "head": "wiki",
+          "legs": "wiki"
+        },
+        "colour_overrides_have_30_visible_pixels": true,
+        "cost_fit_visible_region_px": {
+          "body": 346,
+          "feet": 27,
+          "head": 40,
+          "legs": 155
+        },
+        "direction": "south",
+        "fit": {
+          "align": {
+            "dx": -3,
+            "dy": 0,
+            "frame": 0
+          },
+          "body": 19,
+          "feet": 38,
+          "head": 86,
+          "legs": 110,
+          "region_dist": {
+            "body": 0.48,
+            "feet": 0.41,
+            "head": 0.26,
+            "legs": 0.41
+          },
+          "region_px": {
+            "body": 346,
+            "feet": 27,
+            "head": 40,
+            "legs": 155
+          },
+          "score": 0.39
+        },
+        "frame_group": 1,
+        "look_type": 1747,
+        "opaque_coverage": 1.0,
+        "override_visible_pixels_valid": true,
+        "phase": 0,
+        "score": 3.7088706411966466,
+        "source_addons": 2,
+        "source_palette": {
+          "body": 57,
+          "feet": 68,
+          "head": 0,
+          "legs": 0
+        },
+        "visible_region_px": {
+          "body": 346,
+          "feet": 27,
+          "head": 40,
+          "legs": 155
+        }
+      },
+      "registration_witnesses": [
+        {
+          "byte_end": 82,
+          "byte_start": 31,
+          "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+          "line_end": 2,
+          "line_start": 2
+        },
+        {
+          "byte_end": 9474,
+          "byte_start": 9447,
+          "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+          "line_end": 225,
+          "line_start": 225
+        }
+      ],
+      "revid": 428493,
+      "selector_review": {
+        "bounded_selector_domain": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "chosen_probe": {
+          "accepted": true,
+          "addons": 0,
+          "align": [
+            0,
+            0,
+            -3
+          ],
+          "arbitrated_palette": {
+            "body": 19,
+            "feet": 68,
+            "head": 86,
+            "legs": 110
+          },
+          "arbitration_reasons": {
+            "body": "wiki",
+            "feet": "few_pixels",
+            "head": "wiki",
+            "legs": "wiki"
+          },
+          "direction": "south",
+          "fit": {
+            "align": {
+              "dx": -3,
+              "dy": 0,
+              "frame": 0
+            },
+            "body": 19,
+            "feet": 38,
+            "head": 86,
+            "legs": 110,
+            "region_dist": {
+              "body": 0.48,
+              "feet": 0.41,
+              "head": 0.26,
+              "legs": 0.41
+            },
+            "region_px": {
+              "body": 346,
+              "feet": 27,
+              "head": 40,
+              "legs": 155
+            },
+            "score": 0.39
+          },
+          "frame_group": 1,
+          "look_type": 1747,
+          "opaque_coverage": 1.0,
+          "override_visible_pixels_valid": true,
+          "phase": 0,
+          "score": 3.7088706411966466,
+          "source_addons": 2,
+          "source_palette": {
+            "body": 57,
+            "feet": 68,
+            "head": 0,
+            "legs": 0
+          },
+          "visible_region_px": {
+            "body": 346,
+            "feet": 27,
+            "head": 40,
+            "legs": 155
+          }
+        },
+        "cost_fit_alignment": [
+          0,
+          0,
+          -3
+        ],
+        "cost_fit_alignment_equals_actual_alignment": true,
+        "cost_fit_visible_region_px": {
+          "body": 346,
+          "feet": 27,
+          "head": 40,
+          "legs": 155
+        },
+        "current_image_qualified_addons_candidate": 0,
+        "dialogue_admission": false,
+        "explicit_donor_addons": 2,
+        "native_appearance": {
+          "direction": "south",
+          "frame_group": 1,
+          "id": 1747,
+          "kind": "Outfit",
+          "phase": 0
+        },
+        "native_writes": 0,
+        "other_source_variant": {
+          "blob_sha1": "39a360da5eab28497a195ad2a3510659895797b5",
+          "explicit_addons": 3,
+          "repository": "fifth-empearl/fencore",
+          "revision": "00484ac96d3379fd7f18a3a410e53c2ae31fc981",
+          "score": 132.829548,
+          "source_palette": [
+            38,
+            113,
+            67,
+            95
+          ],
+          "status": "FAIL"
+        },
+        "palette_qualification": {
+          "body": "WIKI_IMAGE_FIT >=30 visible pixels",
+          "feet": "source literal68 retained;27px below30; image does not prove68",
+          "head": "WIKI_IMAGE_FIT >=30 visible pixels",
+          "legs": "WIKI_IMAGE_FIT >=30 visible pixels"
+        },
+        "probe_packet": {
+          "path": "/workspace/npc-r16-research/presentation/coco-addon-probes.json",
+          "sha256": "c8596a3df34a86c356b5a85749306cb5c5931724d4ee53b4857c11820a2bc1ea"
+        },
+        "qualified_palette": {
+          "body": 19,
+          "feet": 68,
+          "head": 86,
+          "legs": 110
+        },
+        "review_rule": "D16(c) WIKI_IMAGE for addon selector; WIKI_IMAGE_FIT for palette; requires root definition review",
+        "schema": "NPC_CURRENT_IMAGE_ADDON_CORRECTION_FACTS/v1",
+        "selector_scores": {
+          "0": 3.7088706411966466,
+          "1": 103.18042355371901,
+          "2": 109.50958867521368,
+          "3": 133.99736306439675
+        },
+        "source": {
+          "blob_sha1": "d139ecf5077d024a5fcfcae7d97870b529d979df",
+          "bytes": 9475,
+          "git_blob_verified": true,
+          "name": "Coco",
+          "path": "/workspace/npc-r16-research/presentation/coco.lua",
+          "repository": "dakotaotserver-glitch/dakbugs",
+          "repository_path": "data-otservbr-global/npc/coco.lua",
+          "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+          "sha256": "6cb58c1e3d7934133eb36b52b40e30bee4518e2ffc0eab7b806798d4ff02bfa8",
+          "status": 200,
+          "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/coco.lua"
+        },
+        "source_image": {
+          "bytes": 14274,
+          "name": "Coco",
+          "pageid": 62168,
+          "path": "/workspace/npc-r16-research/presentation/coco.gif",
+          "r15_actor_image_binding": "previous public browser literal two anchors; actor/pageid/revid qualified",
+          "r15_digest_match": true,
+          "revid": 428493,
+          "sha256": "4a1d261b7dad0e392a40ee2b0269455e798f3a59435e8f0cb03cd3557cd86e92",
+          "status": 200,
+          "url": "https://www.tibiawiki.com.br/images/b/b3/Coco.gif"
+        },
+        "source_mount": null,
+        "status": "QUALIFIED_CORRECTION_CANDIDATE_PENDING_ROOT_REVIEW",
+        "toolchain": {
+          "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "appearances_file": "appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "helper_path": "/workspace/Oteryn-Game/tools/content-schema/npc-authoring/wiki_outfit_fit.py",
+          "helper_sha256": "9e39d1d0f1da25e80cf843c779d17985ad3376e47fe258d7078948200c8fa594",
+          "numpy": "2.4.6",
+          "pillow": "12.3.0"
+        }
+      },
+      "source": {
+        "blob_sha1": "d139ecf5077d024a5fcfcae7d97870b529d979df",
+        "bytes": 9475,
+        "git_blob_verified": true,
+        "name": "Coco",
+        "path": "/workspace/npc-r16-research/presentation/coco.lua",
+        "repository": "dakotaotserver-glitch/dakbugs",
+        "repository_path": "data-otservbr-global/npc/coco.lua",
+        "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+        "sha256": "6cb58c1e3d7934133eb36b52b40e30bee4518e2ffc0eab7b806798d4ff02bfa8",
+        "status": 200,
+        "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/coco.lua"
+      },
+      "source_mount_omitted": true,
+      "target_key": "oteryn:npc.coco"
+    },
+    {
+      "all_source_text_services_quest_effects_and_placements_excluded": true,
+      "current_actor_image_receipt": {
+        "path": "/workspace/npc-r18-research/wiki_captures/current-br-actor-image-custody.json",
+        "pointer": "/records/2",
+        "sha256": "a2f27227bcfd4fdf44c92d3e90f8671b0fb08cd844b39971bf30b78645dc0395"
+      },
+      "definition_spans": [
+        {
+          "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+          "line_end": 5,
+          "line_start": 5
+        },
+        {
+          "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+          "line_end": 10,
+          "line_start": 10
+        },
+        {
+          "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+          "line_end": 11,
+          "line_start": 11
+        },
+        {
+          "byte_sha256": "6f92341a652d22ab92a5fd49c7b0de28e2414e80bb27fdbb17d50a00f2db2750",
+          "line_end": 20,
+          "line_start": 13
+        },
+        {
+          "byte_sha256": "49e458c3d2a1f04d619cb757a7689af13522a1a6cddccd8d1376637d6612130e",
+          "line_end": 24,
+          "line_start": 22
+        }
+      ],
+      "donor": "dakbugs",
+      "excluded_callbacks": [
+        {
+          "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+          "effect_or_opaque_call_count": 28,
+          "function_symbol": "creatureSayCallback",
+          "guard_count": 12,
+          "status": "SOURCE_CALLBACK_IR_ONLY"
+        }
+      ],
+      "image": {
+        "bytes": 6718,
+        "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+        "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/gunther.gif",
+        "sha256": "e4c43c334247ec6b9b188cbf7933c40dc595f4b92bb5553466498c51431d9c4b",
+        "url": "https://www.tibiawiki.com.br/images/f/fe/Gunther.gif"
+      },
+      "literal_actor_name": "Gunther",
+      "literal_config": {
+        "flags": {
+          "floorchange": false
+        },
+        "name": "Gunther",
+        "outfit": {
+          "lookAddons": 0,
+          "lookBody": 79,
+          "lookFeet": 106,
+          "lookHead": 59,
+          "lookLegs": 104,
+          "lookType": 128
+        },
+        "walkInterval": 2000,
+        "walkRadius": 2
+      },
+      "name": "Gunther",
+      "pageid": 62158,
+      "qualification_file": {
+        "path": "/workspace/npc-r18-research/presentation/gunther-current-br-qualified-presentation.json",
+        "sha256": "c3256e63ed73f62238c955a9d929156a4197c205fbd4a73464be60ef748456f8"
+      },
+      "qualified_probe": {
+        "accepted": true,
+        "addons": 0,
+        "arbitrated_align": [
+          0,
+          -8,
+          -16
+        ],
+        "arbitrated_palette": {
+          "body": 79,
+          "feet": 49,
+          "head": 40,
+          "legs": 104
+        },
+        "arbitrated_score": 0.47091,
+        "arbitration_reasons": {
+          "body": "source",
+          "feet": "wiki",
+          "head": "wiki",
+          "legs": "source"
+        },
+        "colour_overrides_have_30_visible_pixels": true,
+        "cost_fit_visible_region_px": {
+          "body": 220,
+          "feet": 46,
+          "head": 77,
+          "legs": 118
+        },
+        "direction": "south",
+        "fit": {
+          "align": {
+            "dx": -16,
+            "dy": -8,
+            "frame": 0
+          },
+          "body": 79,
+          "feet": 49,
+          "head": 40,
+          "legs": 104,
+          "region_dist": {
+            "body": 0.0,
+            "feet": 0.65,
+            "head": 0.92,
+            "legs": 0.49
+          },
+          "region_px": {
+            "body": 220,
+            "feet": 46,
+            "head": 77,
+            "legs": 118
+          },
+          "score": 0.47
+        },
+        "frame_group": 1,
+        "mount_pattern": 0,
+        "opaque_coverage": 1.0,
+        "phase": 0,
+        "source_align": [
+          0,
+          -8,
+          -16
+        ],
+        "source_score": 6.104932,
+        "visible_region_px": {
+          "body": 220,
+          "feet": 46,
+          "head": 77,
+          "legs": 118
+        }
+      },
+      "registration_witnesses": [
+        {
+          "byte_end": 85,
+          "byte_start": 34,
+          "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+          "line_end": 2,
+          "line_start": 2
+        },
+        {
+          "byte_end": 5384,
+          "byte_start": 5357,
+          "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+          "line_end": 129,
+          "line_start": 129
+        }
+      ],
+      "revid": 419325,
+      "selector_review": null,
+      "source": {
+        "blob_sha1": "fc2cda82500817e37365628ecb0e6828d4f70cec",
+        "bytes": 5385,
+        "git_blob_verified": true,
+        "name": "Gunther",
+        "path": "/workspace/npc-r18-research/lane_b/gunther.lua",
+        "repository": "dakotaotserver-glitch/dakbugs",
+        "repository_path": "data-otservbr-global/npc/gunther.lua",
+        "reused_capture": null,
+        "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+        "sha256": "3d94fa8dcc167088392cf4aebf3b008fc83f5678e55096c0eb84ecd2c3846303",
+        "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/gunther.lua"
+      },
+      "source_mount_omitted": true,
+      "target_key": "oteryn:npc.gunther"
+    },
+    {
+      "all_source_text_services_quest_effects_and_placements_excluded": true,
+      "current_actor_image_receipt": {
+        "path": "/workspace/npc-r18-research/wiki_captures/additional-current/current-br-additional-actor-image-custody.json",
+        "pointer": "/records/1",
+        "sha256": "4506d2bb26fcf076908df3498dcc2e5c2d7d7f1322968a77765c3ecd94de4ef6"
+      },
+      "definition_spans": [
+        {
+          "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+          "line_end": 5,
+          "line_start": 5
+        },
+        {
+          "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+          "line_end": 10,
+          "line_start": 10
+        },
+        {
+          "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+          "line_end": 11,
+          "line_start": 11
+        },
+        {
+          "byte_sha256": "ac6f3057b8e81ff7b066649d80de200633b05ccd70f964f46a8b178e89d3525e",
+          "line_end": 21,
+          "line_start": 13
+        },
+        {
+          "byte_sha256": "e9039ce60195f29b7842eec53222b90622cd38d9159c478ecd9d00c19f38c86a",
+          "line_end": 25,
+          "line_start": 23
+        }
+      ],
+      "donor": "happen",
+      "excluded_callbacks": [],
+      "image": {
+        "bytes": 16580,
+        "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+        "path": "/workspace/npc-r18-research/wiki_captures/additional-current/kiru.gif",
+        "sha256": "d5245ed56345eb802387b3ba168714dfea88502beb7b835a5f9c465a1be9cd17",
+        "url": "https://www.tibiawiki.com.br/images/0/00/Kiru.gif"
+      },
+      "literal_actor_name": "Kiru",
+      "literal_config": {
+        "flags": {
+          "floorchange": false
+        },
+        "name": "Kiru",
+        "outfit": {
+          "lookAddons": 0,
+          "lookBody": 99,
+          "lookFeet": 87,
+          "lookHead": 115,
+          "lookLegs": 20,
+          "lookMount": 0,
+          "lookType": 1647
+        },
+        "walkInterval": 2000,
+        "walkRadius": 2
+      },
+      "name": "Kiru",
+      "pageid": 59877,
+      "qualification_file": {
+        "path": "/workspace/npc-r16-research/presentation/three-merchant-qualified-presentations.json",
+        "sha256": "f976d1abff103d0259df35712c0a7b993928653938e7f624d2e2aa285651d21a"
+      },
+      "qualified_probe": {
+        "accepted": true,
+        "addons": 0,
+        "arbitrated_align": [
+          0,
+          0,
+          -4
+        ],
+        "arbitrated_palette": {
+          "body": 43,
+          "feet": 124,
+          "head": 115,
+          "legs": 20
+        },
+        "arbitrated_score": 1.385666,
+        "arbitration_reasons": {
+          "body": "wiki",
+          "feet": "wiki",
+          "head": "source",
+          "legs": "source"
+        },
+        "colour_overrides_have_30_visible_pixels": true,
+        "cost_fit_visible_region_px": {
+          "body": 857,
+          "feet": 207,
+          "head": 129,
+          "legs": 200
+        },
+        "direction": "south",
+        "fit": {
+          "align": {
+            "dx": -4,
+            "dy": 0,
+            "frame": 0
+          },
+          "body": 43,
+          "feet": 124,
+          "head": 115,
+          "legs": 20,
+          "region_dist": {
+            "body": 1.75,
+            "feet": 0.3,
+            "head": 0.41,
+            "legs": 0.52
+          },
+          "region_px": {
+            "body": 857,
+            "feet": 207,
+            "head": 129,
+            "legs": 200
+          },
+          "score": 1.39
+        },
+        "frame_group": 1,
+        "mount_pattern": 0,
+        "opaque_coverage": 1.0,
+        "phase": 0,
+        "source_align": [
+          0,
+          0,
+          -4
+        ],
+        "source_score": 30.112927,
+        "visible_region_px": {
+          "body": 857,
+          "feet": 207,
+          "head": 129,
+          "legs": 200
+        }
+      },
+      "registration_witnesses": [
+        {
+          "byte_end": 82,
+          "byte_start": 31,
+          "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+          "line_end": 2,
+          "line_start": 2
+        },
+        {
+          "byte_end": 4103,
+          "byte_start": 4076,
+          "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+          "line_end": 114,
+          "line_start": 114
+        }
+      ],
+      "revid": 401291,
+      "selector_review": null,
+      "source": {
+        "blob_sha1": "7cd14ca4f5e70278e1ea2664924de826b61bc9d9",
+        "bytes": 4104,
+        "git_blob_verified": true,
+        "name": "Kiru",
+        "path": "/workspace/npc-r16-research/presentation/kiru-Happen.lua",
+        "repository": "Brunowots/Happen",
+        "repository_path": "data/npc/kiru.lua",
+        "revision": "d836d29186dbcbc1c1ae852048884f9612653364",
+        "sha256": "96e744f6bf5732117c282f0c02ab68db5e2abaed305365f4f3343fbb5bb60e95",
+        "url": "https://raw.githubusercontent.com/Brunowots/Happen/d836d29186dbcbc1c1ae852048884f9612653364/data/npc/kiru.lua"
+      },
+      "source_mount_omitted": false,
+      "target_key": "oteryn:npc.kiru"
+    },
+    {
+      "all_source_text_services_quest_effects_and_placements_excluded": true,
+      "current_actor_image_receipt": {
+        "path": "/workspace/npc-r18-research/wiki_captures/current-br-actor-image-custody.json",
+        "pointer": "/records/4",
+        "sha256": "a2f27227bcfd4fdf44c92d3e90f8671b0fb08cd844b39971bf30b78645dc0395"
+      },
+      "definition_spans": [
+        {
+          "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+          "line_end": 5,
+          "line_start": 5
+        },
+        {
+          "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+          "line_end": 10,
+          "line_start": 10
+        },
+        {
+          "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+          "line_end": 11,
+          "line_start": 11
+        },
+        {
+          "byte_sha256": "69c02f2b62c4d588ad5ebfb15a9789d68e00712e8c6fd7949a11e8944bc4d06c",
+          "line_end": 21,
+          "line_start": 13
+        },
+        {
+          "byte_sha256": "49e458c3d2a1f04d619cb757a7689af13522a1a6cddccd8d1376637d6612130e",
+          "line_end": 25,
+          "line_start": 23
+        }
+      ],
+      "donor": "dakbugs",
+      "excluded_callbacks": [
+        {
+          "callback_slot": "CALLBACK_GREET",
+          "effect_or_opaque_call_count": 3,
+          "function_symbol": "greetCallback",
+          "guard_count": 1,
+          "status": "SOURCE_CALLBACK_IR_ONLY"
+        },
+        {
+          "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+          "effect_or_opaque_call_count": 19,
+          "function_symbol": "creatureSayCallback",
+          "guard_count": 7,
+          "status": "SOURCE_CALLBACK_IR_ONLY"
+        }
+      ],
+      "image": {
+        "bytes": 7023,
+        "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+        "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/raclette.gif",
+        "sha256": "1d134d231b970637741a3701be5d85e09b50a5182194a3194fffa728c6cd177d",
+        "url": "https://www.tibiawiki.com.br/images/8/87/Ra%27Clette.gif"
+      },
+      "literal_actor_name": "Ra'Clette",
+      "literal_config": {
+        "flags": {
+          "floorchange": false
+        },
+        "name": "Ra'Clette",
+        "outfit": {
+          "lookAddons": 0,
+          "lookBody": 132,
+          "lookFeet": 0,
+          "lookHead": 0,
+          "lookLegs": 76,
+          "lookMount": 0,
+          "lookType": 533
+        },
+        "walkInterval": 2000,
+        "walkRadius": 2
+      },
+      "name": "Ra'Clette",
+      "pageid": 50712,
+      "qualification_file": {
+        "path": "/workspace/npc-r18-research/presentation/three-current-br-qualified-presentations.json",
+        "sha256": "bc5f15f4b6f8cd2f066276cc6c51514499a364fa94fa8c190a8f581fab7c704d"
+      },
+      "qualified_probe": {
+        "accepted": true,
+        "addons": 0,
+        "arbitrated_align": [
+          7,
+          0,
+          -11
+        ],
+        "arbitrated_palette": {
+          "body": 113,
+          "feet": 0,
+          "head": 0,
+          "legs": 19
+        },
+        "arbitrated_score": 0.989819,
+        "arbitration_reasons": {
+          "body": "wiki",
+          "feet": "few_pixels",
+          "head": "few_pixels",
+          "legs": "wiki"
+        },
+        "colour_overrides_have_30_visible_pixels": true,
+        "cost_fit_visible_region_px": {
+          "body": 66,
+          "feet": 0,
+          "head": 0,
+          "legs": 63
+        },
+        "direction": "south",
+        "fit": {
+          "align": {
+            "dx": -11,
+            "dy": 0,
+            "frame": 7
+          },
+          "body": 113,
+          "feet": 0,
+          "head": 0,
+          "legs": 19,
+          "region_dist": {
+            "body": 0.38,
+            "feet": null,
+            "head": null,
+            "legs": 0.81
+          },
+          "region_px": {
+            "body": 66,
+            "feet": 0,
+            "head": 0,
+            "legs": 63
+          },
+          "score": 0.99
+        },
+        "frame_group": 1,
+        "mount_pattern": 0,
+        "opaque_coverage": 1.0,
+        "phase": 0,
+        "source_align": [
+          7,
+          0,
+          -11
+        ],
+        "source_score": 6.152056,
+        "visible_region_px": {
+          "body": 66,
+          "feet": 0,
+          "head": 0,
+          "legs": 63
+        }
+      },
+      "registration_witnesses": [
+        {
+          "byte_end": 87,
+          "byte_start": 36,
+          "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+          "line_end": 2,
+          "line_start": 2
+        },
+        {
+          "byte_end": 4432,
+          "byte_start": 4405,
+          "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+          "line_end": 121,
+          "line_start": 121
+        }
+      ],
+      "revid": 367577,
+      "selector_review": null,
+      "source": {
+        "blob_sha1": "2039ff364011fb5045f174105f66bbd5036915fd",
+        "bytes": 4433,
+        "git_blob_verified": true,
+        "name": "Ra'Clette",
+        "path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__Ra'Clette.lua",
+        "raw_path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__Ra'Clette.lua",
+        "repository": "dakotaotserver-glitch/dakbugs",
+        "repository_path": "data-otservbr-global/npc/Ra'Clette.lua",
+        "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+        "sha256": "c0371b93a4c69c6e41c6e8fbceca17c4448c28c8c20a68d49df586e7e68d4658",
+        "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/Ra%27Clette.lua"
+      },
+      "source_mount_omitted": false,
+      "target_key": "oteryn:npc.ra_clette"
+    },
+    {
+      "all_source_text_services_quest_effects_and_placements_excluded": true,
+      "current_actor_image_receipt": {
+        "path": "/workspace/npc-r18-research/wiki_captures/current-br-actor-image-custody.json",
+        "pointer": "/records/5",
+        "sha256": "a2f27227bcfd4fdf44c92d3e90f8671b0fb08cd844b39971bf30b78645dc0395"
+      },
+      "definition_spans": [
+        {
+          "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+          "line_end": 5,
+          "line_start": 5
+        },
+        {
+          "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+          "line_end": 10,
+          "line_start": 10
+        },
+        {
+          "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+          "line_end": 11,
+          "line_start": 11
+        },
+        {
+          "byte_sha256": "b12d624a8dde07dd04dc49068caa95128e3dff9c6d7f2566f566f444431d7fe0",
+          "line_end": 21,
+          "line_start": 13
+        },
+        {
+          "byte_sha256": "49e458c3d2a1f04d619cb757a7689af13522a1a6cddccd8d1376637d6612130e",
+          "line_end": 25,
+          "line_start": 23
+        }
+      ],
+      "donor": "dakbugs",
+      "excluded_callbacks": [
+        {
+          "callback_slot": "CALLBACK_GREET",
+          "effect_or_opaque_call_count": 3,
+          "function_symbol": "greetCallback",
+          "guard_count": 1,
+          "status": "SOURCE_CALLBACK_IR_ONLY"
+        },
+        {
+          "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+          "effect_or_opaque_call_count": 18,
+          "function_symbol": "creatureSayCallback",
+          "guard_count": 8,
+          "status": "SOURCE_CALLBACK_IR_ONLY"
+        }
+      ],
+      "image": {
+        "bytes": 5853,
+        "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+        "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/sniff.gif",
+        "sha256": "b3c8f4d384b1e3c2207796fff51e3f73ab061d8eb44006acc0e10c3ff9a17fef",
+        "url": "https://www.tibiawiki.com.br/images/6/63/Sniff.gif"
+      },
+      "literal_actor_name": "Sniff",
+      "literal_config": {
+        "flags": {
+          "floorchange": false
+        },
+        "name": "Sniff",
+        "outfit": {
+          "lookAddons": 1,
+          "lookBody": 57,
+          "lookFeet": 96,
+          "lookHead": 2,
+          "lookLegs": 78,
+          "lookMount": 0,
+          "lookType": 1346
+        },
+        "walkInterval": 2000,
+        "walkRadius": 2
+      },
+      "name": "Sniff",
+      "pageid": 50710,
+      "qualification_file": {
+        "path": "/workspace/npc-r18-research/presentation/three-current-br-qualified-presentations.json",
+        "sha256": "bc5f15f4b6f8cd2f066276cc6c51514499a364fa94fa8c190a8f581fab7c704d"
+      },
+      "qualified_probe": {
+        "accepted": true,
+        "addons": 1,
+        "arbitrated_align": [
+          7,
+          0,
+          -14
+        ],
+        "arbitrated_palette": {
+          "body": 19,
+          "feet": 96,
+          "head": 38,
+          "legs": 78
+        },
+        "arbitrated_score": 1.679514,
+        "arbitration_reasons": {
+          "body": "wiki",
+          "feet": "few_pixels",
+          "head": "wiki",
+          "legs": "few_pixels"
+        },
+        "colour_overrides_have_30_visible_pixels": true,
+        "cost_fit_visible_region_px": {
+          "body": 72,
+          "feet": 5,
+          "head": 142,
+          "legs": 3
+        },
+        "direction": "south",
+        "fit": {
+          "align": {
+            "dx": -14,
+            "dy": 0,
+            "frame": 7
+          },
+          "body": 19,
+          "feet": 113,
+          "head": 38,
+          "legs": 76,
+          "region_dist": {
+            "body": 0.53,
+            "feet": 0.09,
+            "head": 0.26,
+            "legs": 0.42
+          },
+          "region_px": {
+            "body": 72,
+            "feet": 5,
+            "head": 142,
+            "legs": 3
+          },
+          "score": 0.28
+        },
+        "frame_group": 1,
+        "mount_pattern": 0,
+        "opaque_coverage": 1.0,
+        "phase": 0,
+        "source_align": [
+          7,
+          0,
+          -14
+        ],
+        "source_score": 16.294777,
+        "visible_region_px": {
+          "body": 72,
+          "feet": 5,
+          "head": 142,
+          "legs": 3
+        }
+      },
+      "registration_witnesses": [
+        {
+          "byte_end": 83,
+          "byte_start": 32,
+          "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+          "line_end": 2,
+          "line_start": 2
+        },
+        {
+          "byte_end": 4607,
+          "byte_start": 4580,
+          "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+          "line_end": 122,
+          "line_start": 122
+        }
+      ],
+      "revid": 357215,
+      "selector_review": null,
+      "source": {
+        "blob_sha1": "2b1b4fc65d3d3071c7e0c97aa9d658a83c18643c",
+        "bytes": 4608,
+        "git_blob_verified": true,
+        "name": "Sniff",
+        "path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__sniff.lua",
+        "raw_path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__sniff.lua",
+        "repository": "dakotaotserver-glitch/dakbugs",
+        "repository_path": "data-otservbr-global/npc/sniff.lua",
+        "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+        "sha256": "039035e972a75d111dd2b8114236eb6121e76569e62cc837b08afb9b302f61be",
+        "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/sniff.lua"
+      },
+      "source_mount_omitted": false,
+      "target_key": "oteryn:npc.sniff"
+    },
+    {
+      "all_source_text_services_quest_effects_and_placements_excluded": true,
+      "current_actor_image_receipt": {
+        "path": "/workspace/npc-r18-research/wiki_captures/additional-current/current-br-additional-actor-image-custody.json",
+        "pointer": "/records/2",
+        "sha256": "4506d2bb26fcf076908df3498dcc2e5c2d7d7f1322968a77765c3ecd94de4ef6"
+      },
+      "definition_spans": [
+        {
+          "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+          "line_end": 5,
+          "line_start": 5
+        },
+        {
+          "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+          "line_end": 10,
+          "line_start": 10
+        },
+        {
+          "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+          "line_end": 11,
+          "line_start": 11
+        },
+        {
+          "byte_sha256": "4ce25d228030f5eff775bcf3795138652acf65285362429455985a6a95b8f204",
+          "line_end": 20,
+          "line_start": 13
+        },
+        {
+          "byte_sha256": "e9039ce60195f29b7842eec53222b90622cd38d9159c478ecd9d00c19f38c86a",
+          "line_end": 24,
+          "line_start": 22
+        }
+      ],
+      "donor": "happen",
+      "excluded_callbacks": [
+        {
+          "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+          "effect_or_opaque_call_count": 13,
+          "function_symbol": "creatureSayCallback",
+          "guard_count": 5,
+          "status": "SOURCE_CALLBACK_IR_ONLY"
+        }
+      ],
+      "image": {
+        "bytes": 6893,
+        "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+        "path": "/workspace/npc-r18-research/wiki_captures/additional-current/tamru.gif",
+        "sha256": "1c9722433b9927ea800b8df06d6733c002f43f7ed8d0e99d56078b08999d9637",
+        "url": "https://www.tibiawiki.com.br/images/2/2a/Tamru.gif"
+      },
+      "literal_actor_name": "Tamru",
+      "literal_config": {
+        "flags": {
+          "floorchange": false
+        },
+        "name": "Tamru",
+        "outfit": {
+          "lookAddons": 0,
+          "lookBody": 71,
+          "lookFeet": 19,
+          "lookHead": 95,
+          "lookLegs": 128,
+          "lookType": 146
+        },
+        "walkInterval": 2000,
+        "walkRadius": 2
+      },
+      "name": "Tamru",
+      "pageid": 59878,
+      "qualification_file": {
+        "path": "/workspace/npc-r16-research/presentation/three-merchant-qualified-presentations.json",
+        "sha256": "f976d1abff103d0259df35712c0a7b993928653938e7f624d2e2aa285651d21a"
+      },
+      "qualified_probe": {
+        "accepted": true,
+        "addons": 0,
+        "arbitrated_align": [
+          0,
+          -8,
+          -16
+        ],
+        "arbitrated_palette": {
+          "body": 71,
+          "feet": 0,
+          "head": 95,
+          "legs": 128
+        },
+        "arbitrated_score": 0.446796,
+        "arbitration_reasons": {
+          "body": "source",
+          "feet": "wiki",
+          "head": "source",
+          "legs": "source"
+        },
+        "colour_overrides_have_30_visible_pixels": true,
+        "cost_fit_visible_region_px": {
+          "body": 63,
+          "feet": 31,
+          "head": 87,
+          "legs": 115
+        },
+        "direction": "south",
+        "fit": {
+          "align": {
+            "dx": -16,
+            "dy": -8,
+            "frame": 0
+          },
+          "body": 71,
+          "feet": 0,
+          "head": 95,
+          "legs": 128,
+          "region_dist": {
+            "body": 0.69,
+            "feet": 0.56,
+            "head": 0.47,
+            "legs": 0.36
+          },
+          "region_px": {
+            "body": 63,
+            "feet": 31,
+            "head": 87,
+            "legs": 115
+          },
+          "score": 0.45
+        },
+        "frame_group": 1,
+        "mount_pattern": 0,
+        "opaque_coverage": 1.0,
+        "phase": 0,
+        "source_align": [
+          0,
+          -8,
+          -16
+        ],
+        "source_score": 2.770735,
+        "visible_region_px": {
+          "body": 63,
+          "feet": 31,
+          "head": 87,
+          "legs": 115
+        }
+      },
+      "registration_witnesses": [
+        {
+          "byte_end": 83,
+          "byte_start": 32,
+          "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+          "line_end": 2,
+          "line_start": 2
+        },
+        {
+          "byte_end": 6470,
+          "byte_start": 6443,
+          "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+          "line_end": 162,
+          "line_start": 162
+        }
+      ],
+      "revid": 408357,
+      "selector_review": null,
+      "source": {
+        "blob_sha1": "8a41d8266c986e4c3fbd7d64fc8b1cc53bedf6e8",
+        "bytes": 6471,
+        "git_blob_verified": true,
+        "name": "Tamru",
+        "path": "/workspace/npc-r16-research/presentation/tamru-Happen.lua",
+        "repository": "Brunowots/Happen",
+        "repository_path": "data/npc/tamru.lua",
+        "revision": "d836d29186dbcbc1c1ae852048884f9612653364",
+        "sha256": "ac0cc0540a2c7ffd570ccce0344795383cf1bb252cc1277c1d0a85fe77eabaa9",
+        "url": "https://raw.githubusercontent.com/Brunowots/Happen/d836d29186dbcbc1c1ae852048884f9612653364/data/npc/tamru.lua"
+      },
+      "source_mount_omitted": true,
+      "target_key": "oteryn:npc.tamru"
+    },
+    {
+      "all_source_text_services_quest_effects_and_placements_excluded": true,
+      "current_actor_image_receipt": {
+        "path": "/workspace/npc-r18-research/wiki_captures/current-br-actor-image-custody.json",
+        "pointer": "/records/6",
+        "sha256": "a2f27227bcfd4fdf44c92d3e90f8671b0fb08cd844b39971bf30b78645dc0395"
+      },
+      "definition_spans": [
+        {
+          "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+          "line_end": 5,
+          "line_start": 5
+        },
+        {
+          "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+          "line_end": 10,
+          "line_start": 10
+        },
+        {
+          "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+          "line_end": 11,
+          "line_start": 11
+        },
+        {
+          "byte_sha256": "bdc54711fd6fb7f168ef0b6fe316e3c42036473a298fe3a2d8afff785daabffd",
+          "line_end": 20,
+          "line_start": 13
+        },
+        {
+          "byte_sha256": "26590c6f6aa93d2eac18e3930cf26cbc983f167f10e4cc8848a6ce3087655c27",
+          "line_end": 24,
+          "line_start": 22
+        }
+      ],
+      "donor": "dakbugs",
+      "excluded_callbacks": [
+        {
+          "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+          "effect_or_opaque_call_count": 18,
+          "function_symbol": "creatureSayCallback",
+          "guard_count": 6,
+          "status": "SOURCE_CALLBACK_IR_ONLY"
+        }
+      ],
+      "image": {
+        "bytes": 25404,
+        "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+        "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/thedraccoonnpc.gif",
+        "sha256": "3882639caa448a3a026e36dacfb7ac3888eef233da5dcf19ef2a05b3ea8800a6",
+        "url": "https://www.tibiawiki.com.br/images/b/bc/The_Draccoon_%28NPC%29.gif"
+      },
+      "literal_actor_alias_binding": {
+        "br_title": "The Draccoon (NPC)",
+        "canonical_npc_key": "oteryn:npc.the_draccoon_npc",
+        "dialogue_admitted": false,
+        "general_suffix_normalization": false,
+        "literal_actor_name": "The Draccoon",
+        "pageid": 61322,
+        "revid": 416298,
+        "rule": "D8_EXACT_ACTOR_DISAMBIGUATION_CORROBORATED_BY_ATTRIBUTED_SPEECH",
+        "source_capture": {
+          "bytes": 3843,
+          "derived_from": "/parse/wikitext/*",
+          "path": "/workspace/npc-r18-research/wiki_captures/browser-captures/the_draccoon__npc_.wikitext.txt",
+          "sha256": "90adb85049eab4c3dc9b8eed74e065ca552b10a0f46d6d2f8bdcd8032f251c74"
+        },
+        "wiki_prose_copied": false,
+        "witnesses": [
+          {
+            "byte_end": 239,
+            "byte_start": 0,
+            "fragment_sha256": "12b5336c9a5f70dbb81d7f2f5921e8f44cb03b2f3254445e0c5e619caac6edac",
+            "line": 1
+          },
+          {
+            "byte_end": 745,
+            "byte_start": 683,
+            "fragment_sha256": "f5da4a8b3d393ba41c50a0cdd7264a8fb4fc1f485219dc4953b96df2dec81b42",
+            "line": 16
+          },
+          {
+            "byte_end": 909,
+            "byte_start": 792,
+            "fragment_sha256": "549567214dd7f2e783494e946c27c3b443d490e20e41935389567818a8653578",
+            "line": 19
+          }
+        ]
+      },
+      "literal_actor_name": "The Draccoon",
+      "literal_config": {
+        "flags": {
+          "floorchange": false
+        },
+        "name": "The Draccoon",
+        "outfit": {
+          "lookAddons": 0,
+          "lookBody": 0,
+          "lookFeet": 0,
+          "lookHead": 0,
+          "lookLegs": 0,
+          "lookType": 1703
+        },
+        "walkInterval": 2000,
+        "walkRadius": 2
+      },
+      "name": "The Draccoon (NPC)",
+      "pageid": 61322,
+      "qualification_file": {
+        "path": "/workspace/npc-r18-research/presentation/three-current-br-qualified-presentations.json",
+        "sha256": "bc5f15f4b6f8cd2f066276cc6c51514499a364fa94fa8c190a8f581fab7c704d"
+      },
+      "qualified_probe": {
+        "accepted": true,
+        "addons": 0,
+        "arbitrated_align": [
+          0,
+          0,
+          15
+        ],
+        "arbitrated_palette": {
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0
+        },
+        "arbitrated_score": 11.030914,
+        "arbitration_reasons": {
+          "body": "few_pixels",
+          "feet": "few_pixels",
+          "head": "few_pixels",
+          "legs": "few_pixels"
+        },
+        "colour_overrides_have_30_visible_pixels": true,
+        "cost_fit_visible_region_px": {
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0
+        },
+        "direction": "south",
+        "fit": {
+          "align": {
+            "dx": 15,
+            "dy": 0,
+            "frame": 0
+          },
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0,
+          "region_dist": {
+            "body": null,
+            "feet": null,
+            "head": null,
+            "legs": null
+          },
+          "region_px": {
+            "body": 0,
+            "feet": 0,
+            "head": 0,
+            "legs": 0
+          },
+          "score": 11.03
+        },
+        "frame_group": 1,
+        "mount_pattern": 0,
+        "opaque_coverage": 1.0,
+        "phase": 0,
+        "source_align": [
+          0,
+          0,
+          15
+        ],
+        "source_score": 11.030914,
+        "visible_region_px": {
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0
+        }
+      },
+      "registration_witnesses": [
+        {
+          "byte_end": 90,
+          "byte_start": 39,
+          "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+          "line_end": 2,
+          "line_start": 2
+        },
+        {
+          "byte_end": 4298,
+          "byte_start": 4271,
+          "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+          "line_end": 99,
+          "line_start": 99
+        }
+      ],
+      "revid": 416298,
+      "selector_review": null,
+      "source": {
+        "blob_sha1": "4baeacc7b5ab2d9793beadfbe8dd46c59dcc2ff0",
+        "bytes": 4299,
+        "git_blob_verified": true,
+        "name": "The Draccoon (NPC)",
+        "path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__The Draccoon.lua",
+        "raw_path": "/workspace/npc-r18-research/lane_c/raw/dakotaotserver-glitch/dakbugs/data-otservbr-global__npc__The Draccoon.lua",
+        "repository": "dakotaotserver-glitch/dakbugs",
+        "repository_path": "data-otservbr-global/npc/The Draccoon.lua",
+        "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+        "sha256": "32154735d97f9357cf82ed011698bf849778fa2dbb973647d65abd0092c34073",
+        "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/The%20Draccoon.lua"
+      },
+      "source_mount_omitted": true,
+      "target_key": "oteryn:npc.the_draccoon_npc"
+    },
+    {
+      "all_source_text_services_quest_effects_and_placements_excluded": true,
+      "current_actor_image_receipt": {
+        "path": "/workspace/npc-r18-research/wiki_captures/additional-current/current-br-additional-actor-image-custody.json",
+        "pointer": "/records/3",
+        "sha256": "4506d2bb26fcf076908df3498dcc2e5c2d7d7f1322968a77765c3ecd94de4ef6"
+      },
+      "definition_spans": [
+        {
+          "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+          "line_end": 5,
+          "line_start": 5
+        },
+        {
+          "byte_sha256": "668f8485cf94308a47ee23e789f7143f42121ef9b20666262632bd4671be54df",
+          "line_end": 10,
+          "line_start": 10
+        },
+        {
+          "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+          "line_end": 11,
+          "line_start": 11
+        },
+        {
+          "byte_sha256": "c6a846cab402d658c24d0bcbe2c2a7a6fd2c35ed320a6c0a342604cdb85acb72",
+          "line_end": 20,
+          "line_start": 13
+        },
+        {
+          "byte_sha256": "26fcae1277dbb45a391c6ae3126b9cc99808f9b636242be66a36f09314bed2de",
+          "line_end": 24,
+          "line_start": 22
+        }
+      ],
+      "donor": "fencore",
+      "excluded_callbacks": [],
+      "image": {
+        "bytes": 17000,
+        "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+        "path": "/workspace/npc-r18-research/wiki_captures/additional-current/toffee.gif",
+        "sha256": "10d95232b3d7e607db8e2a23277b9557933d30d059f1553f56cf47631d40f99a",
+        "url": "https://www.tibiawiki.com.br/images/4/42/Toffee.gif"
+      },
+      "literal_actor_name": "Toffee",
+      "literal_config": {
+        "flags": {
+          "floorchange": false
+        },
+        "name": "Toffee",
+        "outfit": {
+          "lookAddons": 0,
+          "lookBody": 0,
+          "lookFeet": 0,
+          "lookHead": 0,
+          "lookLegs": 0,
+          "lookType": 1751
+        },
+        "walkInterval": 0,
+        "walkRadius": 2
+      },
+      "name": "Toffee",
+      "pageid": 62172,
+      "qualification_file": {
+        "path": "/workspace/npc-r18-research/presentation/toffee-current-br-qualified-presentation.json",
+        "sha256": "6f7bf3644e1e67f87f9df903beec13d84c30e8ef45eee017fde08fb70d977157"
+      },
+      "qualified_probe": {
+        "accepted": true,
+        "addons": 0,
+        "arbitrated_align": [
+          0,
+          1,
+          -3
+        ],
+        "arbitrated_palette": {
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0
+        },
+        "arbitrated_score": 0.006245,
+        "arbitration_reasons": {
+          "body": "few_pixels",
+          "feet": "few_pixels",
+          "head": "few_pixels",
+          "legs": "few_pixels"
+        },
+        "colour_overrides_have_30_visible_pixels": true,
+        "cost_fit_visible_region_px": {
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0
+        },
+        "direction": "south",
+        "fit": {
+          "align": {
+            "dx": -3,
+            "dy": 1,
+            "frame": 0
+          },
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0,
+          "region_dist": {
+            "body": null,
+            "feet": null,
+            "head": null,
+            "legs": null
+          },
+          "region_px": {
+            "body": 0,
+            "feet": 0,
+            "head": 0,
+            "legs": 0
+          },
+          "score": 0.01
+        },
+        "frame_group": 1,
+        "mount_pattern": 0,
+        "opaque_coverage": 1.0,
+        "phase": 0,
+        "source_align": [
+          0,
+          1,
+          -3
+        ],
+        "source_score": 0.006245,
+        "visible_region_px": {
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0
+        }
+      },
+      "registration_witnesses": [
+        {
+          "byte_end": 84,
+          "byte_start": 33,
+          "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+          "line_end": 2,
+          "line_start": 2
+        },
+        {
+          "byte_end": 3519,
+          "byte_start": 3492,
+          "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+          "line_end": 100,
+          "line_start": 100
+        }
+      ],
+      "revid": 443790,
+      "selector_review": null,
+      "source": {
+        "blob_sha1": "1ce1fd2e5da008e1909abcacb7a4d0dab087ee3a",
+        "bytes": 3520,
+        "git_blob_verified": true,
+        "name": "Toffee",
+        "path": "/workspace/npc-r18-research/lane_c/raw/fifth-empearl__fencore__toffee.lua",
+        "repository": "fifth-empearl/fencore",
+        "repository_path": "data-otservbr-global/npc/toffee.lua",
+        "revision": "00484ac96d3379fd7f18a3a410e53c2ae31fc981",
+        "sha256": "bec8dcc5681ca2afd6c6f5b099a81cad5a16b933d32f8935b0d704aa59a09581",
+        "url": "https://raw.githubusercontent.com/fifth-empearl/fencore/00484ac96d3379fd7f18a3a410e53c2ae31fc981/data-otservbr-global/npc/toffee.lua"
+      },
+      "source_mount_omitted": true,
+      "target_key": "oteryn:npc.toffee"
+    },
+    {
+      "all_source_text_services_quest_effects_and_placements_excluded": true,
+      "current_actor_image_receipt": {
+        "path": "/workspace/npc-r18-research/wiki_captures/additional-current/current-br-additional-actor-image-custody.json",
+        "pointer": "/records/4",
+        "sha256": "4506d2bb26fcf076908df3498dcc2e5c2d7d7f1322968a77765c3ecd94de4ef6"
+      },
+      "definition_spans": [
+        {
+          "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+          "line_end": 5,
+          "line_start": 5
+        },
+        {
+          "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+          "line_end": 10,
+          "line_start": 10
+        },
+        {
+          "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+          "line_end": 11,
+          "line_start": 11
+        },
+        {
+          "byte_sha256": "189669a8ce95bdbad1f2c274ba9b65a315a5f1ec745584ad08ca2a0a5fa8286b",
+          "line_end": 20,
+          "line_start": 13
+        },
+        {
+          "byte_sha256": "e9039ce60195f29b7842eec53222b90622cd38d9159c478ecd9d00c19f38c86a",
+          "line_end": 24,
+          "line_start": 22
+        }
+      ],
+      "donor": "happen",
+      "excluded_callbacks": [],
+      "image": {
+        "bytes": 14202,
+        "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+        "path": "/workspace/npc-r18-research/wiki_captures/additional-current/yerga.gif",
+        "sha256": "867167eb41d9ebbd9f4f79c2f39922b5cd9dbe607334534dc18fe8e94ab9133a",
+        "url": "https://www.tibiawiki.com.br/images/7/7a/Yerga.gif"
+      },
+      "literal_actor_name": "Yerga",
+      "literal_config": {
+        "flags": {
+          "floorchange": false
+        },
+        "name": "Yerga",
+        "outfit": {
+          "lookAddons": 2,
+          "lookBody": 95,
+          "lookFeet": 71,
+          "lookHead": 104,
+          "lookLegs": 123,
+          "lookType": 1648
+        },
+        "walkInterval": 2000,
+        "walkRadius": 2
+      },
+      "name": "Yerga",
+      "pageid": 59876,
+      "qualification_file": {
+        "path": "/workspace/npc-r16-research/presentation/three-merchant-qualified-presentations.json",
+        "sha256": "f976d1abff103d0259df35712c0a7b993928653938e7f624d2e2aa285651d21a"
+      },
+      "qualified_probe": {
+        "accepted": true,
+        "addons": 2,
+        "arbitrated_align": [
+          0,
+          -4,
+          -9
+        ],
+        "arbitrated_palette": {
+          "body": 76,
+          "feet": 71,
+          "head": 53,
+          "legs": 104
+        },
+        "arbitrated_score": 1.370678,
+        "arbitration_reasons": {
+          "body": "wiki",
+          "feet": "few_pixels",
+          "head": "wiki",
+          "legs": "wiki"
+        },
+        "colour_overrides_have_30_visible_pixels": true,
+        "cost_fit_visible_region_px": {
+          "body": 408,
+          "feet": 2,
+          "head": 178,
+          "legs": 87
+        },
+        "direction": "south",
+        "fit": {
+          "align": {
+            "dx": -9,
+            "dy": -4,
+            "frame": 0
+          },
+          "body": 76,
+          "feet": 85,
+          "head": 53,
+          "legs": 104,
+          "region_dist": {
+            "body": 0.43,
+            "feet": 0.0,
+            "head": 0.6,
+            "legs": 0.27
+          },
+          "region_px": {
+            "body": 408,
+            "feet": 2,
+            "head": 178,
+            "legs": 87
+          },
+          "score": 0.8
+        },
+        "frame_group": 1,
+        "mount_pattern": 0,
+        "opaque_coverage": 1.0,
+        "phase": 0,
+        "source_align": [
+          0,
+          -4,
+          -9
+        ],
+        "source_score": 36.614113,
+        "visible_region_px": {
+          "body": 408,
+          "feet": 2,
+          "head": 178,
+          "legs": 87
+        }
+      },
+      "registration_witnesses": [
+        {
+          "byte_end": 83,
+          "byte_start": 32,
+          "fragment_sha256": "ca848790bf76c9bc7af034ca9e17443e8074220f2ca6c6efd210c6a77bc112f9",
+          "line_end": 2,
+          "line_start": 2
+        },
+        {
+          "byte_end": 6448,
+          "byte_start": 6421,
+          "fragment_sha256": "88dfb19b92872d6e1c79978f5e07910c4e130472268fed24b5ba6f33910e016d",
+          "line_end": 144,
+          "line_start": 144
+        }
+      ],
+      "revid": 429318,
+      "selector_review": {
+        "bounded_probes": [
+          {
+            "accepted": true,
+            "addons": 0,
+            "align": [
+              0,
+              -4,
+              -9
+            ],
+            "arbitrated_palette": {
+              "body": 76,
+              "feet": 71,
+              "head": 104,
+              "legs": 104
+            },
+            "arbitration_reasons": {
+              "body": "wiki",
+              "feet": "few_pixels",
+              "head": "few_pixels",
+              "legs": "wiki"
+            },
+            "cost_fit_visible_region_px": {
+              "body": 564,
+              "feet": 2,
+              "head": 1,
+              "legs": 88
+            },
+            "direction": "south",
+            "fit": {
+              "align": {
+                "dx": -9,
+                "dy": -4,
+                "frame": 0
+              },
+              "body": 76,
+              "feet": 85,
+              "head": 53,
+              "legs": 104,
+              "region_dist": {
+                "body": 20.53,
+                "feet": 0.0,
+                "head": 0.35,
+                "legs": 0.52
+              },
+              "region_px": {
+                "body": 564,
+                "feet": 2,
+                "head": 1,
+                "legs": 88
+              },
+              "score": 16.68
+            },
+            "frame_group": 1,
+            "look_type": 1648,
+            "opaque_coverage": 1.0,
+            "override_visible_pixels_valid": true,
+            "phase": 0,
+            "score": 17.3218684256662,
+            "source_addons": 2,
+            "source_palette": {
+              "body": 95,
+              "feet": 71,
+              "head": 104,
+              "legs": 123
+            },
+            "visible_region_px": {
+              "body": 564,
+              "feet": 2,
+              "head": 1,
+              "legs": 88
+            }
+          },
+          {
+            "accepted": false,
+            "addons": 1,
+            "align": [
+              0,
+              -4,
+              -9
+            ],
+            "arbitrated_palette": {
+              "body": 76,
+              "feet": 71,
+              "head": 104,
+              "legs": 104
+            },
+            "arbitration_reasons": {
+              "body": "wiki",
+              "feet": "few_pixels",
+              "head": "few_pixels",
+              "legs": "wiki"
+            },
+            "cost_fit_visible_region_px": {
+              "body": 466,
+              "feet": 2,
+              "head": 1,
+              "legs": 88
+            },
+            "direction": "south",
+            "fit": {
+              "align": {
+                "dx": -9,
+                "dy": -4,
+                "frame": 0
+              },
+              "body": 76,
+              "feet": 85,
+              "head": 53,
+              "legs": 104,
+              "region_dist": {
+                "body": 16.63,
+                "feet": 0.0,
+                "head": 0.35,
+                "legs": 0.52
+              },
+              "region_px": {
+                "body": 466,
+                "feet": 2,
+                "head": 1,
+                "legs": 88
+              },
+              "score": 55.44
+            },
+            "frame_group": 1,
+            "look_type": 1648,
+            "opaque_coverage": 1.0,
+            "override_visible_pixels_valid": true,
+            "phase": 0,
+            "score": 55.996236313868614,
+            "source_addons": 2,
+            "source_palette": {
+              "body": 95,
+              "feet": 71,
+              "head": 104,
+              "legs": 123
+            },
+            "visible_region_px": {
+              "body": 466,
+              "feet": 2,
+              "head": 1,
+              "legs": 88
+            }
+          },
+          {
+            "accepted": true,
+            "addons": 2,
+            "align": [
+              0,
+              -4,
+              -9
+            ],
+            "arbitrated_palette": {
+              "body": 76,
+              "feet": 71,
+              "head": 53,
+              "legs": 104
+            },
+            "arbitration_reasons": {
+              "body": "wiki",
+              "feet": "few_pixels",
+              "head": "wiki",
+              "legs": "wiki"
+            },
+            "cost_fit_visible_region_px": {
+              "body": 408,
+              "feet": 2,
+              "head": 178,
+              "legs": 87
+            },
+            "direction": "south",
+            "fit": {
+              "align": {
+                "dx": -9,
+                "dy": -4,
+                "frame": 0
+              },
+              "body": 76,
+              "feet": 85,
+              "head": 53,
+              "legs": 104,
+              "region_dist": {
+                "body": 0.43,
+                "feet": 0.0,
+                "head": 0.6,
+                "legs": 0.27
+              },
+              "region_px": {
+                "body": 408,
+                "feet": 2,
+                "head": 178,
+                "legs": 87
+              },
+              "score": 0.8
+            },
+            "frame_group": 1,
+            "look_type": 1648,
+            "opaque_coverage": 1.0,
+            "override_visible_pixels_valid": true,
+            "phase": 0,
+            "score": 1.3706782446388983,
+            "source_addons": 2,
+            "source_palette": {
+              "body": 95,
+              "feet": 71,
+              "head": 104,
+              "legs": 123
+            },
+            "visible_region_px": {
+              "body": 408,
+              "feet": 2,
+              "head": 178,
+              "legs": 87
+            }
+          },
+          {
+            "accepted": false,
+            "addons": 3,
+            "align": [
+              0,
+              -4,
+              -9
+            ],
+            "arbitrated_palette": {
+              "body": 95,
+              "feet": 71,
+              "head": 101,
+              "legs": 123
+            },
+            "arbitration_reasons": {
+              "body": "source",
+              "feet": "few_pixels",
+              "head": "wiki",
+              "legs": "source"
+            },
+            "cost_fit_visible_region_px": {
+              "body": 346,
+              "feet": 2,
+              "head": 178,
+              "legs": 87
+            },
+            "direction": "south",
+            "fit": {
+              "align": {
+                "dx": -9,
+                "dy": -4,
+                "frame": 0
+              },
+              "body": 114,
+              "feet": 0,
+              "head": 101,
+              "legs": 95,
+              "region_dist": {
+                "body": 234.87,
+                "feet": 255.0,
+                "head": 163.0,
+                "legs": 234.41
+              },
+              "region_px": {
+                "body": 372,
+                "feet": 2,
+                "head": 178,
+                "legs": 87
+              },
+              "score": 86.08
+            },
+            "frame_group": 1,
+            "look_type": 1648,
+            "opaque_coverage": 1.0,
+            "override_visible_pixels_valid": true,
+            "phase": 0,
+            "score": 73.90577396953405,
+            "source_addons": 2,
+            "source_palette": {
+              "body": 95,
+              "feet": 71,
+              "head": 104,
+              "legs": 123
+            },
+            "visible_region_px": {
+              "body": 372,
+              "feet": 2,
+              "head": 178,
+              "legs": 87
+            }
+          }
+        ],
+        "chosen": 2,
+        "qualification": "Addon2 retains donor Happen literal selector and shows native178-pixel head decoration present on current source GIF; addon0 loses head decoration and scores17.321868 while2scores1.370678. Both0and2 are below35; threshold alone does not uniquely select2. Actual visual review confirms decoration shape.",
+        "rule": "D16(c) WIKI_IMAGE",
+        "scores": {
+          "0": 17.3218684256662,
+          "1": 55.996236313868614,
+          "2": 1.3706782446388983,
+          "3": 73.90577396953405
+        },
+        "source_foot_palette_qualification": "71 literal selected Happen source;2pixels insufficient to replace or image-confirm;fencore122 source separately retained in its fit"
+      },
+      "source": {
+        "blob_sha1": "c37a08a72b12dcef967ffa2bd2c8b33a35bef01f",
+        "bytes": 6449,
+        "git_blob_verified": true,
+        "name": "Yerga",
+        "path": "/workspace/npc-r16-research/presentation/yerga-Happen.lua",
+        "repository": "Brunowots/Happen",
+        "repository_path": "data/npc/yerga.lua",
+        "revision": "d836d29186dbcbc1c1ae852048884f9612653364",
+        "sha256": "6fba061d53d9d9b4b8337f34b1e60bf693644c9e75ac4a04c1470975e4f99162",
+        "url": "https://raw.githubusercontent.com/Brunowots/Happen/d836d29186dbcbc1c1ae852048884f9612653364/data/npc/yerga.lua"
+      },
+      "source_mount_omitted": true,
+      "target_key": "oteryn:npc.yerga"
+    }
+  ]
+}

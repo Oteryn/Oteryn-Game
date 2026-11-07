@@ -1,0 +1,32 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "poison wall rune",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_poison_wall_rune"
+    },
+    "pz_locks_caster": true,
+    "reference_rune_item_id": 3176,
+    "reference_spell_id": 32,
+    "requirements": {
+      "level": 29
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": false
+      },
+      "charges": 4,
+      "magic_level": 5
+    }
+  }
+}

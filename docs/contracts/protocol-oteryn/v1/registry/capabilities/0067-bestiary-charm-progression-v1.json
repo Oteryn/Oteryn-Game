@@ -1,0 +1,13 @@
+{
+  "id": 67,
+  "name": "BESTIARY_CHARM_PROGRESSION_V1",
+  "owner_decision": "PARITY-PROGRESSION-QUERIES-1 parity inventory rank 15 2026-10-25",
+  "owner": "Character charm state and Bestiary kill credit; the reply carries the views, so no state domain.",
+  "requires": [],
+  "command_types": [
+    84
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Admitted charm catalogue and Bestiary content; charm_progression_available."
+}

@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-SKILL-MODIFIERS",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Typed SkillModifier definitions in one Item record",
+  "unit": "definitions",
+  "hard_maximum": 37,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 37
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check count before allocation; validate closed kinds, canonical order, uniqueness and typed parameters.",
+  "client_visible": true,
+  "boundary_tests": [
+    "37 unique typed modifiers accepted",
+    "38th modifier rejected before allocation",
+    "duplicate/unknown kind or invalid typed parameter rejected"
+  ]
+}

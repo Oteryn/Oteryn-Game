@@ -1,0 +1,20 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-MANIFEST-BYTES",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Reference Item artifact manifest section",
+  "unit": "bytes",
+  "hard_maximum": 7500,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 7500
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Validate section length and checked range before retaining or parsing manifest bytes.",
+  "client_visible": true,
+  "boundary_tests": [
+    "7,500-byte manifest accepted only when grammar and artifact total pass",
+    "7,501 bytes rejected before retention",
+    "offset plus length overflow rejected"
+  ],
+  "notes": "Preserves the existing Reference carrier maximum."
+}

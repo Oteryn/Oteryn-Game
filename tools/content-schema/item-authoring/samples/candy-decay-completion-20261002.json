@@ -1,0 +1,187 @@
+{
+  "schema": "OTERYN_CANDY_DECAY_COMPLETION/v1",
+  "appearance_membership": [
+    {
+      "path": "imports/official/appearance-membership/appearances-17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1.json",
+      "sha256": "5d5d50c4dfbb527f73cc0993cb37f18d3ce83f4a8a72376df7c71b6b7d165f2a",
+      "48296_present": false,
+      "48267_present": true
+    },
+    {
+      "path": "imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json",
+      "sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
+      "48296_present": false,
+      "48267_present": true
+    },
+    {
+      "path": "imports/official/appearance-membership/appearances-6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1.json",
+      "sha256": "59455ce0dc9319f89ffd6eb4474c456c7ddfbc7d133c219b576008f32e758dd5",
+      "48296_present": false,
+      "48267_present": true
+    },
+    {
+      "path": "imports/official/appearance-membership/appearances-aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50.json",
+      "sha256": "466fdef535e3b7a8e8e574e2838d729a0f7386f4ffa2dbd7074c043a6e611c58",
+      "48296_present": false,
+      "48267_present": true
+    }
+  ],
+  "corpse_exact_bindings": [
+    {
+      "disposition": "EXACT",
+      "external_id": "48267",
+      "identity_namespace": "ots/item_server_id",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i48267",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "bindings_sha256": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
+  "new_item_identity_authorized": false,
+  "flags": [
+    "APPROXIMATION_SOURCE_NOOP_DECAY_TIMER_OMITTED"
+  ],
+  "behavior": "Retain corpse48267; no decay. Donor attempted missing-target transform after5s retains original corpse.",
+  "difference": "The five-second no-op timer and its observable duration/decaying state are omitted.",
+  "wiki_needed_for_this_correction": false,
+  "live_gameplay_verified": false,
+  "correction_ready_for_native_conversion": true,
+  "original_bundle_retained": true,
+  "item_48296_resolution": "DO_NOT_REGISTER: no source XML, appearance or exact binding",
+  "input_bundle_sha256": {
+    "dependencies.json": "b87672e493fe08e37f64f1fcbdac6bcfa45d4a503ca5dc492bf6b9364f659fa3",
+    "manifest.json": "f89bd8bf5f31562a9e9a28adcdd4261e477387fc84a3fa781d4899db16d39c70",
+    "catalog.json": "db2a08a2cd4abce0420ce67cc75fd56d5ca647faa0cf1bef766e9f579e22dbe0",
+    "monster.json": "eeaaa0cd74df8309378868400e107afe19a1afaca9d5da29932c6f193ee18f83"
+  },
+  "corrected_bundle_sha256": {
+    "dependencies.json": "91b2fdec13c87b4f59e5ed3add37208d67a666061e46c00e84a88313a60ce145",
+    "manifest.json": "ed5ad77798ade21c3e3db4ff5170b49d3f824f0f576d4a6cc1094272cc109ad2",
+    "catalog.json": "eabad337a6530fa0a2d035313ba91c556d8e0b91777321ddaf469cc1d366c88e",
+    "monster.json": "eeaaa0cd74df8309378868400e107afe19a1afaca9d5da29932c6f193ee18f83"
+  },
+  "sources": {
+    "canary": {
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "access": "local_pinned_git_source_read",
+      "files": {
+        "data/items/items.xml": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "data/items/appearances.dat": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+        "src/game/game.cpp": "f98a2d73d53fb4368d0b05b25d9b41ae79f427d15666f6b67a2100abf4c8cf03",
+        "src/items/decay/decay.cpp": "54834242e5a3a6d8542505480ebf9a9eb9c1926af5df8bf37464a27bc2b884fd"
+      },
+      "corpse_xml": {
+        "attributes": {
+          "id": "48267",
+          "article": "a",
+          "name": "dead candy horror"
+        },
+        "children_xml": [
+          "<attribute key=\"containerSize\" value=\"8\" />\n\t\t",
+          "<attribute key=\"decayTo\" value=\"48296\" />\n\t\t",
+          "<attribute key=\"duration\" value=\"5\" />\n\t\t",
+          "<attribute key=\"fluidSource\" value=\"blood\" />\n\t"
+        ],
+        "fields": {
+          "containersize": [
+            {
+              "key": "containerSize",
+              "value": "8"
+            }
+          ],
+          "decayto": [
+            {
+              "key": "decayTo",
+              "value": "48296"
+            }
+          ],
+          "duration": [
+            {
+              "key": "duration",
+              "value": "5"
+            }
+          ],
+          "fluidsource": [
+            {
+              "key": "fluidSource",
+              "value": "blood"
+            }
+          ]
+        }
+      },
+      "appearance_48267_present": true,
+      "appearance_48296_present": false,
+      "xml_48296_present": false
+    },
+    "crystal": {
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "access": "local_pinned_git_source_read",
+      "files": {
+        "data/items/items.xml": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+        "data/items/appearances.dat": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1",
+        "src/game/game.cpp": "2db122ea6a5c1916125284b4ae82508a422f9c51388051c3301f4226344bbb32",
+        "src/items/decay/decay.cpp": "89f131c9e3d28ca5f95c274683bb87cf84230faba44261ebd04b7eaf9eea1291"
+      },
+      "corpse_xml": {
+        "attributes": {
+          "id": "48267",
+          "article": "a",
+          "name": "dead candy horror"
+        },
+        "children_xml": [
+          "<attribute key=\"containerSize\" value=\"8\" />\n\t\t",
+          "<attribute key=\"decayTo\" value=\"48296\" />\n\t\t",
+          "<attribute key=\"duration\" value=\"5\" />\n\t\t",
+          "<attribute key=\"fluidSource\" value=\"blood\" />\n\t"
+        ],
+        "fields": {
+          "containersize": [
+            {
+              "key": "containerSize",
+              "value": "8"
+            }
+          ],
+          "decayto": [
+            {
+              "key": "decayTo",
+              "value": "48296"
+            }
+          ],
+          "duration": [
+            {
+              "key": "duration",
+              "value": "5"
+            }
+          ],
+          "fluidsource": [
+            {
+              "key": "fluidSource",
+              "value": "blood"
+            }
+          ]
+        }
+      },
+      "appearance_48267_present": true,
+      "appearance_48296_present": false,
+      "xml_48296_present": false
+    }
+  },
+  "correction": {
+    "corpse_item": 48267,
+    "old_temporal": {
+      "decay_action": "transform",
+      "duration_ms": 5000,
+      "decay_target": 48296
+    },
+    "new_temporal": {
+      "decay_action": "none",
+      "stop_duration": false
+    },
+    "stats_preserved": true,
+    "loot_preserved": true
+  }
+}

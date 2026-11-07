@@ -1,0 +1,22 @@
+{
+  "id": "HOUSEOWN0-RL-07",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md",
+  "resource": "Snapshotted first rent period",
+  "unit": "microseconds",
+  "hard_maximum": 2592000000000,
+  "configurable_range": {
+    "minimum": 2592000000000,
+    "maximum": 2592000000000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check in the owning House rule or durable pass before mutation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "winner paid_until advances thirty days",
+    "subsequent catalogue rent does not change captured first rent"
+  ],
+  "consumers": [
+    "crates/gameplay/housing/src/house_auction.rs",
+    "crates/gameplay/durability/src/durability/house_ownership.rs"
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/avatar_of_balance",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Avatar of Balance",
+    "carrier": "instant",
+    "words": "uteta res tio",
+    "reference_spell_id": 283,
+    "library_text": "In ancient times, even before the first primeval Merudri settlements formed, dark felines roamed the mountains surrounding the Blue Valley. Taming these creatures has proven impossible for the first Merudri to inhabit the valley. Most of the time they hunted alone, dangerous and silent killers, nocturnal and relentless. The mere sighting of one such beast could mean impending doom for an early enclave of the valley dwellers. An extraordinary ferocious specimen terrorising these primal precursors was known as the 'Blue Claw'. Once this voracious monstrosity set eyes on a victim, there was little to no chance of escape. Larger groups managed to drive it back, only to return to the location a few days later until its prey was either killed or gave up and relocated. A strong Merudri leader from these times was confronted with the creature during a dire time of need and hunger. There was no way to relocate the whole village, sheltering his starving people. As many early Merudri, this leader practised simple combat techniques, including the skill of using his own body as a weapon. Albeit primitive, it required an iron will to completely focus the mind and control every limb and movement to achieve maximum impact in the quickest, most efficient ways.",
+    "requirements": {
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ],
+      "level": 0,
+      "premium": true,
+      "learning_required": false,
+      "wheel_unlock": true
+    },
+    "costs": {
+      "mana": 1200,
+      "soul": 0
+    },
+    "cooldown_ms": 7200000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "text"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "execution": {
+      "native_behavior": {
+        "key": "avatar_state",
+        "parameters": {
+          "wheel": {
+            "owner": "wheel_of_destiny",
+            "perk": "avatar of balance",
+            "stage_kind": "revelation",
+            "stage_min": 0,
+            "stage_max": 3,
+            "stage_zero": "reject_before_costs",
+            "snapshot": "cast_start"
+          },
+          "duration_ms": 15000,
+          "outfit_look_type": 1823,
+          "incoming_damage_reduction_percent": {
+            "0": 0,
+            "1": 5,
+            "2": 10,
+            "3": 15
+          },
+          "incoming_reduction_rounding": "ceil_reduction_per_hit",
+          "critical_chance_percent": 100,
+          "critical_extra_damage_percentage_points": {
+            "0": 0,
+            "1": 5,
+            "2": 10,
+            "3": 15
+          },
+          "cooldown_ms": {
+            "0": 7200000,
+            "1": 7200000,
+            "2": 5400000,
+            "3": 3600000
+          },
+          "state_clock": "world_monotonic_ms",
+          "state_active_until": "strictly_greater_than_now",
+          "refresh_derived_stats": [
+            "on_apply",
+            "on_expiry"
+          ],
+          "expiry_target": "same_creature_identity",
+          "on_recast": "replace_deadline_and_outfit",
+          "effect_asset_binding": "appearance:effect/avatar_appear"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "id": "EVENTSWORLD1-RL-RESULT",
+  "owner_contract": "../agents/tasks/EVENTS-WORLD-1.md",
+  "resource": "World event result and receipt",
+  "unit": "bytes",
+  "hard_maximum": 144,
+  "configurable_range": {
+    "minimum": 144,
+    "maximum": 144
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "One bounded World reset decision and one bounded receipt per accepted session command.",
+  "client_visible": true,
+  "boundary_tests": [
+    "world_event_codec_roundtrips_and_bounds",
+    "world_event_postgres_real_dispatch_reset_restart_and_fences"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/world_event.rs",
+    "crates/gameplay/durability/src/durability/world_event.rs",
+    "apps/game-server/migrations/0172_world_event.sql"
+  ],
+  "notes": "Owner-delegated basic announcement slice. Native map layers remain follow-up work."
+}

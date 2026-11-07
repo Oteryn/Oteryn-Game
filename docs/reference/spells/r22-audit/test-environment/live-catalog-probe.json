@@ -1,0 +1,1737 @@
+{
+  "scope": "Untargeted diagnostic requests by one free level8 Sorcerer; not every-spell execution proof",
+  "gameplay_complete": false,
+  "counts": {
+    "NotAvailable": 59,
+    "Rejected": 118,
+    "TargetRequired": 15,
+    "LevelTooLow": 44,
+    "NotEnoughMana": 4,
+    "Cast": 2,
+    "CoolingDown": 4
+  },
+  "rows": [
+    {
+      "index": 1,
+      "key": "candidate:spell/animate_dead_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 2,
+      "key": "candidate:spell/annihilation",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 3,
+      "key": "candidate:spell/apprentice_s_strike",
+      "selected": true,
+      "disposition": "TargetRequired",
+      "vitals_delta": false
+    },
+    {
+      "index": 4,
+      "key": "candidate:spell/arrow_call",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 5,
+      "key": "candidate:spell/aura_of_exposed_weakness",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 6,
+      "key": "candidate:spell/aura_of_sapped_strength",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 7,
+      "key": "candidate:spell/avalanche_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 8,
+      "key": "candidate:spell/avatar_of_balance",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 9,
+      "key": "candidate:spell/avatar_of_light",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 10,
+      "key": "candidate:spell/avatar_of_nature",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 11,
+      "key": "candidate:spell/avatar_of_steel",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 12,
+      "key": "candidate:spell/avatar_of_storm",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 13,
+      "key": "candidate:spell/balanced_brawl",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 14,
+      "key": "candidate:spell/berserk",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 15,
+      "key": "candidate:spell/blank_rune",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 16,
+      "key": "candidate:spell/blood_rage",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 17,
+      "key": "candidate:spell/bruise_bane",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 18,
+      "key": "candidate:spell/brutal_strike",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 19,
+      "key": "candidate:spell/buzz",
+      "selected": true,
+      "disposition": "TargetRequired",
+      "vitals_delta": false
+    },
+    {
+      "index": 20,
+      "key": "candidate:spell/cancel_invisibility",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 21,
+      "key": "candidate:spell/cancel_magic_shield",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 22,
+      "key": "candidate:spell/chained_penance",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 23,
+      "key": "candidate:spell/challenge",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 24,
+      "key": "candidate:spell/chameleon_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 25,
+      "key": "candidate:spell/charge",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 26,
+      "key": "candidate:spell/chill_out",
+      "selected": true,
+      "disposition": "TargetRequired",
+      "vitals_delta": false
+    },
+    {
+      "index": 27,
+      "key": "candidate:spell/chivalrous_challenge",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 28,
+      "key": "candidate:spell/conjure_arrow",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 29,
+      "key": "candidate:spell/conjure_bolt",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 30,
+      "key": "candidate:spell/conjure_explosive_arrow",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 31,
+      "key": "candidate:spell/conjure_piercing_bolt",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 32,
+      "key": "candidate:spell/conjure_poisoned_arrow",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 33,
+      "key": "candidate:spell/conjure_power_bolt",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 34,
+      "key": "candidate:spell/conjure_royal_star",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 35,
+      "key": "candidate:spell/conjure_sniper_arrow",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 36,
+      "key": "candidate:spell/conjure_wand_of_darkness",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 37,
+      "key": "candidate:spell/convince_creature_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 38,
+      "key": "candidate:spell/creature_illusion",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 39,
+      "key": "candidate:spell/cure_bleeding",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 40,
+      "key": "candidate:spell/cure_burning",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 41,
+      "key": "candidate:spell/cure_curse",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 42,
+      "key": "candidate:spell/cure_electrification",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 43,
+      "key": "candidate:spell/cure_poison",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 44,
+      "key": "candidate:spell/cure_poison_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 45,
+      "key": "candidate:spell/curse",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 46,
+      "key": "candidate:spell/death_echo",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 47,
+      "key": "candidate:spell/death_strike",
+      "selected": true,
+      "disposition": "TargetRequired",
+      "vitals_delta": false
+    },
+    {
+      "index": 48,
+      "key": "candidate:spell/destroy_field_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 49,
+      "key": "candidate:spell/devastating_knockout",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 50,
+      "key": "candidate:spell/disintegrate_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 51,
+      "key": "candidate:spell/divine_barrage",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 52,
+      "key": "candidate:spell/divine_caldera",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 53,
+      "key": "candidate:spell/divine_dazzle",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 54,
+      "key": "candidate:spell/divine_defiance",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 55,
+      "key": "candidate:spell/divine_empowerment",
+      "selected": true,
+      "disposition": "NotEnoughMana",
+      "vitals_delta": false
+    },
+    {
+      "index": 56,
+      "key": "candidate:spell/divine_grenade",
+      "selected": true,
+      "disposition": "NotEnoughMana",
+      "vitals_delta": false
+    },
+    {
+      "index": 57,
+      "key": "candidate:spell/divine_healing",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 58,
+      "key": "candidate:spell/divine_missile",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 59,
+      "key": "candidate:spell/double_jab",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 60,
+      "key": "candidate:spell/druid_familiar",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 61,
+      "key": "candidate:spell/electrify",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 62,
+      "key": "candidate:spell/elemental_synthesis",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 63,
+      "key": "candidate:spell/enchant_party",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 64,
+      "key": "candidate:spell/enchant_spear",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 65,
+      "key": "candidate:spell/enchant_staff",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 66,
+      "key": "candidate:spell/energy_beam",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 67,
+      "key": "candidate:spell/energy_bomb_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 68,
+      "key": "candidate:spell/energy_field_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 69,
+      "key": "candidate:spell/energy_strike",
+      "selected": true,
+      "disposition": "TargetRequired",
+      "vitals_delta": false
+    },
+    {
+      "index": 70,
+      "key": "candidate:spell/energy_wall_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 71,
+      "key": "candidate:spell/energy_wave",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 72,
+      "key": "candidate:spell/enlighten_party",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 73,
+      "key": "candidate:spell/envenom",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 74,
+      "key": "candidate:spell/eternal_winter",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 75,
+      "key": "candidate:spell/ethereal_barrage",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 76,
+      "key": "candidate:spell/ethereal_spear",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 77,
+      "key": "candidate:spell/executioner_s_throw",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 78,
+      "key": "candidate:spell/explosion_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 79,
+      "key": "candidate:spell/fair_wound_cleansing",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 80,
+      "key": "candidate:spell/fierce_berserk",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 81,
+      "key": "candidate:spell/find_fiend",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 82,
+      "key": "candidate:spell/find_person",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 83,
+      "key": "candidate:spell/fire_bomb_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 84,
+      "key": "candidate:spell/fire_field_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 85,
+      "key": "candidate:spell/fire_wall_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 86,
+      "key": "candidate:spell/fire_wave",
+      "selected": true,
+      "disposition": "TargetRequired",
+      "vitals_delta": false
+    },
+    {
+      "index": 87,
+      "key": "candidate:spell/fireball_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 88,
+      "key": "candidate:spell/flame_strike",
+      "selected": true,
+      "disposition": "TargetRequired",
+      "vitals_delta": false
+    },
+    {
+      "index": 89,
+      "key": "candidate:spell/flurry_of_blows",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 90,
+      "key": "candidate:spell/focus_harmony",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 91,
+      "key": "candidate:spell/focus_serenity",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 92,
+      "key": "candidate:spell/food",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 93,
+      "key": "candidate:spell/forceful_uppercut",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 94,
+      "key": "candidate:spell/forked_glacier",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 95,
+      "key": "candidate:spell/forked_thorns",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 96,
+      "key": "candidate:spell/front_sweep",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 97,
+      "key": "candidate:spell/great_death_beam",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 98,
+      "key": "candidate:spell/great_energy_beam",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 99,
+      "key": "candidate:spell/great_fire_wave",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 100,
+      "key": "candidate:spell/great_fireball_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 101,
+      "key": "candidate:spell/great_light",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 102,
+      "key": "candidate:spell/greater_flurry_of_blows",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 103,
+      "key": "candidate:spell/greater_tiger_clash",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 104,
+      "key": "candidate:spell/groundshaker",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 105,
+      "key": "candidate:spell/haste",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 106,
+      "key": "candidate:spell/heal_friend",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 107,
+      "key": "candidate:spell/heal_party",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 108,
+      "key": "candidate:spell/heavy_magic_missile_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 109,
+      "key": "candidate:spell/hell_s_core",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 110,
+      "key": "candidate:spell/holy_flash",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 111,
+      "key": "candidate:spell/holy_missile_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 112,
+      "key": "candidate:spell/house_door_list",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 113,
+      "key": "candidate:spell/house_guest_list",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 114,
+      "key": "candidate:spell/house_kick",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 115,
+      "key": "candidate:spell/house_subowner_list",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 116,
+      "key": "candidate:spell/ice_burst",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 117,
+      "key": "candidate:spell/ice_strike",
+      "selected": true,
+      "disposition": "TargetRequired",
+      "vitals_delta": false
+    },
+    {
+      "index": 118,
+      "key": "candidate:spell/ice_wave",
+      "selected": true,
+      "disposition": "TargetRequired",
+      "vitals_delta": false
+    },
+    {
+      "index": 119,
+      "key": "candidate:spell/icicle_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 120,
+      "key": "candidate:spell/ignite",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 121,
+      "key": "candidate:spell/inflict_wound",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 122,
+      "key": "candidate:spell/intense_healing",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 123,
+      "key": "candidate:spell/intense_healing_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 124,
+      "key": "candidate:spell/intense_recovery",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 125,
+      "key": "candidate:spell/intense_wound_cleansing",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 126,
+      "key": "candidate:spell/invisibility",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 127,
+      "key": "candidate:spell/knight_familiar",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 128,
+      "key": "candidate:spell/lesser_ethereal_spear",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 129,
+      "key": "candidate:spell/lesser_front_sweep",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 130,
+      "key": "candidate:spell/levitate",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 131,
+      "key": "candidate:spell/light",
+      "selected": true,
+      "disposition": "Cast",
+      "vitals_delta": true
+    },
+    {
+      "index": 132,
+      "key": "candidate:spell/light_healing",
+      "selected": true,
+      "disposition": "Cast",
+      "vitals_delta": true
+    },
+    {
+      "index": 133,
+      "key": "candidate:spell/light_magic_missile_rune",
+      "selected": true,
+      "disposition": "CoolingDown",
+      "vitals_delta": false
+    },
+    {
+      "index": 134,
+      "key": "candidate:spell/lightest_magic_missile",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 135,
+      "key": "candidate:spell/lightning",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 136,
+      "key": "candidate:spell/magic_patch",
+      "selected": true,
+      "disposition": "CoolingDown",
+      "vitals_delta": false
+    },
+    {
+      "index": 137,
+      "key": "candidate:spell/magic_rope",
+      "selected": true,
+      "disposition": "CoolingDown",
+      "vitals_delta": false
+    },
+    {
+      "index": 138,
+      "key": "candidate:spell/magic_shield",
+      "selected": true,
+      "disposition": "CoolingDown",
+      "vitals_delta": false
+    },
+    {
+      "index": 139,
+      "key": "candidate:spell/magic_wall_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 140,
+      "key": "candidate:spell/mass_healing",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 141,
+      "key": "candidate:spell/mass_spirit_mend",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 142,
+      "key": "candidate:spell/master_of_decay",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 143,
+      "key": "candidate:spell/master_of_flames",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 144,
+      "key": "candidate:spell/master_of_thunder",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 145,
+      "key": "candidate:spell/monk_familiar",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 146,
+      "key": "candidate:spell/mud_attack",
+      "selected": true,
+      "disposition": "TargetRequired",
+      "vitals_delta": false
+    },
+    {
+      "index": 147,
+      "key": "candidate:spell/mystic_repulse",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 148,
+      "key": "candidate:spell/nature_s_embrace",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 149,
+      "key": "candidate:spell/paladin_familiar",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 150,
+      "key": "candidate:spell/paralyze_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 151,
+      "key": "candidate:spell/physical_strike",
+      "selected": true,
+      "disposition": "TargetRequired",
+      "vitals_delta": false
+    },
+    {
+      "index": 152,
+      "key": "candidate:spell/poison_bomb_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 153,
+      "key": "candidate:spell/poison_field_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 154,
+      "key": "candidate:spell/poison_wall_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 155,
+      "key": "candidate:spell/practise_magic_missile",
+      "selected": false,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 156,
+      "key": "candidate:spell/protect_party",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 157,
+      "key": "candidate:spell/protector",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 158,
+      "key": "candidate:spell/rage_of_the_skies",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 159,
+      "key": "candidate:spell/recovery",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 160,
+      "key": "candidate:spell/restoration",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 161,
+      "key": "candidate:spell/restore_balance",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 162,
+      "key": "candidate:spell/rune/animate_dead_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 163,
+      "key": "candidate:spell/rune/antidote_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 164,
+      "key": "candidate:spell/rune/avalanche_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 165,
+      "key": "candidate:spell/rune/chameleon_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 166,
+      "key": "candidate:spell/rune/convince_creature_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 167,
+      "key": "candidate:spell/rune/desintegrate_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 168,
+      "key": "candidate:spell/rune/destroy_field_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 169,
+      "key": "candidate:spell/rune/energy_field_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 170,
+      "key": "candidate:spell/rune/energy_wall_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 171,
+      "key": "candidate:spell/rune/energybomb_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 172,
+      "key": "candidate:spell/rune/explosion_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 173,
+      "key": "candidate:spell/rune/fire_field_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 174,
+      "key": "candidate:spell/rune/fire_wall_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 175,
+      "key": "candidate:spell/rune/fireball_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 176,
+      "key": "candidate:spell/rune/firebomb_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 177,
+      "key": "candidate:spell/rune/great_fireball_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 178,
+      "key": "candidate:spell/rune/heavy_magic_missile_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 179,
+      "key": "candidate:spell/rune/holy_missile_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 180,
+      "key": "candidate:spell/rune/icicle_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 181,
+      "key": "candidate:spell/rune/intense_healing_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 182,
+      "key": "candidate:spell/rune/light_magic_missile_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 183,
+      "key": "candidate:spell/rune/light_stone_shower_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 184,
+      "key": "candidate:spell/rune/lightest_magic_missile_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 185,
+      "key": "candidate:spell/rune/lightest_missile_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 186,
+      "key": "candidate:spell/rune/magic_wall_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 187,
+      "key": "candidate:spell/rune/paralyze_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 188,
+      "key": "candidate:spell/rune/poison_bomb_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 189,
+      "key": "candidate:spell/rune/poison_field_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 190,
+      "key": "candidate:spell/rune/poison_wall_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 191,
+      "key": "candidate:spell/rune/soulfire_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 192,
+      "key": "candidate:spell/rune/stalagmite_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 193,
+      "key": "candidate:spell/rune/stone_shower_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 194,
+      "key": "candidate:spell/rune/sudden_death_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 195,
+      "key": "candidate:spell/rune/thunderstorm_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 196,
+      "key": "candidate:spell/rune/ultimate_healing_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 197,
+      "key": "candidate:spell/rune/wild_growth_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 198,
+      "key": "candidate:spell/salvation",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 199,
+      "key": "candidate:spell/scorch",
+      "selected": true,
+      "disposition": "TargetRequired",
+      "vitals_delta": false
+    },
+    {
+      "index": 200,
+      "key": "candidate:spell/shared_conservation",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 201,
+      "key": "candidate:spell/sharpshooter",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 202,
+      "key": "candidate:spell/shield_bash",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 203,
+      "key": "candidate:spell/shield_slam",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 204,
+      "key": "candidate:spell/sorcerer_familiar",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 205,
+      "key": "candidate:spell/soulfire_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 206,
+      "key": "candidate:spell/spirit_mend",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 207,
+      "key": "candidate:spell/spiritual_outburst",
+      "selected": true,
+      "disposition": "NotEnoughMana",
+      "vitals_delta": false
+    },
+    {
+      "index": 208,
+      "key": "candidate:spell/stalagmite_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 209,
+      "key": "candidate:spell/stone_shower_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 210,
+      "key": "candidate:spell/strong_energy_strike",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 211,
+      "key": "candidate:spell/strong_ethereal_spear",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 212,
+      "key": "candidate:spell/strong_flame_strike",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 213,
+      "key": "candidate:spell/strong_haste",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 214,
+      "key": "candidate:spell/strong_ice_strike",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 215,
+      "key": "candidate:spell/strong_ice_wave",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 216,
+      "key": "candidate:spell/strong_terra_strike",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 217,
+      "key": "candidate:spell/sudden_death_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 218,
+      "key": "candidate:spell/summon_creature",
+      "selected": true,
+      "disposition": "TargetRequired",
+      "vitals_delta": false
+    },
+    {
+      "index": 219,
+      "key": "candidate:spell/summon_druid_familiar",
+      "selected": false,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 220,
+      "key": "candidate:spell/summon_knight_familiar",
+      "selected": false,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 221,
+      "key": "candidate:spell/summon_paladin_familiar",
+      "selected": false,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 222,
+      "key": "candidate:spell/summon_sorcerer_familiar",
+      "selected": false,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 223,
+      "key": "candidate:spell/sweeping_takedown",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 224,
+      "key": "candidate:spell/swift_foot",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 225,
+      "key": "candidate:spell/swift_jab",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 226,
+      "key": "candidate:spell/terra_burst",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 227,
+      "key": "candidate:spell/terra_strike",
+      "selected": true,
+      "disposition": "TargetRequired",
+      "vitals_delta": false
+    },
+    {
+      "index": 228,
+      "key": "candidate:spell/terra_wave",
+      "selected": true,
+      "disposition": "TargetRequired",
+      "vitals_delta": false
+    },
+    {
+      "index": 229,
+      "key": "candidate:spell/thousand_fist_blows",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 230,
+      "key": "candidate:spell/thunderstorm_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 231,
+      "key": "candidate:spell/tiger_clash",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 232,
+      "key": "candidate:spell/train_party",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 233,
+      "key": "candidate:spell/ultimate_energy_strike",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 234,
+      "key": "candidate:spell/ultimate_flame_strike",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 235,
+      "key": "candidate:spell/ultimate_healing",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 236,
+      "key": "candidate:spell/ultimate_healing_rune",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 237,
+      "key": "candidate:spell/ultimate_ice_strike",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 238,
+      "key": "candidate:spell/ultimate_light",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 239,
+      "key": "candidate:spell/ultimate_terra_strike",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 240,
+      "key": "candidate:spell/virtue_of_harmony",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 241,
+      "key": "candidate:spell/virtue_of_justice",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 242,
+      "key": "candidate:spell/virtue_of_sustain",
+      "selected": true,
+      "disposition": "LevelTooLow",
+      "vitals_delta": false
+    },
+    {
+      "index": 243,
+      "key": "candidate:spell/whirlwind_throw",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    },
+    {
+      "index": 244,
+      "key": "candidate:spell/wild_growth_rune",
+      "selected": true,
+      "disposition": "NotAvailable",
+      "vitals_delta": false
+    },
+    {
+      "index": 245,
+      "key": "candidate:spell/wound_cleansing",
+      "selected": true,
+      "disposition": "NotEnoughMana",
+      "vitals_delta": false
+    },
+    {
+      "index": 246,
+      "key": "candidate:spell/wrath_of_nature",
+      "selected": true,
+      "disposition": "Rejected",
+      "vitals_delta": false
+    }
+  ]
+}

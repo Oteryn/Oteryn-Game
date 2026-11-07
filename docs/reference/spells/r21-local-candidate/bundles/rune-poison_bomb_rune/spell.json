@@ -1,0 +1,79 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/rune/poison_bomb_rune",
+      "revision": "spell-p2-r20"
+    },
+    "name": "poison bomb rune",
+    "carrier": "rune",
+    "reference_spell_id": 91,
+    "library_text": "Another product of the druids' continual research into poisons, this rune represents an advancement of the Poison Field. Like its lesser relative, the rune causes an area to be contaminated with toxic gas that will poison anybody who is caught within it. However, the area of effect of the rune has been improved - now a full 9 square metres are contaminated. Conceivable applications include the blocking of areas or the combat against fast-moving or invisible targets. Keep in mind, however, that there are a number of creatures that are immune to poison. Please note that on optional PvP game worlds this spell has no damaging effect on other characters, unless characters are war opponents.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 25,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 7,
+      "parameter": "none"
+    },
+    "pz_locks_caster": true,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_poison_bomb_rune"
+    },
+    "rune": {
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/3173",
+        "revision": "spell-p2-r21"
+      },
+      "charges": 2,
+      "magic_level": 4,
+      "allow_far_use": true,
+      "blocking": {
+        "solid": false,
+        "creature": false
+      }
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/rune/poison_bomb_rune",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

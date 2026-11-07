@@ -1,0 +1,17 @@
+{
+  "id": 53,
+  "name": "WORLD_EVENT_V1",
+  "constant": "world_event::CAPABILITY_WORLD_EVENT_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    64
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

@@ -1,0 +1,238 @@
+{
+  "creature": {
+    "identity": {
+      "key": "canary:creature/sand_vortex",
+      "revision": "canary-47dfd51f"
+    },
+    "display_name": "Sand Vortex",
+    "inspection": {
+      "description": "a sand vortex"
+    },
+    "stats": {
+      "max_health": 20000,
+      "initial_health": 20000,
+      "experience": 0,
+      "speed": 70,
+      "armor": 30,
+      "defense": 30,
+      "critical_chance_percent": 0
+    },
+    "resistances": [],
+    "immunities": {
+      "damage_types": [],
+      "conditions": [
+        "invisible",
+        "paralyze"
+      ]
+    },
+    "flags": {
+      "attackable": true,
+      "illusionable": false,
+      "health_hidden": false
+    },
+    "summoning": {
+      "summonable": false,
+      "convinceable": false,
+      "is_familiar": false
+    },
+    "presentation": {
+      "family": "Presentation",
+      "key": "canary:presentation/sand_vortex",
+      "revision": "canary-47dfd51f"
+    },
+    "behavior": {
+      "family": "Behavior",
+      "key": "canary:behavior/sand_vortex",
+      "revision": "canary-47dfd51f"
+    },
+    "damage_reflection": [
+      {
+        "damage_type": "physical",
+        "percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "energy",
+        "percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "earth",
+        "percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "fire",
+        "percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "life_drain",
+        "percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "mana_drain",
+        "percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "drowning",
+        "percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "ice",
+        "percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "holy",
+        "percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "death",
+        "percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      }
+    ],
+    "healing_from_damage": [],
+    "system_eligibility": {
+      "prey": true,
+      "exclusive_prey": false,
+      "forge": true,
+      "reward_boss": false
+    },
+    "spawn_eligibility": {
+      "period": "all",
+      "ignore_period_underground": false,
+      "blocked_by_nearby_players": false
+    },
+    "name_forms": {
+      "article": "a"
+    },
+    "death_residue": {
+      "item": {
+        "family": "Item",
+        "key": "canary:item/2886",
+        "revision": "canary-47dfd51f"
+      },
+      "fluid_type": "slime"
+    }
+  },
+  "behavior": {
+    "identity": {
+      "key": "canary:behavior/sand_vortex",
+      "revision": "canary-47dfd51f"
+    },
+    "movement": {
+      "can_walk": true,
+      "pass_through": false,
+      "pushable": false,
+      "push_items": false,
+      "push_creatures": false,
+      "field_permissions": {
+        "energy": false,
+        "fire": true,
+        "poison": false
+      }
+    },
+    "targeting": {
+      "hostile": true,
+      "can_target": true,
+      "sense_invisible": true,
+      "target_distance_tiles": 1,
+      "static_attack_chance_percent": 95,
+      "flee_health": 0,
+      "change_target": {
+        "interval_ms": 5000,
+        "chance_percent": 20
+      },
+      "strategy_weights": {
+        "nearest": 70,
+        "damage": 10,
+        "health": 10,
+        "random": 10
+      }
+    },
+    "attacks": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/sand_vortex/attack-1",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 100
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/sand_vortex/attack-2",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 10
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/sand_vortex/attack-3",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 20
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/sand_vortex/attack-4",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 10
+      }
+    ],
+    "defenses": [],
+    "event_bindings": []
+  },
+  "presentation": {
+    "identity": {
+      "key": "canary:presentation/sand_vortex",
+      "revision": "canary-47dfd51f"
+    },
+    "appearance": {
+      "asset_binding": "canary.appearance:object/23482",
+      "palette_bindings": [],
+      "attachment_bindings": [],
+      "visual_effect_bindings": []
+    },
+    "light": {
+      "level": 0
+    },
+    "audio": {
+      "event_bindings": []
+    }
+  }
+}

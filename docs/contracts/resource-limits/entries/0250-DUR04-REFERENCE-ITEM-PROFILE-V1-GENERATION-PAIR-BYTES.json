@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-GENERATION-PAIR-BYTES",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Combined encoded server and client-safe Reference Item artifacts in one generation",
+  "unit": "bytes",
+  "hard_maximum": 348236190,
+  "configurable_range": {
+    "minimum": 2,
+    "maximum": 348236190
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Use checked addition and validate both projection maxima before staging either artifact as a pair.",
+  "client_visible": false,
+  "boundary_tests": [
+    "348,236,190 cumulative bytes accepted only when both projection maxima pass",
+    "348,236,191 bytes rejected before pair staging",
+    "checked-add overflow rejects the generation without partial publication"
+  ]
+}

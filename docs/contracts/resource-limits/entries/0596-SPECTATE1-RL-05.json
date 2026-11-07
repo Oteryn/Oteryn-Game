@@ -1,0 +1,19 @@
+{
+  "id": "SPECTATE1-RL-05",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_SPECTATE1_DECISION_2026-10-15.md",
+  "resource": "grant end to last observer world frame",
+  "unit": "Channel owner work cycles",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "NOT_AVAILABLE",
+  "allocation_impact": "Serialized lifecycle/egress clears queued projections synchronously; no later world frame.",
+  "client_visible": true,
+  "boundary_tests": [
+    "spectate_lifecycle_ends_before_the_next_frame_and_restart_is_empty",
+    "spectate_revoke_discards_queued_projection_before_egress"
+  ],
+  "notes": "Dormant; NET03-OUTBOUND-QUEUE-ENTRIES=64 and -BYTES=1048576 apply unchanged. RL-03 node capacity, rate-account capacity and audit-fact capacity require measured composition inputs, no activation defaults."
+}

@@ -1,0 +1,64 @@
+{
+  "spell": {
+    "base_power": 44,
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 125,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/41f5301715b13cbf/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/41f5301715b13cbf",
+      "revision": "source-player-r28"
+    },
+    "name": "Berserk",
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_berserk"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 80,
+    "requirements": {
+      "learning_required": false,
+      "level": 35,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exori"
+  }
+}

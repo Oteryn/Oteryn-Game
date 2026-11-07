@@ -1,0 +1,24 @@
+{
+  "id": "BANK0-RL-02-TRANSFER",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md",
+  "resource": "Gold of one bank transfer (BANK-0 \u00a74.3)",
+  "unit": "gold pieces",
+  "hard_maximum": 999999999999,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 999999999999
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Checked before any read: an amount outside 1..=999,999,999,999 is INVALID_INPUT and writes nothing; an amount above the sender's balance is the typed INSUFFICIENT_BALANCE.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=999,999,999,999 transfers a full balance",
+    "max+1 is refused before any write"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/bank_audit.rs",
+    "apps/game-server/src/durability/bank.rs (bank writer: checked before any ledger entry, coin line, balance change or event; a typed refusal or error writes no value)",
+    "apps/game-server/migrations/0071_account_bank.sql"
+  ],
+  "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
+}

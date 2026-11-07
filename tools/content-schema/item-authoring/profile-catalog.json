@@ -1,0 +1,547 @@
+{
+  "schema": "OTERYN_ITEM_AUTHORING_PROFILE_CATALOG/candidate-3",
+  "profiles": [
+    {
+      "profile_id": "equipment_armor",
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "protection",
+        "modifiers",
+        "imbuement",
+        "forge",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "equipment",
+        "protection",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "modifiers",
+        "imbuement",
+        "forge"
+      ],
+      "navigation_families": [
+        "Capacetes",
+        "Botas",
+        "Armaduras",
+        "Calças"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "equipment_offhand",
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "protection",
+        "modifiers",
+        "charges",
+        "temporal",
+        "imbuement",
+        "forge",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "equipment",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "protection",
+        "modifiers",
+        "charges",
+        "temporal",
+        "imbuement",
+        "forge"
+      ],
+      "navigation_families": [
+        "Escudos",
+        "Spellbooks",
+        "Extra Slot",
+        "Amuletos e Colares",
+        "Anéis"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "container_equipment",
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "container",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "equipment",
+        "container",
+        "trade"
+      ],
+      "optional_capabilities": [],
+      "navigation_families": [
+        "Aljavas"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "weapon_melee",
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "weapon",
+        "modifiers",
+        "imbuement",
+        "forge",
+        "proficiency",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "equipment",
+        "weapon",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "modifiers",
+        "imbuement",
+        "forge",
+        "proficiency"
+      ],
+      "navigation_families": [
+        "Machados",
+        "Clavas",
+        "Espadas",
+        "Punhos",
+        "Réplicas de Armas"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "weapon_distance",
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "weapon",
+        "stack",
+        "modifiers",
+        "imbuement",
+        "forge",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "weapon",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "equipment",
+        "stack",
+        "modifiers",
+        "imbuement",
+        "forge"
+      ],
+      "navigation_families": [
+        "Distância",
+        "Munição"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "weapon_magic",
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "weapon",
+        "use",
+        "requirements",
+        "modifiers",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "equipment",
+        "weapon",
+        "use",
+        "requirements",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "modifiers"
+      ],
+      "navigation_families": [
+        "Wands",
+        "Rods",
+        "Antigas Wands e Rods"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "rune",
+      "expected_capabilities": [
+        "physical",
+        "stack",
+        "charges",
+        "use",
+        "requirements",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "stack",
+        "charges",
+        "use",
+        "requirements",
+        "trade"
+      ],
+      "optional_capabilities": [],
+      "navigation_families": [
+        "Runas",
+        "Runas de Decoração"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "document",
+      "expected_capabilities": [
+        "physical",
+        "readable",
+        "presentation",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "readable",
+        "presentation",
+        "trade"
+      ],
+      "optional_capabilities": [],
+      "navigation_families": [
+        "Livros",
+        "Documentos e Papéis"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "container",
+      "expected_capabilities": [
+        "physical",
+        "container",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "container",
+        "trade"
+      ],
+      "optional_capabilities": [],
+      "navigation_families": [
+        "Recipientes"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "decoration",
+      "expected_capabilities": [
+        "physical",
+        "presentation",
+        "use",
+        "light",
+        "lifecycle",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "presentation",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "use",
+        "light",
+        "lifecycle"
+      ],
+      "navigation_families": [
+        "Decorações",
+        "Dolls e Bears",
+        "Troféus",
+        "Instrumentos Musicais",
+        "Jogos e Diversão"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "event_collectible",
+      "expected_capabilities": [
+        "physical",
+        "presentation",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "presentation",
+        "trade"
+      ],
+      "optional_capabilities": [],
+      "navigation_families": [
+        "Prêmios de Eventos",
+        "Itens de Fansites",
+        "Itens de Festa"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "progression_material",
+      "expected_capabilities": [
+        "physical",
+        "stack",
+        "use",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "stack",
+        "use"
+      ],
+      "navigation_families": [
+        "Itens de Addons",
+        "Itens de Imbuements",
+        "Delivery Tasks"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "transformation_item",
+      "expected_capabilities": [
+        "physical",
+        "lifecycle",
+        "use",
+        "temporal",
+        "charges",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "lifecycle",
+        "use"
+      ],
+      "optional_capabilities": [
+        "temporal",
+        "charges",
+        "trade"
+      ],
+      "navigation_families": [
+        "Itens Encantados"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "quest_item",
+      "expected_capabilities": [
+        "physical",
+        "use",
+        "readable",
+        "container",
+        "fluid",
+        "light",
+        "lifecycle",
+        "presentation"
+      ],
+      "common_capabilities": [
+        "physical"
+      ],
+      "optional_capabilities": [
+        "use",
+        "readable",
+        "container",
+        "fluid",
+        "light",
+        "lifecycle",
+        "presentation"
+      ],
+      "navigation_families": [
+        "Itens de Quest"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "material_valuable",
+      "expected_capabilities": [
+        "physical",
+        "stack",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "stack"
+      ],
+      "navigation_families": [
+        "Cristais (Itens)",
+        "Valiosos",
+        "Produtos de Criaturas"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "trash",
+      "expected_capabilities": [
+        "physical",
+        "use"
+      ],
+      "common_capabilities": [
+        "physical"
+      ],
+      "optional_capabilities": [
+        "use"
+      ],
+      "navigation_families": [
+        "Lixos"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "key",
+      "expected_capabilities": [
+        "physical",
+        "use"
+      ],
+      "common_capabilities": [
+        "physical",
+        "use"
+      ],
+      "optional_capabilities": [],
+      "navigation_families": [
+        "Chaves"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "light_source",
+      "expected_capabilities": [
+        "physical",
+        "light",
+        "use",
+        "temporal",
+        "lifecycle",
+        "presentation"
+      ],
+      "common_capabilities": [
+        "physical",
+        "light"
+      ],
+      "optional_capabilities": [
+        "use",
+        "temporal",
+        "lifecycle",
+        "presentation"
+      ],
+      "navigation_families": [
+        "Fontes de Luz"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "tool",
+      "expected_capabilities": [
+        "physical",
+        "use",
+        "charges",
+        "temporal",
+        "lifecycle",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "use",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "charges",
+        "temporal",
+        "lifecycle"
+      ],
+      "navigation_families": [
+        "Ferramentas",
+        "Ferramentas de Cozinha",
+        "Itens de Domar"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "food",
+      "expected_capabilities": [
+        "physical",
+        "stack",
+        "consumable",
+        "use",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "consumable",
+        "use",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "stack"
+      ],
+      "navigation_families": [
+        "Comidas"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "fluid",
+      "expected_capabilities": [
+        "physical",
+        "fluid",
+        "use",
+        "requirements",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "fluid",
+        "use",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "requirements"
+      ],
+      "navigation_families": [
+        "Líquidos"
+      ],
+      "additional_capabilities_allowed": true
+    },
+    {
+      "profile_id": "plant",
+      "expected_capabilities": [
+        "physical",
+        "stack",
+        "consumable",
+        "use",
+        "trade"
+      ],
+      "common_capabilities": [
+        "physical",
+        "trade"
+      ],
+      "optional_capabilities": [
+        "stack",
+        "consumable",
+        "use"
+      ],
+      "navigation_families": [
+        "Plantas e Ervas"
+      ],
+      "additional_capabilities_allowed": true
+    }
+  ]
+}

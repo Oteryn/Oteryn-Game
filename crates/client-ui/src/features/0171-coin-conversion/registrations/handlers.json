@@ -1,0 +1,15 @@
+{
+  "mechanic": "0171-coin-conversion",
+  "kind": "handlers",
+  "id": "0171-coin-conversion-unsupported",
+  "status": "unsupported",
+  "reason": "GOLDCONV2-1 is server-only; the existing generic item-use input remains authoritative.",
+  "commands": [],
+  "not_applicable": {
+    "state": "The mechanic owns no client state domain.",
+    "protocol": "The capability adds no wire fields or command types.",
+    "view": "Coin replacement is presented by existing inventory deltas.",
+    "input": "The existing generic item-use input emits USE_INTENT.",
+    "settings": "The mechanic has no client setting."
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "encounter": "canary:encounter/cult_soul_remains",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "CarlinVortexDeath": [
+      "canary:creature/cult_believer",
+      "canary:creature/cult_enforcer",
+      "canary:creature/cult_scholar"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/cults_of_tibia/cult_believer.lua",
+      "blob_sha1": "18c727b1eab7ef6127237d52895ed82a2a6b0f01"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/cults_of_tibia/cult_enforcer.lua",
+      "blob_sha1": "abe7c8d4a9ad2792a0287bd4b5e1997ea2b3799b"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/cults_of_tibia/cult_scholar.lua",
+      "blob_sha1": "bd743a110767c8bba3f49423fbc1e2e52128ddc7"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_carlin_vortex_spawn.lua",
+      "blob_sha1": "43c0b4332f02c4a24625257fe0cf995371898b77"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Cult Believer is the cultist participant; its file registers CarlinVortexDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Cult Enforcer is the cultist participant; its file registers CarlinVortexDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Cult Scholar is the cultist participant; its file registers CarlinVortexDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        1,
+        2,
+        15
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of a cult believer, enforcer or scholar.",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "status": "mapped",
+      "resolution": "Remains 32414 or 32415, picked uniformly, with action id 5580 on the death position, removed after one minute. Action id 5580 (movements_task_teleport.lua) lets a player absorb the remains for a Cults of Tibia mission counter (interaction and quest domains).",
+      "destination": "/encounter/rules/0/actions/0"
+    }
+  ],
+  "outcome_evidence": []
+}

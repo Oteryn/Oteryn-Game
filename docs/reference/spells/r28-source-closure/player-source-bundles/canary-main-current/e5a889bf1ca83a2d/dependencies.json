@@ -1,0 +1,50 @@
+{
+  "abilities": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/canary-main-current/e5a889bf1ca83a2d/ability/effect-condition-1",
+          "revision": "source-player-r28"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/e5a889bf1ca83a2d/ability",
+        "revision": "source-player-r28"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": true,
+      "range_tiles": 3,
+      "zero_damage_health_path": true
+    }
+  ],
+  "effects": [
+    {
+      "condition": {
+        "damage_over_time": {
+          "first_tick": "after_interval",
+          "fixed_ticks": [
+            {
+              "amount": 45,
+              "count": 25,
+              "interval_ms": 3000
+            }
+          ],
+          "tick_profile": "fixed"
+        },
+        "lifetime": "damage_schedule",
+        "type": "fire"
+      },
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/e5a889bf1ca83a2d/ability/effect-condition-1",
+        "revision": "source-player-r28"
+      },
+      "operation": "condition",
+      "presentation": {
+        "projectile_asset_binding": "canary.appearance:missile/fire"
+      }
+    }
+  ],
+  "formulas": []
+}

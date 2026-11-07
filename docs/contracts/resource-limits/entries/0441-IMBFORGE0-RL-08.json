@@ -1,0 +1,25 @@
+{
+  "id": "IMBFORGE0-RL-08",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+  "resource": "Forge dust limit of one Character (the balance is 0 to the limit)",
+  "unit": "forge dust",
+  "hard_maximum": 4600,
+  "configurable_range": {
+    "minimum": 100,
+    "maximum": 4600
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "D1230 exact progression only: limit=100+20*n, n=0..225; new +20 costs 25+n dust. Before migration every legacy row and ledger link must prove limit100. No rounding of historical 225 or inferred unlocks. Gain/Spend preserve the unlocked limit.",
+  "client_visible": false,
+  "boundary_tests": [
+    "all 225 paid transitions; exact 100 and 4600 accepted; off-grid 101/225/226 and 4601 refused",
+    "native first debit 25 and last debit 249; after 225 upgrades a further attempt is refused without an effect",
+    "native migration rejects legacy limit !=100 or disconnected/inconsistent history before enabling the D1230 constraints"
+  ],
+  "consumers": [
+    "apps/game-server/src/domain/forge_dust.rs",
+    "apps/game-server/src/durability/character_forge_dust.rs",
+    "apps/game-server/tests/support/forge_dust_limit_postgres_cases.rs"
+  ],
+  "notes": "Private continuation proposal under accepted D1230 (CP comment6226138153): GUI+CIPSOFT base/increment; general cost and maximum PARITY_WIKI. Replaces the older unadmitted Canary policy; no other Forge operation is admitted. Native migration number awaits root final allocation."
+}

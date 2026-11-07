@@ -1,0 +1,78 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/house_door_list",
+      "revision": "spell-p2-r20"
+    },
+    "name": "House Door List",
+    "carrier": "instant",
+    "words": "aleta grav",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 8,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": true,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_edit_door"
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "house_access",
+        "parameters": {
+          "action": "edit_list",
+          "list": "door",
+          "house_lookup": "caster_tile",
+          "door_lookup": [
+            "front",
+            "own_tile"
+          ],
+          "require_can_edit": true,
+          "record_editor_session": true,
+          "save_requires_matching_window_and_session": true,
+          "save_rechecks_access": true,
+          "evict_uninvited_on_save": false,
+          "denied_cast_succeeds": false,
+          "no_house_succeeds": false,
+          "no_house_failure_silent": false,
+          "failure_effect": "poff"
+        }
+      }
+    }
+  }
+}

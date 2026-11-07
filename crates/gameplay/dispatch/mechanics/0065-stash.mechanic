@@ -1,0 +1,16 @@
+name=stash
+commands=79
+[route]
+match routing::stash::route(
+    authority,
+    session.actor,
+    &session.admitted,
+    command,
+    &session.item_view,
+    &mut session.stash_rows,
+)
+.await
+{
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

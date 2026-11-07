@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-FIRST-PROD-CLIENT-RECORDS",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+  "resource": "Client-safe body records",
+  "unit": "records",
+  "hard_maximum": 6,
+  "configurable_range": {
+    "minimum": 6,
+    "maximum": 6
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check count before record-vector allocation; only allowlisted client record kinds are valid.",
+  "client_visible": true,
+  "boundary_tests": [
+    "6 allowlisted records accepted",
+    "7 rejected before allocation",
+    "server-only record kind rejected independently"
+  ]
+}

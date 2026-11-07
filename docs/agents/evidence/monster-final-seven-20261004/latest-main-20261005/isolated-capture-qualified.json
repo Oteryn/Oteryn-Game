@@ -1,0 +1,177 @@
+{
+  "status": "CAPTURE_FILTERS_PASS",
+  "origin": {
+    "git_head": "2081af9b92c7316e069e7a7a86265b3019bd9f75",
+    "binary_path": "/dev/shm/monster-comparison-build-target-cache/debug/deps/oteryn_game_server-9494e90a1877450b",
+    "binary_sha256": "375c780a649c357636ef14897bd93a67887cf5bb795acf5907ddccaa17f72940",
+    "manifest_sha256": "117782c12f9309a90e41a72f9b13611771b62a71f6e7348a238824a52227fa34",
+    "capture_root": "/tmp/monster-final-seven/repair-20261005/sealed11",
+    "execution": "direct frozen binary; library4threads, native/capture1thread; no Cargo or product writes",
+    "mode": "all"
+  },
+  "capture_root": "/tmp/monster-final-native-capture-20261005/capture",
+  "capture_documents": [
+    {
+      "path": "content.lock.json",
+      "sha256": "4b522b20db3a15fa0cea6fce7b29ea0e72ba5f410c1c20c98379a971bc71924a"
+    },
+    {
+      "path": "manifest.json",
+      "sha256": "36208a79ae598db9a1b4c6a976303d5f3b9552bfb1b94ccf3b75811ccd85ee7c"
+    },
+    {
+      "path": "project.json",
+      "sha256": "42edd1e97a3125787cdbbd8f156b8cbbbc10b88133b727427d4c50c20fb1e67d"
+    },
+    {
+      "path": "assets/catalog.json",
+      "sha256": "fa61df1076ef66e8c69b6182db1b13fe2ccb92653ab16a148d1fbaf773adb344"
+    },
+    {
+      "path": "definitions/declarations.json",
+      "sha256": "b6c28de9a38da6bf0c5bca39f0936f6ccf69ed59df4d1266a1ff4641116dbe95"
+    },
+    {
+      "path": "definitions/reference.json",
+      "sha256": "d8680c42f767c29c977b0a3a00afde93f7a6f3eea28de5f549d30323bb0bfd2a"
+    },
+    {
+      "path": "editor/author.json",
+      "sha256": "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb"
+    },
+    {
+      "path": "presentations/bindings.json",
+      "sha256": "b7d27b2d7fde6370b7ae56c2c60412f2b213a4a5e92e7db82dd4b59a64359cd7"
+    },
+    {
+      "path": "provenance/imports.json",
+      "sha256": "6ac5b17b337f384a25aed9523eda8b2fd2ba94d7ffe62b3e2869859dcaa1994f"
+    },
+    {
+      "path": "provenance/sources.json",
+      "sha256": "6414fc9da96985e0529bf986fd2e021a75a145ba6cb899af5ad992e4699147c6"
+    },
+    {
+      "path": "worlds/world.json",
+      "sha256": "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa"
+    }
+  ],
+  "parent_entries": 1,
+  "limits_unchanged": true,
+  "failure_disposition": "Initial Bone test scanned scratch parent with more than32entries. Same11document bytes re-homed in dedicated one-entry parent; no product/test limits or source changed. Prior successful library2413/native1/appearance6 retained; only failed/unexecuted capture filters rerun.",
+  "capture_passes": 12,
+  "rows": [
+    {
+      "filter": "bone_phase_registry::shared_hp_actual_source_tests::",
+      "log": "/tmp/monster-final-seven/repair-20261005/final-code-capture-isolated/1-bone_phase_registry--shared_hp_actual_source_tests--.log",
+      "sha256": "4b8cc3de870d826bb510e755040783e4f5a88b08614f75b1f9371e148e63a259",
+      "exit": 0,
+      "counts": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "filter": "creature_area_heal::tests::actual_corrected_native_world",
+      "log": "/tmp/monster-final-seven/repair-20261005/final-code-capture-isolated/2-creature_area_heal--tests--actual_corrected_native_world.log",
+      "sha256": "34573235194cb352b69250ce15321f52cdb89617f1a1c17eb995b0107a353a73",
+      "exit": 0,
+      "counts": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "filter": "crystal_death_composition::",
+      "log": "/tmp/monster-final-seven/repair-20261005/final-code-capture-isolated/3-crystal_death_composition--.log",
+      "sha256": "92f703cae5df7f0a3367688b84a0ed7a66f1c0d6273edf37b0ec8ca63ee3efcc",
+      "exit": 0,
+      "counts": [
+        {
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "filter": "monster_combat_lane::bone_map_admission_actual_tests::",
+      "log": "/tmp/monster-final-seven/repair-20261005/final-code-capture-isolated/4-monster_combat_lane--bone_map_admission_actual_tests--.log",
+      "sha256": "be4842b27f0044ae95be94b2f3d6e65f6b4e811d88551cb81c842be596d60a74",
+      "exit": 0,
+      "counts": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "filter": "monster_combat_lane::defense_composition_tests::",
+      "log": "/tmp/monster-final-seven/repair-20261005/final-code-capture-isolated/5-monster_combat_lane--defense_composition_tests--.log",
+      "sha256": "6586f815047cffda1bc096af9ad6a386b96cde73b757a1d3a915459db7b11656",
+      "exit": 0,
+      "counts": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "filter": "monster_combat_lane::pending_summon_failure_regression::",
+      "log": "/tmp/monster-final-seven/repair-20261005/final-code-capture-isolated/6-monster_combat_lane--pending_summon_failure_regression--.log",
+      "sha256": "89bb9e25bf9cd610111eaec59494cb2e54b3bcbc2b0146f9cc101dbb128bdfcd",
+      "exit": 0,
+      "counts": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "filter": "monster_combat_lane::source_summon_composition_tests::",
+      "log": "/tmp/monster-final-seven/repair-20261005/final-code-capture-isolated/7-monster_combat_lane--source_summon_composition_tests--.log",
+      "sha256": "d39cff431b41a38731bfdca7d9b0e8a171836259a05db937bbe55a9f2bb6f963",
+      "exit": 0,
+      "counts": [
+        {
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "filter": "monster_summon::",
+      "log": "/tmp/monster-final-seven/repair-20261005/final-code-capture-isolated/8-monster_summon--.log",
+      "sha256": "af53319a02c304f00773dc5983f60bf138f81c1dbcbed419b7a02b6993194ca4",
+      "exit": 0,
+      "counts": [
+        {
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "status": "PASS"
+    }
+  ]
+}

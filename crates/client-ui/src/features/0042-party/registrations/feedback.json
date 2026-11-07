@@ -1,0 +1,18 @@
+{
+  "mechanic": "0042-party",
+  "kind": "handlers",
+  "id": "0042-party-feedback",
+  "status": "supported",
+  "commands": [],
+  "direction": "server_to_client",
+  "capability": 42,
+  "entry": "protocol.rs::push_feedback",
+  "shared_commands": [
+    13
+  ],
+  "push_messages": [
+    "ChatLine"
+  ],
+  "reducer": "protocol.rs::push_feedback",
+  "test": "tests.rs::shared_refusal_text_reaches_party_projection_only_for_a_shared_request"
+}

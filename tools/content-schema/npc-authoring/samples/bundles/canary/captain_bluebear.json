@@ -1,0 +1,1344 @@
+{
+ "definition": {
+  "description": {
+   "length": 16,
+   "links": [],
+   "placeholders": [],
+   "sha256": "389747508799126785425af84ffd06f1d4a497fa007f944f585aaae183f97ae4"
+  },
+  "display_name": "Captain Bluebear",
+  "movement": {
+   "floor_change": false,
+   "walk_interval_ms": 2000,
+   "walk_radius": 2
+  },
+  "name": "Captain Bluebear",
+  "presentation": {
+   "light": null,
+   "outfit": {
+    "addons": 0,
+    "body": 69,
+    "feet": 50,
+    "head": 19,
+    "legs": 125,
+    "look_type": 129,
+    "mount": null
+   },
+   "speech_bubble": "SAILOR"
+  },
+  "profession": "sailor",
+  "respawn": null,
+  "vitals": {
+   "health": 100,
+   "max_health": 100
+  }
+ },
+ "dialogue": {
+  "dialog_option_calls": 0,
+  "keywords": [
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "LUA_ACTION",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "travel",
+      "text": null
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "reset": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "no"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 37,
+       "links": [],
+       "placeholders": [],
+       "sha256": "58a77d3f4c5b4fa120da9ded8ccf17ffb5ef7e7b162004986e4a100e21c8af83"
+      }
+     }
+    ],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "carlin"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 49,
+     "links": [],
+     "placeholders": [
+      "|TRAVELCOST|"
+     ],
+     "sha256": "13c58f5b8d97c0b9d5555ceb115da45c5cb9623dde1fe65a7b82dce310c93a6d"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "travel",
+      "text": null
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "reset": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "no"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 37,
+       "links": [],
+       "placeholders": [],
+       "sha256": "58a77d3f4c5b4fa120da9ded8ccf17ffb5ef7e7b162004986e4a100e21c8af83"
+      }
+     }
+    ],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "ab'dendriel"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 54,
+     "links": [],
+     "placeholders": [
+      "|TRAVELCOST|"
+     ],
+     "sha256": "a38c16113c5e8b0ab55255f065424d41ae9461206e8391e679d9d675356b163a"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "travel",
+      "text": null
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "reset": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "no"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 37,
+       "links": [],
+       "placeholders": [],
+       "sha256": "58a77d3f4c5b4fa120da9ded8ccf17ffb5ef7e7b162004986e4a100e21c8af83"
+      }
+     }
+    ],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "edron"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 48,
+     "links": [],
+     "placeholders": [
+      "|TRAVELCOST|"
+     ],
+     "sha256": "32bc659894b35ba63b5ed0fc5937305c1a437e658b244999799598abeb47e19f"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "travel",
+      "text": null
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "reset": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "no"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 37,
+       "links": [],
+       "placeholders": [],
+       "sha256": "58a77d3f4c5b4fa120da9ded8ccf17ffb5ef7e7b162004986e4a100e21c8af83"
+      }
+     }
+    ],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "venore"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 49,
+     "links": [],
+     "placeholders": [
+      "|TRAVELCOST|"
+     ],
+     "sha256": "56f8b8645ae6f32e266f09c53b1638f1f8e1a3487f5906b8fb8134e44d4042c8"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "travel",
+      "text": null
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "reset": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "no"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 37,
+       "links": [],
+       "placeholders": [],
+       "sha256": "58a77d3f4c5b4fa120da9ded8ccf17ffb5ef7e7b162004986e4a100e21c8af83"
+      }
+     }
+    ],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "port hope"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 52,
+     "links": [],
+     "placeholders": [
+      "|TRAVELCOST|"
+     ],
+     "sha256": "79548c2a7fd13ab45e18b89b0a8d6a3a62d5f132f01ed29d2c9bbba16ab7f3ba"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "travel",
+      "text": null
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "reset": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "no"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 37,
+       "links": [],
+       "placeholders": [],
+       "sha256": "58a77d3f4c5b4fa120da9ded8ccf17ffb5ef7e7b162004986e4a100e21c8af83"
+      }
+     }
+    ],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "roshamuul"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 52,
+     "links": [],
+     "placeholders": [
+      "|TRAVELCOST|"
+     ],
+     "sha256": "d9b74e33284920268fa73cc396548b4ccac7348c3b088a6eca44c858143886e5"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "travel",
+      "text": null
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "reset": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "no"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 37,
+       "links": [],
+       "placeholders": [],
+       "sha256": "58a77d3f4c5b4fa120da9ded8ccf17ffb5ef7e7b162004986e4a100e21c8af83"
+      }
+     }
+    ],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "svargrond"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 52,
+     "links": [],
+     "placeholders": [
+      "|TRAVELCOST|"
+     ],
+     "sha256": "44984ea295ecb9743463c935f26aa3d2420ea446dc98faad5a80768d47b6345f"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "travel",
+      "text": null
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "reset": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "no"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 37,
+       "links": [],
+       "placeholders": [],
+       "sha256": "58a77d3f4c5b4fa120da9ded8ccf17ffb5ef7e7b162004986e4a100e21c8af83"
+      }
+     }
+    ],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "liberty bay"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 54,
+     "links": [],
+     "placeholders": [
+      "|TRAVELCOST|"
+     ],
+     "sha256": "c18f03abaa03673cc53b09cf7f2d6e88a04774db71c72956d96a53d5208227ae"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "yalahar"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 33,
+     "links": [],
+     "placeholders": [],
+     "sha256": "7f671697e1595b3435e4b473f5a299bfd12a8464b29289ff2021f8b879b33325"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "travel",
+      "text": null
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "reset": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "no"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 37,
+       "links": [],
+       "placeholders": [],
+       "sha256": "58a77d3f4c5b4fa120da9ded8ccf17ffb5ef7e7b162004986e4a100e21c8af83"
+      }
+     }
+    ],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "yalahar"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 50,
+     "links": [],
+     "placeholders": [
+      "|TRAVELCOST|"
+     ],
+     "sha256": "abef6ef8f98d7dd4fcac44f134b9451f74574f08bdc35ff3b2f81776f45fb4de"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "travel",
+      "text": null
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "reset": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "no"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 37,
+       "links": [],
+       "placeholders": [],
+       "sha256": "58a77d3f4c5b4fa120da9ded8ccf17ffb5ef7e7b162004986e4a100e21c8af83"
+      }
+     }
+    ],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "oramond"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 50,
+     "links": [],
+     "placeholders": [
+      "|TRAVELCOST|"
+     ],
+     "sha256": "db264e7b362b529e60dae4814b7f98c93d9a6e941ad45f661825b7b19d9812cf"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "travel",
+      "text": null
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "reset": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "no"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 37,
+       "links": [],
+       "placeholders": [],
+       "sha256": "58a77d3f4c5b4fa120da9ded8ccf17ffb5ef7e7b162004986e4a100e21c8af83"
+      }
+     }
+    ],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "krailos"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 50,
+     "links": [],
+     "placeholders": [
+      "|TRAVELCOST|"
+     ],
+     "sha256": "604352dacef3bacca6a9b6de03351afc9151564fafce3f902427233625791517"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "kick"
+    ],
+    "kind": "kick",
+    "text": null
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "name"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 54,
+     "links": [],
+     "placeholders": [],
+     "sha256": "2d4198e5c71ecc5db548a2d171ca024d351b7c855fe8c7f82f7285efe9837fec"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "job"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 38,
+     "links": [],
+     "placeholders": [],
+     "sha256": "3ec522744e881fcaa47026b603ff078cc50100dc6982e448da74c0155d28d4d4"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "captain"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 38,
+     "links": [],
+     "placeholders": [],
+     "sha256": "3ec522744e881fcaa47026b603ff078cc50100dc6982e448da74c0155d28d4d4"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "ship"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 57,
+     "links": [],
+     "placeholders": [],
+     "sha256": "c1e69dba23ac99113270e724ff0d6fb6759d6ef022dd186aa0b6540565d58ffe"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "line"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 57,
+     "links": [],
+     "placeholders": [],
+     "sha256": "c1e69dba23ac99113270e724ff0d6fb6759d6ef022dd186aa0b6540565d58ffe"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "company"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 57,
+     "links": [],
+     "placeholders": [],
+     "sha256": "c1e69dba23ac99113270e724ff0d6fb6759d6ef022dd186aa0b6540565d58ffe"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "tibia"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 57,
+     "links": [],
+     "placeholders": [],
+     "sha256": "c1e69dba23ac99113270e724ff0d6fb6759d6ef022dd186aa0b6540565d58ffe"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "good"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 37,
+     "links": [],
+     "placeholders": [],
+     "sha256": "741669725e6f7325d9f0b0100714b6b297783897e25f141b5956cd2a42400633"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "passenger"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 38,
+     "links": [],
+     "placeholders": [],
+     "sha256": "d00ed3105d14dbb2c717ba7a1bafc64245c3fcb0e23af86a98485c42440e417f"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "trip"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 149,
+     "links": [
+      "ab'dendriel",
+      "carlin",
+      "edron",
+      "liberty bay",
+      "oramond",
+      "port hope",
+      "roshamuul",
+      "svargrond",
+      "venore",
+      "yalahar"
+     ],
+     "placeholders": [],
+     "sha256": "49743af8d773926fe780dcfe678cfe8cadbd83b7128ea32fb6398de5b4b43e8b"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "route"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 149,
+     "links": [
+      "ab'dendriel",
+      "carlin",
+      "edron",
+      "liberty bay",
+      "oramond",
+      "port hope",
+      "roshamuul",
+      "svargrond",
+      "venore",
+      "yalahar"
+     ],
+     "placeholders": [],
+     "sha256": "49743af8d773926fe780dcfe678cfe8cadbd83b7128ea32fb6398de5b4b43e8b"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "passage"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 149,
+     "links": [
+      "ab'dendriel",
+      "carlin",
+      "edron",
+      "liberty bay",
+      "oramond",
+      "port hope",
+      "roshamuul",
+      "svargrond",
+      "venore",
+      "yalahar"
+     ],
+     "placeholders": [],
+     "sha256": "49743af8d773926fe780dcfe678cfe8cadbd83b7128ea32fb6398de5b4b43e8b"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "town"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 149,
+     "links": [
+      "ab'dendriel",
+      "carlin",
+      "edron",
+      "liberty bay",
+      "oramond",
+      "port hope",
+      "roshamuul",
+      "svargrond",
+      "venore",
+      "yalahar"
+     ],
+     "placeholders": [],
+     "sha256": "49743af8d773926fe780dcfe678cfe8cadbd83b7128ea32fb6398de5b4b43e8b"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "destination"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 149,
+     "links": [
+      "ab'dendriel",
+      "carlin",
+      "edron",
+      "liberty bay",
+      "oramond",
+      "port hope",
+      "roshamuul",
+      "svargrond",
+      "venore",
+      "yalahar"
+     ],
+     "placeholders": [],
+     "sha256": "49743af8d773926fe780dcfe678cfe8cadbd83b7128ea32fb6398de5b4b43e8b"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "sail"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 149,
+     "links": [
+      "ab'dendriel",
+      "carlin",
+      "edron",
+      "liberty bay",
+      "oramond",
+      "port hope",
+      "roshamuul",
+      "svargrond",
+      "venore",
+      "yalahar"
+     ],
+     "placeholders": [],
+     "sha256": "49743af8d773926fe780dcfe678cfe8cadbd83b7128ea32fb6398de5b4b43e8b"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "go"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 149,
+     "links": [
+      "ab'dendriel",
+      "carlin",
+      "edron",
+      "liberty bay",
+      "oramond",
+      "port hope",
+      "roshamuul",
+      "svargrond",
+      "venore",
+      "yalahar"
+     ],
+     "placeholders": [],
+     "sha256": "49743af8d773926fe780dcfe678cfe8cadbd83b7128ea32fb6398de5b4b43e8b"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "ice"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 60,
+     "links": [],
+     "placeholders": [],
+     "sha256": "28f50c075787748839a25dd97d44ce1060d67aaa021f36dd5eca775ddd8d6445"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "senja"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 60,
+     "links": [],
+     "placeholders": [],
+     "sha256": "28f50c075787748839a25dd97d44ce1060d67aaa021f36dd5eca775ddd8d6445"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "folda"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 60,
+     "links": [],
+     "placeholders": [],
+     "sha256": "28f50c075787748839a25dd97d44ce1060d67aaa021f36dd5eca775ddd8d6445"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "vega"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 60,
+     "links": [],
+     "placeholders": [],
+     "sha256": "28f50c075787748839a25dd97d44ce1060d67aaa021f36dd5eca775ddd8d6445"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "darashia"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 128,
+     "links": [],
+     "placeholders": [],
+     "sha256": "fdaef687546194cc0ed7a11134a8547dd8640812e3ff1ee8d41adc27fbd67dd0"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "darama"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 128,
+     "links": [],
+     "placeholders": [],
+     "sha256": "fdaef687546194cc0ed7a11134a8547dd8640812e3ff1ee8d41adc27fbd67dd0"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "ghost"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 115,
+     "links": [],
+     "placeholders": [],
+     "sha256": "47e04138011d31cce515afe4fcc56f1dbd74587864127d1f4ae0d74d76de9f12"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "thais"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 39,
+     "links": [],
+     "placeholders": [],
+     "sha256": "fcb5ead29cb6fbe73d2632daff9ea237421adde5509aef0676b1f08f824e6856"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "inquisition"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 150,
+     "links": [],
+     "placeholders": [],
+     "sha256": "b4824fefeca05c9b2fe2d6a40caef0649ce2784c68e67e1052a2865272f1fd72"
+    }
+   }
+  ],
+  "messages": {
+   "farewell": {
+    "length": 62,
+    "links": [],
+    "placeholders": [],
+    "sha256": "163839a6cda12ff8b1db960ed635c88f1a1b86ce514fb0d1eb13ce523b933b60"
+   },
+   "greet": {
+    "length": 61,
+    "links": [
+     "sail"
+    ],
+    "placeholders": [
+     "|PLAYERNAME|"
+    ],
+    "sha256": "4d0c52178f81942dfb5ecd7eef842a85833cd68b88895a31c427e837ce98909e"
+   },
+   "walkaway": {
+    "length": 14,
+    "links": [],
+    "placeholders": [],
+    "sha256": "745c8e94a950f9e361701d895d4602e7b86e83dc4c2e519277c1a43c96a62dba"
+   }
+  },
+  "scripted_handlers": []
+ },
+ "evidence": "OTS_HYPOTHESIS_ONLY",
+ "key": "canary:npc/captain_bluebear",
+ "placements": [
+  {
+   "direction": "NORTH",
+   "engine_spawns": true,
+   "placement_file": "data-otservbr-global/world/otservbr-npc.xml",
+   "position": {
+    "x": 32310,
+    "y": 32209,
+    "z": 6
+   },
+   "spawn_interval_s": 60,
+   "spawn_radius": 1
+  }
+ ],
+ "schema": "OTERYN_NPC_AUTHORING_CANDIDATE/v1",
+ "services": {
+  "blessings": [],
+  "kick": [
+   {
+    "destinations": [
+     {
+      "x": 32320,
+      "y": 32219,
+      "z": 6
+     },
+     {
+      "x": 32321,
+      "y": 32210,
+      "z": 6
+     }
+    ],
+    "dialogue_path": "dialogue.keywords[12]"
+   }
+  ],
+  "promotion": [],
+  "spells": [],
+  "trade": null,
+  "travel": [
+   {
+    "destination": {
+     "x": 32387,
+     "y": 31820,
+     "z": 6
+    },
+    "dialogue_path": "dialogue.keywords[0].children[0]",
+    "discount": "postman",
+    "effect": "LUA_ACTION",
+    "gate": "NONE",
+    "keyword": "carlin",
+    "min_level": null,
+    "premium": false,
+    "price": 110
+   },
+   {
+    "destination": {
+     "x": 32734,
+     "y": 31668,
+     "z": 6
+    },
+    "dialogue_path": "dialogue.keywords[1].children[0]",
+    "discount": "postman",
+    "effect": "NONE",
+    "gate": "NONE",
+    "keyword": "ab'dendriel",
+    "min_level": null,
+    "premium": false,
+    "price": 130
+   },
+   {
+    "destination": {
+     "x": 33175,
+     "y": 31764,
+     "z": 6
+    },
+    "dialogue_path": "dialogue.keywords[2].children[0]",
+    "discount": "postman",
+    "effect": "NONE",
+    "gate": "NONE",
+    "keyword": "edron",
+    "min_level": null,
+    "premium": false,
+    "price": 160
+   },
+   {
+    "destination": {
+     "x": 32954,
+     "y": 32022,
+     "z": 6
+    },
+    "dialogue_path": "dialogue.keywords[3].children[0]",
+    "discount": "postman",
+    "effect": "NONE",
+    "gate": "NONE",
+    "keyword": "venore",
+    "min_level": null,
+    "premium": false,
+    "price": 170
+   },
+   {
+    "destination": {
+     "x": 32527,
+     "y": 32784,
+     "z": 6
+    },
+    "dialogue_path": "dialogue.keywords[4].children[0]",
+    "discount": "postman",
+    "effect": "NONE",
+    "gate": "NONE",
+    "keyword": "port hope",
+    "min_level": null,
+    "premium": false,
+    "price": 160
+   },
+   {
+    "destination": {
+     "x": 33494,
+     "y": 32567,
+     "z": 7
+    },
+    "dialogue_path": "dialogue.keywords[5].children[0]",
+    "discount": "postman",
+    "effect": "NONE",
+    "gate": "NONE",
+    "keyword": "roshamuul",
+    "min_level": null,
+    "premium": false,
+    "price": 210
+   },
+   {
+    "destination": {
+     "x": 32341,
+     "y": 31108,
+     "z": 6
+    },
+    "dialogue_path": "dialogue.keywords[6].children[0]",
+    "discount": "postman",
+    "effect": "NONE",
+    "gate": "NONE",
+    "keyword": "svargrond",
+    "min_level": null,
+    "premium": false,
+    "price": 180
+   },
+   {
+    "destination": {
+     "x": 32285,
+     "y": 32892,
+     "z": 6
+    },
+    "dialogue_path": "dialogue.keywords[7].children[0]",
+    "discount": "postman",
+    "effect": "NONE",
+    "gate": "NONE",
+    "keyword": "liberty bay",
+    "min_level": null,
+    "premium": false,
+    "price": 180
+   },
+   {
+    "destination": {
+     "x": 32816,
+     "y": 31272,
+     "z": 6
+    },
+    "dialogue_path": "dialogue.keywords[9].children[0]",
+    "discount": "postman",
+    "effect": "NONE",
+    "gate": "LUA_PREDICATE",
+    "keyword": "yalahar",
+    "min_level": null,
+    "premium": false,
+    "price": 200
+   },
+   {
+    "destination": {
+     "x": 33479,
+     "y": 31985,
+     "z": 7
+    },
+    "dialogue_path": "dialogue.keywords[10].children[0]",
+    "discount": "postman",
+    "effect": "NONE",
+    "gate": "NONE",
+    "keyword": "oramond",
+    "min_level": null,
+    "premium": false,
+    "price": 150
+   },
+   {
+    "destination": {
+     "x": 33492,
+     "y": 31712,
+     "z": 6
+    },
+    "dialogue_path": "dialogue.keywords[11].children[0]",
+    "discount": "postman",
+    "effect": "NONE",
+    "gate": "NONE",
+    "keyword": "krailos",
+    "min_level": null,
+    "premium": false,
+    "price": 230
+   }
+  ]
+ },
+ "source": {
+  "path": "data-otservbr-global/npc/captain_bluebear.lua",
+  "repository": "opentibiabr/canary",
+  "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "sha256": "9c4f626323fff1a5622d9835be40fe929ab57056e03176d4b28fc59df8837e79"
+ },
+ "status": "PARTIAL",
+ "unresolved": [
+  {
+   "detail": "yes",
+   "path": "dialogue.keywords[0].children[0].effect",
+   "reason": "LUA_ACTION"
+  },
+  {
+   "detail": "yalahar",
+   "path": "dialogue.keywords[8].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "inherited from an ancestor or earlier sibling",
+   "path": "dialogue.keywords[9].children[0].gate",
+   "reason": "LUA_PREDICATE"
+  }
+ ],
+ "voices": {
+  "chance_percent": 50,
+  "interval_ms": 15000,
+  "lines": [
+   {
+    "text": {
+     "length": 123,
+     "links": [],
+     "placeholders": [],
+     "sha256": "769383daab9b1cebc75245dd4f9a08c7b526a1bfcda948f4c572805a16a3fe98"
+    },
+    "yell": false
+   }
+  ]
+ }
+}

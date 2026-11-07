@@ -1,0 +1,7 @@
+{
+  "mechanic": "0230-browse-field",
+  "kind": "panels",
+  "id": "0230-browse-field-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

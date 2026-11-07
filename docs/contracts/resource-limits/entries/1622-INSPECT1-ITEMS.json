@@ -1,0 +1,22 @@
+{
+  "id": "INSPECT1-ITEMS",
+  "owner_contract": "protocol-oteryn/v1/inspection-v1.md",
+  "resource": "Equipment entries per inspection",
+  "unit": "items",
+  "hard_maximum": 10,
+  "configurable_range": {
+    "minimum": 10,
+    "maximum": 10
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject at the declared bound; no durable mutation.",
+  "client_visible": true,
+  "boundary_tests": [
+    "inspection_wire_roundtrip_and_bounds",
+    "inspection_postgres_inventory_ground_catalogue_and_private_player_dispatch"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/inspection.rs"
+  ],
+  "notes": "INSPECT-1 reserved resource number 1622."
+}

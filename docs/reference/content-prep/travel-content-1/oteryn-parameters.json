@@ -1,0 +1,35 @@
+{
+  "schema": "OTERYN_WORKING_REFERENCE_PARAMETERS/v1",
+  "task": "TRAVEL-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "MATERIALIZED_IN_TARGET_DATA",
+  "owner_instruction_source": "owner:oteryn-data-completion:2026-10-19",
+  "filled_fields": 639,
+  "normalized_companion_fields": 0,
+  "remaining_unfilled_fields": 0,
+  "originating_proposals": "docs/reference/content-prep/travel-content-1/oteryn-proposals.json",
+  "source_archive": "docs/reference/content-prep/travel-content-1/tibia-source-archive.json",
+  "shared_policies": {},
+  "selection_policy": "Source-backed observations where available; explicit Oteryn working choices otherwise. Native activation and accepted architecture remain outside this data task.",
+  "route_source_correction": {
+    "source_check": "docs/reference/content-prep/travel-content-1/source-correction-check.json",
+    "record_count": 195,
+    "npc_scripts": 56,
+    "correction_counts": {
+      "minimum_level": 195,
+      "destination_coordinates": 195,
+      "premium_required": 195,
+      "quest_requirements": 195,
+      "origin": 24,
+      "travel_guard_conditions": 7,
+      "fare_gold": 5
+    },
+    "route_evidence_counts": {
+      "PROVEN": 589,
+      "DERIVED": 1253
+    },
+    "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
+    "universal_level8_removed": true
+  }
+}

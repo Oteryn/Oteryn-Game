@@ -1,0 +1,366 @@
+{
+  "engine": "canary",
+  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "categories": 25,
+  "leaf_categories": 20,
+  "group_categories": 5,
+  "offers": 757,
+  "offers_per_type": {
+    "allblessings": 2,
+    "blessings": 10,
+    "charges": 37,
+    "charms": 1,
+    "expboost": 1,
+    "hireling": 1,
+    "hireling_namechange": 1,
+    "hireling_outfit": 9,
+    "hireling_sexchange": 1,
+    "hireling_skill": 4,
+    "house": 414,
+    "instant_reward_access": 1,
+    "item_bed": 14,
+    "item_unique": 1,
+    "mount": 142,
+    "namechange": 1,
+    "none": 1,
+    "outfit": 58,
+    "premium": 4,
+    "preybonus": 2,
+    "preyslot": 1,
+    "sexchange": 1,
+    "stackable": 48,
+    "temple": 1,
+    "weekly_task_expansion": 1
+  },
+  "offers_per_product_kind": {
+    "blessing": 10,
+    "blessing_bundle": 2,
+    "hireling": 1,
+    "hireling_typed": 13,
+    "item": 514,
+    "mount": 142,
+    "outfit": 58,
+    "premium_time": 4,
+    "service": 13
+  },
+  "item_backed_offers": 514,
+  "item_refs_resolved": 528,
+  "item_refs_unresolved": 2,
+  "unresolved_item_refs": [
+    {
+      "category": "Decorations",
+      "offer": "Water Floor",
+      "itemtype": 49216
+    },
+    {
+      "category": "Decorations",
+      "offer": "Water Floor",
+      "itemtype": 49216
+    }
+  ],
+  "unresolved_engine_offer_ids": [
+    {
+      "category": "Hirelings",
+      "offer": "Hireling Cook",
+      "source": "HIRELING_SKILLS.COOKING[...]"
+    },
+    {
+      "category": "Hirelings",
+      "offer": "Hireling Trader",
+      "source": "HIRELING_SKILLS.TRADER[...]"
+    },
+    {
+      "category": "Hirelings",
+      "offer": "Hireling Steward",
+      "source": "HIRELING_SKILLS.STEWARD[...]"
+    },
+    {
+      "category": "Hirelings",
+      "offer": "Hireling Banker",
+      "source": "HIRELING_SKILLS.BANKER[...]"
+    },
+    {
+      "category": "Hireling Dresses",
+      "offer": "Banker Dress",
+      "source": "HIRELING_OUTFITS.BANKER[...]"
+    },
+    {
+      "category": "Hireling Dresses",
+      "offer": "Trader Dress",
+      "source": "HIRELING_OUTFITS.TRADER[...]"
+    },
+    {
+      "category": "Hireling Dresses",
+      "offer": "Cook Dress",
+      "source": "HIRELING_OUTFITS.COOKING[...]"
+    },
+    {
+      "category": "Hireling Dresses",
+      "offer": "Steward Dress",
+      "source": "HIRELING_OUTFITS.STEWARD[...]"
+    },
+    {
+      "category": "Hireling Dresses",
+      "offer": "Servant Dress",
+      "source": "HIRELING_OUTFITS.SERVANT[...]"
+    },
+    {
+      "category": "Hireling Dresses",
+      "offer": "Hydra Dress",
+      "source": "HIRELING_OUTFITS.HYDRA[...]"
+    },
+    {
+      "category": "Hireling Dresses",
+      "offer": "Ferumbras Dress",
+      "source": "HIRELING_OUTFITS.FERUMBRAS[...]"
+    },
+    {
+      "category": "Hireling Dresses",
+      "offer": "Bonelord Dress",
+      "source": "HIRELING_OUTFITS.BONELORD[...]"
+    },
+    {
+      "category": "Hireling Dresses",
+      "offer": "Dragon Dress",
+      "source": "HIRELING_OUTFITS.DRAGON[...]"
+    }
+  ],
+  "excluded_offers": [
+    {
+      "category": "Decorations",
+      "offer": "Water Floor",
+      "offer_type": "house",
+      "reason": "unresolved product reference"
+    },
+    {
+      "category": "Decorations",
+      "offer": "Water Floor",
+      "offer_type": "house",
+      "reason": "unresolved product reference"
+    }
+  ],
+  "cross_engine_differences": {
+    "category_names_only_in_canary": [],
+    "category_names_only_in_crystal": [],
+    "offer_count_by_category_name_offer_name_only_in_canary": [
+      [
+        "decorations",
+        "Azure Carpet"
+      ],
+      [
+        "decorations",
+        "Bamboo Mat"
+      ],
+      [
+        "decorations",
+        "Colourful Carpet"
+      ],
+      [
+        "decorations",
+        "Colourful Pom-Pom Carpet"
+      ],
+      [
+        "decorations",
+        "Crested Carpet"
+      ],
+      [
+        "decorations",
+        "Crimson Carpet"
+      ],
+      [
+        "decorations",
+        "Decorated Carpet"
+      ],
+      [
+        "decorations",
+        "Diamond Carpet"
+      ],
+      [
+        "decorations",
+        "Emerald Carpet"
+      ],
+      [
+        "decorations",
+        "Flowery Carpet"
+      ],
+      [
+        "decorations",
+        "Flowery Grass"
+      ],
+      [
+        "decorations",
+        "Fur Carpet"
+      ],
+      [
+        "decorations",
+        "Mystic Carpet"
+      ],
+      [
+        "decorations",
+        "Night Sky Carpet"
+      ],
+      [
+        "decorations",
+        "Patterned Carpet"
+      ],
+      [
+        "decorations",
+        "Rolled-Up Opulent Carpet"
+      ],
+      [
+        "decorations",
+        "Shaggy Carpet"
+      ],
+      [
+        "decorations",
+        "Star Carpet"
+      ],
+      [
+        "decorations",
+        "Striped Carpet"
+      ],
+      [
+        "decorations",
+        "Verdant Carpet"
+      ],
+      [
+        "decorations",
+        "Wheat Carpet"
+      ],
+      [
+        "decorations",
+        "White Fur Carpet"
+      ],
+      [
+        "decorations",
+        "Wooden Planks"
+      ],
+      [
+        "decorations",
+        "Yalaharian Carpet"
+      ],
+      [
+        "mounts",
+        "Hailstorm Fury"
+      ],
+      [
+        "outfits",
+        "Full Grove Keeper Outfit"
+      ]
+    ],
+    "offer_count_by_category_name_offer_name_only_in_crystal": [
+      [
+        "decorations",
+        "Opulent Carpet"
+      ],
+      [
+        "mounts",
+        "Bog Tyrant"
+      ],
+      [
+        "mounts",
+        "Bumblebee"
+      ],
+      [
+        "mounts",
+        "Corpse Phoenix"
+      ],
+      [
+        "mounts",
+        "Corpsefire Skull"
+      ],
+      [
+        "mounts",
+        "Crimson Fang"
+      ],
+      [
+        "mounts",
+        "Dawnbringer Pegasus"
+      ],
+      [
+        "mounts",
+        "Death Phoenix"
+      ],
+      [
+        "mounts",
+        "Doom Skull"
+      ],
+      [
+        "mounts",
+        "Glacier Wyrm"
+      ],
+      [
+        "mounts",
+        "Gorgon Hydra"
+      ],
+      [
+        "mounts",
+        "Hailtorm Fury"
+      ],
+      [
+        "mounts",
+        "Pallbearer"
+      ],
+      [
+        "mounts",
+        "Satin Moth"
+      ],
+      [
+        "mounts",
+        "Skybreaker Pegasus"
+      ],
+      [
+        "mounts",
+        "Soul Phoenix"
+      ],
+      [
+        "mounts",
+        "Wrathfire Pegasus"
+      ],
+      [
+        "outfits",
+        "Full Groove Keeper Outfit"
+      ],
+      [
+        "outfits",
+        "Full Martial Artist Outfit"
+      ],
+      [
+        "outfits",
+        "Full Necromancer Outfit"
+      ]
+    ],
+    "offer_count_diff_by_type": {
+      "house": {
+        "canary": 414,
+        "crystal": 391,
+        "delta": 23
+      },
+      "mount": {
+        "canary": 142,
+        "crystal": 157,
+        "delta": -15
+      },
+      "outfit": {
+        "canary": 58,
+        "crystal": 60,
+        "delta": -2
+      }
+    },
+    "offer_type_numbering_diff": [
+      {
+        "offer_type": "weekly_task_expansion",
+        "canary_id": 25,
+        "crystal_id": 28
+      }
+    ],
+    "offer_type_engine_only": [
+      {
+        "offer_type": "hunting_slot",
+        "canary_id": null,
+        "crystal_id": 25
+      }
+    ],
+    "coin_type_default_rule_diff": "Canary: an offer with no explicit coinType always defaults to transferable. Crystal: defaults to coin, unless the offer description contains the literal marker '{transferableprice}', in which case transferable. Neither engine's catalog data sets coinType explicitly."
+  }
+}

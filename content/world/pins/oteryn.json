@@ -1,0 +1,13 @@
+{
+  "schema": "OTERYN_WORLD_PIN/v2",
+  "digest": "27d29a545e8b3b03501958ffb76f68998597e1713ab0102adec837aec0629bdb",
+  "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
+  "world_schema_version": "reference-schema-v1",
+  "content_revision": "e06-market-crystal-parity-20261031-r1",
+  "production": false,
+  "entry_start": {
+    "x": 32534,
+    "y": 32513,
+    "floor": -7
+  }
+}

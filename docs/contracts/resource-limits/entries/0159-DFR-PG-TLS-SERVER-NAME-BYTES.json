@@ -1,0 +1,20 @@
+{
+  "id": "DFR-PG-TLS-SERVER-NAME-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+  "resource": "Retained explicit PostgreSQL TLS DNS server identity",
+  "unit": "ASCII bytes",
+  "hard_maximum": 253,
+  "configurable_range": {
+    "minimum": 253,
+    "maximum": 253
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Validate DNS presentation grammar and byte length from borrowed/already-bounded source before any retained String copy; checked aggregate configuration arithmetic and same-root I reservation must succeed before allocation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "253-byte valid DNS presentation name accepted when every label is 1..63 octets and all coupled retained-config checks pass",
+    "254 bytes rejected as UNAVAILABLE before retained allocation or TLS-name parsing/copy",
+    "A 64-octet label and checked aggregate arithmetic overflow are rejected before retained allocation"
+  ],
+  "notes": "First-slice owner decision derived from RFC 1035's 255-octet DNS wire-name maximum: an uncompressed presentation name without the trailing root dot is at most 253 ASCII bytes. No ambient PGHOST/PGHOSTADDR fallback is authorized."
+}

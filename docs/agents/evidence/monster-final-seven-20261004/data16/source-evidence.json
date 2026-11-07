@@ -1,0 +1,3014 @@
+{
+  "cases": [
+    {
+      "key": "oteryn:creature.amenef_the_burning",
+      "field": "resistances",
+      "old_native": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -20
+          }
+        }
+      ],
+      "old_canonical": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "new": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 10,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 15,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        }
+      ],
+      "status": "WIKI_CONFIRMED",
+      "project_qualification": [],
+      "wiki_provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Amenef_The_Burning",
+          "page_title": "Amenef The Burning",
+          "page_id": 51997,
+          "revision_id": 445419,
+          "content_sha256": "42098f0c9ced543b9c547c0647c27b50fa8f18d387a7dcf10cd5287e5768254e",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "fireDmgMod",
+          "raw": "85%",
+          "received_percent": {
+            "numerator": 85,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 15,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Amenef_The_Burning",
+          "page_title": "Amenef The Burning",
+          "page_id": 51997,
+          "revision_id": 445419,
+          "content_sha256": "42098f0c9ced543b9c547c0647c27b50fa8f18d387a7dcf10cd5287e5768254e",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "energyDmgMod",
+          "raw": "90%",
+          "received_percent": {
+            "numerator": 90,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 10,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Amenef_The_Burning",
+          "page_title": "Amenef The Burning",
+          "page_id": 51997,
+          "revision_id": 445419,
+          "content_sha256": "42098f0c9ced543b9c547c0647c27b50fa8f18d387a7dcf10cd5287e5768254e",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "iceDmgMod",
+          "raw": "100%",
+          "received_percent": {
+            "numerator": 100,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        }
+      ],
+      "source_provenance": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/monster/quests/kilmaresh/amenef_the_burning.lua",
+          "sha256": "8e9b3f792ea4fca23230226147334951c8e01d9480df25e1c950d84836a0180e",
+          "section": "monster.elements",
+          "explicit_values": {
+            "physical": 0,
+            "energy": 10,
+            "earth": 0,
+            "fire": 15,
+            "life_drain": 0,
+            "mana_drain": 0,
+            "drowning": 0,
+            "ice": -20,
+            "holy": 0,
+            "death": 0
+          }
+        }
+      ],
+      "semantic_policy": "Missing resistance meansneutral0; percent is resistance=100-received; preserved missingWiki source extremes are not clamped to-200; damage vscondition immunities separate",
+      "native_change": true,
+      "canonical_change": false
+    },
+    {
+      "key": "oteryn:creature.egg",
+      "field": "immunities",
+      "old_native": null,
+      "old_canonical": [
+        "death"
+      ],
+      "new": [],
+      "status": "SOURCE_ONLY",
+      "project_qualification": [
+        "SOURCE_ONLY_DAMAGE_IMMUNITY_FALLBACK;DEATH_ZERO_PERCENT_IS_NEUTRAL_NOT_IMMUNE;CONDITION_IMMUNITIES_PRESERVED"
+      ],
+      "wiki_provenance": [],
+      "source_provenance": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/monster/raids/egg_the_welter.lua",
+          "sha256": "57e92b5ac2fe355283b26b70bd809b32833bbcaa202b0663ef4a63491f8cb97d",
+          "section": "monster.elements",
+          "explicit_values": {
+            "physical": 0,
+            "energy": 0,
+            "earth": 0,
+            "fire": 0,
+            "life_drain": 0,
+            "mana_drain": 0,
+            "drowning": 0,
+            "ice": 0,
+            "holy": 0,
+            "death": 0
+          }
+        }
+      ],
+      "semantic_policy": "Missing resistance meansneutral0; percent is resistance=100-received; preserved missingWiki source extremes are not clamped to-200; damage vscondition immunities separate",
+      "native_change": false,
+      "canonical_change": true
+    },
+    {
+      "key": "oteryn:creature.eliz_the_unyielding",
+      "field": "resistances",
+      "old_native": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        }
+      ],
+      "old_canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "new": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        }
+      ],
+      "status": "SOURCE_ONLY",
+      "project_qualification": [
+        "PROJECT_PLAYABLE_VULNERABLE_SOURCE_BASELINE;PROTECTED_WIKI_FORM_SEPARATE;PILLAR_GATE_NOT_STATIC_IMMUNITY"
+      ],
+      "wiki_provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Eliz_The_Unyielding",
+          "revision_id": 399290,
+          "content_sha256": "d2c2776f2ab4788d894bc1b70655b60619fcf668a0ae777d80276ca63bf58733",
+          "raw_note": "É imune até que se destrua o [[Pillar Of Protection]], que a protege.\n<noinclude><p><spoiler>* Faz parte da [[Cults of Tibia Quest]].</spoiler></p></noinclude>",
+          "interpretation": "Wiki zero received damage is protected form while Pillar exists, not permanent resistance. Source HealthPillar damage gate zeroes primary/secondary only for current protector tile."
+        }
+      ],
+      "source_provenance": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/eliz_the_unyielding.lua",
+          "sha256": "a311c30013c3609330cb646e2ad855d17a1acd8aa94fffdbb6685b6022c9a5f6",
+          "section": "monster.elements",
+          "explicit_values": {
+            "physical": 0,
+            "energy": 0,
+            "earth": 0,
+            "fire": 0,
+            "life_drain": 0,
+            "mana_drain": 0,
+            "drowning": 0,
+            "ice": 0,
+            "holy": 0,
+            "death": 0
+          }
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_pillar_health.lua",
+          "sha256": "1479d5ba241a18583d90b35b18985f62b4ebce006beda7687689eac48413df3e",
+          "source_facts": {
+            "source_creature_name": "eliz the unyielding",
+            "protector_tile": [
+              33103,
+              31919,
+              15
+            ],
+            "predicate": "current tile topCreature name contains pillar of",
+            "effect": "zero primary and secondary damage only while protector present",
+            "absence_effect": "preserve incoming damage"
+          },
+          "project_status": "playable vulnerable-source-stat baseline chosen; conditional gate separate source owner, not static elemental immunity claim"
+        }
+      ],
+      "semantic_policy": "Missing resistance meansneutral0; percent is resistance=100-received; preserved missingWiki source extremes are not clamped to-200; damage vscondition immunities separate",
+      "native_change": true,
+      "canonical_change": true
+    },
+    {
+      "key": "oteryn:creature.swarmer_hatchling",
+      "field": "resistances",
+      "old_native": [
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": -400
+          }
+        }
+      ],
+      "old_canonical": [
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": -200
+          }
+        }
+      ],
+      "new": [
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "numerator": -400,
+            "denominator": 1
+          }
+        }
+      ],
+      "status": "SOURCE_ONLY",
+      "project_qualification": [
+        "SOURCE_ONLY_DROWNING_MISSING_WIKI_NO_CLAMP"
+      ],
+      "wiki_provenance": [],
+      "source_provenance": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/monster/vermins/swarmer_hatchling.lua",
+          "sha256": "b1c138527adcf252454d89c63084e75405c94917622930da0d95b6363e1f2cd1",
+          "section": "monster.elements",
+          "explicit_values": {
+            "physical": 0,
+            "energy": 0,
+            "earth": 0,
+            "fire": 0,
+            "life_drain": 0,
+            "mana_drain": 0,
+            "drowning": -400,
+            "ice": 0,
+            "holy": 0,
+            "death": 0
+          }
+        }
+      ],
+      "semantic_policy": "Missing resistance meansneutral0; percent is resistance=100-received; preserved missingWiki source extremes are not clamped to-200; damage vscondition immunities separate",
+      "native_change": false,
+      "canonical_change": true
+    },
+    {
+      "key": "oteryn:creature.the_armored_voidborn",
+      "field": "resistances",
+      "old_native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1400
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        }
+      ],
+      "old_canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": -200
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "new": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "numerator": -1400,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        }
+      ],
+      "status": "WIKI_CONFIRMED_WITH_SOURCE_FALLBACK",
+      "project_qualification": [
+        "SOURCE_ONLY_DROWNING_MISSING_WIKI_NO_CLAMP"
+      ],
+      "wiki_provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/The_Armored_Voidborn",
+          "page_title": "The Armored Voidborn",
+          "page_id": 40986,
+          "revision_id": 445244,
+          "content_sha256": "4e7234aaebc1b5aac9c3cb9d932d6fff37679b2a8a419d2a73b8ee638ab2e140",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "deathDmgMod",
+          "raw": "100%",
+          "received_percent": {
+            "numerator": 100,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/The_Armored_Voidborn",
+          "page_title": "The Armored Voidborn",
+          "page_id": 40986,
+          "revision_id": 445244,
+          "content_sha256": "4e7234aaebc1b5aac9c3cb9d932d6fff37679b2a8a419d2a73b8ee638ab2e140",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "fireDmgMod",
+          "raw": "100%",
+          "received_percent": {
+            "numerator": 100,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/The_Armored_Voidborn",
+          "page_title": "The Armored Voidborn",
+          "page_id": 40986,
+          "revision_id": 445244,
+          "content_sha256": "4e7234aaebc1b5aac9c3cb9d932d6fff37679b2a8a419d2a73b8ee638ab2e140",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "energyDmgMod",
+          "raw": "100%",
+          "received_percent": {
+            "numerator": 100,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/The_Armored_Voidborn",
+          "page_title": "The Armored Voidborn",
+          "page_id": 40986,
+          "revision_id": 445244,
+          "content_sha256": "4e7234aaebc1b5aac9c3cb9d932d6fff37679b2a8a419d2a73b8ee638ab2e140",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "holyDmgMod",
+          "raw": "100%",
+          "received_percent": {
+            "numerator": 100,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/The_Armored_Voidborn",
+          "page_title": "The Armored Voidborn",
+          "page_id": 40986,
+          "revision_id": 445244,
+          "content_sha256": "4e7234aaebc1b5aac9c3cb9d932d6fff37679b2a8a419d2a73b8ee638ab2e140",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "physicalDmgMod",
+          "raw": "100%",
+          "received_percent": {
+            "numerator": 100,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/The_Armored_Voidborn",
+          "page_title": "The Armored Voidborn",
+          "page_id": 40986,
+          "revision_id": 445244,
+          "content_sha256": "4e7234aaebc1b5aac9c3cb9d932d6fff37679b2a8a419d2a73b8ee638ab2e140",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "earthDmgMod",
+          "raw": "100%",
+          "received_percent": {
+            "numerator": 100,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/The_Armored_Voidborn",
+          "page_title": "The Armored Voidborn",
+          "page_id": 40986,
+          "revision_id": 445244,
+          "content_sha256": "4e7234aaebc1b5aac9c3cb9d932d6fff37679b2a8a419d2a73b8ee638ab2e140",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "iceDmgMod",
+          "raw": "100%",
+          "received_percent": {
+            "numerator": 100,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        }
+      ],
+      "source_provenance": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/the_armored_voidborn.lua",
+          "sha256": "81cf82f6bcb7e98ed71406605af40dd9127f4db6092faffc50df773aecc2c429",
+          "section": "monster.elements",
+          "explicit_values": {
+            "physical": 97,
+            "energy": 97,
+            "earth": 97,
+            "fire": 97,
+            "life_drain": 0,
+            "mana_drain": 0,
+            "drowning": -1400,
+            "ice": 97,
+            "holy": 97,
+            "death": 97
+          }
+        }
+      ],
+      "semantic_policy": "Missing resistance meansneutral0; percent is resistance=100-received; preserved missingWiki source extremes are not clamped to-200; damage vscondition immunities separate",
+      "native_change": true,
+      "canonical_change": true
+    },
+    {
+      "key": "oteryn:creature.essence_of_malice",
+      "field": "resistances",
+      "old_native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        }
+      ],
+      "old_canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": -30
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        }
+      ],
+      "new": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": -30,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": -50,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        }
+      ],
+      "status": "WIKI_CONFIRMED",
+      "project_qualification": [],
+      "wiki_provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Essence_Of_Malice",
+          "page_title": "Essence Of Malice",
+          "page_id": 41252,
+          "revision_id": 399320,
+          "content_sha256": "7b763a1a1de816f9d165dceea080eaafba9350b33d0257baba314839ce4f0a83",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "deathDmgMod",
+          "raw": "0%",
+          "received_percent": {
+            "numerator": 0,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Essence_Of_Malice",
+          "page_title": "Essence Of Malice",
+          "page_id": 41252,
+          "revision_id": 399320,
+          "content_sha256": "7b763a1a1de816f9d165dceea080eaafba9350b33d0257baba314839ce4f0a83",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "fireDmgMod",
+          "raw": "100%",
+          "received_percent": {
+            "numerator": 100,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Essence_Of_Malice",
+          "page_title": "Essence Of Malice",
+          "page_id": 41252,
+          "revision_id": 399320,
+          "content_sha256": "7b763a1a1de816f9d165dceea080eaafba9350b33d0257baba314839ce4f0a83",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "energyDmgMod",
+          "raw": "150%",
+          "received_percent": {
+            "numerator": 150,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": -50,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Essence_Of_Malice",
+          "page_title": "Essence Of Malice",
+          "page_id": 41252,
+          "revision_id": 399320,
+          "content_sha256": "7b763a1a1de816f9d165dceea080eaafba9350b33d0257baba314839ce4f0a83",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "holyDmgMod",
+          "raw": "100%",
+          "received_percent": {
+            "numerator": 100,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Essence_Of_Malice",
+          "page_title": "Essence Of Malice",
+          "page_id": 41252,
+          "revision_id": 399320,
+          "content_sha256": "7b763a1a1de816f9d165dceea080eaafba9350b33d0257baba314839ce4f0a83",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "earthDmgMod",
+          "raw": "130%",
+          "received_percent": {
+            "numerator": 130,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": -30,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Essence_Of_Malice",
+          "page_title": "Essence Of Malice",
+          "page_id": 41252,
+          "revision_id": 399320,
+          "content_sha256": "7b763a1a1de816f9d165dceea080eaafba9350b33d0257baba314839ce4f0a83",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "iceDmgMod",
+          "raw": "80%",
+          "received_percent": {
+            "numerator": 80,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        }
+      ],
+      "source_provenance": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/essence_of_malice.lua",
+          "sha256": "35bf960f2f40a2315fbfe52c73d97456bec5da741d1b889e09a897439d29f893",
+          "section": "monster.elements",
+          "explicit_values": {
+            "physical": 0,
+            "energy": -50,
+            "earth": -50,
+            "fire": -50,
+            "life_drain": 0,
+            "mana_drain": 0,
+            "drowning": 0,
+            "ice": 50,
+            "holy": -50,
+            "death": 100
+          }
+        }
+      ],
+      "semantic_policy": "Missing resistance meansneutral0; percent is resistance=100-received; preserved missingWiki source extremes are not clamped to-200; damage vscondition immunities separate",
+      "native_change": true,
+      "canonical_change": false
+    },
+    {
+      "key": "oteryn:creature.fallen_mooh_tah_master_ghar",
+      "field": "resistances",
+      "old_native": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 60
+          }
+        }
+      ],
+      "old_canonical": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "new": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        }
+      ],
+      "status": "WIKI_CONFIRMED",
+      "project_qualification": [],
+      "wiki_provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Fallen_Mooh%27Tah_Master_Ghar",
+          "page_title": "Fallen Mooh'Tah Master Ghar",
+          "page_id": 5005,
+          "revision_id": 413112,
+          "content_sha256": "b65d3d2954527a8dfb1b16545cbec40f4e255eaccc5a1ee69b70a3fb25b85ea1",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "fireDmgMod",
+          "raw": "100%",
+          "received_percent": {
+            "numerator": 100,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        }
+      ],
+      "source_provenance": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/monster/quests/svargrond_arena/warlord/fallen_mooh'tah_master_ghar.lua",
+          "sha256": "40215a13e6f37cdb0c4c9522523a2bb474c0d1c1fd0e6b687adad4de174df489",
+          "section": "monster.elements",
+          "explicit_values": {
+            "physical": 0,
+            "energy": 0,
+            "earth": 0,
+            "fire": 60,
+            "life_drain": 0,
+            "mana_drain": 0,
+            "drowning": 0,
+            "ice": 0,
+            "holy": 0,
+            "death": 0
+          }
+        }
+      ],
+      "semantic_policy": "Missing resistance meansneutral0; percent is resistance=100-received; preserved missingWiki source extremes are not clamped to-200; damage vscondition immunities separate",
+      "native_change": true,
+      "canonical_change": false
+    },
+    {
+      "key": "oteryn:creature.hacker",
+      "field": "resistances",
+      "old_native": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "old_canonical": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "new": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "status": "SOURCE_ONLY",
+      "project_qualification": [
+        "SOURCE_ONLY_FIRE_MISSING_WIKI_NO_CLAMP"
+      ],
+      "wiki_provenance": [],
+      "source_provenance": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/monster/event_creatures/hacker.lua",
+          "sha256": "0b04f006c18c1339f04f2e21880f150eff2cc2cbda3eac02c3ae1eb64b50fbaa",
+          "section": "monster.elements",
+          "explicit_values": {
+            "physical": 0,
+            "energy": 0,
+            "earth": 0,
+            "fire": 100,
+            "life_drain": 0,
+            "mana_drain": 0,
+            "drowning": 0,
+            "ice": 0,
+            "holy": 0,
+            "death": 0
+          }
+        }
+      ],
+      "semantic_policy": "Missing resistance meansneutral0; percent is resistance=100-received; preserved missingWiki source extremes are not clamped to-200; damage vscondition immunities separate",
+      "native_change": false,
+      "canonical_change": true
+    },
+    {
+      "key": "oteryn:creature.hairman_the_huge",
+      "field": "resistances",
+      "old_native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 25
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        }
+      ],
+      "old_canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        }
+      ],
+      "new": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": -1,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 1,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 1,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 1,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": -1,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 1,
+            "denominator": 1
+          }
+        }
+      ],
+      "status": "WIKI_CONFIRMED",
+      "project_qualification": [],
+      "wiki_provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Hairman_The_Huge",
+          "page_title": "Hairman The Huge",
+          "page_id": 4952,
+          "revision_id": 432283,
+          "content_sha256": "5c7bd6018e717392bffa474f02aaa87d18edb58baa37a734a6897a13799fa603",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "deathDmgMod",
+          "raw": "101%",
+          "received_percent": {
+            "numerator": 101,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": -1,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Hairman_The_Huge",
+          "page_title": "Hairman The Huge",
+          "page_id": 4952,
+          "revision_id": 432283,
+          "content_sha256": "5c7bd6018e717392bffa474f02aaa87d18edb58baa37a734a6897a13799fa603",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "fireDmgMod",
+          "raw": "99%",
+          "received_percent": {
+            "numerator": 99,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 1,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Hairman_The_Huge",
+          "page_title": "Hairman The Huge",
+          "page_id": 4952,
+          "revision_id": 432283,
+          "content_sha256": "5c7bd6018e717392bffa474f02aaa87d18edb58baa37a734a6897a13799fa603",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "energyDmgMod",
+          "raw": "99%",
+          "received_percent": {
+            "numerator": 99,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 1,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Hairman_The_Huge",
+          "page_title": "Hairman The Huge",
+          "page_id": 4952,
+          "revision_id": 432283,
+          "content_sha256": "5c7bd6018e717392bffa474f02aaa87d18edb58baa37a734a6897a13799fa603",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "physicalDmgMod",
+          "raw": "99%",
+          "received_percent": {
+            "numerator": 99,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 1,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Hairman_The_Huge",
+          "page_title": "Hairman The Huge",
+          "page_id": 4952,
+          "revision_id": 432283,
+          "content_sha256": "5c7bd6018e717392bffa474f02aaa87d18edb58baa37a734a6897a13799fa603",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "earthDmgMod",
+          "raw": "99%",
+          "received_percent": {
+            "numerator": 99,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 1,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Hairman_The_Huge",
+          "page_title": "Hairman The Huge",
+          "page_id": 4952,
+          "revision_id": 432283,
+          "content_sha256": "5c7bd6018e717392bffa474f02aaa87d18edb58baa37a734a6897a13799fa603",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "iceDmgMod",
+          "raw": "101%",
+          "received_percent": {
+            "numerator": 101,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": -1,
+            "denominator": 1
+          }
+        }
+      ],
+      "source_provenance": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/monster/bosses/hairman_the_huge.lua",
+          "sha256": "b1469fc1c71adf1452a706422ec4407abee2e84845736ac24f030b8d846c59d0",
+          "section": "monster.elements",
+          "explicit_values": {
+            "physical": 1,
+            "energy": 20,
+            "earth": 20,
+            "fire": 25,
+            "life_drain": 0,
+            "mana_drain": 0,
+            "drowning": 0,
+            "ice": -1,
+            "holy": 0,
+            "death": -1
+          }
+        }
+      ],
+      "semantic_policy": "Missing resistance meansneutral0; percent is resistance=100-received; preserved missingWiki source extremes are not clamped to-200; damage vscondition immunities separate",
+      "native_change": true,
+      "canonical_change": false
+    },
+    {
+      "key": "oteryn:creature.hellgorak",
+      "field": "resistances",
+      "old_native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "numerator": -205,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        }
+      ],
+      "old_canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 98
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": -200
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 98
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 98
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 98
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 98
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 98
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 98
+          }
+        }
+      ],
+      "new": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "numerator": -205,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        }
+      ],
+      "status": "WIKI_CONFIRMED_WITH_SOURCE_FALLBACK",
+      "project_qualification": [
+        "SOURCE_ONLY_DROWNING_MISSING_WIKI_NO_CLAMP",
+        "SOURCE_ONLY_LIFE_DRAIN_MISSING_WIKI_NO_CLAMP"
+      ],
+      "wiki_provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Hellgorak",
+          "page_title": "Hellgorak",
+          "page_id": 2060,
+          "revision_id": 445322,
+          "content_sha256": "29e4589427337381b18779b74c09de12a8a9d33dd1274c6d1faf014107fdc59c",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "deathDmgMod",
+          "raw": "2%",
+          "received_percent": {
+            "numerator": 2,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Hellgorak",
+          "page_title": "Hellgorak",
+          "page_id": 2060,
+          "revision_id": 445322,
+          "content_sha256": "29e4589427337381b18779b74c09de12a8a9d33dd1274c6d1faf014107fdc59c",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "fireDmgMod",
+          "raw": "2%",
+          "received_percent": {
+            "numerator": 2,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Hellgorak",
+          "page_title": "Hellgorak",
+          "page_id": 2060,
+          "revision_id": 445322,
+          "content_sha256": "29e4589427337381b18779b74c09de12a8a9d33dd1274c6d1faf014107fdc59c",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "energyDmgMod",
+          "raw": "2%",
+          "received_percent": {
+            "numerator": 2,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Hellgorak",
+          "page_title": "Hellgorak",
+          "page_id": 2060,
+          "revision_id": 445322,
+          "content_sha256": "29e4589427337381b18779b74c09de12a8a9d33dd1274c6d1faf014107fdc59c",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "holyDmgMod",
+          "raw": "2%",
+          "received_percent": {
+            "numerator": 2,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Hellgorak",
+          "page_title": "Hellgorak",
+          "page_id": 2060,
+          "revision_id": 445322,
+          "content_sha256": "29e4589427337381b18779b74c09de12a8a9d33dd1274c6d1faf014107fdc59c",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "physicalDmgMod",
+          "raw": "2%",
+          "received_percent": {
+            "numerator": 2,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Hellgorak",
+          "page_title": "Hellgorak",
+          "page_id": 2060,
+          "revision_id": 445322,
+          "content_sha256": "29e4589427337381b18779b74c09de12a8a9d33dd1274c6d1faf014107fdc59c",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "earthDmgMod",
+          "raw": "2%",
+          "received_percent": {
+            "numerator": 2,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Hellgorak",
+          "page_title": "Hellgorak",
+          "page_id": 2060,
+          "revision_id": 445322,
+          "content_sha256": "29e4589427337381b18779b74c09de12a8a9d33dd1274c6d1faf014107fdc59c",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "iceDmgMod",
+          "raw": "2%",
+          "received_percent": {
+            "numerator": 2,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        }
+      ],
+      "source_provenance": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/monster/quests/the_inquisition/hellgorak.lua",
+          "sha256": "4665cf7b8848f759c2a5195bb9b07ce2b0a189ad1bf39b6d876f409252ce2ea7",
+          "section": "monster.elements",
+          "explicit_values": {
+            "physical": 98,
+            "energy": 98,
+            "earth": 98,
+            "fire": 98,
+            "life_drain": 100,
+            "mana_drain": 0,
+            "drowning": -205,
+            "ice": 98,
+            "holy": 95,
+            "death": 98
+          }
+        }
+      ],
+      "semantic_policy": "Missing resistance meansneutral0; percent is resistance=100-received; preserved missingWiki source extremes are not clamped to-200; damage vscondition immunities separate",
+      "native_change": false,
+      "canonical_change": true
+    },
+    {
+      "key": "oteryn:creature.irgix_the_flimsy",
+      "field": "resistances",
+      "old_native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        }
+      ],
+      "old_canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 75
+          }
+        }
+      ],
+      "new": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": -10,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 75,
+            "denominator": 1
+          }
+        }
+      ],
+      "status": "WIKI_CONFIRMED",
+      "project_qualification": [],
+      "wiki_provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Irgix_the_Flimsy",
+          "page_title": "Irgix the Flimsy",
+          "page_id": 48158,
+          "revision_id": 445154,
+          "content_sha256": "a7ce78dc89827d200eed6719629444f30edb5d833c91f325f18092e0c410d81c",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "deathDmgMod",
+          "raw": "0%",
+          "received_percent": {
+            "numerator": 0,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Irgix_the_Flimsy",
+          "page_title": "Irgix the Flimsy",
+          "page_id": 48158,
+          "revision_id": 445154,
+          "content_sha256": "a7ce78dc89827d200eed6719629444f30edb5d833c91f325f18092e0c410d81c",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "energyDmgMod",
+          "raw": "50%",
+          "received_percent": {
+            "numerator": 50,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Irgix_the_Flimsy",
+          "page_title": "Irgix the Flimsy",
+          "page_id": 48158,
+          "revision_id": 445154,
+          "content_sha256": "a7ce78dc89827d200eed6719629444f30edb5d833c91f325f18092e0c410d81c",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "holyDmgMod",
+          "raw": "100%",
+          "received_percent": {
+            "numerator": 100,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Irgix_the_Flimsy",
+          "page_title": "Irgix the Flimsy",
+          "page_id": 48158,
+          "revision_id": 445154,
+          "content_sha256": "a7ce78dc89827d200eed6719629444f30edb5d833c91f325f18092e0c410d81c",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "physicalDmgMod",
+          "raw": "25%",
+          "received_percent": {
+            "numerator": 25,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 75,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Irgix_the_Flimsy",
+          "page_title": "Irgix the Flimsy",
+          "page_id": 48158,
+          "revision_id": 445154,
+          "content_sha256": "a7ce78dc89827d200eed6719629444f30edb5d833c91f325f18092e0c410d81c",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "iceDmgMod",
+          "raw": "110%",
+          "received_percent": {
+            "numerator": 110,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": -10,
+            "denominator": 1
+          }
+        }
+      ],
+      "source_provenance": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/monster/quests/feaster_of_souls/irgix_the_flimsy.lua",
+          "sha256": "b40bbcc8ba6e24a120e3cff65f23510f9815c6cafca06fa8c335d4cc84f9c1e8",
+          "section": "monster.elements",
+          "explicit_values": {
+            "physical": 50,
+            "energy": 100,
+            "earth": 80,
+            "fire": 50,
+            "life_drain": 0,
+            "mana_drain": 0,
+            "drowning": 0,
+            "ice": 50,
+            "holy": 50,
+            "death": 100
+          }
+        }
+      ],
+      "semantic_policy": "Missing resistance meansneutral0; percent is resistance=100-received; preserved missingWiki source extremes are not clamped to-200; damage vscondition immunities separate",
+      "native_change": true,
+      "canonical_change": false
+    },
+    {
+      "key": "oteryn:creature.memory_of_a_banshee",
+      "field": "resistances",
+      "old_native": null,
+      "old_canonical": [
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -25
+          }
+        }
+      ],
+      "new": [
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": -25,
+            "denominator": 1
+          }
+        }
+      ],
+      "status": "WIKI_CONFIRMED",
+      "project_qualification": [],
+      "wiki_provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Banshee",
+          "page_title": "Memory Of A Banshee",
+          "page_id": 53655,
+          "revision_id": 399806,
+          "content_sha256": "b968f4f4e0bcd2495d868f675b840ef190979ff433752f246ca1e99b53581c57",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "holyDmgMod",
+          "raw": "125%",
+          "received_percent": {
+            "numerator": 125,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": -25,
+            "denominator": 1
+          }
+        }
+      ],
+      "source_provenance": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/monster/event_creatures/memory_creatures/memory_of_a_banshee.lua",
+          "sha256": "c4855a25e84f34f0b3c9cca6a9019705a880f12ada8c01b1b86d1e6f4e674001",
+          "section": "monster.elements",
+          "explicit_values": {
+            "physical": 0,
+            "energy": 0,
+            "earth": 0,
+            "fire": 0,
+            "life_drain": 0,
+            "mana_drain": 0,
+            "drowning": 0,
+            "ice": 0,
+            "holy": 0,
+            "death": 0
+          }
+        }
+      ],
+      "semantic_policy": "Missing resistance meansneutral0; percent is resistance=100-received; preserved missingWiki source extremes are not clamped to-200; damage vscondition immunities separate",
+      "native_change": true,
+      "canonical_change": false
+    },
+    {
+      "key": "oteryn:creature.memory_of_a_dwarf",
+      "field": "resistances",
+      "old_native": null,
+      "old_canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        }
+      ],
+      "new": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        }
+      ],
+      "status": "WIKI_CONFIRMED",
+      "project_qualification": [],
+      "wiki_provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Dwarf",
+          "page_title": "Memory Of A Dwarf",
+          "page_id": 53660,
+          "revision_id": 399809,
+          "content_sha256": "1d6bf582328883e606deb863df1b33a7c626f7f01dd98024e86510bc2f3710de",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "deathDmgMod",
+          "raw": "105%",
+          "received_percent": {
+            "numerator": 105,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Dwarf",
+          "page_title": "Memory Of A Dwarf",
+          "page_id": 53660,
+          "revision_id": 399809,
+          "content_sha256": "1d6bf582328883e606deb863df1b33a7c626f7f01dd98024e86510bc2f3710de",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "physicalDmgMod",
+          "raw": "80%",
+          "received_percent": {
+            "numerator": 80,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Dwarf",
+          "page_title": "Memory Of A Dwarf",
+          "page_id": 53660,
+          "revision_id": 399809,
+          "content_sha256": "1d6bf582328883e606deb863df1b33a7c626f7f01dd98024e86510bc2f3710de",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "fireDmgMod",
+          "raw": "105%",
+          "received_percent": {
+            "numerator": 105,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Dwarf",
+          "page_title": "Memory Of A Dwarf",
+          "page_id": 53660,
+          "revision_id": 399809,
+          "content_sha256": "1d6bf582328883e606deb863df1b33a7c626f7f01dd98024e86510bc2f3710de",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "earthDmgMod",
+          "raw": "80%",
+          "received_percent": {
+            "numerator": 80,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        }
+      ],
+      "source_provenance": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/monster/event_creatures/memory_creatures/memory_of_a_dwarf.lua",
+          "sha256": "26c1d28370f8c1d5b67d259f81c7c0245bfd0337aca9a3a1674ca26c5afbbf54",
+          "section": "monster.elements",
+          "explicit_values": {
+            "physical": 0,
+            "energy": 0,
+            "earth": 0,
+            "fire": 0,
+            "life_drain": 0,
+            "mana_drain": 0,
+            "drowning": 0,
+            "ice": 0,
+            "holy": 0,
+            "death": 0
+          }
+        }
+      ],
+      "semantic_policy": "Missing resistance meansneutral0; percent is resistance=100-received; preserved missingWiki source extremes are not clamped to-200; damage vscondition immunities separate",
+      "native_change": true,
+      "canonical_change": false
+    },
+    {
+      "key": "oteryn:creature.memory_of_a_faun",
+      "field": "resistances",
+      "old_native": null,
+      "old_canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 40
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 70
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        }
+      ],
+      "new": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 40,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 70,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": -10,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": -10,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 10,
+            "denominator": 1
+          }
+        }
+      ],
+      "status": "WIKI_CONFIRMED",
+      "project_qualification": [],
+      "wiki_provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Faun",
+          "page_title": "Memory Of A Faun",
+          "page_id": 53663,
+          "revision_id": 407131,
+          "content_sha256": "310f6fb03ad646e321e8cca8f2baeb78f1951a47df64fedcfcace4b212e1586a",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "deathDmgMod",
+          "raw": "60%",
+          "received_percent": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 40,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Faun",
+          "page_title": "Memory Of A Faun",
+          "page_id": 53663,
+          "revision_id": 407131,
+          "content_sha256": "310f6fb03ad646e321e8cca8f2baeb78f1951a47df64fedcfcace4b212e1586a",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "physicalDmgMod",
+          "raw": "90%",
+          "received_percent": {
+            "numerator": 90,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 10,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Faun",
+          "page_title": "Memory Of A Faun",
+          "page_id": 53663,
+          "revision_id": 407131,
+          "content_sha256": "310f6fb03ad646e321e8cca8f2baeb78f1951a47df64fedcfcace4b212e1586a",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "fireDmgMod",
+          "raw": "105%",
+          "received_percent": {
+            "numerator": 105,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Faun",
+          "page_title": "Memory Of A Faun",
+          "page_id": 53663,
+          "revision_id": 407131,
+          "content_sha256": "310f6fb03ad646e321e8cca8f2baeb78f1951a47df64fedcfcace4b212e1586a",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "earthDmgMod",
+          "raw": "30%",
+          "received_percent": {
+            "numerator": 30,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 70,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Faun",
+          "page_title": "Memory Of A Faun",
+          "page_id": 53663,
+          "revision_id": 407131,
+          "content_sha256": "310f6fb03ad646e321e8cca8f2baeb78f1951a47df64fedcfcace4b212e1586a",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "energyDmgMod",
+          "raw": "110%",
+          "received_percent": {
+            "numerator": 110,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": -10,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Faun",
+          "page_title": "Memory Of A Faun",
+          "page_id": 53663,
+          "revision_id": 407131,
+          "content_sha256": "310f6fb03ad646e321e8cca8f2baeb78f1951a47df64fedcfcace4b212e1586a",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "holyDmgMod",
+          "raw": "110%",
+          "received_percent": {
+            "numerator": 110,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": -10,
+            "denominator": 1
+          }
+        }
+      ],
+      "source_provenance": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/monster/event_creatures/memory_creatures/memory_of_a_faun.lua",
+          "sha256": "35524d44dc57273373cae97f8fc25561d014f10b87f7657dadce46e5e3265ccc",
+          "section": "monster.elements",
+          "explicit_values": {
+            "physical": 0,
+            "energy": 0,
+            "earth": 0,
+            "fire": 0,
+            "life_drain": 0,
+            "mana_drain": 0,
+            "drowning": 0,
+            "ice": 0,
+            "holy": 0,
+            "death": 0
+          }
+        }
+      ],
+      "semantic_policy": "Missing resistance meansneutral0; percent is resistance=100-received; preserved missingWiki source extremes are not clamped to-200; damage vscondition immunities separate",
+      "native_change": true,
+      "canonical_change": false
+    },
+    {
+      "key": "oteryn:creature.memory_of_a_frazzlemaw",
+      "field": "resistances",
+      "old_native": null,
+      "old_canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        }
+      ],
+      "new": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 10,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 15,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 10,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 5,
+            "denominator": 1
+          }
+        }
+      ],
+      "status": "WIKI_CONFIRMED",
+      "project_qualification": [],
+      "wiki_provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Frazzlemaw",
+          "page_title": "Memory Of A Frazzlemaw",
+          "page_id": 53683,
+          "revision_id": 399811,
+          "content_sha256": "43882c8dd41a64aba6f633550124ba8fa2cebb3f066f0d4b0afe6c6bdde679a5",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "deathDmgMod",
+          "raw": "90%",
+          "received_percent": {
+            "numerator": 90,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 10,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Frazzlemaw",
+          "page_title": "Memory Of A Frazzlemaw",
+          "page_id": 53683,
+          "revision_id": 399811,
+          "content_sha256": "43882c8dd41a64aba6f633550124ba8fa2cebb3f066f0d4b0afe6c6bdde679a5",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "physicalDmgMod",
+          "raw": "95%",
+          "received_percent": {
+            "numerator": 95,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 5,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Frazzlemaw",
+          "page_title": "Memory Of A Frazzlemaw",
+          "page_id": 53683,
+          "revision_id": 399811,
+          "content_sha256": "43882c8dd41a64aba6f633550124ba8fa2cebb3f066f0d4b0afe6c6bdde679a5",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "fireDmgMod",
+          "raw": "90%",
+          "received_percent": {
+            "numerator": 90,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 10,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Frazzlemaw",
+          "page_title": "Memory Of A Frazzlemaw",
+          "page_id": 53683,
+          "revision_id": 399811,
+          "content_sha256": "43882c8dd41a64aba6f633550124ba8fa2cebb3f066f0d4b0afe6c6bdde679a5",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "earthDmgMod",
+          "raw": "80%",
+          "received_percent": {
+            "numerator": 80,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Frazzlemaw",
+          "page_title": "Memory Of A Frazzlemaw",
+          "page_id": 53683,
+          "revision_id": 399811,
+          "content_sha256": "43882c8dd41a64aba6f633550124ba8fa2cebb3f066f0d4b0afe6c6bdde679a5",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "energyDmgMod",
+          "raw": "85%",
+          "received_percent": {
+            "numerator": 85,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 15,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Frazzlemaw",
+          "page_title": "Memory Of A Frazzlemaw",
+          "page_id": 53683,
+          "revision_id": 399811,
+          "content_sha256": "43882c8dd41a64aba6f633550124ba8fa2cebb3f066f0d4b0afe6c6bdde679a5",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "iceDmgMod",
+          "raw": "95%",
+          "received_percent": {
+            "numerator": 95,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 5,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Frazzlemaw",
+          "page_title": "Memory Of A Frazzlemaw",
+          "page_id": 53683,
+          "revision_id": 399811,
+          "content_sha256": "43882c8dd41a64aba6f633550124ba8fa2cebb3f066f0d4b0afe6c6bdde679a5",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "holyDmgMod",
+          "raw": "105%",
+          "received_percent": {
+            "numerator": 105,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        }
+      ],
+      "source_provenance": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/monster/event_creatures/memory_creatures/memory_of_a_frazzlemaw.lua",
+          "sha256": "e5a47e3b06324abbca2dc09b5d4b64c5af7e9400e011b4dcb7f9ddc7dd3483ed",
+          "section": "monster.elements",
+          "explicit_values": {
+            "physical": 0,
+            "energy": 0,
+            "earth": 0,
+            "fire": 0,
+            "life_drain": 0,
+            "mana_drain": 0,
+            "drowning": 0,
+            "ice": 0,
+            "holy": 0,
+            "death": 0
+          }
+        }
+      ],
+      "semantic_policy": "Missing resistance meansneutral0; percent is resistance=100-received; preserved missingWiki source extremes are not clamped to-200; damage vscondition immunities separate",
+      "native_change": true,
+      "canonical_change": false
+    },
+    {
+      "key": "oteryn:creature.memory_of_a_fungus",
+      "field": "resistances",
+      "old_native": null,
+      "old_canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 35
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        }
+      ],
+      "new": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 35,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 15,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": 5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 15,
+            "denominator": 1
+          }
+        }
+      ],
+      "status": "WIKI_CONFIRMED",
+      "project_qualification": [],
+      "wiki_provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Fungus",
+          "page_title": "Memory Of A Fungus",
+          "page_id": 53684,
+          "revision_id": 407134,
+          "content_sha256": "48d038b715fff7bbbe68cb86f95effab3b5f505d7d402e0a09db08d1aa10c8e7",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "deathDmgMod",
+          "raw": "65%",
+          "received_percent": {
+            "numerator": 65,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 35,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Fungus",
+          "page_title": "Memory Of A Fungus",
+          "page_id": 53684,
+          "revision_id": 407134,
+          "content_sha256": "48d038b715fff7bbbe68cb86f95effab3b5f505d7d402e0a09db08d1aa10c8e7",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "fireDmgMod",
+          "raw": "95%",
+          "received_percent": {
+            "numerator": 95,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 5,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Fungus",
+          "page_title": "Memory Of A Fungus",
+          "page_id": 53684,
+          "revision_id": 407134,
+          "content_sha256": "48d038b715fff7bbbe68cb86f95effab3b5f505d7d402e0a09db08d1aa10c8e7",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "earthDmgMod",
+          "raw": "0%",
+          "received_percent": {
+            "numerator": 0,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Fungus",
+          "page_title": "Memory Of A Fungus",
+          "page_id": 53684,
+          "revision_id": 407134,
+          "content_sha256": "48d038b715fff7bbbe68cb86f95effab3b5f505d7d402e0a09db08d1aa10c8e7",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "energyDmgMod",
+          "raw": "85%",
+          "received_percent": {
+            "numerator": 85,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 15,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Fungus",
+          "page_title": "Memory Of A Fungus",
+          "page_id": 53684,
+          "revision_id": 407134,
+          "content_sha256": "48d038b715fff7bbbe68cb86f95effab3b5f505d7d402e0a09db08d1aa10c8e7",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "iceDmgMod",
+          "raw": "85%",
+          "received_percent": {
+            "numerator": 85,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 15,
+            "denominator": 1
+          }
+        },
+        {
+          "url": "https://tibiawiki.com.br/wiki/Memory_Of_A_Fungus",
+          "page_title": "Memory Of A Fungus",
+          "page_id": 53684,
+          "revision_id": 407134,
+          "content_sha256": "48d038b715fff7bbbe68cb86f95effab3b5f505d7d402e0a09db08d1aa10c8e7",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "wiki_field": "holyDmgMod",
+          "raw": "95%",
+          "received_percent": {
+            "numerator": 95,
+            "denominator": 1
+          },
+          "resistance_percent": {
+            "numerator": 5,
+            "denominator": 1
+          }
+        }
+      ],
+      "source_provenance": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "path": "data-otservbr-global/monster/event_creatures/memory_creatures/memory_of_a_fungus.lua",
+          "sha256": "b690b44f536988f50d286421b2e1fb3db9265a70fef8f07f238484b0d7e47864",
+          "section": "monster.elements",
+          "explicit_values": {
+            "physical": 0,
+            "energy": 0,
+            "earth": 0,
+            "fire": 0,
+            "life_drain": 0,
+            "mana_drain": 0,
+            "drowning": 0,
+            "ice": 0,
+            "holy": 0,
+            "death": 0
+          }
+        }
+      ],
+      "semantic_policy": "Missing resistance meansneutral0; percent is resistance=100-received; preserved missingWiki source extremes are not clamped to-200; damage vscondition immunities separate",
+      "native_change": true,
+      "canonical_change": false
+    }
+  ],
+  "counts": {
+    "cases": 16,
+    "native_semantic_changes": 12,
+    "canonical_repairs": 6
+  },
+  "input_sha256": "f9a70584d3b5088e75aee1d2eb91610976dc09ec17973736fac2d1a029ae1b0d",
+  "wiki_cache_sha256": "785509ec404bbd47b9e799711546cff8a2389168d419eae7f61927338863854a",
+  "status": "SOURCE_QUALIFIED_GUARDED_PROPOSAL",
+  "baseline": "05590fad254b9b51656951cb7ae2883bbf8e40d8"
+}

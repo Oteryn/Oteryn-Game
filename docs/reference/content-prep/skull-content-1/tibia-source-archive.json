@@ -1,0 +1,55 @@
+{
+  "schema": "OTERYN_GLOBAL_SOURCE_ARCHIVE/v1",
+  "task": "SKULL-CONTENT-1",
+  "scope": "ARCHIVED_GLOBAL_EVIDENCE_NOT_ACTIVE_OTERYN_PARAMETER_FIELDS",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "predecessor": "7548460c7a279ce854e25e2a049ab42969c96ad9",
+  "explanation": "Original Tibia evidence is retained verbatim here. Active target fields now contain explicitly scoped Oteryn working values; no Global fact has been proven by a design choice.",
+  "records": [
+    {
+      "original_field_path": "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json/records/0/facts/duration_seconds",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "Official notes do not give a numeric white-skull timer."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json/records/1/facts/thresholds",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "Official notes only give rule-of-thumb ranges: 3–5/24h, 5–9/7d, 10–19/30d. Exact frag-point thresholds and assist weights are not proven."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json/records/2/facts/thresholds",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "Wiki 6/10/20 kill thresholds are not controlled evidence; official notes call these rule-of-thumb values."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json/records/4/facts/clock_boundaries",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "Rolling-vs-calendar accounting and exact reset/server-save boundaries require official or controlled evidence."
+      }
+    }
+  ]
+}

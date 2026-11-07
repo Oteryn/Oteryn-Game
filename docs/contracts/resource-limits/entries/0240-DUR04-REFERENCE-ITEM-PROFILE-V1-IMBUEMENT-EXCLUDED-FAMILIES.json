@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-IMBUEMENT-EXCLUDED-FAMILIES",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Excluded imbuement families per Item",
+  "unit": "entries",
+  "hard_maximum": 20,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 20
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check count before allocation; require canonical unique family keys.",
+  "client_visible": true,
+  "boundary_tests": [
+    "20 unique excluded families accepted",
+    "21st entry rejected before allocation",
+    "duplicate or unknown family rejected"
+  ]
+}

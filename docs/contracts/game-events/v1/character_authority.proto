@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package oteryn.events.v1;
+
+// First-slice Character Authority durable-audit payloads. Event, operation,
+// and transaction identities remain owned by EventEnvelope.
+
+enum CharacterLifecycleV1 {
+  CHARACTER_LIFECYCLE_V1_UNSPECIFIED = 0;
+  CHARACTER_LIFECYCLE_V1_ACTIVE = 1;
+}
+
+enum CharacterAuthorityTransitionV1 {
+  CHARACTER_AUTHORITY_TRANSITION_V1_UNSPECIFIED = 0;
+  CHARACTER_AUTHORITY_TRANSITION_V1_INITIAL_BOOTSTRAP_CREATE = 1;
+}
+
+message CharacterAuthorityBootstrappedV1 {
+  bytes account_id = 1;   // exactly 16-byte non-nil Platform-owned UUIDv7
+  bytes character_id = 2; // exactly 16-byte non-nil Game-owned UUIDv7
+  bytes world_id = 3;     // exactly 16-byte non-nil UUIDv7
+  CharacterLifecycleV1 lifecycle = 4;
+  uint64 character_revision = 5; // positive
+  CharacterAuthorityTransitionV1 transition = 6;
+}

@@ -1,0 +1,18 @@
+[package]
+name = "oteryn-gameplay-source-critical-baseline"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[package.metadata.oteryn]
+category = "gameplay"
+release-role = "production"
+
+[dependencies]
+oteryn-simulation-determinism = { version = "=0.1.0", path = "../../simulation-determinism" }
+
+[lints]
+workspace = true

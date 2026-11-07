@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:event-component-source-ir:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "records",
+    "caller_witnesses",
+    "summary",
+    "native_semantic_admission",
+    "runtime_admission"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_EVENT_COMPONENT_SOURCE_IR/v1"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_component_id",
+          "provenance",
+          "definition",
+          "source_refs",
+          "holds",
+          "conversion_status",
+          "native_semantic_admission",
+          "runtime_admission"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "source_component_id": {
+            "type": "string"
+          },
+          "provenance": {
+            "type": "object",
+            "required": [
+              "source",
+              "revision",
+              "path",
+              "sha256",
+              "git_blob_sha1",
+              "byte_count"
+            ]
+          },
+          "definition": {
+            "type": "object",
+            "required": [
+              "language",
+              "program",
+              "callbacks",
+              "helpers",
+              "calls",
+              "control_flow",
+              "assignments",
+              "symbol_references",
+              "event_receiver_candidates"
+            ],
+            "properties": {
+              "language": {
+                "const": "LUA_SOURCE_EVENT_IR/v1"
+              },
+              "program": {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "lua_node_type",
+                  "source_ref",
+                  "fields"
+                ]
+              },
+              "callbacks": {
+                "type": "array"
+              },
+              "helpers": {
+                "type": "array"
+              },
+              "calls": {
+                "type": "array"
+              },
+              "control_flow": {
+                "type": "array"
+              },
+              "assignments": {
+                "type": "array"
+              },
+              "symbol_references": {
+                "type": "array"
+              },
+              "event_receiver_candidates": {
+                "type": "array"
+              }
+            },
+            "additionalProperties": false
+          },
+          "source_refs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "ast_pointer",
+                "char_span"
+              ],
+              "properties": {
+                "ast_pointer": {
+                  "type": "string"
+                },
+                "char_span": {
+                  "type": [
+                    "object",
+                    "null"
+                  ]
+                },
+                "byte_start": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_end_exclusive": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "holds": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "existing_canonical_owners": {
+            "type": "array"
+          },
+          "caller_witnesses": {
+            "type": "array"
+          },
+          "conversion_status": {
+            "const": "MATERIALIZED_SOURCE_IR_PARTIAL_SEMANTIC_BINDING"
+          },
+          "native_semantic_admission": {
+            "const": false
+          },
+          "runtime_admission": {
+            "const": false
+          }
+        }
+      }
+    },
+    "caller_witnesses": {
+      "type": "array"
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "components",
+        "materialized_source_ir",
+        "fully_semantically_bound"
+      ],
+      "properties": {
+        "fully_semantically_bound": {
+          "const": 0
+        }
+      }
+    },
+    "native_semantic_admission": {
+      "const": false
+    },
+    "runtime_admission": {
+      "const": false
+    }
+  }
+}

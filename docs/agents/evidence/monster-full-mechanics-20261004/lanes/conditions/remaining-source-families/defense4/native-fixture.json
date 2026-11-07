@@ -1,0 +1,4135 @@
+{
+  "cases": [
+    {
+      "creature": "oteryn:creature.the_sinister_hermit",
+      "index": 1,
+      "ability": "oteryn:ability.spell.shock_head_skill_reducer_2",
+      "source": "31 uniform once-cast magic percent20..50, duration6000,9x9 caster area",
+      "status": "IMPLEMENTING_PRIVATE_SAME_OWNER_DEFENSE_LIST_EXTENSION",
+      "existing_owner": "DamageSpellOwner+ChannelSpellStates apply_attack_conditions+ConditionStore Attributes",
+      "remaining": [
+        "typed Defense entry constructor",
+        "list-qualified occurrence/memo key",
+        "actual native Defense schedule aggregate+real runtime tests"
+      ],
+      "architecture_blocker": false
+    },
+    {
+      "creature": "oteryn:creature.the_sinister_hermit_dirty",
+      "index": 1,
+      "ability": "oteryn:ability.spell.shock_head_skill_reducer_2",
+      "source": "same source body/selector as SinisterHermit",
+      "status": "IMPLEMENTING_PRIVATE_SAME_OWNER_DEFENSE_LIST_EXTENSION",
+      "existing_owner": "same as prior row",
+      "remaining": [
+        "same shared implementation/tests"
+      ],
+      "architecture_blocker": false
+    }
+  ],
+  "records": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.the_sinister_hermit.attack-1",
+          "revision": "definition-r1"
+        }
+      ],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.the_sinister_hermit.attack-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.the_sinister_hermit.attack-2",
+          "revision": "definition-r1"
+        }
+      ],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.the_sinister_hermit.attack-2",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.the_sinister_hermit.defense-1",
+          "revision": "definition-r1"
+        }
+      ],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.the_sinister_hermit.defense-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.the_sinister_hermit_dirty.attack-1",
+          "revision": "definition-r1"
+        }
+      ],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.the_sinister_hermit_dirty.attack-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.the_sinister_hermit_dirty.attack-2",
+          "revision": "definition-r1"
+        }
+      ],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.the_sinister_hermit_dirty.attack-2",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.the_sinister_hermit_dirty.defense-1",
+          "revision": "definition-r1"
+        }
+      ],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.the_sinister_hermit_dirty.defense-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.vermin_swarm.attack-1",
+          "revision": "definition-r1"
+        }
+      ],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.vermin_swarm.attack-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.vermin_swarm.attack-2",
+          "revision": "definition-r1"
+        }
+      ],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.vermin_swarm.attack-2",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-10",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-11",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-12",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-13",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-14",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-15",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-16",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-17",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-18",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-19",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-2",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-20",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-21",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-22",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-23",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-24",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-25",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-26",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-27",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-28",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-29",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-3",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-30",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-31",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-4",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-5",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-6",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-7",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-8",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-9",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "client_projection": "ServerOnly",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.the_sinister_hermit",
+        "revision": "definition-r1"
+      },
+      "kind": "Generic"
+    },
+    {
+      "client_projection": "ServerOnly",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.the_sinister_hermit_dirty",
+        "revision": "definition-r1"
+      },
+      "kind": "Generic"
+    },
+    {
+      "client_projection": "ServerOnly",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.vermin_swarm",
+        "revision": "definition-r1"
+      },
+      "kind": "Generic"
+    },
+    {
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.the_sinister_hermit",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_sinister_hermit",
+        "revision": "definition-r1"
+      },
+      "kind": "Creature",
+      "loot": null,
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.the_sinister_hermit",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.the_sinister_hermit_dirty",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_sinister_hermit_dirty",
+        "revision": "definition-r1"
+      },
+      "kind": "Creature",
+      "loot": null,
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.the_sinister_hermit_dirty",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.vermin_swarm",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.vermin_swarm",
+        "revision": "definition-r1"
+      },
+      "kind": "Creature",
+      "loot": null,
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.vermin_swarm",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit.attack-1-1",
+        "revision": "definition-r1"
+      },
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.the_sinister_hermit.attack-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Effect"
+    },
+    {
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit.attack-2-1",
+        "revision": "definition-r1"
+      },
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.the_sinister_hermit.attack-2",
+        "revision": "definition-r1"
+      },
+      "kind": "Effect"
+    },
+    {
+      "client_projection": "ServerOnly",
+      "effect_family": "Heal",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit.defense-1-1",
+        "revision": "definition-r1"
+      },
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.the_sinister_hermit.defense-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Effect"
+    },
+    {
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit_dirty.attack-1-1",
+        "revision": "definition-r1"
+      },
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.the_sinister_hermit_dirty.attack-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Effect"
+    },
+    {
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit_dirty.attack-2-1",
+        "revision": "definition-r1"
+      },
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.the_sinister_hermit_dirty.attack-2",
+        "revision": "definition-r1"
+      },
+      "kind": "Effect"
+    },
+    {
+      "client_projection": "ServerOnly",
+      "effect_family": "Heal",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit_dirty.defense-1-1",
+        "revision": "definition-r1"
+      },
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.the_sinister_hermit_dirty.defense-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Effect"
+    },
+    {
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.vermin_swarm.attack-1-1",
+        "revision": "definition-r1"
+      },
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.vermin_swarm.attack-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Effect"
+    },
+    {
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.vermin_swarm.attack-2-1",
+        "revision": "definition-r1"
+      },
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.vermin_swarm.attack-2",
+        "revision": "definition-r1"
+      },
+      "kind": "Effect"
+    },
+    {
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit.attack-1-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Formula"
+    },
+    {
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit.attack-2-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Formula"
+    },
+    {
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit.defense-1-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Formula"
+    },
+    {
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit_dirty.attack-1-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Formula"
+    },
+    {
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit_dirty.attack-2-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Formula"
+    },
+    {
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit_dirty.defense-1-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Formula"
+    },
+    {
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.vermin_swarm.attack-1-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Formula"
+    },
+    {
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.vermin_swarm.attack-2-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Formula"
+    },
+    {
+      "client_projection": "ClientSafe",
+      "identity": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i2886",
+        "revision": "definition-r1"
+      },
+      "kind": "Item",
+      "materializable": false,
+      "stack_class": "Unknown"
+    },
+    {
+      "client_projection": "ClientSafe",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.the_sinister_hermit",
+        "revision": "definition-r1"
+      },
+      "kind": "Generic"
+    },
+    {
+      "client_projection": "ClientSafe",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.the_sinister_hermit_dirty",
+        "revision": "definition-r1"
+      },
+      "kind": "Generic"
+    },
+    {
+      "client_projection": "ClientSafe",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.vermin_swarm",
+        "revision": "definition-r1"
+      },
+      "kind": "Generic"
+    }
+  ],
+  "authoring_profiles": [
+    {
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/153",
+          "attachment_bindings": [
+            {
+              "asset_binding": "canary.appearance:outfit/153/addon-1",
+              "slot": "Addon"
+            },
+            {
+              "asset_binding": "canary.appearance:outfit/153/addon-2",
+              "slot": "Addon"
+            }
+          ],
+          "audio_bindings": [
+            {
+              "asset_binding": "canary.sound:effect/101",
+              "cue_id": "canary.sound:effect/101",
+              "event": "Impact"
+            },
+            {
+              "asset_binding": "canary.sound:effect/2013",
+              "cue_id": "canary.sound:effect/2013",
+              "event": "Impact"
+            },
+            {
+              "asset_binding": "canary.sound:effect/2043",
+              "cue_id": "canary.sound:effect/2043",
+              "event": "Impact"
+            }
+          ],
+          "light_level": 0,
+          "palette_bindings": [
+            {
+              "asset_binding": "canary.appearance:palette/85",
+              "slot": "Body"
+            },
+            {
+              "asset_binding": "canary.appearance:palette/79",
+              "slot": "Legs"
+            },
+            {
+              "asset_binding": "canary.appearance:palette/9",
+              "slot": "Feet"
+            }
+          ]
+        }
+      },
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.the_sinister_hermit",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/153",
+          "attachment_bindings": [
+            {
+              "asset_binding": "canary.appearance:outfit/153/addon-1",
+              "slot": "Addon"
+            },
+            {
+              "asset_binding": "canary.appearance:outfit/153/addon-2",
+              "slot": "Addon"
+            }
+          ],
+          "audio_bindings": [
+            {
+              "asset_binding": "canary.sound:effect/100",
+              "cue_id": "canary.sound:effect/100",
+              "event": "Impact"
+            },
+            {
+              "asset_binding": "canary.sound:effect/2013",
+              "cue_id": "canary.sound:effect/2013",
+              "event": "Impact"
+            },
+            {
+              "asset_binding": "canary.sound:effect/2043",
+              "cue_id": "canary.sound:effect/2043",
+              "event": "Impact"
+            }
+          ],
+          "light_level": 0,
+          "palette_bindings": [
+            {
+              "asset_binding": "canary.appearance:palette/97",
+              "slot": "Body"
+            },
+            {
+              "asset_binding": "canary.appearance:palette/79",
+              "slot": "Legs"
+            },
+            {
+              "asset_binding": "canary.appearance:palette/9",
+              "slot": "Feet"
+            }
+          ]
+        }
+      },
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.the_sinister_hermit_dirty",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/349",
+          "audio_bindings": [
+            {
+              "asset_binding": "canary.sound:effect/100",
+              "cue_id": "canary.sound:effect/100",
+              "event": "Impact"
+            },
+            {
+              "asset_binding": "canary.sound:effect/2032",
+              "cue_id": "canary.sound:effect/2032",
+              "event": "Impact"
+            }
+          ],
+          "light_level": 0
+        }
+      },
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.vermin_swarm",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.the_sinister_hermit.attack-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.the_sinister_hermit.attack-2",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.the_sinister_hermit.defense-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.shock_head_skill_reducer_2",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 35,
+          "details": {
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "critical_chance_ppm": 0,
+            "death_residue": {
+              "fluid_type": "blood",
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2886",
+                "revision": "definition-r1"
+              }
+            },
+            "defense": 50,
+            "display_name": "The Sinister Hermit",
+            "encyclopedia_document": {
+              "family": "Document",
+              "key": "oteryn:document/monster-encyclopedia/the_sinister_hermit",
+              "revision": "definition-r1"
+            },
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "The Sinister Hermit",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": false
+            }
+          },
+          "experience": 0,
+          "health": 80000,
+          "mitigation": {
+            "denominator": 25,
+            "numerator": 58
+          },
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "denominator": 1,
+                "numerator": -55
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": -55
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": -55
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": -55
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "denominator": 1,
+                "numerator": -55
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "denominator": 1,
+                "numerator": -55
+              }
+            },
+            {
+              "damage_type": "physical",
+              "percent": {
+                "denominator": 1,
+                "numerator": -55
+              }
+            }
+          ],
+          "speed": 125
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_sinister_hermit",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.the_sinister_hermit_dirty.attack-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.the_sinister_hermit_dirty.attack-2",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.the_sinister_hermit_dirty.defense-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.shock_head_skill_reducer_2",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 35,
+          "details": {
+            "condition_immunities": [
+              "bleed",
+              "invisible",
+              "paralyze"
+            ],
+            "critical_chance_ppm": 0,
+            "death_residue": {
+              "fluid_type": "blood",
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2886",
+                "revision": "definition-r1"
+              }
+            },
+            "defense": 50,
+            "display_name": "The Sinister Hermit",
+            "encyclopedia_document": {
+              "family": "Document",
+              "key": "oteryn:document/monster-encyclopedia/the_sinister_hermit_dirty",
+              "revision": "definition-r1"
+            },
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "The Sinister Hermit",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": false
+            }
+          },
+          "experience": 0,
+          "health": 30000,
+          "mitigation": {
+            "denominator": 10,
+            "numerator": 23
+          },
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "drowning",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": 85
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 85
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": 85
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "life_drain",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "mana_drain",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "physical",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            }
+          ],
+          "speed": 125
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_sinister_hermit_dirty",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.vermin_swarm.attack-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.vermin_swarm.attack-2",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 30,
+          "details": {
+            "article": "a",
+            "critical_chance_ppm": 0,
+            "defense": 30,
+            "display_name": "Vermin Swarm",
+            "encyclopedia_document": {
+              "family": "Document",
+              "key": "oteryn:document/monster-encyclopedia/vermin_swarm",
+              "revision": "definition-r1"
+            },
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "a vermin swarm",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": false
+            }
+          },
+          "experience": 0,
+          "health": 5000,
+          "mitigation": {
+            "denominator": 10,
+            "numerator": 19
+          },
+          "resistances": [
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": 0
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": 0
+              }
+            }
+          ],
+          "speed": 75
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.vermin_swarm",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "effects": [
+              {
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.the_sinister_hermit.attack-1",
+                  "revision": "definition-r1"
+                },
+                "kind": "Executable"
+              }
+            ],
+            "impact_cue": "canary.sound:effect/101",
+            "kind": "Melee",
+            "needs_direction": false,
+            "needs_target": true,
+            "range_tiles": 1
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.the_sinister_hermit.attack-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "length_tiles": 7,
+              "shape": "Beam",
+              "spread_tiles": 8
+            },
+            "effects": [
+              {
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.the_sinister_hermit.attack-2",
+                  "revision": "definition-r1"
+                },
+                "kind": "Executable"
+              }
+            ],
+            "impact_cue": "canary.sound:effect/2043",
+            "kind": "Spell",
+            "needs_direction": true,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.the_sinister_hermit.attack-2",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "effects": [
+              {
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.the_sinister_hermit.defense-1",
+                  "revision": "definition-r1"
+                },
+                "kind": "Executable"
+              }
+            ],
+            "impact_cue": "canary.sound:effect/2013",
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.the_sinister_hermit.defense-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "effects": [
+              {
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.the_sinister_hermit_dirty.attack-1",
+                  "revision": "definition-r1"
+                },
+                "kind": "Executable"
+              }
+            ],
+            "impact_cue": "canary.sound:effect/100",
+            "kind": "Melee",
+            "needs_direction": false,
+            "needs_target": true,
+            "range_tiles": 1
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.the_sinister_hermit_dirty.attack-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "length_tiles": 7,
+              "shape": "Beam",
+              "spread_tiles": 8
+            },
+            "effects": [
+              {
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.the_sinister_hermit_dirty.attack-2",
+                  "revision": "definition-r1"
+                },
+                "kind": "Executable"
+              }
+            ],
+            "impact_cue": "canary.sound:effect/2043",
+            "kind": "Spell",
+            "needs_direction": true,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.the_sinister_hermit_dirty.attack-2",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "effects": [
+              {
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.the_sinister_hermit_dirty.defense-1",
+                  "revision": "definition-r1"
+                },
+                "kind": "Executable"
+              }
+            ],
+            "impact_cue": "canary.sound:effect/2013",
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.the_sinister_hermit_dirty.defense-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "effects": [
+              {
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.vermin_swarm.attack-1",
+                  "revision": "definition-r1"
+                },
+                "kind": "Executable"
+              },
+              {
+                "effect": {
+                  "key": "oteryn:effect.creature.vermin_swarm.attack-1-condition",
+                  "operation": {
+                    "condition": {
+                      "condition_type": "poison",
+                      "damage_over_time": {
+                        "first_tick": "AfterInterval",
+                        "tick_interval_ms": 4000,
+                        "tick_profile": "Decreasing",
+                        "total_maximum": 16,
+                        "total_minimum": 16
+                      },
+                      "lifetime": "DamageSchedule"
+                    },
+                    "operation": "Condition"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "impact_cue": "canary.sound:effect/100",
+            "kind": "Melee",
+            "needs_direction": false,
+            "needs_target": true,
+            "range_tiles": 1
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.vermin_swarm.attack-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "radius_tiles": 5,
+              "shape": "Circle"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.vermin_swarm.attack-2",
+                  "revision": "definition-r1"
+                },
+                "kind": "Executable"
+              }
+            ],
+            "impact_cue": "canary.sound:effect/2032",
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": true,
+            "range_tiles": 4
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.vermin_swarm.attack-2",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0,
+            "variants": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-2",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-3",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-4",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-5",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-6",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-7",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-8",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-9",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-10",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-11",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-12",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-13",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-14",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-15",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-16",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-17",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-18",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-19",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-20",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-21",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-22",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-23",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-24",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-25",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-26",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-27",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-28",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-29",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-30",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-31",
+                "revision": "definition-r1"
+              }
+            ]
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-1.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 20
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-10.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 29
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-10",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-11.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 30
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-11",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-12.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 31
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-12",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-13.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 32
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-13",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-14.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 33
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-14",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-15.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 34
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-15",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-16.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 35
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-16",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-17.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 36
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-17",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-18.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 37
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-18",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-19.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 38
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-19",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-2.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 21
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-2",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-20.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 39
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-20",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-21.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 40
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-21",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-22.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 41
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-22",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-23.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 42
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-23",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-24.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 43
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-24",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-25.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 44
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-25",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-26.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 45
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-26",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-27.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 46
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-27",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-28.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 47
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-28",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-29.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 48
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-29",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-3.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 22
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-3",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-30.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 49
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-30",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-31.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 50
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-31",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-4.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 23
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-4",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-5.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 24
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-5",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-6.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 25
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-6",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-7.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 26
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-7",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-8.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 27
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-8",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xxxxxxx.",
+                "xxxxxxxxx",
+                "xxxxCxxxx",
+                "xxxxxxxxx",
+                ".xxxxxxx.",
+                "..xxxxx..",
+                "...xxx..."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.spell.shock_head_skill_reducer_2.variant-9.effect-condition-1",
+                  "operation": {
+                    "condition": {
+                      "attribute_modifiers": [
+                        {
+                          "attribute": "stat_magicpoints",
+                          "mode": "PercentOfBase",
+                          "value": 28
+                        }
+                      ],
+                      "condition_type": "attributes",
+                      "lifetime": "FixedDuration"
+                    },
+                    "duration_ms": 6000,
+                    "operation": "Condition"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/magic_red"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.shock_head_skill_reducer_2.variant-9",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "physical",
+          "mitigated_by": [
+            "Armor",
+            "Shield"
+          ]
+        }
+      },
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.the_sinister_hermit.attack-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "earth",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/smallplants"
+          }
+        }
+      },
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.the_sinister_hermit.attack-2",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "healing",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/magic_red"
+          }
+        }
+      },
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.the_sinister_hermit.defense-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "physical",
+          "mitigated_by": [
+            "Armor",
+            "Shield"
+          ]
+        }
+      },
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.the_sinister_hermit_dirty.attack-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "earth",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/smallplants"
+          }
+        }
+      },
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.the_sinister_hermit_dirty.attack-2",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "healing",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/magic_red"
+          }
+        }
+      },
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.the_sinister_hermit_dirty.defense-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "physical",
+          "mitigated_by": [
+            "Armor",
+            "Shield"
+          ]
+        }
+      },
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.vermin_swarm.attack-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "death",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/smallclouds"
+          }
+        }
+      },
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.vermin_swarm.attack-2",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "maximum": 400,
+          "minimum": 0
+        }
+      },
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit.attack-1-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "maximum": 488,
+          "minimum": 120
+        }
+      },
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit.attack-2-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "maximum": 800,
+          "minimum": 0
+        }
+      },
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit.defense-1-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "maximum": 400,
+          "minimum": 0
+        }
+      },
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit_dirty.attack-1-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "maximum": 488,
+          "minimum": 120
+        }
+      },
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit_dirty.attack-2-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "maximum": 800,
+          "minimum": 0
+        }
+      },
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.the_sinister_hermit_dirty.defense-1-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "maximum": 250,
+          "minimum": 0
+        }
+      },
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.vermin_swarm.attack-1-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "maximum": 400,
+          "minimum": 0
+        }
+      },
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.vermin_swarm.attack-2-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.the_sinister_hermit.attack-1",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 1000000,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.the_sinister_hermit.attack-2",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 250000,
+              "interval_ms": 2000
+            }
+          ],
+          "defenses": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.the_sinister_hermit.defense-1",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 200000,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 300000,
+              "interval_ms": 2000
+            }
+          ],
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "push_creatures": true,
+            "push_items": true,
+            "pushable": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false
+          },
+          "summons": {
+            "entries": [
+              {
+                "chance_ppm": 1000000,
+                "count": 4,
+                "creature": {
+                  "family": "Creature",
+                  "key": "oteryn:creature.vermin_swarm",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 20000
+              }
+            ],
+            "max_summons": 4
+          },
+          "targeting": {
+            "can_target": true,
+            "change_target": {
+              "chance_ppm": 200000,
+              "interval_ms": 4000
+            },
+            "flee_health": 0,
+            "hostile": true,
+            "sense_invisible": true,
+            "static_attack_chance_ppm": 950000,
+            "strategy_weights": {
+              "damage": 10,
+              "health": 10,
+              "nearest": 70,
+              "random": 10
+            },
+            "target_distance_tiles": 1
+          }
+        }
+      },
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.the_sinister_hermit",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.the_sinister_hermit_dirty.attack-1",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 1000000,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.the_sinister_hermit_dirty.attack-2",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 250000,
+              "interval_ms": 2000
+            }
+          ],
+          "defenses": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.the_sinister_hermit_dirty.defense-1",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 200000,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.shock_head_skill_reducer_2",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 300000,
+              "interval_ms": 2000
+            }
+          ],
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "push_creatures": true,
+            "push_items": true,
+            "pushable": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false
+          },
+          "summons": {
+            "entries": [
+              {
+                "chance_ppm": 1000000,
+                "count": 4,
+                "creature": {
+                  "family": "Creature",
+                  "key": "oteryn:creature.vermin_swarm",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 20000
+              }
+            ],
+            "max_summons": 4
+          },
+          "targeting": {
+            "can_target": true,
+            "change_target": {
+              "chance_ppm": 200000,
+              "interval_ms": 4000
+            },
+            "flee_health": 0,
+            "hostile": true,
+            "sense_invisible": true,
+            "static_attack_chance_ppm": 950000,
+            "strategy_weights": {
+              "damage": 10,
+              "health": 10,
+              "nearest": 70,
+              "random": 10
+            },
+            "target_distance_tiles": 1
+          }
+        }
+      },
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.the_sinister_hermit_dirty",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.vermin_swarm.attack-1",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 1000000,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.vermin_swarm.attack-2",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 150000,
+              "interval_ms": 2000
+            }
+          ],
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "push_creatures": false,
+            "push_items": true,
+            "pushable": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false
+          },
+          "targeting": {
+            "can_target": true,
+            "change_target": {
+              "chance_ppm": 0,
+              "interval_ms": 5000
+            },
+            "flee_health": 0,
+            "hostile": true,
+            "sense_invisible": true,
+            "static_attack_chance_ppm": 950000,
+            "strategy_weights": {
+              "damage": 10,
+              "health": 10,
+              "nearest": 70,
+              "random": 10
+            },
+            "target_distance_tiles": 1
+          }
+        }
+      },
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.vermin_swarm",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "source_identity_bindings": [
+    {
+      "disposition": "EXACT",
+      "external_id": "quests/cults_of_tibia/bosses/summons/vermin_swarm",
+      "identity_namespace": "canary/monster-file",
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.vermin_swarm",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "quests/cults_of_tibia/bosses/the_sinister_hermit_clean",
+      "identity_namespace": "canary/monster-file",
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_sinister_hermit",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "quests/cults_of_tibia/bosses/the_sinister_hermit_dirty",
+      "identity_namespace": "canary/monster-file",
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_sinister_hermit_dirty",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "g4-creature-canary-wave-a-r1",
+      "key": "oteryn:source.canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "1c54c864a5dfcd069db58719d8500a1e7c882517dd2b838759ef393b2bf35d37"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "monster-full-mechanics-portal25051-canary-20261004",
+      "key": "oteryn:source.canary",
+      "revision": "portal25051-semantics:47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "g4-npc-crystal-summer-supplement-r1",
+      "key": "oteryn:source.crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "154083cc71de6e41d73c13854307c4c2cbc134df5afdd1e1c899cfc12f5b3fb5"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "g4-creature-crystal-1530-r1",
+      "key": "oteryn:source.crystalserver",
+      "revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "1c54c864a5dfcd069db58719d8500a1e7c882517dd2b838759ef393b2bf35d37"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "cw2-b1-full-item-family-registry-r1",
+      "key": "oteryn:source.crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "sha256": "7836c78cad130a5c404f648e76e0823f53ae6a34c6952b9b88c8bed2e50d96a7"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "monster-full-mechanics-portal25051-crystal-20261004",
+      "key": "oteryn:source.crystalserver",
+      "revision": "portal25051-semantics:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-npc-prices-tibiawiki-br-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-br-npc-0773232ddd356be2",
+      "sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-item-exact-165-tibiawiki-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-item-census:389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a",
+      "sha256": "583a0b0080f3e08633c8d6cde11d9fd073b47088d84774bfdf851382569dd675"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-item-wave1-tibiawiki-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-item-wave1-snapshot:5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5",
+      "sha256": "5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-mount-252-tibiawiki-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-nonitem-g1-snapshot:0b7caf98940305a91c5384dfb828c0afcf016f087f71572ec71d7c936c6387df",
+      "sha256": "f47dbe5832e7b1accd652852303d638a4f19367bab3951f260cc39a0d93b7713"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-npc-wave-a-tibiawiki-r9",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-npc-52f87d29eddd1a4e",
+      "sha256": "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-wiki-authored-creature-d44-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-wiki-authored-creature-88d21c748283df4c",
+      "sha256": "88d21c748283df4cf059dbf1bd04cbcf7b9d00ca6cd14dc1e913e947f0242c8c"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-npc-prices-tibiopedia-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiopedia-npc-43bfc91ec7721df1",
+      "sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651"
+    }
+  ]
+}

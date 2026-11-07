@@ -1,0 +1,53 @@
+{
+  "identity": {
+    "key": "canary:encounter/the_unarmored_voidborn",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Cults of Tibia: The Unarmored Voidborn",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "the_unarmored_voidborn",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_unarmored_voidborn",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "the_unarmored_voidborn_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_unarmored_voidborn"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "the_unarmored_voidborn",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "the_unarmored_voidborn_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "the_unarmored_voidborn_defeated"
+  ]
+}

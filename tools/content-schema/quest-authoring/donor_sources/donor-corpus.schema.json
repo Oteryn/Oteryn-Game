@@ -1,0 +1,410 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "sources",
+    "files",
+    "failures",
+    "summary",
+    "archives",
+    "native_semantic_admission",
+    "external_wiki_read"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_LOSSLESS_DONOR_RUNTIME_SOURCE_CORPUS/v1"
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "repository",
+          "revision",
+          "git_tree_path",
+          "git_tree_sha256",
+          "selection",
+          "corpus_root",
+          "git_tree_selected_files",
+          "git_tree_all_blobs"
+        ],
+        "properties": {
+          "source": {
+            "enum": [
+              "canary",
+              "crystalserver",
+              "crystal-summer"
+            ]
+          },
+          "repository": {
+            "enum": [
+              "opentibiabr/canary",
+              "zimbadev/crystalserver"
+            ]
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "git_tree_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "git_tree_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "selection": {
+            "type": "string",
+            "minLength": 1
+          },
+          "corpus_root": {
+            "type": "string",
+            "minLength": 1
+          },
+          "git_tree_selected_files": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "git_tree_all_blobs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "original_source_paths_in_file_records": {
+            "const": true
+          }
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "repository",
+          "revision",
+          "path",
+          "git_blob_sha1",
+          "sha256",
+          "byte_count",
+          "cache_path",
+          "read_method"
+        ],
+        "properties": {
+          "source": {
+            "enum": [
+              "canary",
+              "crystalserver",
+              "crystal-summer"
+            ]
+          },
+          "repository": {
+            "enum": [
+              "opentibiabr/canary",
+              "zimbadev/crystalserver"
+            ]
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "git_blob_sha1": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "byte_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cache_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "read_method": {
+            "enum": [
+              "CACHE_REUSE",
+              "NORMAL_HTTPS_PUBLIC_GITHUB_RAW",
+              "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+              "GITBLOB_CACHE_REUSE_OR_NORMAL_HTTPS_PUBLIC_GITHUB_RAW"
+            ]
+          },
+          "file_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "failures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "path",
+          "error"
+        ],
+        "properties": {
+          "source": {
+            "enum": [
+              "canary",
+              "crystalserver",
+              "crystal-summer"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "error": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selected_git_tree_files",
+        "captured_files",
+        "missing_files",
+        "unique_git_blobs",
+        "excluded_git_blobs"
+      ],
+      "properties": {
+        "selected_git_tree_files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "captured_files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "missing_files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unique_git_blobs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "excluded_git_blobs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "archives": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "repository",
+          "revision",
+          "url",
+          "read_method",
+          "sha256",
+          "bytes",
+          "selected_verified_files"
+        ],
+        "properties": {
+          "source": {
+            "enum": [
+              "canary",
+              "crystalserver"
+            ]
+          },
+          "repository": {
+            "type": "string",
+            "minLength": 1
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1
+          },
+          "read_method": {
+            "const": "NORMAL_HTTPS_GITHUB_CODELOAD"
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "selected_verified_files": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "native_semantic_admission": {
+      "const": false
+    },
+    "external_wiki_read": {
+      "const": false
+    },
+    "selection_predicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "top_component_startswith",
+        "top_components",
+        "include_root_files",
+        "suffixes",
+        "filename_endings",
+        "git_object_type",
+        "git_trees_truncated"
+      ],
+      "properties": {
+        "top_component_startswith": {
+          "const": "data"
+        },
+        "top_components": {
+          "const": [
+            "src",
+            "scripts",
+            "config"
+          ]
+        },
+        "include_root_files": {
+          "const": true
+        },
+        "suffixes": {
+          "const": [
+            ".lua",
+            ".xml",
+            ".json",
+            ".toml",
+            ".cpp",
+            ".hpp",
+            ".h",
+            ".c",
+            ".sql",
+            ".conf",
+            ".cfg",
+            ".ini",
+            ".txt",
+            ".yaml",
+            ".yml",
+            ".cmake",
+            ".proto",
+            ".inc"
+          ]
+        },
+        "filename_endings": {
+          "const": [
+            ".lua.dist",
+            ".xml.dist"
+          ]
+        },
+        "git_object_type": {
+          "const": "blob"
+        },
+        "git_trees_truncated": {
+          "const": false
+        }
+      }
+    },
+    "source_comparison_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "crystal-summer"
+      ],
+      "properties": {
+        "crystal-summer": {
+          "const": "COMPARISON_ONLY_SEPARATE_DIVERGED_REVISION_NO_BASELINE_SUBSTITUTION"
+        }
+      }
+    },
+    "portable_layout": {
+      "type": "string",
+      "minLength": 1
+    },
+    "licenses": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "repository",
+          "revision",
+          "source_path",
+          "archive_path",
+          "git_blob_sha1",
+          "sha256"
+        ],
+        "properties": {
+          "source": {
+            "enum": [
+              "canary",
+              "crystalserver",
+              "crystal-summer"
+            ]
+          },
+          "repository": {
+            "type": "string",
+            "minLength": 1
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "source_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "archive_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "git_blob_sha1": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

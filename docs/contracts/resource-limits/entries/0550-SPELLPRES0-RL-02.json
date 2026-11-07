@@ -1,0 +1,22 @@
+{
+  "id": "SPELLPRES0-RL-02",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md",
+  "resource": "bytes of one encoded presentation event, its batch tag and length included",
+  "unit": "bytes",
+  "hard_maximum": 128,
+  "configurable_range": {
+    "minimum": 128,
+    "maximum": 128
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Every event kind is bounded by construction: the worst case, a value_text with a target, an attacker, two 10-byte values and both ordinals at their uint32 maximum, is 126 bytes. The decoder refuses a longer entry LimitExceeded before decoding it; the encoder refuses one as a server fault.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=128: crates/protocol-oteryn/src/presentation_tests.rs events_round_trip_and_the_largest_event_is_within_its_bound (the worst-case value_text is 126 bytes)",
+    "max+1=129: crates/protocol-oteryn/src/presentation_tests.rs malformed_events_fail_closed (a 129-byte entry is refused LimitExceeded)"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/presentation.rs MAX_PRESENTATION_EVENT_BYTES"
+  ],
+  "notes": "SPELL-PRESENT-0 \u00a79 and \u00a713. Registered by PRESENT-WIRE-1 (MAGIC-CAST-1, #1622)."
+}

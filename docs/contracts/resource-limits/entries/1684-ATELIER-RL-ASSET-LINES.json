@@ -1,0 +1,26 @@
+{
+  "id": "ATELIER-RL-ASSET-LINES",
+  "owner_contract": "protocol-oteryn/v1/atelier-v1.md",
+  "resource": "Touched item instances, location lines and participants in one Atelier transaction",
+  "unit": "lines per logical transaction",
+  "hard_maximum": 540,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 540
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "508 carried coin inputs plus 30 material leaves and at most two change outputs; inventory and bank/stash legs remain one transaction.",
+  "client_visible": false,
+  "boundary_tests": [
+    "540 admitted for each counted dimension",
+    "541 rejected with CAPACITY_EXCEEDED",
+    "generic fee rows remain 22"
+  ],
+  "consumers": [
+    "crates/gameplay/durability/src/durability/item_fee_burn_audit/atelier_cause.rs",
+    "crates/gameplay/durability/src/durability/item_fee_burn_audit.rs",
+    "crates/gameplay/durability/src/durability/character_atelier/custody.rs",
+    "crates/gameplay/durability/src/durability/character_atelier/outputs.rs"
+  ],
+  "notes": "P07 Gem Atelier: Crystal 201189f player.cpp:5304-5356,5821-5844, player_wheel.cpp:1514-1568 and game.cpp:2862-2969. Existing native carried-tree, depth, definition and ledger authority limits remain in force. Dismantle may split at most ten fragments across ordinary carried stacks/containers under the same bounds."
+}

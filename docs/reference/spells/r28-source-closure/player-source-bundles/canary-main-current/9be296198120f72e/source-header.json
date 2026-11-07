@@ -1,0 +1,53 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 60000,
+    "costs": {
+      "mana": 165
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "name": "Intense Recovery",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_intense_recovery"
+    },
+    "reference_spell_id": 160,
+    "requirements": {
+      "level": 100,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight",
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "utura gran"
+  }
+}

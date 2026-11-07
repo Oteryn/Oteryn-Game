@@ -1,0 +1,21 @@
+{
+  "id": 87,
+  "name": "PVP_EXPERT_V1",
+  "constant": "pvp_expert::CAPABILITY_PVP_EXPERT_V1",
+  "requires": [
+    17
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    103
+  ],
+  "domains": [
+    52
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

@@ -1,0 +1,19 @@
+[
+  {
+    "filter": "",
+    "ignored": false,
+    "exit": 0,
+    "log": "/tmp/monster-final-seven/repair-20261005/frozen-library/full-lib-tests-final-frozen.log",
+    "log_sha256": "03b8b011b11b99841716b4347bc4954ec27f7143f2a8c1bc50da49e32bbf32cc",
+    "counts": [
+      {
+        "status": "ok",
+        "passed": 2395,
+        "failed": 0,
+        "ignored": 25
+      }
+    ],
+    "expected_passes": 2396,
+    "status": "FAIL_OR_EMPTY"
+  }
+]

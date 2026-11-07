@@ -1,0 +1,17 @@
+{
+  "id": 87,
+  "name": "PVP_EXPERT_V1",
+  "owner_decision": "PVP-EXPERT-1 owner task; PVP-0 section 6.6",
+  "owner": "current ChannelRuntime",
+  "requires": [
+    17
+  ],
+  "command_types": [
+    103
+  ],
+  "state_domains": [
+    52
+  ],
+  "offered": true,
+  "offer_gate": "Server dispatch composed. Client must explicitly select 87. Fresh sessions default to Dove; Hardcore is fixed to Red Fist."
+}

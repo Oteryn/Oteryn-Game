@@ -1,0 +1,16 @@
+{
+  "id": 99,
+  "name": "GUILDHALL_V1",
+  "owner_decision": "GUILDHALL-1 allocation; GUILD0 sections 6-7",
+  "owner": "World-global Guild House participant",
+  "requires": [
+    40,
+    49
+  ],
+  "command_types": [
+    115
+  ],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "House intents for catalogue Guildhalls and typed refusals require both HOUSE_V1 and GUILDHALL_V1; ownership and balances remain fenced by their native owners."
+}

@@ -1,0 +1,22 @@
+{
+  "id": "GAMEITEM01-CORPSE-PLACEMENT-DEPTH",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md",
+  "resource": "Placement depth below a corpse ItemInstance",
+  "unit": "container levels",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Only direct entries of the corpse item itself are admitted destinations; the composite foreign key (parent_item_instance_id, world_id) -> game_item_instances plus the parent-live-CORPSE_MATERIALIZATION-receipt check make a deeper placement (a bag inside a corpse) unrepresentable in this slice.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=1: a loot entry whose parent is the death's own corpse ItemInstance is accepted",
+    "max+1=2: a loot entry whose parent is itself a corpse container entry is rejected by the database"
+  ],
+  "consumers": [
+    "apps/game-server/migrations/0013_corpse_container_mint.sql (game_item_corpse_container_entries)"
+  ],
+  "notes": "D131; decision \u00a74.2 mirrors GAMEITEM01-PLACEMENT-DEPTH; nested bags inside corpses are a later decision. Registered by OTV2-20260929-d3-1-corpse-migration."
+}

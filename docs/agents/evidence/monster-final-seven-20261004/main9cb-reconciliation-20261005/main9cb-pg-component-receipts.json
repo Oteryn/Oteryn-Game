@@ -1,0 +1,12 @@
+[
+  {
+    "database": "monster_main9cb_creature_fields",
+    "exit": 0,
+    "log": "/tmp/monster-final-seven/repair-20261005/monster_main9cb_creature_fields.log"
+  },
+  {
+    "database": "monster_main9cb_player_fields",
+    "exit": 0,
+    "log": "/tmp/monster-final-seven/repair-20261005/monster_main9cb_player_fields.log"
+  }
+]

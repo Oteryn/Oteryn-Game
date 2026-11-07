@@ -1,0 +1,19 @@
+{
+  "id": 81,
+  "name": "NPC_SHOP_V1",
+  "constant": "npc_shop::CAPABILITY_NPC_SHOP_V1",
+  "requires": [
+    3
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    97
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

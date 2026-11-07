@@ -1,0 +1,517 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_SOURCE_MANIFEST/v1",
+  "task": "SKILL-FORMULAS-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "owner_cut_override": "Owner explicitly requested fresh current data on 2026-10-18; historical 2026-09-27 programme cut is not changed repository-wide.",
+  "sources": {
+    "repo:docs/reference/tibia-manual/combat.md": {
+      "path": "docs/reference/tibia-manual/combat.md",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/docs/reference/tibia-manual/combat.md",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "ef518113d52cc089185c6472b23556d7aba74b714a74d3ef1d529f6dc03d1d62",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18"
+    },
+    "wiki:78086:1113308": {
+      "title": "Critical Hit",
+      "url": "https://tibia.fandom.com/wiki/Critical_Hit",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113308",
+      "revid": 1113308,
+      "revision_timestamp": "2025-07-24T17:19:22Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "eaec983a016db290ed19170f716ddcbf16c43e227f0abbba72b16c4bbf74f781",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Critical%20Hit%7CLife%20Leech%7CMana%20Leech%7CSkills&redirects=1"
+    },
+    "wiki:1092:1205374": {
+      "title": "Formulae",
+      "url": "https://tibia.fandom.com/wiki/Formulae",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1205374",
+      "revid": 1205374,
+      "revision_timestamp": "2026-09-07T17:28:39Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "dead5a3344eef4a7af05561f1893202052ef31c611e5de90676624c69bc9abf5",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Formulae%7CEquipment%20Upgrade%2FFusing%7CTemplate%3AInfobox%20Outfit%7CTemplate%3AInfobox%20Object%7CTemplate%3ATransportCell%7CTemplate%3ARaid%20Message%7CTemplate%3ACalculator%2FMana%20Per%20Second%7CTemplate%3ACalculator%2FHitpoints%20Per%20Second&redirects=1"
+    },
+    "wiki:78085:1101811": {
+      "title": "Life Leech",
+      "url": "https://tibia.fandom.com/wiki/Life_Leech",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1101811",
+      "revid": 1101811,
+      "revision_timestamp": "2025-05-04T17:01:12Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "507f3e067c027749e8e2de7b832d9473565d97a8436f0939d90bdce6c7049d35",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Critical%20Hit%7CLife%20Leech%7CMana%20Leech%7CSkills&redirects=1"
+    },
+    "wiki:78087:1101810": {
+      "title": "Mana Leech",
+      "url": "https://tibia.fandom.com/wiki/Mana_Leech",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1101810",
+      "revid": 1101810,
+      "revision_timestamp": "2025-05-04T17:01:10Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "560d6058c2c3e1da14dfe62bf77f318812bbece68eef833f3916b78d5fc826ac",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Critical%20Hit%7CLife%20Leech%7CMana%20Leech%7CSkills&redirects=1"
+    },
+    "wiki:2780:1200670": {
+      "title": "Skills",
+      "url": "https://tibia.fandom.com/wiki/Skills",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1200670",
+      "revid": 1200670,
+      "revision_timestamp": "2026-08-15T17:36:48Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "e6a10f2d73871e8f63d5c3a1eaad199863e033148028528a06f1c11baf4aba12",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Critical%20Hit%7CLife%20Leech%7CMana%20Leech%7CSkills&redirects=1"
+    },
+    "official:manual:combat:2026-10-18": {
+      "title": "Tibia official manual: combat",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=combat",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "evidence_role": "PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18",
+      "response_sha256": "62b54782e78348ea1cfc720dbddeea48564ab0c54934cec4ce8480eb9a06d58f",
+      "capture_method": "Public URL read through owner-authorized connected computer",
+      "retained_scope": "RESPONSE_DIGEST_AND_PARAPHRASED_FACTS",
+      "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH"
+    },
+    "official:news:8421:20261018": {
+      "title": "Weapon Proficiency System",
+      "url": "https://www.tibia.com/news/?id=8421&subtopic=newsarchive",
+      "fetched_at": "2026-10-18",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "retained_scope": "TARGETED_SOURCE_RETRIEVAL",
+      "retained_response_sha256": "dce51014aa5c777d6f11c0efc8f554fbb8bc65ebc1e48bede23dc8d3a58c697f",
+      "supported_claim": "Character base critical chance5% and base critical extra damage10%.",
+      "publication_date": "2025-06-23",
+      "retrieval_method": "SEARCH_INDEX_OF_PRIMARY_OFFICIAL_PUBLICATION",
+      "direct_fetch": "HTTP403_FROM_WEB_FETCH_AND_OWNER_PC_URL_READER",
+      "qualification": "Primary official publication indexed at fetch; direct HTTP retrieval was blocked. Claim scope is the cited announcement, corroborated against release evidence where stated; no controlled server measurement is claimed."
+    },
+    "official:news:8436:20261018": {
+      "title": "Summer Update2025 release",
+      "url": "https://www.tibia.com/news/?id=8436&subtopic=newsarchive",
+      "fetched_at": "2026-10-18",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "retained_scope": "TARGETED_SOURCE_RETRIEVAL",
+      "retained_response_sha256": "dfa87ca7f6a94ab6dc3bff910d1d97985ae76656ae44ccce220b3315b244cda2",
+      "supported_claim": "Weapon Proficiency System released on2025-07-21.",
+      "publication_date": "2025-07-21",
+      "retrieval_method": "SEARCH_INDEX_OF_PRIMARY_OFFICIAL_PUBLICATION",
+      "direct_fetch": "HTTP403_FROM_WEB_FETCH_AND_OWNER_PC_URL_READER",
+      "qualification": "Primary official publication indexed at fetch; direct HTTP retrieval was blocked. Claim scope is the cited announcement, corroborated against release evidence where stated; no controlled server measurement is claimed."
+    },
+    "owner:oteryn-data-completion:2026-10-19": {
+      "source_class": "OWNER_AUTHORIZED_OTERYN_WORKING_PARAMETERS",
+      "instruction": "No to uzupełnij te dane bo piszę ci to5raz",
+      "prior_instruction": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+      "parameter_document": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json",
+      "selection_actor": "assistant completing owner-authorized reference/data task",
+      "scope": "Populate working Oteryn data defaults, keeping evidence limits explicit; no runtime or architectural acceptance is implied."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:leech.amount": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/game/game.cpp",
+      "line": 8664,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/game/game.cpp#L8664",
+      "file_sha256": "5f7ba67a158af607bacb9d75451ca490817f189ca7d3dcf9e774d55dc1ccaab6",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "expression": "clamp(lround(realDamage*(skillAmount/10000.0)*(0.1*N+0.9)/N),0,realDamage)",
+        "domain": "N>=1, actual nonnegative damage; skillAmount in hundredths of percent"
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:skill.progression": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/vocations/vocation.cpp",
+      "line": 376,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/vocations/vocation.cpp#L376",
+      "file_sha256": "20f555f13d6320c50ef824cc3cd9e9e73eb9c716f7f7b0a63143a120a478be9d",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "target_level_L": "0 for L<=10; uint64(base[skill]*pow(vocation_multiplier,L-11)) otherwise",
+        "base_by_skill_id": [
+          50,
+          50,
+          50,
+          50,
+          30,
+          100,
+          20
+        ],
+        "cumulative": "sum individual target-level costs from 10 through L",
+        "rounding": "floating pow followed by integer truncation"
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Knight": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "line": 62,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L62",
+      "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "attributes": {
+          "id": "4",
+          "clientid": "1",
+          "baseid": "4",
+          "name": "Knight",
+          "description": "a knight",
+          "magicshield": "0",
+          "gaincap": "25",
+          "gainhp": "15",
+          "gainmana": "5",
+          "gainhpticks": "6000",
+          "gainhpamount": "1",
+          "gainmanaticks": "6000",
+          "gainmanaamount": "2",
+          "manamultiplier": "3.0",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "100",
+          "gainsoulticks": "120000",
+          "fromvoc": "4",
+          "avatarlooktype": "1593"
+        },
+        "skill_multipliers": {
+          "0": "1.1",
+          "1": "1.1",
+          "2": "1.1",
+          "3": "1.1",
+          "4": "1.4",
+          "5": "1.1",
+          "6": "1.1"
+        }
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:magic.progression": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/vocations/vocation.cpp",
+      "line": 406,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/vocations/vocation.cpp#L406",
+      "file_sha256": "20f555f13d6320c50ef824cc3cd9e9e73eb9c716f7f7b0a63143a120a478be9d",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "target_magic_level_L": "0 for L=0; floor(1600*pow(manaMultiplier,L-1)) otherwise",
+        "cumulative": "sum getReqMana(i) for i=1..L"
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Paladin": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "line": 49,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L49",
+      "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "attributes": {
+          "id": "3",
+          "clientid": "2",
+          "baseid": "3",
+          "name": "Paladin",
+          "description": "a paladin",
+          "magicshield": "0",
+          "gaincap": "20",
+          "gainhp": "10",
+          "gainmana": "15",
+          "gainhpticks": "8000",
+          "gainhpamount": "1",
+          "gainmanaticks": "4000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.4",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "100",
+          "gainsoulticks": "120000",
+          "fromvoc": "3",
+          "avatarlooktype": "1594"
+        },
+        "skill_multipliers": {
+          "0": "1.2",
+          "1": "1.2",
+          "2": "1.2",
+          "3": "1.2",
+          "4": "1.1",
+          "5": "1.1",
+          "6": "1.1"
+        }
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Druid": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "line": 36,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L36",
+      "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "attributes": {
+          "id": "2",
+          "clientid": "4",
+          "baseid": "2",
+          "name": "Druid",
+          "description": "a druid",
+          "magicshield": "1",
+          "gaincap": "10",
+          "gainhp": "5",
+          "gainmana": "30",
+          "gainhpticks": "12000",
+          "gainhpamount": "1",
+          "gainmanaticks": "3000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.1",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "100",
+          "gainsoulticks": "120000",
+          "fromvoc": "2",
+          "avatarlooktype": "1596"
+        },
+        "skill_multipliers": {
+          "0": "1.5",
+          "1": "1.8",
+          "2": "1.8",
+          "3": "1.8",
+          "4": "1.8",
+          "5": "1.5",
+          "6": "1.1"
+        }
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Sorcerer": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "line": 23,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L23",
+      "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "attributes": {
+          "id": "1",
+          "clientid": "3",
+          "baseid": "1",
+          "name": "Sorcerer",
+          "description": "a sorcerer",
+          "magicshield": "1",
+          "gaincap": "10",
+          "gainhp": "5",
+          "gainmana": "30",
+          "gainhpticks": "12000",
+          "gainhpamount": "1",
+          "gainmanaticks": "3000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.1",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "100",
+          "gainsoulticks": "120000",
+          "fromvoc": "1",
+          "avatarlooktype": "1595"
+        },
+        "skill_multipliers": {
+          "0": "1.5",
+          "1": "2.0",
+          "2": "2.0",
+          "3": "2.0",
+          "4": "2.0",
+          "5": "1.5",
+          "6": "1.1"
+        }
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Monk": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "line": 139,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L139",
+      "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "attributes": {
+          "id": "9",
+          "clientid": "5",
+          "baseid": "5",
+          "name": "Monk",
+          "description": "an monk",
+          "magicshield": "0",
+          "gaincap": "25",
+          "gainhp": "10",
+          "gainmana": "10",
+          "gainhpticks": "7000",
+          "gainhpamount": "1",
+          "gainmanaticks": "4000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.3",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "200",
+          "gainsoulticks": "15000",
+          "fromvoc": "9",
+          "avatarlooktype": "1823"
+        },
+        "skill_multipliers": {
+          "0": "1.1",
+          "1": "1.2",
+          "2": "1.2",
+          "3": "1.2",
+          "4": "1.5",
+          "5": "1.1",
+          "6": "1.1"
+        }
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.None": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "line": 10,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L10",
+      "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "attributes": {
+          "id": "0",
+          "clientid": "0",
+          "baseid": "0",
+          "name": "None",
+          "description": "none",
+          "magicshield": "0",
+          "gaincap": "10",
+          "gainhp": "5",
+          "gainmana": "5",
+          "gainhpticks": "12000",
+          "gainhpamount": "1",
+          "gainmanaticks": "6000",
+          "gainmanaamount": "2",
+          "manamultiplier": "4.0",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "100",
+          "gainsoulticks": "120000",
+          "fromvoc": "0"
+        },
+        "skill_multipliers": {
+          "0": "1.5",
+          "1": "2.0",
+          "2": "2.0",
+          "3": "2.0",
+          "4": "2.0",
+          "5": "1.5",
+          "6": "1.1"
+        }
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp": {
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/game/game.cpp",
+      "blob_sha": "40a667ac7c28cff9a04324cca18575cebc92f13f",
+      "sha256": "f98a2d73d53fb4368d0b05b25d9b41ae79f427d15666f6b67a2100abf4c8cf03",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/game/game.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp": {
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/creatures/combat/combat.cpp",
+      "blob_sha": "ec7a7ceebea67280ab8b2c77ab9a527e3a9f9aea",
+      "sha256": "c57a9cdf3d68f7d82c5cb3220a4a603e76c3992d5517a654bb01814c68f80889",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/creatures/combat/combat.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp": {
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/creatures/players/vocations/vocation.cpp",
+      "blob_sha": "70411c647329194528b11985e9be5674804cc5bc",
+      "sha256": "a3930265d68ccf188a0aeddebfd4bd19fcc257bfb3865e5ee8e429f043be83b3",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/creatures/players/vocations/vocation.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml": {
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "data/XML/vocations.xml",
+      "blob_sha": "57c014e720bbe8d7f83501970c2b89976598cc3d",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/data/XML/vocations.xml",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/game/game.cpp",
+      "blob_sha": "5f421b1b2361280abeb8b392bca0e0344fc04648",
+      "sha256": "5f7ba67a158af607bacb9d75451ca490817f189ca7d3dcf9e774d55dc1ccaab6",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/game/game.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/combat/combat.cpp",
+      "blob_sha": "499a6aec29f7fd85da4953aea599ab1cba181fe3",
+      "sha256": "2ce001eb6820b43b3ea0a094f5e67bedd5cb5cafbb31038d14e49786be109bad",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/combat/combat.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/vocations/vocation.cpp",
+      "blob_sha": "3bf13d00a5d177b9ac010404687b6b719544555d",
+      "sha256": "20f555f13d6320c50ef824cc3cd9e9e73eb9c716f7f7b0a63143a120a478be9d",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/vocations/vocation.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "blob_sha": "eed5290955fd7a988acab73672dc5356ed0e0ba8",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "wiki-br:skill-calculator:indexed:20261019": {
+      "url": "https://www.tibiawiki.com.br/wiki/Tibia_Wiki%3ASkills_Calculator/Codigo",
+      "source_class": "COMMUNITY_CALCULATOR_SOURCE",
+      "fetched_at": "2026-10-19",
+      "retrieval": "Indexed code observation; no fresh revision ID claimed",
+      "selector": "Monk magic1.25andshielding1.15"
+    }
+  }
+}

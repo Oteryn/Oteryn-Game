@@ -1,0 +1,237 @@
+{
+  "schema": "OTERYN_FAMILIAR_PROFILE_SOURCE_PROOF/v1",
+  "classification": "OtsHypothesisOnly; explicit local candidate",
+  "definition_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "current_revision": "99902524e052f37574194466c2949c576e4ab269",
+  "unchanged_full_definitions": [
+    {
+      "path": "data-otservbr-global/monster/familiars/druid_familiar.lua",
+      "definition_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "current_revision": "99902524e052f37574194466c2949c576e4ab269",
+      "definition_git_blob": "2c4f3a55ab2e8e2383da2e82c9c2a6bfa49fedb5",
+      "current_git_blob": "2c4f3a55ab2e8e2383da2e82c9c2a6bfa49fedb5",
+      "sha256": "cca0a4d6cb4c07b6ddad7edd7151b0a795d30b389ed41953af6115036ead5016",
+      "byte_identical": true
+    },
+    {
+      "path": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "definition_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "current_revision": "99902524e052f37574194466c2949c576e4ab269",
+      "definition_git_blob": "83c619695910876e8dbb1f24287fa755b5d9d0c8",
+      "current_git_blob": "83c619695910876e8dbb1f24287fa755b5d9d0c8",
+      "sha256": "0a7630ef4ad7b7e124d28c3a0e5ee6815e647a199d658f98bce2526a026ca527",
+      "byte_identical": true
+    },
+    {
+      "path": "data-otservbr-global/monster/familiars/monk_familiar.lua",
+      "definition_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "current_revision": "99902524e052f37574194466c2949c576e4ab269",
+      "definition_git_blob": "93a6e898ffa1fc62e921e9c4d7ed5b23c7f90c17",
+      "current_git_blob": "93a6e898ffa1fc62e921e9c4d7ed5b23c7f90c17",
+      "sha256": "2bd4dab7451a89f91d9f6853189a1ddc3185eabe80e58a1e8e48a5c9ac16034c",
+      "byte_identical": true
+    },
+    {
+      "path": "data-otservbr-global/monster/familiars/paladin_familiar.lua",
+      "definition_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "current_revision": "99902524e052f37574194466c2949c576e4ab269",
+      "definition_git_blob": "181e96f394c48c4dd1f6675252cbe62b93392361",
+      "current_git_blob": "181e96f394c48c4dd1f6675252cbe62b93392361",
+      "sha256": "e8674b2495283c6314a248d1e7389e688d3e8e15d242373a9d72407766bfcd84",
+      "byte_identical": true
+    },
+    {
+      "path": "data-otservbr-global/monster/familiars/sorcerer_familiar.lua",
+      "definition_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "current_revision": "99902524e052f37574194466c2949c576e4ab269",
+      "definition_git_blob": "31d61dfbf280cee1f30a0758f99828f06bf61f63",
+      "current_git_blob": "31d61dfbf280cee1f30a0758f99828f06bf61f63",
+      "sha256": "c9bbdc224311d112fbe0f9bbce9bbbf405ad2795a7cc90026e87e02d708b6aa7",
+      "byte_identical": true
+    }
+  ],
+  "formal_shared_sources": [
+    {
+      "path": "data/items/items.xml",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    {
+      "path": "data/items/appearances.dat",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+    },
+    {
+      "path": "src/utils/utils_definitions.hpp",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "bdd23ca8e86ab433bef04766f0c183d46fc2ca1796a81bab1d44db8d3fd685d1"
+    },
+    {
+      "path": "src/creatures/creatures_definitions.hpp",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "54f0a5bcdc10e33d8850300c5c5022eb7fe8b4549394407482c57245bdab3e33"
+    },
+    {
+      "path": "data/scripts/lib/register_monster_type.lua",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "42165d6a26189c0c8b8631011f061f8a90ec2534a33404af4cc93e1ce011a187"
+    },
+    {
+      "path": "src/creatures/monsters/monsters.hpp",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "ba4b06827d1e88dd40eeb44a832e90b4ae18ad9108879a8aa997cb7702d7e022"
+    },
+    {
+      "path": "src/creatures/monsters/monsters.cpp",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "77096a723113e896b7d90d2615450cec9c61acf22f5d36f1d6eed3592aaa5512"
+    },
+    {
+      "path": "data/libs/functions/player.lua",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "26e85b0c577b76ef42c429a459428758a6a8dfc3e019bb771403bc33fbbf5c0c"
+    },
+    {
+      "path": "data/libs/systems/familiar.lua",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "d12558c52f581a9149ebb738f68aa4ad74734b3fe79eb9863252fb5a90018dcc"
+    }
+  ],
+  "bundles": [
+    {
+      "identity": {
+        "family": "Creature",
+        "key": "canary:creature/druid_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "bundle_sha256": "9ec838026886d0e1717c483a3d274ac14d200c990a7857ad31fd2d430baf46dc",
+      "source": {
+        "file": "data-otservbr-global/monster/familiars/druid_familiar.lua",
+        "git_blob": "2c4f3a55ab2e8e2383da2e82c9c2a6bfa49fedb5"
+      },
+      "unresolved_manifest_rows": [
+        {
+          "manifest": {
+            "source_index": 0,
+            "source_file": "data-otservbr-global/monster/familiars/druid_familiar.lua",
+            "source_line": 72,
+            "source_field": "attacks[4]",
+            "kind": "field",
+            "status": "unresolved_semantics",
+            "resolution": "registered instant spell \"summon challenge\" (data-otservbr-global/scripts/spells/monster/summonchallenge.lua) has custom logic (per-target Lua combat callback: CALLBACK_PARAM_TARGETCREATURE); needs a native behaviour (D13). D18 pattern `taunt_challenge` (samples/p4-behaviour-patterns-canary-47dfd51f.json)."
+          },
+          "source_operation": {
+            "chance": 40,
+            "name": "summon challenge",
+            "target": false,
+            "interval": 2000
+          },
+          "retained_schedule": {
+            "ability": {
+              "family": "Ability",
+              "key": "canary:ability/spell/summon_challenge",
+              "revision": "canary-47dfd51f"
+            },
+            "interval_ms": 2000,
+            "chance_percent": 40
+          }
+        }
+      ]
+    },
+    {
+      "identity": {
+        "family": "Creature",
+        "key": "canary:creature/knight_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "bundle_sha256": "f453c9e37cc47529a285e425f327e3ba8db5364763d9d4172ffa8ffa6d2d0425",
+      "source": {
+        "file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+        "git_blob": "83c619695910876e8dbb1f24287fa755b5d9d0c8"
+      },
+      "unresolved_manifest_rows": []
+    },
+    {
+      "identity": {
+        "family": "Creature",
+        "key": "canary:creature/monk_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "bundle_sha256": "2130dd645b9a30775c6e97a0f5fb4f43e758c7a7d60e8d4259a59577c983f01b",
+      "source": {
+        "file": "data-otservbr-global/monster/familiars/monk_familiar.lua",
+        "git_blob": "93a6e898ffa1fc62e921e9c4d7ed5b23c7f90c17"
+      },
+      "unresolved_manifest_rows": []
+    },
+    {
+      "identity": {
+        "family": "Creature",
+        "key": "canary:creature/paladin_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "bundle_sha256": "557674b6133b50789b2df2434b366fce033733113cc5496a26e427c0b7c7de00",
+      "source": {
+        "file": "data-otservbr-global/monster/familiars/paladin_familiar.lua",
+        "git_blob": "181e96f394c48c4dd1f6675252cbe62b93392361"
+      },
+      "unresolved_manifest_rows": []
+    },
+    {
+      "identity": {
+        "family": "Creature",
+        "key": "canary:creature/sorcerer_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "bundle_sha256": "d27e8847377ce4b141448eab5b06148568c39d04f3bb81f0f8330e557bc86747",
+      "source": {
+        "file": "data-otservbr-global/monster/familiars/sorcerer_familiar.lua",
+        "git_blob": "31d61dfbf280cee1f30a0758f99828f06bf61f63"
+      },
+      "unresolved_manifest_rows": [
+        {
+          "manifest": {
+            "source_index": 0,
+            "source_file": "data-otservbr-global/monster/familiars/sorcerer_familiar.lua",
+            "source_line": 72,
+            "source_field": "attacks[4]",
+            "kind": "field",
+            "status": "unresolved_semantics",
+            "resolution": "registered instant spell \"summon challenge\" (data-otservbr-global/scripts/spells/monster/summonchallenge.lua) has custom logic (per-target Lua combat callback: CALLBACK_PARAM_TARGETCREATURE); needs a native behaviour (D13). D18 pattern `taunt_challenge` (samples/p4-behaviour-patterns-canary-47dfd51f.json)."
+          },
+          "source_operation": {
+            "name": "summon challenge",
+            "target": false,
+            "interval": 2000,
+            "chance": 40
+          },
+          "retained_schedule": {
+            "ability": {
+              "family": "Ability",
+              "key": "canary:ability/spell/summon_challenge",
+              "revision": "canary-47dfd51f"
+            },
+            "interval_ms": 2000,
+            "chance_percent": 40
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "familiar-creature-profiles.json": "1fb3dd56c736a2fafc50e90891039e42b9db6b7d6345712ecaeefe3e4cc83c0d",
+    "familiar-presentation-profiles.json": "f9620685ea04d31fca3b05892674e38bc1a3f17dbef05ccf94f5925ea6a6091d",
+    "familiar-dependency-profiles.json": "ea9e3d58b65125c8b225d24d82b62882286235b41a986e5c9068801956300bff"
+  },
+  "conversion_tools": [
+    {
+      "path": "tools/content-schema/monster-authoring/canary_batch.py",
+      "sha256": "7580ba16f85da692d4d42c7c4ea0ca4eeb9c6763da04642835ba493758f641e9"
+    },
+    {
+      "path": "tools/content-migration/creature_admission_stage.py",
+      "sha256": "5a03273ab74f22bc175ad78d1efa3000c87f674248ee11c2196051e86c444322"
+    }
+  ],
+  "scope": "Full Creature/Behavior/Presentation and dependency source profiles; runtime source admission and activated closure remain required."
+}

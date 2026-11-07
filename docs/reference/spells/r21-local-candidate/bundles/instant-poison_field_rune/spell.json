@@ -1,0 +1,64 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/poison_field_rune",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Poison Field Rune",
+    "carrier": "instant",
+    "words": "adevo grav pox",
+    "reference_spell_id": 26,
+    "library_text": "After careful study of the existing varieties, the druids came up with this contribution to the field spell arsenal. Making use of their pre-eminent knowledge of all kinds of toxins they devised a way to create small pockets of poison gas which remain stable for several minutes before dissipating. Anybody who enters these fields will be affected by a vicious toxin. Consequently, many creatures will avoid them, although strong monsters or creatures that are immune to poison will not hesitate to move into them. Still, the spell is usually well suited to create protective barriers. Also, its usefulness as a cheap attack spell to be cast on weaker creatures must not be underestimated. Please note that on optional PvP game worlds this spell has no damaging effect on other characters, unless characters are war opponents.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 14,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 200,
+      "soul": 1
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "execution": {
+      "conjure": {
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/3172",
+          "revision": "spell-p2-r21"
+        },
+        "count": 3,
+        "effect_asset_binding": "canary.appearance:effect/magic_red",
+        "reagent": {
+          "family": "Item",
+          "key": "candidate:item/3147",
+          "revision": "spell-p2-r21"
+        }
+      }
+    }
+  }
+}

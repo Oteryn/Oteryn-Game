@@ -1,0 +1,128 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/rune/convince_creature_rune",
+      "revision": "spell-p2-r20"
+    },
+    "name": "convince creature rune",
+    "carrier": "rune",
+    "reference_spell_id": 12,
+    "library_text": "The Convince Creature rune was developed by druids who wished to find a way to befriend hostile animals rather than having to kill them. It soon turned out, however, that this rune could also be used against more powerful creatures, including some who must actually be considered to be intelligent species. Unfortunately, to succeed in convincing a creature mana, additionally to creating the rune, has to be spent. The mental strain on the user of the rune is determined by the power of the creature he wishes to convince, so the amount of mana to convince a rat is lower than that which is needed for an orc. The adventurer who uses the rune should make sure in advance, however, that the target is really susceptible to the effect of this spell - there is no point in trying to convince a rampaging dragon. Also, the adventurer should make sure to stay close to convinced creatures to maintain the bond. Convinced creatures that are separated from their masters will soon run off, never to be seen again.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 16,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": true,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_convince_creature_rune"
+    },
+    "rune": {
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/3177",
+        "revision": "spell-p2-r21"
+      },
+      "charges": 1,
+      "magic_level": 5,
+      "allow_far_use": true,
+      "blocking": {
+        "solid": true,
+        "creature": false
+      }
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "acquire_summon",
+        "parameters": {
+          "source": "target_creature",
+          "summon_cap": 2,
+          "admission_order": [
+            "monster_target",
+            "convinceable_and_master",
+            "summon_cap",
+            "mana"
+          ],
+          "cap_and_flag_exemption": "can_convince_all",
+          "required_flag": "convinceable",
+          "target_master": "none_or_a_carved_stone_tile",
+          "refuse_black_skull": false,
+          "corpse": {
+            "selection": "none",
+            "requires_movable": false,
+            "requires_is_corpse": false,
+            "additional_age_check": false
+          },
+          "created_creature": "existing_target",
+          "spawn": {
+            "position": "existing_target",
+            "extended": false,
+            "force": false,
+            "assign_master_in_create": false,
+            "assign_master_after_create": false
+          },
+          "mana": {
+            "source": "creature_type_mana_cost",
+            "insufficient_exemption": "has_infinite_mana",
+            "subtract_actual_cost": true,
+            "add_mana_spent": true
+          },
+          "commit_order": [
+            "subtract_mana",
+            "add_mana_spent",
+            "assign_master",
+            "caster_magic_blue"
+          ],
+          "rune_charge_on_success": true,
+          "visuals": {
+            "refusal": "poff",
+            "success": "magic_blue",
+            "created_teleport": false
+          },
+          "failure_messages": {
+            "invalid_source": "not_possible",
+            "summon_cap": "You cannot control more creatures.",
+            "mana": "not_enough_mana",
+            "spawn_room": "not_possible"
+          }
+        }
+      }
+    }
+  }
+}

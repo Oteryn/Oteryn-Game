@@ -1,0 +1,1635 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.bigfoot_s_burden_quest",
+  "runtime_enabled": false,
+  "purpose": "Complete source dialogue evidence for blocked native and exchange branches; not a second handler.",
+  "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+  "npcs": [
+    {
+      "npc": "oteryn:npc.gnomally",
+      "fragments": [
+        {
+          "line": 107,
+          "literal_parts": [
+            "You can buy different equipment for minor or for major tokens. So, which is the equipment you are interested in, the one for {minor} or {major} tokens? ...",
+            "By the way, if you want to have a look on the prismatic and gill items first, just head over to the depot and check the market."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:107"
+        },
+        {
+          "line": 112,
+          "literal_parts": [
+            "For ten major tokens, I can offer you a {gill gugel}, a {gill coat}, {gill legs}, a {spellbook} of vigilance, a {prismatic helmet}, a {prismatic armor}, {prismatic legs}, {prismatic boots} or a {prismatic shield} ...",
+            "For twenty major tokens, I can offer you a {basic soil guardian outfit}, a {basic crystal warlord outfit}, an {iron loadstone} or a {glow wine}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:112"
+        },
+        {
+          "line": 117,
+          "literal_parts": [
+            "For two minor tokens, you can buy one gnomish {supply} package! For eight tokens, you can buy a {muck} remover! For ten tokens, you can buy a {mission} crystal. For fifteen tokens, you can buy a crystal {lamp} or a mushroom {backpack}. ...",
+            "For seventy tokens, I can offer you a voucher for an {addition to the soil guardian outfit}, or a voucher for an {addition to the crystal warlord armor outfit}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:117"
+        },
+        {
+          "line": 123,
+          "literal_parts": [
+            "Do you want to trade %s %s for %d %s tokens?",
+            "",
+            ""
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:123"
+        },
+        {
+          "line": 129,
+          "literal_parts": [
+            "Our relations improve with every mission you undertake on our behalf. Another way to improve your relations with us gnomes is to trade in minor crystal tokens. ..."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:129"
+        },
+        {
+          "line": 130,
+          "literal_parts": [
+            "Your renown amongst us gnomes is currently {",
+            "}. Do you want to improve your standing by sacrificing tokens? One token will raise your renown by 5 points. "
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:130"
+        },
+        {
+          "line": 133,
+          "literal_parts": [
+            "You are not even a recruit of the Bigfoots. Sorry I can't help you."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:133"
+        },
+        {
+          "line": 138,
+          "literal_parts": [
+            "Do you really want to trade ",
+            " minor tokens for ",
+            " renown?"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:138"
+        },
+        {
+          "line": 143,
+          "literal_parts": [
+            "Do you need to buy any mission items?"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:143"
+        },
+        {
+          "line": 149,
+          "literal_parts": [
+            "Sorry, you don't have enough ",
+            " tokens with you."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:149"
+        },
+        {
+          "line": 160,
+          "literal_parts": [
+            "First make sure you have enough capacity to hold it."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:160"
+        },
+        {
+          "line": 162,
+          "literal_parts": [
+            "First make sure you have enough space in your inventory."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:162"
+        },
+        {
+          "line": 169,
+          "literal_parts": [
+            "Here have one of our ",
+            "."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:169"
+        },
+        {
+          "line": 172,
+          "literal_parts": [
+            "How many tokens do you want to trade?"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:172"
+        },
+        {
+          "line": 179,
+          "literal_parts": [
+            "As you wish! Your new renown is {",
+            "}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:179"
+        },
+        {
+          "line": 181,
+          "literal_parts": [
+            "You don't have these many tokens."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:181"
+        },
+        {
+          "line": 186,
+          "literal_parts": [
+            "Let us see if I have what you need."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:186"
+        },
+        {
+          "line": 190,
+          "literal_parts": [
+            "As you like."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:190"
+        },
+        {
+          "line": 201,
+          "literal_parts": [
+            "Oh, hello! I'm the gnome-human relations assistant. I am here for you to trade your tokens for {equipment}, resupply you with mission {items} and talk to you about your {relations} to us gnomes! ..."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomally.lua:201"
+        }
+      ],
+      "source_sha256": "e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
+    },
+    {
+      "npc": "oteryn:npc.doctor_gnomedix",
+      "fragments": [
+        {
+          "line": 42,
+          "literal_parts": [
+            "Stand still on the examination platform |PLAYERNAME|."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/doctor_gnomedix.lua:42"
+        }
+      ],
+      "source_sha256": "71f3662ac255ef0d34f1ac8db37289666b764e1116219ba95afba2be19ef799d"
+    },
+    {
+      "npc": "oteryn:npc.gnominus",
+      "fragments": [
+        {
+          "line": 64,
+          "literal_parts": [
+            "Your examination is quite easy. Just step through the green crystal apparatus in the south! We will examine you with what we call g-rays. Where g stands for gnome of course ..."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnominus.lua:64"
+        },
+        {
+          "line": 65,
+          "literal_parts": [
+            "Afterwards walk up to Gnomedix for your ear examination."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnominus.lua:65"
+        },
+        {
+          "line": 69,
+          "literal_parts": [
+            "I provide the population with some fresh alcohol-free mushroom {beer}!"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnominus.lua:69"
+        },
+        {
+          "line": 71,
+          "literal_parts": [
+            "Do you want some mushroom beer for 10 gold?"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnominus.lua:71"
+        },
+        {
+          "line": 75,
+          "literal_parts": [
+            "Don't be afraid. It won't hurt! Just step in!"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnominus.lua:75"
+        },
+        {
+          "line": 82,
+          "literal_parts": [
+            "And here it is! Drink it quick, it gets stale quite fast!"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnominus.lua:82"
+        },
+        {
+          "line": 89,
+          "literal_parts": [
+            "You do not have enough money."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnominus.lua:89"
+        },
+        {
+          "line": 92,
+          "literal_parts": [
+            "Come back later."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnominus.lua:92"
+        },
+        {
+          "line": 99,
+          "literal_parts": [
+            "Hi there! Welcome to my little {tavern}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnominus.lua:99"
+        }
+      ],
+      "source_sha256": "5cf25ac59d0d4c8eae6e660ef6421436acdb8e3a7ff81ad7c73a5f12fda09fc3"
+    },
+    {
+      "npc": "oteryn:npc.gnomerik",
+      "fragments": [
+        {
+          "line": 70,
+          "literal_parts": [
+            "I suggest you relax a bit with a fresh mushroom beer and we can talk after that. ...",
+            "Gnominus... He is the one you need right now, find him."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:70"
+        },
+        {
+          "line": 77,
+          "literal_parts": [
+            "Yes... Yes... <sigh>. We already talked about that. I can't remember if you have already tried the {test}, so lets get going."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:77"
+        },
+        {
+          "line": 79,
+          "literal_parts": [
+            "We are hiring people to fight in our so called Bigfoot company against the foes of gnomekind. Are you interested in joining?"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:79"
+        },
+        {
+          "line": 88,
+          "literal_parts": [
+            "Imagine, during your travels you come upon a rare and unknown mushroom. Would you {A}) note down its specifics and location and look for a gnome to take care of it. ...",
+            "Or would you {B}) smash it to an unrecognisable pulp. Or would you {C}) pluck it to take it with you for further examination. Or would you {D}) try to become friends with the mushroom by singing questionable bar-room songs?"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:88"
+        },
+        {
+          "line": 94,
+          "literal_parts": [
+            "Imagine you wake up one morning and discover you have forgotten how to knot your shoelaces. Would you {A}) admit defeat and go to bed once more. ...",
+            "{B}) look for a gnome that can remind you how to do it. {C}) Despite the risk of injuring yourself, try to figure it out on your own. {D}) Use some pottery instead of shoes."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:94"
+        },
+        {
+          "line": 100,
+          "literal_parts": [
+            "Now let us assume you see a gnome in danger. Would you {A}) not care because you must be imagining things. {B}) Save the gnome despite all odds and risk to your own life. ...",
+            "{C}) Inspire the gnome by singing the gnomish national anthem. {D}) Hide and loot his corpse if he dies."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:100"
+        },
+        {
+          "line": 106,
+          "literal_parts": [
+            "Imagine you were participating in a gnome-throwing competition. Would you {A}) do some physical calculations in advance to increase your chances of winning. ...",
+            "{B}) throw the gnome as safely as you can to ensure his safety. {C}) Sabotage the throwing gnomes of your competitors. {D}) Never participate in such an abominable competition."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:106"
+        },
+        {
+          "line": 112,
+          "literal_parts": [
+            "Now imagine you were given the order to guard a valuable and unique mushroom. You guard it for days and no one shows up to release you and you grow hungry. ...",
+            "Would you {A}) eat your boots. {B}) eat the mushroom. {C}) eat a bit of the mushroom. {D}) stick to your duty and continue starving."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:112"
+        },
+        {
+          "line": 118,
+          "literal_parts": [
+            "What do you think describes gnomish society best? {A}) Ingenuity {B}) Bravery {C}) Humility {D}) All of the above."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:118"
+        },
+        {
+          "line": 121,
+          "literal_parts": [
+            "How many bigfoot does it take to change a light crystal? {A}) Only one since it's a piece of mushroom cake. {B}) Light crystals are delicate products of gnomish science and should only be handled by certified gnomish experts. ...",
+            "{C}) Three. One to hold the crystal and two to turn him around. {D}) Five. A light crystal turner, a light crystal picker, a light crystal exchanger, a light crystal changing manager and finally a light crystal changing manager assistant."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:121"
+        },
+        {
+          "line": 127,
+          "literal_parts": [
+            "What is a pollyfluxed quantumresonator? {A}) Something funny. {B}) Something important. {C}) Something to be destroyed. ...",
+            "{D}) Sadly I am not a gnome and lack the intelligence and education to know about even the simplest of gnomish inventions."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:127"
+        },
+        {
+          "line": 133,
+          "literal_parts": [
+            "If your mushroom patch is infested with cave worms, would you {A}) place some green light crystals to drive them away. {B}) place some disharmonic crystals to drive them away. ...",
+            "{C}) burn everything down. {D}) switch your diet to cave worms."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:133"
+        },
+        {
+          "line": 139,
+          "literal_parts": [
+            "What is the front part of a spear? Is it {A}) the pointed one. {B}) The blunt one. {C}) Whatever causes the most damage {D}) A spear is no weapon but a fruit that grows on surface trees."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:139"
+        },
+        {
+          "line": 142,
+          "literal_parts": [
+            "On a military campaign what piece of equipment would you need most? ...",
+            "Is it {A}) some tasty mushroom beer to keep the morale high. {B}) A large backpack to carry all the loot. {C}) A mighty weapon to vanquish the foes. {D}) Mushroom earplugs to be spared of the cries of agony of your opponents?"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:142"
+        },
+        {
+          "line": 148,
+          "literal_parts": [
+            "What comes first? {A}) safety {B}) I {C}) duty {D}) George"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:148"
+        },
+        {
+          "line": 151,
+          "literal_parts": [
+            "In case of emergency {A}) break glass {B}) break a leg {C}) have a break {D}) call a gnome?"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:151"
+        },
+        {
+          "line": 154,
+          "literal_parts": [
+            "The greatest disaster I can imagine is ... {A}) to fail the gnomes {B}) a ruined mushroom pie {C}) accidentally hammering my finger {D}) having some work to do"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:154"
+        },
+        {
+          "line": 157,
+          "literal_parts": [
+            "What would your favourite pet be? {A}) A Krazzelzak of course. {B}) An Uxmoff to be honest. {C}) Montpiffs were always my favourite. {D}) A Humdrella and nothing else!"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:157"
+        },
+        {
+          "line": 160,
+          "literal_parts": [
+            "Why do you want to become a bigfoot? {A}) To become rich and famous. {B}) To become famous and rich. {C}) To become rich or famous. {D}) To serve the gnomish community in their struggle?"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:160"
+        },
+        {
+          "line": 169,
+          "literal_parts": [
+            "Indeed an excellent and smart decision for an ungnomish lifeform. But let us continue with the {test}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:169"
+        },
+        {
+          "line": 173,
+          "literal_parts": [
+            "A well thought out answer I have to admit. But let us continue with the {test}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:173"
+        },
+        {
+          "line": 177,
+          "literal_parts": [
+            "Ah, we have a true warrior here I guess. But let us continue with the {test}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:177"
+        },
+        {
+          "line": 181,
+          "literal_parts": [
+            "Fear not. We don't expect too much of you anyway. But let us continue with the {test}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:181"
+        },
+        {
+          "line": 185,
+          "literal_parts": [
+            "Ha! A Krazzelzak would for sure fit someone like you! But let us continue with the {test}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:185"
+        },
+        {
+          "line": 190,
+          "literal_parts": [
+            "Wrong answer!"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:190"
+        },
+        {
+          "line": 193,
+          "literal_parts": [
+            "Stop it! The test is over, you can ask me for your {results}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:193"
+        },
+        {
+          "line": 203,
+          "literal_parts": [
+            "Although chances are the gnome will end up rescuing you instead, it is the attempt that counts. But let us continue with the {test}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:203"
+        },
+        {
+          "line": 207,
+          "literal_parts": [
+            "I knew this question was too easy. But let us continue with the {test}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:207"
+        },
+        {
+          "line": 212,
+          "literal_parts": [
+            "Wrong answer!"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:212"
+        },
+        {
+          "line": 215,
+          "literal_parts": [
+            "Stop it! The test is over, you can ask me for your {results}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:215"
+        },
+        {
+          "line": 225,
+          "literal_parts": [
+            "That's the spirit! Initiative is always a good thing. Well most of the time. But let us continue with the {test}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:225"
+        },
+        {
+          "line": 229,
+          "literal_parts": [
+            "You have no idea how many answer this question wrong. But let us continue with the {test}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:229"
+        },
+        {
+          "line": 233,
+          "literal_parts": [
+            "That's the spirit! But let us continue with the {test}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:233"
+        },
+        {
+          "line": 238,
+          "literal_parts": [
+            "Wrong answer!"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:238"
+        },
+        {
+          "line": 241,
+          "literal_parts": [
+            "Stop it! The test is over, you can ask me for your {results}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:241"
+        },
+        {
+          "line": 251,
+          "literal_parts": [
+            "Of COURSE you wouldn't! NO ONE would! But let us continue with the {test}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:251"
+        },
+        {
+          "line": 255,
+          "literal_parts": [
+            "I can only hope that is your honest opinion. But let us continue with the test."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:255"
+        },
+        {
+          "line": 259,
+          "literal_parts": [
+            "Oh, you silver tongued devil almost made me blush. But of course you're right. But let us continue with the {test}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:259"
+        },
+        {
+          "line": 263,
+          "literal_parts": [
+            "How true. How true. *sigh* But fear not! We gnomes are here to help! But let us continue with the {test}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:263"
+        },
+        {
+          "line": 267,
+          "literal_parts": [
+            "That's just what I'd do - if I weren't a gnome already, that is. But let us continue with the {test}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:267"
+        },
+        {
+          "line": 271,
+          "literal_parts": [
+            "Excellent! Well this concludes the test. Now let us see your {results}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:271"
+        },
+        {
+          "line": 276,
+          "literal_parts": [
+            "Wrong answer!"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:276"
+        },
+        {
+          "line": 279,
+          "literal_parts": [
+            "Stop it! The test is over, you can ask me for your {results}."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:279"
+        },
+        {
+          "line": 290,
+          "literal_parts": [
+            "You have failed the test with ",
+            " of 112 possible points. You probably were just too nervous. ...",
+            "I suggest you relax a bit with a fresh mushroom beer and we'll start over after that. Gnominus sells some beer. You should find him somewhere in the central chamber."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:290"
+        },
+        {
+          "line": 295,
+          "literal_parts": [
+            "You have passed the test with ",
+            " of 112 possible points. Congratulations. You are ready to proceed with the more physical parts of your examination! Go and talk to Gnomespector about it."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:295"
+        },
+        {
+          "line": 301,
+          "literal_parts": [
+            "Excellent! Now let us begin with the gnomish aptitude test. Just tell me when you feel ready for the {test}!"
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:301"
+        },
+        {
+          "line": 309,
+          "literal_parts": [
+            "Hello and welcome in the gnomish {recruitment} office."
+          ],
+          "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomerik.lua:309"
+        }
+      ],
+      "source_sha256": "4f8ef95b4ff9eaf9befa839d8a7a83ab451b8de8c4e86a472bf3a419014234f0"
+    }
+  ],
+  "gnomally_offers_literal_table": {
+    "line": 75,
+    "head": [],
+    "fields": [
+      {
+        "key": "supply",
+        "value": {
+          "line": 76,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 15698,
+              "line": 76,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 76,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "minor",
+                    "line": 76,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16128,
+                    "line": 76,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 2,
+                    "line": 76,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 76,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 76,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "muck",
+        "value": {
+          "line": 77,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16101,
+              "line": 77,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 77,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "minor",
+                    "line": 77,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16128,
+                    "line": 77,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 8,
+                    "line": 77,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 77,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 77,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "mission",
+        "value": {
+          "line": 78,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16242,
+              "line": 78,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 78,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "minor",
+                    "line": 78,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16128,
+                    "line": 78,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 10,
+                    "line": 78,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 78,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 78,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "lamp",
+        "value": {
+          "line": 79,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16094,
+              "line": 79,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 79,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "minor",
+                    "line": 79,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16128,
+                    "line": 79,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 15,
+                    "line": 79,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 79,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 79,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "backpack",
+        "value": {
+          "line": 80,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16099,
+              "line": 80,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 80,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "minor",
+                    "line": 80,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16128,
+                    "line": 80,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 15,
+                    "line": 80,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 80,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 80,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "addition to the soil guardian outfit",
+        "value": {
+          "line": 81,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16253,
+              "line": 81,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 81,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "minor",
+                    "line": 81,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16128,
+                    "line": 81,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 70,
+                    "line": 81,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 81,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 81,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "addition to the crystal warlord armor outfit",
+        "value": {
+          "line": 82,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16256,
+              "line": 82,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 82,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "minor",
+                    "line": 82,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16128,
+                    "line": 82,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 70,
+                    "line": 82,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 82,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 82,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "gill gugel",
+        "value": {
+          "line": 83,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16104,
+              "line": 83,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 83,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "major",
+                    "line": 83,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16129,
+                    "line": 83,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 10,
+                    "line": 83,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 83,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 83,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "gill coat",
+        "value": {
+          "line": 84,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16105,
+              "line": 84,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 84,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "major",
+                    "line": 84,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16129,
+                    "line": 84,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 10,
+                    "line": 84,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 84,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 84,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "gill legs",
+        "value": {
+          "line": 85,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16106,
+              "line": 85,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 85,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "major",
+                    "line": 85,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16129,
+                    "line": 85,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 10,
+                    "line": 85,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 85,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 85,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "spellbook",
+        "value": {
+          "line": 86,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16107,
+              "line": 86,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 86,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "major",
+                    "line": 86,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16129,
+                    "line": 86,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 10,
+                    "line": 86,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 86,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 86,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "prismatic helmet",
+        "value": {
+          "line": 87,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16109,
+              "line": 87,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 87,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "major",
+                    "line": 87,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16129,
+                    "line": 87,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 10,
+                    "line": 87,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 87,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 87,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "prismatic armor",
+        "value": {
+          "line": 88,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16110,
+              "line": 88,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 88,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "major",
+                    "line": 88,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16129,
+                    "line": 88,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 10,
+                    "line": 88,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 88,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 88,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "prismatic legs",
+        "value": {
+          "line": 89,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16111,
+              "line": 89,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 89,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "major",
+                    "line": 89,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16129,
+                    "line": 89,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 10,
+                    "line": 89,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 89,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 89,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "prismatic boots",
+        "value": {
+          "line": 90,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16112,
+              "line": 90,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 90,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "major",
+                    "line": 90,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16129,
+                    "line": 90,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 10,
+                    "line": 90,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 90,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 90,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "prismatic shield",
+        "value": {
+          "line": 91,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16116,
+              "line": 91,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 91,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "major",
+                    "line": 91,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16129,
+                    "line": 91,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 10,
+                    "line": 91,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 91,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 91,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "basic soil guardian outfit",
+        "value": {
+          "line": 92,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16252,
+              "line": 92,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 92,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "major",
+                    "line": 92,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16129,
+                    "line": 92,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 20,
+                    "line": 92,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 92,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 92,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "basic crystal warlord outfit",
+        "value": {
+          "line": 93,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16255,
+              "line": 93,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 93,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "major",
+                    "line": 93,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16129,
+                    "line": 93,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 20,
+                    "line": 93,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 93,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 93,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "iron loadstone",
+        "value": {
+          "line": 94,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16153,
+              "line": 94,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 94,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "major",
+                    "line": 94,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16129,
+                    "line": 94,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 20,
+                    "line": 94,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 94,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 94,
+        "comments": [],
+        "trailing": []
+      },
+      {
+        "key": "glow wine",
+        "value": {
+          "line": 95,
+          "head": [],
+          "fields": [
+            {
+              "key": "itemid",
+              "value": 16154,
+              "line": 95,
+              "comments": [],
+              "trailing": []
+            },
+            {
+              "key": "token",
+              "value": {
+                "line": 95,
+                "head": [],
+                "fields": [
+                  {
+                    "key": "type",
+                    "value": "major",
+                    "line": 95,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "id",
+                    "value": 16129,
+                    "line": 95,
+                    "comments": [],
+                    "trailing": []
+                  },
+                  {
+                    "key": "count",
+                    "value": 20,
+                    "line": 95,
+                    "comments": [],
+                    "trailing": []
+                  }
+                ]
+              },
+              "line": 95,
+              "comments": [],
+              "trailing": []
+            }
+          ]
+        },
+        "line": 95,
+        "comments": [],
+        "trailing": []
+      }
+    ]
+  }
+}

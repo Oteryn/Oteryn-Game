@@ -1,0 +1,42 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 600000,
+    "costs": {
+      "mana": 500
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Focus Serenity",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_ultimate_light"
+    },
+    "reference_spell_id": 281,
+    "requirements": {
+      "level": 150,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": false
+    },
+    "words": "utamo tio"
+  }
+}

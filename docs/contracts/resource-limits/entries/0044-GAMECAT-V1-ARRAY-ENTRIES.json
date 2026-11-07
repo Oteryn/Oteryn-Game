@@ -1,0 +1,18 @@
+{
+  "id": "GAMECAT-V1-ARRAY-ENTRIES",
+  "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+  "resource": "Entries in one nested entity/relation data array",
+  "unit": "entries",
+  "hard_maximum": 200000,
+  "configurable_range": {
+    "minimum": 200000,
+    "maximum": 200000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bound nested arrays before recursive validation and canonical serialization.",
+  "client_visible": false,
+  "boundary_tests": [
+    "200,000 nested entries accepted when otherwise valid",
+    "200,001 rejected before unbounded array work"
+  ]
+}

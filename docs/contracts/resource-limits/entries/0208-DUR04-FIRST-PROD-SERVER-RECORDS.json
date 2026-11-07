@@ -1,0 +1,18 @@
+{
+  "id": "DUR04-FIRST-PROD-SERVER-RECORDS",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_04",
+  "resource": "Server-authoritative body records",
+  "unit": "records",
+  "hard_maximum": 1045,
+  "configurable_range": {
+    "minimum": 22,
+    "maximum": 1045
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check count before record-vector allocation and parsing.",
+  "client_visible": false,
+  "boundary_tests": [
+    "1,045 records accepted when semantic-family limits pass",
+    "1,046 rejected before vector allocation"
+  ]
+}

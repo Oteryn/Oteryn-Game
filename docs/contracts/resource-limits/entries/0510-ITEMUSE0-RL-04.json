@@ -1,0 +1,22 @@
+{
+  "id": "ITEMUSE0-RL-04",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md",
+  "resource": "Ambiguous item-use commit bound before the actor's in-flight slot is freed",
+  "unit": "milliseconds (Channel owner clock, from PREPARE)",
+  "hard_maximum": 2000,
+  "configurable_range": {
+    "minimum": 2000,
+    "maximum": 2000
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "One in-flight timestamp per present actor. Items reserved by an ambiguous commit stay unspendable until reconciliation.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max-1=1999 ms: another use is still EXHAUSTED",
+    "max=2000 ms: the in-flight slot is freed and the use is admitted"
+  ],
+  "consumers": [
+    "USE of a main backpack entry under capability 15 (ITEM-USE-1c, gameplay_transport/item_use.rs)"
+  ],
+  "notes": "Registered by ITEM-USE-1c (#1622). The commit is awaited for at most this bound; an outcome not known by then is ambiguous and answers REJECTED."
+}

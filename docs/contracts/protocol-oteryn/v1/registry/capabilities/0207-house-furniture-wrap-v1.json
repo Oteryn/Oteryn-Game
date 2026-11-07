@@ -1,0 +1,15 @@
+{
+  "id": 207,
+  "name": "HOUSE_FURNITURE_WRAP_V1",
+  "owner_decision": "HOUSE-ITEM-WIRE-1",
+  "owner": "Game house owner",
+  "requires": [
+    49
+  ],
+  "command_types": [
+    402
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES: current named House session, node generation and edit ACL required."
+}

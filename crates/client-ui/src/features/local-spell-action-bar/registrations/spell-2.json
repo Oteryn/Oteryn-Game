@@ -1,0 +1,9 @@
+{
+  "mechanic": "local-spell-action-bar",
+  "kind": "keybindings",
+  "id": "local-spell-action-bar-spell-2",
+  "status": "supported",
+  "context": "spell-gameplay",
+  "chord": "2",
+  "entry": "input.rs::default_spell_binding"
+}

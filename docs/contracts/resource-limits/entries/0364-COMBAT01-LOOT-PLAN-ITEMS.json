@@ -1,0 +1,22 @@
+{
+  "id": "COMBAT01-LOOT-PLAN-ITEMS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+  "resource": "ItemInstances a creature death's loot plan may mint",
+  "unit": "ItemInstances per death",
+  "hard_maximum": 16,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 16
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "One MINT per accepted plan entry; a stack is one ItemInstance with a quantity, never multiple instances. Checked before the plan is returned; never truncated.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=16: a plan with 16 accepted entries (16 chance draws all succeeding) is returned",
+    "max+1=17: a plan that would accept a 17th entry is rejected"
+  ],
+  "consumers": [
+    "apps/game-server/src/combat/loot_plan.rs (plan_creature_loot: rejects before returning a plan with more than 16 accepted entries)"
+  ],
+  "notes": "D77, decision \u00a74.1: one MINT per plan entry, a stack is one instance with quantity. Registered by OTV2-20260928-combat-d2a-loot-plan."
+}

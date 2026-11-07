@@ -1,0 +1,61 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/holy_flash",
+        "revision": "spell-p2-r20"
+      },
+      "kind": "spell",
+      "range_tiles": 3,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/holy_flash/effect",
+          "revision": "spell-p2-r20"
+        },
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/holy_flash/effect-condition-1",
+          "revision": "spell-p2-r20"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/holy_flash/effect",
+        "revision": "spell-p2-r20"
+      },
+      "presentation": {
+        "projectile_asset_binding": "canary.appearance:missile/smallholy"
+      },
+      "operation": "presentation_only"
+    },
+    {
+      "identity": {
+        "key": "candidate:ability/spell/holy_flash/effect-condition-1",
+        "revision": "spell-p2-r20"
+      },
+      "operation": "condition",
+      "condition": {
+        "type": "dazzled",
+        "lifetime": "damage_schedule",
+        "damage_over_time": {
+          "tick_profile": "fixed",
+          "first_tick": "after_interval",
+          "fixed_ticks": [
+            {
+              "count": 7,
+              "interval_ms": 3000,
+              "amount": 20
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "formulas": []
+}

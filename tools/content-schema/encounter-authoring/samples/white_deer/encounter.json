@@ -1,0 +1,193 @@
+{
+  "identity": {
+    "key": "canary:encounter/white_deer",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "White Deer",
+  "scope": "channel_shared",
+  "participants": [
+    {
+      "role": "white_deer",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/white_deer",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "enraged_white_deer",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/enraged_white_deer",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [
+      {
+        "name": "deer_variant_chosen",
+        "initial": false
+      }
+    ],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "white_deer_roll",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "white_deer"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "white_deer",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "deer_variant_chosen",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "white_deer_turns_to_fight",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "white_deer"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "white_deer",
+          "value": false
+        },
+        {
+          "kind": "chance_percent",
+          "value": 30
+        }
+      ],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "deer_variant_chosen",
+          "value": true
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/enraged_white_deer",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "enraged_white_deer",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "white_deer"
+          },
+          "text": "The white deer summons all his strength and turns to fight!",
+          "mode": "say"
+        }
+      ]
+    },
+    {
+      "key": "white_deer_escapes",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "white_deer"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "white_deer",
+          "value": false
+        },
+        {
+          "kind": "flag",
+          "flag": "deer_variant_chosen",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/desperate_white_deer",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "white_deer"
+          },
+          "text": "The white deer desperately tries to escape!",
+          "mode": "say"
+        }
+      ]
+    },
+    {
+      "key": "elves_avenge_the_deer",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "enraged_white_deer"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "enraged_white_deer",
+          "value": false
+        },
+        {
+          "kind": "chance_percent",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/elf_scout",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 2,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "enraged_white_deer"
+          },
+          "text": "The elves came too late to save the deer, however they might avenge it.",
+          "mode": "say"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-CLIENT-ARTIFACT-BYTES",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "One full client-safe Reference Item artifact",
+  "unit": "bytes",
+  "hard_maximum": 171790518,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 171790518
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check total slice length before header parse or input-sized allocation; all nested allowlist limits remain conjunctive.",
+  "client_visible": true,
+  "boundary_tests": [
+    "171,790,518-byte artifact accepted only when every nested limit passes",
+    "171,790,519 bytes rejected before parse/allocation",
+    "server-only section content rejected independently"
+  ]
+}

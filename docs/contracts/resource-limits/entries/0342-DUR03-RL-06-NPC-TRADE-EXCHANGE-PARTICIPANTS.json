@@ -1,0 +1,19 @@
+{
+  "id": "DUR03-RL-06-NPC-TRADE-EXCHANGE-PARTICIPANTS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+  "resource": "Participants in one DUR-03 NPC EXCHANGE transaction",
+  "unit": "participants per logical transaction",
+  "hard_maximum": 6,
+  "configurable_range": {
+    "minimum": 6,
+    "maximum": 6
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked before any write; never truncated. Every line is one participant.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=6 admitted",
+    "max+1=7 rejected (CAPACITY_EXCEEDED)"
+  ],
+  "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C8 (DUR-03 \u00a739.3 CRAFT-1 amendment); NPC exchange shape only (NpcTradeCause side EXCHANGE, up to 3 take BURNs and 3 give MINTs, no gold, value lines 0), the NPC BUY and SELL rows are unchanged and the audit event stays under DUR03-RL-07-NPC-TRADE-*. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-NPC-1)."
+}

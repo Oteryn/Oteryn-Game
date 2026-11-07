@@ -1,0 +1,77 @@
+{
+  "encounter": "canary:encounter/scorn_of_the_emperor",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "WrathOfTheEmperorBossDeath": [
+      "canary:creature/scorn_of_the_emperor"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/wrath_of_the_emperor/scorn_of_the_emperor.lua",
+      "blob_sha1": "7b0b97c6354a5526495654482e6d01b50a60d099"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/wrath_of_the_emperor/creaturescripts_bosses_kill.lua",
+      "blob_sha1": "4bd0c94dbf04beeabc53c203c450f95d586e3ad2"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Scorn of the Emperor is the scorn_of_the_emperor participant; its file registers WrathOfTheEmperorBossDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        10
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the configured boss \"scorn of the emperor\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        11
+      ],
+      "status": "mapped",
+      "resolution": "Item 10797 on (33095, 31110, 15) becomes 11427 (the sceptre of mission 10 turns it back, actions_mission10_a_message_of_freedom_sceptre.lua lines 10-11: quest interaction, not this event).",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        27,
+        12
+      ],
+      "status": "approved_omission",
+      "resolution": "Game.setStorageValue(Bosses.<boss>, 0): nothing sets this global to 1, and movements_boss_teleport.lua lines 55-60 teleport in both branches, differing only by a teleport effect, so the write has no effect."
+    }
+  ],
+  "outcome_evidence": []
+}

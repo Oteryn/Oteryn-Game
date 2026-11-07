@@ -1,0 +1,19 @@
+{
+  "schema": "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v1",
+  "catalog": {
+    "path": "../spell-authoring/samples/executable-spell-catalog.json",
+    "sha256": "dbf1c5ba3ad48ff2bb61dd76e551a89937b1183babf5c69916690192d6c39bd8"
+  },
+  "source_selection": {
+    "path": "../spell-authoring/samples/executable-spell-source-selection.json",
+    "sha256": "b1ad32a957186df28189b9a8b0fa55ac1f572d5c8061490d080cf7377775a029"
+  },
+  "creature_profiles": {
+    "path": "creature_profiles.json",
+    "sha256": "d8e38c5c521a2187109dedb288e90843e5cc2b48289408b6d7bb7cbb6e1da19e"
+  },
+  "presentation_profiles": {
+    "path": "presentation_profiles.json",
+    "sha256": "eed783098409d88e281ced7c7744641643955476417d635ba0bf6cb92af562a7"
+  }
+}

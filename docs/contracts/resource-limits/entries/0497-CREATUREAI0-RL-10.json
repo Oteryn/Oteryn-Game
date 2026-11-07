@@ -1,0 +1,23 @@
+{
+  "id": "CREATUREAI0-RL-10",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_MOVE1_STEPS_PATHS_AND_GOALS_PACKET_2026-10-04.md",
+  "resource": "Path requests per creature per think, with one pending request per exact actor",
+  "unit": "requests per think",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The existing creature entry retains a single pending request; repeated movement drains of the same think never create a second request.",
+  "client_visible": false,
+  "boundary_tests": [
+    "hard maximum accepted",
+    "hard maximum + 1 waits or is refused without partial mutation"
+  ],
+  "consumers": [
+    "crates/gameplay/world/src/movement/path_budget.rs",
+    "crates/gameplay/monster-ai/src/ai_think/creature_steps.rs"
+  ],
+  "notes": "The existing creature entry retains a single pending request; repeated movement drains of the same think never create a second request."
+}

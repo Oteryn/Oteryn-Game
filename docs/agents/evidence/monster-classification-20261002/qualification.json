@@ -1,0 +1,79 @@
+{
+  "classification": "SOURCE_BOUND_AUTHORING_CLASSIFICATION",
+  "counts": {
+    "population": 1697,
+    "roles": {
+      "boss:confirmed": 372,
+      "boss:inferred": 55,
+      "creature:confirmed": 804,
+      "familiar:confirmed": 3,
+      "mechanic_actor:confirmed": 19,
+      "summon:confirmed": 146,
+      "trainer:confirmed": 1,
+      "trainer:inferred": 1,
+      "unknown:unknown": 399
+    },
+    "contexts": {
+      "dawnport:inferred": 20,
+      "event:inferred": 38,
+      "historical:inferred": 8,
+      "quest:confirmed": 177,
+      "quest:inferred": 657,
+      "raid:confirmed": 23,
+      "raid:inferred": 55
+    },
+    "mitigation": {
+      "present": 1053,
+      "unknown": 644
+    }
+  },
+  "unknown_group_452_roles": {
+    "unknown:unknown": 265,
+    "boss:confirmed": 91,
+    "boss:inferred": 50,
+    "summon:confirmed": 45,
+    "mechanic_actor:confirmed": 10,
+    "familiar:confirmed": 3,
+    "trainer:confirmed": 1
+  },
+  "source_blobs_verified": 3813,
+  "source_monster_paths_verified": 1703,
+  "encounter_input_hashes": 249,
+  "authoring_only": true,
+  "native_profiles_unchanged": true,
+  "native_stage_sha256": "2e2925c298d7eb10ca22aadd928598cddc8e39580d0f6d649af3e268dd3ea39c",
+  "inherited_native_arena": {
+    "profiles": 1697,
+    "pass": 1697,
+    "input_unchanged": true,
+    "source_pr": 1543
+  },
+  "checks": {
+    "migration": "106tests;105PASS1skip",
+    "focused_classification": "5PASS",
+    "independent_review": "PASS;3813blobs,3002pointers,553sourcelines,644absentmitigation",
+    "positive_role_completeness": "399rolesunknown;notfabricated",
+    "governance": "validatorPASS;36testsPASS"
+  },
+  "archive_sha256": "209a462c9fba3ef9e8baad14b1e9a292cfb700a28813d81b36920331f5f62213",
+  "archive_bytes": 831718,
+  "members": {
+    "published-classification.json": "a1c2089352a0262c8ee5ee955d6e21bdb38b15625360e7788aa59c99c8a595e4",
+    "published-classification.csv": "95a3fa821905b244b6131bcbeed863e2ef8d9679d40519fff40d264a21a88bcc",
+    "published-source-evidence.json": "35cfd7af75e3db8ed5ea0772ea51999bfc6bafdb4f5843941367c560fd2f396b",
+    "schema-review.json": "91b46493855dc596ce313c8470148ed0e136bf03aefbe149ea6e89a2ab2f2a34",
+    "independent-review.json": "b6c292f9c6915298a3dd17a3f8ddc92f7e9172d9286f7d6c2a717181f4ecd71a",
+    "independent-review-final.json": "4f6d5803eeee9761b8c862f1c2a578f37cb7632e998189b23502308fc3b76a95",
+    "review-published.json": "3a19ba466a0501aadac4de5b729ac4b8f032156bd91242e82708b536b7166c0c",
+    "migration-tests-published.log": "68dab2e444bcb9600b4648901b37d07ad81ce2250192f29974cc714a2ba4200d",
+    "published-classification.log": "20e79a21a92542fc3eaba3382c4456136519e5912efbc0d103b3b6c43f8b7107",
+    "published-source-evidence.log": "ee79e397a3d970222200702665bfdddcc568f730ed352303e382c7a82689165b",
+    "governance.log": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f",
+    "governance-final.log": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f",
+    "governance-tests.log": "ca1bba99eaea8444f092cd4326dfa376c8724c719b2e088be2584097690a0838"
+  },
+  "live_gameplay_verified": false,
+  "production_activated": false,
+  "runtime_metadata_promotion": "PENDING architecture/integration #162",
+  "source_snapshot_head": "67112b9a194f77fc514564843be6596a877e986c"
+}

@@ -1,0 +1,159 @@
+{
+  "identity": {
+    "key": "canary:encounter/ragiaz",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Ferumbras Ascension: Ragiaz",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "ragiaz",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/ragiaz",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "death_dragon",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/death_dragon",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "exit_teleporter",
+      "kind": "point",
+      "description": "Boss-room teleporter; Canary (33482, 32345, 13).",
+      "location": {
+        "x": 33482,
+        "y": 32345,
+        "floor": 13
+      }
+    },
+    {
+      "key": "godbreaker",
+      "kind": "point",
+      "description": "Godbreaker destination; Canary (33466, 32392, 13).",
+      "location": {
+        "x": 33466,
+        "y": 32392,
+        "floor": 13
+      }
+    },
+    {
+      "key": "ascendant_exit",
+      "kind": "point",
+      "description": "Default teleporter destination; Canary (33319, 32318, 13).",
+      "location": {
+        "x": 33319,
+        "y": 32318,
+        "floor": 13
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "ragiaz_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "ragiaz"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "ragiaz_defeated",
+          "credited": "damage_contributors"
+        },
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/1949",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/22761",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_teleporter",
+          "destination": "godbreaker",
+          "effect": "canary.appearance:effect/thunder",
+          "revert_after_ms": 60000,
+          "revert_destination": "ascendant_exit"
+        }
+      ]
+    },
+    {
+      "key": "death_dragon_revives",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "death_dragon"
+      },
+      "delay_ms": 1000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/death_dragon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "death_dragon",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "ragiaz_revives_his_minion",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "death_dragon"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "ragiaz",
+          "near": {
+            "role": "death_dragon",
+            "radius": 10
+          },
+          "present": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "ragiaz"
+          },
+          "text": "Ragiaz power revives his minion!",
+          "mode": "say"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "ragiaz_defeated"
+  ]
+}

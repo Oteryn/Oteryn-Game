@@ -1,0 +1,15 @@
+{
+  "mechanic": "0153-depot-search",
+  "kind": "handlers",
+  "id": "0153-depot-search-commands",
+  "status": "supported",
+  "commands": [
+    182
+  ],
+  "direction": "client_to_server",
+  "capability": 153,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "Server-owned state."
+  }
+}

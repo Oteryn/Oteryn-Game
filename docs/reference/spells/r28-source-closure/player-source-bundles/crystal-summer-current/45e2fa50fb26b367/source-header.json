@@ -1,0 +1,58 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 120,
+      "soul": 2
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Destroy Field Rune",
+    "requirements": {
+      "level": 17,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false
+    },
+    "words": "adito grav"
+  }
+}

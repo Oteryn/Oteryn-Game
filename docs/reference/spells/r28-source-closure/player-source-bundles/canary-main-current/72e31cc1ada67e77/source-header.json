@@ -1,0 +1,31 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "destroy field rune",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_destroy_field_rune"
+    },
+    "reference_rune_item_id": 3148,
+    "reference_spell_id": 30,
+    "requirements": {
+      "level": 17
+    },
+    "rune": {
+      "allow_far_use": true,
+      "charges": 3,
+      "magic_level": 3
+    },
+    "targeting": {
+      "aggressive": false,
+      "range_tiles": 5
+    }
+  }
+}

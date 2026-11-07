@@ -1,0 +1,158 @@
+{
+  "checked_at": "2026-10-19T08:56:01.264591+00:00",
+  "classification": "DERIVED",
+  "evidence_scope": "OTS_HYPOTHESIS_ONLY",
+  "qualification": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed.",
+  "observations": [
+    {
+      "record": 0,
+      "key": "prey.creature.acid_blob",
+      "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:slimes/acid_blob.lua",
+      "source_url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/slimes/acid_blob.lua#L66",
+      "superseded_fact": {
+        "value": "free_or_gold",
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/0/facts/selection_pool"
+          },
+          {
+            "source": "wiki:86349:1090711",
+            "selector": "Creatures that can be rolled for free/gold"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/0/facts/selection_pool",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "replacement": "wildcard_only"
+    },
+    {
+      "record": 90,
+      "key": "prey.creature.damaged_worker_golem",
+      "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:constructs/damaged_worker_golem.lua",
+      "source_url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/constructs/damaged_worker_golem.lua#L63",
+      "superseded_fact": {
+        "value": "free_or_gold",
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/90/facts/selection_pool"
+          },
+          {
+            "source": "wiki:86349:1090711",
+            "selector": "Creatures that can be rolled for free/gold"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/90/facts/selection_pool",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "replacement": "wildcard_only"
+    },
+    {
+      "record": 157,
+      "key": "prey.creature.flamingo",
+      "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:birds/flamingo.lua",
+      "source_url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/birds/flamingo.lua#L63",
+      "superseded_fact": {
+        "value": "free_or_gold",
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/157/facts/selection_pool"
+          },
+          {
+            "source": "wiki:86349:1090711",
+            "selector": "Creatures that can be rolled for free/gold"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/157/facts/selection_pool",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "replacement": "wildcard_only"
+    },
+    {
+      "record": 173,
+      "key": "prey.creature.gazer",
+      "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:magicals/gazer.lua",
+      "source_url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/magicals/gazer.lua#L63",
+      "superseded_fact": {
+        "value": "free_or_gold",
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/173/facts/selection_pool"
+          },
+          {
+            "source": "wiki:86349:1090711",
+            "selector": "Creatures that can be rolled for free/gold"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/173/facts/selection_pool",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "replacement": "wildcard_only"
+    },
+    {
+      "record": 374,
+      "key": "prey.creature.silver_rabbit",
+      "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey-exclusive:mammals/silver_rabbit.lua",
+      "source_url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/monster/mammals/silver_rabbit.lua#L63",
+      "superseded_fact": {
+        "value": "free_or_gold",
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/374/facts/selection_pool"
+          },
+          {
+            "source": "wiki:86349:1090711",
+            "selector": "Creatures that can be rolled for free/gold"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/374/facts/selection_pool",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "replacement": "wildcard_only"
+    }
+  ]
+}

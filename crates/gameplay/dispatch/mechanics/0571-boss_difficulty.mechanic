@@ -1,0 +1,10 @@
+name=boss_difficulty
+commands=431
+transport=boss_difficulty
+composed=boss_difficulty
+authority=boss_difficulty
+[route]
+match routing::boss_difficulty::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

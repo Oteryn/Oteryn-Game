@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V4-SERVER-RECORD-BYTES",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V4.md",
+  "resource": "One artifact v7 typed server-authoritative Item body record",
+  "unit": "bytes",
+  "hard_maximum": 3612,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 3612
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject declared record length before slicing, copying or field decode.",
+  "client_visible": false,
+  "boundary_tests": [
+    "3,612-byte semantically valid record accepted",
+    "3,613 bytes rejected before record allocation",
+    "truncated record rejected"
+  ]
+}

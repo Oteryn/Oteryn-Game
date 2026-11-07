@@ -1,0 +1,20 @@
+{
+  "id": "DUR03-RL-07-CRAFT-ENVELOPE-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
+  "resource": "One encoded normative ANL-01 EventEnvelope carrying the CONVERSION aggregate, including payload",
+  "unit": "bytes",
+  "hard_maximum": 42452,
+  "configurable_range": {
+    "minimum": 42452,
+    "maximum": 42452
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check the encoded or borrowed envelope length before retaining, decoding, batching or publishing; ANL01-EVENT-ENVELOPE-BYTES (262,144 B) still applies on top. The payload ceiling plus the 314 B envelope overhead of the registered NPC trade rows (27,408 - 27,094). CRAFT-RT-1's migration admits a stored conversion envelope only up to this row.",
+  "client_visible": false,
+  "boundary_tests": [
+    "the measured worst-case envelope (128-byte build id) is at most 42,452 B and accepted (boundary test recorded by CRAFT-RT-1)",
+    "max=42,452 bytes accepted",
+    "max+1=42,453 bytes rejected before decode (CAPACITY_EXCEEDED)"
+  ],
+  "notes": "CRAFT1-ITEM-CONVERSIONS-V1 C3a (DUR-03 \u00a739.3 CRAFT-1 amendment); conversion shape only (ConversionCause, one CONVERSION audit aggregate), the one-item DUR03-RL-01..08 rows are unchanged and DUR03-RL-03 and DUR03-RL-05 stay 0. Registered by the CRAFT-1 acceptance PR (ACCEPT-BATCH-2026-10-15 \u00a78) before the code that relies on it (CRAFT-RT-1); fixed ruleset bounds, a reference row above them needs an amendment of CRAFT1 C3a, never a silent raise."
+}

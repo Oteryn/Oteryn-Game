@@ -1,0 +1,30 @@
+#![allow(clippy::expect_used)]
+// Focused PostgreSQL 18.6 target for PROF-SHAPE-1a; the protected durability lane also runs
+// these exact cases through durability_postgres.
+extern crate oteryn_game_server as production_server;
+extern crate self as oteryn_game_server;
+
+pub use production_server::admission_evidence;
+#[allow(dead_code, unused_imports)]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
+pub mod character_bootstrap_intent;
+#[allow(dead_code, unused_imports)]
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+#[path = "support/domain_shim.rs"]
+pub mod domain;
+use oteryn_gameplay_durability::durability;
+#[allow(dead_code, unused_imports)]
+pub use oteryn_gameplay_entities as foundation;
+#[allow(dead_code, unused_imports)]
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
+
+#[path = "support/character_proficiency_modification_postgres_cases.rs"]
+mod character_proficiency_modification_postgres_cases;
+
+#[allow(dead_code)]
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
+
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_spell_data_shim.rs"]
+mod content;

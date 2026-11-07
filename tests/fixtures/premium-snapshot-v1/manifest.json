@@ -1,0 +1,551 @@
+{
+  "fixture_set": "oteryn.premium_snapshot.v1",
+  "coordination_id": "OTV2-PREMIUM-DELIVERY",
+  "contract": "docs/contracts/OTERYN_V2_PREMIUM_TIME_SNAPSHOT_CONTRACT.md",
+  "policy": {
+    "max_authority_lease_seconds": 3600,
+    "refresh_fraction": "2/3",
+    "max_clock_skew_seconds": 5,
+    "stale_within_bound": "DENY",
+    "max_response_bytes": 1024,
+    "max_request_bytes": 256
+  },
+  "request_schema": "request.schema.json",
+  "snapshot_schema": "snapshot.schema.json",
+  "valid_request": "request.valid.json",
+  "valid_snapshots": [
+    {
+      "file": "snapshot.active.json",
+      "entitlement_state": "ACTIVE",
+      "expected_consumer_classification": "CURRENT_AUTHORITY while trusted time is within [effective_from, refresh_after) conservatively; STALE_WITHIN_BOUND (deny) from refresh_after and EXPIRED from authority_valid_until without newer evidence; full 3600 s lease"
+    },
+    {
+      "file": "snapshot.active-clipped.json",
+      "entitlement_state": "ACTIVE",
+      "expected_consumer_classification": "CURRENT_AUTHORITY before refresh_after; lease clipped to commercial effective_until, refresh at two thirds of the clipped lease"
+    },
+    {
+      "file": "snapshot.expired.json",
+      "entitlement_state": "EXPIRED",
+      "expected_consumer_classification": "EXPIRED; deny benefit"
+    },
+    {
+      "file": "snapshot.revoked.json",
+      "entitlement_state": "REVOKED",
+      "expected_consumer_classification": "REVOKED; deny benefit and fence older lifecycle revisions"
+    },
+    {
+      "file": "snapshot.none.json",
+      "entitlement_state": "NONE",
+      "expected_consumer_classification": "NONE; no entitlement, deny benefit"
+    }
+  ],
+  "cross_field_rules": [
+    "nonce and account_id equal the request values byte for byte",
+    "entitlement_state NONE iff entitlement_id, effective_from and effective_until are null and lifecycle_revision is 0",
+    "effective_from < effective_until when not null",
+    "authority_issued_at <= refresh_after < authority_valid_until <= authority_issued_at + 3600 s",
+    "ACTIVE and NOT_YET_EFFECTIVE: authority_valid_until = min(authority_issued_at + 3600 s, effective_until)",
+    "EXPIRED, REVOKED and NONE: authority_valid_until = authority_issued_at + 3600 s",
+    "refresh_after = authority_issued_at + floor(2 * (authority_valid_until - authority_issued_at) / 3) seconds",
+    "ACTIVE: effective_from <= authority_issued_at < effective_until",
+    "NOT_YET_EFFECTIVE: authority_issued_at < effective_from",
+    "EXPIRED: authority_issued_at >= effective_until",
+    "serialized UTF-8 body is at most 1024 bytes"
+  ],
+  "invalid_requests": [
+    {
+      "case": "unknown member",
+      "body": {
+        "schema": "oteryn.premium_snapshot_request.v1",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "world_id": "x"
+      }
+    },
+    {
+      "case": "missing nonce",
+      "body": {
+        "schema": "oteryn.premium_snapshot_request.v1",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001"
+      }
+    },
+    {
+      "case": "short nonce",
+      "body": {
+        "schema": "oteryn.premium_snapshot_request.v1",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a190"
+      }
+    },
+    {
+      "case": "upper-case nonce",
+      "body": {
+        "schema": "oteryn.premium_snapshot_request.v1",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "nonce": "4F1C2A9BE07D4C3A8B6E5D4C3B2A1908"
+      }
+    },
+    {
+      "case": "upper-case account_id",
+      "body": {
+        "schema": "oteryn.premium_snapshot_request.v1",
+        "account_id": "01890F4E-7C00-7000-8000-000000000001",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908"
+      }
+    },
+    {
+      "case": "wrong schema id",
+      "body": {
+        "schema": "oteryn.premium_snapshot_request.v2",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908"
+      }
+    },
+    {
+      "case": "numeric account_id",
+      "body": {
+        "schema": "oteryn.premium_snapshot_request.v1",
+        "account_id": 1,
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908"
+      }
+    },
+    {
+      "case": "UUIDv4 account_id",
+      "body": {
+        "schema": "oteryn.premium_snapshot_request.v1",
+        "account_id": "01890f4e-7c00-4000-8000-000000000001",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908"
+      }
+    },
+    {
+      "case": "nil account_id",
+      "body": {
+        "schema": "oteryn.premium_snapshot_request.v1",
+        "account_id": "00000000-0000-0000-0000-000000000000",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908"
+      }
+    }
+  ],
+  "invalid_snapshots": [
+    {
+      "case": "unknown member",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 17,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-11-14T08:30:00Z",
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T13:00:00Z",
+        "refresh_after": "2026-10-01T12:40:00Z",
+        "benefit_level": "gold"
+      }
+    },
+    {
+      "case": "missing member",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 17,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-11-14T08:30:00Z",
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T13:00:00Z"
+      }
+    },
+    {
+      "case": "wrong schema id",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v2",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 17,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-11-14T08:30:00Z",
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T13:00:00Z",
+        "refresh_after": "2026-10-01T12:40:00Z"
+      }
+    },
+    {
+      "case": "missing producer_profile",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 17,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-11-14T08:30:00Z",
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T13:00:00Z",
+        "refresh_after": "2026-10-01T12:40:00Z"
+      }
+    },
+    {
+      "case": "wrong producer_profile",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_a.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 17,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-11-14T08:30:00Z",
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T13:00:00Z",
+        "refresh_after": "2026-10-01T12:40:00Z"
+      }
+    },
+    {
+      "case": "wrong product",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.vip",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 17,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-11-14T08:30:00Z",
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T13:00:00Z",
+        "refresh_after": "2026-10-01T12:40:00Z"
+      }
+    },
+    {
+      "case": "wrong product version",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 2,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 17,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-11-14T08:30:00Z",
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T13:00:00Z",
+        "refresh_after": "2026-10-01T12:40:00Z"
+      }
+    },
+    {
+      "case": "fractional-second timestamp",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 17,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-11-14T08:30:00Z",
+        "authority_issued_at": "2026-10-01T12:00:00.000Z",
+        "authority_valid_until": "2026-10-01T13:00:00Z",
+        "refresh_after": "2026-10-01T12:40:00Z"
+      }
+    },
+    {
+      "case": "offset timestamp",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 17,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-11-14T09:30:00+01:00",
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T13:00:00Z",
+        "refresh_after": "2026-10-01T12:40:00Z"
+      }
+    },
+    {
+      "case": "upper-case uuid",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890F4E-7C00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 17,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-11-14T08:30:00Z",
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T13:00:00Z",
+        "refresh_after": "2026-10-01T12:40:00Z"
+      }
+    },
+    {
+      "case": "UUIDv4 account_id",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-4000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 17,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-11-14T08:30:00Z",
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T13:00:00Z",
+        "refresh_after": "2026-10-01T12:40:00Z"
+      }
+    },
+    {
+      "case": "entitlement_id with non-RFC variant",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-cf2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 17,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-11-14T08:30:00Z",
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T13:00:00Z",
+        "refresh_after": "2026-10-01T12:40:00Z"
+      }
+    },
+    {
+      "case": "NONE with entitlement_id",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "NONE",
+        "lifecycle_revision": 0,
+        "authority_revision": 1,
+        "effective_from": null,
+        "effective_until": null,
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T13:00:00Z",
+        "refresh_after": "2026-10-01T12:40:00Z"
+      }
+    },
+    {
+      "case": "ACTIVE with null interval",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 17,
+        "effective_from": null,
+        "effective_until": null,
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T13:00:00Z",
+        "refresh_after": "2026-10-01T12:40:00Z"
+      }
+    },
+    {
+      "case": "lease longer than 3600 s",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 17,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-11-14T08:30:00Z",
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T13:00:01Z",
+        "refresh_after": "2026-10-01T12:40:00Z"
+      }
+    },
+    {
+      "case": "cutoff after effective_until",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 18,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-10-01T12:30:00Z",
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T12:30:01Z",
+        "refresh_after": "2026-10-01T12:20:00Z"
+      }
+    },
+    {
+      "case": "refresh_after not before cutoff",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 17,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-11-14T08:30:00Z",
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T13:00:00Z",
+        "refresh_after": "2026-10-01T13:00:00Z"
+      }
+    },
+    {
+      "case": "refresh_after not two thirds of lease",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 17,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-11-14T08:30:00Z",
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T13:00:00Z",
+        "refresh_after": "2026-10-01T12:30:00Z"
+      }
+    },
+    {
+      "case": "ACTIVE although issued at effective_until",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 17,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-10-01T12:00:00Z",
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T12:00:00Z",
+        "refresh_after": "2026-10-01T12:00:00Z"
+      }
+    },
+    {
+      "case": "revision above 2^53-1",
+      "body": {
+        "schema": "oteryn.premium_snapshot.v1",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+        "producer_profile": "oteryn.entitlement.profile_b.v1",
+        "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+        "account_id": "01890f4e-7c00-7000-8000-000000000001",
+        "product_id": "oteryn.premium_time",
+        "product_version": 1,
+        "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+        "entitlement_state": "ACTIVE",
+        "lifecycle_revision": 2,
+        "authority_revision": 9007199254740992,
+        "effective_from": "2026-09-15T08:30:00Z",
+        "effective_until": "2026-11-14T08:30:00Z",
+        "authority_issued_at": "2026-10-01T12:00:00Z",
+        "authority_valid_until": "2026-10-01T13:00:00Z",
+        "refresh_after": "2026-10-01T12:40:00Z"
+      }
+    }
+  ]
+}

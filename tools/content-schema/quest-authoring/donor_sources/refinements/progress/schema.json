@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema",
+    "scope",
+    "records",
+    "summary",
+    "runtime_enabled",
+    "native_admission",
+    "original_core_unchanged"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_SOURCE_MISSION_PROGRESS_SUPPLEMENT/v1"
+    },
+    "scope": {
+      "const": "THREE_EXISTING_SOURCE_TRACKS_NOT_COMPLETE_QUEST_MIGRATION"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_component_id",
+          "quest_keys",
+          "source_target",
+          "source_storage_expression",
+          "canonical_mission_refs",
+          "status",
+          "provenance",
+          "write_ast_pointer",
+          "write_witness",
+          "scoped_alias_witnesses",
+          "operation",
+          "runtime_enabled",
+          "native_admission",
+          "canonical_gap_replaced"
+        ],
+        "properties": {
+          "source_component_id": {
+            "type": "string"
+          },
+          "quest_keys": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "source_target": {
+            "enum": [
+              "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
+              "canary:quest-progress/quest/u11_40/threatened_dreams/mission03_1",
+              "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/mission13"
+            ]
+          },
+          "source_storage_expression": {
+            "type": "string"
+          },
+          "canonical_mission_refs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "quest_key",
+                "source_quest_identity",
+                "mission_key",
+                "path",
+                "json_pointer",
+                "mission_sha256",
+                "mission"
+              ],
+              "properties": {
+                "quest_key": {
+                  "type": "string"
+                },
+                "source_quest_identity": {
+                  "type": "object"
+                },
+                "mission_key": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "json_pointer": {
+                  "type": "string"
+                },
+                "mission_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "mission": {
+                  "type": "object"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "status": {
+            "const": "SOURCE_MISSION_WRITE_SPEC_EXECUTION_UNPROVEN"
+          },
+          "provenance": {
+            "type": "object",
+            "required": [
+              "source",
+              "repository",
+              "revision",
+              "path",
+              "sha256",
+              "git_blob_sha1",
+              "byte_count"
+            ]
+          },
+          "write_ast_pointer": {
+            "type": "string"
+          },
+          "write_witness": {
+            "type": "object"
+          },
+          "scoped_alias_witnesses": {
+            "type": "array"
+          },
+          "operation": {
+            "type": "object",
+            "required": [
+              "kind",
+              "evaluation_order",
+              "receiver",
+              "storage_key_operand",
+              "value_operand",
+              "exact_source_guards_and_early_returns",
+              "source_method_implementation_activation",
+              "lookup_and_errors"
+            ],
+            "properties": {
+              "kind": {
+                "const": "source_storage_write"
+              },
+              "evaluation_order": {
+                "const": [
+                  "READ_RECEIVER_ONCE",
+                  "LOOKUP_METHOD",
+                  "EVALUATE_STORAGE_KEY",
+                  "EVALUATE_VALUE",
+                  "CALL_WITH_RECEIVER_SELF"
+                ]
+              },
+              "storage_key_operand": {
+                "type": "object",
+                "required": [
+                  "native_storage_slot"
+                ],
+                "properties": {
+                  "native_storage_slot": {
+                    "const": null
+                  }
+                }
+              },
+              "source_method_implementation_activation": {
+                "const": "NOT_PROVEN"
+              },
+              "lookup_and_errors": {
+                "type": "array",
+                "minItems": 4,
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "runtime_enabled": {
+            "const": false
+          },
+          "native_admission": {
+            "const": false
+          },
+          "canonical_gap_replaced": {
+            "const": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "source_tracks"
+      ],
+      "properties": {
+        "source_tracks": {
+          "const": 3
+        }
+      }
+    },
+    "runtime_enabled": {
+      "const": false
+    },
+    "native_admission": {
+      "const": false
+    },
+    "original_core_unchanged": {
+      "const": true
+    }
+  },
+  "additionalProperties": false
+}

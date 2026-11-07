@@ -1,0 +1,18 @@
+{
+  "id": "SPECTATE1-RL-06",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_SPECTATE1_DECISION_2026-10-15.md",
+  "resource": "CSPRNG grant code length",
+  "unit": "bytes",
+  "hard_maximum": 16,
+  "configurable_range": {
+    "minimum": 16,
+    "maximum": 16
+  },
+  "failure_category": "NOT_AVAILABLE",
+  "allocation_impact": "AWS-LC TLS provider CSPRNG; constant-time equality; never in audit or diagnostics.",
+  "client_visible": true,
+  "boundary_tests": [
+    "spectate_code_consent_rotation_cas_and_contacts_unavailable"
+  ],
+  "notes": "Dormant; NET03-OUTBOUND-QUEUE-ENTRIES=64 and -BYTES=1048576 apply unchanged. RL-03 node capacity, rate-account capacity and audit-fact capacity require measured composition inputs, no activation defaults."
+}

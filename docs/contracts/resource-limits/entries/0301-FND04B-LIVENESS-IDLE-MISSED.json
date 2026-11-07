@@ -1,0 +1,22 @@
+{
+  "id": "FND04B-LIVENESS-IDLE-MISSED",
+  "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+  "resource": "Consecutive unanswered out-of-combat probes that prove playable control lost",
+  "unit": "probes",
+  "hard_maximum": 3,
+  "configurable_range": {
+    "minimum": 3,
+    "maximum": 3
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Reaching the limit ends the admitted transport as control lost; no durable session mutation in this child.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=3: the third consecutive unanswered probe ends the transport as control lost at the next cadence",
+    "max-1=2 unanswered probes followed by an answered probe keep control"
+  ],
+  "consumers": [
+    "gameplay_transport serve_admitted (OTV2-20260927-liveness-control-loss)"
+  ],
+  "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss."
+}

@@ -1,0 +1,26 @@
+{
+  "authority": "OTS_HYPOTHESIS_ONLY; reference evidence for compatibility research, never value evidence where a decision requires official or TibiaWiki sources, and never an Oteryn identity",
+  "decision": "D384 (#1622)",
+  "files": [
+    {
+      "path": "items.xml",
+      "role": "Canary Item definitions (data/items/items.xml), byte-identical",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "item_elements": 17109
+    },
+    {
+      "path": "LICENSE",
+      "role": "Canary repository licence (GNU GPL v2), byte-identical",
+      "sha256": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643"
+    }
+  ],
+  "licence": "GPL-2.0 (see LICENSE); redistributed unmodified with its licence",
+  "schema": "OTERYN_IMPORT_PINNED_SOURCE/v1",
+  "source": {
+    "evidence": "OtsHypothesisOnly",
+    "key": "oteryn:source.canary",
+    "path": "data/items/items.xml",
+    "repository": "https://github.com/opentibiabr/canary",
+    "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "COMBAT01-LOOT-RNG-DRAWS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md",
+  "resource": "Deterministic RNG draws (one chance draw and one quantity draw per loot-table entry) to plan one creature death",
+  "unit": "draws per death",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 2,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked before any draw is made (before planning): a table needing more than 32 draws is rejected whole.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=32: a 16-entry table needs exactly 32 draws and is planned",
+    "max+1 would need 17 entries, already rejected by COMBAT01-LOOT-PLAN-ENTRIES before its 34th draw"
+  ],
+  "consumers": [
+    "apps/game-server/src/combat/loot_plan.rs (plan_creature_loot: entries.len() * 2 checked against 32 before any deterministic_draw call)"
+  ],
+  "notes": "D77, decision \u00a74.1; evidence packet Q2 COMBAT01-LOOT-RNG-DRAWS = 2 * 16 entries. Not the same value as DUR03-RL-08 (retry/reconciliation work units, unrelated). Registered by OTV2-20260928-combat-d2a-loot-plan."
+}

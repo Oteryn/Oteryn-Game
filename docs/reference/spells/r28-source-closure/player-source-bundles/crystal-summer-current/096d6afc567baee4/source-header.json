@@ -1,0 +1,43 @@
+{
+  "spell": {
+    "base_power": 190,
+    "carrier": "instant",
+    "cooldown_ms": 26000,
+    "costs": {
+      "mana": 160
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Divine Grenade",
+    "reference_spell_id": 258,
+    "requirements": {
+      "level": 300,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "cast_at_position": true,
+      "range_tiles": 7
+    },
+    "words": "exevo tempo mas san"
+  }
+}

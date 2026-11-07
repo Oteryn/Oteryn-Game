@@ -1,0 +1,153 @@
+{
+  "identity": {
+    "key": "canary:encounter/zalamon",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Wrath of the Emperor: Zalamon",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "snake_god_essence",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/snake_god_essence",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "snake_thing",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/snake_thing",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "lizard_abomination",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/lizard_abomination",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "mutated_zalamon",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/mutated_zalamon",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "snake_god_essence_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "snake_god_essence"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/snake_thing",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "snake_thing",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "snake_thing"
+          },
+          "text": "IT'S NOT THAT EASY MORTALS! FEEL THE POWER OF THE GOD!",
+          "mode": "say"
+        }
+      ]
+    },
+    {
+      "key": "snake_thing_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "snake_thing"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/lizard_abomination",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "lizard_abomination",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "lizard_abomination"
+          },
+          "text": "NOOO! NOW YOU HERETICS WILL FACE MY GODLY WRATH!",
+          "mode": "say"
+        }
+      ]
+    },
+    {
+      "key": "lizard_abomination_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "lizard_abomination"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/mutated_zalamon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "mutated_zalamon",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "mutated_zalamon"
+          },
+          "text": "YOU ... WILL ... PAY WITH ETERNITY ... OF AGONY!",
+          "mode": "say"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

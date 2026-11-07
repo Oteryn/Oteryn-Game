@@ -1,0 +1,25 @@
+{
+  "id": "DUR03-RL-03-PLAYER-DEATH-AMULET",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_DEATH_COMPLETE0_PLAYER_DEATH_MODULE_DECISION_2026-10-13.md",
+  "resource": "Value lines of one player death amulet primitive",
+  "unit": "per logical transaction",
+  "hard_maximum": 0,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 0
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Fixed one-item shape; bounds checked before encoding or writes. Contents are re-parented by identity with no expansion; placement depth remains one. No existing shape or limit changes.",
+  "client_visible": false,
+  "boundary_tests": [
+    "player_death_resource_rows_max_and_max_plus_one: exact maximum accepted, every maximum+1 refused",
+    "player_death_audit_encoders_roundtrip_and_reject_silent_delete",
+    "player_death_item_primitives: PostgreSQL transaction cases (coordinator route required)"
+  ],
+  "consumers": [
+    "crates/gameplay/durability/src/durability/player_death_items.rs",
+    "crates/gameplay/durability/src/durability/player_death_items/audit.rs",
+    "apps/game-server/migrations/0531_player_death_item_primitives.sql"
+  ],
+  "notes": "No contents enumeration or child writes; RL-05 is expansion depth zero, while the existing physical backpack placement ceiling remains one. Payload and envelope budgets inherit unchanged DUR03-RL-07 ceilings; the fixed-shape maximum-field encoder test fits within them. Batch C owns selection and workflow."
+}

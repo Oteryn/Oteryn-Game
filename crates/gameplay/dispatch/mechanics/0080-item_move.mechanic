@@ -1,0 +1,17 @@
+name=item_move
+commands=9
+[route]
+match routing::item_move::route(
+    authority,
+    session.actor,
+    &mut session.admitted,
+    command,
+    &mut session.item_view,
+    &mut session.container_views,
+    session.selected_capabilities,
+)
+.await
+{
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

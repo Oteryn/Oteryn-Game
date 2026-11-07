@@ -1,0 +1,13 @@
+{
+  "definitions": [
+    {
+      "family": "Item",
+      "key": "canary:item/2886",
+      "revision": "canary-47dfd51f"
+    }
+  ],
+  "assets": [
+    "canary.appearance:effect/poff",
+    "canary.appearance:object/23482"
+  ]
+}

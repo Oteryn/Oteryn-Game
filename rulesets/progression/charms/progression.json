@@ -1,0 +1,516 @@
+{
+  "catalogue": {
+    "count": 25,
+    "path": "content/charms/charms-00000-00024.json",
+    "sha256": "ce118bb9933ed5fae362c819aa0c0b50c043df4c9829de9ea7d03f89d73e3afe"
+  },
+  "conflicts": [
+    {
+      "accepted": "stage2 required",
+      "id": "minor_assignment_source_gap",
+      "ots": "no minor kill-stage check in sendBuyCharmRune",
+      "resolution": "preserve accepted stage2",
+      "sources": [
+        "owner_decisions",
+        "canary_progression",
+        "crystal_progression"
+      ]
+    },
+    {
+      "accepted": "expansion entitlement unlimited",
+      "id": "expansion_premium_gate",
+      "ots": "only Premium receives25, otherwise2",
+      "resolution": "do not adopt source quirks; entitlement production left coordinator",
+      "sources": [
+        "owner_decisions",
+        "canary_progression",
+        "crystal_progression"
+      ]
+    },
+    {
+      "id": "first_reset_fee",
+      "official": "first reset free",
+      "ots": "every reset charges formula; no first-reset counter/branch",
+      "resolution": "exclude runtime reset; capture conflict; official behavior outranks OTS",
+      "sources": [
+        "official_manual_interface",
+        "canary_progression",
+        "crystal_progression"
+      ]
+    },
+    {
+      "accepted": "CHARM-0 section8 answer15 already confirms",
+      "current_domain": "ASSUMPTION until owner confirms in lines28-29",
+      "id": "stale_slot_assumption_comment",
+      "resolution": "metadata/comment may be corrected without functional change",
+      "sources": [
+        "owner_decisions",
+        "current_domain"
+      ]
+    },
+    {
+      "accepted": "100 only promoted",
+      "id": "planner_initial_echoes",
+      "planner": "100 always initialized",
+      "resolution": "derive from promotion rather than planner initial constant",
+      "sources": [
+        "tibiapal_planner",
+        "owner_decisions"
+      ]
+    }
+  ],
+  "evidence": "tools/content-schema/charm-authoring/samples/charm-mechanics-sources-2026-10-01.json",
+  "excluded_reference_only": {
+    "expansion_external": {
+      "activation": false,
+      "notes": "Accepted Oteryn entitlement remains unlimited; Premium gate and literal25 are source quirks not accepted rules. Purchase lifecycle out of scope.",
+      "references": [
+        {
+          "lines": [
+            189,
+            189
+          ],
+          "source": "Oteryn/Oteryn-Game:docs/reference/tibia-manual/products.md"
+        },
+        {
+          "lines": [
+            459,
+            573
+          ],
+          "source": "opentibiabr/canary:src/io/iobestiary.cpp"
+        },
+        {
+          "lines": [
+            469,
+            583
+          ],
+          "source": "zimbadev/crystalserver:src/io/iobestiary.cpp"
+        }
+      ],
+      "status": "OTS_HYPOTHESIS_ONLY",
+      "value": {
+        "assign_all_catalogue_charms": true,
+        "ots_slot_cap_if_premium": 25,
+        "ots_slot_cap_without_premium_even_with_expansion": 2,
+        "premium_expiration_effect": null,
+        "purchase_cost": null,
+        "remove_reset_discount_percent": 25
+      }
+    },
+    "reset_first_free_official": {
+      "activation": false,
+      "notes": "Official behavior restatement; exact fee for subsequent resets not officially numeric in available notes.",
+      "references": [
+        {
+          "lines": [
+            173,
+            173
+          ],
+          "source": "Oteryn/Oteryn-Game:docs/reference/tibia-manual/interface.md"
+        }
+      ],
+      "status": "STRUCTURED_REFERENCE",
+      "value": true
+    },
+    "reset_gold_ots": {
+      "activation": false,
+      "notes": "OTS_HYPOTHESIS_ONLY; conflicts with official first reset free.",
+      "references": [
+        {
+          "lines": [
+            459,
+            573
+          ],
+          "source": "opentibiabr/canary:src/io/iobestiary.cpp"
+        },
+        {
+          "lines": [
+            469,
+            583
+          ],
+          "source": "zimbadev/crystalserver:src/io/iobestiary.cpp"
+        }
+      ],
+      "status": "CONFLICT",
+      "value": {
+        "base_fee_expression": "100000 + (character_level > 100 ? character_level * 11000 : 0)",
+        "expansion_discount_percent": 25,
+        "fee_expression": "floor(base_fee * 75 / 100) when expansion, otherwise base_fee",
+        "first_reset_free": false
+      }
+    },
+    "reset_state_ots": {
+      "activation": false,
+      "notes": "OTS_HYPOTHESIS_ONLY; no Oteryn reset design adopted.",
+      "references": [
+        {
+          "lines": [
+            459,
+            573
+          ],
+          "source": "opentibiabr/canary:src/io/iobestiary.cpp"
+        },
+        {
+          "lines": [
+            469,
+            583
+          ],
+          "source": "zimbadev/crystalserver:src/io/iobestiary.cpp"
+        }
+      ],
+      "status": "OTS_HYPOTHESIS_ONLY",
+      "value": {
+        "charm_points_after": "max earned Charm Points",
+        "clear": [
+          "all unlocked tiers",
+          "all assignments",
+          "used/unlocked rune bits"
+        ],
+        "max_minor_echoes_after": "same promoted initial amount",
+        "minor_echoes_after_promoted": 100,
+        "minor_echoes_after_unpromoted": 0
+      }
+    },
+    "unassign_gold": {
+      "activation": false,
+      "notes": "Exact gold formula is OTS hypothesis; level scaling and discount have official support. Runtime blocked by accepted boundary.",
+      "references": [
+        {
+          "lines": [
+            459,
+            573
+          ],
+          "source": "opentibiabr/canary:src/io/iobestiary.cpp"
+        },
+        {
+          "lines": [
+            469,
+            583
+          ],
+          "source": "zimbadev/crystalserver:src/io/iobestiary.cpp"
+        },
+        {
+          "lines": [
+            189,
+            189
+          ],
+          "source": "Oteryn/Oteryn-Game:docs/reference/tibia-manual/products.md"
+        }
+      ],
+      "status": "OTS_HYPOTHESIS_ONLY",
+      "value": {
+        "base_fee_expression": "character_level * 100",
+        "expansion_discount_percent": 25,
+        "expansion_fee_expression": "floor(base_fee * 75 / 100)"
+      }
+    },
+    "upgrade_potions": {
+      "activation": false,
+      "notes": "UNKNOWN",
+      "references": [],
+      "status": "UNKNOWN",
+      "value": {
+        "cost": null,
+        "effect": null,
+        "eligibility": null,
+        "persistence": null,
+        "reason": "Explicitly excluded by CHARM-0 section6; no verified available potion evidence in extracted sources.",
+        "runtime_authorized": false
+      }
+    }
+  },
+  "rules": {
+    "assignment": {
+      "activation": false,
+      "notes": "",
+      "references": [
+        {
+          "lines": [
+            67,
+            94
+          ],
+          "source": "Oteryn/Oteryn-Game:docs/architecture/reviews/OTERYN_GAME_CHARM0_BESTIARY_CHARM_PROGRESSION_DECISION_PACKET_2026-09-29.md"
+        },
+        {
+          "lines": [
+            17,
+            51
+          ],
+          "source": "Oteryn/Oteryn-Game:apps/game-server/src/domain/charm.rs"
+        },
+        {
+          "lines": [
+            189,
+            189
+          ],
+          "source": "Oteryn/Oteryn-Game:docs/reference/tibia-manual/products.md"
+        }
+      ],
+      "status": "OWNER_ACCEPTED",
+      "value": {
+        "major_minimum_bestiary_stage": 3,
+        "maximum_major_charms_per_race": 1,
+        "maximum_minor_charms_per_race": 1,
+        "maximum_races_per_charm": 1,
+        "minor_minimum_bestiary_stage": 2,
+        "null_slot_limit_means": "unlimited",
+        "requires_unlocked_charm": true,
+        "shared_slot_count_includes": [
+          "major",
+          "minor"
+        ],
+        "slots": {
+          "charm_expansion": null,
+          "free": 2,
+          "premium": 6
+        }
+      }
+    },
+    "balance": {
+      "activation": false,
+      "notes": "",
+      "references": [
+        {
+          "lines": [
+            67,
+            94
+          ],
+          "source": "Oteryn/Oteryn-Game:docs/architecture/reviews/OTERYN_GAME_CHARM0_BESTIARY_CHARM_PROGRESSION_DECISION_PACKET_2026-09-29.md"
+        },
+        {
+          "lines": [
+            17,
+            51
+          ],
+          "source": "Oteryn/Oteryn-Game:apps/game-server/src/domain/charm.rs"
+        }
+      ],
+      "status": "OWNER_ACCEPTED",
+      "value": {
+        "available": "earned minus spent; may be negative after definition revisions",
+        "echoes_spent": "sum costs of every reached minor stage",
+        "negative_balance": "fails affordability; no implicit unlock revocation",
+        "never_persisted": [
+          "charm_points",
+          "minor_charm_echoes"
+        ],
+        "persisted": [
+          "unlocked_stage per character/charm key",
+          "assignment race key per character/charm key"
+        ],
+        "points_spent": "sum costs of every reached major stage"
+      }
+    },
+    "bestiary_credit": {
+      "activation": false,
+      "notes": "",
+      "references": [
+        {
+          "lines": [
+            67,
+            94
+          ],
+          "source": "Oteryn/Oteryn-Game:docs/architecture/reviews/OTERYN_GAME_CHARM0_BESTIARY_CHARM_PROGRESSION_DECISION_PACKET_2026-09-29.md"
+        }
+      ],
+      "status": "OWNER_ACCEPTED",
+      "value": {
+        "counter_saturates_at": "final_race_kill_threshold",
+        "principal": "single_reward_principal",
+        "stages": "derived_from_kill_count",
+        "window_ms": 300000
+      }
+    },
+    "earnings": {
+      "activation": false,
+      "notes": "TibiaPal initializes 100 echoes unconditionally as a planner convenience; it is not evidence that unpromoted characters earn them.",
+      "references": [
+        {
+          "lines": [
+            67,
+            94
+          ],
+          "source": "Oteryn/Oteryn-Game:docs/architecture/reviews/OTERYN_GAME_CHARM0_BESTIARY_CHARM_PROGRESSION_DECISION_PACKET_2026-09-29.md"
+        },
+        {
+          "lines": [
+            17,
+            51
+          ],
+          "source": "Oteryn/Oteryn-Game:apps/game-server/src/domain/charm.rs"
+        },
+        {
+          "lines": [
+            459,
+            573
+          ],
+          "source": "opentibiabr/canary:src/io/iobestiary.cpp"
+        }
+      ],
+      "status": "OWNER_ACCEPTED",
+      "value": {
+        "charm_points": "Sum charm_points of completed Bestiary entries",
+        "major_stage_echoes": [
+          50,
+          100,
+          200
+        ],
+        "minor_unlock_awards_echoes": false,
+        "promotion_echoes_once": 100,
+        "unpromoted_initial_echoes": 0
+      }
+    },
+    "excluded_product_scope": {
+      "activation": false,
+      "notes": "Slot entitlement values were subsequently accepted by section8 answer15; this does not authorize Store purchase/reset/potions.",
+      "references": [
+        {
+          "lines": [
+            67,
+            94
+          ],
+          "source": "Oteryn/Oteryn-Game:docs/architecture/reviews/OTERYN_GAME_CHARM0_BESTIARY_CHARM_PROGRESSION_DECISION_PACKET_2026-09-29.md"
+        }
+      ],
+      "status": "OWNER_ACCEPTED",
+      "value": [
+        "charm reset",
+        "Charm Upgrade potions",
+        "Store purchase/provisioning of all-charms expansion"
+      ]
+    },
+    "identity": {
+      "activation": false,
+      "notes": "",
+      "references": [
+        {
+          "lines": [
+            67,
+            94
+          ],
+          "source": "Oteryn/Oteryn-Game:docs/architecture/reviews/OTERYN_GAME_CHARM0_BESTIARY_CHARM_PROGRESSION_DECISION_PACKET_2026-09-29.md"
+        },
+        {
+          "lines": [
+            17,
+            51
+          ],
+          "source": "Oteryn/Oteryn-Game:apps/game-server/src/domain/charm.rs"
+        }
+      ],
+      "status": "OWNER_ACCEPTED",
+      "value": {
+        "display_name_resolution": "client export of same content generation",
+        "durable_charm_key_prefix": "oteryn:charm.",
+        "durable_race_key_prefix": "oteryn:creature.",
+        "source_numeric_ids": "provenance only; not wire identities",
+        "wire_indices": "1-based key-order indices derived per content generation, never persisted"
+      }
+    },
+    "stages": {
+      "activation": false,
+      "notes": "",
+      "references": [
+        {
+          "lines": [
+            67,
+            94
+          ],
+          "source": "Oteryn/Oteryn-Game:docs/architecture/reviews/OTERYN_GAME_CHARM0_BESTIARY_CHARM_PROGRESSION_DECISION_PACKET_2026-09-29.md"
+        },
+        {
+          "lines": [
+            17,
+            51
+          ],
+          "source": "Oteryn/Oteryn-Game:apps/game-server/src/domain/charm.rs"
+        },
+        {
+          "lines": [
+            60,
+            91
+          ],
+          "source": "PawelKusnierek/TibiaPal:scripts/charm_planner.js"
+        },
+        {
+          "lines": [
+            459,
+            573
+          ],
+          "source": "opentibiabr/canary:src/io/iobestiary.cpp"
+        }
+      ],
+      "status": "OWNER_ACCEPTED",
+      "value": {
+        "cost_interpretation": "incremental payment per stage, not cumulative total",
+        "count": 3,
+        "unlock_order": [
+          1,
+          2,
+          3
+        ],
+        "upgrade_mode": "next_stage_only"
+      }
+    },
+    "unassign_boundary": {
+      "activation": false,
+      "notes": "",
+      "references": [
+        {
+          "lines": [
+            67,
+            94
+          ],
+          "source": "Oteryn/Oteryn-Game:docs/architecture/reviews/OTERYN_GAME_CHARM0_BESTIARY_CHARM_PROGRESSION_DECISION_PACKET_2026-09-29.md"
+        },
+        {
+          "lines": [
+            17,
+            51
+          ],
+          "source": "Oteryn/Oteryn-Game:apps/game-server/src/domain/charm.rs"
+        }
+      ],
+      "status": "OWNER_ACCEPTED",
+      "value": {
+        "condition_for_future_runtime": "GAME-ITEM-01/DUR-03 prove Character and Item boundary",
+        "future_behavior": "gold fee from first release; no temporary free unassign",
+        "runtime_command_available": false
+      }
+    }
+  },
+  "ruleset_key": "oteryn:ruleset.charms.progression",
+  "runtime_connected": false,
+  "schema": "OTERYN_CHARM_PROGRESSION_PREPARATION/v1",
+  "status": "PREPARATION_ONLY",
+  "unknowns": [
+    {
+      "classification": "UNKNOWN",
+      "id": "wiki_refresh",
+      "outcome": "Single read attempt failed: Tunnel connection failed403 Forbidden",
+      "retry_performed": false,
+      "route": "https://tibia.fandom.com/api.php",
+      "target_titles": [
+        "Minor Charms",
+        "Charm Expansion",
+        "Charms",
+        "Cyclopedia",
+        "Charm Upgrade"
+      ]
+    },
+    {
+      "id": "minor_charms_page_revision",
+      "reason": "Accepted packet cites page but provides no exact revision; no fabricated wiki revision.",
+      "value": null
+    },
+    {
+      "id": "store_lifecycle",
+      "reason": "Out of scope, no new product decision",
+      "unknown_fields": [
+        "purchase cost",
+        "entitlement persistence",
+        "Premium expiration behavior"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": 285,
+  "name": "STORE_PURCHASE_HISTORY_V1",
+  "owner_decision": "Owner 2026-11-04: E10 store history in Game (in-game purchases)",
+  "owner": "Game Store purchase display journal; Platform remains the coin and order ledger",
+  "requires": [
+    154
+  ],
+  "command_types": [
+    501
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Offered with STORE_V1 by with_store_offer when the Platform Store client is composed; BUNDLE_WORLD_OFFERED_CAPABILITIES unchanged"
+}

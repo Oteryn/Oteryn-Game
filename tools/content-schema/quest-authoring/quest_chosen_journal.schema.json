@@ -1,0 +1,457 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "records",
+    "fox_original_stages_sha256",
+    "source_equivalence",
+    "source_holds_preserved",
+    "runtime_enabled",
+    "native_admission",
+    "summary"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_CHOSEN_JOURNAL_CORRECTIONS/v1"
+    },
+    "records": {
+      "const": [
+        {
+          "correction_key": "spike_upper_handins",
+          "quest_key": "oteryn:quest.spike_task",
+          "mission_key": "first_task",
+          "original_mission": {
+            "key": "first_task",
+            "name": "First Task",
+            "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/gnomilly",
+            "start_value": 0,
+            "end_value": 100,
+            "journal": {
+              "kind": "template",
+              "parts": [
+                {
+                  "sha256": "6d73fb6ddafac4385d2db7ed48fbe388b860abc6e23542a45e764943c4ffba6a",
+                  "length": 77,
+                  "placeholders": [
+                    "%d"
+                  ]
+                }
+              ],
+              "reads": [
+                "quest/u10_20/spike_task_quest/gnomilly"
+              ]
+            },
+            "transitions": []
+          },
+          "original_mission_sha256": "4a62dbfa29cf0226144ff488c698a6b3a80b1b786438f91c582d318a9d46670d",
+          "chosen_mapping": {
+            "stage_key": "spike_upper_handins",
+            "npc_source_name": "gnomilly",
+            "region": "Upper",
+            "kind": "oteryn_region_successful_handin_counter",
+            "initial_value": 0,
+            "increment": 1,
+            "increment_trigger": "first successful hand-in for each distinct named task from this NPC guarded Source fame-award branch",
+            "goal": 4,
+            "distinct_task_set": [
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Pacifier_Main",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Mound_Main",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Track_Main",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Main"
+            ],
+            "repeat_handin_advances_chosen_stage": false,
+            "goal_basis": "one completion of all four Source tasks per region, matching current chosen campaign",
+            "chosen_campaign_level": 80,
+            "source_level_gate_override": "chosen campaign level80; original Source upper25-49 and middle50-79 gates preserved as evidence only",
+            "source_storage_alias": null,
+            "shared_fame_storage_separate": 44313,
+            "original_journal_milestone": {
+              "goal": 100,
+              "label": "Cave Explorer outfit"
+            },
+            "chosen_fame100_or_outfit_reward_included": false,
+            "outfit_runtime_reward_binding": null,
+            "recipe_stage_keys": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5"
+            ],
+            "source_task_stage_keys": {
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Pacifier_Main": "s2",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Mound_Main": "s3",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Track_Main": "s4",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Main": "s5"
+            }
+          },
+          "evidence": {
+            "path": "spike-choice.json",
+            "sha256": "77d20065ef436c385111dda067685e19eded8f13a5a416a53f9cee690815e3d8"
+          },
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "source_equivalence": false,
+          "source_holds_preserved": true,
+          "runtime_enabled": false,
+          "native_admission": false
+        },
+        {
+          "correction_key": "spike_middle_handins",
+          "quest_key": "oteryn:quest.spike_task",
+          "mission_key": "second_task",
+          "original_mission": {
+            "key": "second_task",
+            "name": "Second Task",
+            "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/gnombold/points",
+            "start_value": 0,
+            "end_value": 100,
+            "journal": {
+              "kind": "template",
+              "parts": [
+                {
+                  "sha256": "3961db53e110bdac602a6ac7009f96163b1bc6d511f1e387014c8dbadecc7d3a",
+                  "length": 68,
+                  "placeholders": [
+                    "%d"
+                  ]
+                }
+              ],
+              "reads": [
+                "quest/u10_20/spike_task_quest/gnombold/points"
+              ]
+            },
+            "transitions": []
+          },
+          "original_mission_sha256": "0c2b23c8f2a35916ac5566c0497552cea848b81601c78288a74520aa5ee330df",
+          "chosen_mapping": {
+            "stage_key": "spike_middle_handins",
+            "npc_source_name": "gnombold",
+            "region": "Middle",
+            "kind": "oteryn_region_successful_handin_counter",
+            "initial_value": 0,
+            "increment": 1,
+            "increment_trigger": "first successful hand-in for each distinct named task from this NPC guarded Source fame-award branch",
+            "goal": 4,
+            "distinct_task_set": [
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Charge_Main",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Mushroom_Main",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Nest_Main",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Kill_Main"
+            ],
+            "repeat_handin_advances_chosen_stage": false,
+            "goal_basis": "one completion of all four Source tasks per region, matching current chosen campaign",
+            "chosen_campaign_level": 80,
+            "source_level_gate_override": "chosen campaign level80; original Source upper25-49 and middle50-79 gates preserved as evidence only",
+            "source_storage_alias": null,
+            "shared_fame_storage_separate": 44313,
+            "original_journal_milestone": {
+              "goal": 100,
+              "label": "first addon"
+            },
+            "chosen_fame100_or_outfit_reward_included": false,
+            "outfit_runtime_reward_binding": null,
+            "recipe_stage_keys": [
+              "s6",
+              "s7",
+              "s8",
+              "s9",
+              "s10"
+            ],
+            "source_task_stage_keys": {
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Charge_Main": "s9",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Mushroom_Main": "s8",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Nest_Main": "s7",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Kill_Main": "s10"
+            }
+          },
+          "evidence": {
+            "path": "spike-choice.json",
+            "sha256": "77d20065ef436c385111dda067685e19eded8f13a5a416a53f9cee690815e3d8"
+          },
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "source_equivalence": false,
+          "source_holds_preserved": true,
+          "runtime_enabled": false,
+          "native_admission": false
+        },
+        {
+          "correction_key": "spike_lower_handins",
+          "quest_key": "oteryn:quest.spike_task",
+          "mission_key": "third_task",
+          "original_mission": {
+            "key": "third_task",
+            "name": "Third Task",
+            "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/gnomargery/points",
+            "start_value": 0,
+            "end_value": 100,
+            "journal": {
+              "kind": "template",
+              "parts": [
+                {
+                  "sha256": "1c59798a246345386bbbc9daa2ff4f4982ab9ea3968d751aef0f05307f151d7a",
+                  "length": 69,
+                  "placeholders": [
+                    "%d"
+                  ]
+                }
+              ],
+              "reads": [
+                "quest/u10_20/spike_task_quest/gnomargery/points"
+              ]
+            },
+            "transitions": []
+          },
+          "original_mission_sha256": "2929977c3fc397d3facbf04444554d8854539212d4d6952f78ef6c74d412a6bb",
+          "chosen_mapping": {
+            "stage_key": "spike_lower_handins",
+            "npc_source_name": "gnomargery",
+            "region": "Lower",
+            "kind": "oteryn_region_successful_handin_counter",
+            "initial_value": 0,
+            "increment": 1,
+            "increment_trigger": "first successful hand-in for each distinct named task from this NPC guarded Source fame-award branch",
+            "goal": 4,
+            "distinct_task_set": [
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Parcel_Main",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Undercover_Main",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Lava_Main",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Kill_Main"
+            ],
+            "repeat_handin_advances_chosen_stage": false,
+            "goal_basis": "one completion of all four Source tasks per region, matching current chosen campaign",
+            "chosen_campaign_level": 80,
+            "source_level_gate_override": "chosen campaign level80; original Source upper25-49 and middle50-79 gates preserved as evidence only",
+            "source_storage_alias": null,
+            "shared_fame_storage_separate": 44313,
+            "original_journal_milestone": {
+              "goal": 100,
+              "label": "second addon"
+            },
+            "chosen_fame100_or_outfit_reward_included": false,
+            "outfit_runtime_reward_binding": null,
+            "recipe_stage_keys": [
+              "s11",
+              "s12",
+              "s13",
+              "s14",
+              "s15",
+              "s16"
+            ],
+            "source_task_stage_keys": {
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Parcel_Main": "s12",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Undercover_Main": "s13",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Lava_Main": "s14",
+              "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Kill_Main": "s15"
+            }
+          },
+          "evidence": {
+            "path": "spike-choice.json",
+            "sha256": "77d20065ef436c385111dda067685e19eded8f13a5a416a53f9cee690815e3d8"
+          },
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "source_equivalence": false,
+          "source_holds_preserved": true,
+          "runtime_enabled": false,
+          "native_admission": false
+        },
+        {
+          "correction_key": "fox_child_journal",
+          "quest_key": "oteryn:quest.tibia_tales",
+          "mission_key": "to_outfox_a_fox",
+          "original_mission": {
+            "key": "to_outfox_a_fox",
+            "name": "To Outfox a Fox",
+            "progress": "canary:quest-progress/quest/u8_1/to_outfox_afox_quest",
+            "start_value": 1,
+            "end_value": 2,
+            "journal": {
+              "kind": "per_stage",
+              "stages": [
+                {
+                  "value": 1,
+                  "text_ref": {
+                    "sha256": "fa82c759f025a1f60db236ae286507bc8d1f93facdfc5952ed0bea6685b6afb5",
+                    "length": 166,
+                    "placeholders": []
+                  }
+                },
+                {
+                  "value": 2,
+                  "text_ref": {
+                    "sha256": "e7a4c1488e7f18600b0834772ece9c578300867490aaece92d1a922c62d19d47",
+                    "length": 69,
+                    "placeholders": []
+                  }
+                }
+              ]
+            },
+            "transitions": []
+          },
+          "original_mission_sha256": "e35aef30469823668af66e26015c37ed6734dcd0d8591e65ab23c57cf0f866a4",
+          "chosen_mapping": {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "child_progress_ref": "canary:quest-progress/quest/u8_1/to_outfox_afox_quest/questline",
+            "donor_track_symbol": "Storage.Quest.U8_1.ToOutfoxAFoxQuest.Questline",
+            "donor_storage_id": 41492,
+            "start_value": 1,
+            "completion_value": 2,
+            "splice_after": "s16",
+            "splice_before": "s17",
+            "stages": [
+              {
+                "key": "s17",
+                "kind": "talk",
+                "count": 1,
+                "targets": [
+                  "Budrik"
+                ],
+                "next": [
+                  "s18"
+                ],
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "objective": "Ask Budrik for a mission and accept recovery of his stolen mining helmet."
+              },
+              {
+                "key": "s18",
+                "kind": "collect",
+                "count": 1,
+                "targets": [
+                  "Budrik's stolen mining helmet"
+                ],
+                "next": [
+                  "s19"
+                ],
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "objective": "Recover Budrik's stolen helmet from the existing Horned Fox hideout chest."
+              },
+              {
+                "key": "s19",
+                "kind": "talk",
+                "count": 1,
+                "targets": [
+                  "Budrik"
+                ],
+                "next": [
+                  "s20"
+                ],
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "objective": "Return to Budrik and discuss the mission with the recovered helmet."
+              }
+            ],
+            "covered_title": "To Outfox a Fox Quest",
+            "title_stage_keys": [
+              "s17",
+              "s18",
+              "s19"
+            ],
+            "reward_intents_add": [],
+            "completion_reward_delivery_admitted": false,
+            "source_notes": [
+              "CHOSEN Fox stages select Budrik child Questline writes1/2 and Crystal child journal mapping. Canary parent-table journal reference is preserved as Source disagreement.",
+              "Recover item139 via the existing standalone Fox RewardClaim; do not create a second chest or duplicate item delivery. Budrik Source consumes139 and adds875; this overlay does not implement or admit that NPC reward delivery.",
+              "Insert this tale into the selected anthology before completion; ordering is CHOSEN, not donor-wide chronology. Preserve the original nine-patron report and6500XP intent."
+            ]
+          },
+          "evidence": {
+            "path": "fox-correction.json",
+            "sha256": "ab1adff526d5583c3ff5010a5b2e0983cd86db4fcf6a990190853507eb631308"
+          },
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "source_equivalence": false,
+          "source_holds_preserved": true,
+          "runtime_enabled": false,
+          "native_admission": false
+        },
+        {
+          "correction_key": "cobra_scarlett_credit",
+          "quest_key": "oteryn:quest.grave_danger_quest",
+          "mission_key": "the_order_of_the_cobra",
+          "original_mission": {
+            "key": "the_order_of_the_cobra",
+            "name": "The Order of the Cobra",
+            "progress": "canary:quest-progress/quest/u12_20/grave_danger/cobra",
+            "start_value": 1,
+            "end_value": 2,
+            "journal": {
+              "kind": "per_stage",
+              "stages": [
+                {
+                  "value": 1,
+                  "text_ref": {
+                    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "length": 0,
+                    "placeholders": []
+                  }
+                },
+                {
+                  "value": 2,
+                  "text_ref": {
+                    "sha256": "4fdd2d2557d75775ffc49c4b283067703c98e5e0880c1ddf7e88f3faa6851aa4",
+                    "length": 198,
+                    "placeholders": []
+                  }
+                }
+              ]
+            },
+            "transitions": []
+          },
+          "original_mission_sha256": "437bfac07f2f51eceaa08179b7e5cc2a0adcfbfa9f7d3f47575ede58b9480ccd",
+          "chosen_mapping": {
+            "basis": "CHOSEN_OTERYN_APPROXIMATION",
+            "event_key": "oteryn:chosen-event.grave_danger.cobra.scarlett_defeated",
+            "recipe_stage_key": "s5",
+            "trigger": "Server-authenticated death of the bound Scarlett encounter, credited to an actual player participant; never client name matching.",
+            "recipient_policy": "Preserve Canary damage-map Player(attackerId) participants, not all nearby players or party members. Resolve project combat identities at integration.",
+            "effect": "Complete existing chosen stage s5 once per character/quest instance; progress to existing s6. No donor scalar copied into Native storage.",
+            "mission_completion_intent": "Record completion intent for The Order of the Cobra; chosen association of credited Scarlett defeat to the named mission, not an assertion that Source writes the journal track.",
+            "evidence_ids": [
+              "scarlett_factory_and_events",
+              "scarlett_factory_registration",
+              "scarlett_kill_credit_config",
+              "player_death_credit_and_achievement",
+              "canary_journal_declaration"
+            ],
+            "eligible_current_stage": "s5",
+            "fresh_authenticated_death_required": true,
+            "prior_kill_history_completes_stage": false,
+            "source_firstkill_achievement_guard_separate": true
+          },
+          "evidence": {
+            "path": "scarlett-completion.json",
+            "sha256": "16986e93009e0580b4e413da36d878cfaeb97d324d2b92d0be42192342303bab"
+          },
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "source_equivalence": false,
+          "source_holds_preserved": true,
+          "runtime_enabled": false,
+          "native_admission": false
+        }
+      ]
+    },
+    "fox_original_stages_sha256": {
+      "const": "eb3b9bf5aa4df659a73e818e155b9d754d0c020c7de606f44f807757fa655c99"
+    },
+    "source_equivalence": {
+      "const": false
+    },
+    "source_holds_preserved": {
+      "const": true
+    },
+    "runtime_enabled": {
+      "const": false
+    },
+    "native_admission": {
+      "const": false
+    },
+    "summary": {
+      "const": {
+        "corrections": 5,
+        "quests": 3,
+        "exact_source_spans": 57,
+        "chosen_fox_stages_added": 3
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "id": "PUBPROJ-ONLINE-WORLDS",
+  "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+  "resource": "Changed Worlds published concurrently in one world_online scan",
+  "unit": "worlds",
+  "hard_maximum": 16,
+  "configurable_range": {
+    "minimum": 16,
+    "maximum": 16
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "At most 16 exchanges in flight per scan, one per World; more changed Worlds are sent in further waves of 16 within the same scan deadline.",
+  "client_visible": false,
+  "boundary_tests": [
+    "apps/game-server/src/native_admission_source/public_projections_tests.rs: changed Worlds are sent one publication per World"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/public_projections.rs"
+  ],
+  "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+}

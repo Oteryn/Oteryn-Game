@@ -1,0 +1,5 @@
+{
+  "id": 390, "name": "TEAM_FINDER_LEADER_UPSERT", "owner_decision": "S14a", "capability": 200,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/team-finder-leader-v1.md#upsert", "result_schema": "docs/contracts/protocol-oteryn/v1/team-finder-leader-v1.md#reply",
+  "max_payload_bytes": 64, "max_result_payload_bytes": 0
+}

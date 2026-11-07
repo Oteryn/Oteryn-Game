@@ -1,0 +1,7 @@
+name=weapon_proficiency_modify
+commands=379,380,392,393,394,395
+[route]
+match routing::weapon_proficiency_modify::route(authority, session.actor, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

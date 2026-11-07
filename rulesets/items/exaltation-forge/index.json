@@ -1,0 +1,10 @@
+{
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+  "path": "rulesets/items/exaltation-forge/",
+  "kind": "ruleset",
+  "owner": "Item/Economy",
+  "repository": "Oteryn/Oteryn-Game",
+  "population_state": "READY_UNPOPULATED",
+  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+  "notes": "Forge classes, tier rules, fusion/transfer costs/chances; current tier on ItemInstance."
+}

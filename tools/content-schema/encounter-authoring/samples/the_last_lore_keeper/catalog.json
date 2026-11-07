@@ -1,0 +1,14 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/the_last_lore_keeper",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/an_astral_glyph",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

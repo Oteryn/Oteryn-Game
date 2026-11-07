@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-CLIENT-GROUPS-PER-RECORD",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Present typed capability groups in one client-safe Item body",
+  "unit": "groups",
+  "hard_maximum": 11,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 11
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject group count before allocation and reject every server-only group through the projection allowlist.",
+  "client_visible": true,
+  "boundary_tests": [
+    "11 allowlisted ordered unique groups accepted",
+    "12 groups rejected before allocation",
+    "each server-only group rejected independently"
+  ]
+}

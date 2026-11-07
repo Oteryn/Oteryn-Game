@@ -1,0 +1,35 @@
+{
+  "schema": "OTERYN_R24_IMPORT_COMPLETION_STATUS/v1",
+  "data_package": "ready_for_test_content_import_preparation",
+  "runtime_activation": false,
+  "production_or_merge_ready": false,
+  "player_definitions": 246,
+  "source_selected": 241,
+  "unselected_aliases": 5,
+  "native_creature_profiles": 1508,
+  "approximate_melee_enabled": 1253,
+  "disabled_melee": 255,
+  "disabled_reasons": {
+    "no_source_melee_slot": 124,
+    "explicit_zero_damage": 11,
+    "native_health_conflict": 103,
+    "no_unique_matching_donor": 17
+  },
+  "scenarios": {
+    "existing_path_requires_fixture": 101,
+    "runtime_owner_integration": 140,
+    "inactive_source_alias": 5
+  },
+  "remaining_coordinator_integration": [
+    "Missing native spell dispatchers, equipment and delayed effects",
+    "Real Premium entitlement/clock and HouseInterior owner composition",
+    "Full monster ranged/defensive/custom/condition execution and chase",
+    "Soul War live quest access/progression/participants/rewards",
+    "Long-lived instance admission and deployment"
+  ],
+  "required_clippy_remaining": 859,
+  "research": "research/source-access-and-findings.json",
+  "product_decisions": {
+    "soul": "Owner-selected free/Premium 100/200 preserved; fresh wiki states unpromoted/promoted 100/200. This is flagged product divergence, not source parity."
+  }
+}

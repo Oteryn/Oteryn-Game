@@ -1,0 +1,22 @@
+{
+  "id": "WOBJ-RL-01",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "Use inputs applied for one actor in one Channel owner work cycle",
+  "unit": "use inputs per actor per work cycle",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "At most one use input is applied per actor per Channel owner work cycle; further inputs remain outstanding FND-02 commands bounded by FND02-OUTSTANDING-COMMANDS, processed FIFO per session and round-robin across actors.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=1: one use input for an actor is applied in a work cycle",
+    "max+1=2: a second use input for the same actor is not applied in the same work cycle; it stays outstanding and the 65th outstanding command is refused under the existing FND-02 rule"
+  ],
+  "consumers": [
+    "USE_INTENT command (USE-WIRE-V1)"
+  ],
+  "notes": "Accepted by the resource owner in #162 comment 5864914163 (USE-WIRE-V1). The server selects the unique bound transition; the client sends intent only. Occupancy, reach and stale-state disposition semantics are decided by USE-WIRE-V1; composition into the Server Seam is M2."
+}

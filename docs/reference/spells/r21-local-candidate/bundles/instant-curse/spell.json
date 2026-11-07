@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/curse",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Curse",
+    "carrier": "instant",
+    "words": "utori mort",
+    "reference_spell_id": 139,
+    "library_text": "Drawing upon the powers of darkness is always walking a thin line. This spell focuses amounts of raw dark power to curse an enemy with deathly magic that more and more destroys the victim's body. Attacking inner organs, it becomes more and more dangerous the longer it can do its evil work. A victim is well advised to seek out a cure as soon as possible before the dark magic can reach its dreadful peak.",
+    "requirements": {
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 75,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 30,
+      "soul": 0
+    },
+    "cooldown_ms": 40000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": true,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 3,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_curse"
+    },
+    "base_power": 120,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/curse",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

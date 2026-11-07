@@ -1,0 +1,10 @@
+{
+  "id": 124,
+  "name": "MAIL",
+  "owner_decision": "MAIL-0 accepted 2026-10-15; MAIL-1 server completion 2026-10-27",
+  "capability": 115,
+  "payload_schema": "mail.rs#MailIntent",
+  "result_schema": "mail.rs#MailOutcome",
+  "max_payload_bytes": 8007,
+  "max_result_payload_bytes": 1
+}

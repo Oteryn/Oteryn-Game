@@ -1,0 +1,252 @@
+{
+  "task": "BLESSINGS-CONTENT-1",
+  "checked_at": "2026-10-19T10:56:49.647114+00:00",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "source_precedence": "Official specific effective price change supersedes stale general manual prose; primary death reduction supersedes community6.4.",
+  "changes": [
+    {
+      "path": "docs/reference/content-prep/blessings-content-1/admission-evidence/reference-evidence.json/records/0/facts/regular",
+      "before": {
+        "value": [
+          {
+            "level_max": 30,
+            "gold": "2000"
+          },
+          {
+            "level_min_exclusive": 30,
+            "level_max_exclusive": 120,
+            "gold": "200*(L-20)"
+          },
+          {
+            "level_min": 120,
+            "gold": "20000+75*(L-120)"
+          }
+        ],
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1630:1113782",
+            "selector": "Price / R(L)"
+          },
+          {
+            "source": "wiki:1630:1113782",
+            "selector": "Conflicting statements identified in note"
+          },
+          {
+            "source": "wiki:1628:1140641",
+            "selector": "Conflicting statements identified in note"
+          },
+          {
+            "source": "official:manual:characters:2026-10-18",
+            "selector": "Conflicting statements identified in note"
+          }
+        ],
+        "note": "Current Wiki piecewise formula is preserved, but its above-120 segment conflicts with live official manual wording that regular prices stop rising while PvP blessing prices continue. Do not admit the aggregate regular formula without resolving this segment."
+      },
+      "after": {
+        "value": [
+          {
+            "level_max": 30,
+            "gold": "2000"
+          },
+          {
+            "level_min_exclusive": 30,
+            "level_max_exclusive": 120,
+            "gold": "200*(L-20)"
+          },
+          {
+            "level_min": 120,
+            "gold": "20000+75*(L-120)"
+          }
+        ],
+        "classification": "PROVEN",
+        "target_cut": "2026-10-19",
+        "continuity": "PRIMARY_SOURCE_PRECEDENCE_RESOLVED",
+        "sources": [
+          {
+            "source": "official:news:944:20261019",
+            "selector": "Up to30cost2000;31..119cost2000+200*(L-30)"
+          },
+          {
+            "source": "official:news:7260:20261019",
+            "selector": "Regular20,000+75*(L-120); enhanced26,000+100*(L-120); no adjustment below120"
+          }
+        ],
+        "note": "Specific official2023price announcement resolves the apparent wiki/manual conflict. Standard base price only; existing quest/NPC discounts remain separate.",
+        "assumptions": [],
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/blessings-content-1/admission-evidence/reference-evidence.json/records/0/facts/regular_above_120",
+      "before": {
+        "value": null,
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-18",
+        "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1630:1113782",
+            "selector": "Conflicting statements identified in note"
+          },
+          {
+            "source": "wiki:1628:1140641",
+            "selector": "Conflicting statements identified in note"
+          },
+          {
+            "source": "official:manual:characters:2026-10-18",
+            "selector": "Conflicting statements identified in note"
+          }
+        ],
+        "note": "Wiki current Blessings price formula grows 75 gp/level above 120; official manual 2026-09-28 describes a flat regular price past 120. Keep both observations; no runtime formula selected."
+      },
+      "after": {
+        "value": {
+          "level_min": 120,
+          "gold": "20000+75*(L-120)"
+        },
+        "classification": "PROVEN",
+        "target_cut": "2026-10-19",
+        "continuity": "PRIMARY_SOURCE_PRECEDENCE_RESOLVED",
+        "sources": [
+          {
+            "source": "official:news:7260:20261019",
+            "selector": "Regular blessing price from level120"
+          }
+        ],
+        "note": "Primary official price-change announcement explicitly establishes this branch; stale flat20,000manual prose is superseded.",
+        "assumptions": [],
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/blessings-content-1/admission-evidence/reference-evidence.json/records/0/facts/promotion_price_effect",
+      "before": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "No explicit promotion-specific purchase discount in the cited current source."
+      },
+      "after": {
+        "value": {
+          "published_base_formula_inputs": [
+            "level",
+            "regular_or_enhanced_blessing"
+          ],
+          "promotion_multiplier_in_published_base_formula": 1,
+          "scope": "PUBLISHED_STANDARD_BASE_PRICE_ONLY",
+          "separate_npc_or_quest_discounts": "preserved separately; no blanket absence claim"
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "PRIMARY_SOURCE_PRECEDENCE_RESOLVED",
+        "sources": [
+          {
+            "source": "official:news:944:20261019",
+            "selector": "Up to30cost2000;31..119cost2000+200*(L-30)"
+          },
+          {
+            "source": "official:news:7260:20261019",
+            "selector": "Regular20,000+75*(L-120); enhanced26,000+100*(L-120); no adjustment below120"
+          }
+        ],
+        "note": "The official published base formula has no promotion argument. This establishes base-formula independence, not a claim that no special NPC/quest discount can exist. Promotion death-loss effects remain separate.",
+        "assumptions": [],
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/blessings-content-1/admission-evidence/reference-evidence.json/records/9/facts/retro_hardcore_rate",
+      "before": {
+        "value": null,
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-18",
+        "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1630:1113782",
+            "selector": "Conflicting statements identified in note"
+          },
+          {
+            "source": "wiki:1628:1140641",
+            "selector": "Conflicting statements identified in note"
+          },
+          {
+            "source": "official:manual:characters:2026-10-18",
+            "selector": "Conflicting statements identified in note"
+          }
+        ],
+        "note": "Official manual: 6.31% per blessing; current Death Wiki: 6.4%. Neither silently selected."
+      },
+      "after": {
+        "value": 6.31,
+        "classification": "PROVEN",
+        "target_cut": "2026-10-19",
+        "continuity": "PRIMARY_SOURCE_PRECEDENCE_RESOLVED",
+        "sources": [
+          {
+            "source": "official:manual:characters:2026-10-18",
+            "selector": "5.1.11deathreduction6.31%perblessing"
+          }
+        ],
+        "note": "Primary official6.31takes precedence over retained community6.4wording. Resolved reference value; historical disagreement remains in source reconciliation.",
+        "assumptions": [],
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    }
+  ],
+  "donor_cross_check": {
+    "repository": "zimbadev/crystalserver",
+    "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+    "path": "data/libs/systems/blessing.lua",
+    "sha256": "e4cc6975aab546c73e2fa8ba59ee42427e030ce39dad0b913800bc1b54569b4a",
+    "blob_sha": "ae88475992a5d3d880c2af5498192c7ef60bea7c",
+    "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/libs/systems/blessing.lua#L147",
+    "source_class": "OTS_HYPOTHESIS_ONLY",
+    "observation": "getBlessingCost(level,byCommand,enhanced) corroborates the official regular/enhanced above120formula; no promotion parameter. It is supplementary, not sole numeric evidence."
+  },
+  "price_examples": [
+    {
+      "level": 30,
+      "regular_gold": 2000
+    },
+    {
+      "level": 31,
+      "regular_gold": 2200
+    },
+    {
+      "level": 119,
+      "regular_gold": 19800
+    },
+    {
+      "level": 120,
+      "regular_gold": 20000
+    },
+    {
+      "level": 121,
+      "regular_gold": 20075
+    },
+    {
+      "level": 200,
+      "regular_gold": 26000
+    },
+    {
+      "level": 1000,
+      "regular_gold": 86000
+    }
+  ],
+  "active_evidence_counts": {
+    "PROVEN": 68,
+    "DERIVED": 25
+  },
+  "remaining": [],
+  "limitations": [
+    "Published base pricing only; special NPC/quest discounts remain separate.",
+    "No generated service/pin activation or runtime qualification."
+  ]
+}

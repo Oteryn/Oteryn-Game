@@ -1,0 +1,152 @@
+{
+  "schema": "SOURCE_ABILITIES_SHARED_DEFAULT_SPARSE_EVENTS_PROPOSAL/v1",
+  "status": "SMALL_ONLY_NO_FULLPOOL_REPLAY_MODEL_OR_DATA_ADMISSION",
+  "goal": {
+    "eligible_targets": 33975,
+    "own_rows": 45721,
+    "max_owncut_rows_per_target": 3,
+    "protected901": "EXCLUDED"
+  },
+  "catalogs": {
+    "canary-47df": {
+      "path": "canary-47df-default-catalog.json",
+      "sha256": "818dee6f0be445b39450b4e3eecc06682eea75f399c149ab9dd44b8888744c4a"
+    },
+    "crystal-ff7": {
+      "path": "crystal-ff7-default-catalog.json",
+      "sha256": "91a7f1c2f88aef0586fca26f2c6483ba6a5a12b9917107fa8ed886f45f1df7ad"
+    },
+    "crystal-00ce": {
+      "path": "crystal-00ce-default-catalog.json",
+      "sha256": "6e5e6a9819109dacf0454120829429667b6ecc450aeb9062d50252b0a9c19d74"
+    }
+  },
+  "exact_static_counts": {
+    "canary-47df": {
+      "stats": 5,
+      "skills": 13,
+      "combat": 14,
+      "condition": 40,
+      "array_leaf_slots": 173,
+      "scalar_leaf_slots": 15,
+      "recognized_dispatch_keys": 143,
+      "ability_handler_count": 17,
+      "unconditional_allocating_handlers": [
+        "parseSpecializedMagicLevelPoint",
+        "parseMagicShieldCapacity",
+        "parsePerfecShot",
+        "parseCleavePercent",
+        "parseReflectDamage"
+      ]
+    },
+    "crystal-ff7": {
+      "stats": 5,
+      "skills": 13,
+      "combat": 14,
+      "condition": 38,
+      "array_leaf_slots": 183,
+      "scalar_leaf_slots": 15,
+      "recognized_dispatch_keys": 143,
+      "ability_handler_count": 19,
+      "unconditional_allocating_handlers": [
+        "parseSpecializedMagicLevelPoint",
+        "parseMagicShieldCapacity",
+        "parsePerfecShot",
+        "parseCleavePercent",
+        "parseReflectDamage"
+      ]
+    },
+    "crystal-00ce": {
+      "stats": 5,
+      "skills": 13,
+      "combat": 14,
+      "condition": 38,
+      "array_leaf_slots": 183,
+      "scalar_leaf_slots": 15,
+      "recognized_dispatch_keys": 143,
+      "ability_handler_count": 19,
+      "unconditional_allocating_handlers": [
+        "parseSpecializedMagicLevelPoint",
+        "parseMagicShieldCapacity",
+        "parsePerfecShot",
+        "parseCleavePercent",
+        "parseReflectDamage"
+      ]
+    }
+  },
+  "source_row_design": {
+    "common_header": "SameOwnCut/externalID/prototypeMessageSHA/orderedXMLphase/wholefullbinding/XMLrecordSHA+ordinal asDefinition; actualfullpool eligibility stillrequired.",
+    "catalog_reference": "Perowncutdefault_catalog_sha256; storesneutralarrays ONCE in sharedcatalog, notonearray peritem.",
+    "allocation_witness": "ABSENT_STORED_OBJECT or FIRST_GET_ABILITIES{XMLdirectordinal,handler,registeredkey,rawattributeSHA}. Once allocated pointer staysinitialized unlessownphasewriterclosure provesotherwise; do notcallmutatinggetter.",
+    "ordered_events": "Closedtaggedsetter variants below; rawlexeme retained perevent andCPPcast/sourceindex law pinned. No arbitrarymaps; sortedXMLordinal withhandlerorder insideeachinitParse.",
+    "derived_members": "Sparse typedchanges from shareddefault; eachaffectedarray slot uses closedownenum MEMBER+ownnumericid, notNativeenum cast. Missingmember comesfromqualified shareddefault ONLYifallocationproven; absentobject retainedabsent, gettersfallbackseparate."
+  },
+  "finite_event_variants": [
+    "ASSIGN_STAT_I32",
+    "ASSIGN_STAT_PERCENT_I32",
+    "ASSIGN_SKILL_I32",
+    "ASSIGN_SPEED_I32",
+    "ASSIGN_INVISIBLE_BOOL",
+    "ASSIGN_MANASHIELD_BOOL",
+    "ASSIGN_REGEN_RAW_U32_AND_ENABLE",
+    "ACCUMULATE_FIELD_ABSORB_I16",
+    "ACCUMULATE_GENERAL_ABSORB_I16",
+    "CONDITIONAL_SUPPRESSION_OWN_ENUM",
+    "ASSIGN_ELEMENT_U16_AND_OWN_TYPE",
+    "ACCUMULATE_SPECIAL_MAGIC_I32_AND_ASSIGN_OWN_TYPE",
+    "ACCUMULATE_MAGICSHIELD_I32",
+    "ASSIGN_PERFECT_DAMAGE_I32",
+    "ASSIGN_PERFECT_RANGE_I16_TO_U8",
+    "ACCUMULATE_CLEAVE_I32",
+    "ACCUMULATE_REFLECT_FLAT_I32",
+    "ACCUMULATE_REFLECT_ALL_I32_TO_I16",
+    "CRYSTAL_MANTRA_ACCUMULATE_I16_FOUR_OWN_ELEMENTS",
+    "CRYSTAL_ELEMENTAL_BOND_ASSIGN_OWN_TYPE",
+    "RECOGNIZED_ALIAS_NOOP_ALLOCATION_EVENT"
+  ],
+  "own_integer_cast_law": "Custompugicast: std::from_chars exactFULLtoken/range forT; successful valuewithinT. Invalid/range errorcallslogError thenT{} ifthatcallreturns. logErrorexceptionsemantics heldpendingownimplementation; nooutofrangeclampguessed.",
+  "SDK_bool_law_sha256": "0b774effc55bed18c6ae5868e2170ad7ab5e0bc1024beb5e3dd4a497a2e6cce9",
+  "cut_differences": [
+    "CanaryCOMBAT_FIRE1/ENERGY3; CrystalENERGY1/FIRE3. Native14ordinalirrelevant.",
+    "ConditionCount40Canary/38Crystal; STAT5 andskills13allcuts; SKILL_MAGLEVEL13/LEVEL14 outsideabilityskillarray.",
+    "CrystalmantraAbsorb14 exists; Canarymantra changesItemType.mantra only.",
+    "Crystalelementalbond modifiesAbilities.elementType andstringfield; CanarymodifiesItemType.elementalBond enum only.",
+    "COMBAT_NONE255 outside14array."
+  ],
+  "open_holds": [
+    "Exactownmagic_enumSDK enum_index law toqualifycombatTypeToIndex, no crosscutordinalborrow.",
+    "pugi::logError body/errorpath throws-or-default mustclosed beforeinvalidnumeric values qualify.",
+    "Full491/559CPP/HPP allwriter/access/creation phase closure; noheavy replayuntilRootrelease.",
+    "Nestedscript/createAndRegisterScript/callbacks andall possible abilities mutation duringXMLphase requireclosed ordering evidence.",
+    "Signed32+=overflow held; int16narrowing mustsource-law distinctfromsignedUB; regenerationconfigscaledgetters runtimeUnknown.",
+    "Observed maximumevents/changedslots/lexeme bytes per45721row andSourceevidencebudget MUSTactualfinitecensus afterlockrelease; no max16/64 guessed.",
+    "Strictbothview/outsidecohortinverse andold576/Scalar/Definition/Media/Armor/World901/metadataOwning companions notyetprepared."
+  ],
+  "input_sha256": {
+    "/tmp/native-primary-classification-audit/source-code/canary-47df/items.hpp": "b8c12f45122eeb575ad548719c5fb178a96460d8a41ad882d0d88b2e66d797e6",
+    "/tmp/native-primary-classification-audit/source-code/canary-47df/items.cpp": "f695ed647e111923cf8e4d487c4a0706f19e7edbfb7896655c20494d6d927fd7",
+    "/tmp/native-primary-classification-audit/source-code/canary-47df/item_parse.cpp": "4abe1c35c621595472bc6b30d39e10d7db115dd569d9e3334b64b600b9141477",
+    "/tmp/native-primary-classification-audit/source-code/canary-47df/item_parse.hpp": "06221b5fc0a6e744df143eb6c91c1abe83689a438fb5f64d2dba28b0baae17ef",
+    "/tmp/oteryn-primary-fx-audio-v2/contexts/canary-47df/src/creatures/creatures_definitions.hpp": "54f0a5bcdc10e33d8850300c5c5022eb7fe8b4549394407482c57245bdab3e33",
+    "/tmp/oteryn-primary-fx-audio-v2/contexts/canary-47df/src/utils/tools.cpp": "28dc881ffb1fa38d63f3cf1c02e2329cab8051117936b055f78000d6f0a5cc19",
+    "/tmp/native-primary-skills-schema/canary-47df__src__utils__pugicast.hpp": "f474ef00522c557903e0de18ed3136c06df5d90501809a9bf651caa257881f8c",
+    "/tmp/native-primary-classification-audit/source-code/crystal-ff7/items.hpp": "4bb45e54fc06921e82b12badee389330376f72f352b2ef8c0074e824cf7b9844",
+    "/tmp/native-primary-classification-audit/source-code/crystal-ff7/items.cpp": "f39d8fc6c1c81b8ec6f749e1f152dd945472ffd5a36b9cf3cd9a3a64b2f19b1d",
+    "/tmp/native-primary-classification-audit/source-code/crystal-ff7/item_parse.cpp": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+    "/tmp/native-primary-classification-audit/source-code/crystal-ff7/item_parse.hpp": "4493fe6ed56696402eb9eeb47d2685544130b8b0ed0074e2fae2f81bd193a796",
+    "/tmp/oteryn-primary-fx-audio-v2/contexts/crystal-ff7/src/creatures/creatures_definitions.hpp": "8fbc70bf2416b6e76f17cce3dc1b075f8a5451f0f85b522b0a4ae34cf2cccf94",
+    "/tmp/oteryn-primary-fx-audio-v2/contexts/crystal-ff7/src/utils/tools.cpp": "ffcf3cd7f08f18aa4701388f5df6eda85ece721acc3f0c89f1082302952b2512",
+    "/tmp/native-primary-skills-schema/crystal-ff7__src__utils__pugicast.hpp": "6394ad75753a32fd5bac2cf6a50fb6a097ecd736a0bb690695ae13f8abe1da17",
+    "/tmp/native-primary-classification-audit/source-code/crystal-00ce/items.hpp": "4bb45e54fc06921e82b12badee389330376f72f352b2ef8c0074e824cf7b9844",
+    "/tmp/native-primary-classification-audit/source-code/crystal-00ce/items.cpp": "f39d8fc6c1c81b8ec6f749e1f152dd945472ffd5a36b9cf3cd9a3a64b2f19b1d",
+    "/tmp/native-primary-classification-audit/source-code/crystal-00ce/item_parse.cpp": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+    "/tmp/native-primary-classification-audit/source-code/crystal-00ce/item_parse.hpp": "4493fe6ed56696402eb9eeb47d2685544130b8b0ed0074e2fae2f81bd193a796",
+    "/tmp/oteryn-primary-fx-audio-v2/contexts/crystal-00ce/src/creatures/creatures_definitions.hpp": "8fbc70bf2416b6e76f17cce3dc1b075f8a5451f0f85b522b0a4ae34cf2cccf94",
+    "/tmp/oteryn-primary-fx-audio-v2/contexts/crystal-00ce/src/utils/tools.cpp": "61f1649fce6cae87905f9619cc1b6cd8b76c3066ce349ae2f4bc92072caed070",
+    "/tmp/native-primary-skills-schema/crystal-00ce__src__utils__pugicast.hpp": "6394ad75753a32fd5bac2cf6a50fb6a097ecd736a0bb690695ae13f8abe1da17"
+  },
+  "heavy_operations": 0,
+  "Cpp_executed": false,
+  "Cargo": false,
+  "repository_writes": 0
+}

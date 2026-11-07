@@ -1,0 +1,18 @@
+{
+  "id": "CHATPM-RL-01",
+  "owner_contract": "protocol-oteryn/v1/chat_v1.proto",
+  "resource": "Invitations of one private chat channel",
+  "unit": "characters",
+  "hard_maximum": 16,
+  "configurable_range": {
+    "minimum": 16,
+    "maximum": 16
+  },
+  "failure_category": "REJECTED",
+  "allocation_impact": "Checked under the Channel chat lock before an invitation is stored; the in-memory list never grows past it.",
+  "client_visible": true,
+  "boundary_tests": [
+    "private_channel_invitations_are_bounded"
+  ],
+  "notes": "Canary PrivateChatChannel::invitePlayer (src/creatures/interactions/chat.cpp:42 at 47dfd51f) bounds invitations only by online players; Oteryn fixes its own bound. A 17th invitation answers REJECTED and changes nothing."
+}

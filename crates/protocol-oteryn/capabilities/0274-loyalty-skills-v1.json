@@ -1,0 +1,17 @@
+{
+  "id": 274,
+  "name": "LOYALTY_SKILLS_V1",
+  "constant": "loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    488
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

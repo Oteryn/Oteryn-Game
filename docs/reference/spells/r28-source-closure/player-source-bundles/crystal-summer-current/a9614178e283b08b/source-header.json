@@ -1,0 +1,44 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 140,
+      "soul": 2
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Conjure Bolt",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_conjure_arrow"
+    },
+    "reference_spell_id": 79,
+    "requirements": {
+      "level": 17,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "exevo con mort"
+  }
+}

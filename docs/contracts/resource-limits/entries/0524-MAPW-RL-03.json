@@ -1,0 +1,23 @@
+{
+  "id": "MAPW-RL-03",
+  "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+  "resource": "Tiles and cleared entries of one WorldMapViewDeltaV1 (domain 17)",
+  "unit": "entries per delta",
+  "hard_maximum": 248,
+  "configurable_range": {
+    "minimum": 248,
+    "maximum": 248
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A one-step diagonal move reveals at most 31 tiles per floor over 8 floors: 248. A delta that would carry more is sent as a snapshot instead, never truncated.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=248: a delta with 248 entries encodes within 93,376 bytes and decodes",
+    "max+1=249: a delta with 249 entries fails closed and the server sends a snapshot"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/world_map.rs MAX_DELTA_ENTRIES",
+    "apps/game-server/src/gameplay_transport/world_map.rs"
+  ],
+  "notes": "MAP-WIRE-1 \u00a73. Tests: world_map::tests::encoded_sizes_stay_within_the_bounds, gameplay_transport::world_map::tests. Registered by OTV2-20261004-map-wire-2."
+}

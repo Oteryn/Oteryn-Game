@@ -1,0 +1,1860 @@
+{
+  "schema": "NPC_R28_QUEST_DIALOGUE_SOURCE_UPGRADES/v1",
+  "baseline_head": "82a7e1fcee352512bf6c5ea0406271e326192b53",
+  "upgrades": [
+    {
+      "key": "oteryn:npc.nagging_naga",
+      "name": "Nagging Naga",
+      "dialogue": {
+        "greet": {
+          "reply": [
+            "Speak quick human. What is it that you want? My patience is limited!"
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "Nagging Naga",
+              "original_exact_text": "Speak quick human. What is it that you want? My patience is limited!",
+              "start_byte": 83104,
+              "end_byte_exclusive": 83257,
+              "raw_fragment_sha256": "1fdd668d9920e4fa5427d28700c954071d22b4587965ef902327401370662d3e"
+            }
+          ],
+          "source": {
+            "url": "https://tibiopedia.pl/quests/Primal_Ordeal_Quest",
+            "sha256": "d044b9f5865cd326b3fe0b21118a668895f24699b782bc18d96e66148a6f2ffb",
+            "revision": null,
+            "capture_path": "/workspace/npc-quest-recheck/original_b/tibiopedia.pl--quests--Primal_Ordeal_Quest.html",
+            "access_method": "ordinary public HTTP via CookieJar site language form; retained exact whole HTML",
+            "bytes": 152148,
+            "documentary_quote_rows": [
+              {
+                "speaker_identity": "Nagging Naga",
+                "original_exact_text": "Speak quick human. What is it that you want? My patience is limited!",
+                "selected_text": "Speak quick human. What is it that you want? My patience is limited!",
+                "placeholder_normalization": false,
+                "player_keyword": "Hi",
+                "conversation_sequence": 2,
+                "player_turn": 1,
+                "source": {
+                  "url": "https://tibiopedia.pl/quests/Primal_Ordeal_Quest",
+                  "sha256": "d044b9f5865cd326b3fe0b21118a668895f24699b782bc18d96e66148a6f2ffb",
+                  "revision": null,
+                  "capture_path": "/workspace/npc-quest-recheck/original_b/tibiopedia.pl--quests--Primal_Ordeal_Quest.html",
+                  "access_method": "ordinary public HTTP via CookieJar site language form; retained exact whole HTML"
+                },
+                "quote_html": {
+                  "start_byte": 83104,
+                  "end_byte_exclusive": 83257,
+                  "raw_fragment_sha256": "1fdd668d9920e4fa5427d28700c954071d22b4587965ef902327401370662d3e",
+                  "literal_html": "<div class=\"npc_chat_npc\">Nagging Naga: Speak quick human. What is it that you <span class=\"npc_class_keyword\">want</span>? My patience is limited!</div>"
+                },
+                "conversation_html": {
+                  "start_byte": 82884,
+                  "end_byte_exclusive": 84433,
+                  "raw_fragment_sha256": "eb86cfd73057049b9300803213facbc9d6703ad71a169aaaf974b5d2ee77fa20"
+                },
+                "context": "Quest spoiler NPC dialogue; state-dependent quest stage retained, no runtime/action/state fidelity claim."
+              }
+            ],
+            "source_speaker_identity": "Nagging Naga",
+            "canonical_name_alias": {
+              "source": "Nagging Naga",
+              "canonical": "Nagging Naga",
+              "policy": "EXACT_ACTOR_KEY_AND_NPC_PROFILE_IDENTITY_WITH_DOCUMENTED_NPC_SUFFIX_ALIAS"
+            }
+          },
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "matching_policy": "OTERYN_STATIC_APPROXIMATE_SELECTION_FROM_QUEST_HI_CONTEXT_SOURCE_STATE_UNPROVEN",
+          "source_fidelity_canonical_claim": false
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.opticorder_forge_npc",
+      "name": "Opticorder Forge (NPC)",
+      "dialogue": {
+        "greet": {
+          "reply": [
+            "State the meaning of walls VB and VC of testimony."
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "Opticorder Forge (NPC)",
+              "original_exact_text": "State the meaning of walls VB and VC of testimony.",
+              "start_byte": 81440,
+              "end_byte_exclusive": 81540,
+              "raw_fragment_sha256": "cf0959604fa26e0b1e3a14834b3a28dfb39c2fb75dd5e6cda7e11d5020bd1926"
+            }
+          ],
+          "source": {
+            "url": "https://tibiopedia.pl/quests/Mysterious_Ornate_Chest_Quest",
+            "sha256": "f2273ad8b3ca26c85576faec37fca88b1f2dd1473129166f8e400ec6534524b4",
+            "revision": null,
+            "capture_path": "/workspace/npc-quest-recheck/original_b/tibiopedia.pl--quests--Mysterious_Ornate_Chest_Quest.html",
+            "access_method": "ordinary public HTTP via CookieJar site language form; retained exact whole HTML",
+            "bytes": 227395,
+            "documentary_quote_rows": [
+              {
+                "speaker_identity": "Opticorder Forge",
+                "original_exact_text": "State the meaning of walls VB and VC of testimony.",
+                "selected_text": "State the meaning of walls VB and VC of testimony.",
+                "placeholder_normalization": false,
+                "player_keyword": "hi",
+                "conversation_sequence": 2,
+                "player_turn": 1,
+                "source": {
+                  "url": "https://tibiopedia.pl/quests/Mysterious_Ornate_Chest_Quest",
+                  "sha256": "f2273ad8b3ca26c85576faec37fca88b1f2dd1473129166f8e400ec6534524b4",
+                  "revision": null,
+                  "capture_path": "/workspace/npc-quest-recheck/original_b/tibiopedia.pl--quests--Mysterious_Ornate_Chest_Quest.html",
+                  "access_method": "ordinary public HTTP via CookieJar site language form; retained exact whole HTML"
+                },
+                "quote_html": {
+                  "start_byte": 81440,
+                  "end_byte_exclusive": 81540,
+                  "raw_fragment_sha256": "cf0959604fa26e0b1e3a14834b3a28dfb39c2fb75dd5e6cda7e11d5020bd1926",
+                  "literal_html": "<div class=\"npc_chat_npc\">Opticorder Forge: State the meaning of walls VB and VC of testimony.</div>"
+                },
+                "conversation_html": {
+                  "start_byte": 81220,
+                  "end_byte_exclusive": 82067,
+                  "raw_fragment_sha256": "a3b0e97e57fc8cdf3b96fe31d4828ff18cdff7815bafc89ee3b6e75953b5ed62"
+                },
+                "context": "Quest spoiler NPC dialogue; state-dependent quest stage retained, no runtime/action/state fidelity claim."
+              }
+            ],
+            "source_speaker_identity": "Opticorder Forge",
+            "canonical_name_alias": {
+              "source": "Opticorder Forge",
+              "canonical": "Opticorder Forge (NPC)",
+              "policy": "EXACT_ACTOR_KEY_AND_NPC_PROFILE_IDENTITY_WITH_DOCUMENTED_NPC_SUFFIX_ALIAS"
+            }
+          },
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "matching_policy": "OTERYN_STATIC_APPROXIMATE_SELECTION_FROM_QUEST_HI_CONTEXT_SOURCE_STATE_UNPROVEN",
+          "source_fidelity_canonical_claim": false
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.proprietor_piers",
+      "name": "Proprietor Piers",
+      "dialogue": {
+        "greet": {
+          "reply": [
+            "Top o' the morning, traveller! Here to join the Great Expedition by helping to fund it, vote for a crew member, check its status, exchange your event points or customise our majestic ship? ...",
+            "Thing is, we're in quite a pickle here right now and could really need your help!"
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "Proprietor Piers",
+              "original_exact_text": "Top o' the morning, traveller! Here to join the Great Expedition by helping to fund it, vote for a crew member, check its status, exchange your event points or customise our majestic ship? ...",
+              "start_byte": 52534,
+              "end_byte_exclusive": 53093,
+              "raw_fragment_sha256": "e685c6efcf40f46611507306af316af5178ae5160034f0dd1876e6bca1526cf7"
+            },
+            {
+              "speaker_identity": "Proprietor Piers",
+              "original_exact_text": "Thing is, we're in quite a pickle here right now and could really need your help!",
+              "start_byte": 53093,
+              "end_byte_exclusive": 53268,
+              "raw_fragment_sha256": "13a843152ca2315d6505fe3eb121feeaa080b9fcc95784bd151482e840161dc5"
+            }
+          ],
+          "source": {
+            "url": "https://tibiopedia.pl/quests/The_Great_Expedition",
+            "sha256": "d555ac1c2902ed3f7f0dff6645fa8e9127856c0506e72d5db2f14d677176b00a",
+            "revision": null,
+            "capture_path": "/workspace/npc-quest-recheck/original_b/tibiopedia.pl--quests--The_Great_Expedition.html",
+            "access_method": "ordinary public HTTP via CookieJar site language form; retained exact whole HTML",
+            "bytes": 157255,
+            "documentary_quote_rows": [
+              {
+                "speaker_identity": "Proprietor Piers",
+                "original_exact_text": "Top o' the morning, traveller! Here to join the Great Expedition by helping to fund it, vote for a crew member, check its status, exchange your event points or customise our majestic ship? ...",
+                "selected_text": "Top o' the morning, traveller! Here to join the Great Expedition by helping to fund it, vote for a crew member, check its status, exchange your event points or customise our majestic ship? ...",
+                "placeholder_normalization": false,
+                "player_keyword": ":Hi",
+                "conversation_sequence": 2,
+                "player_turn": 1,
+                "source": {
+                  "url": "https://tibiopedia.pl/quests/The_Great_Expedition",
+                  "sha256": "d555ac1c2902ed3f7f0dff6645fa8e9127856c0506e72d5db2f14d677176b00a",
+                  "revision": null,
+                  "capture_path": "/workspace/npc-quest-recheck/original_b/tibiopedia.pl--quests--The_Great_Expedition.html",
+                  "access_method": "ordinary public HTTP via CookieJar site language form; retained exact whole HTML"
+                },
+                "quote_html": {
+                  "start_byte": 52534,
+                  "end_byte_exclusive": 53093,
+                  "raw_fragment_sha256": "e685c6efcf40f46611507306af316af5178ae5160034f0dd1876e6bca1526cf7",
+                  "literal_html": "<div class=\"npc_chat_npc\">Proprietor Piers: Top o&#039; the morning, traveller! Here to join the <span class=\"npc_class_keyword\">Great Expedition</span> by helping to <span class=\"npc_class_keyword\">fund</span> it, <span class=\"npc_class_keyword\">vote</span> for a crew member, check its <span class=\"npc_class_keyword\">status</span>, <span class=\"npc_class_keyword\">exchange</span> your <span class=\"npc_class_keyword\">event points</span> or <span class=\"npc_class_keyword\">customise</span> our majestic <span class=\"npc_class_keyword\">ship</span>? ...</div>"
+                },
+                "conversation_html": {
+                  "start_byte": 52313,
+                  "end_byte_exclusive": 54188,
+                  "raw_fragment_sha256": "67f82ce0d698366727da5b4746ff114f29ab2294be83785ee94a0dcbc492fa3d"
+                },
+                "context": "Quest spoiler NPC dialogue; state-dependent quest stage retained, no runtime/action/state fidelity claim."
+              },
+              {
+                "speaker_identity": "Proprietor Piers",
+                "original_exact_text": "Thing is, we're in quite a pickle here right now and could really need your help!",
+                "selected_text": "Thing is, we're in quite a pickle here right now and could really need your help!",
+                "placeholder_normalization": false,
+                "player_keyword": ":Hi",
+                "conversation_sequence": 3,
+                "player_turn": 1,
+                "source": {
+                  "url": "https://tibiopedia.pl/quests/The_Great_Expedition",
+                  "sha256": "d555ac1c2902ed3f7f0dff6645fa8e9127856c0506e72d5db2f14d677176b00a",
+                  "revision": null,
+                  "capture_path": "/workspace/npc-quest-recheck/original_b/tibiopedia.pl--quests--The_Great_Expedition.html",
+                  "access_method": "ordinary public HTTP via CookieJar site language form; retained exact whole HTML"
+                },
+                "quote_html": {
+                  "start_byte": 53093,
+                  "end_byte_exclusive": 53268,
+                  "raw_fragment_sha256": "13a843152ca2315d6505fe3eb121feeaa080b9fcc95784bd151482e840161dc5",
+                  "literal_html": "<div class=\"npc_chat_npc\">Proprietor Piers: Thing is, we&#039;re in quite a pickle here right now and could really need your <span class=\"npc_class_keyword\">help</span>!</div>"
+                },
+                "conversation_html": {
+                  "start_byte": 52313,
+                  "end_byte_exclusive": 54188,
+                  "raw_fragment_sha256": "67f82ce0d698366727da5b4746ff114f29ab2294be83785ee94a0dcbc492fa3d"
+                },
+                "context": "Quest spoiler NPC dialogue; state-dependent quest stage retained, no runtime/action/state fidelity claim."
+              }
+            ],
+            "source_speaker_identity": "Proprietor Piers",
+            "canonical_name_alias": {
+              "source": "Proprietor Piers",
+              "canonical": "Proprietor Piers",
+              "policy": "EXACT_ACTOR_KEY_AND_NPC_PROFILE_IDENTITY_WITH_DOCUMENTED_NPC_SUFFIX_ALIAS"
+            }
+          },
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "matching_policy": "OTERYN_STATIC_APPROXIMATE_SELECTION_FROM_QUEST_HI_CONTEXT_SOURCE_STATE_UNPROVEN",
+          "source_fidelity_canonical_claim": false
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.rascalio",
+      "name": "Rascalio",
+      "dialogue": {
+        "greet": {
+          "reply": [
+            "Be greeted, |PLAYERNAME|! I heard you are on a mission for my friend the draccoon!"
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "Rascalio",
+              "original_exact_text": "Be greeted, Player! I heard you are on a mission for my friend the draccoon!",
+              "start_byte": 111684,
+              "end_byte_exclusive": 111883,
+              "raw_fragment_sha256": "d50e315bf85b1cddd688b5168f4d844c4bbe63b4297fe0c5d54b671987d5a9fd"
+            }
+          ],
+          "source": {
+            "url": "https://tibiopedia.pl/quests/20_Years_a_Cook_Quest",
+            "sha256": "f5003dd58e0245c820a3f9478024c52734c84dfc085ca26a92c6bdcc4a6e7a81",
+            "revision": null,
+            "capture_path": "/workspace/npc-quest-recheck/original_b/tibiopedia.pl--quests--20_Years_a_Cook_Quest.html",
+            "access_method": "ordinary public HTTP via CookieJar site language form; retained exact whole HTML",
+            "bytes": 188388,
+            "documentary_quote_rows": [
+              {
+                "speaker_identity": "Rascalio",
+                "original_exact_text": "Be greeted, Player! I heard you are on a mission for my friend the draccoon!",
+                "selected_text": "Be greeted, |PLAYERNAME|! I heard you are on a mission for my friend the draccoon!",
+                "placeholder_normalization": true,
+                "player_keyword": "Hi",
+                "conversation_sequence": 2,
+                "player_turn": 1,
+                "source": {
+                  "url": "https://tibiopedia.pl/quests/20_Years_a_Cook_Quest",
+                  "sha256": "f5003dd58e0245c820a3f9478024c52734c84dfc085ca26a92c6bdcc4a6e7a81",
+                  "revision": null,
+                  "capture_path": "/workspace/npc-quest-recheck/original_b/tibiopedia.pl--quests--20_Years_a_Cook_Quest.html",
+                  "access_method": "ordinary public HTTP via CookieJar site language form; retained exact whole HTML"
+                },
+                "quote_html": {
+                  "start_byte": 111684,
+                  "end_byte_exclusive": 111883,
+                  "raw_fragment_sha256": "d50e315bf85b1cddd688b5168f4d844c4bbe63b4297fe0c5d54b671987d5a9fd",
+                  "literal_html": "<div class=\"npc_chat_npc\">Rascalio: Be greeted, <span class=\"npc_chat_player_name\">Player</span>! I heard you are on a <span class=\"npc_class_keyword\">mission</span> for my friend the draccoon!</div>"
+                },
+                "conversation_html": {
+                  "start_byte": 111464,
+                  "end_byte_exclusive": 112871,
+                  "raw_fragment_sha256": "cd17ea72d85599390b65bb33d01670598d9f6a5386eebe45259082c383360898"
+                },
+                "context": "Quest spoiler NPC dialogue; state-dependent quest stage retained, no runtime/action/state fidelity claim."
+              }
+            ],
+            "source_speaker_identity": "Rascalio",
+            "canonical_name_alias": {
+              "source": "Rascalio",
+              "canonical": "Rascalio",
+              "policy": "EXACT_ACTOR_KEY_AND_NPC_PROFILE_IDENTITY_WITH_DOCUMENTED_NPC_SUFFIX_ALIAS"
+            }
+          },
+          "source_quote": true,
+          "classification": "APPROXIMATE_PLACEHOLDER_NORMALIZATION",
+          "matching_policy": "OTERYN_STATIC_APPROXIMATE_SELECTION_FROM_QUEST_HI_CONTEXT_SOURCE_STATE_UNPROVEN",
+          "source_fidelity_canonical_claim": false,
+          "normalization": {
+            "from": "Player",
+            "to": "|PLAYERNAME|"
+          }
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.secretive_rascoohan",
+      "name": "Secretive Rascoohan",
+      "dialogue": {
+        "greet": {
+          "reply": [
+            "Be greeted, |PLAYERNAME|! It's me, Airclairebear! I'm here to help."
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "Secretive Rascoohan",
+              "original_exact_text": "Be greeted, Player! It's me, Airclairebear! I'm here to help.",
+              "start_byte": 104570,
+              "end_byte_exclusive": 104775,
+              "raw_fragment_sha256": "d6a454b0f9293e7292256e4a6050c5c0343bc5c47e87e20ac6dbc48db2ffd5d7"
+            }
+          ],
+          "source": {
+            "url": "https://tibiopedia.pl/quests/20_Years_a_Cook_Quest",
+            "sha256": "f5003dd58e0245c820a3f9478024c52734c84dfc085ca26a92c6bdcc4a6e7a81",
+            "revision": null,
+            "capture_path": "/workspace/npc-quest-recheck/original_b/tibiopedia.pl--quests--20_Years_a_Cook_Quest.html",
+            "access_method": "ordinary public HTTP via CookieJar site language form; retained exact whole HTML",
+            "bytes": 188388,
+            "documentary_quote_rows": [
+              {
+                "speaker_identity": "Secretive Rascoohan",
+                "original_exact_text": "Be greeted, Player! It's me, Airclairebear! I'm here to help.",
+                "selected_text": "Be greeted, |PLAYERNAME|! It's me, Airclairebear! I'm here to help.",
+                "placeholder_normalization": true,
+                "player_keyword": "Hi",
+                "conversation_sequence": 2,
+                "player_turn": 1,
+                "source": {
+                  "url": "https://tibiopedia.pl/quests/20_Years_a_Cook_Quest",
+                  "sha256": "f5003dd58e0245c820a3f9478024c52734c84dfc085ca26a92c6bdcc4a6e7a81",
+                  "revision": null,
+                  "capture_path": "/workspace/npc-quest-recheck/original_b/tibiopedia.pl--quests--20_Years_a_Cook_Quest.html",
+                  "access_method": "ordinary public HTTP via CookieJar site language form; retained exact whole HTML"
+                },
+                "quote_html": {
+                  "start_byte": 104570,
+                  "end_byte_exclusive": 104775,
+                  "raw_fragment_sha256": "d6a454b0f9293e7292256e4a6050c5c0343bc5c47e87e20ac6dbc48db2ffd5d7",
+                  "literal_html": "<div class=\"npc_chat_npc\">Secretive Rascoohan: Be greeted, <span class=\"npc_chat_player_name\">Player</span>! It&#039;s me, Airclairebear! I&#039;m here to <span class=\"npc_class_keyword\">help</span>.</div>"
+                },
+                "conversation_html": {
+                  "start_byte": 104350,
+                  "end_byte_exclusive": 105758,
+                  "raw_fragment_sha256": "87d302664b887f9c68211310c58763f6606f0f36ba41f164d04949f71c240aea"
+                },
+                "context": "Quest spoiler NPC dialogue; state-dependent quest stage retained, no runtime/action/state fidelity claim."
+              }
+            ],
+            "source_speaker_identity": "Secretive Rascoohan",
+            "canonical_name_alias": {
+              "source": "Secretive Rascoohan",
+              "canonical": "Secretive Rascoohan",
+              "policy": "EXACT_ACTOR_KEY_AND_NPC_PROFILE_IDENTITY_WITH_DOCUMENTED_NPC_SUFFIX_ALIAS"
+            }
+          },
+          "source_quote": true,
+          "classification": "APPROXIMATE_PLACEHOLDER_NORMALIZATION",
+          "matching_policy": "OTERYN_STATIC_APPROXIMATE_SELECTION_FROM_QUEST_HI_CONTEXT_SOURCE_STATE_UNPROVEN",
+          "source_fidelity_canonical_claim": false,
+          "normalization": {
+            "from": "Player",
+            "to": "|PLAYERNAME|"
+          }
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.skullfrost_npc",
+      "name": "Skullfrost (NPC)",
+      "dialogue": {
+        "greet": {
+          "reply": [
+            "Thank you for finding me! I was sure you would be able to save me. But this was really a terrible experience!"
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "Skullfrost (NPC)",
+              "original_exact_text": "Thank you for finding me! I was sure you would be able to save me. But this was really a terrible experience!",
+              "start_byte": 143853,
+              "end_byte_exclusive": 144045,
+              "raw_fragment_sha256": "840420b2c119f58e139d892c868f158568796c2c70923a619bcad7c945f9541c"
+            }
+          ],
+          "source": {
+            "url": "https://tibiopedia.pl/quests/Between_the_Lines_Quest",
+            "sha256": "e2aeb880166d20fed8c73bee7a86351c93c90d8f05621a5888ad40d61bdfa65b",
+            "revision": null,
+            "capture_path": "/workspace/npc-quest-recheck/original_b/tibiopedia.pl--quests--Between_the_Lines_Quest.html",
+            "access_method": "ordinary public HTTP via CookieJar site language form; retained exact whole HTML",
+            "bytes": 237144,
+            "documentary_quote_rows": [
+              {
+                "speaker_identity": "Skullfrost",
+                "original_exact_text": "Thank you for finding me! I was sure you would be able to save me. But this was really a terrible experience!",
+                "selected_text": "Thank you for finding me! I was sure you would be able to save me. But this was really a terrible experience!",
+                "placeholder_normalization": false,
+                "player_keyword": "hi",
+                "conversation_sequence": 2,
+                "player_turn": 1,
+                "source": {
+                  "url": "https://tibiopedia.pl/quests/Between_the_Lines_Quest",
+                  "sha256": "e2aeb880166d20fed8c73bee7a86351c93c90d8f05621a5888ad40d61bdfa65b",
+                  "revision": null,
+                  "capture_path": "/workspace/npc-quest-recheck/original_b/tibiopedia.pl--quests--Between_the_Lines_Quest.html",
+                  "access_method": "ordinary public HTTP via CookieJar site language form; retained exact whole HTML"
+                },
+                "quote_html": {
+                  "start_byte": 143853,
+                  "end_byte_exclusive": 144045,
+                  "raw_fragment_sha256": "840420b2c119f58e139d892c868f158568796c2c70923a619bcad7c945f9541c",
+                  "literal_html": "<div class=\"npc_chat_npc\">Skullfrost: Thank you for finding me! I was sure you would be able to save me. But this was really a terrible <span class=\"npc_class_keyword\">experience</span>!</div>"
+                },
+                "conversation_html": {
+                  "start_byte": 143633,
+                  "end_byte_exclusive": 144366,
+                  "raw_fragment_sha256": "1bfc472b5c001899af0589104d9a3539cb0f153650a2593cf59562e67a2cf530"
+                },
+                "context": "Quest spoiler NPC dialogue; state-dependent quest stage retained, no runtime/action/state fidelity claim."
+              }
+            ],
+            "source_speaker_identity": "Skullfrost",
+            "canonical_name_alias": {
+              "source": "Skullfrost",
+              "canonical": "Skullfrost (NPC)",
+              "policy": "EXACT_ACTOR_KEY_AND_NPC_PROFILE_IDENTITY_WITH_DOCUMENTED_NPC_SUFFIX_ALIAS"
+            }
+          },
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "matching_policy": "OTERYN_STATIC_APPROXIMATE_SELECTION_FROM_QUEST_HI_CONTEXT_SOURCE_STATE_UNPROVEN",
+          "source_fidelity_canonical_claim": false
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.thundergiant_npc",
+      "name": "Thundergiant (NPC)",
+      "dialogue": {
+        "greet": {
+          "reply": [
+            "Thank you for finding me! I was sure you would be able to save me. But this was really a terrible experience!"
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "Thundergiant (NPC)",
+              "original_exact_text": "Thank you for finding me! I was sure you would be able to save me. But this was really a terrible experience!",
+              "start_byte": 151861,
+              "end_byte_exclusive": 152055,
+              "raw_fragment_sha256": "be730f53911da111c8d3e5b276611a9c35ed562e886a81bd2545d8daa5f6687e"
+            }
+          ],
+          "source": {
+            "url": "https://tibiopedia.pl/quests/Between_the_Lines_Quest",
+            "sha256": "e2aeb880166d20fed8c73bee7a86351c93c90d8f05621a5888ad40d61bdfa65b",
+            "revision": null,
+            "capture_path": "/workspace/npc-quest-recheck/original_b/tibiopedia.pl--quests--Between_the_Lines_Quest.html",
+            "access_method": "ordinary public HTTP via CookieJar site language form; retained exact whole HTML",
+            "bytes": 237144,
+            "documentary_quote_rows": [
+              {
+                "speaker_identity": "Thundergiant",
+                "original_exact_text": "Thank you for finding me! I was sure you would be able to save me. But this was really a terrible experience!",
+                "selected_text": "Thank you for finding me! I was sure you would be able to save me. But this was really a terrible experience!",
+                "placeholder_normalization": false,
+                "player_keyword": "hi",
+                "conversation_sequence": 2,
+                "player_turn": 1,
+                "source": {
+                  "url": "https://tibiopedia.pl/quests/Between_the_Lines_Quest",
+                  "sha256": "e2aeb880166d20fed8c73bee7a86351c93c90d8f05621a5888ad40d61bdfa65b",
+                  "revision": null,
+                  "capture_path": "/workspace/npc-quest-recheck/original_b/tibiopedia.pl--quests--Between_the_Lines_Quest.html",
+                  "access_method": "ordinary public HTTP via CookieJar site language form; retained exact whole HTML"
+                },
+                "quote_html": {
+                  "start_byte": 151861,
+                  "end_byte_exclusive": 152055,
+                  "raw_fragment_sha256": "be730f53911da111c8d3e5b276611a9c35ed562e886a81bd2545d8daa5f6687e",
+                  "literal_html": "<div class=\"npc_chat_npc\">Thundergiant: Thank you for finding me! I was sure you would be able to save me. But this was really a terrible <span class=\"npc_class_keyword\">experience</span>!</div>"
+                },
+                "conversation_html": {
+                  "start_byte": 151641,
+                  "end_byte_exclusive": 152378,
+                  "raw_fragment_sha256": "4e5904724ca5047c5ec86d1564a5661cd0cce1d9cc7e788bc1c8fb0309cf737a"
+                },
+                "context": "Quest spoiler NPC dialogue; state-dependent quest stage retained, no runtime/action/state fidelity claim."
+              }
+            ],
+            "source_speaker_identity": "Thundergiant",
+            "canonical_name_alias": {
+              "source": "Thundergiant",
+              "canonical": "Thundergiant (NPC)",
+              "policy": "EXACT_ACTOR_KEY_AND_NPC_PROFILE_IDENTITY_WITH_DOCUMENTED_NPC_SUFFIX_ALIAS"
+            }
+          },
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "matching_policy": "OTERYN_STATIC_APPROXIMATE_SELECTION_FROM_QUEST_HI_CONTEXT_SOURCE_STATE_UNPROVEN",
+          "source_fidelity_canonical_claim": false
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.timira",
+      "name": "Timira",
+      "dialogue": {
+        "greet": {
+          "reply": [
+            "Oh, what… has happened? What are you doing here? No, wait… Oh no! I attacked you, didn't I?"
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "Timira",
+              "original_exact_text": "Oh, what… has happened? What are you doing here? No, wait… Oh no! I attacked you, didn't I?",
+              "start_byte": 1312,
+              "end_byte_exclusive": 1471,
+              "raw_fragment_sha256": "432dc8046648ab6d5f09edd3996508a96f81e581ebeff737014bb22a393b74b6"
+            }
+          ],
+          "source": {
+            "url": "https://tibia.fandom.com/wiki/Timira/Transcripts",
+            "sha256": "7446106fa689d3cab9a72645131612a9a7f476ef42458a8acdf515ab1febd0cf",
+            "revision": "",
+            "capture_path": "/workspace/npc-quest-recheck/browser-fandom/Timira-Transcripts.json",
+            "capture_file_sha256": "a2d1710936d2e3aa125587e1f318231d382b9fb0904b099b3b0ee80006ff89e3",
+            "access_method": "Remote Desktop Commander + real Chrome/CDP public DOM",
+            "captured_at": "2026-10-02T17:00:54.951317+00:00",
+            "body_kind": "retained rendered DOM HTML; not source server-original bytes",
+            "bytes": 3648,
+            "documentary_quote_rows": [
+              {
+                "speaker_identity": "Timira",
+                "original_exact_text": "Oh, what… has happened? What are you doing here? No, wait… Oh no! I attacked you, didn't I?",
+                "selected_text": "Oh, what… has happened? What are you doing here? No, wait… Oh no! I attacked you, didn't I?",
+                "placeholder_normalization": false,
+                "player_keyword": "Hello or Hi",
+                "source": {
+                  "url": "https://tibia.fandom.com/wiki/Timira/Transcripts",
+                  "sha256": "7446106fa689d3cab9a72645131612a9a7f476ef42458a8acdf515ab1febd0cf",
+                  "revision": "",
+                  "capture_path": "/workspace/npc-quest-recheck/browser-fandom/Timira-Transcripts.json",
+                  "capture_file_sha256": "a2d1710936d2e3aa125587e1f318231d382b9fb0904b099b3b0ee80006ff89e3",
+                  "access_method": "Remote Desktop Commander + real Chrome/CDP public DOM",
+                  "captured_at": "2026-10-02T17:00:54.951317+00:00",
+                  "body_kind": "retained rendered DOM HTML; not source server-original bytes"
+                },
+                "quote_html": {
+                  "start_byte": 1312,
+                  "end_byte_exclusive": 1471,
+                  "raw_fragment_sha256": "432dc8046648ab6d5f09edd3996508a96f81e581ebeff737014bb22a393b74b6",
+                  "literal_html": "<a href=\"/wiki/Timira\" title=\"Timira\">Timira</a>: Oh, what… has happened? What are you doing here? No, wait… Oh no! I attacked you, didn't I?<b></b></span>"
+                },
+                "context": "Timira exists after defeat of aggressive form; source hello/hi transcript only, no universal/state/quest runtime fidelity claim."
+              }
+            ],
+            "source_speaker_identity": "Timira",
+            "canonical_name_alias": {
+              "source": "Timira",
+              "canonical": "Timira",
+              "policy": "EXACT_ACTOR_KEY_AND_NPC_PROFILE_IDENTITY_WITH_DOCUMENTED_NPC_SUFFIX_ALIAS"
+            }
+          },
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "matching_policy": "OTERYN_STATIC_APPROXIMATE_SELECTION_FROM_QUEST_HI_CONTEXT_SOURCE_STATE_UNPROVEN",
+          "source_fidelity_canonical_claim": false
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.mud",
+      "name": "MUD",
+      "dialogue": {
+        "greet": {
+          "reply": [
+            "You arrived in Tibia! The Multi-User Dungeon (c) 1997 CipSoft GmbH ...",
+            "Everything around you emits a cozy and warm feeling. Silence and a great calm clutches this place. The lights are out. There is not much to see here. You are in a room with MUD."
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "MUD",
+              "original_exact_text": "You arrived in Tibia! The Multi-User Dungeon (c) 1997 CipSoft GmbH ...",
+              "start_byte": 105149,
+              "end_byte_exclusive": 105256,
+              "raw_fragment_sha256": "fe32260754c334ae2accc321b954516c79211c41b35e57663f9311eda5b9cb71"
+            },
+            {
+              "speaker_identity": "MUD",
+              "original_exact_text": "Everything around you emits a cozy and warm feeling. Silence and a great calm clutches this place. The lights are out. There is not much to see here. You are in a room with MUD.",
+              "start_byte": 105256,
+              "end_byte_exclusive": 105509,
+              "raw_fragment_sha256": "0a4b53452e4826564b757da5b38dd591c8a9ee956c62deef0e38e635062a7c4b"
+            }
+          ],
+          "source": {
+            "url": "https://tibiopedia.pl/quests/Time_Travel_Quest",
+            "sha256": "f17484ca8091461cfe32b22a8acca71524380c4137b72fa900160ed80e2c9a32",
+            "capture_path": "/workspace/npc-quest-recheck/original_a/Time_Travel_Quest.html",
+            "access_method": "NORMAL_PUBLIC_TIBIOPEDIA_HTTP_COOKIE_SETUP",
+            "quest_context": "Time Travel Quest final boss teleport; room timeout and previous conversation state govern this encounter.",
+            "bytes": 182028,
+            "documentary_quote_rows": [
+              {
+                "speaker_identity": "MUD",
+                "original_exact_text": "You arrived in Tibia! The Multi-User Dungeon (c) 1997 CipSoft GmbH ...",
+                "selected_text": "You arrived in Tibia! The Multi-User Dungeon (c) 1997 CipSoft GmbH ...",
+                "source": {
+                  "url": "https://tibiopedia.pl/quests/Time_Travel_Quest",
+                  "sha256": "f17484ca8091461cfe32b22a8acca71524380c4137b72fa900160ed80e2c9a32",
+                  "capture_path": "/workspace/npc-quest-recheck/original_a/Time_Travel_Quest.html",
+                  "access_method": "NORMAL_PUBLIC_TIBIOPEDIA_HTTP_COOKIE_SETUP",
+                  "quest_context": "Time Travel Quest final boss teleport; room timeout and previous conversation state govern this encounter."
+                },
+                "quote_html": {
+                  "start_byte": 105149,
+                  "end_byte_exclusive": 105256,
+                  "raw_fragment_sha256": "fe32260754c334ae2accc321b954516c79211c41b35e57663f9311eda5b9cb71",
+                  "literal_html": "<div class=\"npc_chat_npc\">MUD: You arrived in Tibia! The Multi-User Dungeon (c) 1997 CipSoft GmbH ...</div>"
+                },
+                "documentary_candidate": {
+                  "key": "oteryn:npc.mud",
+                  "source_speaker": "MUD",
+                  "player_keyword": "hi",
+                  "literal_utterance": "You arrived in Tibia! The Multi-User Dungeon (c) 1997 CipSoft GmbH ...",
+                  "source_url": "https://tibiopedia.pl/quests/Time_Travel_Quest",
+                  "whole_body_sha256": "f17484ca8091461cfe32b22a8acca71524380c4137b72fa900160ed80e2c9a32",
+                  "raw_fragment_start_byte": 105149,
+                  "raw_fragment_end_byte_exclusive": 105256,
+                  "raw_fragment_sha256": "fe32260754c334ae2accc321b954516c79211c41b35e57663f9311eda5b9cb71",
+                  "raw_fragment_utf8": "<div class=\"npc_chat_npc\">MUD: You arrived in Tibia! The Multi-User Dungeon (c) 1997 CipSoft GmbH ...</div>",
+                  "quest": "Time_Travel_Quest",
+                  "quest_context": "Time Travel Quest final boss teleport; room timeout and previous conversation state govern this encounter.",
+                  "classification": "LITERAL_QUEST_TRANSCRIPT_FRAGMENT_ONLY",
+                  "automatic_basic_reply_admission": false,
+                  "changes_quest_runtime_actions": false,
+                  "access_method": "NORMAL_PUBLIC_TIBIOPEDIA_HTTP_COOKIE_SETUP",
+                  "preceding_table_context": "pokonujemy ponownie, ale nie musimy już odblokowywać dostępu do kolejnych części zadania.      Uwaga!  Jeżeli nie mamy przy sobie albumu    , nie będziemy w stanie przejść przez teleport.    Wchodzimy w teleport prowadzący do finałowego bossa, tutaj -   .    Uwaga!  Po wejściu w teleport, jeśli nie przeprowadzimy rozmowy z NPC, po 2 minutach zostaniemy wyrzuceni na zewnątrz pokoju, gdzie czekają na nas żarłoczne    .   Rozmawiamy z    :  "
+                }
+              },
+              {
+                "speaker_identity": "MUD",
+                "original_exact_text": "Everything around you emits a cozy and warm feeling. Silence and a great calm clutches this place. The lights are out. There is not much to see here. You are in a room with MUD.",
+                "selected_text": "Everything around you emits a cozy and warm feeling. Silence and a great calm clutches this place. The lights are out. There is not much to see here. You are in a room with MUD.",
+                "source": {
+                  "url": "https://tibiopedia.pl/quests/Time_Travel_Quest",
+                  "sha256": "f17484ca8091461cfe32b22a8acca71524380c4137b72fa900160ed80e2c9a32",
+                  "capture_path": "/workspace/npc-quest-recheck/original_a/Time_Travel_Quest.html",
+                  "access_method": "NORMAL_PUBLIC_TIBIOPEDIA_HTTP_COOKIE_SETUP",
+                  "quest_context": "Time Travel Quest final boss teleport; room timeout and previous conversation state govern this encounter."
+                },
+                "quote_html": {
+                  "start_byte": 105256,
+                  "end_byte_exclusive": 105509,
+                  "raw_fragment_sha256": "0a4b53452e4826564b757da5b38dd591c8a9ee956c62deef0e38e635062a7c4b",
+                  "literal_html": "<div class=\"npc_chat_npc\">MUD: Everything around you emits a cozy and warm feeling. Silence and a great calm clutches this place. The lights are out. There is not much to see here. You are in a room with <span class=\"npc_class_keyword\">MUD</span>.</div>"
+                },
+                "documentary_candidate": {
+                  "key": "oteryn:npc.mud",
+                  "source_speaker": "MUD",
+                  "player_keyword": "hi",
+                  "literal_utterance": "Everything around you emits a cozy and warm feeling. Silence and a great calm clutches this place. The lights are out. There is not much to see here. You are in a room with MUD.",
+                  "source_url": "https://tibiopedia.pl/quests/Time_Travel_Quest",
+                  "whole_body_sha256": "f17484ca8091461cfe32b22a8acca71524380c4137b72fa900160ed80e2c9a32",
+                  "raw_fragment_start_byte": 105256,
+                  "raw_fragment_end_byte_exclusive": 105509,
+                  "raw_fragment_sha256": "0a4b53452e4826564b757da5b38dd591c8a9ee956c62deef0e38e635062a7c4b",
+                  "raw_fragment_utf8": "<div class=\"npc_chat_npc\">MUD: Everything around you emits a cozy and warm feeling. Silence and a great calm clutches this place. The lights are out. There is not much to see here. You are in a room with <span class=\"npc_class_keyword\">MUD</span>.</div>",
+                  "quest": "Time_Travel_Quest",
+                  "quest_context": "Time Travel Quest final boss teleport; room timeout and previous conversation state govern this encounter.",
+                  "classification": "LITERAL_QUEST_TRANSCRIPT_FRAGMENT_ONLY",
+                  "automatic_basic_reply_admission": false,
+                  "changes_quest_runtime_actions": false,
+                  "access_method": "NORMAL_PUBLIC_TIBIOPEDIA_HTTP_COOKIE_SETUP",
+                  "preceding_table_context": "pokonujemy ponownie, ale nie musimy już odblokowywać dostępu do kolejnych części zadania.      Uwaga!  Jeżeli nie mamy przy sobie albumu    , nie będziemy w stanie przejść przez teleport.    Wchodzimy w teleport prowadzący do finałowego bossa, tutaj -   .    Uwaga!  Po wejściu w teleport, jeśli nie przeprowadzimy rozmowy z NPC, po 2 minutach zostaniemy wyrzuceni na zewnątrz pokoju, gdzie czekają na nas żarłoczne    .   Rozmawiamy z    :  "
+                }
+              }
+            ],
+            "source_speaker_identity": "MUD",
+            "canonical_name_alias": {
+              "source": "MUD",
+              "canonical": "MUD",
+              "policy": "EXACT_ACTOR_KEY_AND_NPC_PROFILE_IDENTITY_WITH_DOCUMENTED_NPC_SUFFIX_ALIAS"
+            }
+          },
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "matching_policy": "OTERYN_STATIC_APPROXIMATE_SELECTION_FROM_QUEST_HI_CONTEXT_SOURCE_STATE_UNPROVEN",
+          "source_fidelity_canonical_claim": false
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.grovebeast_npc",
+      "name": "Grovebeast (NPC)",
+      "dialogue": {
+        "greet": {
+          "reply": [
+            "Thank you for finding me! I was sure you would be able to save me. But this was really a terrible experience!"
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "Grovebeast (NPC)",
+              "original_exact_text": "Thank you for finding me! I was sure you would be able to save me. But this was really a terrible experience!",
+              "start_byte": 149492,
+              "end_byte_exclusive": 149684,
+              "raw_fragment_sha256": "0f3bb3789252f5561099c3e29fa92c435a5a97f1d64b2188ec4c59e14a59c250"
+            }
+          ],
+          "source": {
+            "url": "https://tibiopedia.pl/quests/Between_the_Lines_Quest",
+            "sha256": "01a0dd0acd298b5351e56d9f02f560e96ab573a0bda39bad070eedcf341aaec6",
+            "capture_path": "/workspace/npc-quest-recheck/original_a/Between_the_Lines_Quest.html",
+            "access_method": "NORMAL_PUBLIC_TIBIOPEDIA_HTTP_COOKIE_SETUP",
+            "quest_context": "Between the Lines druid familiar branch; after Sir Leonard, colored-ink door and reward chest, before rescue/follow sequence.",
+            "bytes": 237144,
+            "documentary_quote_rows": [
+              {
+                "speaker_identity": "Grovebeast",
+                "original_exact_text": "Thank you for finding me! I was sure you would be able to save me. But this was really a terrible experience!",
+                "selected_text": "Thank you for finding me! I was sure you would be able to save me. But this was really a terrible experience!",
+                "source": {
+                  "url": "https://tibiopedia.pl/quests/Between_the_Lines_Quest",
+                  "sha256": "01a0dd0acd298b5351e56d9f02f560e96ab573a0bda39bad070eedcf341aaec6",
+                  "capture_path": "/workspace/npc-quest-recheck/original_a/Between_the_Lines_Quest.html",
+                  "access_method": "NORMAL_PUBLIC_TIBIOPEDIA_HTTP_COOKIE_SETUP",
+                  "quest_context": "Between the Lines druid familiar branch; after Sir Leonard, colored-ink door and reward chest, before rescue/follow sequence."
+                },
+                "quote_html": {
+                  "start_byte": 149492,
+                  "end_byte_exclusive": 149684,
+                  "raw_fragment_sha256": "0f3bb3789252f5561099c3e29fa92c435a5a97f1d64b2188ec4c59e14a59c250",
+                  "literal_html": "<div class=\"npc_chat_npc\">Grovebeast: Thank you for finding me! I was sure you would be able to save me. But this was really a terrible <span class=\"npc_class_keyword\">experience</span>!</div>"
+                },
+                "documentary_candidate": {
+                  "key": "oteryn:npc.grovebeast_npc",
+                  "source_speaker": "Grovebeast",
+                  "player_keyword": "hi",
+                  "literal_utterance": "Thank you for finding me! I was sure you would be able to save me. But this was really a terrible experience!",
+                  "source_url": "https://tibiopedia.pl/quests/Between_the_Lines_Quest",
+                  "whole_body_sha256": "01a0dd0acd298b5351e56d9f02f560e96ab573a0bda39bad070eedcf341aaec6",
+                  "raw_fragment_start_byte": 149492,
+                  "raw_fragment_end_byte_exclusive": 149684,
+                  "raw_fragment_sha256": "0f3bb3789252f5561099c3e29fa92c435a5a97f1d64b2188ec4c59e14a59c250",
+                  "raw_fragment_utf8": "<div class=\"npc_chat_npc\">Grovebeast: Thank you for finding me! I was sure you would be able to save me. But this was really a terrible <span class=\"npc_class_keyword\">experience</span>!</div>",
+                  "quest": "Between_the_Lines_Quest",
+                  "quest_context": "Between the Lines druid familiar branch; after Sir Leonard, colored-ink door and reward chest, before rescue/follow sequence.",
+                  "classification": "LITERAL_QUEST_TRANSCRIPT_FRAGMENT_ONLY",
+                  "automatic_basic_reply_admission": false,
+                  "changes_quest_runtime_actions": false,
+                  "access_method": "NORMAL_PUBLIC_TIBIOPEDIA_HTTP_COOKIE_SETUP",
+                  "preceding_table_context": "an>  Mając w bp     i     używamy     na drzwi.       Przechodzimy przez drzwi, ze skrzyni wyciągamy nagrodę     i rozmawiamy z przywołańcem:  "
+                }
+              }
+            ],
+            "source_speaker_identity": "Grovebeast",
+            "canonical_name_alias": {
+              "source": "Grovebeast",
+              "canonical": "Grovebeast (NPC)",
+              "policy": "EXACT_ACTOR_KEY_AND_NPC_PROFILE_IDENTITY_WITH_DOCUMENTED_NPC_SUFFIX_ALIAS"
+            }
+          },
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "matching_policy": "OTERYN_STATIC_APPROXIMATE_SELECTION_FROM_QUEST_HI_CONTEXT_SOURCE_STATE_UNPROVEN",
+          "source_fidelity_canonical_claim": false
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.a_taffy_bunny",
+      "name": "A Taffy Bunny",
+      "dialogue": {
+        "greet": {
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "source": {
+            "key": "oteryn:npc.a_taffy_bunny",
+            "name": "A Taffy Bunny",
+            "path": "data/npcs/text/Candia/A_Taffy_Bunny.txt",
+            "size": 602,
+            "git_blob_sha1": "fb63f7480b52c2f35f80c5ca8caeb0fb5e9a6c6d",
+            "skipped_old_batch3": false,
+            "source_url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Candia/A_Taffy_Bunny.txt",
+            "revision": "8824eb38872a1174b0f0c923e08719e981f32ecc",
+            "access_method": "NORMAL_PUBLIC_GITHUB_RAW_HTTP",
+            "status": "CAPTURE_VERIFIED",
+            "sha256": "6d11be84e22ae8df6bb21c4d2b0b2809c88d6f419b8712e7077cefe1682f5f55",
+            "bytes": 602,
+            "capture_path": "/workspace/npc-enrichment-r22/dialogue/a_taffy_bunny.s2ward.txt",
+            "url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Candia/A_Taffy_Bunny.txt",
+            "kind": "pinned_public_transcript",
+            "documentary_original_candidate": {
+              "reply": [
+                "*The bunny briefly sits on its hind legs and sniffs, but then pays no further attention to you.*"
+              ],
+              "source_quote": true,
+              "classification": "OBSERVED_NONVERBAL_HI_CHAT_TEXT",
+              "source": {
+                "key": "oteryn:npc.a_taffy_bunny",
+                "name": "A Taffy Bunny",
+                "path": "data/npcs/text/Candia/A_Taffy_Bunny.txt",
+                "size": 602,
+                "git_blob_sha1": "fb63f7480b52c2f35f80c5ca8caeb0fb5e9a6c6d",
+                "skipped_old_batch3": false,
+                "source_url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Candia/A_Taffy_Bunny.txt",
+                "revision": "8824eb38872a1174b0f0c923e08719e981f32ecc",
+                "access_method": "NORMAL_PUBLIC_GITHUB_RAW_HTTP",
+                "status": "CAPTURE_VERIFIED",
+                "sha256": "6d11be84e22ae8df6bb21c4d2b0b2809c88d6f419b8712e7077cefe1682f5f55",
+                "bytes": 602,
+                "capture_path": "/workspace/npc-enrichment-r22/dialogue/a_taffy_bunny.s2ward.txt",
+                "url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Candia/A_Taffy_Bunny.txt",
+                "kind": "pinned_public_transcript"
+              },
+              "quote_evidence": [
+                {
+                  "speaker_identity": "A Taffy Bunny",
+                  "source_speaker_identity": "A Taffy Bunny",
+                  "original_exact_text": "*The bunny briefly sits on its hind legs and sniffs, but then pays no further attention to you.*",
+                  "source_exact_text": "*The bunny briefly sits on its hind legs and sniffs, but then pays no further attention to you.*",
+                  "selected_literal_speech_fragment": "*The bunny briefly sits on its hind legs and sniffs, but then pays no further attention to you.*",
+                  "observed_prompt": "hi",
+                  "start_byte": 103,
+                  "end_byte_exclusive": 215,
+                  "raw_fragment_sha256": "866b4fe6384d37e9cc10673ab04c5f3b7219f5748945c51276eb042389dffe9c",
+                  "literal_text_sha256": "9adbd5ba19405f2900f5f51c37d66fdda08d1cc8f5d89ace19adeb77c2a7e5ce",
+                  "selected_fragment_sha256": "9adbd5ba19405f2900f5f51c37d66fdda08d1cc8f5d89ace19adeb77c2a7e5ce",
+                  "player_prompt_start_byte": 91,
+                  "player_prompt_end_byte_exclusive": 103,
+                  "player_prompt_fragment_sha256": "d0ddcd3a54de78830a865a478b8ab1b48fd2ac9c065a7fb50e73bf452dc14ee8",
+                  "actor_identity_policy": "EXACT_PINNED_TRANSCRIPT_ACTOR_NAME; FEMALE_MALE_DIFFERENT_RECORDS",
+                  "original_guard_unproven": true,
+                  "nonverbal_reply_note": "Exact source NPC chat emote retained as displayed text only; no bunny animation or quest transition is activated."
+                }
+              ],
+              "source_condition": "Sweet Dreams bunny interaction before the source hello/feeding/treasure sequence; subsequent reward instructions documentary only. Fresh full quest documents gestures before Candy Lipstick; source does not tie this specific bunny emote to exact lipstick/carrot storage, so preserve unknown guard.",
+              "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; SOURCE_STAGE_MOVEMENT_NOT_IMPLEMENTED",
+              "static_guard": "No item grants, reward choice, transport, movement, quest status or economic runtime actions. Text only.",
+              "runtime_enabled": false,
+              "canonical_tibia_fidelity_claim": false
+            }
+          },
+          "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; SOURCE_STAGE_MOVEMENT_NOT_IMPLEMENTED",
+          "source_fidelity_canonical_claim": false,
+          "reply": [
+            "*The bunny briefly sits on its hind legs and sniffs, but then pays no further attention to you.*"
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "A Taffy Bunny",
+              "original_exact_text": "*The bunny briefly sits on its hind legs and sniffs, but then pays no further attention to you.*",
+              "start_byte": 103,
+              "end_byte_exclusive": 215,
+              "raw_fragment_sha256": "866b4fe6384d37e9cc10673ab04c5f3b7219f5748945c51276eb042389dffe9c"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.para_norbert",
+      "name": "Para Norbert",
+      "dialogue": {
+        "greet": {
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "source": {
+            "url": "https://tibiopedia.pl/quests/Feaster_of_Souls_Quest",
+            "access_method": "NORMAL_PUBLIC_HTTP_COOKIEJAR_LANGUAGE_PREF_PL_LIBRARY",
+            "status": 200,
+            "final_url": "https://tibiopedia.pl/quests/Feaster_of_Souls_Quest",
+            "sha256": "46708a9a7bd1e706edce7d32cc9813c5795f1a8c3067e4b925b7bc754725200e",
+            "bytes": 194740,
+            "capture_path": "/workspace/npc-quest-recheck/dialogues10/Feaster_of_Souls_Quest.tp.html",
+            "kind": "wiki",
+            "revision": "HTTP_BODY_SHA256:46708a9a7bd1e706edce7d32cc9813c5795f1a8c3067e4b925b7bc754725200e",
+            "documentary_original_candidate": {
+              "reply": [
+                "Welcome adventurer! I'm sensing some very unusual distortions in the fabric of reality recently. They are caused by an inactive portal right beside me. ..."
+              ],
+              "source_quote": true,
+              "classification": "EXPLICIT_OTERYN_QUEST_CONTEXT_SOURCE_HI_SELECTION",
+              "source": {
+                "url": "https://tibiopedia.pl/quests/Feaster_of_Souls_Quest",
+                "access_method": "NORMAL_PUBLIC_HTTP_COOKIEJAR_LANGUAGE_PREF_PL_LIBRARY",
+                "status": 200,
+                "final_url": "https://tibiopedia.pl/quests/Feaster_of_Souls_Quest",
+                "sha256": "46708a9a7bd1e706edce7d32cc9813c5795f1a8c3067e4b925b7bc754725200e",
+                "bytes": 194740,
+                "capture_path": "/workspace/npc-quest-recheck/dialogues10/Feaster_of_Souls_Quest.tp.html",
+                "kind": "wiki",
+                "revision": "HTTP_BODY_SHA256:46708a9a7bd1e706edce7d32cc9813c5795f1a8c3067e4b925b7bc754725200e"
+              },
+              "quote_evidence": [
+                {
+                  "canonical_actor": "Para Norbert",
+                  "speaker_identity_source": "Para Norbert",
+                  "observed_player_keyword": "Hi",
+                  "reply": "Welcome adventurer! I'm sensing some very unusual distortions in the fabric of reality recently. They are caused by an inactive portal right beside me. ...",
+                  "exchange_group": 0,
+                  "start_byte": 61324,
+                  "end_byte_exclusive": 61569,
+                  "raw_fragment_sha256": "bbaa0d8000e368a48fd82388004ce59cf3ece4069a3f4b8fc44647ebf4f330a3",
+                  "literal_reply_sha256": "96e091bcbc30139f51923da06dedb03180b7bc382a0f658fda34febbeba50980",
+                  "source_embeds_typed_player_placeholder": false,
+                  "actor_alias_claim": false,
+                  "conditions_not_inferred_from_source_profile": true,
+                  "quest_context": "https://tibiopedia.pl/quests/Feaster_of_Souls_Quest",
+                  "runtime_actions_enabled": false,
+                  "speaker_identity": "Para Norbert",
+                  "source_speaker_identity": "Para Norbert",
+                  "original_exact_text": "Welcome adventurer! I'm sensing some very unusual distortions in the fabric of reality recently. They are caused by an inactive portal right beside me. ...",
+                  "source_exact_text": "Welcome adventurer! I'm sensing some very unusual distortions in the fabric of reality recently. They are caused by an inactive portal right beside me. ...",
+                  "observed_prompt": "Hi",
+                  "player_prompt_start_byte": 61139,
+                  "player_prompt_end_byte_exclusive": 61324,
+                  "player_prompt_fragment_sha256": "c249f5825d912a758050263f384b8c8b0df59fe5458e0fea76db5e0092a7eb4e",
+                  "original_guard_unproven": true,
+                  "actor_identity_policy": "EXACT_ACTOR_NAME_CASE_APOSTROPHE_EQUIVALENCE"
+                }
+              ],
+              "source_condition": "Feaster of Souls initial encounter before investigation; alternate later Hi replies remain documentary.",
+              "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; REAL_QUEST_GUARDS_NOT_IMPLEMENTED",
+              "static_guard": "No item grants, transport, movement, quest status or economic runtime actions. Source-state conditions retained as evidence; only text proposed.",
+              "runtime_enabled": false,
+              "canonical_tibia_fidelity_claim": false
+            }
+          },
+          "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; REAL_QUEST_GUARDS_NOT_IMPLEMENTED",
+          "source_fidelity_canonical_claim": false,
+          "reply": [
+            "Welcome adventurer! I'm sensing some very unusual distortions in the fabric of reality recently. They are caused by an inactive portal right beside me. ..."
+          ],
+          "quote_evidence": [
+            {
+              "start_byte": 61324,
+              "end_byte_exclusive": 61569,
+              "raw_fragment_sha256": "bbaa0d8000e368a48fd82388004ce59cf3ece4069a3f4b8fc44647ebf4f330a3",
+              "speaker_identity": "Para Norbert",
+              "original_exact_text": "Welcome adventurer! I'm sensing some very unusual distortions in the fabric of reality recently. They are caused by an inactive portal right beside me. ..."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.player_level_1000",
+      "name": "Player Level 1000",
+      "dialogue": {
+        "greet": {
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "source": {
+            "key": "oteryn:npc.player_level_1000",
+            "name": "Player Level 1000",
+            "path": "data/npcs/text/Port_Hope/Player_Level_1000.txt",
+            "size": 261,
+            "git_blob_sha1": "a6a678d68fb77b8a5e2cefe93a84a2bba4a77356",
+            "skipped_old_batch3": false,
+            "source_url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_1000.txt",
+            "revision": "8824eb38872a1174b0f0c923e08719e981f32ecc",
+            "access_method": "NORMAL_PUBLIC_GITHUB_RAW_HTTP",
+            "status": "CAPTURE_VERIFIED",
+            "sha256": "587485f91d2b4d4179f382efa0b644a6f5def52b13b35518b9186f826b8cea0d",
+            "bytes": 261,
+            "capture_path": "/workspace/npc-enrichment-r22/dialogue/player_level_1000.s2ward.txt",
+            "url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_1000.txt",
+            "kind": "pinned_public_transcript",
+            "documentary_original_candidate": {
+              "reply": [
+                "You're sure you want to line up?"
+              ],
+              "source_quote": true,
+              "classification": "EXPLICIT_OTERYN_SOURCE_HI_SPEECH_FRAGMENT_SELECTION_EXCLUDES_RECORDER_STAGE_DIRECTION",
+              "source": {
+                "key": "oteryn:npc.player_level_1000",
+                "name": "Player Level 1000",
+                "path": "data/npcs/text/Port_Hope/Player_Level_1000.txt",
+                "size": 261,
+                "git_blob_sha1": "a6a678d68fb77b8a5e2cefe93a84a2bba4a77356",
+                "skipped_old_batch3": false,
+                "source_url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_1000.txt",
+                "revision": "8824eb38872a1174b0f0c923e08719e981f32ecc",
+                "access_method": "NORMAL_PUBLIC_GITHUB_RAW_HTTP",
+                "status": "CAPTURE_VERIFIED",
+                "sha256": "587485f91d2b4d4179f382efa0b644a6f5def52b13b35518b9186f826b8cea0d",
+                "bytes": 261,
+                "capture_path": "/workspace/npc-enrichment-r22/dialogue/player_level_1000.s2ward.txt",
+                "url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_1000.txt",
+                "kind": "pinned_public_transcript"
+              },
+              "quote_evidence": [
+                {
+                  "speaker_identity": "Player Level 1000",
+                  "source_speaker_identity": "Player Level 1000",
+                  "original_exact_text": "You're sure you want to line up? (fourth in line, walks away)",
+                  "source_exact_text": "You're sure you want to line up? (fourth in line, walks away)",
+                  "selected_literal_speech_fragment": "You're sure you want to line up?",
+                  "observed_prompt": "hi",
+                  "start_byte": 12,
+                  "end_byte_exclusive": 92,
+                  "raw_fragment_sha256": "d085f9953aee9c4a0daafa9d85671cffd3ebe8c695b00874314b60e02b7c74b0",
+                  "literal_text_sha256": "2c3ff175e63ca2995e62dd8fca409438d7121338ee7afa73d6afae9113b8381c",
+                  "selected_fragment_sha256": "b25a4821a98d452e609fc8ec373c7358ae52b129f068c89ea05a522ed09e1513",
+                  "player_prompt_start_byte": 0,
+                  "player_prompt_end_byte_exclusive": 12,
+                  "player_prompt_fragment_sha256": "b2ed8bbf354e8381cf3883eb45ee61f4904829a7b9399843b8fd2cc8b219e286",
+                  "actor_identity_policy": "EXACT_PINNED_TRANSCRIPT_ACTOR_NAME; FEMALE_MALE_DIFFERENT_RECORDS",
+                  "original_guard_unproven": true,
+                  "normalization": "Select exact spoken prefix only; parenthesized queue position and walks-away annotation retained documentary, never emitted or executed."
+                }
+              ],
+              "source_condition": "Schrödinger's Island reward queue interaction; source records queue position and walkaway. Proposed text makes no movement or reward changes.",
+              "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; SOURCE_STAGE_MOVEMENT_NOT_IMPLEMENTED",
+              "static_guard": "No item grants, reward choice, transport, movement, quest status or economic runtime actions. Text only.",
+              "runtime_enabled": false,
+              "canonical_tibia_fidelity_claim": false
+            }
+          },
+          "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; SOURCE_STAGE_MOVEMENT_NOT_IMPLEMENTED",
+          "source_fidelity_canonical_claim": false,
+          "reply": [
+            "You're sure you want to line up?"
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "Player Level 1000",
+              "original_exact_text": "You're sure you want to line up?",
+              "start_byte": 31,
+              "end_byte_exclusive": 63,
+              "raw_fragment_sha256": "b25a4821a98d452e609fc8ec373c7358ae52b129f068c89ea05a522ed09e1513"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.player_level_1001",
+      "name": "Player Level 1001",
+      "dialogue": {
+        "greet": {
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "source": {
+            "key": "oteryn:npc.player_level_1001",
+            "name": "Player Level 1001",
+            "path": "data/npcs/text/Port_Hope/Player_Level_1001.txt",
+            "size": 292,
+            "git_blob_sha1": "e5d70b904573eac78ae544453d64c3ea7cee47a6",
+            "skipped_old_batch3": false,
+            "source_url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_1001.txt",
+            "revision": "8824eb38872a1174b0f0c923e08719e981f32ecc",
+            "access_method": "NORMAL_PUBLIC_GITHUB_RAW_HTTP",
+            "status": "CAPTURE_VERIFIED",
+            "sha256": "b0679272490184d40efdc0383a5547c0649b884be3ec15280b78e0b428401d30",
+            "bytes": 292,
+            "capture_path": "/workspace/npc-enrichment-r22/dialogue/player_level_1001.s2ward.txt",
+            "url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_1001.txt",
+            "kind": "pinned_public_transcript",
+            "documentary_original_candidate": {
+              "reply": [
+                "The end of the queue is over there in the back."
+              ],
+              "source_quote": true,
+              "classification": "EXPLICIT_OTERYN_SOURCE_HI_SPEECH_FRAGMENT_SELECTION_EXCLUDES_RECORDER_STAGE_DIRECTION",
+              "source": {
+                "key": "oteryn:npc.player_level_1001",
+                "name": "Player Level 1001",
+                "path": "data/npcs/text/Port_Hope/Player_Level_1001.txt",
+                "size": 292,
+                "git_blob_sha1": "e5d70b904573eac78ae544453d64c3ea7cee47a6",
+                "skipped_old_batch3": false,
+                "source_url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_1001.txt",
+                "revision": "8824eb38872a1174b0f0c923e08719e981f32ecc",
+                "access_method": "NORMAL_PUBLIC_GITHUB_RAW_HTTP",
+                "status": "CAPTURE_VERIFIED",
+                "sha256": "b0679272490184d40efdc0383a5547c0649b884be3ec15280b78e0b428401d30",
+                "bytes": 292,
+                "capture_path": "/workspace/npc-enrichment-r22/dialogue/player_level_1001.s2ward.txt",
+                "url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_1001.txt",
+                "kind": "pinned_public_transcript"
+              },
+              "quote_evidence": [
+                {
+                  "speaker_identity": "Player Level 1001",
+                  "source_speaker_identity": "Player Level 1001",
+                  "original_exact_text": "The end of the queue is over there in the back. (second in line, walks away)",
+                  "source_exact_text": "The end of the queue is over there in the back. (second in line, walks away)",
+                  "selected_literal_speech_fragment": "The end of the queue is over there in the back.",
+                  "observed_prompt": "hi",
+                  "start_byte": 12,
+                  "end_byte_exclusive": 107,
+                  "raw_fragment_sha256": "99ff9b906e6a57448a917d52a2845cae8e89667a2dea25524e02fe4f3cfa110a",
+                  "literal_text_sha256": "9a5f56dc1272a3cff8eed64e4514ec7007af245ede40655add7f5b38d980dfe7",
+                  "selected_fragment_sha256": "e1cc71662a909f19f029cc8eab3f61b84a84fd8cdc4f1db39ffae61dc31f5e3d",
+                  "player_prompt_start_byte": 0,
+                  "player_prompt_end_byte_exclusive": 12,
+                  "player_prompt_fragment_sha256": "b2ed8bbf354e8381cf3883eb45ee61f4904829a7b9399843b8fd2cc8b219e286",
+                  "actor_identity_policy": "EXACT_PINNED_TRANSCRIPT_ACTOR_NAME; FEMALE_MALE_DIFFERENT_RECORDS",
+                  "original_guard_unproven": true,
+                  "normalization": "Select exact spoken prefix only; parenthesized queue position and walks-away annotation retained documentary, never emitted or executed."
+                }
+              ],
+              "source_condition": "Schrödinger's Island reward queue interaction; source records queue position and walkaway. Proposed text makes no movement or reward changes.",
+              "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; SOURCE_STAGE_MOVEMENT_NOT_IMPLEMENTED",
+              "static_guard": "No item grants, reward choice, transport, movement, quest status or economic runtime actions. Text only.",
+              "runtime_enabled": false,
+              "canonical_tibia_fidelity_claim": false
+            }
+          },
+          "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; SOURCE_STAGE_MOVEMENT_NOT_IMPLEMENTED",
+          "source_fidelity_canonical_claim": false,
+          "reply": [
+            "The end of the queue is over there in the back."
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "Player Level 1001",
+              "original_exact_text": "The end of the queue is over there in the back.",
+              "start_byte": 31,
+              "end_byte_exclusive": 78,
+              "raw_fragment_sha256": "e1cc71662a909f19f029cc8eab3f61b84a84fd8cdc4f1db39ffae61dc31f5e3d"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.player_level_1003",
+      "name": "Player Level 1003",
+      "dialogue": {
+        "greet": {
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "source": {
+            "key": "oteryn:npc.player_level_1003",
+            "name": "Player Level 1003",
+            "path": "data/npcs/text/Port_Hope/Player_Level_1003.txt",
+            "size": 294,
+            "git_blob_sha1": "5e814441b991b8af1af778c5a300b371870a7ead",
+            "skipped_old_batch3": false,
+            "source_url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_1003.txt",
+            "revision": "8824eb38872a1174b0f0c923e08719e981f32ecc",
+            "access_method": "NORMAL_PUBLIC_GITHUB_RAW_HTTP",
+            "status": "CAPTURE_VERIFIED",
+            "sha256": "75612efc4bd7ddcc12d731fa124e96d05c4ecfffca843648176deef5b3b37d2e",
+            "bytes": 294,
+            "capture_path": "/workspace/npc-enrichment-r22/dialogue/player_level_1003.s2ward.txt",
+            "url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_1003.txt",
+            "kind": "pinned_public_transcript",
+            "documentary_original_candidate": {
+              "reply": [
+                "Oh, get in line please! I'll feel much better when I'm not the last in the queue!"
+              ],
+              "source_quote": true,
+              "classification": "EXPLICIT_OTERYN_SOURCE_HI_SPEECH_FRAGMENT_SELECTION_EXCLUDES_RECORDER_STAGE_DIRECTION",
+              "source": {
+                "key": "oteryn:npc.player_level_1003",
+                "name": "Player Level 1003",
+                "path": "data/npcs/text/Port_Hope/Player_Level_1003.txt",
+                "size": 294,
+                "git_blob_sha1": "5e814441b991b8af1af778c5a300b371870a7ead",
+                "skipped_old_batch3": false,
+                "source_url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_1003.txt",
+                "revision": "8824eb38872a1174b0f0c923e08719e981f32ecc",
+                "access_method": "NORMAL_PUBLIC_GITHUB_RAW_HTTP",
+                "status": "CAPTURE_VERIFIED",
+                "sha256": "75612efc4bd7ddcc12d731fa124e96d05c4ecfffca843648176deef5b3b37d2e",
+                "bytes": 294,
+                "capture_path": "/workspace/npc-enrichment-r22/dialogue/player_level_1003.s2ward.txt",
+                "url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_1003.txt",
+                "kind": "pinned_public_transcript"
+              },
+              "quote_evidence": [
+                {
+                  "speaker_identity": "Player Level 1003",
+                  "source_speaker_identity": "Player Level 1003",
+                  "original_exact_text": "Oh, get in line please! I'll feel much better when I'm not the last in the queue! (fifth in line, walks away)",
+                  "source_exact_text": "Oh, get in line please! I'll feel much better when I'm not the last in the queue! (fifth in line, walks away)",
+                  "selected_literal_speech_fragment": "Oh, get in line please! I'll feel much better when I'm not the last in the queue!",
+                  "observed_prompt": "hi",
+                  "start_byte": 12,
+                  "end_byte_exclusive": 140,
+                  "raw_fragment_sha256": "2829a284c13def405e61854f79e71275dddef6ad73fbaab8f22de5cb3cc1e08b",
+                  "literal_text_sha256": "28d8c31e9adbd79ebe45638e87bbc8f0d0bf89eb541404539c7fd42967598776",
+                  "selected_fragment_sha256": "d02f12e41663e3af4b1ad4c63bdd1596e447d17bb2ad2b17823b7afea8f566ff",
+                  "player_prompt_start_byte": 0,
+                  "player_prompt_end_byte_exclusive": 12,
+                  "player_prompt_fragment_sha256": "b2ed8bbf354e8381cf3883eb45ee61f4904829a7b9399843b8fd2cc8b219e286",
+                  "actor_identity_policy": "EXACT_PINNED_TRANSCRIPT_ACTOR_NAME; FEMALE_MALE_DIFFERENT_RECORDS",
+                  "original_guard_unproven": true,
+                  "normalization": "Select exact spoken prefix only; parenthesized queue position and walks-away annotation retained documentary, never emitted or executed."
+                }
+              ],
+              "source_condition": "Schrödinger's Island reward queue interaction; source records queue position and walkaway. Proposed text makes no movement or reward changes.",
+              "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; SOURCE_STAGE_MOVEMENT_NOT_IMPLEMENTED",
+              "static_guard": "No item grants, reward choice, transport, movement, quest status or economic runtime actions. Text only.",
+              "runtime_enabled": false,
+              "canonical_tibia_fidelity_claim": false
+            }
+          },
+          "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; SOURCE_STAGE_MOVEMENT_NOT_IMPLEMENTED",
+          "source_fidelity_canonical_claim": false,
+          "reply": [
+            "Oh, get in line please! I'll feel much better when I'm not the last in the queue!"
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "Player Level 1003",
+              "original_exact_text": "Oh, get in line please! I'll feel much better when I'm not the last in the queue!",
+              "start_byte": 31,
+              "end_byte_exclusive": 112,
+              "raw_fragment_sha256": "d02f12e41663e3af4b1ad4c63bdd1596e447d17bb2ad2b17823b7afea8f566ff"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.player_level_999_female",
+      "name": "Player Level 999 (Female)",
+      "dialogue": {
+        "greet": {
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "source": {
+            "key": "oteryn:npc.player_level_999_female",
+            "name": "Player Level 999 (Female)",
+            "path": "data/npcs/text/Port_Hope/Player_Level_999_(Female).txt",
+            "size": 291,
+            "git_blob_sha1": "1cda01bf79b471f337a5d462b121ba2e82bf6dd0",
+            "skipped_old_batch3": false,
+            "source_url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_999_%28Female%29.txt",
+            "revision": "8824eb38872a1174b0f0c923e08719e981f32ecc",
+            "access_method": "NORMAL_PUBLIC_GITHUB_RAW_HTTP",
+            "status": "CAPTURE_VERIFIED",
+            "sha256": "0754e9ffe43faa08854a6c0e10e0c974fb3cc368b5f5016e9fa5fdebdfc380d2",
+            "bytes": 291,
+            "capture_path": "/workspace/npc-enrichment-r22/dialogue/player_level_999_female.s2ward.txt",
+            "url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_999_%28Female%29.txt",
+            "kind": "pinned_public_transcript",
+            "documentary_original_candidate": {
+              "reply": [
+                "Wait in line please."
+              ],
+              "source_quote": true,
+              "classification": "EXPLICIT_OTERYN_SOURCE_HI_SPEECH_FRAGMENT_SELECTION_EXCLUDES_RECORDER_STAGE_DIRECTION",
+              "source": {
+                "key": "oteryn:npc.player_level_999_female",
+                "name": "Player Level 999 (Female)",
+                "path": "data/npcs/text/Port_Hope/Player_Level_999_(Female).txt",
+                "size": 291,
+                "git_blob_sha1": "1cda01bf79b471f337a5d462b121ba2e82bf6dd0",
+                "skipped_old_batch3": false,
+                "source_url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_999_%28Female%29.txt",
+                "revision": "8824eb38872a1174b0f0c923e08719e981f32ecc",
+                "access_method": "NORMAL_PUBLIC_GITHUB_RAW_HTTP",
+                "status": "CAPTURE_VERIFIED",
+                "sha256": "0754e9ffe43faa08854a6c0e10e0c974fb3cc368b5f5016e9fa5fdebdfc380d2",
+                "bytes": 291,
+                "capture_path": "/workspace/npc-enrichment-r22/dialogue/player_level_999_female.s2ward.txt",
+                "url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_999_%28Female%29.txt",
+                "kind": "pinned_public_transcript"
+              },
+              "quote_evidence": [
+                {
+                  "speaker_identity": "Player Level 999 (Female)",
+                  "source_speaker_identity": "Player Level 999 (Female)",
+                  "original_exact_text": "Wait in line please. (third in line, walks away)",
+                  "source_exact_text": "Wait in line please. (third in line, walks away)",
+                  "selected_literal_speech_fragment": "Wait in line please.",
+                  "observed_prompt": "hi",
+                  "start_byte": 12,
+                  "end_byte_exclusive": 87,
+                  "raw_fragment_sha256": "91465266e6b619cdfb2737f96dc73045b5928223d6312cc25b61721963a89314",
+                  "literal_text_sha256": "e7207bde810cd63b82196c6bf2f373a12d9bd883efabea03c2d7ff140e2375e6",
+                  "selected_fragment_sha256": "d204321361c0bb235532681b4dce10f17322630c917e18b4e935d309602e53c0",
+                  "player_prompt_start_byte": 0,
+                  "player_prompt_end_byte_exclusive": 12,
+                  "player_prompt_fragment_sha256": "b2ed8bbf354e8381cf3883eb45ee61f4904829a7b9399843b8fd2cc8b219e286",
+                  "actor_identity_policy": "EXACT_PINNED_TRANSCRIPT_ACTOR_NAME; FEMALE_MALE_DIFFERENT_RECORDS",
+                  "original_guard_unproven": true,
+                  "normalization": "Select exact spoken prefix only; parenthesized queue position and walks-away annotation retained documentary, never emitted or executed."
+                }
+              ],
+              "source_condition": "Schrödinger's Island reward queue interaction; source records queue position and walkaway. Proposed text makes no movement or reward changes.",
+              "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; SOURCE_STAGE_MOVEMENT_NOT_IMPLEMENTED",
+              "static_guard": "No item grants, reward choice, transport, movement, quest status or economic runtime actions. Text only.",
+              "runtime_enabled": false,
+              "canonical_tibia_fidelity_claim": false
+            }
+          },
+          "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; SOURCE_STAGE_MOVEMENT_NOT_IMPLEMENTED",
+          "source_fidelity_canonical_claim": false,
+          "reply": [
+            "Wait in line please."
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "Player Level 999 (Female)",
+              "original_exact_text": "Wait in line please.",
+              "start_byte": 39,
+              "end_byte_exclusive": 59,
+              "raw_fragment_sha256": "d204321361c0bb235532681b4dce10f17322630c917e18b4e935d309602e53c0"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.player_level_999_male",
+      "name": "Player Level 999 (Male)",
+      "dialogue": {
+        "greet": {
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "source": {
+            "key": "oteryn:npc.player_level_999_male",
+            "name": "Player Level 999 (Male)",
+            "path": "data/npcs/text/Port_Hope/Player_Level_999_(Male).txt",
+            "size": 346,
+            "git_blob_sha1": "ccadf6501fc60becbdf8b40df7fa829ddebd55b3",
+            "skipped_old_batch3": false,
+            "source_url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_999_%28Male%29.txt",
+            "revision": "8824eb38872a1174b0f0c923e08719e981f32ecc",
+            "access_method": "NORMAL_PUBLIC_GITHUB_RAW_HTTP",
+            "status": "CAPTURE_VERIFIED",
+            "sha256": "b0155d1bc04ec5e1cd07c7b9d20d62de7d631217ef22c63050df5858b45b3750",
+            "bytes": 346,
+            "capture_path": "/workspace/npc-enrichment-r22/dialogue/player_level_999_male.s2ward.txt",
+            "url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_999_%28Male%29.txt",
+            "kind": "pinned_public_transcript",
+            "documentary_original_candidate": {
+              "reply": [
+                "Sorry, no time for gossip. I have to choose my reward."
+              ],
+              "source_quote": true,
+              "classification": "EXPLICIT_OTERYN_SOURCE_HI_SPEECH_FRAGMENT_SELECTION_EXCLUDES_RECORDER_STAGE_DIRECTION",
+              "source": {
+                "key": "oteryn:npc.player_level_999_male",
+                "name": "Player Level 999 (Male)",
+                "path": "data/npcs/text/Port_Hope/Player_Level_999_(Male).txt",
+                "size": 346,
+                "git_blob_sha1": "ccadf6501fc60becbdf8b40df7fa829ddebd55b3",
+                "skipped_old_batch3": false,
+                "source_url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_999_%28Male%29.txt",
+                "revision": "8824eb38872a1174b0f0c923e08719e981f32ecc",
+                "access_method": "NORMAL_PUBLIC_GITHUB_RAW_HTTP",
+                "status": "CAPTURE_VERIFIED",
+                "sha256": "b0155d1bc04ec5e1cd07c7b9d20d62de7d631217ef22c63050df5858b45b3750",
+                "bytes": 346,
+                "capture_path": "/workspace/npc-enrichment-r22/dialogue/player_level_999_male.s2ward.txt",
+                "url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Port_Hope/Player_Level_999_%28Male%29.txt",
+                "kind": "pinned_public_transcript"
+              },
+              "quote_evidence": [
+                {
+                  "speaker_identity": "Player Level 999 (Male)",
+                  "source_speaker_identity": "Player Level 999 (Male)",
+                  "original_exact_text": "Sorry, no time for gossip. I have to choose my reward. (first in line, walks away)",
+                  "source_exact_text": "Sorry, no time for gossip. I have to choose my reward. (first in line, walks away)",
+                  "selected_literal_speech_fragment": "Sorry, no time for gossip. I have to choose my reward.",
+                  "observed_prompt": "hi",
+                  "start_byte": 12,
+                  "end_byte_exclusive": 119,
+                  "raw_fragment_sha256": "b6099a6d45d7f1391451c429205ab683835f7898877b41f52deea6e49e41b550",
+                  "literal_text_sha256": "ff282abcbb0b13c32be3ab52e4207959bacf0ea30626e7100925a23181ec96fb",
+                  "selected_fragment_sha256": "424b2d096fa75c4794e993ebda09bea42e1969ec58d9391c20f58d548db69977",
+                  "player_prompt_start_byte": 0,
+                  "player_prompt_end_byte_exclusive": 12,
+                  "player_prompt_fragment_sha256": "b2ed8bbf354e8381cf3883eb45ee61f4904829a7b9399843b8fd2cc8b219e286",
+                  "actor_identity_policy": "EXACT_PINNED_TRANSCRIPT_ACTOR_NAME; FEMALE_MALE_DIFFERENT_RECORDS",
+                  "original_guard_unproven": true,
+                  "normalization": "Select exact spoken prefix only; parenthesized queue position and walks-away annotation retained documentary, never emitted or executed."
+                }
+              ],
+              "source_condition": "Schrödinger's Island reward queue interaction; source records queue position and walkaway. Proposed text makes no movement or reward changes.",
+              "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; SOURCE_STAGE_MOVEMENT_NOT_IMPLEMENTED",
+              "static_guard": "No item grants, reward choice, transport, movement, quest status or economic runtime actions. Text only.",
+              "runtime_enabled": false,
+              "canonical_tibia_fidelity_claim": false
+            }
+          },
+          "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; SOURCE_STAGE_MOVEMENT_NOT_IMPLEMENTED",
+          "source_fidelity_canonical_claim": false,
+          "reply": [
+            "Sorry, no time for gossip. I have to choose my reward."
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "Player Level 999 (Male)",
+              "original_exact_text": "Sorry, no time for gossip. I have to choose my reward.",
+              "start_byte": 37,
+              "end_byte_exclusive": 91,
+              "raw_fragment_sha256": "424b2d096fa75c4794e993ebda09bea42e1969ec58d9391c20f58d548db69977"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.s_zallar_m_andar",
+      "name": "S'Zallar M'Andar",
+      "dialogue": {
+        "greet": {
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "source": {
+            "url": "https://tibiopedia.pl/quests/The_Roost_of_the_Graveborn_Quest",
+            "access_method": "NORMAL_PUBLIC_HTTP_COOKIEJAR_LANGUAGE_PREF_PL_LIBRARY",
+            "status": 200,
+            "final_url": "https://tibiopedia.pl/quests/The_Roost_of_the_Graveborn_Quest",
+            "sha256": "b328326ff1a24654ad4de1b4bc59f18581cd23a55a09d37ada5865d606441aa6",
+            "bytes": 160934,
+            "capture_path": "/workspace/npc-quest-recheck/dialogues10/The_Roost_of_the_Graveborn_Quest.tp.html",
+            "kind": "wiki",
+            "revision": "HTTP_BODY_SHA256:b328326ff1a24654ad4de1b4bc59f18581cd23a55a09d37ada5865d606441aa6",
+            "documentary_original_candidate": {
+              "reply": [
+                "Human! The ancient spirits are in unrest."
+              ],
+              "source_quote": true,
+              "classification": "EXPLICIT_OTERYN_QUEST_CONTEXT_SOURCE_HI_SELECTION",
+              "source": {
+                "url": "https://tibiopedia.pl/quests/The_Roost_of_the_Graveborn_Quest",
+                "access_method": "NORMAL_PUBLIC_HTTP_COOKIEJAR_LANGUAGE_PREF_PL_LIBRARY",
+                "status": 200,
+                "final_url": "https://tibiopedia.pl/quests/The_Roost_of_the_Graveborn_Quest",
+                "sha256": "b328326ff1a24654ad4de1b4bc59f18581cd23a55a09d37ada5865d606441aa6",
+                "bytes": 160934,
+                "capture_path": "/workspace/npc-quest-recheck/dialogues10/The_Roost_of_the_Graveborn_Quest.tp.html",
+                "kind": "wiki",
+                "revision": "HTTP_BODY_SHA256:b328326ff1a24654ad4de1b4bc59f18581cd23a55a09d37ada5865d606441aa6"
+              },
+              "quote_evidence": [
+                {
+                  "canonical_actor": "S'Zallar M'Andar",
+                  "speaker_identity_source": "S'Zallar M'Andar",
+                  "observed_player_keyword": "hi",
+                  "reply": "Human! The ancient spirits are in unrest.",
+                  "exchange_group": 0,
+                  "start_byte": 68959,
+                  "end_byte_exclusive": 69099,
+                  "raw_fragment_sha256": "6ae70f61e5d059e518cb4635e8fb98ab05e853d7d12815964ffd216569d95f54",
+                  "literal_reply_sha256": "f94b1f9dc7d9032dd0301f65a29408d2fd7b9ad1482336a801e8d5f2401c27dd",
+                  "source_embeds_typed_player_placeholder": false,
+                  "actor_alias_claim": false,
+                  "conditions_not_inferred_from_source_profile": true,
+                  "quest_context": "https://tibiopedia.pl/quests/The_Roost_of_the_Graveborn_Quest",
+                  "runtime_actions_enabled": false,
+                  "speaker_identity": "S'Zallar M'Andar",
+                  "source_speaker_identity": "S'Zallar M'Andar",
+                  "original_exact_text": "Human! The ancient spirits are in unrest.",
+                  "source_exact_text": "Human! The ancient spirits are in unrest.",
+                  "observed_prompt": "hi",
+                  "player_prompt_start_byte": 68774,
+                  "player_prompt_end_byte_exclusive": 68959,
+                  "player_prompt_fragment_sha256": "8067b31111697e732cd8e7d23017bc90e061d9468f8306aa8620a13dc60180ae",
+                  "original_guard_unproven": true,
+                  "actor_identity_policy": "EXACT_ACTOR_NAME_CASE_APOSTROPHE_EQUIVALENCE"
+                }
+              ],
+              "source_condition": "The Roost of the Graveborn quest initial unrest dialogue; later mission/talisman Hi replies remain documentary.",
+              "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; REAL_QUEST_GUARDS_NOT_IMPLEMENTED",
+              "static_guard": "No item grants, transport, movement, quest status or economic runtime actions. Source-state conditions retained as evidence; only text proposed.",
+              "runtime_enabled": false,
+              "canonical_tibia_fidelity_claim": false
+            }
+          },
+          "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; REAL_QUEST_GUARDS_NOT_IMPLEMENTED",
+          "source_fidelity_canonical_claim": false,
+          "reply": [
+            "Human! The ancient spirits are in unrest."
+          ],
+          "quote_evidence": [
+            {
+              "start_byte": 68959,
+              "end_byte_exclusive": 69099,
+              "raw_fragment_sha256": "6ae70f61e5d059e518cb4635e8fb98ab05e853d7d12815964ffd216569d95f54",
+              "speaker_identity": "S'Zallar M'Andar",
+              "original_exact_text": "Human! The ancient spirits are in unrest."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.taya",
+      "name": "Taya",
+      "dialogue": {
+        "greet": {
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "source": {
+            "url": "https://tibiopedia.pl/quests/Kilmaresh_Quest",
+            "access_method": "NORMAL_PUBLIC_HTTP_COOKIEJAR_LANGUAGE_PREF_PL_LIBRARY",
+            "status": 200,
+            "final_url": "https://tibiopedia.pl/quests/Kilmaresh_Quest",
+            "sha256": "f33250a04eb2cedcf9c47381fc6d82dc1a2a12978cc394f6307f030f71ca7e66",
+            "bytes": 296843,
+            "capture_path": "/workspace/npc-quest-recheck/dialogues10/Kilmaresh_Quest.tp.html",
+            "kind": "wiki",
+            "revision": "HTTP_BODY_SHA256:f33250a04eb2cedcf9c47381fc6d82dc1a2a12978cc394f6307f030f71ca7e66",
+            "documentary_original_candidate": {
+              "reply": [
+                "A gryphon rider! What a rare honour!"
+              ],
+              "source_quote": true,
+              "classification": "EXPLICIT_OTERYN_QUEST_CONTEXT_SOURCE_HI_SELECTION",
+              "source": {
+                "url": "https://tibiopedia.pl/quests/Kilmaresh_Quest",
+                "access_method": "NORMAL_PUBLIC_HTTP_COOKIEJAR_LANGUAGE_PREF_PL_LIBRARY",
+                "status": 200,
+                "final_url": "https://tibiopedia.pl/quests/Kilmaresh_Quest",
+                "sha256": "f33250a04eb2cedcf9c47381fc6d82dc1a2a12978cc394f6307f030f71ca7e66",
+                "bytes": 296843,
+                "capture_path": "/workspace/npc-quest-recheck/dialogues10/Kilmaresh_Quest.tp.html",
+                "kind": "wiki",
+                "revision": "HTTP_BODY_SHA256:f33250a04eb2cedcf9c47381fc6d82dc1a2a12978cc394f6307f030f71ca7e66"
+              },
+              "quote_evidence": [
+                {
+                  "canonical_actor": "Taya",
+                  "speaker_identity_source": "Taya",
+                  "observed_player_keyword": "Hi",
+                  "reply": "A gryphon rider! What a rare honour!",
+                  "exchange_group": 79,
+                  "start_byte": 180055,
+                  "end_byte_exclusive": 180129,
+                  "raw_fragment_sha256": "12481f762eb2a8fe710ee785ee4ac6caf2183eadbd4e83556f56bdb5fb7dc96e",
+                  "literal_reply_sha256": "1944df999ee6a233ba90355be9b36e06972fce208cb8da70b93a440329df390f",
+                  "source_embeds_typed_player_placeholder": false,
+                  "actor_alias_claim": false,
+                  "conditions_not_inferred_from_source_profile": true,
+                  "quest_context": "https://tibiopedia.pl/quests/Kilmaresh_Quest",
+                  "runtime_actions_enabled": false,
+                  "speaker_identity": "Taya",
+                  "source_speaker_identity": "Taya",
+                  "original_exact_text": "A gryphon rider! What a rare honour!",
+                  "source_exact_text": "A gryphon rider! What a rare honour!",
+                  "observed_prompt": "Hi",
+                  "player_prompt_start_byte": 179870,
+                  "player_prompt_end_byte_exclusive": 180055,
+                  "player_prompt_fragment_sha256": "c249f5825d912a758050263f384b8c8b0df59fe5458e0fea76db5e0092a7eb4e",
+                  "original_guard_unproven": true,
+                  "actor_identity_policy": "EXACT_ACTOR_NAME_CASE_APOSTROPHE_EQUIVALENCE"
+                }
+              ],
+              "source_condition": "Kilmaresh oracle encounters; NPC addresses a gryphon rider, implying mount/quest-access context. Do not claim this is unconditional real-Tibia greeting.",
+              "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; REAL_QUEST_GUARDS_NOT_IMPLEMENTED",
+              "static_guard": "No item grants, transport, movement, quest status or economic runtime actions. Source-state conditions retained as evidence; only text proposed.",
+              "runtime_enabled": false,
+              "canonical_tibia_fidelity_claim": false
+            }
+          },
+          "matching_policy": "EXPLICIT_OTERYN_STATIC_COMPATIBILITY_SELECTION_FROM_OBSERVED_HI; REAL_QUEST_GUARDS_NOT_IMPLEMENTED",
+          "source_fidelity_canonical_claim": false,
+          "reply": [
+            "A gryphon rider! What a rare honour!"
+          ],
+          "quote_evidence": [
+            {
+              "start_byte": 180055,
+              "end_byte_exclusive": 180129,
+              "raw_fragment_sha256": "12481f762eb2a8fe710ee785ee4ac6caf2183eadbd4e83556f56bdb5fb7dc96e",
+              "speaker_identity": "Taya",
+              "original_exact_text": "A gryphon rider! What a rare honour!"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.john_the_carpenter",
+      "name": "John The Carpenter",
+      "dialogue": {
+        "greet": {
+          "source_quote": true,
+          "classification": "LITERAL_SOURCE_QUOTE",
+          "source": {
+            "url": "https://tibiopedia.pl/quests/Adventures_of_Galthen_Quest",
+            "sha256": "7bbc11662182836d723208008d04b50e87c186c67dac6fc808c7ea76a69acbb2",
+            "capture_path": "/workspace/npc-quest-recheck/original_a/Adventures_of_Galthen_Quest.html",
+            "access_method": "NORMAL_PUBLIC_TIBIOPEDIA_HTTP_COOKIE_SETUP",
+            "kind": "public_quest_transcript",
+            "documentary_original_candidate": {
+              "reply": [
+                "Good evening, sorry but it's already quite late and I'm technically on vacation... please make it quick!"
+              ],
+              "source_quote": true,
+              "classification": "OBSERVED_CONTEXTUAL_HI_TRANSCRIPT_FRAGMENT",
+              "source": {
+                "url": "https://tibiopedia.pl/quests/Adventures_of_Galthen_Quest",
+                "sha256": "7bbc11662182836d723208008d04b50e87c186c67dac6fc808c7ea76a69acbb2",
+                "capture_path": "/workspace/npc-quest-recheck/original_a/Adventures_of_Galthen_Quest.html",
+                "access_method": "NORMAL_PUBLIC_TIBIOPEDIA_HTTP_COOKIE_SETUP",
+                "kind": "public_quest_transcript"
+              },
+              "quote_evidence": [
+                {
+                  "speaker_identity": "John The Carpenter",
+                  "source_speaker_identity": "John",
+                  "original_exact_text": "Good evening, sorry but it's already quite late and I'm technically on vacation... please make it quick!",
+                  "source_exact_text": "Good evening, sorry but it's already quite late and I'm technically on vacation... please make it quick!",
+                  "selected_literal_speech_fragment": "Good evening, sorry but it's already quite late and I'm technically on vacation... please make it quick!",
+                  "observed_prompt": "Hi",
+                  "start_byte": 94703,
+                  "end_byte_exclusive": 94855,
+                  "raw_fragment_sha256": "6adc41e28a7caee2fc19a2790b7e3734ab353365158d77a78a33e38737819902",
+                  "literal_html": "<div class=\"npc_chat_npc\">John: Good evening, sorry but it&#039;s already quite late and I&#039;m technically on vacation... please make it quick!</div>",
+                  "literal_text_sha256": "f54febda0efe82323b82fc48097b2b144c6485051f746a685ed85af77cab1274",
+                  "selected_fragment_sha256": "f54febda0efe82323b82fc48097b2b144c6485051f746a685ed85af77cab1274",
+                  "original_guard_unproven": true,
+                  "quest_runtime_actions_implemented": false,
+                  "context": "Adventures of Galthen: Galthen and the Lost Queen, after Kesar royal-advisor recognition; night John_(Bounac), xx:45–xx:15. Daytime actor uses John The Carpenter and different appearance.",
+                  "identity_bridge": [
+                    {
+                      "literal_text": " Assim como a maioria dos NPC's de Bounac,  John The Carpenter  muda de nome e de aparência no período diurno e noturno.\n ",
+                      "raw_fragment_start_byte": 5691,
+                      "raw_fragment_end_byte_exclusive": 5854,
+                      "raw_fragment_sha256": "7e467b74bc32460104cd39e267188e85d67d2a4ea7dd000a79d9632cad6298fb",
+                      "raw_fragment_utf8": "<p>Assim como a maioria dos NPC's de Bounac, <a class=\"mw-selflink selflink\">John The Carpenter</a> muda de nome e de aparência no período diurno e noturno.\n</p>",
+                      "source_url": "https://www.tibiawiki.com.br/wiki/John_The_Carpenter",
+                      "whole_body_sha256": "51f4cbfcaf30b9427953a45c16e1dca5b227648b550a47d3ccdfb6a7ea76b3fb"
+                    }
+                  ],
+                  "actor_identity_policy": "EXPLICIT_WIKI_DAY_NIGHT_NAME_BRIDGE; source_speaker_John_retained; scheduling_unimplemented"
+                }
+              ],
+              "runtime_loaded": false,
+              "original_guard_unproven": true,
+              "quest_service_item_actions_implemented": false
+            }
+          },
+          "source_fidelity_canonical_claim": false,
+          "reply": [
+            "Good evening, sorry but it's already quite late and I'm technically on vacation... please make it quick!"
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "John The Carpenter",
+              "original_exact_text": "Good evening, sorry but it's already quite late and I'm technically on vacation... please make it quick!",
+              "start_byte": 94703,
+              "end_byte_exclusive": 94855,
+              "raw_fragment_sha256": "6adc41e28a7caee2fc19a2790b7e3734ab353365158d77a78a33e38737819902"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.gaberiel",
+      "name": "Gaberiel",
+      "dialogue": {
+        "greet": {
+          "source_quote": true,
+          "classification": "APPROXIMATE_PLACEHOLDER_NORMALIZATION",
+          "source": {
+            "url": "https://tibia.fandom.com/wiki/Gaberiel",
+            "sha256": "30ac8d6e237f8d16b0538091a1e487c034e2d446ddbbb423ff456bfd8796688a",
+            "capture_path": "/workspace/npc-enrichment-r24/browser-fandom/Gaberiel.json",
+            "access_method": "Retained Remote Desktop + real Chrome public Fandom DOM capture",
+            "kind": "public_event_transcript_DOM",
+            "documentary_original_candidate": {
+              "reply": [
+                "Hi, |PLAYERNAME|! Nice to meet you. I stranded here years ago and can't really remember how. I had some small green gifts for the Tibians. But then I left Thais and wandered the world of Tibia ..."
+              ],
+              "source_quote": true,
+              "classification": "OBSERVED_CONTEXTUAL_HI_TRANSCRIPT_FRAGMENT",
+              "source": {
+                "url": "https://tibia.fandom.com/wiki/Gaberiel",
+                "sha256": "30ac8d6e237f8d16b0538091a1e487c034e2d446ddbbb423ff456bfd8796688a",
+                "capture_path": "/workspace/npc-enrichment-r24/browser-fandom/Gaberiel.json",
+                "access_method": "Retained Remote Desktop + real Chrome public Fandom DOM capture",
+                "kind": "public_event_transcript_DOM"
+              },
+              "quote_evidence": [
+                {
+                  "speaker_identity": "Gaberiel",
+                  "source_speaker_identity": "Gaberiel",
+                  "original_exact_text": "Hi, Player! Nice to meet you. I stranded here years ago and can't really remember how. I had some small green gifts for the Tibians. But then I left Thais and wandered the world of Tibia ...",
+                  "source_exact_text": "Hi, Player! Nice to meet you. I stranded here years ago and can't really remember how. I had some small green gifts for the Tibians. But then I left Thais and wandered the world of Tibia ...",
+                  "selected_literal_speech_fragment": "Hi, |PLAYERNAME|! Nice to meet you. I stranded here years ago and can't really remember how. I had some small green gifts for the Tibians. But then I left Thais and wandered the world of Tibia ...",
+                  "observed_prompt": "hi",
+                  "start_byte": 10727,
+                  "end_byte_exclusive": 10948,
+                  "raw_fragment_sha256": "a3cbddb8a509eaad446293f1355e15c80ac5a9e325635f39548e4587e9e68fd3",
+                  "literal_html": "<span>\nGaberiel: Hi, <i>Player</i>! Nice to meet you. I stranded here years ago and can't really remember how. I had some small green gifts for the Tibians. But then I left Thais and wandered the world of Tibia ...</span>",
+                  "literal_text_sha256": "3fce6adca8c99a1eb51e6d090daa36e334679add9496c41de93941ddcfd15773",
+                  "selected_fragment_sha256": "2b9d464d2dc44cc53e5029050b0efaaabc093690377df9a990e179153fe98f93",
+                  "original_guard_unproven": true,
+                  "quest_runtime_actions_implemented": false,
+                  "context": "2022 Observer tapestry event",
+                  "actor_identity_policy": "EXACT_GABERIEL_SOURCE_NAME; historical2022firstwelcome_not2014_orrepeat",
+                  "placeholder_normalization": "Player -> |PLAYERNAME| only"
+                }
+              ],
+              "runtime_loaded": false,
+              "original_guard_unproven": true,
+              "quest_service_item_actions_implemented": false
+            }
+          },
+          "source_fidelity_canonical_claim": false,
+          "reply": [
+            "Hi, |PLAYERNAME|! Nice to meet you. I stranded here years ago and can't really remember how. I had some small green gifts for the Tibians. But then I left Thais and wandered the world of Tibia ..."
+          ],
+          "quote_evidence": [
+            {
+              "speaker_identity": "Gaberiel",
+              "original_exact_text": "Hi, Player! Nice to meet you. I stranded here years ago and can't really remember how. I had some small green gifts for the Tibians. But then I left Thais and wandered the world of Tibia ...",
+              "start_byte": 10727,
+              "end_byte_exclusive": 10948,
+              "raw_fragment_sha256": "a3cbddb8a509eaad446293f1355e15c80ac5a9e325635f39548e4587e9e68fd3"
+            }
+          ],
+          "normalization": {
+            "from": "Player",
+            "to": "|PLAYERNAME|"
+          }
+        }
+      }
+    }
+  ],
+  "exchange_reference": {
+    "key": "oteryn:npc.a_blue_stone",
+    "source": {
+      "url": "https://www.tibiawiki.com.br/wiki/A_blue_stone",
+      "sha256": "24ec36b9319687ea9e38624198b219e56a10086694d1fce756a898309a9257ca",
+      "access_method": "Remote Desktop Commander + real Chrome/CDP public DOM",
+      "captured_at": "2026-10-02T16:46:13.017237+00:00",
+      "documentary_original_exchange_fact": {
+        "npc_key": "oteryn:npc.a_blue_stone",
+        "classification": "DOCUMENTED_EXCHANGE_REFERENCE_NOT_RUNTIME_SERVICE",
+        "sources": [
+          {
+            "url": "https://www.tibiawiki.com.br/wiki/A_blue_stone",
+            "html_sha256": "24ec36b9319687ea9e38624198b219e56a10086694d1fce756a898309a9257ca",
+            "captured_at": "2026-10-02T16:46:13.017237+00:00",
+            "access_method": "Remote Desktop Commander + real Chrome/CDP public DOM"
+          },
+          {
+            "url": "https://tibiopedia.pl/npcs/A_Blue_Stone",
+            "html_sha256": "3d169898e1bf7c6d830ac78f5e76a85a35da9d92ae2f9dadc813526e6ff333b8",
+            "captured_at": "2026-10-02T16:48:48.761978+00:00",
+            "access_method": "Remote Desktop Commander + real Chrome/CDP public DOM"
+          }
+        ],
+        "player_keyword_sequence": [
+          "hi",
+          "ice shards"
+        ],
+        "literal_npc_utterances_found": [],
+        "exchange_reference": [
+          {
+            "item_name": "Ice Feather",
+            "currency": "Ice Shards",
+            "cost": 7500,
+            "quantity": 1
+          },
+          {
+            "item_name": "Ice Lavalamp",
+            "currency": "Ice Shards",
+            "cost": 10000,
+            "quantity": 1
+          },
+          {
+            "item_name": "Ice Snowflake",
+            "currency": "Ice Shards",
+            "cost": 2500,
+            "quantity": 1
+          },
+          {
+            "item_name": "Ice Water Fountain",
+            "currency": "Ice Shards",
+            "cost": 5000,
+            "quantity": 1
+          },
+          {
+            "item_name": "Silverfrost Sentinel Figurine",
+            "currency": "Ice Shards",
+            "cost": 1250,
+            "quantity": 1
+          }
+        ],
+        "name_aliases": {
+          "Ice Lavalamp": "Tibiopedia labels this Ice Lava Lamp"
+        },
+        "runtime_trade_enabled": false,
+        "native_price_enrichment_published": false,
+        "finding": "Existing native metadata retains item names but structured prices are null; this research packet supplies documented values without inventing literal NPC speech.",
+        "historical_observation_note": "native_price_enrichment_published=false describes pre-R28 research status, not future admitted metadata status"
+      }
+    },
+    "prices": [
+      {
+        "item_name": "Ice Feather",
+        "currency": "Ice Shards",
+        "cost": 7500,
+        "quantity": 1
+      },
+      {
+        "item_name": "Ice Lavalamp",
+        "currency": "Ice Shards",
+        "cost": 10000,
+        "quantity": 1
+      },
+      {
+        "item_name": "Ice Snowflake",
+        "currency": "Ice Shards",
+        "cost": 2500,
+        "quantity": 1
+      },
+      {
+        "item_name": "Ice Water Fountain",
+        "currency": "Ice Shards",
+        "cost": 5000,
+        "quantity": 1
+      },
+      {
+        "item_name": "Silverfrost Sentinel Figurine",
+        "currency": "Ice Shards",
+        "cost": 1250,
+        "quantity": 1
+      }
+    ]
+  },
+  "counts": {
+    "actors": 21,
+    "greet_components": 21,
+    "placeholder_normalized_actors": 3,
+    "PlayerLevel_literal_prefix_selections": 5
+  },
+  "limits": [
+    "Quest/event state-specific observed greetings mapped to approximate static authoring; no action/source-state fidelity.",
+    "Recorder annotations retained documentary and excluded from emitted speech.",
+    "No source assets redistributed or runtimeservices enabled."
+  ]
+}

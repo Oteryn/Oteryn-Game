@@ -1,0 +1,24 @@
+{
+  "id": 57,
+  "name": "SERVER_MESSAGES",
+  "owner_decision": "ZONES-NOLOGOUT-1, NIGHT-W1 owner allocation",
+  "owner": "current ChannelRuntime",
+  "capability": 92,
+  "revision": "per GameSessionId, monotonic and retained across reconnect/transfer; snapshots consume MOTD only after complete delivery",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "SERVER_MESSAGE_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/server_messages_v1.proto#ServerMessageV1",
+      "max_payload_bytes": 260
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "SERVER_MESSAGE_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/server_messages_v1.proto#ServerMessageV1",
+      "max_payload_bytes": 260
+    }
+  ]
+}

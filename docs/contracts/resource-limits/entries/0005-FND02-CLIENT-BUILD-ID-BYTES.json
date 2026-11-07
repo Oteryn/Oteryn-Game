@@ -1,0 +1,22 @@
+{
+  "id": "FND02-CLIENT-BUILD-ID-BYTES",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "UTF-8 client_build_id",
+  "unit": "UTF-8 bytes",
+  "hard_maximum": 128,
+  "configurable_range": {
+    "minimum": 128,
+    "maximum": 128
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Validate UTF-8 and byte length before retaining or logging.",
+  "client_visible": true,
+  "boundary_tests": [
+    "128-byte valid UTF-8 accepted",
+    "129 bytes rejected",
+    "invalid UTF-8 rejected"
+  ],
+  "consumers": [
+    "bootstrap/resume diagnostics"
+  ]
+}

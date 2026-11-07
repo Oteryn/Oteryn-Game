@@ -1,0 +1,43 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 1000,
+    "costs": {
+      "mana": 210
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "name": "Salvation",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_salvation"
+    },
+    "reference_spell_id": 36,
+    "requirements": {
+      "level": 60,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "exura gran san"
+  }
+}

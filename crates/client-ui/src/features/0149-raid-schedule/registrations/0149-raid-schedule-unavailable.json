@@ -1,0 +1,14 @@
+{
+  "mechanic": "0149-raid-schedule",
+  "kind": "handlers",
+  "id": "0149-raid-schedule-unavailable",
+  "status": "unsupported",
+  "commands": [
+    172,
+    173
+  ],
+  "reason": "The server routes only query 171; subscription and acknowledgement have no client-usable server handlers or protocol codecs.",
+  "not_applicable": {
+    "settings": "No persistent settings."
+  }
+}

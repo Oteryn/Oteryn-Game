@@ -1,0 +1,256 @@
+{
+  "classification": "SOURCE_BOUND_LOCAL_COMPLETION_QUALIFICATION",
+  "parent": "bd431a633649f79bc9e77898f957bd52bbcb8704",
+  "original_admitted": 1660,
+  "original_held": 0,
+  "prepared_and_native_admitted": 1696,
+  "new_required_creatures_forms": 36,
+  "encounters": 83,
+  "held_encounters": 0,
+  "native_profiles": 22874,
+  "native_records": 23949,
+  "original_stats_loot_preserved": 1660,
+  "native_arena_pass": 1696,
+  "private_training_variants_used": 0,
+  "native_arena_seconds": 56.81,
+  "live_gameplay_verified": false,
+  "runtime_activated": false,
+  "materializer_snapshot_migration": "PENDING owned integration; historical runtime input/counts unchanged",
+  "checks": {
+    "monster_authoring": "247 tests:233PASS14skipped",
+    "migration": "59PASS",
+    "candy": "4PASS",
+    "encounter_completion": "6PASS",
+    "lab": "42PASS",
+    "native_arena": "7 focused tests PASS incl1696batch",
+    "governance": "validatorPASS36testsPASS",
+    "independent_review": "PASS;19sourcepins;all1696schema/readiness;3186uniqueItemrefsclosed"
+  },
+  "quality_flags": {
+    "bone_bear": [
+      "GAMEPLAY_UNVERIFIED",
+      "OTS_HYPOTHESIS_ONLY"
+    ],
+    "bony_sea_devil": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "SW6_POOL_CREATION_POLICY_NOT_IMPLEMENTED"
+    ],
+    "brachiodemon": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "SW6_POOL_CREATION_POLICY_NOT_IMPLEMENTED"
+    ],
+    "branchy_crawler": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "SW6_POOL_CREATION_POLICY_NOT_IMPLEMENTED"
+    ],
+    "candy_horror": [
+      "APPROXIMATION_SOURCE_NOOP_DECAY_TIMER_OMITTED"
+    ],
+    "capricious_phantom": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "SW6_POOL_CREATION_POLICY_NOT_IMPLEMENTED"
+    ],
+    "carnisylvan_sapling": [
+      "GAMEPLAY_UNVERIFIED",
+      "MITIGATION_UNKNOWN",
+      "OTS_HYPOTHESIS_ONLY",
+      "SOURCE_BEHAVIOR_PARTIAL",
+      "SOURCE_MECHANICS_OMITTED"
+    ],
+    "charged_anomaly": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "charging_outburst": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "cloak_of_terror": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "SOURCE_BEHAVIOR_PARTIAL",
+      "SW6_POOL_CREATION_POLICY_NOT_IMPLEMENTED"
+    ],
+    "corrupted_soul": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "courage_leech": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "SW6_POOL_CREATION_POLICY_NOT_IMPLEMENTED"
+    ],
+    "distorted_phantom": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "SW6_POOL_CREATION_POLICY_NOT_IMPLEMENTED"
+    ],
+    "dragon_egg": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "eruption_of_destruction": [
+      "GAMEPLAY_UNVERIFIED",
+      "MITIGATION_UNKNOWN",
+      "OTS_HYPOTHESIS_ONLY",
+      "SOURCE_BEHAVIOR_PARTIAL",
+      "SOURCE_MECHANICS_OMITTED"
+    ],
+    "faceless_bane": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "ferumbras_essence": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "QUEST_GLOBAL_CRYSTAL_RESET_NOT_IMPLEMENTED"
+    ],
+    "ferumbras_mortal_shell": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "ferumbras_soul_splinter": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "QUEST_GLOBAL_CRYSTAL_RESET_NOT_IMPLEMENTED"
+    ],
+    "gaz_haragoth": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "goshnar_s_megalomania_blue": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "goshnar_s_megalomania_green": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "goshnar_s_megalomania_purple": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "grand_mother_foulscale": [
+      "SOURCE_CONFIRMED_SUMMON_NAME_CORRECTION"
+    ],
+    "infernal_demon": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "SW6_POOL_CREATION_POLICY_NOT_IMPLEMENTED"
+    ],
+    "infernal_phantom": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "SW6_POOL_CREATION_POLICY_NOT_IMPLEMENTED"
+    ],
+    "izcandar_champion_of_summer": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "izcandar_champion_of_winter": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "izcandar_the_banished": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "knight_familiar": [
+      "PLAYER_FAMILIAR_RUNTIME_INTEGRATION_PENDING",
+      "SOURCE_BACKED_CORE_SUMMON"
+    ],
+    "lady_tenebris": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "leiden": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "many_faces": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "SW6_POOL_CREATION_POLICY_NOT_IMPLEMENTED"
+    ],
+    "mazoran": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "mirror_image": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "SW6_POOL_CREATION_POLICY_NOT_IMPLEMENTED"
+    ],
+    "monk_familiar": [
+      "PLAYER_FAMILIAR_RUNTIME_INTEGRATION_PENDING",
+      "SOURCE_BACKED_CORE_SUMMON"
+    ],
+    "mould_phantom": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "SW6_POOL_CREATION_POLICY_NOT_IMPLEMENTED"
+    ],
+    "paladin_familiar": [
+      "PLAYER_FAMILIAR_RUNTIME_INTEGRATION_PENDING",
+      "SOURCE_BACKED_CORE_SUMMON"
+    ],
+    "parasite": [
+      "GAMEPLAY_UNVERIFIED",
+      "OTS_HYPOTHESIS_ONLY",
+      "SOURCE_BEHAVIOR_PARTIAL",
+      "SOURCE_MECHANICS_OMITTED"
+    ],
+    "plagirath": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "powerful_soul": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "professor_maxxen": [
+      "SOURCE_BEHAVIOR_PARTIAL",
+      "SOURCE_UNREGISTERED_SUMMON_OMITTED"
+    ],
+    "ragiaz": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "rotten_golem": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "SW6_POOL_CREATION_POLICY_NOT_IMPLEMENTED"
+    ],
+    "seacrest_serpent": [
+      "UNSUPPORTED_DEFENSIVE_MELEE_OMITTED"
+    ],
+    "soulsnatcher": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "spiteful_spitter": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "SW6_POOL_CREATION_POLICY_NOT_IMPLEMENTED"
+    ],
+    "strong_soul": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "the_baron_from_below": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "the_blazing_time_guardian": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "the_freezing_time_guardian": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "the_primal_menace": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "the_time_guardian": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "turbulent_elemental": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "SW6_POOL_CREATION_POLICY_NOT_IMPLEMENTED"
+    ],
+    "vibrant_phantom": [
+      "ENCOUNTER_PARTIAL_IMPORT",
+      "SW6_POOL_CREATION_POLICY_NOT_IMPLEMENTED"
+    ],
+    "walker": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "weak_soul": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ],
+    "wormling": [
+      "GAMEPLAY_UNVERIFIED",
+      "OTS_HYPOTHESIS_ONLY",
+      "SOURCE_BEHAVIOR_PARTIAL",
+      "SOURCE_MECHANICS_OMITTED"
+    ],
+    "zamulosh": [
+      "SOURCE_BEHAVIOR_PARTIAL"
+    ]
+  },
+  "artifact_sha256": {
+    "qualified-population/population-index.json": "909a4107b15b1a1da2f488982873613407ed3559095ac613a282abff6805810f",
+    "qualified-population/creature-admission-stage.json": "4816c6b356405d3b14ac4cad7d58fd01ea98889a3591da17505ec3bf6907af16",
+    "qualified-population/completion-quality.json": "c8ba66b6eb6df8347df547357b8f85a8b2dbb58b20c6669361b84881a112b206",
+    "arena-qualified/native-arena-result.json": "2e1c8bd3042a02f9600694cb17cbf2582ff325e6a6e86e77e6457907f14057fb",
+    "arena-qualified/arena-input.json": "f52338e60ae6fe7b393b6ff0e7101938f3b6b59ac62206501922f718cc4a600d",
+    "independent-review.json": "fe03d4b3f03e381ac084e59011a125bafeb0a894918bdccc6bc35f25d53ea13f"
+  },
+  "sources": "Pinned public Canary47dfd51f/Crystal00ce02a5 local Git caches and previously verified wiki captures; freshTavily432/BR403/Fandom402 blocked,RemoteDesktop offline",
+  "remote_ci_review": "PENDING draft publication; these are source-bound local results"
+}

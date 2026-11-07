@@ -1,0 +1,1081 @@
+{
+  "schema": "NPC_APPEARANCE_FOLLOWUP_SOURCES/v1",
+  "baseline_head": "296842b073086c8b27c3091af67a31cb5029862f",
+  "reviewed_actors": 12,
+  "selected_visual_approximations": 9,
+  "documented_invisible_choices": 1,
+  "explicit_unresolved_project_defaults": 2,
+  "selections": [
+    {
+      "key": "oteryn:npc.a_stressed_sugar_cube_worker",
+      "name": "A Stressed Sugar Cube Worker",
+      "outfit": {
+        "look_type": 1753,
+        "head": 0,
+        "body": 0,
+        "legs": 0,
+        "feet": 0,
+        "addons": 0,
+        "mount": null
+      },
+      "source": {
+        "url": "https://tibiopedia.pl/images/static/npcs/a_stressed_sugar_cube_worker.gif",
+        "sha256": "fe916ce2a7d7fdb7ec3fee58a3166438127b64005170d8b347d41b63703ad9c8",
+        "page_url": "https://tibiopedia.pl/npcs/A_Stressed_Sugar_Cube_Worker",
+        "page_sha256": "4fa821d36bff3e6f65c6ac7ffc9af580b0a6f189dc93728364ea963793420023",
+        "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE"
+      },
+      "rationale": "Full image including rows behind the green caption contains a white angular cube with feet. The previous cropped/blank assessment was incorrect. Client1753 resembles the visible white cube and named Canary/Crystal Sugar Cube templates corroborate the species look; worker monster1756 carries a large brown load and is not used. NPC numeric identity remains derived approximate.",
+      "named_template_sources": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/monster/fey/sugar_cube.lua",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/monster/fey/sugar_cube.lua",
+          "sha256": "0b8b254265d7dfce8f7d79662a40e2c2d30283544b5a83e84573b55f17bb1e1c",
+          "local_path": "/workspace/npc-appearance-r26/a/canary-sugar_cube.lua",
+          "outfit_quote": "monster.outfit = {\n\tlookType = 1753,\n\tlookHead = 0,\n\tlookBody = 0,\n\tlookLegs = 0,\n\tlookFeet = 0,\n\tlookAddons = 0,\n\tlookMount = 0,\n}",
+          "access": "NORMAL_PUBLIC_GITHUB_RAW_HTTP"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/monster/fey/sugar_cube_worker.lua",
+          "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/monster/fey/sugar_cube_worker.lua",
+          "sha256": "050099928b183c5bdab9a55656638dae32e78ff50141052abf75248a27ea614f",
+          "local_path": "/workspace/npc-appearance-r26/a/canary-sugar_cube_worker.lua",
+          "outfit_quote": "monster.outfit = {\n\tlookType = 1756,\n\tlookHead = 0,\n\tlookBody = 0,\n\tlookLegs = 0,\n\tlookFeet = 0,\n\tlookAddons = 0,\n\tlookMount = 0,\n}",
+          "access": "NORMAL_PUBLIC_GITHUB_RAW_HTTP"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/monster/fey/sugar_cube.lua",
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/monster/fey/sugar_cube.lua",
+          "sha256": "0b8b254265d7dfce8f7d79662a40e2c2d30283544b5a83e84573b55f17bb1e1c",
+          "local_path": "/workspace/npc-appearance-r26/a/crystalserver-sugar_cube.lua",
+          "outfit_quote": "monster.outfit = {\n\tlookType = 1753,\n\tlookHead = 0,\n\tlookBody = 0,\n\tlookLegs = 0,\n\tlookFeet = 0,\n\tlookAddons = 0,\n\tlookMount = 0,\n}",
+          "access": "NORMAL_PUBLIC_GITHUB_RAW_HTTP"
+        }
+      ],
+      "client_animation_observation": {
+        "look_type": 1753,
+        "directions": 4,
+        "idle_phases": 1,
+        "walking_phases": 8,
+        "classification": "CLIENT_ASSET_FACT_NOT_RUNTIME_NPC_TEST"
+      }
+    },
+    {
+      "key": "oteryn:npc.demon_mother",
+      "name": "Demon Mother",
+      "outfit": {
+        "look_type": 12,
+        "head": 132,
+        "body": 34,
+        "legs": 72,
+        "feet": 75,
+        "addons": 0,
+        "mount": null
+      },
+      "source": {
+        "url": "https://tibiopedia.pl/images/static/npcs/demon_mother.gif",
+        "sha256": "155fd3896c5e57b6d907a5f470dfe93b2e2e42f8cbab789091659574e3c9ebac",
+        "page_url": "https://tibiopedia.pl/npcs/Demon_Mother",
+        "page_sha256": "39ebc76b819563e2b8e63695395d7bc9f6ffadb2ec60d762e16e91140e6f127b",
+        "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE"
+      },
+      "rationale": "Full original GIF giant rounded head, four squat limbs, snout and horn positions visually agree with client outfit12. Fitted purple/black/red palette reproduces body; palette remains approximate. No named creature donor or actor-exact ID bridge.",
+      "visual_review": {
+        "actor_exact_match": false,
+        "target_native_appearance_verified": false,
+        "choice_classification": "OTERYN_WIKI_CLIENT_DERIVED_APPROXIMATE_APPEARANCE",
+        "full_portrait_review": {
+          "image_path": "/workspace/npc-r7-work/identities/images/demon_mother.gif",
+          "portrait_sha256": "155fd3896c5e57b6d907a5f470dfe93b2e2e42f8cbab789091659574e3c9ebac",
+          "portrait_url": "https://tibiopedia.pl/images/static/npcs/demon_mother.gif",
+          "page_url": "https://tibiopedia.pl/npcs/Demon_Mother",
+          "page_capture_sha256": "39ebc76b819563e2b8e63695395d7bc9f6ffadb2ec60d762e16e91140e6f127b",
+          "actor_caption": "Demon Mother",
+          "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE",
+          "caption_policy": "All original rows inspected; expanded green-caption mask used only for candidate generation, no top-row crop admission.",
+          "contact_sheet": "/workspace/npc-appearance-r26/b/full-portraits.png"
+        },
+        "fresh_fandom_source": {
+          "url": "https://tibia.fandom.com/wiki/Demon_Mother",
+          "revision": "",
+          "html_sha256": "c60c798ed40ae07aac2c7c1f87c1c0a0c64cb9c5f7785142acfb5611fe8689d7",
+          "capture_file_sha256": "3d2e41d920ed99d80bdeb8cff8fa2abdd0f5be1012cabd54c502d25cd6e8c9a7",
+          "access": "Remote Desktop Commander + real Chrome/CDP public DOM",
+          "captured_at": "2026-10-02T14:32:14.618917+00:00"
+        },
+        "client_source": {
+          "repository": "Oteryn/Oteryn-Game",
+          "revision": "296842b073086c8b27c3091af67a31cb5029862f",
+          "appearance_file": "appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "catalog_sha256": "4921ef60464a0baea0aa25e02c5c7843a42196767951c453400e81a67cc3b424",
+          "helper_sha256": "9e39d1d0f1da25e80cf843c779d17985ad3376e47fe258d7078948200c8fa594",
+          "access": "EXISTING_CLIENT_ASSETS_LOCAL_READ_ONLY"
+        },
+        "movement_changed": false,
+        "services_changed": false,
+        "native_runtime_loaded": false,
+        "images_redistributed": false,
+        "fit_evidence": {
+          "head": 132,
+          "body": 34,
+          "legs": 72,
+          "feet": 75,
+          "score": 48.3,
+          "align": {
+            "frame": 0,
+            "dy": -3,
+            "dx": 5
+          },
+          "region_dist": {
+            "head": 75.83,
+            "body": 43.4,
+            "legs": 52.22,
+            "feet": 33.94
+          },
+          "region_px": {
+            "head": 171,
+            "body": 1307,
+            "legs": 161,
+            "feet": 13
+          }
+        },
+        "state": "DERIVED_VISUAL_APPROXIMATION_SELECTED",
+        "field_quality": {
+          "look_type": "approximate",
+          "head": "approximate",
+          "body": "approximate",
+          "legs": "approximate",
+          "feet": "approximate",
+          "addons": "defaulted",
+          "mount": "defaulted"
+        },
+        "source_creature": null,
+        "client_row": {
+          "look_type": 12,
+          "addons": 0,
+          "w": 64,
+          "h": 60,
+          "bbox": [
+            0,
+            3,
+            64,
+            63
+          ],
+          "uncoloured": false
+        },
+        "default_flags": [
+          "addons0 selected: no actor-specific addon bridge",
+          "mount=None: no actor-specific mount bridge"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:npc.demonic_messenger",
+      "name": "Demonic Messenger",
+      "outfit": {
+        "look_type": 237,
+        "head": 0,
+        "body": 0,
+        "legs": 0,
+        "feet": 0,
+        "addons": 0,
+        "mount": null
+      },
+      "source": {
+        "url": "https://tibiopedia.pl/images/static/npcs/demonic_messenger.gif",
+        "sha256": "60a9054aae373aea2ac8784caea7a38098f2be04656b7256bce2d9668215ebc2",
+        "page_url": "https://tibiopedia.pl/npcs/Demonic_Messenger",
+        "page_sha256": "5da27d2ce3c70149537ced767dc617b622839da13fb66831ab4dd3e270896da5",
+        "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE"
+      },
+      "rationale": "Full original GIF red imp holding pale staff, purple outlined wing and matching foot/body positions agree with Diabolic Imp client237; Fandom Race Demon independently supports category, not numeric actor identity.",
+      "visual_review": {
+        "actor_exact_match": false,
+        "target_native_appearance_verified": false,
+        "choice_classification": "OTERYN_WIKI_CLIENT_DERIVED_APPROXIMATE_APPEARANCE",
+        "full_portrait_review": {
+          "image_path": "/workspace/npc-r7-work/identities/images/demonic_messenger.gif",
+          "portrait_sha256": "60a9054aae373aea2ac8784caea7a38098f2be04656b7256bce2d9668215ebc2",
+          "portrait_url": "https://tibiopedia.pl/images/static/npcs/demonic_messenger.gif",
+          "page_url": "https://tibiopedia.pl/npcs/Demonic_Messenger",
+          "page_capture_sha256": "5da27d2ce3c70149537ced767dc617b622839da13fb66831ab4dd3e270896da5",
+          "actor_caption": "Demonic Messenger",
+          "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE",
+          "caption_policy": "All original rows inspected; expanded green-caption mask used only for candidate generation, no top-row crop admission.",
+          "contact_sheet": "/workspace/npc-appearance-r26/b/full-portraits.png"
+        },
+        "fresh_fandom_source": {
+          "url": "https://tibia.fandom.com/wiki/Demonic_Messenger",
+          "revision": "",
+          "html_sha256": "a498f6e7a02d046e6e57d55b1a04e9a79dc61d4e80bbcce240a5498c671ee89e",
+          "capture_file_sha256": "fa6ea0dc59ef2dfc470dacfd2abbc2363d9eca0bf37403d686523d7cfc8fce1d",
+          "access": "Remote Desktop Commander + real Chrome/CDP public DOM",
+          "captured_at": "2026-10-02T14:32:14.619354+00:00"
+        },
+        "client_source": {
+          "repository": "Oteryn/Oteryn-Game",
+          "revision": "296842b073086c8b27c3091af67a31cb5029862f",
+          "appearance_file": "appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "catalog_sha256": "4921ef60464a0baea0aa25e02c5c7843a42196767951c453400e81a67cc3b424",
+          "helper_sha256": "9e39d1d0f1da25e80cf843c779d17985ad3376e47fe258d7078948200c8fa594",
+          "access": "EXISTING_CLIENT_ASSETS_LOCAL_READ_ONLY"
+        },
+        "movement_changed": false,
+        "services_changed": false,
+        "native_runtime_loaded": false,
+        "images_redistributed": false,
+        "state": "DERIVED_VISUAL_APPROXIMATION_SELECTED",
+        "field_quality": {
+          "look_type": "approximate",
+          "head": "defaulted",
+          "body": "defaulted",
+          "legs": "defaulted",
+          "feet": "defaulted",
+          "addons": "defaulted",
+          "mount": "defaulted"
+        },
+        "source_creature": {
+          "literal_record": {
+            "f4": 3,
+            "f5": 0,
+            "f6": 1,
+            "f7": 1,
+            "look": {
+              "hex": "08ed01120808001000180020001800"
+            },
+            "name": "diabolic imp",
+            "source_id": 288,
+            "source_index": 167,
+            "staticdata_sha256": "948f810efea28e6cd6cbb7c1b2bc69dd6cb44e0429e6a5cec03e51d5646e0988"
+          },
+          "path": "imports/cipsoft-staticdata/creatures/creatures-00000-00249.json",
+          "sha256": "3da6a83a2c3ce3e3b9551379e2dd6c22693365a20059dfba3209d0f2255cef6e",
+          "revision": "296842b073086c8b27c3091af67a31cb5029862f",
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/296842b073086c8b27c3091af67a31cb5029862f/imports/cipsoft-staticdata/creatures/creatures-00000-00249.json",
+          "access": "RETAINED_CIPSOFT_STATICDATA_SOURCE_OBSERVATIONS_READ_ONLY"
+        },
+        "client_row": {
+          "look_type": 237,
+          "addons": 0,
+          "w": 59,
+          "h": 39,
+          "bbox": [
+            5,
+            22,
+            64,
+            61
+          ],
+          "uncoloured": true
+        },
+        "default_flags": [
+          "addons0 selected: no actor-specific addon bridge",
+          "mount=None: no actor-specific mount bridge",
+          "head/body/legs/feet0: fixed uncoloured client model"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:npc.dread_guardian",
+      "name": "Dread Guardian",
+      "outfit": {
+        "item_look": 8008
+      },
+      "source": {
+        "url": "https://tibiopedia.pl/images/static/npcs/dread_guardian.gif",
+        "sha256": "8918ffe622d323dcb8389c9667cebcbdff9c214824f0d09c6a5e10f5e827721c",
+        "page_url": "https://tibiopedia.pl/npcs/Dread_Guardian",
+        "page_sha256": "a3a47edb0230f55ab832024ddde2528935d7e3ca9d6fec5818cac904c71bb4d5",
+        "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE"
+      },
+      "rationale": "Full GIF depicts grey weapon-bearing seated guardian statue. Fandom literal Notes: Looks like a Guardian Statue. Legacy named item server8836 maps via pinned items.otb to client8008; current render8008/sprite277825 agrees in full statue shape. Actor-to-object mapping remains derived approximate.",
+      "visual_review": {
+        "actor_exact_match": false,
+        "target_native_appearance_verified": false,
+        "choice_classification": "OTERYN_WIKI_CLIENT_DERIVED_APPROXIMATE_APPEARANCE",
+        "full_portrait_review": {
+          "image_path": "/workspace/npc-r7-work/identities/images/dread_guardian.gif",
+          "portrait_sha256": "8918ffe622d323dcb8389c9667cebcbdff9c214824f0d09c6a5e10f5e827721c",
+          "portrait_url": "https://tibiopedia.pl/images/static/npcs/dread_guardian.gif",
+          "page_url": "https://tibiopedia.pl/npcs/Dread_Guardian",
+          "page_capture_sha256": "a3a47edb0230f55ab832024ddde2528935d7e3ca9d6fec5818cac904c71bb4d5",
+          "actor_caption": "Dread Guardian",
+          "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE",
+          "caption_policy": "All original rows inspected; expanded green-caption mask used only for candidate generation, no top-row crop admission.",
+          "contact_sheet": "/workspace/npc-appearance-r26/b/full-portraits.png"
+        },
+        "fresh_fandom_source": {
+          "url": "https://tibia.fandom.com/wiki/Dread_Guardian",
+          "revision": "",
+          "html_sha256": "04e679186763e29bdd09ef8be4a75537f5300665f55a6f2ea910ccf05d325f3f",
+          "capture_file_sha256": "f76d8ff6df135e03fcce028eda43e67aefc40d04ff4b49bdacb0ca30f6d0c843",
+          "access": "Remote Desktop Commander + real Chrome/CDP public DOM",
+          "captured_at": "2026-10-02T14:32:14.619808+00:00",
+          "literal_quote": "Looks like a Guardian Statue."
+        },
+        "client_source": {
+          "repository": "Oteryn/Oteryn-Game",
+          "revision": "296842b073086c8b27c3091af67a31cb5029862f",
+          "appearance_file": "appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "catalog_sha256": "4921ef60464a0baea0aa25e02c5c7843a42196767951c453400e81a67cc3b424",
+          "helper_sha256": "9e39d1d0f1da25e80cf843c779d17985ad3376e47fe258d7078948200c8fa594",
+          "access": "EXISTING_CLIENT_ASSETS_LOCAL_READ_ONLY"
+        },
+        "movement_changed": false,
+        "services_changed": false,
+        "native_runtime_loaded": false,
+        "images_redistributed": false,
+        "state": "DERIVED_VISUAL_OBJECT_APPROXIMATION_SELECTED",
+        "field_quality": {
+          "item_look": "approximate"
+        },
+        "object_evidence": {
+          "item_look": 8008,
+          "sprite_id": 277825,
+          "reference": "/workspace/npc-appearance-r26/b/item-models.json",
+          "full_sprite_visually_reviewed": true
+        },
+        "legacy_server_client_bridge": {
+          "source_url": "https://raw.githubusercontent.com/otg-br/global1285/35fd2ac6b665c323d4fa945e57ec2187ccaac99f/data/items/items.otb",
+          "sha256": "8d602c38e183c558d4baa76fba9cd9219d796ce8415e206e45f1cc610d1aeb30",
+          "rows": [
+            {
+              "group": 0,
+              "flags": 8193,
+              "server_id": 8836,
+              "client_id": 8008,
+              "attributes": {
+                "16": "8422",
+                "17": "481f",
+                "32": "ca264c45963e3d16768293bc51a2b795",
+                "33": "ba00",
+                "43": "02"
+              }
+            },
+            {
+              "group": 0,
+              "flags": 8193,
+              "server_id": 8837,
+              "client_id": 8009,
+              "attributes": {
+                "16": "8522",
+                "17": "491f",
+                "32": "d874cdf67705b0b5ec675ea98826addd",
+                "33": "ba00",
+                "43": "02"
+              }
+            }
+          ],
+          "root_type": 0,
+          "node_count": 40708
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.ivora",
+      "name": "Ivora",
+      "outfit": {
+        "look_type": 1604,
+        "head": 0,
+        "body": 0,
+        "legs": 0,
+        "feet": 0,
+        "addons": 0,
+        "mount": null
+      },
+      "source": {
+        "url": "https://tibiopedia.pl/images/static/npcs/ivora.gif",
+        "sha256": "a10677057b20a314ab723e6220b137f0b51755101c197f56b2c0ac9c766f1fcc",
+        "page_url": "https://tibiopedia.pl/npcs/Ivora",
+        "page_sha256": "a821737aca97bb899fc9f26e56592ccc0e9281173dc9fb2364e006614c01e884",
+        "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE"
+      },
+      "rationale": "Full GIF teal spread wings, bird face, brown humanoid legs/claws match fixed Harpy client1604; Fandom Race Bird agrees. Previous lion and humanoid proxies rejected.",
+      "visual_review": {
+        "actor_exact_match": false,
+        "target_native_appearance_verified": false,
+        "choice_classification": "OTERYN_WIKI_CLIENT_DERIVED_APPROXIMATE_APPEARANCE",
+        "full_portrait_review": {
+          "image_path": "/workspace/npc-r7-work/identities/images/ivora.gif",
+          "portrait_sha256": "a10677057b20a314ab723e6220b137f0b51755101c197f56b2c0ac9c766f1fcc",
+          "portrait_url": "https://tibiopedia.pl/images/static/npcs/ivora.gif",
+          "page_url": "https://tibiopedia.pl/npcs/Ivora",
+          "page_capture_sha256": "a821737aca97bb899fc9f26e56592ccc0e9281173dc9fb2364e006614c01e884",
+          "actor_caption": "Ivora",
+          "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE",
+          "caption_policy": "All original rows inspected; expanded green-caption mask used only for candidate generation, no top-row crop admission.",
+          "contact_sheet": "/workspace/npc-appearance-r26/b/full-portraits.png"
+        },
+        "fresh_fandom_source": {
+          "url": "https://tibia.fandom.com/wiki/Ivora",
+          "revision": "",
+          "html_sha256": "4bb96ec2124e46d5390086c7ee04755993c79afa5e96e51d3d59336d5957ce79",
+          "capture_file_sha256": "1a9dfefc8f9ab430adf12579f629d8a7188e85aca9db9fcfb049edf55bdf2142",
+          "access": "Remote Desktop Commander + real Chrome/CDP public DOM",
+          "captured_at": "2026-10-02T14:32:14.620067+00:00"
+        },
+        "client_source": {
+          "repository": "Oteryn/Oteryn-Game",
+          "revision": "296842b073086c8b27c3091af67a31cb5029862f",
+          "appearance_file": "appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "catalog_sha256": "4921ef60464a0baea0aa25e02c5c7843a42196767951c453400e81a67cc3b424",
+          "helper_sha256": "9e39d1d0f1da25e80cf843c779d17985ad3376e47fe258d7078948200c8fa594",
+          "access": "EXISTING_CLIENT_ASSETS_LOCAL_READ_ONLY"
+        },
+        "movement_changed": false,
+        "services_changed": false,
+        "native_runtime_loaded": false,
+        "images_redistributed": false,
+        "state": "DERIVED_VISUAL_APPROXIMATION_SELECTED",
+        "field_quality": {
+          "look_type": "approximate",
+          "head": "defaulted",
+          "body": "defaulted",
+          "legs": "defaulted",
+          "feet": "defaulted",
+          "addons": "defaulted",
+          "mount": "defaulted"
+        },
+        "source_creature": {
+          "literal_record": {
+            "f4": 4,
+            "f5": 0,
+            "f6": 1,
+            "f7": 1,
+            "look": {
+              "hex": "08c40c120808001000180020001800"
+            },
+            "name": "harpy",
+            "source_id": 2340,
+            "source_index": 695,
+            "staticdata_sha256": "3c195d1bd77406ce98e6a6685880b29c600183ec58b3dffbab665913e64d26e6"
+          },
+          "path": "imports/cipsoft-staticdata/creatures/creatures-00500-00749.json",
+          "sha256": "2c81949301abe20b4867220decc7195182c43470e0d976d6b46e13c0b062b04b",
+          "revision": "296842b073086c8b27c3091af67a31cb5029862f",
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/296842b073086c8b27c3091af67a31cb5029862f/imports/cipsoft-staticdata/creatures/creatures-00500-00749.json",
+          "access": "RETAINED_CIPSOFT_STATICDATA_SOURCE_OBSERVATIONS_READ_ONLY"
+        },
+        "client_row": {
+          "look_type": 1604,
+          "addons": 0,
+          "w": 48,
+          "h": 46,
+          "bbox": [
+            14,
+            14,
+            62,
+            60
+          ],
+          "uncoloured": true
+        },
+        "default_flags": [
+          "addons0 selected: no actor-specific addon bridge",
+          "mount=None: no actor-specific mount bridge",
+          "head/body/legs/feet0: fixed uncoloured client model"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:npc.jelly",
+      "name": "Jelly",
+      "outfit": {
+        "look_type": 982,
+        "head": 0,
+        "body": 0,
+        "legs": 0,
+        "feet": 0,
+        "addons": 0,
+        "mount": null
+      },
+      "source": {
+        "url": "https://tibiopedia.pl/images/static/npcs/jelly.gif",
+        "sha256": "20cc3daca981ede2c7bdd7f17e7ac61482253eb8f60fdf2e5ec9a44356d3482c",
+        "page_url": "https://tibiopedia.pl/npcs/Jelly",
+        "page_sha256": "7a40983997d23c42a8574cb41dc5b91116070c5344697c5244a0584bfcb6a265",
+        "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE"
+      },
+      "rationale": "Full GIF tiny red/pink fairy with blue wings. Pixie982 has corresponding wing/body category and colours; render is larger than reference, so scale/pose mismatch explicitly remains approximate. White Tooth223 tiny shape has wrong fixed colour; rejected as exact equivalent.",
+      "visual_review": {
+        "actor_exact_match": false,
+        "target_native_appearance_verified": false,
+        "choice_classification": "OTERYN_WIKI_CLIENT_DERIVED_APPROXIMATE_APPEARANCE",
+        "full_portrait_review": {
+          "image_path": "/workspace/npc-r7-work/identities/images/jelly.gif",
+          "portrait_sha256": "20cc3daca981ede2c7bdd7f17e7ac61482253eb8f60fdf2e5ec9a44356d3482c",
+          "portrait_url": "https://tibiopedia.pl/images/static/npcs/jelly.gif",
+          "page_url": "https://tibiopedia.pl/npcs/Jelly",
+          "page_capture_sha256": "7a40983997d23c42a8574cb41dc5b91116070c5344697c5244a0584bfcb6a265",
+          "actor_caption": "Jelly",
+          "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE",
+          "caption_policy": "All original rows inspected; expanded green-caption mask used only for candidate generation, no top-row crop admission.",
+          "contact_sheet": "/workspace/npc-appearance-r26/b/full-portraits.png"
+        },
+        "fresh_fandom_source": {
+          "url": "https://tibia.fandom.com/wiki/Jelly",
+          "revision": "",
+          "html_sha256": "5089c8bf1c50b5468ac808a5fb5f8b6e4c8560150307b933bd817d57e69f3f71",
+          "capture_file_sha256": "af146d6f5942f5d23bcfa25024e7f1c271761d9e139ab29a38ae05cfd06b15bb",
+          "access": "Remote Desktop Commander + real Chrome/CDP public DOM",
+          "captured_at": "2026-10-02T14:32:14.620257+00:00"
+        },
+        "client_source": {
+          "repository": "Oteryn/Oteryn-Game",
+          "revision": "296842b073086c8b27c3091af67a31cb5029862f",
+          "appearance_file": "appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "catalog_sha256": "4921ef60464a0baea0aa25e02c5c7843a42196767951c453400e81a67cc3b424",
+          "helper_sha256": "9e39d1d0f1da25e80cf843c779d17985ad3376e47fe258d7078948200c8fa594",
+          "access": "EXISTING_CLIENT_ASSETS_LOCAL_READ_ONLY"
+        },
+        "movement_changed": false,
+        "services_changed": false,
+        "native_runtime_loaded": false,
+        "images_redistributed": false,
+        "state": "DERIVED_VISUAL_APPROXIMATION_SELECTED",
+        "field_quality": {
+          "look_type": "approximate",
+          "head": "defaulted",
+          "body": "defaulted",
+          "legs": "defaulted",
+          "feet": "defaulted",
+          "addons": "defaulted",
+          "mount": "defaulted"
+        },
+        "source_creature": {
+          "literal_record": {
+            "f4": 3,
+            "f5": 0,
+            "f6": 1,
+            "f7": 1,
+            "look": {
+              "hex": "08d607120808001000180020001800"
+            },
+            "name": "pixie",
+            "source_id": 1438,
+            "source_index": 514,
+            "staticdata_sha256": "22991e01b597a3824bd6e82c8e8f8eae121d27f521f139fc0a9c851651a5c286"
+          },
+          "path": "imports/cipsoft-staticdata/creatures/creatures-00500-00749.json",
+          "sha256": "2c81949301abe20b4867220decc7195182c43470e0d976d6b46e13c0b062b04b",
+          "revision": "296842b073086c8b27c3091af67a31cb5029862f",
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/296842b073086c8b27c3091af67a31cb5029862f/imports/cipsoft-staticdata/creatures/creatures-00500-00749.json",
+          "access": "RETAINED_CIPSOFT_STATICDATA_SOURCE_OBSERVATIONS_READ_ONLY"
+        },
+        "client_row": {
+          "look_type": 982,
+          "addons": 0,
+          "w": 24,
+          "h": 34,
+          "bbox": [
+            30,
+            20,
+            54,
+            54
+          ],
+          "uncoloured": true
+        },
+        "default_flags": [
+          "addons0 selected: no actor-specific addon bridge",
+          "mount=None: no actor-specific mount bridge",
+          "head/body/legs/feet0: fixed uncoloured client model"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:npc.mud",
+      "name": "MUD",
+      "outfit": {
+        "addons": 0,
+        "body": 0,
+        "feet": 0,
+        "head": 0,
+        "legs": 0,
+        "look_type": 128,
+        "mount": null
+      },
+      "source": {
+        "url": "https://tibiopedia.pl/images/static/npcs/mud.gif",
+        "sha256": "29f1dc585b774dddfb7df243bb878d98721e909d328d43fee9ee4d57d0c1ac83",
+        "page_url": "https://tibiopedia.pl/npcs/MUD",
+        "page_sha256": "4377bdfa150bbec140092c0f5801f1aa59b162470e0271e925b762a9b4de444d",
+        "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE"
+      },
+      "rationale": "Full retained wiki portrait and fresh Fandom article do not establish a separate actor sprite or literal invisible status. Retain existing neutral project appearance for authoring; this is an explicit unresolved project default, not a wiki sprite match.",
+      "visual_review": {
+        "actor_exact_match": false,
+        "target_native_appearance_verified": false,
+        "choice_classification": "OTERYN_WIKI_CLIENT_DERIVED_APPROXIMATE_APPEARANCE",
+        "full_portrait_review": {
+          "image_path": "/workspace/npc-r7-work/identities/images/mud.gif",
+          "portrait_sha256": "29f1dc585b774dddfb7df243bb878d98721e909d328d43fee9ee4d57d0c1ac83",
+          "portrait_url": "https://tibiopedia.pl/images/static/npcs/mud.gif",
+          "page_url": "https://tibiopedia.pl/npcs/MUD",
+          "page_capture_sha256": "4377bdfa150bbec140092c0f5801f1aa59b162470e0271e925b762a9b4de444d",
+          "actor_caption": "MUD",
+          "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE",
+          "caption_policy": "All original rows inspected; expanded green-caption mask used only for candidate generation, no top-row crop admission.",
+          "contact_sheet": "/workspace/npc-appearance-r26/b/full-portraits.png"
+        },
+        "fresh_fandom_source": {
+          "url": "https://tibia.fandom.com/wiki/MUD",
+          "revision": "",
+          "html_sha256": "f9d483e5cc7ce422d08f52c3b0facc8046070f656fcefbc161fff0c32aa5a393",
+          "capture_file_sha256": "c9c857f8bfe023234312469863dbefdded685ab15b279e26645d64441f2a40ca",
+          "access": "Remote Desktop Commander + real Chrome/CDP public DOM",
+          "captured_at": "2026-10-02T14:32:14.620460+00:00"
+        },
+        "client_source": {
+          "repository": "Oteryn/Oteryn-Game",
+          "revision": "296842b073086c8b27c3091af67a31cb5029862f",
+          "appearance_file": "appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "catalog_sha256": "4921ef60464a0baea0aa25e02c5c7843a42196767951c453400e81a67cc3b424",
+          "helper_sha256": "9e39d1d0f1da25e80cf843c779d17985ad3376e47fe258d7078948200c8fa594",
+          "access": "EXISTING_CLIENT_ASSETS_LOCAL_READ_ONLY"
+        },
+        "movement_changed": false,
+        "services_changed": false,
+        "native_runtime_loaded": false,
+        "images_redistributed": false,
+        "state": "HELD_WITH_DOCUMENTARY_REFERENCE"
+      },
+      "choice_kind": "project_default_no_source_sprite",
+      "source_completeness": "unknown",
+      "visual_correspondence": "unknown"
+    },
+    {
+      "key": "oteryn:npc.mysterious_device",
+      "name": "Mysterious Device",
+      "outfit": {
+        "item_look": 15274
+      },
+      "source": {
+        "url": "https://tibiopedia.pl/images/static/npcs/mysterious_device.gif",
+        "sha256": "6aadb00056db970a2c70d4f11f4f216f7d57144a0b8132c99ab7c983a1fe6e56",
+        "page_url": "https://tibiopedia.pl/npcs/Mysterious_Device",
+        "page_sha256": "4c4d2ee9598870a27f2eb61d53f400c6a531e81ba87d1760e828174562b1bc25",
+        "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE"
+      },
+      "rationale": "Full original GIF red angled mechanical/telephone-like object matches client item15274/sprite281110. Duplicate44070 uses identical sprite; project selects15274. Fandom Race Animate Object agrees with object category only.",
+      "visual_review": {
+        "actor_exact_match": false,
+        "target_native_appearance_verified": false,
+        "choice_classification": "OTERYN_WIKI_CLIENT_DERIVED_APPROXIMATE_APPEARANCE",
+        "full_portrait_review": {
+          "image_path": "/workspace/npc-r7-work/identities/images/mysterious_device.gif",
+          "portrait_sha256": "6aadb00056db970a2c70d4f11f4f216f7d57144a0b8132c99ab7c983a1fe6e56",
+          "portrait_url": "https://tibiopedia.pl/images/static/npcs/mysterious_device.gif",
+          "page_url": "https://tibiopedia.pl/npcs/Mysterious_Device",
+          "page_capture_sha256": "4c4d2ee9598870a27f2eb61d53f400c6a531e81ba87d1760e828174562b1bc25",
+          "actor_caption": "Mysterious Device",
+          "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE",
+          "caption_policy": "All original rows inspected; expanded green-caption mask used only for candidate generation, no top-row crop admission.",
+          "contact_sheet": "/workspace/npc-appearance-r26/b/full-portraits.png"
+        },
+        "fresh_fandom_source": {
+          "url": "https://tibia.fandom.com/wiki/Mysterious_Device",
+          "revision": "",
+          "html_sha256": "c76c96b4845be221023d5d56ea80860dff99f307a2e0aafa1a9bc11c16a683f3",
+          "capture_file_sha256": "f14cd063e4723b82d03c6b3b6e868b8cea8ceb7dae2c265a51f34129b9341f09",
+          "access": "Remote Desktop Commander + real Chrome/CDP public DOM",
+          "captured_at": "2026-10-02T14:32:14.620650+00:00"
+        },
+        "client_source": {
+          "repository": "Oteryn/Oteryn-Game",
+          "revision": "296842b073086c8b27c3091af67a31cb5029862f",
+          "appearance_file": "appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "catalog_sha256": "4921ef60464a0baea0aa25e02c5c7843a42196767951c453400e81a67cc3b424",
+          "helper_sha256": "9e39d1d0f1da25e80cf843c779d17985ad3376e47fe258d7078948200c8fa594",
+          "access": "EXISTING_CLIENT_ASSETS_LOCAL_READ_ONLY"
+        },
+        "movement_changed": false,
+        "services_changed": false,
+        "native_runtime_loaded": false,
+        "images_redistributed": false,
+        "state": "DERIVED_VISUAL_OBJECT_APPROXIMATION_SELECTED",
+        "field_quality": {
+          "item_look": "approximate"
+        },
+        "object_evidence": {
+          "item_look": 15274,
+          "sprite_id": 281110,
+          "reference": "/workspace/npc-appearance-r26/b/item-models.json",
+          "full_sprite_visually_reviewed": true
+        }
+      }
+    },
+    {
+      "key": "oteryn:npc.opticorder_forge_npc",
+      "name": "Opticorder Forge (NPC)",
+      "outfit": null,
+      "source": {
+        "url": "https://tibia.fandom.com/wiki/Opticorder_Forge_(NPC)",
+        "sha256": "c9bc5c9c13fe2e65470898c86d212b52f46b0f852a0674d3a116d99fa1e51912",
+        "access": "Remote Desktop Commander + real Chrome/CDP public DOM",
+        "captured_at": "2026-10-02T14:32:14.620853+00:00"
+      },
+      "rationale": "Full GIF consists of caption/status bar with no visible actor body. Fresh Fandom explicitly says Cipsoft had to make an invisible NPC just above it. Documentary invisible metadata is useful; numeric native invisible choice belongs to root, no body proxy admitted here.",
+      "visual_review": {
+        "actor_exact_match": false,
+        "target_native_appearance_verified": false,
+        "choice_classification": "OTERYN_WIKI_CLIENT_DERIVED_APPROXIMATE_APPEARANCE",
+        "full_portrait_review": {
+          "image_path": "/workspace/npc-r7-work/identities/images/opticorder_forge_npc.gif",
+          "portrait_sha256": "2900244c06a1dace3d6e4b08fc04feacc4e57d84d65727a269c8ff087799e31f",
+          "portrait_url": "https://tibiopedia.pl/images/static/npcs/opticorder_forge.gif",
+          "page_url": "https://tibiopedia.pl/npcs/Opticorder_Forge",
+          "page_capture_sha256": "8f271b8515eecccd876ca6d3afabb6b76d4fcfd03d9ddf6e3b37527aea043ec0",
+          "actor_caption": "Opticorder Forge (NPC)",
+          "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE",
+          "caption_policy": "All original rows inspected; expanded green-caption mask used only for candidate generation, no top-row crop admission.",
+          "contact_sheet": "/workspace/npc-appearance-r26/b/full-portraits.png"
+        },
+        "fresh_fandom_source": {
+          "url": "https://tibia.fandom.com/wiki/Opticorder_Forge_(NPC)",
+          "revision": "",
+          "html_sha256": "c9bc5c9c13fe2e65470898c86d212b52f46b0f852a0674d3a116d99fa1e51912",
+          "capture_file_sha256": "076062fc82cb4dee85292d5d35f8bf273f5a516395c4f5a5f5a6b19320866862",
+          "access": "Remote Desktop Commander + real Chrome/CDP public DOM",
+          "captured_at": "2026-10-02T14:32:14.620853+00:00"
+        },
+        "client_source": {
+          "repository": "Oteryn/Oteryn-Game",
+          "revision": "296842b073086c8b27c3091af67a31cb5029862f",
+          "appearance_file": "appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "catalog_sha256": "4921ef60464a0baea0aa25e02c5c7843a42196767951c453400e81a67cc3b424",
+          "helper_sha256": "9e39d1d0f1da25e80cf843c779d17985ad3376e47fe258d7078948200c8fa594",
+          "access": "EXISTING_CLIENT_ASSETS_LOCAL_READ_ONLY"
+        },
+        "movement_changed": false,
+        "services_changed": false,
+        "native_runtime_loaded": false,
+        "images_redistributed": false,
+        "state": "HELD_WITH_DOCUMENTARY_REFERENCE"
+      },
+      "visibility": "invisible",
+      "visibility_evidence": {
+        "original_exact_text": "Cipsoft had to make an invisible NPC just above it.",
+        "start_byte": 6460,
+        "end_byte_exclusive": 6511,
+        "raw_fragment_sha256": "8f0aed1af0e84f7516d67bd473ae57b39ea7d42c8e7cd2fed40847c09d29496b"
+      }
+    },
+    {
+      "key": "oteryn:npc.planestrider_npc",
+      "name": "Planestrider (NPC)",
+      "outfit": {
+        "addons": 0,
+        "body": 0,
+        "feet": 0,
+        "head": 0,
+        "legs": 0,
+        "look_type": 128,
+        "mount": null
+      },
+      "source": {
+        "url": "https://tibiopedia.pl/images/static/npcs/planestrider.gif",
+        "sha256": "f2c7af46ea74845d507840d8e31b360c6c7d5ec4ed61465fa017ed401a26ddea",
+        "page_url": "https://tibiopedia.pl/npcs/Planestrider",
+        "page_sha256": "84306fa431d0b9fbb11dadce2de2fab96ef55d4a6f6d3d51a9f93c7235bbaa64",
+        "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE"
+      },
+      "rationale": "Full retained wiki portrait and fresh Fandom article do not establish a separate actor sprite or literal invisible status. Retain existing neutral project appearance for authoring; this is an explicit unresolved project default, not a wiki sprite match.",
+      "visual_review": {
+        "actor_exact_match": false,
+        "target_native_appearance_verified": false,
+        "choice_classification": "OTERYN_WIKI_CLIENT_DERIVED_APPROXIMATE_APPEARANCE",
+        "full_portrait_review": {
+          "image_path": "/workspace/npc-r7-work/identities/images/planestrider_npc.gif",
+          "portrait_sha256": "f2c7af46ea74845d507840d8e31b360c6c7d5ec4ed61465fa017ed401a26ddea",
+          "portrait_url": "https://tibiopedia.pl/images/static/npcs/planestrider.gif",
+          "page_url": "https://tibiopedia.pl/npcs/Planestrider",
+          "page_capture_sha256": "84306fa431d0b9fbb11dadce2de2fab96ef55d4a6f6d3d51a9f93c7235bbaa64",
+          "actor_caption": "Planestrider (NPC)",
+          "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE",
+          "caption_policy": "All original rows inspected; expanded green-caption mask used only for candidate generation, no top-row crop admission.",
+          "contact_sheet": "/workspace/npc-appearance-r26/b/full-portraits.png"
+        },
+        "fresh_fandom_source": {
+          "url": "https://tibia.fandom.com/wiki/Planestrider_(NPC)",
+          "revision": "",
+          "html_sha256": "bd504271925e3eae780bcf1302c5daecc86904fe31f30613be206682390a4306",
+          "capture_file_sha256": "5cd1d01ead69ee0795f2c7b6f430e2c3939bf0d47e8999c1f36c0a9025b55400",
+          "access": "Remote Desktop Commander + real Chrome/CDP public DOM",
+          "captured_at": "2026-10-02T14:32:14.621120+00:00"
+        },
+        "client_source": {
+          "repository": "Oteryn/Oteryn-Game",
+          "revision": "296842b073086c8b27c3091af67a31cb5029862f",
+          "appearance_file": "appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "catalog_sha256": "4921ef60464a0baea0aa25e02c5c7843a42196767951c453400e81a67cc3b424",
+          "helper_sha256": "9e39d1d0f1da25e80cf843c779d17985ad3376e47fe258d7078948200c8fa594",
+          "access": "EXISTING_CLIENT_ASSETS_LOCAL_READ_ONLY"
+        },
+        "movement_changed": false,
+        "services_changed": false,
+        "native_runtime_loaded": false,
+        "images_redistributed": false,
+        "state": "HELD_WITH_DOCUMENTARY_REFERENCE"
+      },
+      "choice_kind": "project_default_no_source_sprite",
+      "source_completeness": "unknown",
+      "visual_correspondence": "unknown"
+    },
+    {
+      "key": "oteryn:npc.praline",
+      "name": "Praline",
+      "outfit": {
+        "look_type": 1747,
+        "head": 111,
+        "body": 19,
+        "legs": 105,
+        "feet": 104,
+        "addons": 0,
+        "mount": null
+      },
+      "source": {
+        "url": "https://tibiopedia.pl/images/static/npcs/praline.gif",
+        "sha256": "f7602b72eb4974f2bcd53753b32dedb2a7fe52527f054429c4aef3189bce10b1",
+        "page_url": "https://tibiopedia.pl/npcs/Praline",
+        "page_sha256": "c0e5532521cc364f46f92124a742c1c0be3a764c7fe3111b1ec4543b350771af",
+        "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE"
+      },
+      "rationale": "Full GIF blue/pink flying fairy with long staff and sweeping dress. Angry Sugar Fairy1747 gives corresponding full body/staff model; fitted blue palette approximates colour. Fandom Race Unknown does not establish identity; numeric selection is visual only.",
+      "visual_review": {
+        "actor_exact_match": false,
+        "target_native_appearance_verified": false,
+        "choice_classification": "OTERYN_WIKI_CLIENT_DERIVED_APPROXIMATE_APPEARANCE",
+        "full_portrait_review": {
+          "image_path": "/workspace/npc-r7-work/identities/images/praline.gif",
+          "portrait_sha256": "f7602b72eb4974f2bcd53753b32dedb2a7fe52527f054429c4aef3189bce10b1",
+          "portrait_url": "https://tibiopedia.pl/images/static/npcs/praline.gif",
+          "page_url": "https://tibiopedia.pl/npcs/Praline",
+          "page_capture_sha256": "c0e5532521cc364f46f92124a742c1c0be3a764c7fe3111b1ec4543b350771af",
+          "actor_caption": "Praline",
+          "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE",
+          "caption_policy": "All original rows inspected; expanded green-caption mask used only for candidate generation, no top-row crop admission.",
+          "contact_sheet": "/workspace/npc-appearance-r26/b/full-portraits.png"
+        },
+        "fresh_fandom_source": {
+          "url": "https://tibia.fandom.com/wiki/Praline",
+          "revision": "",
+          "html_sha256": "c051f9a2a9cdba0a98d8f8f8c1a21458860911649558fa286cbec1ead69304e6",
+          "capture_file_sha256": "d660bcf87be59332e082bb48e93bce402b9bef55df0c534e109554cd69b8e914",
+          "access": "Remote Desktop Commander + real Chrome/CDP public DOM",
+          "captured_at": "2026-10-02T14:32:14.621299+00:00"
+        },
+        "client_source": {
+          "repository": "Oteryn/Oteryn-Game",
+          "revision": "296842b073086c8b27c3091af67a31cb5029862f",
+          "appearance_file": "appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "catalog_sha256": "4921ef60464a0baea0aa25e02c5c7843a42196767951c453400e81a67cc3b424",
+          "helper_sha256": "9e39d1d0f1da25e80cf843c779d17985ad3376e47fe258d7078948200c8fa594",
+          "access": "EXISTING_CLIENT_ASSETS_LOCAL_READ_ONLY"
+        },
+        "movement_changed": false,
+        "services_changed": false,
+        "native_runtime_loaded": false,
+        "images_redistributed": false,
+        "fit_evidence": {
+          "head": 111,
+          "body": 19,
+          "legs": 105,
+          "feet": 104,
+          "score": 83.75,
+          "align": {
+            "frame": 0,
+            "dy": -17,
+            "dx": -11
+          },
+          "region_dist": {
+            "head": 82.82,
+            "body": 98.48,
+            "legs": 38.77,
+            "feet": 65.9
+          },
+          "region_px": {
+            "head": 40,
+            "body": 346,
+            "legs": 155,
+            "feet": 27
+          }
+        },
+        "state": "DERIVED_VISUAL_APPROXIMATION_SELECTED",
+        "field_quality": {
+          "look_type": "approximate",
+          "head": "approximate",
+          "body": "approximate",
+          "legs": "approximate",
+          "feet": "approximate",
+          "addons": "defaulted",
+          "mount": "defaulted"
+        },
+        "source_creature": {
+          "literal_record": {
+            "f4": 4,
+            "f5": 0,
+            "f6": 1,
+            "f7": 1,
+            "look": {
+              "hex": "08d30d1208080f10061835205d1800"
+            },
+            "name": "angry sugar fairy",
+            "source_id": 2552,
+            "source_index": 755,
+            "staticdata_sha256": "ad87b52ac04702a748d3df06cbb835ae46e89ef30237393e9f4a64e783bcbf10"
+          },
+          "path": "imports/cipsoft-staticdata/creatures/creatures-00750-00832.json",
+          "sha256": "eed18ff5ae82fcefdf6893ff2078ac893451a7fee849c9416b87db594b0044f6",
+          "revision": "296842b073086c8b27c3091af67a31cb5029862f",
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/296842b073086c8b27c3091af67a31cb5029862f/imports/cipsoft-staticdata/creatures/creatures-00750-00832.json",
+          "access": "RETAINED_CIPSOFT_STATICDATA_SOURCE_OBSERVATIONS_READ_ONLY"
+        },
+        "client_row": {
+          "look_type": 1747,
+          "addons": 0,
+          "w": 46,
+          "h": 40,
+          "bbox": [
+            11,
+            17,
+            57,
+            57
+          ],
+          "uncoloured": false
+        },
+        "default_flags": [
+          "addons0 selected: no actor-specific addon bridge",
+          "mount=None: no actor-specific mount bridge"
+        ]
+      }
+    },
+    {
+      "key": "oteryn:npc.the_dentist",
+      "name": "The Dentist",
+      "outfit": {
+        "look_type": 857,
+        "head": 0,
+        "body": 0,
+        "legs": 0,
+        "feet": 0,
+        "addons": 0,
+        "mount": null
+      },
+      "source": {
+        "url": "https://tibiopedia.pl/images/static/npcs/the_dentist.gif",
+        "sha256": "9f18decc1ae78cfe391c6defe2bb9f3c23a5ed2977d11fcfd14ba930ad85083a",
+        "page_url": "https://tibiopedia.pl/npcs/The_Dentist",
+        "page_sha256": "5dcd1cf790a0b0a346595bd0ad5c405cd5ebe4da30f739e2b5e80cc7abaf95cd",
+        "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE"
+      },
+      "rationale": "Full GIF large brown ogre, swept horns, projecting snout and rounded forward arms closely match fixed Ogre Brute857; Fandom Race Ogre agrees. No actor-exact native mapping claim.",
+      "visual_review": {
+        "actor_exact_match": false,
+        "target_native_appearance_verified": false,
+        "choice_classification": "OTERYN_WIKI_CLIENT_DERIVED_APPROXIMATE_APPEARANCE",
+        "full_portrait_review": {
+          "image_path": "/workspace/npc-r7-work/identities/images/the_dentist.gif",
+          "portrait_sha256": "9f18decc1ae78cfe391c6defe2bb9f3c23a5ed2977d11fcfd14ba930ad85083a",
+          "portrait_url": "https://tibiopedia.pl/images/static/npcs/the_dentist.gif",
+          "page_url": "https://tibiopedia.pl/npcs/The_Dentist",
+          "page_capture_sha256": "5dcd1cf790a0b0a346595bd0ad5c405cd5ebe4da30f739e2b5e80cc7abaf95cd",
+          "actor_caption": "The Dentist",
+          "access": "RETAINED_ORDINARY_PUBLIC_TIBIOPEDIA_HTTP_CACHE",
+          "caption_policy": "All original rows inspected; expanded green-caption mask used only for candidate generation, no top-row crop admission.",
+          "contact_sheet": "/workspace/npc-appearance-r26/b/full-portraits.png"
+        },
+        "fresh_fandom_source": {
+          "url": "https://tibia.fandom.com/wiki/The_Dentist",
+          "revision": "",
+          "html_sha256": "2c56b7afa0a56d6d34c32ac04e9a86b34ae290dc84130b707fd7f561d547d9d3",
+          "capture_file_sha256": "1899acecb89161b3eef154ec44f009d73878ea5763ac00b4dbf8de2c6c6b1176",
+          "access": "Remote Desktop Commander + real Chrome/CDP public DOM",
+          "captured_at": "2026-10-02T14:32:14.621472+00:00"
+        },
+        "client_source": {
+          "repository": "Oteryn/Oteryn-Game",
+          "revision": "296842b073086c8b27c3091af67a31cb5029862f",
+          "appearance_file": "appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+          "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+          "catalog_sha256": "4921ef60464a0baea0aa25e02c5c7843a42196767951c453400e81a67cc3b424",
+          "helper_sha256": "9e39d1d0f1da25e80cf843c779d17985ad3376e47fe258d7078948200c8fa594",
+          "access": "EXISTING_CLIENT_ASSETS_LOCAL_READ_ONLY"
+        },
+        "movement_changed": false,
+        "services_changed": false,
+        "native_runtime_loaded": false,
+        "images_redistributed": false,
+        "state": "DERIVED_VISUAL_APPROXIMATION_SELECTED",
+        "field_quality": {
+          "look_type": "approximate",
+          "head": "defaulted",
+          "body": "defaulted",
+          "legs": "defaulted",
+          "feet": "defaulted",
+          "addons": "defaulted",
+          "mount": "defaulted"
+        },
+        "source_creature": {
+          "literal_record": {
+            "f4": 3,
+            "f5": 0,
+            "f6": 1,
+            "f7": 1,
+            "look": {
+              "hex": "08d906120808001000180020001800"
+            },
+            "name": "ogre brute",
+            "source_id": 1161,
+            "source_index": 480,
+            "staticdata_sha256": "502bd6166453927c307755b7d3831908c8090c061c63788b578450c2dea054d1"
+          },
+          "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+          "sha256": "8bda35e885f85779ecec50eaec6d65ea2077f76505b2b4a5fb86938a47b06e75",
+          "revision": "296842b073086c8b27c3091af67a31cb5029862f",
+          "url": "https://github.com/Oteryn/Oteryn-Game/blob/296842b073086c8b27c3091af67a31cb5029862f/imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+          "access": "RETAINED_CIPSOFT_STATICDATA_SOURCE_OBSERVATIONS_READ_ONLY"
+        },
+        "client_row": {
+          "look_type": 857,
+          "addons": 0,
+          "w": 62,
+          "h": 55,
+          "bbox": [
+            1,
+            6,
+            63,
+            61
+          ],
+          "uncoloured": true
+        },
+        "default_flags": [
+          "addons0 selected: no actor-specific addon bridge",
+          "mount=None: no actor-specific mount bridge",
+          "head/body/legs/feet0: fixed uncoloured client model"
+        ]
+      }
+    }
+  ],
+  "held": [],
+  "unknown_numeric_or_visual_sources": [
+    "oteryn:npc.mud",
+    "oteryn:npc.planestrider_npc"
+  ],
+  "all_mapping_actor_exact_claims": false,
+  "runtime_loaded": 0,
+  "images_rehosted": false
+}

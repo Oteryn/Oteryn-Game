@@ -1,0 +1,1476 @@
+{
+ "definition": {
+  "description": {
+   "length": 8,
+   "links": [],
+   "placeholders": [],
+   "sha256": "806117580b1a0a63842940c5ef231d6f0810645670b0c8f9e3925d5c28318627"
+  },
+  "display_name": "Cipfried",
+  "movement": {
+   "floor_change": false,
+   "walk_interval_ms": 1000,
+   "walk_radius": 2
+  },
+  "name": "Cipfried",
+  "presentation": {
+   "light": null,
+   "outfit": {
+    "addons": 0,
+    "body": 0,
+    "feet": 0,
+    "head": 0,
+    "legs": 0,
+    "look_type": 57,
+    "mount": null
+   },
+   "speech_bubble": "NORMAL"
+  },
+  "profession": "normal",
+  "respawn": null,
+  "vitals": {
+   "health": 100,
+   "max_health": 100
+  }
+ },
+ "dialogue": {
+  "dialog_option_calls": 0,
+  "keywords": [
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "hint"
+    ],
+    "kind": "rookgaard_hints",
+    "text": null
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "name"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 20,
+     "links": [],
+     "placeholders": [],
+     "sha256": "a1af0c6659fc7534f44ea8c4a37a8ffb2653fbf5d253e5b41ea7ee57a96986ea"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "job"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 73,
+     "links": [
+      "healing",
+      "help",
+      "monk"
+     ],
+     "placeholders": [],
+     "sha256": "f58bdfc0cacdd044ffffb6b0eb20a83e75323c4aeff46bb859f767e00acf9a4b"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "time"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 27,
+     "links": [],
+     "placeholders": [
+      "|TIME|"
+     ],
+     "sha256": "8920d409c0bce7450472c388befe10d03e6d63851bfeebf52a70c9712c644c15"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "monk"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 96,
+     "links": [
+      "tibia"
+     ],
+     "placeholders": [],
+     "sha256": "2699d303a3b5ad6250a40a9cfcd5abb3175b60d2537e4c425f555f126fb878e2"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "bank"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 140,
+     "links": [
+      "killed"
+     ],
+     "placeholders": [],
+     "sha256": "6fd6c43f99c0b4b14ec6ec8c6228bfd0e5155baf42c18f6e6d7972ddc1cb8f9c"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "destiny"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 158,
+     "links": [
+      "druid",
+      "knight",
+      "paladin",
+      "sorcerer",
+      "vocation"
+     ],
+     "placeholders": [],
+     "sha256": "0f303b39cb77ea3468e5dfa47b9bf2df405eeac863029727889cc6f7efcff310"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "tibia"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 143,
+     "links": [
+      "citizens",
+      "monsters",
+      "quests",
+      "rookgaard"
+     ],
+     "placeholders": [],
+     "sha256": "1b1fe658084323dc6020f8076de01fb5a277881bdcfcb7dff259e326e4b62cc1"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "help"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 139,
+     "links": [
+      "citizens",
+      "hints",
+      "tibia"
+     ],
+     "placeholders": [],
+     "sha256": "761c18c8d9958864cc3bf5dfc1fbf4f49cb10c6289b9b8ad55013e5fff68c779"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "citizen"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 204,
+     "links": [
+      "job",
+      "merchants",
+      "trade"
+     ],
+     "placeholders": [],
+     "sha256": "a366c5bc724a41bd881c4ccbac496480d75953b70de49f34d475d6b8fa9d91b0"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "trade"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 129,
+     "links": [
+      "merchants"
+     ],
+     "placeholders": [],
+     "sha256": "13680e9423923df098613166a4b413d8f85f51d296d0ff3c4ef8dff577d44b6e"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "rat"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 129,
+     "links": [
+      "kill"
+     ],
+     "placeholders": [],
+     "sha256": "fae28024b61c51ca6cd4614ca7b5fbfba81e37bbfa0eab526b3820f026720e4e"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "spider"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 148,
+     "links": [
+      "poisonous"
+     ],
+     "placeholders": [],
+     "sha256": "9729eec4338bb64bccf31b815fbafb6b91f7143e945e01689d65c92200b0c3b9"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "kill"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 160,
+     "links": [],
+     "placeholders": [],
+     "sha256": "98a85b05f9def05bff1a00ff9095bb7272caa103f6ad42138e62733082ff2c59"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "poison"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 107,
+     "links": [],
+     "placeholders": [],
+     "sha256": "433ebedf080bb8514dd0b83f9af51df9011b656e7cf52b0a76b2eb01c0cb20e0"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "vocation"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 126,
+     "links": [
+      "druid",
+      "knight",
+      "paladin",
+      "sorcerer"
+     ],
+     "placeholders": [],
+     "sha256": "c2bba4831efe5d7e3bfb865d64752f8b86cec59751168765404e459a648c2b9e"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "knight"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 98,
+     "links": [],
+     "placeholders": [],
+     "sha256": "21f47c32ca58067b83820c062b60a63c4f398baf4127621cfee1904a3e48f690"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "druid"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 118,
+     "links": [],
+     "placeholders": [],
+     "sha256": "ed3c8064a55fe8699a463398de39dc39dbfa986d34e32e61179cd40a5ff888b4"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "paladin"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 121,
+     "links": [],
+     "placeholders": [],
+     "sha256": "e1c24f1df55ef298f67d1fac91902121c4ed231d2904a1504950ae844449a01c"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "sorcerer"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 83,
+     "links": [],
+     "placeholders": [],
+     "sha256": "48c6f865afb3e97eff4e475974bfbb1dd0283e028d1d9ed0a4807b277ea49d51"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "shop"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 178,
+     "links": [
+      "trade"
+     ],
+     "placeholders": [],
+     "sha256": "9f37105496905353b2fe8db3263011bb259e116a3038c97e0a4cb7a2f874210a"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "equip"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 142,
+     "links": [
+      "gold",
+      "merchants",
+      "monsters"
+     ],
+     "placeholders": [],
+     "sha256": "8c2506ad892cd5fd158027a465309fc2c5963a3c5b7ebbda8a03990fc3c4c2b4"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "shovel"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 125,
+     "links": [],
+     "placeholders": [],
+     "sha256": "7663e3167eadabab570a3737fd2781497c82c7f533e8a906a8b1102a1e1bf873"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "rope"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 145,
+     "links": [],
+     "placeholders": [],
+     "sha256": "2c58f3215d21899d1305c061ef6aa39b53ec66a8e5f4edcf76825868e43e35d8"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "weapon"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 101,
+     "links": [
+      "obi"
+     ],
+     "placeholders": [],
+     "sha256": "aaec2e5697a6310f6c04c5980aad2c2caa797840a4035663629cac5088ff67af"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "food"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 181,
+     "links": [
+      "monster"
+     ],
+     "placeholders": [],
+     "sha256": "80bc59d77ab08e8453fe1ed5abf4650be654a49851512884b1b981737f2ee6d9"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "premium"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 165,
+     "links": [
+      "merchants",
+      "ship"
+     ],
+     "placeholders": [],
+     "sha256": "1c53fc22952cbbad45fdd49a9fe9507193e0a2a5285330ca17be9e284d3fef43"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "ship"
+    ],
+    "kind": "say",
+    "text": {
+     "parts": [
+      {
+       "length": 138,
+       "links": [],
+       "placeholders": [],
+       "sha256": "ce9ae781bd1cd4b0d0602f85c4db71c4bf4dbdb7622362d7bcaf7e751543756c"
+      },
+      {
+       "length": 86,
+       "links": [],
+       "placeholders": [],
+       "sha256": "8f772b137aa9ac8c2477d26fbe032cd7d897325a36542c9c12f57ea51bc79fae"
+      }
+     ]
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "potion"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 156,
+     "links": [
+      "food"
+     ],
+     "placeholders": [],
+     "sha256": "11d76a6d573d1a3c896da2cee7ec22156f991dec86c00629f56c95143000457c"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "academy"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 101,
+     "links": [
+      "seymour"
+     ],
+     "placeholders": [],
+     "sha256": "edd9c2394e83ae7a73d7207ff53322755bb333059feba7237e29ee28399fbc9f"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "king"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 80,
+     "links": [
+      "rookgaard"
+     ],
+     "placeholders": [],
+     "sha256": "b32ddead70a47078789681aa7eccfb920c53757062706556160c50f0ae0cd45e"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "rookgaard"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 121,
+     "links": [
+      "citizens",
+      "gods"
+     ],
+     "placeholders": [],
+     "sha256": "e70fd88a38054b168dff0de57fc512ec00acf2ba620cc5b44a71543fa73dd07d"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "god"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 82,
+     "links": [
+      "academy",
+      "tibia"
+     ],
+     "placeholders": [],
+     "sha256": "41912b83805351b99a5ef7d1d73ec336f67756744d01c872233ac40cd22b854e"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "monster"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 173,
+     "links": [
+      "rats",
+      "sewers",
+      "spiders",
+      "wolves"
+     ],
+     "placeholders": [],
+     "sha256": "3e2fc0f971901b9cba5e41b23acd0a91cc47eeef09fc992d43e78dd429e35f77"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "merchant"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 178,
+     "links": [
+      "trade"
+     ],
+     "placeholders": [],
+     "sha256": "9f37105496905353b2fe8db3263011bb259e116a3038c97e0a4cb7a2f874210a"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "sewer"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 188,
+     "links": [],
+     "placeholders": [],
+     "sha256": "e2cbe484f2669e4d56a5b426e1b19037d0f3bb7cfa01e897005da6c5f5a082b6"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "buy"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 134,
+     "links": [],
+     "placeholders": [],
+     "sha256": "37fd303e8577b2317f590e56b16b3b9047ee48043c78d163dcbac281528f33bb"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "sell"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 134,
+     "links": [],
+     "placeholders": [],
+     "sha256": "37fd303e8577b2317f590e56b16b3b9047ee48043c78d163dcbac281528f33bb"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "shield"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 108,
+     "links": [
+      "dixi"
+     ],
+     "placeholders": [],
+     "sha256": "dc3ad206bb17358035b227d008e06faf0703de17b28e1cbb96adf982c427e28d"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "armor"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 108,
+     "links": [
+      "dixi"
+     ],
+     "placeholders": [],
+     "sha256": "dc3ad206bb17358035b227d008e06faf0703de17b28e1cbb96adf982c427e28d"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "money"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 160,
+     "links": [
+      "citizens",
+      "monsters"
+     ],
+     "placeholders": [],
+     "sha256": "2324962da90c48ea4b5350924f9eca244f7475e8625f832c937952e66ba875d4"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "gold"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 160,
+     "links": [
+      "citizens",
+      "monsters"
+     ],
+     "placeholders": [],
+     "sha256": "2324962da90c48ea4b5350924f9eca244f7475e8625f832c937952e66ba875d4"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "quest"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 194,
+     "links": [
+      "citizens",
+      "monsters",
+      "quests"
+     ],
+     "placeholders": [],
+     "sha256": "92cf4903dbcd4b882f06732baba16c2add4ca7b4b5a1804ed18d2187cf159974"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "mission"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 194,
+     "links": [
+      "citizens",
+      "monsters",
+      "quests"
+     ],
+     "placeholders": [],
+     "sha256": "92cf4903dbcd4b882f06732baba16c2add4ca7b4b5a1804ed18d2187cf159974"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "wolf"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 143,
+     "links": [
+      "dallheim",
+      "zerbrus"
+     ],
+     "placeholders": [],
+     "sha256": "7b792706dc3e86adfa421c6a6c8ceeac56e99ed677a47c1f4455663dd178cabf"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "wolves"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 143,
+     "links": [
+      "dallheim",
+      "zerbrus"
+     ],
+     "placeholders": [],
+     "sha256": "7b792706dc3e86adfa421c6a6c8ceeac56e99ed677a47c1f4455663dd178cabf"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "adventure"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 146,
+     "links": [
+      "tibia"
+     ],
+     "placeholders": [],
+     "sha256": "cba7782a1bb1df6b5f266b9f82aa954c1765da7dab8135bf2805540920a30a33"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "explore"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 146,
+     "links": [
+      "tibia"
+     ],
+     "placeholders": [],
+     "sha256": "cba7782a1bb1df6b5f266b9f82aa954c1765da7dab8135bf2805540920a30a33"
+    }
+   },
+   {
+    "children": [],
+    "effect": "LUA_ACTION",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "heal"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 44,
+     "links": [],
+     "placeholders": [],
+     "sha256": "614284ec918251ae9430999aae8daedd28b997bf9647c0bc980e6675431c3dca"
+    }
+   },
+   {
+    "children": [],
+    "effect": "LUA_ACTION",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "heal"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 34,
+     "links": [],
+     "placeholders": [],
+     "sha256": "a79b3f2d426643de2856ef5c1de03088497319f9dc798c15ac9f4dc3d31fa202"
+    }
+   },
+   {
+    "children": [],
+    "effect": "LUA_ACTION",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "heal"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 24,
+     "links": [],
+     "placeholders": [],
+     "sha256": "25acb17a1ca934bf6f5c2779c1c0a0e3b7aad9e353d0a1171e4be7971375ce64"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "heal"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 133,
+     "links": [
+      "food"
+     ],
+     "placeholders": [
+      "|PLAYERNAME|"
+     ],
+     "sha256": "4ae2b45c0c4f3aa1bd56692d6d5e976a09aaf2d1287343bd38ab2e58b25657f4"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "obi"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 143,
+     "links": [
+      "armor",
+      "dixi",
+      "shields",
+      "shop",
+      "weapons"
+     ],
+     "placeholders": [],
+     "sha256": "03944edb05de7ad5e446431d5ee258e596972ae37ca83db929c2418815fb4081"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "norma"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 55,
+     "links": [],
+     "placeholders": [],
+     "sha256": "3e05c065f0c0eed78ee08885a89e09cb0185911d22af2fa5f389280e002f3423"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "loui"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 102,
+     "links": [],
+     "placeholders": [],
+     "sha256": "a5c1d1a96b3061a661ab1ad49da8fee4e50b3bf643612e5e2ec212da4876d950"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "santiago"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 127,
+     "links": [],
+     "placeholders": [],
+     "sha256": "98767712afcbf52b6ca0ca942444dc5e6bd53617fb8fcac16f41bf57c2889d53"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "zirella"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 102,
+     "links": [
+      "tom"
+     ],
+     "placeholders": [],
+     "sha256": "877794896735ca09f00a5e08254aed73b12886dbd9884078f7d2b35de1e59ff6"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "al",
+     "dee"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 96,
+     "links": [
+      "ropes",
+      "shovels"
+     ],
+     "placeholders": [],
+     "sha256": "f6e61932706aa7716c899adbdc2bed493affea2238d67f245daddf917fb74de7"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "amber"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 127,
+     "links": [
+      "adventurer",
+      "explorer"
+     ],
+     "placeholders": [],
+     "sha256": "0281728171390e0c4c52a80596154dd88a62d6408574158a736056b570458f35"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "billy"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 83,
+     "links": [
+      "willie"
+     ],
+     "placeholders": [],
+     "sha256": "653cea099f60d53f2ef872ec0caf8911522bf96ca2ebb94b500bdeaa3be45a12"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "willie"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 124,
+     "links": [
+      "billy",
+      "food"
+     ],
+     "placeholders": [],
+     "sha256": "2d2d71d5af22a31a6024e43324577d37e0437414cad7180f724e3b68d9213841"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "cipfried"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 26,
+     "links": [
+      "help"
+     ],
+     "placeholders": [],
+     "sha256": "4328105f79d797c5f735f112ac420862f26fc665f77b606c77bffb192ee8df26"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "dixi"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 123,
+     "links": [
+      "armor",
+      "obi's",
+      "shields"
+     ],
+     "placeholders": [],
+     "sha256": "4b6453ef73fb19d7ff29420ec8de9ff9b608a5336971bf4df5c7a9f37055b20c"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "hyacinth"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 149,
+     "links": [],
+     "placeholders": [],
+     "sha256": "64d4261ac0b3638d9cace7e1eb231448b5d9cef6c818548d10c4261e2293f61c"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "lee'delle"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 79,
+     "links": [
+      "premium"
+     ],
+     "placeholders": [],
+     "sha256": "5361742b4c9739b147aa7ea0ebd45fa3901c245458c14e9872028b61cc1d8853"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "lily"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 144,
+     "links": [
+      "potions"
+     ],
+     "placeholders": [],
+     "sha256": "7aa9b378f41afbb3e729dbac82b7891bc42e29d3351002ace869f48ba98f9f86"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "oracle"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 134,
+     "links": [
+      "academy",
+      "destiny",
+      "seymour"
+     ],
+     "placeholders": [],
+     "sha256": "48b6ad67d96eed4b4df99bbd9a9a54e3a8a9d14561d918652577071ff65c8bd8"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "paulie"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 62,
+     "links": [
+      "bank",
+      "money"
+     ],
+     "placeholders": [],
+     "sha256": "1aa79599b7eaeaf4060e671026dfa26402d7d114117976163fad876148a9a4e5"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "seymour"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 73,
+     "links": [
+      "academy",
+      "king"
+     ],
+     "placeholders": [],
+     "sha256": "ba83f5c5bf7e32f3c8588e7090230851d59d1dd3ccf847279ce5fe82db91ab6b"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "tom"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 119,
+     "links": [],
+     "placeholders": [],
+     "sha256": "62a5316eeae8639d155e59f0c88ee0b21ee8f554ae608e0301f805aa6d40b97c"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "dallheim"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 142,
+     "links": [
+      "monsters"
+     ],
+     "placeholders": [],
+     "sha256": "61fea96af4c22c74a6bcb28876380fca61f8b7ca88c81232000bd9958973751d"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "zerbrus"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 142,
+     "links": [
+      "monsters"
+     ],
+     "placeholders": [],
+     "sha256": "61fea96af4c22c74a6bcb28876380fca61f8b7ca88c81232000bd9958973751d"
+    }
+   }
+  ],
+  "messages": {
+   "farewell": {
+    "length": 23,
+    "links": [],
+    "placeholders": [
+     "|PLAYERNAME|"
+    ],
+    "sha256": "4a8bcab6c93f00ebbae70873f6b72f9c41fbb63f31fe29616103c69328ad0c9d"
+   },
+   "walkaway": {
+    "length": 15,
+    "links": [],
+    "placeholders": [],
+    "sha256": "02bc0d168b797d52a010f6e8f8bc535c185d651b1288c61f39ffbb3c6e257180"
+   }
+  },
+  "scripted_handlers": [
+   "CALLBACK_GREET"
+  ]
+ },
+ "evidence": "OTS_HYPOTHESIS_ONLY",
+ "key": "canary:npc/cipfried",
+ "placements": [
+  {
+   "direction": "NORTH",
+   "engine_spawns": true,
+   "placement_file": "data-otservbr-global/world/otservbr-npc.xml",
+   "position": {
+    "x": 32097,
+    "y": 32218,
+    "z": 7
+   },
+   "spawn_interval_s": 60,
+   "spawn_radius": 1
+  }
+ ],
+ "schema": "OTERYN_NPC_AUTHORING_CANDIDATE/v1",
+ "services": {
+  "blessings": [],
+  "kick": [],
+  "promotion": [],
+  "spells": [],
+  "trade": null,
+  "travel": []
+ },
+ "source": {
+  "path": "data-otservbr-global/npc/cipfried.lua",
+  "repository": "opentibiabr/canary",
+  "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "sha256": "e214794a89da34dc8fa035b1a12ae2130e32d0606a8b455df917d7b7a79fb418"
+ },
+ "status": "PARTIAL",
+ "unresolved": [
+  {
+   "detail": "heal",
+   "path": "dialogue.keywords[48].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "heal",
+   "path": "dialogue.keywords[48].effect",
+   "reason": "LUA_ACTION"
+  },
+  {
+   "detail": "heal",
+   "path": "dialogue.keywords[49].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "heal",
+   "path": "dialogue.keywords[49].effect",
+   "reason": "LUA_ACTION"
+  },
+  {
+   "detail": "heal",
+   "path": "dialogue.keywords[50].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "heal",
+   "path": "dialogue.keywords[50].effect",
+   "reason": "LUA_ACTION"
+  },
+  {
+   "detail": "CALLBACK_GREET",
+   "path": "dialogue.scripted_handlers",
+   "reason": "LUA_CALLBACK"
+  }
+ ],
+ "voices": {
+  "chance_percent": 50,
+  "interval_ms": 15000,
+  "lines": [
+   {
+    "text": {
+     "length": 49,
+     "links": [],
+     "placeholders": [],
+     "sha256": "cae9de0cf8b025418d33a7400079624dd746169e94da52a87179226e2663bb1e"
+    },
+    "yell": false
+   },
+   {
+    "text": {
+     "length": 31,
+     "links": [],
+     "placeholders": [],
+     "sha256": "73921037ad7eeb6ac599347c1e4518b67422b1e51538d487c978e252a971e6ae"
+    },
+    "yell": false
+   },
+   {
+    "text": {
+     "length": 35,
+     "links": [],
+     "placeholders": [],
+     "sha256": "3d22bc298d250ff82e35a8791c47d0438384c80c5757a55099c17a3673868d4c"
+    },
+    "yell": false
+   },
+   {
+    "text": {
+     "length": 28,
+     "links": [],
+     "placeholders": [],
+     "sha256": "4891afeced438ed8549e460e69a431daafc92091f4bbabfc62f1d8942a6a660b"
+    },
+    "yell": false
+   }
+  ]
+ }
+}

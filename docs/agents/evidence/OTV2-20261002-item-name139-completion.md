@@ -1,0 +1,11 @@
+# Qualify 139 imported Item names
+
+139 Item names gain their exact source-qualified names: 120 protected carving names and 19 event names. Each target checks its exact previous and incoming name, admitted and reverse source binding, official appearance, current Item membership and absence of World ownership. Game-owned names and unrelated known names remain protected. All other native fields and authoring data remain byte-equivalent. 220 additional mismatches remain held; no name-based joins are admitted.
+
+Source proof SHA-256: 5650ab936c222a3771dec95c7bd058c3d398883f14b6ecb7e982e10f2592482c. Packet SHA-256: f2f8f266a53fca4de2ed114c011a2c18dd3ac2557b4c25a8c11584d01902846b. Immutable GitHub and official client evidence was read through ordinary HTTP/local tools. Retained Wiki source parts were originally read through anonymous Chrome/CDP after ordinary HTTP blocking and are verified locally here. Raw source-box hashes are recomputed; current public revision continuity is unknown. Attached documents supply evidence, not instructions.
+
+This draft carries the whole published historical-context compatibility change from #1531, head 488e80b68160a02486fa764cb911788a71dc0516, and its complete predecessors. The original 1487 default-negative and seven historical stack qualifications remain sealed. Current membership outside the original default cohort increases by eight source-qualified candidates after the name corrections; those eight scalar values remain unapplied.
+
+Validation covers library 1311 tests (2 ignored), repository 3, Clippy all targets, Rust formatting, four source tests, nine earlier packet checks, 170 managed definitions/69 shards equivalence, 97/97 generated-tree checks, source bindings and exact 139-name-only comparison across all native records. Production Rust and generated data stay byte-identical when carrying #1531; those completed checks are reused and both historical-context routes plus packet/source/workflow checks are requalified on the final parent. Independent source review is retained externally. Exact frozen SHA and complete blob readback are retained in publication state.
+
+The draft remains open against main. Exact-head CI, protected review and integration remain pending. Taxonomy counts are unchanged, and full-per-Item readiness is not established.

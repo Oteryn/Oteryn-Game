@@ -1,0 +1,31 @@
+{
+  "base_sha": "1e77ca22b4fcb7869f8f1d169f4e12bc749b295d",
+  "status": "PASS",
+  "results": [
+    {
+      "check": "tests",
+      "exit_code": 0
+    },
+    {
+      "check": "ruff",
+      "exit_code": 0
+    },
+    {
+      "check": "format",
+      "exit_code": 0
+    },
+    {
+      "check": "build",
+      "exit_code": 0
+    },
+    {
+      "check": "validate",
+      "exit_code": 0
+    },
+    {
+      "check": "patch-apply",
+      "exit_code": 0
+    }
+  ],
+  "scope": "Offline candidate on exact main source; repository checks rerun after authoring. Not CI or protected integration evidence."
+}

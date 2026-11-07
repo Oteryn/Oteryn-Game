@@ -1,0 +1,13 @@
+{
+  "id": 274,
+  "name": "LOYALTY_SKILLS_V1",
+  "owner_decision": "ANIMUS-LOYALTY-19; Crystal re-audit P13",
+  "owner": "Game Character build and account loyalty projection consumer",
+  "requires": [],
+  "command_types": [
+    488
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only, filtered out without the active native training formula. The selected capability permits command 488 to read the admitted Character's own base and loyalty-adjusted skills from the existing session-fenced Character owner. Game does not earn or modify loyalty points."
+}

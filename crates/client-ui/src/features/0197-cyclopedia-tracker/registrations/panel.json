@@ -1,0 +1,7 @@
+{
+  "mechanic": "0197-cyclopedia-tracker",
+  "kind": "panels",
+  "id": "0197-cyclopedia-tracker-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

@@ -1,0 +1,17 @@
+{
+  "id": 15,
+  "name": "ITEM_USE_V1",
+  "constant": "world_object::CAPABILITY_ITEM_USE_V1",
+  "requires": [
+    4
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

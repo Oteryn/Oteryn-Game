@@ -1,0 +1,21 @@
+{
+  "id": "IMBUEWIRE1-RL-02",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+  "resource": "Imbuement window reply payload",
+  "unit": "bytes",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 1024
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "At most 3 applied rows (IMBFORGE0-RL-01) and 60 offers (20 families x 3 tiers); the encoder refuses a larger reply before it is sent.",
+  "client_visible": false,
+  "boundary_tests": [
+    "imbuement_reply_strict_codec_and_bound"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/imbuement.rs"
+  ],
+  "notes": "IMBUE-WIRE-1. No success chance or protection field: success is always 100% (IMBUE-FORGE0 R2)."
+}

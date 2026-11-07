@@ -1,0 +1,21 @@
+{
+  "definitions": [
+    {
+      "family": "Ability",
+      "key": "canary:ability/spell/summon_druid_familiar",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Ability",
+      "key": "canary:ability/spell/summon_challenge",
+      "revision": "canary-47dfd51f"
+    }
+  ],
+  "assets": [
+    "canary.appearance:effect/groundshaker",
+    "canary.appearance:effect/magic_green",
+    "canary.appearance:effect/stones",
+    "canary.appearance:missile/earth",
+    "canary.appearance:outfit/993"
+  ]
+}

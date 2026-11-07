@@ -1,0 +1,1733 @@
+{
+ "anomalies": [
+  {
+   "field": "premium",
+   "reason": "missing",
+   "title": "Smart Thinking",
+   "value": null
+  },
+  {
+   "field": "grade",
+   "reason": "not a grade 1-4",
+   "title": "The More the Merrier",
+   "value": "0"
+  },
+  {
+   "field": "premium",
+   "reason": "not lowercase yes/no",
+   "title": "Sculptor Apprentice",
+   "value": "Yes"
+  },
+  {
+   "field": "points",
+   "reason": "missing",
+   "title": "Hell Rider",
+   "value": null
+  },
+  {
+   "field": "name",
+   "reason": "missing",
+   "title": "Achievement 563",
+   "value": null
+  },
+  {
+   "field": "grade",
+   "reason": "missing",
+   "title": "Achievement 563",
+   "value": null
+  },
+  {
+   "field": "premium",
+   "reason": "not lowercase yes/no",
+   "title": "Achievement 563",
+   "value": "?"
+  },
+  {
+   "field": "points",
+   "reason": "not an integer",
+   "title": "Achievement 563",
+   "value": "?"
+  },
+  {
+   "field": "points",
+   "reason": "missing",
+   "title": "Taskaholic",
+   "value": null
+  },
+  {
+   "field": "premium",
+   "reason": "missing",
+   "title": "Sail Away!",
+   "value": null
+  }
+ ],
+ "authority": "SOURCE_OBSERVATIONS_ONLY; no Oteryn ProductionKeys or gameplay promotion",
+ "counts": {
+  "joined": 368,
+  "joined_with_differences": 57,
+  "staticdata": 368,
+  "staticdata_only": 0,
+  "uncertain_id": 1,
+  "wiki": 571,
+  "wiki_only": 203
+ },
+ "inputs": {
+  "facts": "imports/tibiawiki/achievements/2026-09-29/tibiawiki-achievements-facts.json",
+  "staticdata": "imports/cipsoft-staticdata/achievements/achievements-00000-00367.json"
+ },
+ "join": "wiki achievementid == staticdata source_id",
+ "joined_with_differences": [
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You follow the path of dreams and that of responsibility without self-centred power. Free from greed and selfishness, you help others without expecting a reward. ",
+     "wiki": "You follow the path of dreams and that of responsibility without self-centered power. Free from greed and selfishness, you help others without expecting a reward."
+    }
+   ],
+   "source_id": 10,
+   "title": "Nightmare Knight"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You travelled the surreal realm of the elemental spheres, summoned and slew the Lord of the Elements, all in order to retrieve neutral matter. And as brave as you were, you couldn't have done it without your team!",
+     "wiki": "You travelled the surreal realm of the elemental spheres, summoned and slayed the Lord of the Elements, all in order to retrieve neutral matter. And as brave as you were, you couldn't have done it without your team!"
+    }
+   ],
+   "source_id": 15,
+   "title": "Lord of the Elements (Achievement)"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "Girl power! Whether you're female or not, you've proven absolute loyalty and the willingness to put your life at stake for the girls brigade of Carlin. ",
+     "wiki": "Girl power! Whether you're female or not, you've proven absolute loyalty and the willingness to put your life at stake for the girls brigade of Carlin."
+    }
+   ],
+   "source_id": 23,
+   "title": "Top CGB Agent"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You've proven to be a valuable ally to the Marid, and earned Gabel's trust. As long as you stand with the Marid you are welcome to trade with Haroun and Nah'bob. Though the Djinn War has still not ended, the Marid can't fail with you on their side.",
+     "wiki": "You've proven to be a valuable ally to the Marid, and Gabel welcomed you to trade with Haroun and Nah'Bob whenever you want to. Though the Djinn war has still not ended, the Marid can't fail with you on their side."
+    }
+   ],
+   "source_id": 31,
+   "title": "Marid Ally"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "Even though the Efreet welcomed you only reluctantly and viewed you as \"only a human\" for quite some time, you managed to impress Malor and gained his respect. As long as you stand with the Efreet, you are permitted to trade to with the green djinns.",
+     "wiki": "Even though the Efreet welcomed you only reluctantly and viewed you as \"only a human\" for quite some time, you managed to impress Malor and gained his respect and trade options with the green djinns."
+    }
+   ],
+   "source_id": 32,
+   "title": "Efreet Ally"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "Warm, furry and cuddly - though that same bear you just hugged would probably rip you into pieces if he had been conscious, he reminded you of that old teddy bear which always slept in your bed when you were still small. ",
+     "wiki": "Warm, furry and cuddly - though that same bear you just hugged would probably rip you into pieces if he had been conscious, he reminded you of that old teddy bear which always slept in your bed when you were still small."
+    }
+   ],
+   "source_id": 37,
+   "title": "Bearhugger"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You have a soft spot for little, weak animals, and you do everything in your power to protect them - even if you probably eat dragons for breakfast. ",
+     "wiki": "You have a soft spot for little, weak animals, and you do everything in your power to protect them - even if you probably eat dragons for breakfast."
+    }
+   ],
+   "source_id": 39,
+   "title": "Animal Activist"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You don't believe in romance to be a coincidence or in love at first sight. In fact - love potions, bouquets of flowers and cheesy poems do the trick much better. Keep those hormones flowing!",
+     "wiki": "You don't believe in romance to be a coincidence or in love at first sight. In fact - love potions, bouquets of flowers and cheesy poems do the trick much better than ever could. Keep those hormones flowing!"
+    }
+   ],
+   "source_id": 48,
+   "title": "Matchmaker"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "RAWR! Strength running through your body, your heart racing faster and adrenaline fuelling your every weapon swing. All in a little bottle. No refund for destroyed furniture. For further questions consult your healer or potion dealer.",
+     "wiki": "RAWR! Strength running through your body, your heart racing faster and adrenaline fueling your every weapon swing. All in a little bottle. No refund for destroyed furniture. For further questions consult your healer or potion dealer."
+    }
+   ],
+   "source_id": 123,
+   "title": "Berserker (Achievement)"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "Stealth kills and backstabbing are your specialty. Your numerous victims are usually unaware of their imminent death, which you bring to them silently and swiftly. Everything is permitted.",
+     "wiki": "Stealth kills and backstabbing are you specialty. Your numerous victims are usually unaware of their imminent death, which you bring to them silently and swiftly. Everything is permitted."
+    }
+   ],
+   "source_id": 146,
+   "title": "Swift Death"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You've extinguished the Sulphur Scuttler's gas clouds and made the air in his cave a little better... at least for a while.",
+     "wiki": "You've exinguished the Sulphur Scuttler's gas clouds and made the air in his cave a little better... at least for a while."
+    }
+   ],
+   "source_id": 234,
+   "title": "Something Smells"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You've discovered three nomad camps and stole their supplies. Well, you can probably use them better than they can.",
+     "wiki": "You've discovered three nomad camps and stole their supplies. Well, you can probably use them better then they can."
+    }
+   ],
+   "source_id": 254,
+   "title": "Chest Robber"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You have proven that you can beat the best of the hive. You have caused first promising breaches in the defence of the hive.",
+     "wiki": "You have proven that you can beat the best of the hive. You have caused first promising breaches in the defence of the hive"
+    }
+   ],
+   "source_id": 269,
+   "title": "Guard Killer"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You have destroyed a significant amount of the hive's vital nerve centres and caused massive destruction to the hive's awareness. You are probably causing the hive horrible nightmares.",
+     "wiki": "You have destroyed a significant amount of the hive's vital nerve centers and caused massive destruction to the hive's awareness. You are probably causing the hive horrible nightmares."
+    }
+   ],
+   "source_id": 274,
+   "title": "Manic"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You hushed the songs of war in the black depths by silencing more than three hundred Deepling Spellsingers.",
+     "wiki": "You hushed the songs of war in the black depths by sliencing more than three hundred Deepling Spellsingers."
+    }
+   ],
+   "source_id": 279,
+   "title": "Death Song"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "Your invaluable experience in fighting the hive allows you to add another piece of armor to your chitin outfit to prove your dedication for the cause. ",
+     "wiki": "Your invaluable experience in fighting the hive allows you to add another piece of armor to your chitin outfit to prove your dedication for the cause."
+    }
+   ],
+   "source_id": 285,
+   "title": "Hive War Veteran"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You have participated that much in the hive war, that you are able to create some makeshift armor from the remains of dead hive born that can be found in the major hive, to show off your skill. ",
+     "wiki": "You have participated that much in the hive war, that you are able to create some makeshift armor from the remains of dead hive born that can be found in the major hive, to show of your skill."
+    }
+   ],
+   "source_id": 286,
+   "title": "Hive Fighter"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You overcame the undead Zanakeph and sent him back into the darkness that spawned him. ",
+     "wiki": "You overcame the undead Zanakeph and sent him back into the darkness that spawned him."
+    }
+   ],
+   "source_id": 294,
+   "title": "Back from the Dead"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You brought two loving crystals together. Perhaps they might even name one of their children after you. To bad you forgot to leave your calling card.",
+     "wiki": "You brought two loving crystals together. Perhaps they might even name one of their children after you. Too bad you forgot to leave your calling card."
+    }
+   ],
+   "source_id": 304,
+   "title": "Crystals in Love"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "The gnomes decided their pigs need some exclusive diet and you had to do all the dirty work - but wasn't the piglet adorable? <sigh>",
+     "wiki": "The gnomes decided their pigs need some exclusive diet and you had to do all the dirty work - but wasn't the piglet adorable?"
+    }
+   ],
+   "source_id": 312,
+   "title": "The Picky Pig"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "If the gnomes had told you that crystal armor is see-through you probably would have changed your underwear in time. ",
+     "wiki": "If the gnomes had told you that crystal armor is see-through you had probably changed your underwear in time."
+    }
+   ],
+   "source_id": 321,
+   "title": "Crystal Clear"
+  },
+  {
+   "differences": [
+    {
+     "field": "name",
+     "staticdata": "Gnomish Art of War",
+     "wiki": "Gnomish Art Of War"
+    }
+   ],
+   "source_id": 322,
+   "title": "Gnomish Art Of War"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You managed to create, improve and transform your blade into a master state and have proven yourself worthy in a nightmarish world.",
+     "wiki": "You managed to transform, improve and sacrify your blade into a master state and have proven yourself worthy in a nightmarish world."
+    }
+   ],
+   "source_id": 328,
+   "title": "Umbral Swordsman"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You helped the gnomes of the Spike in securing the caves and explored enough of the lightless depths to earn you a complete cave explorer's outfit. Well done!",
+     "wiki": "You have helped the gnomes of the spike in securing the caves and explored enough of the lightles depths to earn you a complete cave explorers outfit. Well done!"
+    }
+   ],
+   "source_id": 331,
+   "title": "Cave Completionist"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You managed to create, improve and transform your slayer into a master state and have proven yourself worthy in a nightmarish world.",
+     "wiki": "You managed to transform, improve and sacrify your slayer into a master state and have proven yourself worthy in a nightmarish world."
+    }
+   ],
+   "source_id": 332,
+   "title": "Umbral Bladelord"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You managed to create, improve and transform your axe into a master state and have proven yourself worthy in a nightmarish world.",
+     "wiki": "You managed to transform, improve and sacrify your axe into a master state and have proven yourself worthy in a nightmarish world."
+    }
+   ],
+   "source_id": 333,
+   "title": "Umbral Headsman"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You managed to create, improve and transform your chopper into a master state and have proven yourself worthy in a nightmarish world.",
+     "wiki": "You managed to transform, improve and sacrify your chopper into a master state and have proven yourself worthy in a nightmarish world."
+    }
+   ],
+   "source_id": 334,
+   "title": "Umbral Executioner"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You managed to create, improve and transform your mace into a master state and have proven yourself worthy in a nightmarish world.",
+     "wiki": "You managed to transform, improve and sacrify your mace into a master state and have proven yourself worthy in a nightmarish world."
+    }
+   ],
+   "source_id": 335,
+   "title": "Umbral Brawler"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You managed to create, improve and transform your hammer into a master state and have proven yourself worthy in a nightmarish world.",
+     "wiki": "You managed to transform, improve and sacrify your hammer into a master state and have proven yourself worthy in a nightmarish world."
+    }
+   ],
+   "source_id": 336,
+   "title": "Umbral Berserker"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You managed to create, improve and transform your bow into a master state and have proven yourself worthy in a nightmarish world.",
+     "wiki": "You managed to transform, improve and sacrify your bow into a master state and have proven yourself worthy in a nightmarish world."
+    }
+   ],
+   "source_id": 337,
+   "title": "Umbral Archer"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You managed to create, improve and transform your crossbow into a master state and have proven yourself worthy in a nightmarish world.",
+     "wiki": "You managed to transform, improve and sacrify your crossbow into a master state and have proven yourself worthy in a nightmarish world."
+    }
+   ],
+   "source_id": 338,
+   "title": "Umbral Marksman"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You managed to create, improve and transform your spellbook into a master state and have proven yourself worthy in a nightmarish world.",
+     "wiki": "You managed to transform, improve and sacrify your spellbook into a master state and have proven yourself worthy in a nightmarish world."
+    }
+   ],
+   "source_id": 339,
+   "title": "Umbral Harbinger"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You managed to create, improve and transform all kinds of weapons into a master state and have proven yourself worthy in a nightmarish world. Respect!",
+     "wiki": "You managed to transform, improve and sacrify all kinds of weapons into a master state and have proven yourself worthy in a nightmarish world. Respect!"
+    }
+   ],
+   "source_id": 340,
+   "title": "Umbral Master"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "By having rendered numerous services to the city of Rathleton you have been promoted to the rank of a Commoner.",
+     "wiki": "By having rendered numerous services to the city of Rathleton you have been promoted to the rank of Commoner."
+    }
+   ],
+   "source_id": 351,
+   "title": "Rathleton Commoner"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "By having rendered numerous services to the city of Rathleton you have been promoted to the rank of a Inhabitant.",
+     "wiki": "By having rendered numerous services to the city of Rathleton you have been promoted to the rank of Inhabitant."
+    }
+   ],
+   "source_id": 352,
+   "title": "Rathleton Inhabitant"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "By having rendered numerous services to the city of Rathleton you have been promoted to the rank of a Citizen.",
+     "wiki": "By having rendered numerous services to the city of Rathleton you have been promoted to the rank of Citizen."
+    }
+   ],
+   "source_id": 353,
+   "title": "Rathleton Citizen"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "Though you may have averted a dire threat for Rathleton, this relative peace may only hold for a while. At least you've scavenged an outfit from some of the poor fellows that have fallen prey to death priest Shargon.",
+     "wiki": "Though you might have averted a dire threat for Rathleton, this relative peace may only hold for a while. At least you've scavenged an outfit from some of the poor fellows that have fallen prey to death priest Shagron."
+    }
+   ],
+   "source_id": 355,
+   "title": "Glooth Engineer"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "By having rendered numerous services to the city of Rathleton you have been promoted to the rank of a Squire.",
+     "wiki": "By having rendered numerous services to the city of Rathleton you have been promoted to the rank of Squire."
+    }
+   ],
+   "source_id": 359,
+   "title": "Rathleton Squire"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "Having a loyal friend alongside is comforting to every adventurer. If only this lad was not so stubborn ...",
+     "wiki": "Having a loyal friend alongside is comforting to every adventurer. If only this lad was not so stubborn..."
+    }
+   ],
+   "source_id": 373,
+   "title": "Loyal Lad"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "Kingly deers mostly prefer elves as friends and familiars. This one, however, decided to favour you as a confidant and rider. Well done!",
+     "wiki": "Kingly deer mostly prefer elves as friends and familiars. This one, however, decided to favour you as a confidant and rider. Well done!"
+    }
+   ],
+   "source_id": 381,
+   "title": "Friend of Elves"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "By mastering the secrets of Lions Rock, you proved yourself worthy to face the mighty lions there. One of them even chose to accompany you.",
+     "wiki": "By mastering the secrets of Lion's Rock, you proved yourself worthy to face the mighty lions there. One of them even chose to accompany you."
+    }
+   ],
+   "source_id": 386,
+   "title": "Lion King"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "Drugging a snail can have some beneficial side effects. You're now the proud owner of a snarling, speed-crazy slug.  Maybe it'll purr if you stroke it. Anyway, life should be one slick ride from now on.",
+     "wiki": "Drugging a snail can have some beneficial side effects. You're now the proud owner of a snarling, speed-crazy slug. Maybe it'll purr if you stroke it. Anyway, life should be one slick ride from now on."
+    }
+   ],
+   "source_id": 393,
+   "title": "Slugging Around"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You went through hell. Seven times. You defeated the demons. Countless times. You put an end to Ferumbras' claims to ascendancy. Once and for all.",
+     "wiki": "You went through hell. Seven times. You defeated the demons. Countless times. You put an end to Ferumbras claims to ascendancy. Once and for all."
+    }
+   ],
+   "source_id": 408,
+   "title": "Rift Warrior"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You sucessfully fought against all odds to protect your world from an ascending god! - You weren't there for the hat only after all?",
+     "wiki": "You sucessfully fought against all odds to protect your world from an ascending god! – You weren't there for the hat only after all?"
+    }
+   ],
+   "source_id": 410,
+   "title": "Hat Hunter"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You opposed man-eating ogres and clumys clomps. You grappled with hungry chieftains, desperate goblins and angry spirits. So you truly overcame the wild vastness of Krailos.",
+     "wiki": "You opposed man-eating ogres and clumsy clomps. You grappled with hungry chieftains, desperate goblins and angry spirits. So you truly overcame the wild vastness of Krailos."
+    }
+   ],
+   "source_id": 412,
+   "title": "The Call of the Wild"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You have entered the heart of destruction and valiantly defeated the world devourer. By your actions you have postponed the end of the world - at least for a while. ",
+     "wiki": "You have entered the heart of destruction and valiantly defeated the world devourer. By your actions you have postponed the end of the world — at least for a while."
+    }
+   ],
+   "source_id": 413,
+   "title": "Ender of the End"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You assisted a very prominent fae and you fought tooth and nail to earn this title. ",
+     "wiki": "You assisted a very prominent fae and you fought tooth and nail to earn this title."
+    }
+   ],
+   "source_id": 420,
+   "title": "Toothfairy Assistant"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You have combed the desert and searched the pyramid city of Ankrahmun. ",
+     "wiki": "You have combed the desert and searched the pyramid city of Ankrahmun."
+    }
+   ],
+   "source_id": 455,
+   "title": "Mummy's Dearest"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "Glooth is the substance that powers a whole continent and all its weird inhabitants, workshops and factories. You travelled this strange smorgasbord of curiosities in its entirety - just in time for tea. ",
+     "wiki": "Glooth is the substance that powers a whole continent and all its weird inhabitants, workshops and factories. You travelled this strange smorgasbord of curiosities in its entirety - just in time for tea."
+    }
+   ],
+   "source_id": 463,
+   "title": "Glooth Punk"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You passion for reading was somewhat diminished by biting books and aggressive quills. But this flying specimen proved to be a loyal companion. Never judge a book by its cover! ",
+     "wiki": "You passion for reading was somewhat diminished by biting books and aggressive quills. But this flying specimen proved to be a loyal companion. Never judge a book by its cover!"
+    }
+   ],
+   "source_id": 468,
+   "title": "Bibliomaniac"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "Your special garb, solely awarded to a dedicated hand of the Inquisition, is now complete.",
+     "wiki": "Your special garb, solely awarded to a dedicated Hand of the Inquisition, is now complete."
+    }
+   ],
+   "source_id": 495,
+   "title": "Inquisition's Arm"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "Riding a traditional Orcsoberfest beer barrel is a once-in-a-lifetime experience. Beer sold separately.",
+     "wiki": "Riding a traditional beer barrel from the Orcsoberfest is a once-in-a-lifetime experience. Beer sold separately."
+    }
+   ],
+   "source_id": 497,
+   "title": "Do a Barrel Roll!"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You defeated the manifestation of Goshnar's evil traits by fighting your way through beasts you didn't even want to imagine. It transformed you and now you can also look the part. ",
+     "wiki": "You defeated the manifestation of Goshnar's evil traits by fighting your way through beasts you didn't even want to imagine. It transformed you and now you can also look the part."
+    }
+   ],
+   "source_id": 515,
+   "title": "Unleash the Beast"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You helped Domizian and thus proved yourself worthy to enter the werelion sanctum underneath Lion's Rock.You faced the mighty werelions there and one of the rare white lions even chose to accompany you.",
+     "wiki": "You helped Domizian and thus proved yourself worthy to enter the werelion sanctum underneath Lion's Rock. You faced the mighty werelions there and one of the rare white lions even chose to accompany you."
+    }
+   ],
+   "source_id": 516,
+   "title": "Well Roared, Lion!"
+  },
+  {
+   "differences": [
+    {
+     "field": "name",
+     "staticdata": "Shell We Take a Ride",
+     "wiki": "Shell we take a Ride"
+    }
+   ],
+   "source_id": 528,
+   "title": "Shell We Take a Ride"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "You accomplished the impossible and created 16 mutagens of corresponding colours.",
+     "wiki": "You accomplished the impossible and created 16 mutagens of corresponding colours"
+    }
+   ],
+   "source_id": 542,
+   "title": "Mutagenius"
+  },
+  {
+   "differences": [
+    {
+     "field": "description",
+     "staticdata": "The Soulpit resonates as the spirit of your final foe shatters under your might.",
+     "wiki": "The [[Soulpit]] resonates as the spirit of your final foe shatters under your might."
+    }
+   ],
+   "source_id": 554,
+   "title": "Soul Crusher"
+  }
+ ],
+ "schema": "OTERYN_TIBIAWIKI_ACHIEVEMENT_STATICDATA_JOIN/v1",
+ "staticdata_only": [],
+ "uncertain_id": [
+  {
+   "achievementid": "563?",
+   "title": "Achievement 563"
+  }
+ ],
+ "wiki_only": [
+  {
+   "achievementid": 1,
+   "secret": "yes",
+   "title": "Castlemania"
+  },
+  {
+   "achievementid": 6,
+   "secret": "yes",
+   "title": "Shell Seeker"
+  },
+  {
+   "achievementid": 7,
+   "secret": "yes",
+   "title": "Backpack Tourist"
+  },
+  {
+   "achievementid": 8,
+   "secret": "yes",
+   "title": "Dread Lord"
+  },
+  {
+   "achievementid": 9,
+   "secret": "yes",
+   "title": "Lord Protector"
+  },
+  {
+   "achievementid": 14,
+   "secret": "yes",
+   "title": "Fountain of Life"
+  },
+  {
+   "achievementid": 27,
+   "secret": "yes",
+   "title": "Poet Laureate"
+  },
+  {
+   "achievementid": 28,
+   "secret": "yes",
+   "title": "Minstrel"
+  },
+  {
+   "achievementid": 30,
+   "secret": "yes",
+   "title": "Territorial"
+  },
+  {
+   "achievementid": 36,
+   "secret": "yes",
+   "title": "Unlikely Pathfinder"
+  },
+  {
+   "achievementid": 42,
+   "secret": "yes",
+   "title": "Worm Whacker"
+  },
+  {
+   "achievementid": 49,
+   "secret": "yes",
+   "title": "His True Face"
+  },
+  {
+   "achievementid": 50,
+   "secret": "yes",
+   "title": "Razing!"
+  },
+  {
+   "achievementid": 56,
+   "secret": "yes",
+   "title": "Herbicide"
+  },
+  {
+   "achievementid": 63,
+   "secret": "yes",
+   "title": "Wayfarer"
+  },
+  {
+   "achievementid": 64,
+   "secret": "yes",
+   "title": "Waverider"
+  },
+  {
+   "achievementid": 65,
+   "secret": "yes",
+   "title": "Rockstar"
+  },
+  {
+   "achievementid": 66,
+   "secret": "yes",
+   "title": "Allowance Collector"
+  },
+  {
+   "achievementid": 67,
+   "secret": "yes",
+   "title": "High-Flyer"
+  },
+  {
+   "achievementid": 68,
+   "secret": "yes",
+   "title": "Clay Fighter"
+  },
+  {
+   "achievementid": 69,
+   "secret": "yes",
+   "title": "Masquerader"
+  },
+  {
+   "achievementid": 70,
+   "secret": "yes",
+   "title": "Deep Sea Diver"
+  },
+  {
+   "achievementid": 71,
+   "secret": "yes",
+   "title": "Firewalker"
+  },
+  {
+   "achievementid": 72,
+   "secret": "yes",
+   "title": "Here, Fishy Fishy!"
+  },
+  {
+   "achievementid": 73,
+   "secret": "yes",
+   "title": "Green Thumb"
+  },
+  {
+   "achievementid": 74,
+   "secret": "yes",
+   "title": "Potion Addict"
+  },
+  {
+   "achievementid": 75,
+   "secret": "yes",
+   "title": "Ice Sculptor"
+  },
+  {
+   "achievementid": 76,
+   "secret": "yes",
+   "title": "Interior Decorator"
+  },
+  {
+   "achievementid": 77,
+   "secret": "yes",
+   "title": "Jinx"
+  },
+  {
+   "achievementid": 78,
+   "secret": "yes",
+   "title": "Lucky Devil"
+  },
+  {
+   "achievementid": 79,
+   "secret": "yes",
+   "title": "Marblelous"
+  },
+  {
+   "achievementid": 80,
+   "secret": "yes",
+   "title": "Party Animal"
+  },
+  {
+   "achievementid": 81,
+   "secret": "yes",
+   "title": "Fireworks in the Sky"
+  },
+  {
+   "achievementid": 82,
+   "secret": "yes",
+   "title": "Quick as a Turtle"
+  },
+  {
+   "achievementid": 83,
+   "secret": "yes",
+   "title": "Polisher"
+  },
+  {
+   "achievementid": 84,
+   "secret": "yes",
+   "title": "Ship's Kobold"
+  },
+  {
+   "achievementid": 85,
+   "secret": "yes",
+   "title": "Steampunked"
+  },
+  {
+   "achievementid": 86,
+   "secret": "yes",
+   "title": "Vanity"
+  },
+  {
+   "achievementid": 87,
+   "secret": "yes",
+   "title": "Superstitious"
+  },
+  {
+   "achievementid": 88,
+   "secret": "yes",
+   "title": "Turncoat"
+  },
+  {
+   "achievementid": 89,
+   "secret": "yes",
+   "title": "Marble Madness"
+  },
+  {
+   "achievementid": 90,
+   "secret": "yes",
+   "title": "Clay to Fame"
+  },
+  {
+   "achievementid": 91,
+   "secret": "yes",
+   "title": "Cold as Ice"
+  },
+  {
+   "achievementid": 92,
+   "secret": "yes",
+   "title": "Exquisite Taste"
+  },
+  {
+   "achievementid": 93,
+   "secret": "yes",
+   "title": "Jamjam"
+  },
+  {
+   "achievementid": 94,
+   "secret": "yes",
+   "title": "I Did My Part"
+  },
+  {
+   "achievementid": 95,
+   "secret": "yes",
+   "title": "Notorious Worldsaver"
+  },
+  {
+   "achievementid": 96,
+   "secret": "yes",
+   "title": "Teamplayer"
+  },
+  {
+   "achievementid": 97,
+   "secret": "yes",
+   "title": "Daring Trespasser"
+  },
+  {
+   "achievementid": 98,
+   "secret": "yes",
+   "title": "Slayer of Anmothra"
+  },
+  {
+   "achievementid": 99,
+   "secret": "yes",
+   "title": "Slayer of Chikhaton"
+  },
+  {
+   "achievementid": 100,
+   "secret": "yes",
+   "title": "Slayer of Irahsae"
+  },
+  {
+   "achievementid": 101,
+   "secret": "yes",
+   "title": "Slayer of Phrodomo"
+  },
+  {
+   "achievementid": 102,
+   "secret": "yes",
+   "title": "Slayer of Teneshpar"
+  },
+  {
+   "achievementid": 103,
+   "secret": "yes",
+   "title": "Cocoon of Doom"
+  },
+  {
+   "achievementid": 104,
+   "secret": "yes",
+   "title": "Devovorga's Nemesis"
+  },
+  {
+   "achievementid": 105,
+   "secret": "yes",
+   "title": "Mister Sandman"
+  },
+  {
+   "achievementid": 106,
+   "secret": "yes",
+   "title": "Rock Me to Sleep"
+  },
+  {
+   "achievementid": 107,
+   "secret": "yes",
+   "title": "Modest Guest"
+  },
+  {
+   "achievementid": 108,
+   "secret": "yes",
+   "title": "Joke's on You"
+  },
+  {
+   "achievementid": 109,
+   "secret": "yes",
+   "title": "Oops"
+  },
+  {
+   "achievementid": 110,
+   "secret": "yes",
+   "title": "Bluebarian"
+  },
+  {
+   "achievementid": 112,
+   "secret": "yes",
+   "title": "The Snowman"
+  },
+  {
+   "achievementid": 116,
+   "secret": "yes",
+   "title": "Rocket in Pocket"
+  },
+  {
+   "achievementid": 117,
+   "secret": "yes",
+   "title": "Make a Wish"
+  },
+  {
+   "achievementid": 118,
+   "secret": "yes",
+   "title": "Santa's Li'l Helper"
+  },
+  {
+   "achievementid": 119,
+   "secret": "yes",
+   "title": "Cursed!"
+  },
+  {
+   "achievementid": 120,
+   "secret": "yes",
+   "title": "Free Items!"
+  },
+  {
+   "achievementid": 122,
+   "secret": "yes",
+   "title": "Transmutator"
+  },
+  {
+   "achievementid": 126,
+   "secret": "yes",
+   "title": "Do Not Disturb"
+  },
+  {
+   "achievementid": 127,
+   "secret": "yes",
+   "title": "Let the Sunshine In"
+  },
+  {
+   "achievementid": 128,
+   "secret": "yes",
+   "title": "Bad Timing"
+  },
+  {
+   "achievementid": 129,
+   "secret": "yes",
+   "title": "Nothing Can Stop Me"
+  },
+  {
+   "achievementid": 130,
+   "secret": "yes",
+   "title": "Happy Farmer"
+  },
+  {
+   "achievementid": 131,
+   "secret": "yes",
+   "title": "Natural Sweetener"
+  },
+  {
+   "achievementid": 132,
+   "secret": "yes",
+   "title": "Homebrewed"
+  },
+  {
+   "achievementid": 133,
+   "secret": "yes",
+   "title": "Gold Digger"
+  },
+  {
+   "achievementid": 134,
+   "secret": "yes",
+   "title": "The Undertaker"
+  },
+  {
+   "achievementid": 135,
+   "secret": "yes",
+   "title": "Cookie Monster"
+  },
+  {
+   "achievementid": 136,
+   "secret": "yes",
+   "title": "The Cake's the Truth"
+  },
+  {
+   "achievementid": 137,
+   "secret": "yes",
+   "title": "Sweet Tooth"
+  },
+  {
+   "achievementid": 138,
+   "secret": "yes",
+   "title": "With a Cherry on Top"
+  },
+  {
+   "achievementid": 139,
+   "secret": "yes",
+   "title": "Mutated Presents"
+  },
+  {
+   "achievementid": 140,
+   "secret": "yes",
+   "title": "Keeper of the Flame"
+  },
+  {
+   "achievementid": 141,
+   "secret": "yes",
+   "title": "True Lightbearer"
+  },
+  {
+   "achievementid": 143,
+   "secret": "yes",
+   "title": "The Day After"
+  },
+  {
+   "achievementid": 144,
+   "secret": "yes",
+   "title": "Commitment Phobic"
+  },
+  {
+   "achievementid": 145,
+   "secret": "yes",
+   "title": "Heartbreaker"
+  },
+  {
+   "achievementid": 171,
+   "secret": "yes",
+   "title": "Bunny Slipped"
+  },
+  {
+   "achievementid": 175,
+   "secret": "yes",
+   "title": "Extreme Degustation"
+  },
+  {
+   "achievementid": 176,
+   "secret": "yes",
+   "title": "Cake Conqueror"
+  },
+  {
+   "achievementid": 177,
+   "secret": "yes",
+   "title": "Baby Sitter"
+  },
+  {
+   "achievementid": 178,
+   "secret": "yes",
+   "title": "Nanny from Hell"
+  },
+  {
+   "achievementid": 179,
+   "secret": "yes",
+   "title": "Ghost Sailor"
+  },
+  {
+   "achievementid": 180,
+   "secret": "yes",
+   "title": "Spectral Traveller"
+  },
+  {
+   "achievementid": 181,
+   "secret": "yes",
+   "title": "Nether Pirate"
+  },
+  {
+   "achievementid": 182,
+   "secret": "yes",
+   "title": "Scourge of Death"
+  },
+  {
+   "achievementid": 183,
+   "secret": "yes",
+   "title": "Fire Lighter"
+  },
+  {
+   "achievementid": 184,
+   "secret": "yes",
+   "title": "Witches Lil' Helper"
+  },
+  {
+   "achievementid": 185,
+   "secret": "yes",
+   "title": "Banebringers' Bane"
+  },
+  {
+   "achievementid": 186,
+   "secret": "yes",
+   "title": "Fire Devil (Achievement)"
+  },
+  {
+   "achievementid": 187,
+   "secret": "yes",
+   "title": "Pyromaniac"
+  },
+  {
+   "achievementid": 188,
+   "secret": "yes",
+   "title": "Honorary Witch"
+  },
+  {
+   "achievementid": 189,
+   "secret": "yes",
+   "title": "Natural Born Cowboy"
+  },
+  {
+   "achievementid": 190,
+   "secret": "yes",
+   "title": "Petrologist"
+  },
+  {
+   "achievementid": 192,
+   "secret": "yes",
+   "title": "I Like it Fancy"
+  },
+  {
+   "achievementid": 193,
+   "secret": "yes",
+   "title": "Skin-Deep"
+  },
+  {
+   "achievementid": 194,
+   "secret": "yes",
+   "title": "Ashes to Dust"
+  },
+  {
+   "achievementid": 195,
+   "secret": "yes",
+   "title": "Smart Thinking"
+  },
+  {
+   "achievementid": 196,
+   "secret": "yes",
+   "title": "Safely Stored Away"
+  },
+  {
+   "achievementid": 197,
+   "secret": "yes",
+   "title": "Something's in There"
+  },
+  {
+   "achievementid": 198,
+   "secret": "yes",
+   "title": "Silent Pet"
+  },
+  {
+   "achievementid": 199,
+   "secret": "yes",
+   "title": "Snowbunny"
+  },
+  {
+   "achievementid": 200,
+   "secret": "yes",
+   "title": "Dark Voodoo Priest"
+  },
+  {
+   "achievementid": 201,
+   "secret": "yes",
+   "title": "Nomad Soul"
+  },
+  {
+   "achievementid": 202,
+   "secret": "yes",
+   "title": "Truth Be Told"
+  },
+  {
+   "achievementid": 203,
+   "secret": "yes",
+   "title": "You Don't Know Jack"
+  },
+  {
+   "achievementid": 204,
+   "secret": "yes",
+   "title": "Berry Picker"
+  },
+  {
+   "achievementid": 205,
+   "secret": "yes",
+   "title": "True Colours"
+  },
+  {
+   "achievementid": 206,
+   "secret": "yes",
+   "title": "Master Shapeshifter"
+  },
+  {
+   "achievementid": 207,
+   "secret": "yes",
+   "title": "Slimer"
+  },
+  {
+   "achievementid": 208,
+   "secret": "yes",
+   "title": "Mageslayer"
+  },
+  {
+   "achievementid": 209,
+   "secret": "yes",
+   "title": "Biodegradable"
+  },
+  {
+   "achievementid": 210,
+   "secret": "yes",
+   "title": "Eye of the Deep"
+  },
+  {
+   "achievementid": 211,
+   "secret": "yes",
+   "title": "Invader of the Deep"
+  },
+  {
+   "achievementid": 212,
+   "secret": "yes",
+   "title": "Firefighter"
+  },
+  {
+   "achievementid": 213,
+   "secret": "yes",
+   "title": "Deer Hunt"
+  },
+  {
+   "achievementid": 214,
+   "secret": "yes",
+   "title": "Askarak Nemesis"
+  },
+  {
+   "achievementid": 215,
+   "secret": "yes",
+   "title": "Shaburak Nemesis"
+  },
+  {
+   "achievementid": 216,
+   "secret": "yes",
+   "title": "Fearless"
+  },
+  {
+   "achievementid": 217,
+   "secret": "yes",
+   "title": "Doctor! Doctor!"
+  },
+  {
+   "achievementid": 241,
+   "secret": "yes",
+   "title": "Pwned a Lot of Fur"
+  },
+  {
+   "achievementid": 243,
+   "secret": "yes",
+   "title": "Goldhunter"
+  },
+  {
+   "achievementid": 244,
+   "secret": "yes",
+   "title": "Trail of the Ape God"
+  },
+  {
+   "achievementid": 245,
+   "secret": "yes",
+   "title": "Someone's Bored"
+  },
+  {
+   "achievementid": 246,
+   "secret": "yes",
+   "title": "Whistle-Blower"
+  },
+  {
+   "achievementid": 247,
+   "secret": "yes",
+   "title": "Torn Treasures"
+  },
+  {
+   "achievementid": 248,
+   "secret": "yes",
+   "title": "Loyal Subject"
+  },
+  {
+   "achievementid": 253,
+   "secret": "yes",
+   "title": "Preservationist"
+  },
+  {
+   "achievementid": 276,
+   "secret": "yes",
+   "title": "Navigational Error"
+  },
+  {
+   "achievementid": 281,
+   "secret": "yes",
+   "title": "Gem Cutter"
+  },
+  {
+   "achievementid": 295,
+   "secret": "yes",
+   "title": "Pwned All Fur"
+  },
+  {
+   "achievementid": 297,
+   "secret": "yes",
+   "title": "Bibby's Bloodbath"
+  },
+  {
+   "achievementid": 308,
+   "secret": "yes",
+   "title": "Dungeon Cleaner"
+  },
+  {
+   "achievementid": 313,
+   "secret": "yes",
+   "title": "Diplomatic Immunity"
+  },
+  {
+   "achievementid": 314,
+   "secret": "yes",
+   "title": "Fall of the Fallen"
+  },
+  {
+   "achievementid": 315,
+   "secret": "yes",
+   "title": "Death on Strike"
+  },
+  {
+   "achievementid": 316,
+   "secret": "yes",
+   "title": "Death from Below"
+  },
+  {
+   "achievementid": 317,
+   "secret": "yes",
+   "title": "Gnomebane's Bane"
+  },
+  {
+   "achievementid": 318,
+   "secret": "yes",
+   "title": "Final Strike"
+  },
+  {
+   "achievementid": 319,
+   "secret": "yes",
+   "title": "Goo Goo Dancer"
+  },
+  {
+   "achievementid": 324,
+   "secret": "yes",
+   "title": "True Dedication"
+  },
+  {
+   "achievementid": 325,
+   "secret": "yes",
+   "title": "Task Manager"
+  },
+  {
+   "achievementid": 327,
+   "secret": "yes",
+   "title": "Repenter (Achievement)"
+  },
+  {
+   "achievementid": 341,
+   "secret": "yes",
+   "title": "Nevermending Story"
+  },
+  {
+   "achievementid": 354,
+   "secret": "yes",
+   "title": "Combo Master"
+  },
+  {
+   "achievementid": 356,
+   "secret": "yes",
+   "title": "Lion's Den Explorer"
+  },
+  {
+   "achievementid": 361,
+   "secret": "yes",
+   "title": "Plant vs. Minos"
+  },
+  {
+   "achievementid": 362,
+   "secret": "yes",
+   "title": "Rumble in the Plant"
+  },
+  {
+   "achievementid": 363,
+   "secret": "yes",
+   "title": "Robo Chop"
+  },
+  {
+   "achievementid": 364,
+   "secret": "yes",
+   "title": "Go with da Lava Flow"
+  },
+  {
+   "achievementid": 365,
+   "secret": "yes",
+   "title": "Wail of the Banshee"
+  },
+  {
+   "achievementid": 368,
+   "secret": "yes",
+   "title": "Hoard of the Dragon"
+  },
+  {
+   "achievementid": 405,
+   "secret": "yes",
+   "title": "Lost Palace Raider"
+  },
+  {
+   "achievementid": 406,
+   "secret": "yes",
+   "title": "The More the Merrier"
+  },
+  {
+   "achievementid": 416,
+   "secret": "yes",
+   "title": "Forbidden Fruit (Achievement)"
+  },
+  {
+   "achievementid": 417,
+   "secret": "yes",
+   "title": "Forbidden Knowledge"
+  },
+  {
+   "achievementid": 418,
+   "secret": "yes",
+   "title": "Treasure Hunter"
+  },
+  {
+   "achievementid": 421,
+   "secret": "yes",
+   "title": "Fairy Teasing"
+  },
+  {
+   "achievementid": 431,
+   "secret": "yes",
+   "title": "Little Big Adventure"
+  },
+  {
+   "achievementid": 433,
+   "secret": "yes",
+   "title": "Serious Contender"
+  },
+  {
+   "achievementid": 435,
+   "secret": "yes",
+   "title": "Master Hunter"
+  },
+  {
+   "achievementid": 445,
+   "secret": "yes",
+   "title": "Master Debater"
+  },
+  {
+   "achievementid": 446,
+   "secret": "yes",
+   "title": "High and Dry"
+  },
+  {
+   "achievementid": 466,
+   "secret": "yes",
+   "title": "Spectulation"
+  },
+  {
+   "achievementid": 467,
+   "secret": "yes",
+   "title": "Millennial Falcon"
+  },
+  {
+   "achievementid": 474,
+   "secret": "yes",
+   "title": "Areas of Effect"
+  },
+  {
+   "achievementid": 475,
+   "secret": "yes",
+   "title": "Tied the Knot"
+  },
+  {
+   "achievementid": 483,
+   "secret": "yes",
+   "title": "Champion of Summer"
+  },
+  {
+   "achievementid": 484,
+   "secret": "yes",
+   "title": "Champion of Winter"
+  },
+  {
+   "achievementid": 486,
+   "secret": "yes",
+   "title": "Bewitcher"
+  },
+  {
+   "achievementid": 488,
+   "secret": "yes",
+   "title": "Sculptor Apprentice"
+  },
+  {
+   "achievementid": 490,
+   "secret": "yes",
+   "title": "A Study in Scarlett"
+  },
+  {
+   "achievementid": 491,
+   "secret": "yes",
+   "title": "Avid Spectral Reader"
+  },
+  {
+   "achievementid": 492,
+   "secret": "yes",
+   "title": "Hippofoddermus"
+  },
+  {
+   "achievementid": 499,
+   "secret": "yes",
+   "title": "Orcsoberfest Welcome"
+  },
+  {
+   "achievementid": 500,
+   "secret": "yes",
+   "title": "Prospectre"
+  },
+  {
+   "achievementid": 511,
+   "secret": "yes",
+   "title": "Malefitz"
+  },
+  {
+   "achievementid": 513,
+   "secret": "yes",
+   "title": "Soul Mender"
+  },
+  {
+   "achievementid": 521,
+   "secret": "yes",
+   "title": "Pied Piper"
+  },
+  {
+   "achievementid": 522,
+   "secret": "yes",
+   "title": "Woodcarver"
+  },
+  {
+   "achievementid": 523,
+   "secret": "yes",
+   "title": "Bounacean Chivalry"
+  },
+  {
+   "achievementid": 531,
+   "secret": "yes",
+   "title": "First Achievement"
+  },
+  {
+   "achievementid": 550,
+   "secret": "yes",
+   "title": "A Friend in Need"
+  },
+  {
+   "achievementid": 551,
+   "secret": "yes",
+   "title": "Holzkopf"
+  },
+  {
+   "achievementid": 567,
+   "secret": "yes",
+   "title": "The Forbidden Build"
+  },
+  {
+   "achievementid": 576,
+   "secret": "yes",
+   "title": "Mimic (Achievement)"
+  },
+  {
+   "achievementid": 578,
+   "secret": "yes",
+   "title": "Razor's Edge"
+  },
+  {
+   "achievementid": 579,
+   "secret": "yes",
+   "title": "Lost Letters"
+  },
+  {
+   "achievementid": 580,
+   "secret": "yes",
+   "title": "Stagmeister"
+  },
+  {
+   "achievementid": 582,
+   "secret": "yes",
+   "title": "Castle Crasher"
+  },
+  {
+   "achievementid": 589,
+   "secret": "yes",
+   "title": "Echo Conqueror"
+  },
+  {
+   "achievementid": 591,
+   "secret": "yes",
+   "title": "Purrfectly Addicted"
+  }
+ ]
+}

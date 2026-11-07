@@ -1,0 +1,94 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_SOURCE_MANIFEST/v1",
+  "task": "BLESSINGS-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "owner_cut_override": "Owner explicitly requested fresh current data on 2026-10-18; historical 2026-09-27 programme cut is not changed repository-wide.",
+  "sources": {
+    "wiki:1630:1113782": {
+      "title": "Blessings",
+      "url": "https://tibia.fandom.com/wiki/Blessings",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113782",
+      "revid": 1113782,
+      "revision_timestamp": "2025-07-26T09:23:41Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "09f4bf1eba57ccddf74816967b8dd7e5e8fbdec933abd4ecb8e089f367bf91e1",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=The%20Market%20(Object)%7CTravelling%7CEquipment%20Upgrade%7CBlessings&redirects=1"
+    },
+    "repo:docs/reference/tibia-manual/characters.md": {
+      "path": "docs/reference/tibia-manual/characters.md",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/docs/reference/tibia-manual/characters.md",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "f3f89885a0850493e737b109e658c35b9a47186c0e1656da64df907b118d5a79",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18"
+    },
+    "wiki:1628:1140641": {
+      "title": "Death",
+      "url": "https://tibia.fandom.com/wiki/Death",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1140641",
+      "revid": 1140641,
+      "revision_timestamp": "2025-11-07T13:36:07Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "92e62acaa5b6cb3b9f63a10730ddd5d5e636699b765f4f372c8fa20bfcf0402b",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%7CTask%20Board%7CSkull%20System%7CDeath&redirects=1"
+    },
+    "official:manual:characters:2026-10-18": {
+      "title": "Tibia official manual: characters",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=characters",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "evidence_role": "PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18",
+      "response_sha256": "d14ece6c40d0213c0f996b45938ff215cd050404e5d38abf7255bf29e8568026",
+      "capture_method": "Public URL read through owner-authorized connected computer",
+      "retained_scope": "RESPONSE_DIGEST_AND_PARAPHRASED_FACTS",
+      "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH"
+    },
+    "owner:oteryn-data-completion:2026-10-19": {
+      "source_class": "OWNER_AUTHORIZED_OTERYN_WORKING_PARAMETERS",
+      "instruction": "No to uzupełnij te dane bo piszę ci to5raz",
+      "prior_instruction": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+      "parameter_document": "docs/reference/content-prep/blessings-content-1/oteryn-parameters.json",
+      "selection_actor": "assistant completing owner-authorized reference/data task",
+      "scope": "Populate working Oteryn data defaults, keeping evidence limits explicit; no runtime or architectural acceptance is implied."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:blessings.price": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/libs/systems/blessing.lua",
+      "line": 147,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/libs/systems/blessing.lua#L147",
+      "file_sha256": "e4cc6975aab546c73e2fa8ba59ee42427e030ce39dad0b913800bc1b54569b4a",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "level_le_30": 2000,
+        "regular_31_119": "200*(L-20)",
+        "regular_ge_120": "20000+75*(L-120)",
+        "enhanced_31_119": "260*(L-20)",
+        "enhanced_ge_120": "26000+100*(L-120)"
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:death.loss": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/player.cpp",
+      "line": 7281,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/player.cpp#L7281",
+      "file_sha256": "61e9da9c6d14d8b243ec5230f149cbc88b9aed14b5547b96664bc6ce730cc5a0",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "level_at_least_24_base_percent": "(tmpLevel+50)*50*(tmpLevel*tmpLevel-5*tmpLevel+8)/experience",
+        "tmpLevel": "level+levelPercent/100",
+        "below_24_base_percent": 10,
+        "blessing_reduction_per_bless_percent": "6.31 retro PvP, 8 otherwise",
+        "promotion_reduction_percentage_points": 30,
+        "override": "DEATH_LOSE_PERCENT != -1 selects a different formula"
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    }
+  }
+}

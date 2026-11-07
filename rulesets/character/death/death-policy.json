@@ -1,0 +1,7 @@
+{
+  "loss_denominator": 1,
+  "loss_numerator": 1,
+  "revision": "character-death-v1-ee32335db5cf5852523183aaa0d2ffe0",
+  "rounding": "floor",
+  "schema": "OTERYN_GAME_CHARACTER_DEATH_POLICY/v1"
+}

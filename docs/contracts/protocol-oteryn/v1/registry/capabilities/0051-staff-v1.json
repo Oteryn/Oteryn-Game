@@ -1,0 +1,14 @@
+{
+  "id": 51,
+  "name": "STAFF_V1",
+  "owner_decision": "GM-1 owner 2026-10-23 option A: signed operators over logged-in sessions",
+  "owner": "Game signed staff authority",
+  "requires": [],
+  "command_types": [
+    60,
+    61
+  ],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Transport only; off-host OpenSSH signature and restart-pinned trust required on every request. No content or player role grants authority."
+}

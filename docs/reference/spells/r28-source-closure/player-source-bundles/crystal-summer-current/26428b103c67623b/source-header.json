@@ -1,0 +1,46 @@
+{
+  "spell": {
+    "base_power": 350,
+    "carrier": "instant",
+    "cooldown_ms": 40000,
+    "costs": {
+      "mana": 30
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Envenom",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_envenom"
+    },
+    "reference_spell_id": 142,
+    "requirements": {
+      "level": 50,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_target": true,
+      "range_tiles": 3
+    },
+    "words": "utori pox"
+  }
+}

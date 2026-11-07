@@ -1,0 +1,49 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 30000,
+    "costs": {
+      "mana": 100
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 30000,
+        "group": "ultimatestrikes"
+      }
+    ],
+    "name": "Ultimate Flame Strike",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_ultimate_flame_strike"
+    },
+    "reference_spell_id": 154,
+    "requirements": {
+      "level": 90,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "range_tiles": 3,
+      "target_or_direction": true
+    },
+    "words": "exori max flam"
+  }
+}

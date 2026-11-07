@@ -1,0 +1,17 @@
+{
+  "id": 28,
+  "name": "ITEM_LOOK_V1",
+  "constant": "capability_tables::CAPABILITY_ITEM_LOOK_V1",
+  "requires": [],
+  "acceptance_requires": true,
+  "commands": [
+    30
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

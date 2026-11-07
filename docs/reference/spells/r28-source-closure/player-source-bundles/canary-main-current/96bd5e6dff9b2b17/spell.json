@@ -1,0 +1,65 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 40,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/canary-main-current/96bd5e6dff9b2b17/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/96bd5e6dff9b2b17",
+      "revision": "source-player-r28"
+    },
+    "name": "Whirlwind Throw",
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_whirlwind_throw"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 107,
+    "requirements": {
+      "learning_required": false,
+      "level": 28,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "none",
+      "range_tiles": 5,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exori hur"
+  }
+}

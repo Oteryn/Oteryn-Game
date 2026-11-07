@@ -1,0 +1,30 @@
+syntax = "proto3";
+package oteryn.party.v1;
+// PARTY-1 basic subset of PARTYPVP0 §11, capability 42. Commands 45/46.
+// Strict codecs require all scalar fields shown, reject duplicates/unknowns and zero handles.
+// No durable identity is accepted or returned. Query again after reconnect to obtain handles.
+message PartyIntentV1 {
+  // 1 invite, 2 accept, 3 leave, 4 kick, 5 pass leadership.
+  uint32 action = 1;
+  bytes actor_identity = 2; // exactly 16 bytes, invite only
+  uint64 actor_generation = 3; // nonzero, invite only
+  uint64 handle = 4; // accept: invitation; kick/pass: member; absent otherwise
+}
+message PartyQueryV1 {} // Own current membership and up to 20 live invitations.
+message PartyEntryV1 {
+  uint64 handle = 1;
+  string name = 2; // 1..64 UTF-8 bytes
+  bool leader = 3;
+  uint64 expires_at = 4; // invitation Unix seconds; zero for members
+}
+message PartyResultV1 {
+  // 1 OK, 2 NOT_LEADER, 3 ALREADY_IN_PARTY, 4 NOT_INVITED, 5 NOT_VISIBLE,
+  // 6 LOGOUT_BLOCKED, 7 PARTY_UNAVAILABLE, 8 REJECTED, 9 NOT_MEMBER.
+  uint32 disposition = 1;
+  bool shared_xp_enabled = 2;
+  repeated PartyEntryV1 members = 3; // <=50, invitation order
+  repeated PartyEntryV1 invitations = 4; // <=20, expiry checked in PostgreSQL
+}
+// Intents return only their original receipted disposition. Queries return current data.
+// Transport retains FND-02 sequence/replay rules; mutations use World party receipts.
+// A session retains <=4096 observed handles; exhaustion returns PARTY_UNAVAILABLE.

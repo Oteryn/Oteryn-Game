@@ -1,0 +1,5 @@
+{
+  "mechanic":"0040-guild","kind":"handlers","id":"0040-guild-intent","status":"supported",
+  "commands":[40],"direction":"client_to_server","capability":40,"entry":"mod.rs::request",
+  "not_applicable":{"settings":"Guild state is persisted by the server; no local authority settings."}
+}

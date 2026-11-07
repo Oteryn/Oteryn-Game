@@ -1,0 +1,40 @@
+{
+  "spell": {
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 530,
+      "soul": 3
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Test",
+    "reference_spell_id": 221,
+    "requirements": {
+      "learning_required": false,
+      "level": 30,
+      "vocation_display_flags": [
+        {
+          "show_in_description": false,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "source_carrier_symbol": "@spell_instant",
+    "targeting": {
+      "aggressive": false
+    },
+    "words": "adori mas test"
+  }
+}

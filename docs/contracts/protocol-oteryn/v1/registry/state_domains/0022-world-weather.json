@@ -1,0 +1,10 @@
+{
+  "id": 22,
+  "name": "WORLD_WEATHER",
+  "owner_decision": "CP D1023-D1028 (#2202); D1137 allocates state domain 22",
+  "owner": "current ChannelRuntime",
+  "capability": 26,
+  "revision": "per GameSessionId, monotonic and never reused: 0 at the initial snapshot, plus 1 for each delta sent; never reset at a reconnect or channel transfer; a resync, reconnect or channel transfer sends only a snapshot and never replays a delta",
+  "delta_types": [{"id": 1, "name": "WORLD_WEATHER_DELTA_V1", "payload_schema": "docs/contracts/protocol-oteryn/v1/world_weather_v1.proto#WorldWeatherV1", "max_payload_bytes": 64}],
+  "snapshot_types": [{"id": 1, "name": "WORLD_WEATHER_SNAPSHOT_V1", "payload_schema": "docs/contracts/protocol-oteryn/v1/world_weather_v1.proto#WorldWeatherV1", "max_payload_bytes": 64}]
+}

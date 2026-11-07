@@ -1,0 +1,691 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Oteryn imbuement authoring candidate v1",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "OTERYN_IMBUEMENT_AUTHORING_CATALOGUE/v1"
+    },
+    "activation": {
+      "const": "DRAFT_NOT_RUNTIME_READY"
+    },
+    "target": {
+      "const": "global-tibia-current-2026-10-01"
+    },
+    "source_facts_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "supporting_catalogues": {
+      "type": "object",
+      "properties": {
+        "crystal-imbuements-evidence.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "current-behavior-answers.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "global-observation-plan.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "global-research-closure.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "global-rules-evidence.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "imbuement-access.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "imbuement-bindings.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "imbuement-combat.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "imbuement-eligibility.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "missing-item-definitions.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "missing-item-source-facts.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "owner-authoring-policy.json": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "crystal-imbuements-evidence.json",
+        "current-behavior-answers.json",
+        "global-observation-plan.json",
+        "global-research-closure.json",
+        "global-rules-evidence.json",
+        "imbuement-access.json",
+        "imbuement-bindings.json",
+        "imbuement-combat.json",
+        "imbuement-eligibility.json",
+        "missing-item-definitions.json",
+        "missing-item-source-facts.json",
+        "owner-authoring-policy.json"
+      ],
+      "additionalProperties": false
+    },
+    "global_rules_profile": {
+      "const": "global-rules-evidence.json"
+    },
+    "observation_plan_profile": {
+      "const": "global-observation-plan.json"
+    },
+    "combat_profile": {
+      "const": "imbuement-combat.json"
+    },
+    "current_behavior_profile": {
+      "const": "current-behavior-answers.json"
+    },
+    "global_research_profile": {
+      "const": "global-research-closure.json"
+    },
+    "owner_authoring_policy_profile": {
+      "const": "owner-authoring-policy.json"
+    },
+    "missing_item_proposals": {
+      "const": "missing-item-definitions.json"
+    },
+    "engine_reference_profile": {
+      "const": "crystal-imbuements-evidence.json"
+    },
+    "architecture_reconciliation": {
+      "const": "GLOBAL_SOURCE_CONFLICTS_REQUIRE_ARCHITECTURE_UPDATE"
+    },
+    "definitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "candidate_key": {
+            "enum": [
+              "bash",
+              "blockade",
+              "chop",
+              "cloud_fabric",
+              "demon_presence",
+              "dragon_hide",
+              "electrify",
+              "epiphany",
+              "featherweight",
+              "frost",
+              "lich_shroud",
+              "precision",
+              "punch",
+              "quara_scale",
+              "reap",
+              "scorch",
+              "slash",
+              "snake_skin",
+              "strike",
+              "swiftness",
+              "vampirism",
+              "venom",
+              "vibrancy",
+              "void"
+            ]
+          },
+          "name": {
+            "enum": [
+              "Bash",
+              "Blockade",
+              "Chop",
+              "Cloud Fabric",
+              "Demon Presence",
+              "Dragon Hide",
+              "Electrify",
+              "Epiphany",
+              "Featherweight",
+              "Frost",
+              "Lich Shroud",
+              "Precision",
+              "Punch",
+              "Quara Scale",
+              "Reap",
+              "Scorch",
+              "Slash",
+              "Snake Skin",
+              "Strike",
+              "Swiftness",
+              "Vampirism",
+              "Venom",
+              "Vibrancy",
+              "Void"
+            ]
+          },
+          "category": {
+            "enum": [
+              "bash",
+              "blockade",
+              "chop",
+              "cloud_fabric",
+              "demon_presence",
+              "dragon_hide",
+              "elemental_damage",
+              "epiphany",
+              "featherweight",
+              "lich_shroud",
+              "precision",
+              "punch",
+              "quara_scale",
+              "slash",
+              "snake_skin",
+              "strike",
+              "swiftness",
+              "vampirism",
+              "vibrancy",
+              "void"
+            ]
+          },
+          "parity": {
+            "const": "AUDITED_WITH_EXPLICIT_GAPS"
+          },
+          "item_eligibility_binding": {
+            "type": "object",
+            "properties": {
+              "catalogue": {
+                "const": "imbuement-eligibility.json"
+              },
+              "candidate_key": {
+                "enum": [
+                  "bash",
+                  "blockade",
+                  "chop",
+                  "cloud_fabric",
+                  "demon_presence",
+                  "dragon_hide",
+                  "electrify",
+                  "epiphany",
+                  "featherweight",
+                  "frost",
+                  "lich_shroud",
+                  "precision",
+                  "punch",
+                  "quara_scale",
+                  "reap",
+                  "scorch",
+                  "slash",
+                  "snake_skin",
+                  "strike",
+                  "swiftness",
+                  "vampirism",
+                  "venom",
+                  "vibrancy",
+                  "void"
+                ]
+              }
+            },
+            "required": [
+              "catalogue",
+              "candidate_key"
+            ],
+            "additionalProperties": false
+          },
+          "tiers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tier": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 3
+                },
+                "name": {
+                  "enum": [
+                    "Basic",
+                    "Intricate",
+                    "Powerful"
+                  ]
+                },
+                "duration_ms": {
+                  "const": 72000000
+                },
+                "effect": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "elemental_conversion"
+                        },
+                        "element": {
+                          "enum": [
+                            "fire",
+                            "earth",
+                            "ice",
+                            "energy",
+                            "death",
+                            "holy"
+                          ]
+                        },
+                        "share_bps": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "element",
+                        "share_bps"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "protection"
+                        },
+                        "element": {
+                          "enum": [
+                            "fire",
+                            "earth",
+                            "ice",
+                            "energy",
+                            "death",
+                            "holy"
+                          ]
+                        },
+                        "absorb_bps": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "element",
+                        "absorb_bps"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "leech"
+                        },
+                        "resource": {
+                          "enum": [
+                            "health",
+                            "mana"
+                          ]
+                        },
+                        "share_bps": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        },
+                        "chance_bps": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "resource",
+                        "share_bps",
+                        "chance_bps"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "critical"
+                        },
+                        "extra_damage_bps": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        },
+                        "chance_bps": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        },
+                        "value_semantics": {
+                          "const": "ADDITIVE_IMBUEMENT_MODIFIER"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "extra_damage_bps",
+                        "chance_bps",
+                        "value_semantics"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "skill_bonus"
+                        },
+                        "skill": {
+                          "enum": [
+                            "axe",
+                            "sword",
+                            "club",
+                            "shielding",
+                            "distance",
+                            "magic_level",
+                            "fist"
+                          ]
+                        },
+                        "amount": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "skill",
+                        "amount"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "speed_bonus"
+                        },
+                        "amount": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "amount"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "capacity_bonus"
+                        },
+                        "increase_bps": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "increase_bps"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "paralysis_recovery"
+                        },
+                        "remove_chance_bps": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        },
+                        "trigger": {
+                          "const": "additional_paralysis_attack_while_paralysed"
+                        },
+                        "sequence_profile": {
+                          "const": "imbuement-combat.json#vibrancy_sequence"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "remove_chance_bps",
+                        "trigger",
+                        "sequence_profile"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "materials": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "source_name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "count": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "item_binding": {
+                        "type": "object",
+                        "properties": {
+                          "family": {
+                            "const": "Item"
+                          },
+                          "key": {
+                            "type": "string",
+                            "pattern": "^oteryn:item\\.tibia\\.i[0-9]+$"
+                          },
+                          "revision": {
+                            "const": "definition-r1"
+                          }
+                        },
+                        "required": [
+                          "family",
+                          "key",
+                          "revision"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "source_name",
+                      "count",
+                      "item_binding"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "minItems": 1,
+                  "maxItems": 3
+                },
+                "scroll_item": {
+                  "type": "object",
+                  "properties": {
+                    "family": {
+                      "const": "Item"
+                    },
+                    "key": {
+                      "type": "string",
+                      "pattern": "^oteryn:item\\.tibia\\.i[0-9]+$"
+                    },
+                    "revision": {
+                      "const": "definition-r1"
+                    }
+                  },
+                  "required": [
+                    "family",
+                    "key",
+                    "revision"
+                  ],
+                  "additionalProperties": false
+                },
+                "apply_fee_gold": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "clear_fee_gold": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "access": {
+                  "type": "object",
+                  "properties": {
+                    "direct_shrine_target_unequipped_required": {
+                      "const": true
+                    },
+                    "premium_required": {
+                      "type": "boolean"
+                    },
+                    "catalogue": {
+                      "const": "imbuement-access.json"
+                    },
+                    "profile": {
+                      "enum": [
+                        "Bash",
+                        "Blockade",
+                        "Chop",
+                        "Cloud Fabric",
+                        "Demon Presence",
+                        "Dragon Hide",
+                        "Electrify",
+                        "Epiphany",
+                        "Featherweight",
+                        "Frost",
+                        "Lich Shroud",
+                        "Precision",
+                        "Punch",
+                        "Quara Scale",
+                        "Reap",
+                        "Scorch",
+                        "Slash",
+                        "Snake Skin",
+                        "Strike",
+                        "Swiftness",
+                        "Vampirism",
+                        "Venom",
+                        "Vibrancy",
+                        "Void"
+                      ]
+                    },
+                    "tier": {
+                      "enum": [
+                        "basic",
+                        "intricate",
+                        "powerful"
+                      ]
+                    },
+                    "runtime_quest_binding": {
+                      "const": "QUEST_FAMILY_NOT_POPULATED"
+                    }
+                  },
+                  "required": [
+                    "direct_shrine_target_unequipped_required",
+                    "premium_required",
+                    "catalogue",
+                    "profile",
+                    "tier",
+                    "runtime_quest_binding"
+                  ],
+                  "additionalProperties": false
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "effect": {
+                      "enum": [
+                        "wiki_br",
+                        "global-rules-evidence.json#strike_additive_modifiers"
+                      ]
+                    },
+                    "materials": {
+                      "const": "wiki_br"
+                    },
+                    "duration": {
+                      "const": "manual"
+                    },
+                    "access": {
+                      "const": "imbuement-access.json"
+                    },
+                    "fees": {
+                      "const": "global-rules-evidence.json"
+                    }
+                  },
+                  "required": [
+                    "effect",
+                    "materials",
+                    "duration",
+                    "access",
+                    "fees"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "tier",
+                "name",
+                "duration_ms",
+                "effect",
+                "materials",
+                "scroll_item",
+                "apply_fee_gold",
+                "clear_fee_gold",
+                "access",
+                "provenance"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 3,
+            "maxItems": 3
+          }
+        },
+        "required": [
+          "candidate_key",
+          "name",
+          "category",
+          "parity",
+          "item_eligibility_binding",
+          "tiers"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 24,
+      "maxItems": 24
+    }
+  },
+  "required": [
+    "schema",
+    "activation",
+    "target",
+    "source_facts_sha256",
+    "supporting_catalogues",
+    "global_rules_profile",
+    "observation_plan_profile",
+    "combat_profile",
+    "current_behavior_profile",
+    "global_research_profile",
+    "owner_authoring_policy_profile",
+    "missing_item_proposals",
+    "engine_reference_profile",
+    "architecture_reconciliation",
+    "definitions"
+  ],
+  "additionalProperties": false
+}

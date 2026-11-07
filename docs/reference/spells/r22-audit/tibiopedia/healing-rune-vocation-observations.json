@@ -1,0 +1,45 @@
+{
+  "schema": "OTERYN_CURRENT_HEALING_RUNE_REFERENCE/v1",
+  "notes": [
+    {
+      "url": "https://tibiopedia.pl/spells/Intense_Healing_Rune",
+      "content_sha256": "1abc2575c9c9524e34814b99952dc67061936df4d552853cb2fe58e6907da12c",
+      "access": "normal HTTP",
+      "capture_date": "2026-10-02",
+      "instant_conjure_vocation": "Druid",
+      "instant_conjure_words": "adura gran",
+      "rune_usage_table": [
+        {
+          "Lvl": "15",
+          "Mlvl": "1",
+          "Mana": "0",
+          "Profesja": "Każda"
+        }
+      ],
+      "parsed_rune_usage_vocations": "Druid, Sorcerer, Knight, Paladin, Monk",
+      "usage_promotion_exception": "no explicit Monk/Exalted Monk exception found in the spell-detail block; absence is not verification of exception behavior",
+      "warning": "Do not infer rune usage eligibility from Druid-only conjure eligibility."
+    },
+    {
+      "url": "https://tibiopedia.pl/spells/Ultimate_Healing_Rune",
+      "content_sha256": "5c71483a0510162c1c4b3c1f4318174ca79ac9647b0e769ffe676c69ba3fd402",
+      "access": "normal HTTP",
+      "capture_date": "2026-10-02",
+      "instant_conjure_vocation": "Druid",
+      "instant_conjure_words": "adura vita",
+      "rune_usage_table": [
+        {
+          "Lvl": "24",
+          "Mlvl": "4",
+          "Mana": "0",
+          "Profesja": "Każda"
+        }
+      ],
+      "parsed_rune_usage_vocations": "Druid, Sorcerer, Knight, Paladin, Monk",
+      "usage_promotion_exception": "no explicit Monk/Exalted Monk exception found in the spell-detail block; absence is not verification of exception behavior",
+      "warning": "Do not infer rune usage eligibility from Druid-only conjure eligibility."
+    }
+  ],
+  "source_conflict": "Fresh Tibiopedia tables say Każda for both. Root source inspection reports Canary UH excludes Exalted Monk only, IH no source guard, Crystal both no guard. Existing historical wiki deny-Monk policy requires source conflict resolution; this report does not authorize silently changing it.",
+  "monk_article_status": "No linked Monk profession article discovered on current /articles/game. Dedicated Monk profession restriction not verified."
+}

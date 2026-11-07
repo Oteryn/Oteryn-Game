@@ -1,0 +1,6 @@
+Actual executed code head: 7a3711a95ce2f2be7fd38567998d86672a0b01f0
+Binary SHA256: d67b785ab4193d8ddb9d0e641bf46047277c8921bb5f826a3a3b729f3dc24059
+Original exact log SHA256: 72ecf3bacac11316415f87a0792f063da426e84aa00335a10bfc3a337c38e625
+running 1 test
+test creature_area_heal::tests::actual_corrected_native_world_has_1863_hp_catalog_19_area_and_1_project_prophet_membership ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2393 filtered out; finished in 16.06s

@@ -1,0 +1,12 @@
+{
+  "id": 75,
+  "name": "SERVER_SAVE_COUNTDOWN_V1",
+  "owner_decision": "PARITY-EVENT-CALLBACKS-1 coordinator decision, NIGHT-W1 (option 3, server side only); the coordinator allocates capability 75 and state domain 40",
+  "owner": "current ChannelRuntime",
+  "command_types": [],
+  "state_domains": [
+    40
+  ],
+  "offered": true,
+  "offer_gate": "Countdown notices only after capability selection. The Channel reads the planned reset Control publishes (active epoch calendar TIBIA_SERVER_SAVE_BERLIN_10) and never triggers, moves or cancels a reset; one notice per minute from 5 to 1 minutes before it, at most once per World, ending epoch and minute in one serve lifetime."
+}

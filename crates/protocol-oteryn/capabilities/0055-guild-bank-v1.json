@@ -1,0 +1,18 @@
+{
+  "id": 55,
+  "name": "GUILD_BANK_V1",
+  "constant": "guild_bank::CAPABILITY_GUILD_BANK_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    68,
+    69
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

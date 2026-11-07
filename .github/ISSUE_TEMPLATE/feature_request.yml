@@ -1,0 +1,39 @@
+name: Feature or architecture request
+description: Propose a bounded product, architecture, tooling, or process improvement
+title: "feat(scope): "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the concrete problem, affected users or systems, and current evidence.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Required outcome
+      description: State the observable acceptance criteria without prescribing unnecessary implementation detail.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and exclusions
+      description: Identify affected modules, contracts, repositories, and explicit exclusions.
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks and constraints
+      description: Cover compatibility, security, persistence, performance, operations, licensing, and rollback where relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Supporting evidence
+      description: Link existing ADRs, issues, benchmarks, source repositories, or official documentation.

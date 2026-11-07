@@ -1,0 +1,20 @@
+{
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+  "path": "rulesets/encounters/tibiadrome/",
+  "kind": "ruleset",
+  "owner": "Encounter/Progression",
+  "repository": "Oteryn/Oteryn-Game",
+  "population_state": "POPULATED",
+  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+  "notes": "Tibiadrome selection/scoring/reward rules.",
+  "runtime_admission": "BLOCKED",
+  "runtime_switch_authorized": false,
+  "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED",
+  "source_snapshot_target": "current-at-fetch-2026-10-18",
+  "payloads": [
+    {
+      "path": "rulesets/encounters/tibiadrome/reference-evidence.json",
+      "sha256": "5a5d59a6c41db688f96bf6034c11bc0ca5f3ccc4657816e3d3dc3318ca1d68e9"
+    }
+  ]
+}

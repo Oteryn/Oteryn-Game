@@ -1,0 +1,444 @@
+{
+  "schema": "OTERYN_SOURCE_CONFIG_MISSION_PROGRESS_SUPPLEMENT/v1",
+  "records": [
+    {
+      "source_component_id": "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
+      "quest_keys": [
+        "oteryn:quest.cults_of_tibia_quest"
+      ],
+      "source_target": "canary:quest-progress/quest/u11_40/cults_of_tibia/orcs/mission",
+      "canonical_mission_refs": [
+        {
+          "quest_key": "oteryn:quest.cults_of_tibia_quest",
+          "mission_key": "the_orc_idol",
+          "mission": {
+            "end_value": 3,
+            "journal": {
+              "kind": "per_stage",
+              "stages": [
+                {
+                  "text_ref": {
+                    "length": 3,
+                    "placeholders": [],
+                    "sha256": "c38777d1619a83b0ee9e6e23868bb47b29f81875090a0b5d4e607263df35fec1"
+                  },
+                  "value": 1
+                },
+                {
+                  "text_ref": {
+                    "length": 3,
+                    "placeholders": [],
+                    "sha256": "c38777d1619a83b0ee9e6e23868bb47b29f81875090a0b5d4e607263df35fec1"
+                  },
+                  "value": 2
+                },
+                {
+                  "text_ref": {
+                    "length": 191,
+                    "placeholders": [],
+                    "sha256": "df15408ee35255c6811bfdb1d03b2b70c50614a786627a4d321f4cdfa2170698"
+                  },
+                  "value": 3
+                }
+              ]
+            },
+            "key": "the_orc_idol",
+            "name": "The Orc Idol",
+            "progress": "canary:quest-progress/quest/u11_40/cults_of_tibia/orcs/mission",
+            "start_value": 1,
+            "transitions": []
+          },
+          "mission_sha256": "ef473ecfa339e44f58d1445a2b44e87d090055d7e7c3bd163492bbd05b9c3aca",
+          "path": "content/quests/definitions/quests-00100-00199.json",
+          "json_pointer": "/records/26/definition/source_data/quest/missions/5"
+        }
+      ],
+      "provenance": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
+        "sha256": "05272eb00ce068612ec38128abef9eba68e4d0946494f0771554b2ea35c4647e",
+        "git_blob_sha1": "5ce125af212e79be3d3ea5f7d2b209fe8a133ace",
+        "byte_count": 2227
+      },
+      "status": "SOURCE_CONFIG_MISSION_WRITE_SPEC_EXECUTION_UNPROVEN",
+      "runtime_enabled": false,
+      "native_admission": false,
+      "canonical_gap_replaced": false,
+      "case": {
+        "kind": "source_dictionary_case",
+        "key": "the unarmored voidborn",
+        "config_witness": {
+          "provenance": {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
+            "sha256": "05272eb00ce068612ec38128abef9eba68e4d0946494f0771554b2ea35c4647e",
+            "git_blob_sha1": "5ce125af212e79be3d3ea5f7d2b209fe8a133ace",
+            "byte_count": 2227
+          },
+          "ast_pointer": "/fields/body/fields/body/0/fields/values/0/fields/fields/3",
+          "span": {
+            "column": 1,
+            "end_char_exclusive": 421,
+            "end_token_column": 100,
+            "end_token_line": 5,
+            "line": 5,
+            "start_char": 321
+          },
+          "raw_expression": "[\"the unarmored voidborn\"] = { storage = Storage.Quest.U11_40.CultsOfTibia.Orcs.Mission, value = 2 }",
+          "slice_sha256": "60b72666729cfe7713ecb23e53ab035c2d8a993bcb17037829922fce65329807",
+          "byte_start": 321,
+          "byte_end_exclusive": 421
+        },
+        "table_declaration_witness": {
+          "provenance": {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
+            "sha256": "05272eb00ce068612ec38128abef9eba68e4d0946494f0771554b2ea35c4647e",
+            "git_blob_sha1": "5ce125af212e79be3d3ea5f7d2b209fe8a133ace",
+            "byte_count": 2227
+          },
+          "ast_pointer": "/fields/body/fields/body/0",
+          "span": {
+            "column": 0,
+            "end_char_exclusive": 979,
+            "end_token_column": 0,
+            "end_token_line": 10,
+            "line": 1,
+            "start_char": 0
+          },
+          "raw_expression": "local bosses = {\n\t[\"ravenous hunger\"] = { storage = Storage.Quest.U11_40.CultsOfTibia.Barkless.Mission, value = 6 },\n\t[\"the souldespoiler\"] = { storage = Storage.Quest.U11_40.CultsOfTibia.Misguided.Mission, value = 4 },\n\t[\"essence of malice\"] = { storage = Storage.Quest.U11_40.CultsOfTibia.Humans.Mission, value = 2 },\n\t[\"the unarmored voidborn\"] = { storage = Storage.Quest.U11_40.CultsOfTibia.Orcs.Mission, value = 2 },\n\t[\"the false god\"] = { storage = Storage.Quest.U11_40.CultsOfTibia.Minotaurs.Mission, value = 4 },\n\t[\"the sandking\"] = { storage = Storage.Quest.U11_40.CultsOfTibia.Life.Mission, value = 8, global = \"sandking\", g_value = 5 },\n\t[\"the corruptor of souls\"] = { createNew = \"The Source Of Corruption\", pos = Position(33039, 31922, 15), removeMonster = \"zarcorix of yalahar\", area1 = Position(33073, 31885, 15), area2 = Position(33075, 31887, 15) },\n\t[\"the source of corruption\"] = { storage = Storage.Quest.U11_40.CultsOfTibia.FinalBoss.Mission, value = 2 },\n}",
+          "slice_sha256": "dc0657e4aca746a5feb4093d02125d757ed43d5eede301db4cdce1b96ae735af",
+          "byte_start": 0,
+          "byte_end_exclusive": 979
+        },
+        "lookup_witness": {
+          "provenance": {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
+            "sha256": "05272eb00ce068612ec38128abef9eba68e4d0946494f0771554b2ea35c4647e",
+            "git_blob_sha1": "5ce125af212e79be3d3ea5f7d2b209fe8a133ace",
+            "byte_count": 2227
+          },
+          "ast_pointer": "/fields/body/fields/body/2/fields/body/fields/body/2",
+          "span": {
+            "column": 1,
+            "end_char_exclusive": 1278,
+            "end_token_column": 32,
+            "end_token_line": 20,
+            "line": 20,
+            "start_char": 1246
+          },
+          "raw_expression": "local boss = bosses[monsterName]",
+          "slice_sha256": "c600109d7ced56055200b051ed18ebe2e69011c95583a6655df562bd63e22b31",
+          "byte_start": 1246,
+          "byte_end_exclusive": 1278
+        },
+        "boss_binding": {
+          "kind": "local_declaration",
+          "name": "boss",
+          "declaration_pointer": "/fields/body/fields/body/2/fields/body/fields/body/2/fields/targets/0",
+          "scope_pointer": "/fields/body/fields/body/2/fields/body/fields/body"
+        },
+        "no_monster_entity_id_inferred": true,
+        "finite_script_sha256": "05272eb00ce068612ec38128abef9eba68e4d0946494f0771554b2ea35c4647e"
+      },
+      "source_storage_expression": "Storage.Quest.U11_40.CultsOfTibia.Orcs.Mission",
+      "config_fields": {
+        "storage": {
+          "ast_pointer": "/fields/body/fields/body/0/fields/values/0/fields/fields/3/fields/value/fields/fields/0/fields/value",
+          "witness": {
+            "provenance": {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
+              "sha256": "05272eb00ce068612ec38128abef9eba68e4d0946494f0771554b2ea35c4647e",
+              "git_blob_sha1": "5ce125af212e79be3d3ea5f7d2b209fe8a133ace",
+              "byte_count": 2227
+            },
+            "ast_pointer": "/fields/body/fields/body/0/fields/values/0/fields/fields/3/fields/value/fields/fields/0/fields/value",
+            "span": {
+              "column": 42,
+              "end_char_exclusive": 408,
+              "end_token_column": 81,
+              "end_token_line": 5,
+              "line": 5,
+              "start_char": 362
+            },
+            "raw_expression": "Storage.Quest.U11_40.CultsOfTibia.Orcs.Mission",
+            "slice_sha256": "ffa70ab06837472e3cb1393f790712902a2e75662edaaf777ae6bcfb8ce08f96",
+            "byte_start": 362,
+            "byte_end_exclusive": 408
+          }
+        },
+        "value": {
+          "ast_pointer": "/fields/body/fields/body/0/fields/values/0/fields/fields/3/fields/value/fields/fields/1/fields/value",
+          "witness": {
+            "provenance": {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
+              "sha256": "05272eb00ce068612ec38128abef9eba68e4d0946494f0771554b2ea35c4647e",
+              "git_blob_sha1": "5ce125af212e79be3d3ea5f7d2b209fe8a133ace",
+              "byte_count": 2227
+            },
+            "ast_pointer": "/fields/body/fields/body/0/fields/values/0/fields/fields/3/fields/value/fields/fields/1/fields/value",
+            "span": {
+              "column": 98,
+              "end_char_exclusive": 419,
+              "end_token_column": 98,
+              "end_token_line": 5,
+              "line": 5,
+              "start_char": 418
+            },
+            "raw_expression": "2",
+            "slice_sha256": "d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35",
+            "byte_start": 418,
+            "byte_end_exclusive": 419
+          }
+        }
+      },
+      "write_ast_pointer": "/fields/body/fields/body/2/fields/body/fields/body/6/fields/args/1/fields/body/fields/body/0/fields/body/fields/body/0",
+      "write_witness": {
+        "provenance": {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
+          "sha256": "05272eb00ce068612ec38128abef9eba68e4d0946494f0771554b2ea35c4647e",
+          "git_blob_sha1": "5ce125af212e79be3d3ea5f7d2b209fe8a133ace",
+          "byte_count": 2227
+        },
+        "ast_pointer": "/fields/body/fields/body/2/fields/body/fields/body/6/fields/args/1/fields/body/fields/body/0/fields/body/fields/body/0",
+        "span": {
+          "column": 3,
+          "end_char_exclusive": 2173,
+          "end_token_column": 50,
+          "end_token_line": 48,
+          "line": 48,
+          "start_char": 2125
+        },
+        "raw_expression": "player:setStorageValue(boss.storage, boss.value)",
+        "slice_sha256": "42f3a97d8e57b42e84889062bf1d554d33bbe6e99208ab9a45dbcb0bba91ddef",
+        "byte_start": 2125,
+        "byte_end_exclusive": 2173
+      },
+      "operation": {
+        "kind": "source_config_selected_storage_write",
+        "evaluation_order": [
+          "READ_RECEIVER_ONCE",
+          "LOOKUP_METHOD",
+          "EVALUATE_STORAGE_KEY",
+          "EVALUATE_VALUE",
+          "CALL_WITH_RECEIVER_SELF"
+        ],
+        "source_storage_key": "boss.storage",
+        "source_value_expression": "boss.value",
+        "declared_case_value": 2,
+        "native_storage_slot": null,
+        "branch_source_context": [
+          {
+            "kind": "Function",
+            "ast_pointer": "/fields/body/fields/body/2",
+            "source_witness": {
+              "provenance": {
+                "source": "canary",
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
+                "sha256": "05272eb00ce068612ec38128abef9eba68e4d0946494f0771554b2ea35c4647e",
+                "git_blob_sha1": "5ce125af212e79be3d3ea5f7d2b209fe8a133ace",
+                "byte_count": 2227
+              },
+              "ast_pointer": "/fields/body/fields/body/2",
+              "span": {
+                "column": 0,
+                "end_char_exclusive": 2202,
+                "end_token_column": 0,
+                "end_token_line": 52,
+                "line": 13,
+                "start_char": 1040
+              },
+              "raw_expression": "function bossesCults.onDeath(creature)\n\t-- Deny summons and players\n\tif not creature or creature:isPlayer() or creature:getMaster() then\n\t\treturn true\n\tend\n\n\tlocal monsterName = creature:getName():lower()\n\tlocal boss = bosses[monsterName]\n\tif not boss then\n\t\treturn true\n\tend\n\tif boss.global and Game.getStorageValue(boss.global) < boss.g_value then\n\t\treturn true\n\tend\n\tif boss.createNew then\n\t\tGame.setStorageValue(\"CheckTile\", -1)\n\t\tGame.createMonster(boss.createNew, boss.pos)\n\t\tif removeMonster then\n\t\t\tfor _x = boss.area1.x, boss.area2.x, 1 do\n\t\t\t\tfor _y = boss.area1.y, boss.area2.y, 1 do\n\t\t\t\t\tfor _z = boss.area1.z, boss.area2.z, 1 do\n\t\t\t\t\t\tif Tile(Position(_x, _y, _z)) then\n\t\t\t\t\t\t\tlocal monster = Tile(Position(_x, _y, _z)):getTopCreature()\n\t\t\t\t\t\t\tif monster and monster:isMonster() and monster:getName():lower() == string.lower(boss.removeMonster) then\n\t\t\t\t\t\t\t\tmonster:remove()\n\t\t\t\t\t\t\tend\n\t\t\t\t\t\tend\n\t\t\t\t\tend\n\t\t\t\tend\n\t\t\tend\n\t\tend\n\t\treturn true\n\tend\n\tonDeathForDamagingPlayers(creature, function(creature, player)\n\t\tif player:getStorageValue(boss.storage) < boss.value then\n\t\t\tplayer:setStorageValue(boss.storage, boss.value)\n\t\tend\n\tend)\n\treturn true\nend",
+              "slice_sha256": "fae7685a4424a7a6855011883a1e222e6d84a8e8982b0ebcf08cfe26746f54de",
+              "byte_start": 1040,
+              "byte_end_exclusive": 2202
+            },
+            "path_to_write": "/fields/body/fields/body/6/fields/args/1/fields/body/fields/body/0/fields/body/fields/body/0",
+            "is_orelse_path": false
+          },
+          {
+            "kind": "AnonymousFunction",
+            "ast_pointer": "/fields/body/fields/body/2/fields/body/fields/body/6/fields/args/1",
+            "source_witness": {
+              "provenance": {
+                "source": "canary",
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
+                "sha256": "05272eb00ce068612ec38128abef9eba68e4d0946494f0771554b2ea35c4647e",
+                "git_blob_sha1": "5ce125af212e79be3d3ea5f7d2b209fe8a133ace",
+                "byte_count": 2227
+              },
+              "ast_pointer": "/fields/body/fields/body/2/fields/body/fields/body/6/fields/args/1",
+              "span": {
+                "column": 37,
+                "end_char_exclusive": 2184,
+                "end_token_column": 1,
+                "end_token_line": 50,
+                "line": 46,
+                "start_char": 2035
+              },
+              "raw_expression": "function(creature, player)\n\t\tif player:getStorageValue(boss.storage) < boss.value then\n\t\t\tplayer:setStorageValue(boss.storage, boss.value)\n\t\tend\n\tend",
+              "slice_sha256": "680cf114e309a04d32a204df237d8652f7cf70d408bab3638f835bd0d69b2c03",
+              "byte_start": 2035,
+              "byte_end_exclusive": 2184
+            },
+            "path_to_write": "/fields/body/fields/body/0/fields/body/fields/body/0",
+            "is_orelse_path": false
+          },
+          {
+            "kind": "If",
+            "ast_pointer": "/fields/body/fields/body/2/fields/body/fields/body/6/fields/args/1/fields/body/fields/body/0",
+            "source_witness": {
+              "provenance": {
+                "source": "canary",
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
+                "sha256": "05272eb00ce068612ec38128abef9eba68e4d0946494f0771554b2ea35c4647e",
+                "git_blob_sha1": "5ce125af212e79be3d3ea5f7d2b209fe8a133ace",
+                "byte_count": 2227
+              },
+              "ast_pointer": "/fields/body/fields/body/2/fields/body/fields/body/6/fields/args/1/fields/body/fields/body/0",
+              "span": {
+                "column": 2,
+                "end_char_exclusive": 2179,
+                "end_token_column": 2,
+                "end_token_line": 49,
+                "line": 47,
+                "start_char": 2064
+              },
+              "raw_expression": "if player:getStorageValue(boss.storage) < boss.value then\n\t\t\tplayer:setStorageValue(boss.storage, boss.value)\n\t\tend",
+              "slice_sha256": "69d1f046ea21f2fe88ad45dfa366ec42c5ce90c323d93016ff3037bbfd225a04",
+              "byte_start": 2064,
+              "byte_end_exclusive": 2179
+            },
+            "path_to_write": "/fields/body/fields/body/0",
+            "is_orelse_path": false,
+            "test_witness": {
+              "provenance": {
+                "source": "canary",
+                "repository": "opentibiabr/canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
+                "sha256": "05272eb00ce068612ec38128abef9eba68e4d0946494f0771554b2ea35c4647e",
+                "git_blob_sha1": "5ce125af212e79be3d3ea5f7d2b209fe8a133ace",
+                "byte_count": 2227
+              },
+              "ast_pointer": "/fields/body/fields/body/2/fields/body/fields/body/6/fields/args/1/fields/body/fields/body/0/fields/test",
+              "span": {
+                "column": 5,
+                "end_char_exclusive": 2116,
+                "end_token_column": 49,
+                "end_token_line": 47,
+                "line": 47,
+                "start_char": 2067
+              },
+              "raw_expression": "player:getStorageValue(boss.storage) < boss.value",
+              "slice_sha256": "9ba6502d738ca255fec6c82df3ec2e435cd9cf6507edbafb31aefe8e754b99dd",
+              "byte_start": 2067,
+              "byte_end_exclusive": 2116
+            }
+          }
+        ],
+        "helper_call_witness": {
+          "provenance": {
+            "source": "canary",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
+            "sha256": "05272eb00ce068612ec38128abef9eba68e4d0946494f0771554b2ea35c4647e",
+            "git_blob_sha1": "5ce125af212e79be3d3ea5f7d2b209fe8a133ace",
+            "byte_count": 2227
+          },
+          "ast_pointer": "/fields/body/fields/body/2/fields/body/fields/body/6",
+          "span": {
+            "column": 26,
+            "end_char_exclusive": 2185,
+            "end_token_column": 4,
+            "end_token_line": 50,
+            "line": 46,
+            "start_char": 2024
+          },
+          "raw_expression": "(creature, function(creature, player)\n\t\tif player:getStorageValue(boss.storage) < boss.value then\n\t\t\tplayer:setStorageValue(boss.storage, boss.value)\n\t\tend\n\tend)",
+          "slice_sha256": "e78d032c63f715d55caaa025d0203071eebd704a99266393460794ca5afad21b",
+          "byte_start": 2024,
+          "byte_end_exclusive": 2185
+        },
+        "player_iteration": {
+          "kind": "source_damage_map_player_iteration",
+          "helper_witness": {
+            "provenance": {
+              "source": "canary",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "path": "data/libs/functions/functions.lua",
+              "sha256": "0aa8c6427b7c35678af3ba8be3d64b6cd3b6cd020bb0fc11538cb7f1bcdd6bbe",
+              "git_blob_sha1": "9eaaf99bc3ad6479711b30a00a3dbe40c341148b",
+              "byte_count": 29480
+            },
+            "ast_pointer": "/fields/body/fields/body/60",
+            "span": {
+              "column": 0,
+              "end_char_exclusive": 29479,
+              "end_token_column": 0,
+              "end_token_line": 1105,
+              "line": 1098,
+              "start_char": 29289
+            },
+            "raw_expression": "function onDeathForDamagingPlayers(creature, func)\n\tfor key, value in pairs(creature:getDamageMap()) do\n\t\tlocal player = Player(key)\n\t\tif player then\n\t\t\tfunc(creature, player)\n\t\tend\n\tend\nend",
+            "slice_sha256": "9c6ae3d8a1f61a9caed740cf2d913b959264855c5f0119ba45dd047455b5846c",
+            "byte_start": 29289,
+            "byte_end_exclusive": 29479
+          },
+          "steps": [
+            "GET_CREATURE_DAMAGE_MAP",
+            "PAIRS_ITERATION_ORDER_UNSPECIFIED",
+            "PLAYER_CONSTRUCTOR_FOR_EACH_DAMAGE_MAP_KEY",
+            "CALL_CALLBACK_ONLY_FOR_TRUTHY_PLAYER"
+          ],
+          "callback_arguments": [
+            "original_creature",
+            "resolved_player"
+          ],
+          "runtime_activation": false
+        },
+        "execution_uncertainties": [
+          "GLOBAL_HELPER_AND_PLAYER_CONSTRUCTOR_BINDINGS",
+          "ACTUAL_MONSTER_NAME_AND_LOCAL_CONFIG_LOOKUP_AT_RUNTIME",
+          "METHOD_INDEX_ERRORS_AND_SIDE_EFFECTS",
+          "ACTUAL_STORAGE_SLOT_AND_NATIVE_ACTOR_BINDING"
+        ]
+      }
+    }
+  ],
+  "original_core_unchanged": true,
+  "runtime_enabled": false,
+  "native_admission": false,
+  "summary": {
+    "records": 1,
+    "source_tracks": 1,
+    "canonical_mission_joins": 1,
+    "source_files": 2
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/strong_flame_strike",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Strong Flame Strike",
+    "carrier": "instant",
+    "words": "exori gran flam",
+    "reference_spell_id": 150,
+    "library_text": "The experiments that led to the ground-breaking discovery that allowed the use of fire spells also underwater paved the way for this spell. It is a powerful eruption of fire with such intense heat that it is almost impossible to stop it.",
+    "requirements": {
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 70,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 60,
+      "soul": 0
+    },
+    "cooldown_ms": 8000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      },
+      {
+        "group": "special",
+        "cooldown_ms": 8000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": true,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 7,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_strong_flame_strike"
+    },
+    "base_power": 125,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/strong_flame_strike",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 0,
+    "costs": {
+      "mana": 3000
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Summon Sorcerer Familiar",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_summon_sorcerer_familiar"
+    },
+    "reference_spell_id": 196,
+    "requirements": {
+      "level": 200,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false
+    },
+    "words": "utevo gran res ven"
+  }
+}

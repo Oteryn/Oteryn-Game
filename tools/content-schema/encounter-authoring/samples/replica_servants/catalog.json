@@ -1,0 +1,19 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/golden_servant_replica",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/diamond_servant_replica",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/iron_servant_replica",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

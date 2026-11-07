@@ -1,0 +1,20 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-EQUIPMENT-PATTERNS",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Alternative complete Equipment patterns per Item",
+  "unit": "patterns",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 2
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check count before pattern allocation; canonicalize semantic content and reject semantic duplicates.",
+  "client_visible": true,
+  "boundary_tests": [
+    "2 distinct canonical patterns accepted",
+    "3rd pattern rejected before allocation",
+    "same semantic pattern under a different local ID rejected"
+  ],
+  "notes": "max(normalized 38,157-row candidate-corpus maximum 1, minimum non-singleton schema witness 2)."
+}

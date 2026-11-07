@@ -1,0 +1,5 @@
+{
+  "id": 391, "name": "TEAM_FINDER_LEADER_REMOVE", "owner_decision": "S14a", "capability": 200,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/team-finder-leader-v1.md#remove", "result_schema": "docs/contracts/protocol-oteryn/v1/team-finder-leader-v1.md#reply",
+  "max_payload_bytes": 0, "max_result_payload_bytes": 0
+}

@@ -1,0 +1,23 @@
+{
+  "compiler_dependencies_exact": [
+    "lua_blocks.py",
+    "lua_tables.py",
+    "lua_writers.py",
+    "ots_chests.py",
+    "ots_interactions.py",
+    "ots_questlog.py",
+    "quest_requirement_interpretations.py",
+    "reward_aliases.py",
+    "scoped_storage_aliases.py",
+    "source_reference_tracks.py",
+    "validate_quest_content.py"
+  ],
+  "donor_runtime_replayed": false,
+  "effective_transition_and_alias_maps_exact": true,
+  "interaction_outputs_byte_equal_parent": true,
+  "parent_frozen_head": "495ae76a9d7aa140a3b5ac26c2e64c3b9db5630c",
+  "questlog_delta": "ONLY_PINNED_NPC_HOOK",
+  "raw_progress_without_exchange_exact": true,
+  "schema": "OTERYN_R14_INTERACTION_REUSE_PROOF/v1",
+  "status": "PASS"
+}

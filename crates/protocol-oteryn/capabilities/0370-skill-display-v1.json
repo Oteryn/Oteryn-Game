@@ -1,0 +1,17 @@
+{
+  "id": 370,
+  "name": "SKILL_DISPLAY_V1",
+  "constant": "skill_display::CAPABILITY_SKILL_DISPLAY_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    640
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

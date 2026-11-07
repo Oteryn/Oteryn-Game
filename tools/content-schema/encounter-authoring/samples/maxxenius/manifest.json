@@ -1,0 +1,90 @@
+{
+  "encounter": "canary:encounter/maxxenius",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "dreamCourtsDeath": [
+      "canary:creature/maxxenius"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/the_dream_courts/bosses/maxxenius.lua",
+      "blob_sha1": "2b6c41b48e6003e362410e437fa7268ef35b4924"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/the_dream_courts_quest/creaturescripts_dreamCourtsDeath.lua",
+      "blob_sha1": "6dff8c6d7a217993f67965de7349ceffeb1cee2a"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        24
+      ],
+      "status": "mapped",
+      "resolution": "Maxxenius is the maxxenius participant; its file registers dreamCourtsDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        92,
+        105
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the questlog boss \"Maxxenius\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        93,
+        94,
+        95
+      ],
+      "status": "mapped",
+      "resolution": "Returns without effect for a non-monster or a creature with a master.",
+      "destination": "/encounter/rules/0/conditions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        9,
+        15
+      ],
+      "status": "mapped",
+      "resolution": "Every player in creature:getDamageMap() is credited (D27): the quest domain raises Storage TheDreamCourts.DreamScar.BossCount by 1 while it is <= 5, and the reward domain sets the MaxxeniusTimer cooldown to 20 hours.",
+      "destination": "/encounter/rules/0/actions/0"
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "maxxenius_defeated",
+      "credited": "damage_contributors",
+      "quest_domain": {
+        "canary_storage": "Storage.Quest.U12_00.TheDreamCourts.DreamScar.BossCount",
+        "increment": 1,
+        "only_while_at_most": 5
+      },
+      "reward_domain": {
+        "canary_storage": "Storage.Quest.U12_00.TheDreamCourts.DreamScarGlobal.MaxxeniusTimer",
+        "cooldown_seconds": 72000
+      }
+    }
+  ]
+}

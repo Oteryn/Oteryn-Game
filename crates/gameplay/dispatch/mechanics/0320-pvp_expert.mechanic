@@ -1,0 +1,10 @@
+name=pvp_expert
+commands=103
+[route]
+routing::combat_intent::route_expert_modes(
+    authority,
+    session.actor,
+    &mut session.admitted,
+    command,
+)
+.await

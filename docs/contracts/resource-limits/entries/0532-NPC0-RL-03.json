@@ -1,0 +1,22 @@
+{
+  "id": "NPC0-RL-03",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+  "resource": "Offers of one NPC_TRADE_WINDOW projection (domain 8)",
+  "unit": "offers",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 1024
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Measured 757 offers over the catalogue (the limit is at least 757). 1,024 offers of at most 22 bytes each, 22,570 bytes in all.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=1024: a window of 1,024 offers encodes and decodes",
+    "max+1=1025: a 1,025th offer is refused; offer index 1,024 of a trade intent is refused"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/npc_service.rs MAX_OFFERS"
+  ],
+  "notes": "NPC-0 \u00a74 (at least 757). Measured over content/world/definitions/declarations.json. A 757-offer window is tested within the bound. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+}

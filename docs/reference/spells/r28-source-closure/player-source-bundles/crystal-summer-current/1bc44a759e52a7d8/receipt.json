@@ -1,0 +1,102 @@
+{
+  "blockers": [],
+  "candidate_key": "candidate:spell/source/crystal-summer-current/1bc44a759e52a7d8",
+  "conversion_notes": [
+    "CALLBACK_PARAM_SKILLVALUE is the player formula; a monster caster uses its own values instead.",
+    "COMBAT_PARAM_USECHARGES only consumes player weapon charges.",
+    "",
+    "",
+    "src/creatures/combat/combat.cpp Combat::setParam maps COMBAT_PARAM_BLOCKARMOR/BLOCKSHIELD to blockedByArmor/blockedByShield, which Creature::blockHit applies (mitigated_by).",
+    "{\"source_formula_helper_proof\": {\"body_sha256\": \"cd8f6f08c8f982eea130276f21230684d40ada81a06de375a2c31cd2454cc5dc\", \"function\": \"calculateBaseDamageHealing\", \"line_start\": 602, \"path\": \"data/scripts/lib/register_spells.lua\", \"revision\": \"00ce02a57ca5a12e48f32a3476e37471167e4c3f\", \"sha256\": \"4c33e84b0b6b34f0221eb169a8f7de680ebd1444e8e702472cc1091fd91b99a9\"}, \"source_shielding_helper_proof\": null}"
+  ],
+  "dependencies": {
+    "abilities": 1,
+    "effects": 1,
+    "formulas": 1
+  },
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+    }
+  ],
+  "external_sources_used": false,
+  "item_owner_bindings_required": [],
+  "logical_key": [
+    "instant",
+    "brutal strike"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "crystal-summer-current/data/scripts/spells/attack/brutal_strike.lua#1",
+    "source_callback_scope": "cached exact source callback expressions and cast tier",
+    "source_capture": "crystal-summer-current-registered-spells.json",
+    "source_capture_sha256": "bfa49da343913ac220721208128530f1a128e99ffd9b447808489daf59043200"
+  },
+  "native_execution_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/attack/brutal_strike.lua#1",
+  "remaining_mechanics": [
+    {
+      "reason": "Existing Combat converter retains source receipt but has no independent exact Effect owner binding for this field",
+      "source_field": "COMBAT_PARAM_USECHARGES"
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "schema_and_semantic_validation_errors": [],
+  "source_header": {
+    "base_power": 39,
+    "carrier": "instant",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 30
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Brutal Strike",
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_brutal_strike"
+    },
+    "reference_spell_id": 61,
+    "requirements": {
+      "level": 16,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "needs_target": true,
+      "range_tiles": 1
+    },
+    "words": "exori ico"
+  },
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "add8cdcddf4277a50cff34936ea53d6d5b69501847d418c4a4c03dc207c60a65",
+  "status": "CANDIDATE_SCHEMA_VALID"
+}

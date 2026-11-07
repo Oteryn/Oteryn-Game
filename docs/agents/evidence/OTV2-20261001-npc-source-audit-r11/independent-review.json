@@ -1,0 +1,107 @@
+{
+  "accepted_boundaries": [
+    "Both public donor revisions are explicit OTS source hypotheses, without claims of independent Global authority.",
+    "Five exact trade callbacks retain denied NotEqual branches and allowed Equal branches; unknown source progress remains unqualified.",
+    "All source-track identities already exist in the source registry. Native predicate/gate/transition/effect/variant bindings remain null, and native Quest/track/transition declarations are empty.",
+    "Two travel action proofs retain exact Mission01 equality guards, source writes, fare, destination and callback/action registration in both donor repositories.",
+    "Source debit-before-cooldown and action-on-refusal findings are source defects, not proposed native behavior.",
+    "Proposed travel validates all gates before durable fee+pending-arrival+qualified-effects commit, then performs fenced placement. A known commit remains authoritative through disconnect, placement failure and recovery; no automatic rollback or atomic physical move is claimed.",
+    "ExampleQuest>=1 remains rejected placeholder evidence. Rank>=3 remains a prospective title hypothesis; all 171 discount routes remain on hold until exact Global eligibility is qualified.",
+    "Eight quote/donor fare disagreements preserve separate retained quote custody and donor candidate fare. Fluid/charge evidence is not reinterpreted as transaction units.",
+    "Citizen is a named title dependency, with no fabricated tally threshold, track or native gate.",
+    "All631 relation outputs and the packet remain OFFLINE_AUTHORING_ONLY/runtime_eligible=false."
+  ],
+  "findings": [
+    {
+      "affected_relations": 171,
+      "closure": "All171 registration pointers now resolve to the whole owning route, whose canonical hash equals row_sha256; independently named discount_field_pointer/hash bind the scalar field. Compiler validates route shape/hash and field parent/hash. The new regression independently reads actual candidate JSON and rejects old scalar pointers for every sibling.",
+      "consequence": "All emitted registration_custody pointer/hash pairs fail independent re-resolution; the original whole-route provenance cannot be checked using the published witness.",
+      "example": {
+        "hashed_value": "owning route object",
+        "pointer": "/candidates/84/travel_service/routes/0/discount",
+        "resolved_value": "postman"
+      },
+      "file": "/workspace/npc-r8-work/service-relations/build_service_relations.py",
+      "id": "R11-CUSTODY-1",
+      "line": 311,
+      "priority": "P2",
+      "repair": "Emit a whole-route pointer paired with the current whole-route hash; optionally retain a separately named discount field pointer. Preserve the source observation original pointer as its own source custody.",
+      "required_regression": "Resolve every one of the 171 registration_custody pointers against its declared source file, independently hash the resolved object using canonical sorted JSON, and compare with row_sha256. Assert the resolved object has the route destination, fare and discount fields, rather than changing the test to accept a field hash.",
+      "root_cause": "promotion_pointer addresses the route discount field, while row_sha256 hashes the containing route object.",
+      "status": "FIXED",
+      "title": "Discount registration pointer and row digest identify different source values"
+    }
+  ],
+  "known_findings_complete": true,
+  "limitations": "Tests classify authoring dependencies and source-only previews. They do not exercise a native service execution engine or qualify any owning runtime contracts.",
+  "repair_re_review": {
+    "no_new_discovery_sweep": true,
+    "original_finding_count": 1,
+    "remaining_findings": 0,
+    "repo_edits": false,
+    "reviewed_final_files": [
+      {
+        "bytes": 26099,
+        "path": "build_service_relations.py",
+        "sha256": "ae0e19e32c875cf8bed95c8147757a3b7f161849b692b5e631ef60e8440a5f5e"
+      },
+      {
+        "bytes": 2079,
+        "path": "service_source_conditions.py",
+        "sha256": "aa12a80a6418cd9069d66995f639993971c57c6e899df98cbf076d13534be564"
+      },
+      {
+        "bytes": 11765,
+        "path": "test_service_relations.py",
+        "sha256": "50bfd93d2b914c841da86efde616def53db84873e63f2a089b07c5378adc279e"
+      },
+      {
+        "bytes": 1250702,
+        "path": "implementation-packet.json",
+        "sha256": "54c8d8d48cb2dd394832b125b2b2ddc955955f453e78b0bdbcbff0b54ea88cae"
+      },
+      {
+        "bytes": 5011,
+        "path": "README.md",
+        "sha256": "d7112c7c92035619df8fb857cfd7f1c73e75c02c5c3fe0c2503e166f82cb9ec4"
+      }
+    ]
+  },
+  "repo_edits": false,
+  "research_network_calls": 0,
+  "result": "PASS",
+  "reviewed_packet_sha256": "54c8d8d48cb2dd394832b125b2b2ddc955955f453e78b0bdbcbff0b54ea88cae",
+  "reviewer": "dialogue_sources",
+  "schema": "NPC_SERVICE_RELATIONS_INDEPENDENT_REVIEW/v1",
+  "scope": "Whole module, read-only independent review of R11 offline source-service compiler; no repository mutations or runtime admission.",
+  "validation": {
+    "all_byte_hash_url_line_witnesses_verified": 30,
+    "all_other_packet_fields_guards_prices_and_runtime_flags_byte_exact_unchanged": true,
+    "counts": {
+      "discounts": 171,
+      "item_variant_dependencies": 173,
+      "merchant_gates": 284,
+      "offer_relations": 457,
+      "routes": 3,
+      "total": 631
+    },
+    "dedicated_tests": {
+      "command": "python /workspace/npc-r8-work/service-relations/test_service_relations.py --repo /workspace/Oteryn-Game --evidence-dir /workspace/Oteryn-Game/docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/quests --source-dir /workspace/npc-r8-work/service-relations/raw -v",
+      "failed": 0,
+      "passed": 13,
+      "skipped": 0
+    },
+    "discount_scalar_field_pointer_and_hash_verified": 171,
+    "emitted_registration_pointer_hash_mismatches": 0,
+    "existing_native_service_identities_verified_against_full_declarations": 101,
+    "independent_verifier": "/workspace/npc-r8-work/review/check_service_custody.py",
+    "independent_whole_route_hashes_verified": 171,
+    "manifest_files_verified": 5,
+    "offer_custody_verified": 457,
+    "regeneration_structurally_identical": true,
+    "registry_file_digest_and_exact_identity_bindings_verified": 5,
+    "repair_scope_exact_prior_packet_digest_reconstructed": "68061c0711738632e3d7e29471736f101784f15d4dc04b45590f5e1dcf5a25f8",
+    "source_captures_verified": 25,
+    "unique_raw_source_digests": 24
+  }
+}

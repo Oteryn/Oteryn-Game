@@ -1,0 +1,10 @@
+{
+  "id": 119,
+  "name": "GUILD_WAR_INTENT",
+  "owner_decision": "GUILD-WAR-1 parity slice 2026-10-26",
+  "capability": 103,
+  "payload_schema": "guild_war.rs#GuildWarIntent",
+  "result_schema": "guild_war.rs#GuildWarResult",
+  "max_payload_bytes": 64,
+  "max_result_payload_bytes": 20
+}

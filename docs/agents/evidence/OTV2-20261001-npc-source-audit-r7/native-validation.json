@@ -1,0 +1,72 @@
+{
+  "canonical_documents": 11,
+  "canonical_paths": [
+    {
+      "bytes": 56,
+      "path": "assets/catalog.json",
+      "sha256": "fa61df1076ef66e8c69b6182db1b13fe2ccb92653ab16a148d1fbaf773adb344"
+    },
+    {
+      "bytes": 397,
+      "path": "content.lock.json",
+      "sha256": "16d4d6096b8b6046f2be6be7ce993166b7df437c66eafe45aefcab266765e514"
+    },
+    {
+      "bytes": 17029087,
+      "path": "definitions/declarations.json",
+      "sha256": "0959a4dddcb92714d1902cc1e9faa9d3a4ce5d835a37a97955d925b3052d2433"
+    },
+    {
+      "bytes": 22538307,
+      "path": "definitions/reference.json",
+      "sha256": "89f1487ecc025d5a6755ac29a7bacfffc6ef6f2cdbf92a448bbc13570ae9d2d3"
+    },
+    {
+      "bytes": 120557,
+      "path": "editor/author.json",
+      "sha256": "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb"
+    },
+    {
+      "bytes": 1948,
+      "path": "manifest.json",
+      "sha256": "1eb53040ff3b8ad2c68da46c260f030e0011c8a7024233d17bf6bab64fedb1eb"
+    },
+    {
+      "bytes": 73,
+      "path": "presentations/bindings.json",
+      "sha256": "b7d27b2d7fde6370b7ae56c2c60412f2b213a4a5e92e7db82dd4b59a64359cd7"
+    },
+    {
+      "bytes": 401,
+      "path": "project.json",
+      "sha256": "580f0b71fb7e19da115db9f01235f8f8e9235411a27de28ab24000ca638f5e29"
+    },
+    {
+      "bytes": 33077,
+      "path": "provenance/imports.json",
+      "sha256": "a6865cf27269c6d3cabb80b9b7895aab202d11d829675e7fda17b1c2cda89763"
+    },
+    {
+      "bytes": 1317786,
+      "path": "provenance/sources.json",
+      "sha256": "8319dc455ec284809447e1d50b0dba984ff451c45ad305fa117269def60f1bb1"
+    },
+    {
+      "bytes": 72,
+      "path": "worlds/world.json",
+      "sha256": "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa"
+    }
+  ],
+  "deterministic_materializations": 2,
+  "native_declaration_repairs": 43,
+  "native_profile_repairs": 2,
+  "new_native_quest_ids": 0,
+  "new_npc_identities": 0,
+  "other_native_declarations_unchanged": 2587,
+  "other_native_profiles_unchanged": 22315,
+  "pending_prices": 0,
+  "retained_offers": 12267,
+  "runtime_qualified": false,
+  "schema": "NPC_R7_NATIVE_QUALIFICATION_RECEIPT/v1",
+  "tree_sha256": "bb21fcf2cf4a4526544a231a72612fa82e789abfefaae2780698d639fd9ac0ec"
+}

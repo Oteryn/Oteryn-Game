@@ -1,0 +1,18 @@
+{
+  "mechanic": "0272-atelier-resources",
+  "kind": "handlers",
+  "id": "0272-atelier-resources-query",
+  "status": "supported",
+  "commands": [
+    484
+  ],
+  "direction": "client_to_server",
+  "capability": 272,
+  "entry": "protocol.rs::decode_reply",
+  "not_applicable": {
+    "state": "The existing 0148 Wheel panel retains the optional server-confirmed balances.",
+    "view": "The existing 0148 Wheel panel displays all seven balances.",
+    "input": "The existing 0148 refresh automatically queries balances after negotiation; no additional control.",
+    "settings": "Live resource balances remain server-owned; there are no client authority settings."
+  }
+}

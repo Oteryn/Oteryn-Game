@@ -1,0 +1,5 @@
+Original log SHA256: 020b8d3edc2a53ff2b6287f4318c12194b21dae32e293bd95e9e88b32ea27713
+
+running 1 test
+test monster_combat_lane::pending_summon_failure_regression::two_real_children_first_registration_failure_keeps_later_child_and_receipts ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2372 filtered out; finished in 16.59s

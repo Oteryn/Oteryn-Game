@@ -1,0 +1,45 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 30000,
+    "costs": {
+      "mana": 400
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      },
+      {
+        "cooldown_ms": 30000,
+        "group": "stance"
+      }
+    ],
+    "name": "Master of Decay",
+    "reference_spell_id": 306,
+    "requirements": {
+      "learning_required": false,
+      "level": 20,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "uteta mort"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": 51,
+  "name": "HOUSE_SCOPE",
+  "owner_decision": "HOUSE-TRANSFER-1 (2026-10-26)",
+  "owner": "native House owner; post-acknowledgement projection only",
+  "capability": 86,
+  "delta_types": [],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "HOUSE_SCOPE_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/house_transfer_v1.proto#HouseTransferAckV1",
+      "max_payload_bytes": 2048
+    }
+  ],
+  "revision": "per committed transfer; replacement only"
+}

@@ -1,0 +1,14 @@
+{
+  "id": 57,
+  "name": "CYCLOPEDIA_MAP_V1",
+  "owner_decision": "LOOP-MAP-1 owner option A 2026-10-23",
+  "owner": "Character discovery and World Cyclopedia owner",
+  "requires": [],
+  "command_types": [
+    72,
+    73
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Composed bundle with admitted authored Entry environs and reachable POI pool; cyclopedia_available."
+}

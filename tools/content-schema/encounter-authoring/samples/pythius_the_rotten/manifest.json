@@ -1,0 +1,76 @@
+{
+  "encounter": "canary:encounter/pythius_the_rotten",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "PythiusTheRottenDeath": [
+      "canary:creature/pythius_the_rotten"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/bosses/pythius_the_rotten.lua",
+      "blob_sha1": "742285c193f4bda8b6cd0dacf14788641d6e68c4"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/the_hidden_city_of_beregar/creaturescripts_pythius_the_rotten_kill.lua",
+      "blob_sha1": "d1c3f1e7232743610980417a992b3ec2e66dda16"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Pythius The Rotten is the pythius_the_rotten participant; its file registers PythiusTheRottenDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1,
+        2
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of Pythius the Rotten.",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        3
+      ],
+      "status": "mapped",
+      "resolution": "creature:say(..., TALKTYPE_MONSTER_SAY); Canary shows the text on (32572, 31405, 15), a display position only.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        5,
+        6,
+        7
+      ],
+      "status": "mapped",
+      "resolution": "The player with the most damage is teleported to the reward room (32577, 31403, 15): a reward room belongs to the reward domain (D27), which picks the top damage contributor. The teleport effect is cosmetic.",
+      "destination": "/encounter/rules/0/actions/1"
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "pythius_the_rotten_defeated",
+      "credited": "damage_contributors",
+      "reward_domain": {
+        "recipient": "the top damage contributor (Canary mostDamageKiller)",
+        "reward_room": "Canary (32577, 31403, 15)"
+      }
+    }
+  ]
+}

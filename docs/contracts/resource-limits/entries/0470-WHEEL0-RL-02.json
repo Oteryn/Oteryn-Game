@@ -1,0 +1,22 @@
+{
+  "id": "WHEEL0-RL-02",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+  "resource": "Domain points of the highest revelation stage",
+  "unit": "domain points",
+  "hard_maximum": 1000,
+  "configurable_range": {
+    "minimum": 1000,
+    "maximum": 1000
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "No allocation; revelation stages 1, 2 and 3 start at 250, 500 and 1000 points in one domain, and a domain holds at most 1000 points (nine slots).",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=1000: 999 points give stage 2 and 1000 give stage 3",
+    "max+1: a domain cannot hold 1001 points (its capacities sum to 1000)"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/character_wheel.rs REVELATION_THRESHOLDS, WheelStages::derive"
+  ],
+  "notes": "WHEEL-0 \u00a72 and \u00a78 (thresholds 250/500/1000); test: character_wheel::tests::revelation_stages_follow_the_thresholds. Registered by WHEEL-W1."
+}

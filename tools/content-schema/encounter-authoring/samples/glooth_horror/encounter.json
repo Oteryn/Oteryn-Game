@@ -1,0 +1,261 @@
+{
+  "identity": {
+    "key": "canary:encounter/glooth_horror",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Hero of Rathleton: Glooth Horror",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "feeble_glooth_horror",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/feeble_glooth_horror",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "weakened_glooth_horror",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/weakened_glooth_horror",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "glooth_horror",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/glooth_horror",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "strong_glooth_horror",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/strong_glooth_horror",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "empowered_glooth_horror",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/empowered_glooth_horror",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "horror_arena",
+      "kind": "area",
+      "description": "Tiles within 13 of Canary (33555, 31956, 15) on that floor.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33542,
+              33568
+            ],
+            "y": [
+              31943,
+              31969
+            ],
+            "floor": 15
+          }
+        ]
+      }
+    },
+    {
+      "key": "exit_teleporter",
+      "kind": "point",
+      "description": "Boss-room teleporter; Canary (33545, 31955, 15).",
+      "location": {
+        "x": 33545,
+        "y": 31955,
+        "floor": 15
+      }
+    },
+    {
+      "key": "next_destination",
+      "kind": "point",
+      "description": "Destination while open; Canary (33534, 31955, 15).",
+      "location": {
+        "x": 33534,
+        "y": 31955,
+        "floor": 15
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "feeble_glooth_horror_splits",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "feeble_glooth_horror"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/weakened_glooth_horror",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "weakened_glooth_horror",
+          "count": 2,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "weakened_glooth_horror_splits",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "weakened_glooth_horror"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/glooth_horror",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "glooth_horror",
+          "count": 2,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "glooth_horror_splits",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "glooth_horror"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/strong_glooth_horror",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "strong_glooth_horror",
+          "count": 2,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "strong_glooth_horror_splits",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "strong_glooth_horror"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/empowered_glooth_horror",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "empowered_glooth_horror",
+          "count": 2,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "empowered_glooth_horror_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "empowered_glooth_horror"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "feeble_glooth_horror",
+          "anchor": "horror_arena",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "weakened_glooth_horror",
+          "anchor": "horror_arena",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "glooth_horror",
+          "anchor": "horror_arena",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "strong_glooth_horror",
+          "anchor": "horror_arena",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "empowered_glooth_horror",
+          "anchor": "horror_arena",
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/1949",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/22761",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_teleporter",
+          "destination": "next_destination",
+          "revert_after_ms": 120000
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

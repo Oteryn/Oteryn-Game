@@ -1,0 +1,90 @@
+{
+  "schema": "OTERYN_GLOBAL_SOURCE_ARCHIVE/v1",
+  "task": "DEATH-LOSS-EVIDENCE-1",
+  "scope": "ARCHIVED_GLOBAL_EVIDENCE_NOT_ACTIVE_OTERYN_PARAMETER_FIELDS",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "predecessor": "790951fdede520c96d7810ddd7fd4abf10a6e9f8",
+  "explanation": "Original Tibia evidence is retained verbatim here. Active target fields now contain explicitly scoped Oteryn working values; no Global fact has been proven by a design choice.",
+  "records": [
+    {
+      "original_field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/0/facts/levels_24_plus",
+      "original_global_fact": {
+        "value": "((L+50)/100)*50*(L*L-5*L+8)",
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1628:1140641",
+            "selector": "Skill and Experience Loss"
+          }
+        ],
+        "note": "Community formula candidate only. Official manual gives examples, not a closed form or rounding rule; no controlled evidence."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/0/facts/rounding",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "No official integer rounding, fractional XP or low-level edge algorithm."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/1/facts/magic_and_skill_loss",
+      "original_global_fact": {
+        "value": "Loss of spent mana and skill tries; low levels 10%, later percentage based on XP loss / total XP.",
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1628:1140641",
+            "selector": "Skill and Experience Loss"
+          }
+        ],
+        "note": "No official separate closed-form magic/skill percentage or rounding rule. Wiki formula prose omits /100 present in its own worked table."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/1/facts/retro_hardcore_blessing",
+      "original_global_fact": {
+        "value": null,
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-18",
+        "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1628:1140641",
+            "selector": "Conflicting statements identified in note"
+          },
+          {
+            "source": "official:manual:characters:2026-10-18",
+            "selector": "Conflicting statements identified in note"
+          }
+        ],
+        "note": "Death Wiki says 6.4%; official manual says 6.31%; do not round one into the other without evidence."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/2/facts/unfair_fight",
+      "original_global_fact": {
+        "value": "victim_level / sum_attacker_levels; reduction capped at 80%",
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1628:1140641",
+            "selector": "Unfair Fight"
+          }
+        ],
+        "note": "Official manual confirms reduced loss in an unfair fight but not this numeric formula/cap."
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+name=player_trade
+commands=78
+transport=player_trade
+composed=player_trade
+authority=player_trade
+[route]
+match routing::player_trade::route(authority, session.admitted, command, session.item_view.as_ref()).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

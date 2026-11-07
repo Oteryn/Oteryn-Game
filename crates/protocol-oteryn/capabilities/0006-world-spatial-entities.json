@@ -1,0 +1,15 @@
+{
+  "id": 6,
+  "name": "WORLD_SPATIAL_ENTITIES",
+  "constant": "world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": null,
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

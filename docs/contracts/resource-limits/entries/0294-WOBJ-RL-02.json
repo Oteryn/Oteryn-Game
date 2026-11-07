@@ -1,0 +1,22 @@
+{
+  "id": "WOBJ-RL-02",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "Overlay entries encoded in one WORLD_OBJECT_OVERLAY delta",
+  "unit": "overlay entries per delta",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "One committed use transition changes exactly one world object; the delta carries that single overlay entry and a second entry is refused before encoding.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=1: the one changed overlay entry is carried in a delta",
+    "max+1=2: a second entry cannot be encoded by the WORLD_OBJECT_OVERLAY_DELTA_V1 payload schema"
+  ],
+  "consumers": [
+    "WORLD_OBJECT_OVERLAY state domain 2, delta type 1"
+  ],
+  "notes": "Accepted by the resource owner in #162 comment 5864914163 (USE-WIRE-V1)."
+}

@@ -1,0 +1,211 @@
+"""Version input-footprint receipts after W15c, preserving frozen source facts.
+
+Run from any directory. Original qualification bytes are hash checked and never
+written. Only the enumerated owner/producer footprints may change; all records,
+closed scopes, source observations and qualification decisions are copied intact.
+"""
+
+import argparse
+import ast
+import hashlib
+import json
+import re
+import sys
+from pathlib import Path
+
+from historical_world_owner_context import GROUND, MARKER, original_marker
+
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "tools/content-migration"))
+
+from source_relocations import current_path
+
+HERE = "tools/content-schema/item-authoring/"
+RECIPES = (
+    (
+        "lower_item_use_observation_packet",
+        "PROOF",
+        "docs/agents/evidence/OTV2-20261002-item-use-observation-source-qualification-v1.json",
+        "b4bf2c87cc5c3b81c66521023775ac499dcd7d64fb1f10f4210fb682935dbd8a",
+        2,
+    ),
+    (
+        "lower_elemental_magic_modifier_packet",
+        "PROOF",
+        "docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-source-qualification-v1.json",
+        "022b40bdbd6de3d97d938eeff4d7370d5904961edf3ba8effde700c8f5973490",
+        2,
+    ),
+    (
+        "lower_wiki_stack_default_successor8_packet",
+        "PROOF",
+        "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-source-qualification-v1.json",
+        "2f95cad2912f2cc3e29df6f2ecb04fef50595d8b370b39e9bf85d4da0b7fded4",
+        2,
+    ),
+    (
+        "lower_wiki_stack_default_successor8_packet",
+        "RECEIPT",
+        "docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v9.json",
+        "6e219614713d4cc5d4e2b20fc622cb9f4ab553feb7cdd08d40e353a3aade787e",
+        10,
+    ),
+    (
+        "lower_item_name15_packet",
+        "PROOF",
+        "docs/agents/evidence/OTV2-20261002-item-name15-source-qualification-v2.json",
+        "20a113d4cc4d9dd1c97c7ee4e09c9c8bb7e11a271cd3acb740f56f31ae76a1bb",
+        3,
+    ),
+    (
+        "lower_mantra_bond_modifier_packet",
+        "PROOF",
+        "docs/agents/evidence/OTV2-20261002-item-mantra-bond-source-qualification-v7.json",
+        "875da6c756647b528b3f4ce7c74bc8c4c384694d2478284df7c6971ce9be112a",
+        8,
+    ),
+    (
+        "lower_numeric_modifier17_packet",
+        "RECEIPT",
+        "docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v7.json",
+        "c5d6d1a97d222b81b16d3796d19022d4396ffe32df6a8aabe2d8cb898568d319",
+        8,
+    ),
+)
+ALLOWED = {
+    *(
+        "docs/agents/evidence/" + name + ".json"
+        for name in (
+            "OTV2-20261001-item-capacity-promotion-v1",
+            "OTV2-20261001-item-document-promotion-v1",
+            "OTV2-20261001-item-physical-promotion-v1",
+            "OTV2-20261001-item-stack-false-promotion-v1",
+            "OTV2-20261002-item-elemental-magic-modifier-promotion-v1",
+            "OTV2-20261002-item-hit-magic-promotion-v1",
+            "OTV2-20261002-item-mantra-bond-promotion-v1",
+            "OTV2-20261002-item-use-observation-promotion-v1",
+            "OTV2-20261003-item-market-true-promotion-v2",
+            "OTV2-20261003-item-movable-promotion-v2",
+        )
+    ),
+    "crates/gameplay/content/src/content/item_name_promotion.rs",
+    MARKER,
+    "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+    "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
+    *(
+        HERE + name + ".py"
+        for name in (
+            "check_stack_default_historical_context",
+            "test_stack_default_historical_context",
+            "lower_elemental_magic_modifier_packet",
+            "lower_mantra_bond_modifier_packet",
+        )
+    ),
+}
+
+
+def digest(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def refresh_pin(root, path, previous):
+    raw = (root / current_path(path)).read_bytes()
+    actual = digest(raw)
+    if actual != previous and path not in ALLOWED:
+        raise ValueError(f"unqualified input change: {path}")
+    return actual, len(raw)
+
+
+def refresh_list(root, pins):
+    for pin in pins:
+        actual, size = refresh_pin(root, pin["path"], pin["sha256"])
+        pin["sha256"] = actual
+        if "bytes" in pin:
+            pin["bytes"] = size
+    if any(pin["path"] == MARKER for pin in pins):
+        for path in (
+            "content/world/terrain/" + GROUND,
+            HERE + "historical_world_owner_context.py",
+        ):
+            raw = (root / path).read_bytes()
+            pins.append({"path": path, "sha256": digest(raw), "bytes": len(raw)})
+
+
+def refresh(root, recipe):
+    module, kind, source, expected, version = recipe
+    raw = (root / source).read_bytes()
+    if digest(raw) != expected:
+        raise ValueError(f"frozen qualification changed: {source}")
+    original_marker(root)  # Exact qualified W15c marker and ground pair only.
+    packet = json.loads(raw)
+    for key in (
+        "input_pins",
+        "input_digests",
+        "world_owner_inputs",
+        "source_dependency_pins",
+    ):
+        pins = packet.get(key)
+        if isinstance(pins, list):
+            refresh_list(root, pins)
+        elif isinstance(pins, dict):
+            for path, previous in pins.items():
+                pins[path] = refresh_pin(root, path, previous)[0]
+    if "world_owner_baseline" in packet:
+        refresh_list(root, packet["world_owner_baseline"]["input_digests"])
+    if "historical_source_proof_sha256" in packet:
+        proof = root / RECIPES[2][2].replace("-v1.json", "-v2.json")
+        packet["historical_source_proof_sha256"] = digest(proof.read_bytes())
+    if "actual_published_parent" in packet:
+        packet["actual_published_parent"] = "4224c44239d0913e6dc14b6e30bcb18e1b248c43"
+    packet["input_footprint_refresh"] = {
+        "base": "4224c44239d0913e6dc14b6e30bcb18e1b248c43",
+        "supersedes": source,
+        "sha256": expected,
+        "reason": "W15c owner footprint; original source records and closed scope unchanged",
+        "generator": HERE + Path(__file__).name,
+    }
+    output = re.sub(r"-v[0-9]+\.json$", f"-v{version}.json", source)
+    # Preserve the frozen source's serialization style, avoiding unrelated churn.
+    if raw.count(b"\n") <= 1:
+        encoded = (
+            json.dumps(
+                packet, sort_keys=True, ensure_ascii=False, separators=(",", ":")
+            )
+            + "\n"
+        ).encode()
+    else:
+        encoded = (json.dumps(packet, indent=2, ensure_ascii=False) + "\n").encode()
+    (root / output).write_bytes(encoded)
+    compiler = root / HERE / (module + ".py")
+    text = compiler.read_text()
+    # Accept reruns from either original or refreshed constants, without changing checks.
+    assignment = next(
+        node
+        for node in ast.parse(text).body
+        if isinstance(node, ast.Assign)
+        and isinstance(node.targets[0], ast.Name)
+        and node.targets[0].id == kind
+    )
+    lines = text.splitlines(keepends=True)
+    value = f'{kind} = "{output}"\n'
+    if len(value.rstrip()) > 88 and len(output) + 6 <= 88:
+        value = f'{kind} = (\n    "{output}"\n)\n'
+    lines[assignment.lineno - 1 : assignment.end_lineno] = [value]
+    text = "".join(lines)
+    pattern = rf'({kind}_SHA = ")[0-9a-f]{{64}}(")'
+    text, count = re.subn(pattern, rf"\g<1>{digest(encoded)}\2", text)
+    if count != 1:
+        raise ValueError(f"missing unique {kind}_SHA in {compiler}")
+    compiler.write_text(text)
+    print(output)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("target", type=int, choices=range(len(RECIPES)))
+    args = parser.parse_args()
+    refresh(ROOT, RECIPES[args.target])
+
+
+if __name__ == "__main__":
+    main()

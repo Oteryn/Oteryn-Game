@@ -1,0 +1,72 @@
+{
+  "spell": {
+    "identity": {
+      "key": "oteryn:spell.sudden_death_rune",
+      "revision": "definition-r1"
+    },
+    "name": "sudden death rune",
+    "carrier": "rune",
+    "reference_spell_id": 21,
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 45,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": true,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "base_power": 150,
+    "rune": {
+      "item": {
+        "family": "Item",
+        "key": "oteryn:item.sudden_death_rune",
+        "revision": "definition-r1"
+      },
+      "charges": 3,
+      "magic_level": 15,
+      "allow_far_use": true,
+      "blocking": {
+        "solid": true,
+        "creature": false
+      }
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.sudden_death_rune",
+        "revision": "definition-r1"
+      }
+    }
+  }
+}

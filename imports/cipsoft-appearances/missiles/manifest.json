@@ -1,0 +1,31 @@
+{
+  "authority": "SOURCE_OBSERVATIONS_ONLY; no Oteryn ProductionKeys or gameplay promotion",
+  "client_version": "15.30",
+  "excluded_top_level": {
+    "field_1_objects": 43516,
+    "field_5": {
+      "count": 1,
+      "note": "top-level field 5, not staged",
+      "sha256": "481b1193cc4d97da27c24de67f63cb9fd191e5faa0eb047efe757c878cf79576"
+    }
+  },
+  "family": "Missile",
+  "files": [
+    {
+      "path": "missiles-00000-00075.json",
+      "records": 76,
+      "sha256": "b970317b1f61605962fdca5b6377b714081306a5fcd4ee2cea45e9210845c32d"
+    }
+  ],
+  "identity_namespace": "cipsoft/appearance-missiles",
+  "inputs": {
+    "appearances": {
+      "file": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+      "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+    }
+  },
+  "record_count": 76,
+  "schema": "OTERYN_CIPSOFT_APPEARANCE_MISSILE_SOURCE_MANIFEST/v1",
+  "source": "CIPSOFT_CLIENT_ASSETS",
+  "top_level_field": 4
+}

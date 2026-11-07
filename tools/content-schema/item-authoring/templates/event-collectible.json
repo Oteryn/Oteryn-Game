@@ -1,0 +1,27 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.event-collectible",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Event Collectible",
+  "family_profile": "event_collectible",
+  "delivery_task_eligible": false,
+  "taxonomy": {
+    "item_class": "collectible",
+    "primary": "event-collectible",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "presentation": {},
+  "trade": {
+    "tradeable": true,
+    "marketable": false
+  }
+}

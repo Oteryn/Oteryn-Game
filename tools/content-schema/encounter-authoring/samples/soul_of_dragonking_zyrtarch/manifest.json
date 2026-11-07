@@ -1,0 +1,77 @@
+{
+  "encounter": "canary:encounter/soul_of_dragonking_zyrtarch",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "ForgottenKnowledgeBossDeath": [
+      "canary:creature/soul_of_dragonking_zyrtarch"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/soul_of_dragonking_zyrtarch.lua",
+      "blob_sha1": "c45a1fc4ef06b22b6597f924c7ec645cba15003f"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua",
+      "blob_sha1": "00ced55f16d363011cad6cc00bc14ea07fbdd253"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Soul of Dragonking Zyrtarch is the soul_of_dragonking_zyrtarch participant; its file registers ForgottenKnowledgeBossDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        16,
+        18,
+        19,
+        20,
+        21,
+        22,
+        6
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the configured boss \"Soul of Dragonking Zyrtarch\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        35
+      ],
+      "status": "mapped",
+      "resolution": "onDeathForDamagingPlayers credits every damaging player (D27): the reward domain sets Storage ForgottenKnowledge.DragonkingKilled to now + 72000 seconds.",
+      "destination": "/encounter/rules/0/actions/0"
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "soul_of_dragonking_zyrtarch_defeated",
+      "credited": "damage_contributors",
+      "reward_domain": {
+        "canary_storage": "Storage.Quest.U11_02.ForgottenKnowledge.DragonkingKilled",
+        "cooldown_seconds": 72000
+      }
+    }
+  ]
+}

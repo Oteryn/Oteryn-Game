@@ -1,0 +1,10 @@
+{
+  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+  "kind": "relationship_content",
+  "notes": "Reward references to Item/Achievement/etc.",
+  "owner": "Quest/Reward owners",
+  "path": "content/quests/rewards/",
+  "population_state": "READY_UNPOPULATED",
+  "repository": "Oteryn/Oteryn-Game",
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1"
+}

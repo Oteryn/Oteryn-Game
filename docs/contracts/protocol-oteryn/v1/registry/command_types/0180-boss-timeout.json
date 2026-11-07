@@ -1,0 +1,10 @@
+{
+  "id": 180,
+  "name": "BOSS_TIMEOUT",
+  "owner_decision": "BOSS-LEVER-1 owner decisions 23/24, 2026-10-28",
+  "capability": 117,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/boss_encounter_v1.proto#BossTerminalRequestV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/boss_encounter_v1.proto#BossTerminalResultV1",
+  "max_payload_bytes": 515,
+  "max_result_payload_bytes": 64
+}

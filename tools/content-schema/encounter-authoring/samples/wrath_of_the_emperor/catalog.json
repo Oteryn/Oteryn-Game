@@ -1,0 +1,19 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/wrath_of_the_emperor",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/10797",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/11427",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+name=player_report
+commands=93
+transport=player_report
+composed=player_report
+authority=player_report
+[route]
+match routing::player_report::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

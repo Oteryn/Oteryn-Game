@@ -1,0 +1,10 @@
+{
+  "id": 79,
+  "name": "STASH_INTENT",
+  "owner_decision": "SUPPLYSTASH0-SUPPLY-STASH-V1; PARITY-DEPOT-SEARCH-STASH-1",
+  "capability": 62,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/stash_v1.proto#StashIntentV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/stash_v1.proto#StashReplyV1",
+  "max_payload_bytes": 48,
+  "max_result_payload_bytes": 36000
+}

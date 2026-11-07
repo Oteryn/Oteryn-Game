@@ -1,0 +1,17 @@
+name=use_item
+commands=2
+[route]
+match routing::use_item::route(
+    authority,
+    session.actor,
+    &mut session.admitted,
+    command,
+    &mut session.item_view,
+    &mut session.container_views,
+    &session.visibility,
+)
+.await
+{
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

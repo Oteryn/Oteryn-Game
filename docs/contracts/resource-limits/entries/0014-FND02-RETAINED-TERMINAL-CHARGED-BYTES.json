@@ -1,0 +1,24 @@
+{
+  "id": "FND02-RETAINED-TERMINAL-CHARGED-BYTES",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "Aggregate charged bytes of Foundation-owned retained terminal semantic records for one GameSession",
+  "unit": "charged bytes per GameSession",
+  "hard_maximum": 3116,
+  "configurable_range": {
+    "minimum": 3116,
+    "maximum": 3116
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Compute the complete retained semantic-record charge with checked arithmetic before retaining it or performing gameplay mutation whose accepted semantics require replayability. Reject over-bound or overflowed admission before mutation. Charge every simultaneously owned retained component exactly once.",
+  "client_visible": false,
+  "boundary_tests": [
+    "3116 charged bytes are accepted when every nested semantic bound passes",
+    "3117 charged bytes are rejected before gameplay mutation requiring replayability",
+    "checked charge arithmetic overflow is rejected",
+    "eviction preserves the ingress high-water mark and later duplicate lookup resolves expired rather than fresh"
+  ],
+  "consumers": [
+    "server GameSession command lifecycle"
+  ],
+  "notes": "Charged-byte authority is a deterministic semantic ownership envelope, not allocator RSS, Rust ABI size, wire payload size or persistence size. Protected #665 evidence establishes the current first-playable aggregate bound."
+}

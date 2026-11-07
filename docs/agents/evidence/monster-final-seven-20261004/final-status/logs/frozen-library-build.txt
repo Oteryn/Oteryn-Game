@@ -1,0 +1,19 @@
+Original log SHA256: 69d7f47818e42126e181ec7eca298c2f3e33d7174c74131b0ba8081b10cc429c
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 1 warning
+warning: `tokio` (lib) generated 1 warning (1 duplicate)
+   Compiling oteryn-game-server v0.1.0 (/dev/shm/monster-seven-publication-20261004/apps/game-server)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 59s
+  Executable unittests src/lib.rs (/tmp/monster-comparison-build-target-cache/debug/deps/oteryn_game_server-9494e90a1877450b)

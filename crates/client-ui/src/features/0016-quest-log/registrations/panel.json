@@ -1,0 +1,7 @@
+{
+  "mechanic": "0016-quest-log",
+  "kind": "panels",
+  "id": "0016-quest-log-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

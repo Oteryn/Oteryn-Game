@@ -1,0 +1,18 @@
+{
+  "id": "SELLALL1-RL-04",
+  "owner_contract": "protocol-oteryn/v1/npc_shop_v1.proto",
+  "resource": "One encoded NpcShopResultV1",
+  "unit": "bytes",
+  "hard_maximum": 524,
+  "configurable_range": {
+    "minimum": 524,
+    "maximum": 524
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The disposition, a 512-byte look text, units and gold; the encoder refuses a larger result.",
+  "client_visible": true,
+  "boundary_tests": [
+    "npc_shop_result_carries_text_or_sale_only_with_ok"
+  ],
+  "notes": "The look text is the item look text bound (MAX_ITEM_LOOK_TEXT_BYTES)."
+}

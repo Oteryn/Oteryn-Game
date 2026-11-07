@@ -1,0 +1,21 @@
+{
+  "id": "GUILDBANK-RL-03",
+  "owner_contract": "protocol-oteryn/v1/guild_bank_v1.proto",
+  "resource": "Guild ledger page",
+  "unit": "entries",
+  "hard_maximum": 100,
+  "configurable_range": {
+    "minimum": 100,
+    "maximum": 100
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Fail closed before value mutation or unbounded allocation; no truncation. Query fetches at most 101 rows.",
+  "client_visible": true,
+  "boundary_tests": [
+    "guild_bank_codec_roundtrip_and_fail_closed",
+    "guild_bank_postgres_real_dispatch"
+  ],
+  "consumers": [
+    "crates/gameplay/durability/src/durability/guild_bank/query.rs"
+  ]
+}

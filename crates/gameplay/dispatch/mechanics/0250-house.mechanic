@@ -1,0 +1,7 @@
+name=house
+commands=56,57
+transport=house_intent
+composed=house_intent
+authority=house_intent
+[route]
+routing::house::route(authority, session.actor, &session.admitted, command).await

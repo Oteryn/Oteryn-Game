@@ -1,0 +1,26 @@
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 1 warning
+warning: `tokio` (lib) generated 1 warning (1 duplicate)
+    Checking oteryn-game-server v0.1.0 (/dev/shm/monster-seven-publication-20261004/apps/game-server)
+error[E0432]: unresolved import `crate::ai_think::D115_THINK_INTERVAL_MILLIS`
+ --> apps/game-server/src/monster_owner_cycle.rs:4:5
+  |
+4 |     D115_THINK_INTERVAL_MILLIS, ThinkFamily, ThinkOccurrence, ThinkSequenceTracker,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |     |
+  |     no `D115_THINK_INTERVAL_MILLIS` in `ai_think`
+  |     help: a similar name exists in the module: `CREATURE_THINK_INTERVAL_MILLIS`
+
+For more information about this error, try `rustc --explain E0432`.
+error: could not compile `oteryn-game-server` (lib) due to 1 previous error

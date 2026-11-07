@@ -1,0 +1,117 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/strong_haste",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Strong Haste",
+    "carrier": "instant",
+    "words": "utani gran hur",
+    "reference_spell_id": 39,
+    "library_text": "Another advancement of a well-known spell, Strong Haste works quite similar to its lesser relative, although the effect is much more impressive. However, all potential users should be warned: The use of this spell is not without risk. In fact, it was kept secret for a long time as many worried sorcerers warned of the dangers that might be involved in carelessly tampering with time itself. In the end, however, the spell was made public by some reckless sorcerers at Edron's magic academy, and so it is commonly available today. Still, it is advised to resort to this spell only in the most desperate of situations where nothing but fast flight can guarantee survival.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "exalted_monk",
+        "master_sorcerer",
+        "monk",
+        "sorcerer"
+      ],
+      "level": 20,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 100,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_strong_haste"
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "companion_haste",
+        "parameters": {
+          "caster": {
+            "condition": "haste",
+            "duration_ms": 22000,
+            "formula": {
+              "mina": "1.7",
+              "minb": "40",
+              "maxa": "1.7",
+              "maxb": "40"
+            },
+            "basis": "base_speed_minus_40",
+            "coefficient_arithmetic": "float32",
+            "bound_conversion": "truncate_toward_zero",
+            "delta": "formula_total_minus_base"
+          },
+          "familiar": {
+            "filter": "monster_type_is_familiar",
+            "duration_ms": 22000,
+            "basis": "max_owner_base_familiar_base",
+            "multiplier": "0.7",
+            "offset": "-56",
+            "arithmetic": "lua_double_then_int32",
+            "condition": "haste_if_positive_else_paralyze",
+            "zero_delta_paralyze_total": 40
+          },
+          "execution_order": [
+            "familiar_conditions",
+            "caster_combat"
+          ],
+          "replacement": {
+            "slot": "type_id_subid",
+            "replace_duration": true,
+            "replace_delta": true,
+            "stronger_wins": false,
+            "preserve_infinite_from_timed": true
+          },
+          "opposite_condition_removal": true,
+          "expiry_speed_change": "negate_owned_delta",
+          "caster_effect": "magic_green",
+          "ordinary_summons_receive_condition": false,
+          "damage_dealt_percent": {
+            "none": 100,
+            "regular": 100,
+            "greater": 100
+          },
+          "damage_modifier_duration_ms": 0,
+          "damage_modifier_after_combat_success": false,
+          "damage_modifier_condition": {
+            "type": "attributes",
+            "id": "combat",
+            "sub_id": 0,
+            "buff": false,
+            "preserve_infinite_from_timed": true,
+            "preserve_longer_remaining": true,
+            "refresh": "end_old_effects_then_replace_entire_slot",
+            "other_parameters": "condition_attribute_defaults"
+          },
+          "attacks_and_casts_allowed": true
+        }
+      }
+    }
+  }
+}

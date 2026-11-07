@@ -1,0 +1,1752 @@
+#![allow(clippy::expect_used)]
+
+use oteryn_game_server::content::*;
+use serde_json::{Value, json};
+
+#[path = "support/content_world_project_v2_fixture.rs"]
+mod content_world_project_v2_fixture;
+use content_world_project_v2_fixture::*;
+
+fn identity(key: &str) -> ProjectV2Identity {
+    ProjectV2Identity {
+        key: format!("oteryn:content.{key}"),
+        revision: "definition-r1".into(),
+    }
+}
+
+fn candidate() -> ProjectV2Draft {
+    let npc = reference(ProjectV2Family::Npc, "oteryn:content.npc.courier");
+    let presentation = reference(
+        ProjectV2Family::Presentation,
+        "oteryn:reference.presentation.courier",
+    );
+    let asset = ProjectV2AssetRef {
+        key: "oteryn:asset.courier".into(),
+        revision: "asset-r1".into(),
+    };
+    ProjectV2Draft {
+        core: core(),
+        state: ProjectV2State {
+            // Deliberately unordered: the writer normalizes canonical identity order.
+            declarations: vec![
+                ProjectV2Declaration::Npc {
+                    identity: identity("npc.courier"),
+                    presentation: Some(presentation.clone()),
+                    behavior: None,
+                    dialogue: Some(reference(
+                        ProjectV2Family::Dialogue,
+                        "oteryn:content.dialogue.courier",
+                    )),
+                    services: vec![reference(
+                        ProjectV2Family::Service,
+                        "oteryn:content.service.courier",
+                    )],
+                    fields: vec![],
+                },
+                ProjectV2Declaration::WorldObject {
+                    identity: identity("object.sign"),
+                    presentation: Some(presentation.clone()),
+                    fields: vec![],
+                },
+                ProjectV2Declaration::Dialogue {
+                    identity: identity("dialogue.courier"),
+                    greet: vec![],
+                    farewell: vec![],
+                    walkaway: vec![],
+                    send_trade: vec![],
+                    keywords: vec![],
+                    voices: None,
+                    source_incomplete: vec![],
+                    fields: vec![ProjectV2CandidateField {
+                        field_path: "oteryn:source.dialogue-text".into(),
+                        value: ProjectV2CandidateValue::Text("hello".into()),
+                    }],
+                },
+                ProjectV2Declaration::Service {
+                    bank: false,
+                    identity: identity("service.courier"),
+                    offers: vec![],
+                    recipes: vec![],
+                    routes: vec![],
+                    fields: vec![],
+                },
+                ProjectV2Declaration::Interaction {
+                    identity: identity("interaction.courier"),
+                    fields: vec![],
+                },
+                ProjectV2Declaration::Quest {
+                    identity: identity("quest.courier"),
+                    fields: vec![ProjectV2CandidateField {
+                        field_path: "oteryn:source.stage-id".into(),
+                        value: ProjectV2CandidateValue::SourceId(11),
+                    }],
+                },
+                ProjectV2Declaration::Transition {
+                    identity: identity("transition.courier"),
+                    fields: vec![],
+                },
+                ProjectV2Declaration::House {
+                    identity: identity("house.courier"),
+                    fields: vec![],
+                },
+                ProjectV2Declaration::Encounter {
+                    identity: identity("encounter.courier"),
+                    fields: vec![],
+                },
+            ],
+            item_authoring: vec![],
+            authoring_profiles: vec![],
+            worlds: vec![ProjectV2World {
+                key: "oteryn:world.reference".into(),
+                world_id: core().world_id,
+                coordinate_frame: core().coordinate_frame,
+                bounds: ProjectV2Bounds {
+                    min_x: 0,
+                    min_y: 0,
+                    max_x_exclusive: 256,
+                    max_y_exclusive: 256,
+                },
+                floors: vec![7],
+            }],
+            placements: vec![ProjectV2Placement {
+                key: "oteryn:placement.courier".into(),
+                world: "oteryn:world.reference".into(),
+                map_revision: "map-r1".into(),
+                definition: npc.clone(),
+                area: None,
+                document: None,
+                parent_placement: None,
+                coordinate_frame: "global-target-2026-09-27".into(),
+                x: 100,
+                y: 200,
+                floor: 7,
+                presentation_order: ProjectV2PresentationOrder { plane: 0, order: 0 },
+                disposition: ProjectV2Disposition::CandidateOnly,
+            }],
+            appearance_bindings: vec![ProjectV2AppearanceBinding {
+                presentation: presentation.clone(),
+                asset: asset.clone(),
+                disposition: ProjectV2Disposition::CandidateOnly,
+            }],
+            assets: vec![ProjectV2Asset {
+                identity: asset,
+                sha256: "97fbfe027f93834bfaef365e4271dbb56b479ba29528e3f00a1b046aae0a7491".into(),
+            }],
+            sources: vec![],
+            source_identity_bindings: vec![],
+            editor: vec![ProjectV2EditorEntry {
+                target: npc,
+                display_name: "Courier".into(),
+                description: "Editor only".into(),
+                categories: vec!["npc".into()],
+                notes: vec!["Candidate".into()],
+                aliases: vec!["Messenger".into(), "Courier".into()],
+                tags: vec!["oteryn:editor.npc".into()],
+            }],
+        },
+    }
+}
+
+fn with_source_identity_bindings(bindings: Vec<ProjectV2SourceIdentityBinding>) -> ProjectV2Draft {
+    let mut draft = item_candidate();
+    let digest = "97fbfe027f93834bfaef365e4271dbb56b479ba29528e3f00a1b046aae0a7491";
+    draft.core.imports.push(ImportBatch {
+        batch_id: "wiki-import-r1".into(),
+        source_repository: "https://example.invalid/wiki".into(),
+        source_revision: "source-r1".into(),
+        source_artifact_sha256: digest.into(),
+        access_disposition: "PENDING".into(),
+        source_generation_profile: "wiki-snapshot-v1".into(),
+        importer: "test-importer".into(),
+        mapper: "test-mapper".into(),
+        mapper_revision: "mapper-r1".into(),
+        mapper_sha256: digest.into(),
+        candidates: vec![],
+        reimport_states: vec![],
+    });
+    draft.state.sources.push(ProjectV2Source {
+        key: "oteryn:source.tibiawiki".into(),
+        import_batch_id: "wiki-import-r1".into(),
+        revision: "source-r1".into(),
+        sha256: digest.into(),
+        evidence: ProjectV2EvidenceClass::Proven,
+    });
+    draft.state.source_identity_bindings = bindings;
+    draft
+}
+
+fn source_identity_binding(
+    namespace: &str,
+    external_id: &str,
+    target: ProjectV2DefinitionRef,
+    disposition: ProjectV2SourceIdentityDisposition,
+) -> ProjectV2SourceIdentityBinding {
+    ProjectV2SourceIdentityBinding {
+        source_key: "oteryn:source.tibiawiki".into(),
+        source_revision: "source-r1".into(),
+        identity_namespace: namespace.into(),
+        external_id: external_id.into(),
+        target,
+        disposition,
+    }
+}
+
+#[test]
+fn v1_migrates_explicitly_and_retains_its_original_six_document_wire_format() {
+    let original = CanonicalProjectDocuments::from_draft(core(), limits()).expect("v1 documents");
+    assert_eq!(original.documents().len(), 6);
+    let parsed = ProjectSnapshot::new(original.documents().clone(), limits())
+        .expect("admit v1")
+        .parse(limits())
+        .expect("parse v1");
+    assert!(parsed.v2().is_none());
+    assert_eq!(
+        parsed
+            .canonical_documents(limits())
+            .expect("v1 rewrite")
+            .documents(),
+        original.documents()
+    );
+
+    let migrated = CanonicalProjectDocuments::from_v2_draft(parsed.migrate_to_v2(), limits())
+        .expect("explicit migration");
+    assert_eq!(migrated.documents().len(), 11);
+    let v2 = ProjectSnapshot::new(migrated.documents().clone(), limits())
+        .expect("admit v2")
+        .parse(limits())
+        .expect("parse v2");
+    assert_eq!(v2.v2(), Some(&ProjectV2State::default()));
+    assert_eq!(
+        v2.canonical_documents(limits())
+            .expect("v2 rewrite")
+            .documents(),
+        migrated.documents()
+    );
+    assert_eq!(
+        v2.lower_reference_source()
+            .expect("reference projection")
+            .definitions
+            .len(),
+        1
+    );
+}
+
+#[test]
+fn all_v2_declarative_families_round_trip_without_lowering_candidates() {
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(candidate(), limits()).expect("v2 documents");
+    let empty_provenance: Value =
+        serde_json::from_slice(&documents.documents()["provenance/sources.json"])
+            .expect("empty provenance JSON");
+    assert_eq!(
+        empty_provenance
+            .as_object()
+            .expect("provenance object")
+            .len(),
+        2,
+        "empty source identity bindings preserve the prior v2 wire shape"
+    );
+    let project = ProjectSnapshot::new(documents.documents().clone(), limits())
+        .expect("admit v2")
+        .parse(limits())
+        .expect("parse v2");
+    let state = project.v2().expect("v2 state");
+    assert_eq!(state.declarations.len(), 9);
+    assert_eq!(state.placements.len(), 1);
+    assert_eq!(state.worlds[0].floors, [7]);
+    assert_eq!(state.editor[0].aliases, ["Courier", "Messenger"]);
+    assert_eq!(
+        project
+            .canonical_documents(limits())
+            .expect("rewrite")
+            .documents(),
+        documents.documents()
+    );
+    let reference = project
+        .lower_reference_source()
+        .expect("reference projection");
+    assert_eq!(reference.definitions.len(), 1);
+    assert!(reference.placements.is_empty());
+    assert!(reference.transitions.is_empty());
+    project
+        .link()
+        .expect("server-authoritative Reference linker still works");
+}
+
+#[test]
+fn typed_references_and_author_aliases_fail_closed() {
+    let mut wrong_family = candidate();
+    if let ProjectV2Declaration::Npc { dialogue, .. } = &mut wrong_family.state.declarations[0] {
+        dialogue.as_mut().expect("dialogue").family = ProjectV2Family::Service;
+    }
+    assert!(CanonicalProjectDocuments::from_v2_draft(wrong_family, limits()).is_err());
+
+    let mut missing_revision = candidate();
+    missing_revision.state.placements[0].definition.revision = "missing-r1".into();
+    assert!(CanonicalProjectDocuments::from_v2_draft(missing_revision, limits()).is_err());
+
+    let mut duplicate_alias = candidate();
+    duplicate_alias.state.editor[0]
+        .aliases
+        .push("Courier".into());
+    assert!(CanonicalProjectDocuments::from_v2_draft(duplicate_alias, limits()).is_err());
+
+    let mut invalid_tag = candidate();
+    invalid_tag.state.editor[0].tags.push("quest-reward".into());
+    assert!(CanonicalProjectDocuments::from_v2_draft(invalid_tag, limits()).is_err());
+
+    let mut duplicate_field = candidate();
+    if let ProjectV2Declaration::Dialogue { fields, .. } =
+        &mut duplicate_field.state.declarations[2]
+    {
+        fields.push(fields[0].clone());
+    }
+    assert!(CanonicalProjectDocuments::from_v2_draft(duplicate_field, limits()).is_err());
+
+    let mut orphan_source = candidate();
+    orphan_source.state.sources.push(ProjectV2Source {
+        key: "oteryn:source.reference".into(),
+        import_batch_id: "absent".into(),
+        revision: "source-r1".into(),
+        sha256: "97fbfe027f93834bfaef365e4271dbb56b479ba29528e3f00a1b046aae0a7491".into(),
+        evidence: ProjectV2EvidenceClass::Unknown,
+    });
+    assert!(CanonicalProjectDocuments::from_v2_draft(orphan_source, limits()).is_err());
+}
+
+#[test]
+fn source_identity_bindings_preserve_lexical_ids_and_round_trip_in_tuple_order() {
+    let mut draft = with_source_identity_bindings(vec![
+        source_identity_binding(
+            "client/appearance_id",
+            "7",
+            reference(
+                ProjectV2Family::Presentation,
+                "oteryn:reference.presentation.courier",
+            ),
+            ProjectV2SourceIdentityDisposition::AcceptedAlias,
+        ),
+        source_identity_binding(
+            "mediawiki/page_id",
+            "7",
+            reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
+            ProjectV2SourceIdentityDisposition::Exact,
+        ),
+        source_identity_binding(
+            "ots/item_server_id",
+            "0007",
+            reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
+            ProjectV2SourceIdentityDisposition::Exact,
+        ),
+    ]);
+    let mut second_revision = draft.core.imports[0].clone();
+    second_revision.batch_id = "wiki-import-r2".into();
+    second_revision.source_revision = "source-r2".into();
+    draft.core.imports.push(second_revision);
+    let mut second_source = draft.state.sources[0].clone();
+    second_source.import_batch_id = "wiki-import-r2".into();
+    second_source.revision = "source-r2".into();
+    draft.state.sources.push(second_source);
+    let mut revision_binding = source_identity_binding(
+        "mediawiki/page_id",
+        "7",
+        reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
+        ProjectV2SourceIdentityDisposition::Exact,
+    );
+    revision_binding.source_revision = "source-r2".into();
+    draft.state.source_identity_bindings.push(revision_binding);
+    // Canonical writing orders by (source key, source revision, namespace, external ID).
+    draft.state.source_identity_bindings.reverse();
+    draft
+        .core
+        .imports
+        .sort_by(|a, b| a.batch_id.cmp(&b.batch_id));
+    draft
+        .state
+        .sources
+        .sort_by(|a, b| (&a.key, &a.revision).cmp(&(&b.key, &b.revision)));
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(draft, limits()).expect("write crosswalk");
+    let provenance: Value =
+        serde_json::from_slice(&documents.documents()["provenance/sources.json"])
+            .expect("provenance JSON");
+    assert_eq!(
+        provenance["source_identity_bindings"][0]["external_id"],
+        "7"
+    );
+    assert_eq!(
+        provenance["source_identity_bindings"][0]["disposition"],
+        "ACCEPTED_ALIAS"
+    );
+    assert_eq!(
+        provenance["source_identity_bindings"][2]["target"]["family"],
+        "Item"
+    );
+    let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
+        .expect("admit")
+        .parse(limits())
+        .expect("parse");
+    let bindings = &parsed.v2().expect("v2").source_identity_bindings;
+    assert_eq!(bindings[0].external_id, "7");
+    assert_eq!(bindings[0].identity_namespace, "client/appearance_id");
+    assert_eq!(bindings[0].target.family, ProjectV2Family::Presentation);
+    assert_eq!(bindings[2].external_id, "0007");
+    assert_eq!(bindings[1].external_id, bindings[3].external_id);
+    assert_eq!(bindings[1].source_revision, "source-r1");
+    assert_eq!(bindings[3].source_revision, "source-r2");
+    assert_eq!(
+        parsed
+            .canonical_documents(limits())
+            .expect("rewrite")
+            .documents(),
+        documents.documents()
+    );
+}
+
+#[test]
+fn source_identity_bindings_reject_missing_source_targets_and_identity_conflicts() {
+    let exact_target = reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha");
+    let valid = source_identity_binding(
+        "ots/item_server_id",
+        "17",
+        exact_target.clone(),
+        ProjectV2SourceIdentityDisposition::Exact,
+    );
+
+    let mut missing_source = with_source_identity_bindings(vec![valid.clone()]);
+    missing_source.state.source_identity_bindings[0].source_revision = "source-r2".into();
+    assert!(CanonicalProjectDocuments::from_v2_draft(missing_source, limits()).is_err());
+
+    let mut missing_target = with_source_identity_bindings(vec![valid.clone()]);
+    missing_target.state.source_identity_bindings[0]
+        .target
+        .revision = "definition-r2".into();
+    assert!(CanonicalProjectDocuments::from_v2_draft(missing_target, limits()).is_err());
+
+    let mut duplicate = with_source_identity_bindings(vec![valid.clone(), valid.clone()]);
+    duplicate.state.source_identity_bindings.sort_by(|a, b| {
+        (
+            &a.source_key,
+            &a.source_revision,
+            &a.identity_namespace,
+            &a.external_id,
+        )
+            .cmp(&(
+                &b.source_key,
+                &b.source_revision,
+                &b.identity_namespace,
+                &b.external_id,
+            ))
+    });
+    assert!(CanonicalProjectDocuments::from_v2_draft(duplicate, limits()).is_err());
+
+    let conflict = source_identity_binding(
+        "ots/item_server_id",
+        "17",
+        reference(ProjectV2Family::WorldObject, "oteryn:content.object.sign"),
+        ProjectV2SourceIdentityDisposition::Exact,
+    );
+    let mut conflicting = with_source_identity_bindings(vec![valid, conflict]);
+    conflicting.state.source_identity_bindings.sort_by(|a, b| {
+        (
+            &a.source_key,
+            &a.source_revision,
+            &a.identity_namespace,
+            &a.external_id,
+        )
+            .cmp(&(
+                &b.source_key,
+                &b.source_revision,
+                &b.identity_namespace,
+                &b.external_id,
+            ))
+    });
+    assert!(CanonicalProjectDocuments::from_v2_draft(conflicting, limits()).is_err());
+
+    let mut empty_id = with_source_identity_bindings(vec![source_identity_binding(
+        "ots/item_server_id",
+        " ",
+        exact_target.clone(),
+        ProjectV2SourceIdentityDisposition::Exact,
+    )]);
+    empty_id.state.source_identity_bindings[0].external_id = "".into();
+    assert!(CanonicalProjectDocuments::from_v2_draft(empty_id, limits()).is_err());
+
+    for invalid_namespace in ["page_id", "/page_id", "mediawiki/", "mediawiki/page/id"] {
+        let invalid = with_source_identity_bindings(vec![source_identity_binding(
+            invalid_namespace,
+            "17",
+            exact_target.clone(),
+            ProjectV2SourceIdentityDisposition::Exact,
+        )]);
+        assert!(CanonicalProjectDocuments::from_v2_draft(invalid, limits()).is_err());
+    }
+
+    let appearance_to_item = with_source_identity_bindings(vec![source_identity_binding(
+        "client/appearance_id",
+        "17",
+        exact_target,
+        ProjectV2SourceIdentityDisposition::Exact,
+    )]);
+    assert!(CanonicalProjectDocuments::from_v2_draft(appearance_to_item, limits()).is_err());
+}
+
+#[test]
+fn spatial_bounds_floors_and_presentation_order_follow_the_native_contract() {
+    let mut out_of_bounds = candidate();
+    out_of_bounds.state.placements[0].x = 256;
+    assert!(CanonicalProjectDocuments::from_v2_draft(out_of_bounds, limits()).is_err());
+
+    let mut unknown_floor = candidate();
+    unknown_floor.state.placements[0].floor = 6;
+    assert!(CanonicalProjectDocuments::from_v2_draft(unknown_floor, limits()).is_err());
+
+    let mut unsorted_floors = candidate();
+    unsorted_floors.state.worlds[0].floors = vec![7, 6];
+    assert!(CanonicalProjectDocuments::from_v2_draft(unsorted_floors, limits()).is_err());
+
+    let mut duplicate_order = candidate();
+    let mut second = duplicate_order.state.placements[0].clone();
+    second.key = "oteryn:placement.second".into();
+    duplicate_order.state.placements.push(second);
+    assert!(CanonicalProjectDocuments::from_v2_draft(duplicate_order, limits()).is_err());
+}
+
+#[test]
+fn v2_inventory_digest_and_bounded_document_count_are_enforced() {
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(candidate(), limits()).expect("v2 documents");
+    let mut changed = documents.documents().clone();
+    changed
+        .get_mut("assets/catalog.json")
+        .expect("asset document")
+        .push(b' ');
+    assert!(
+        ProjectSnapshot::new(changed, limits())
+            .expect("admit")
+            .parse(limits())
+            .is_err()
+    );
+
+    let mut too_few = limits();
+    too_few.max_documents = 10;
+    assert!(CanonicalProjectDocuments::from_v2_draft(candidate(), too_few).is_err());
+}
+
+#[test]
+fn v2_role_and_strict_schema_reject_undeclared_authority() {
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(candidate(), limits()).expect("v2 documents");
+    let mut unknown_role = documents.documents().clone();
+    let mut manifest: Value =
+        serde_json::from_slice(&unknown_role["manifest.json"]).expect("manifest");
+    let role = manifest["documents"]
+        .as_array_mut()
+        .expect("inventory")
+        .iter_mut()
+        .find(|entry| entry["role"] == "declarative-definitions")
+        .expect("role");
+    role["role"] = json!("executable-definitions");
+    rebind_manifest_and_lock(&mut unknown_role, &manifest);
+    assert!(
+        ProjectSnapshot::new(unknown_role, limits())
+            .expect("admit")
+            .parse(limits())
+            .is_err()
+    );
+
+    let mut unknown_field = documents.documents().clone();
+    let path = "worlds/world.json";
+    let mut world: Value = serde_json::from_slice(&unknown_field[path]).expect("world");
+    world["placements"][0]["runtime_instance"] = json!("implicit");
+    let bytes = canonical(&world);
+    unknown_field.insert(path.into(), bytes.clone());
+    let mut manifest: Value =
+        serde_json::from_slice(&unknown_field["manifest.json"]).expect("manifest");
+    let entry = manifest["documents"]
+        .as_array_mut()
+        .expect("inventory")
+        .iter_mut()
+        .find(|entry| entry["locator"] == path)
+        .expect("entry");
+    entry["byte_length"] = json!(bytes.len());
+    entry["sha256"] = json!(world_project_sha256(&bytes));
+    rebind_manifest_and_lock(&mut unknown_field, &manifest);
+    assert!(
+        ProjectSnapshot::new(unknown_field, limits())
+            .expect("admit")
+            .parse(limits())
+            .is_err()
+    );
+}
+
+#[test]
+fn relocating_one_managed_document_keeps_v2_semantic_identity() {
+    let original =
+        CanonicalProjectDocuments::from_v2_draft(candidate(), limits()).expect("v2 documents");
+    let mut moved = original.documents().clone();
+    let declaration_bytes = moved
+        .remove("definitions/declarations.json")
+        .expect("declarations");
+    moved.insert("definitions/moved.json".into(), declaration_bytes);
+    let mut manifest: Value = serde_json::from_slice(&moved["manifest.json"]).expect("manifest");
+    let entry = manifest["documents"]
+        .as_array_mut()
+        .expect("inventory")
+        .iter_mut()
+        .find(|entry| entry["role"] == "declarative-definitions")
+        .expect("role");
+    entry["locator"] = json!("definitions/moved.json");
+    rebind_manifest_and_lock(&mut moved, &manifest);
+    let parsed = ProjectSnapshot::new(moved, limits())
+        .expect("admit moved project")
+        .parse(limits())
+        .expect("parse moved project");
+    assert_eq!(
+        parsed
+            .canonical_documents(limits())
+            .expect("canonical rewrite")
+            .documents(),
+        original.documents()
+    );
+}
+
+fn item_candidate() -> ProjectV2Draft {
+    let mut draft = candidate();
+    draft.core.records.extend([
+        ProjectReferenceRecord::Formula {
+            identity: DefinitionIdentityDocument {
+                family: "Formula".into(),
+                key: "oteryn:reference.formula.item-alpha".into(),
+                revision: "definition-r1".into(),
+            },
+        },
+        ProjectReferenceRecord::Effect {
+            identity: DefinitionIdentityDocument {
+                family: "Effect".into(),
+                key: "oteryn:reference.effect.item-alpha".into(),
+                revision: "definition-r1".into(),
+            },
+            client_projection: ProjectionDocument::ServerOnly,
+            effect_family: EffectFamilyDocument::Damage,
+            formula: DefinitionReferenceDocument {
+                family: "Formula".into(),
+                key: "oteryn:reference.formula.item-alpha".into(),
+                revision: "definition-r1".into(),
+            },
+        },
+        ProjectReferenceRecord::Ability {
+            identity: DefinitionIdentityDocument {
+                family: "Ability".into(),
+                key: "oteryn:reference.ability.item-alpha".into(),
+                revision: "definition-r1".into(),
+            },
+            effects: vec![DefinitionReferenceDocument {
+                family: "Effect".into(),
+                key: "oteryn:reference.effect.item-alpha".into(),
+                revision: "definition-r1".into(),
+            }],
+        },
+        ProjectReferenceRecord::Item {
+            identity: DefinitionIdentityDocument {
+                family: "Item".into(),
+                key: "oteryn:reference.item.weapon-alpha".into(),
+                revision: "definition-r1".into(),
+            },
+            client_projection: ProjectionDocument::ClientSafe,
+            materializable: false,
+            stack_class: ItemStackDocument::Unknown,
+            semantics: ReferenceItemSemantics::default(),
+        },
+    ]);
+    draft
+        .state
+        .declarations
+        .push(ProjectV2Declaration::Interaction {
+            identity: identity("interaction.item-alpha"),
+            fields: vec![],
+        });
+    draft
+        .state
+        .declarations
+        .push(ProjectV2Declaration::Service {
+            bank: false,
+            identity: identity("service.item-alpha"),
+            offers: vec![ProjectV2ServiceOffer {
+                item: reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
+                direction: ProjectV2ServiceOfferDirection::SellToPlayer,
+                unit_price: 125_000,
+                currency: None,
+                count: None,
+                sub_type: None,
+                parity_pending: false,
+            }],
+            recipes: vec![],
+            routes: vec![],
+            fields: vec![],
+        });
+    draft
+        .state
+        .declarations
+        .push(ProjectV2Declaration::Proficiency {
+            identity: identity("proficiency.item-alpha"),
+            levels: proficiency_levels(),
+            fields: vec![],
+        });
+    draft.state.item_authoring.push(ProjectV2ItemAuthoring {
+        item: reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
+        ranged: None,
+        presentation: Some(reference(
+            ProjectV2Family::Presentation,
+            "oteryn:reference.presentation.courier",
+        )),
+        document: None,
+        taxonomy: Some(ProjectV2ItemTaxonomy {
+            primary: "Weapons".into(),
+            secondary: Some("Fist".into()),
+            tertiary: Some("Monk".into()),
+        }),
+        forge: Some(ProjectV2ItemForgeProfile {
+            classification: 4,
+            max_tier: 10,
+        }),
+        proficiency: Some(ProjectV2WeaponProficiencyProfile {
+            profile_binding: reference(
+                ProjectV2Family::Proficiency,
+                "oteryn:content.proficiency.item-alpha",
+            ),
+            threshold_class: ProjectV2ProficiencyThresholdClass::Knight,
+        }),
+        weapon_attack_modifier_points: None,
+        weapon_absolute_hit_chance_percent: None,
+        augments: vec![ProjectV2AugmentBinding {
+            inspection: None,
+            key: "oteryn:augment.base.item-alpha".into(),
+            target: ProjectV2AugmentTarget::OffensiveRune,
+            effect: None,
+            rank_values: vec![],
+            fields: vec![ProjectV2CandidateField {
+                field_path: "oteryn:source.augment-note".into(),
+                value: ProjectV2CandidateValue::Text("source-only".into()),
+            }],
+        }],
+        on_use_interactions: vec![reference(
+            ProjectV2Family::Interaction,
+            "oteryn:content.interaction.item-alpha",
+        )],
+        use_ability: Some(reference(
+            ProjectV2Family::Ability,
+            "oteryn:reference.ability.item-alpha",
+        )),
+        required_magic_level: Some(15),
+        consumable: Some(ProjectV2ItemConsumableProfile {
+            edible: true,
+            regeneration_seconds: Some(60),
+        }),
+        use_observation: Some(ProjectV2ItemUseObservation {
+            damage: Some(ProjectV2ItemDamageObservation::Range { min: 60, max: 80 }),
+            damage_type: Some("Energy".into()),
+            mana_cost: Some(13),
+        }),
+        lifecycle: Some(ProjectV2ItemLifecycle {
+            enchantable: Some(true),
+            destructible: Some(false),
+            enchant_interactions: vec![reference(
+                ProjectV2Family::Interaction,
+                "oteryn:content.interaction.item-alpha",
+            )],
+            destroy_interactions: vec![],
+        }),
+        source_lifecycle: Some(ProjectV2ItemSourceLifecycle {
+            implemented: Some("Summer Update 2026".into()),
+            removed: None,
+        }),
+    });
+    draft.state.editor.push(ProjectV2EditorEntry {
+        target: reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
+        display_name: "Weapon Alpha".into(),
+        description: "Editor-only Item metadata".into(),
+        categories: vec!["weapon".into()],
+        notes: vec!["TibiaWiki crosswalk candidate".into()],
+        aliases: vec!["Alpha Weapon".into()],
+        tags: vec!["oteryn:editor.item".into()],
+    });
+    draft
+}
+
+fn ratio(numerator: i64, denominator: u64) -> ProjectV2ExactRatio {
+    ProjectV2ExactRatio {
+        numerator,
+        denominator,
+    }
+}
+
+/// Two levels in deliberately non-alphabetical perk order.
+fn proficiency_levels() -> Vec<ProjectV2ProficiencyLevel> {
+    vec![
+        ProjectV2ProficiencyLevel {
+            level: 1,
+            perks: vec![ProjectV2ProficiencyPerk::SkillBonus {
+                skill: ProjectV2ProficiencySkill::Sword,
+                value: ratio(1, 1),
+            }],
+        },
+        ProjectV2ProficiencyLevel {
+            level: 2,
+            perks: vec![
+                ProjectV2ProficiencyPerk::SpellAugment {
+                    spell_client_id: 105,
+                    augment: ProjectV2ProficiencySpellAugment::Cooldown,
+                    value: ratio(-4, 1),
+                },
+                ProjectV2ProficiencyPerk::HomingMissile {
+                    element: ProjectV2ProficiencyElement::Earth,
+                    missile_client_id: 71,
+                    probability: ratio(1, 100),
+                    multiplier: ratio(2, 1),
+                },
+                ProjectV2ProficiencyPerk::AutoAttackCriticalExtraDamage {
+                    value: ratio(1, 10),
+                },
+            ],
+        },
+    ]
+}
+
+#[test]
+fn inspection_augment_source_text_roundtrips_and_rejects_invalid_values() {
+    let mut draft = item_candidate();
+    draft.state.item_authoring[0].augments[0].inspection =
+        Some("Auto Attack -> +5% Base Damage".into());
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(draft, limits()).expect("inspection documents");
+    let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
+        .expect("admit")
+        .parse(limits())
+        .expect("parse");
+    assert_eq!(
+        parsed.v2().expect("v2").item_authoring[0].augments[0]
+            .inspection
+            .as_deref(),
+        Some("Auto Attack -> +5% Base Damage")
+    );
+    for invalid in [String::new(), "x".repeat(1025), "bad\0text".to_owned()] {
+        let mut draft = item_candidate();
+        draft.state.item_authoring[0].augments[0].inspection = Some(invalid);
+        assert!(CanonicalProjectDocuments::from_v2_draft(draft, limits()).is_err());
+    }
+}
+
+#[test]
+fn modern_item_authoring_and_shop_relations_round_trip_without_runtime_lowering() {
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(item_candidate(), limits()).expect("v2 documents");
+    let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
+        .expect("admit v2")
+        .parse(limits())
+        .expect("parse v2");
+    let state = parsed.v2().expect("v2 state");
+    assert_eq!(state.item_authoring.len(), 1);
+    let item = &state.item_authoring[0];
+    assert_eq!(item.forge.expect("forge").classification, 4);
+    assert_eq!(item.forge.expect("forge").max_tier, 10);
+    assert_eq!(
+        item.use_observation
+            .as_ref()
+            .and_then(|value| value.mana_cost),
+        Some(13)
+    );
+    let proficiency = item.proficiency.as_ref().expect("proficiency");
+    assert_eq!(
+        proficiency.profile_binding.family,
+        ProjectV2Family::Proficiency
+    );
+    assert_eq!(
+        proficiency.threshold_class,
+        ProjectV2ProficiencyThresholdClass::Knight
+    );
+    let levels = state
+        .declarations
+        .iter()
+        .find_map(|declaration| match declaration {
+            ProjectV2Declaration::Proficiency { levels, .. } => Some(levels),
+            _ => None,
+        })
+        .expect("Proficiency declaration");
+    // Perks keep source order: the selection index of a perk is its position.
+    assert_eq!(levels, &proficiency_levels());
+    let service = state
+        .declarations
+        .iter()
+        .find_map(|declaration| match declaration {
+            ProjectV2Declaration::Service { offers, .. } if !offers.is_empty() => Some(offers),
+            _ => None,
+        })
+        .expect("typed service offer");
+    assert_eq!(service[0].unit_price, 125_000);
+    assert_eq!(
+        parsed
+            .canonical_documents(limits())
+            .expect("rewrite")
+            .documents(),
+        documents.documents()
+    );
+
+    let reference = parsed
+        .lower_reference_source()
+        .expect("reference projection");
+    assert_eq!(reference.definitions.len(), 5);
+}
+
+#[test]
+fn item_authoring_rejects_mutable_instance_and_reverse_relationship_fields() {
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(item_candidate(), limits()).expect("v2 documents");
+    for forbidden in [
+        ("current_forge_tier", json!(3)),
+        ("proficiency_xp", json!(25_000)),
+        ("npcprice", json!(125_000)),
+        ("droppedby", json!(["Demon"])),
+    ] {
+        let mut changed = documents.documents().clone();
+        let path = "definitions/declarations.json";
+        let mut declarations: Value = serde_json::from_slice(&changed[path]).expect("declarations");
+        declarations["item_authoring"][0][forbidden.0] = forbidden.1;
+        let bytes = canonical(&declarations);
+        changed.insert(path.into(), bytes.clone());
+        let mut manifest: Value =
+            serde_json::from_slice(&changed["manifest.json"]).expect("manifest");
+        let entry = manifest["documents"]
+            .as_array_mut()
+            .expect("inventory")
+            .iter_mut()
+            .find(|entry| entry["locator"] == path)
+            .expect("entry");
+        entry["byte_length"] = json!(bytes.len());
+        entry["sha256"] = json!(world_project_sha256(&bytes));
+        rebind_manifest_and_lock(&mut changed, &manifest);
+        assert!(
+            ProjectSnapshot::new(changed, limits())
+                .expect("admit")
+                .parse(limits())
+                .is_err(),
+            "forbidden Item authoring field admitted: {}",
+            forbidden.0
+        );
+    }
+}
+
+#[test]
+fn protected_empty_v2_declarations_wire_remains_unchanged_without_item_authoring() {
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(candidate(), limits()).expect("v2 documents");
+    let declarations: Value =
+        serde_json::from_slice(&documents.documents()["definitions/declarations.json"])
+            .expect("declarations");
+    assert!(declarations.get("item_authoring").is_none());
+    assert!(declarations.get("authoring_profiles").is_none());
+    let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
+        .expect("admit")
+        .parse(limits())
+        .expect("parse");
+    assert_eq!(
+        parsed
+            .canonical_documents(limits())
+            .expect("rewrite")
+            .documents(),
+        documents.documents()
+    );
+}
+
+fn wiki_coverage_candidate() -> ProjectV2Draft {
+    let mut draft = item_candidate();
+    draft.core.records.extend([
+        ProjectReferenceRecord::Generic {
+            identity: DefinitionIdentityDocument {
+                family: "Behavior".into(),
+                key: "oteryn:reference.behavior.wiki-alpha".into(),
+                revision: "definition-r1".into(),
+            },
+            client_projection: ProjectionDocument::ServerOnly,
+        },
+        ProjectReferenceRecord::Creature {
+            identity: DefinitionIdentityDocument {
+                family: "Creature".into(),
+                key: "oteryn:reference.creature.wiki-alpha".into(),
+                revision: "definition-r1".into(),
+            },
+            client_projection: ProjectionDocument::ClientSafe,
+            presentation: DefinitionReferenceDocument {
+                family: "Presentation".into(),
+                key: "oteryn:reference.presentation.courier".into(),
+                revision: "definition-r1".into(),
+            },
+            behavior: DefinitionReferenceDocument {
+                family: "Behavior".into(),
+                key: "oteryn:reference.behavior.wiki-alpha".into(),
+                revision: "definition-r1".into(),
+            },
+            loot: None,
+        },
+    ]);
+
+    let interaction = reference(
+        ProjectV2Family::Interaction,
+        "oteryn:content.interaction.item-alpha",
+    );
+    let area = reference(ProjectV2Family::Area, "oteryn:content.area.thais");
+    let document = reference(
+        ProjectV2Family::Document,
+        "oteryn:content.document.library-alpha",
+    );
+    let achievement = reference(
+        ProjectV2Family::Achievement,
+        "oteryn:content.achievement.alpha",
+    );
+    let presentation = reference(
+        ProjectV2Family::Presentation,
+        "oteryn:reference.presentation.courier",
+    );
+    let item = reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha");
+
+    draft.state.declarations.extend([
+        ProjectV2Declaration::Area {
+            identity: identity("area.thais"),
+            parent: None,
+            fields: vec![],
+        },
+        ProjectV2Declaration::Document {
+            identity: identity("document.library-alpha"),
+            document_type: ProjectV2DocumentType::Book,
+            title: Some("Oteryn Library Alpha".into()),
+            author: Some("Oteryn".into()),
+            language: Some("en".into()),
+            content: vec!["Project-owned readable content.".into()],
+            fields: vec![],
+        },
+        ProjectV2Declaration::Achievement {
+            identity: identity("achievement.alpha"),
+            presentation: Some(presentation.clone()),
+            source_id: Some(1),
+            degree: Some(2),
+            points: Some(3),
+            secret: Some(false),
+            premium: Some(false),
+            unlock_interactions: vec![interaction.clone()],
+            fields: vec![],
+        },
+        ProjectV2Declaration::Outfit {
+            identity: identity("outfit.alpha"),
+            presentations: vec![presentation.clone()],
+            premium: Some(true),
+            acquisition_interactions: vec![interaction.clone()],
+            fields: vec![],
+        },
+        ProjectV2Declaration::Mount {
+            identity: identity("mount.alpha"),
+            presentation: Some(presentation),
+            speed_bonus: Some(10),
+            premium: Some(true),
+            taming_item: Some(item.clone()),
+            acquisition_interactions: vec![interaction.clone()],
+            fields: vec![],
+        },
+        ProjectV2Declaration::Charm {
+            identity: identity("charm.alpha"),
+            charm_type: ProjectV2CharmType::Major,
+            ranks: vec![ProjectV2CharmRank {
+                rank: 1,
+                points_cost: 100,
+                chance: Some(ProjectV2ExactRatio {
+                    numerator: 1,
+                    denominator: 10,
+                }),
+                effect: Some(reference(
+                    ProjectV2Family::Effect,
+                    "oteryn:reference.effect.item-alpha",
+                )),
+                fields: vec![],
+            }],
+            fields: vec![],
+        },
+    ]);
+
+    let service = draft
+        .state
+        .declarations
+        .iter_mut()
+        .find_map(|declaration| match declaration {
+            ProjectV2Declaration::Service {
+                identity, recipes, ..
+            } if identity.key == "oteryn:content.service.item-alpha" => Some(recipes),
+            _ => None,
+        })
+        .expect("item service");
+    service.push(ProjectV2ServiceRecipe {
+        key: "oteryn:recipe.weapon-alpha".into(),
+        inputs: vec![ProjectV2ItemQuantity {
+            item: item.clone(),
+            quantity: 2,
+        }],
+        outputs: vec![ProjectV2ItemQuantity {
+            item: item.clone(),
+            quantity: 1,
+        }],
+        fee: Some(500),
+        currency: None,
+    });
+
+    draft.state.item_authoring[0].document = Some(document.clone());
+
+    draft.state.authoring_profiles.extend([
+        ProjectV2AuthoringProfile {
+            target: reference(
+                ProjectV2Family::Creature,
+                "oteryn:reference.creature.wiki-alpha",
+            ),
+            data: ProjectV2AuthoringProfileData::Creature(ProjectV2CreatureAuthoring {
+                health: Some(1_000),
+                initial_health: None,
+                experience: Some(500),
+                speed: Some(220),
+                armor: Some(30),
+                mitigation: Some(ProjectV2ExactRatio {
+                    numerator: 1,
+                    denominator: 20,
+                }),
+                resistances: vec![ProjectV2Resistance {
+                    damage_type: "Fire".into(),
+                    percent: ProjectV2ExactRatio {
+                        numerator: 1,
+                        denominator: 5,
+                    },
+                }],
+                immunities: vec!["Paralysis".into()],
+                pushable: Some(false),
+                pushes_objects: Some(true),
+                pass_through: Some(false),
+                abilities: vec![reference(
+                    ProjectV2Family::Ability,
+                    "oteryn:reference.ability.item-alpha",
+                )],
+                bestiary: Some(ProjectV2BestiaryProfile {
+                    difficulty: "Medium".into(),
+                    occurrence: Some("Common".into()),
+                    kill_thresholds: vec![5, 50, 500],
+                    charm_points: 25,
+                }),
+                bosstiary: Some(ProjectV2BosstiaryProfile {
+                    category: "Bane".into(),
+                    prowess_kills: 5,
+                    expertise_kills: 20,
+                    mastery_kills: 60,
+                    boss_points: 5,
+                }),
+                familiar: Some(ProjectV2FamiliarProfile {
+                    vocation: Some("Monk".into()),
+                    summon_ability: Some(reference(
+                        ProjectV2Family::Ability,
+                        "oteryn:reference.ability.item-alpha",
+                    )),
+                    duration_seconds: Some(900),
+                    mana_cost: Some(300),
+                    owner_speed_bonus: Some(10),
+                }),
+                details: None,
+                encounters: vec![],
+                fields: vec![],
+            }),
+        },
+        ProjectV2AuthoringProfile {
+            target: reference(
+                ProjectV2Family::Ability,
+                "oteryn:reference.ability.item-alpha",
+            ),
+            data: ProjectV2AuthoringProfileData::Ability(ProjectV2AbilityAuthoring {
+                incantation: Some("exori alpha".into()),
+                vocations: vec!["Monk".into()],
+                required_level: Some(30),
+                group: Some("Attack".into()),
+                cooldown_ms: Some(8_000),
+                group_cooldown_ms: Some(2_000),
+                premium: Some(true),
+                mana_cost: Some(150),
+                base_power: Some(85),
+                range: Some(7),
+                damage_type: Some("Physical".into()),
+                acquisition_interactions: vec![interaction.clone()],
+                augments: vec![],
+                details: None,
+                fields: vec![],
+            }),
+        },
+        ProjectV2AuthoringProfile {
+            target: reference(ProjectV2Family::Quest, "oteryn:content.quest.courier"),
+            data: ProjectV2AuthoringProfileData::Quest(ProjectV2QuestAuthoring {
+                required_level: Some(20),
+                premium: Some(false),
+                repeatable: Some(false),
+                prerequisites: vec![],
+                reward_items: vec![ProjectV2ItemQuantity {
+                    item: item.clone(),
+                    quantity: 1,
+                }],
+                reward_achievements: vec![achievement],
+                encounters: vec![reference(
+                    ProjectV2Family::Encounter,
+                    "oteryn:content.encounter.courier",
+                )],
+                fields: vec![],
+            }),
+        },
+        ProjectV2AuthoringProfile {
+            target: reference(ProjectV2Family::House, "oteryn:content.house.courier"),
+            data: ProjectV2AuthoringProfileData::House(ProjectV2HouseAuthoring {
+                area: Some(area.clone()),
+                size_sqm: Some(120),
+                rent_amount: Some(10_000),
+                rent_currency: None,
+                beds: Some(2),
+                floors: Some(2),
+                rooms: Some(4),
+                player_ownable: Some(true),
+                streets: vec!["Harbour Lane".into()],
+                fields: vec![],
+            }),
+        },
+        ProjectV2AuthoringProfile {
+            target: reference(
+                ProjectV2Family::Encounter,
+                "oteryn:content.encounter.courier",
+            ),
+            data: ProjectV2AuthoringProfileData::Encounter(ProjectV2EncounterAuthoring {
+                encounter_type: ProjectV2EncounterType::Raid,
+                scope: ProjectV2EncounterScope::World,
+                areas: vec![area.clone()],
+                cooldown_seconds: Some(3_600),
+                repeatable: Some(true),
+                interactions: vec![interaction.clone()],
+                details: Some(Box::new(
+                    serde_json::from_value(serde_json::json!({
+                        "display_name": "Courier raid",
+                        "participants": [{"role": "courier", "creatures": [{
+                            "family": "Creature",
+                            "key": "oteryn:reference.creature.wiki-alpha",
+                            "revision": "definition-r1"
+                        }]}],
+                        "state": {"flags": [{"name": "started", "initial": false}]},
+                        "rules": [{"key": "start", "trigger": {"kind": "encounter_started"},
+                                   "actions": [{"kind": "flag", "flag": "started", "value": true}]}]
+                    }))
+                    .expect("encounter details"),
+                )),
+                fields: vec![],
+            }),
+        },
+        ProjectV2AuthoringProfile {
+            target: reference(ProjectV2Family::WorldObject, "oteryn:content.object.sign"),
+            data: ProjectV2AuthoringProfileData::WorldObject(ProjectV2WorldObjectAuthoring {
+                area: Some(area.clone()),
+                interactions: vec![interaction],
+                transitions: vec![reference(
+                    ProjectV2Family::Transition,
+                    "oteryn:content.transition.courier",
+                )],
+                document: Some(document.clone()),
+                fields: vec![],
+            }),
+        },
+    ]);
+
+    let parent = ProjectV2Placement {
+        key: "oteryn:placement.library-shelf".into(),
+        world: "oteryn:world.reference".into(),
+        map_revision: "map-r1".into(),
+        definition: reference(ProjectV2Family::WorldObject, "oteryn:content.object.sign"),
+        area: Some(area.clone()),
+        document: None,
+        parent_placement: None,
+        coordinate_frame: "global-target-2026-09-27".into(),
+        x: 101,
+        y: 200,
+        floor: 7,
+        presentation_order: ProjectV2PresentationOrder { plane: 0, order: 1 },
+        disposition: ProjectV2Disposition::CandidateOnly,
+    };
+    let child = ProjectV2Placement {
+        key: "oteryn:placement.library-book".into(),
+        world: "oteryn:world.reference".into(),
+        map_revision: "map-r1".into(),
+        definition: item,
+        area: Some(area),
+        document: Some(document),
+        parent_placement: Some(parent.key.clone()),
+        coordinate_frame: "global-target-2026-09-27".into(),
+        x: 101,
+        y: 200,
+        floor: 7,
+        presentation_order: ProjectV2PresentationOrder { plane: 1, order: 0 },
+        disposition: ProjectV2Disposition::CandidateOnly,
+    };
+    draft.state.placements.extend([child, parent]);
+    draft
+}
+
+#[test]
+fn wiki_wide_static_authoring_round_trips_without_runtime_lowering() {
+    let documents = CanonicalProjectDocuments::from_v2_draft(wiki_coverage_candidate(), limits())
+        .expect("wiki-wide v2 documents");
+    let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
+        .expect("admit wiki-wide v2")
+        .parse(limits())
+        .expect("parse wiki-wide v2");
+    let state = parsed.v2().expect("v2 state");
+
+    assert_eq!(state.authoring_profiles.len(), 6);
+    assert_eq!(
+        state
+            .declarations
+            .iter()
+            .filter(|declaration| matches!(declaration, ProjectV2Declaration::Document { .. }))
+            .count(),
+        1
+    );
+    assert_eq!(
+        state.item_authoring[0]
+            .document
+            .as_ref()
+            .expect("Item Document")
+            .family,
+        ProjectV2Family::Document
+    );
+    let book = state
+        .placements
+        .iter()
+        .find(|placement| placement.key == "oteryn:placement.library-book")
+        .expect("book placement");
+    assert_eq!(
+        book.parent_placement.as_deref(),
+        Some("oteryn:placement.library-shelf")
+    );
+    assert_eq!(
+        book.document.as_ref().expect("placement Document").family,
+        ProjectV2Family::Document
+    );
+    assert_eq!(
+        parsed
+            .canonical_documents(limits())
+            .expect("canonical rewrite")
+            .documents(),
+        documents.documents()
+    );
+
+    let reference = parsed
+        .lower_reference_source()
+        .expect("reference projection remains executable-only");
+    assert_eq!(reference.definitions.len(), 7);
+}
+
+#[test]
+fn wiki_authoring_rejects_mutable_state_and_wrong_profile_ownership() {
+    let documents = CanonicalProjectDocuments::from_v2_draft(wiki_coverage_candidate(), limits())
+        .expect("wiki-wide v2 documents");
+
+    for (kind, field, value) in [
+        ("Document", "player_written_text", json!("mutable")),
+        ("Achievement", "unlocked", json!(true)),
+    ] {
+        let mut changed = documents.documents().clone();
+        let path = "definitions/declarations.json";
+        let mut declarations: Value = serde_json::from_slice(&changed[path]).expect("declarations");
+        let record = declarations["records"]
+            .as_array_mut()
+            .expect("records")
+            .iter_mut()
+            .find(|record| record["kind"] == kind)
+            .expect("target declaration");
+        record[field] = value;
+        let bytes = canonical(&declarations);
+        changed.insert(path.into(), bytes.clone());
+        let mut manifest: Value =
+            serde_json::from_slice(&changed["manifest.json"]).expect("manifest");
+        let entry = manifest["documents"]
+            .as_array_mut()
+            .expect("inventory")
+            .iter_mut()
+            .find(|entry| entry["locator"] == path)
+            .expect("entry");
+        entry["byte_length"] = json!(bytes.len());
+        entry["sha256"] = json!(world_project_sha256(&bytes));
+        rebind_manifest_and_lock(&mut changed, &manifest);
+        assert!(
+            ProjectSnapshot::new(changed, limits())
+                .expect("admit")
+                .parse(limits())
+                .is_err(),
+            "mutable field admitted into {kind}: {field}"
+        );
+    }
+
+    let mut wrong_owner = wiki_coverage_candidate();
+    let creature = wrong_owner
+        .state
+        .authoring_profiles
+        .iter_mut()
+        .find(|profile| matches!(&profile.data, ProjectV2AuthoringProfileData::Creature(_)))
+        .expect("Creature profile");
+    creature.target.family = ProjectV2Family::Item;
+    assert!(CanonicalProjectDocuments::from_v2_draft(wrong_owner, limits()).is_err());
+}
+
+#[test]
+fn wiki_placement_hierarchy_rejects_parent_cycles() {
+    let mut candidate = wiki_coverage_candidate();
+    let shelf_key = "oteryn:placement.library-shelf";
+    let book_key = "oteryn:placement.library-book";
+
+    let shelf = candidate
+        .state
+        .placements
+        .iter_mut()
+        .find(|placement| placement.key == shelf_key)
+        .expect("shelf placement");
+    shelf.parent_placement = Some(book_key.into());
+
+    assert!(CanonicalProjectDocuments::from_v2_draft(candidate, limits()).is_err());
+}
+
+#[test]
+fn wiki_area_hierarchy_rejects_parent_cycles() {
+    let mut candidate = wiki_coverage_candidate();
+    let area = candidate
+        .state
+        .declarations
+        .iter_mut()
+        .find_map(|declaration| match declaration {
+            ProjectV2Declaration::Area {
+                identity, parent, ..
+            } if identity.key == "oteryn:content.area.thais" => Some((identity.clone(), parent)),
+            _ => None,
+        })
+        .expect("Area declaration");
+    *area.1 = Some(ProjectV2DefinitionRef {
+        family: ProjectV2Family::Area,
+        key: area.0.key,
+        revision: area.0.revision,
+    });
+
+    assert!(CanonicalProjectDocuments::from_v2_draft(candidate, limits()).is_err());
+}
+
+fn proficiency_levels_mut(draft: &mut ProjectV2Draft) -> &mut Vec<ProjectV2ProficiencyLevel> {
+    draft
+        .state
+        .declarations
+        .iter_mut()
+        .find_map(|declaration| match declaration {
+            ProjectV2Declaration::Proficiency { levels, .. } => Some(levels),
+            _ => None,
+        })
+        .expect("Proficiency declaration")
+}
+
+fn item_proficiency_mut(draft: &mut ProjectV2Draft) -> &mut ProjectV2WeaponProficiencyProfile {
+    draft.state.item_authoring[0]
+        .proficiency
+        .as_mut()
+        .expect("proficiency")
+}
+
+#[test]
+fn proficiency_declarations_and_item_bindings_fail_closed() {
+    let rejects = |change: &dyn Fn(&mut ProjectV2Draft)| {
+        let mut draft = item_candidate();
+        change(&mut draft);
+        CanonicalProjectDocuments::from_v2_draft(draft, limits()).is_err()
+    };
+    assert!(!rejects(&|_| {}));
+    assert!(rejects(&|draft| proficiency_levels_mut(draft).clear()));
+    assert!(rejects(&|draft| proficiency_levels_mut(draft)[1].level = 3));
+    assert!(rejects(&|draft| proficiency_levels_mut(draft)[0]
+        .perks
+        .clear()));
+    assert!(rejects(&|draft| {
+        let perks = &mut proficiency_levels_mut(draft)[1].perks;
+        perks.push(perks[0].clone());
+    }));
+    assert!(rejects(&|draft| {
+        proficiency_levels_mut(draft)[1].perks[0] = ProjectV2ProficiencyPerk::SpellAugment {
+            spell_client_id: 105,
+            augment: ProjectV2ProficiencySpellAugment::Cooldown,
+            value: ratio(4, 1),
+        };
+    }));
+    assert!(rejects(&|draft| {
+        proficiency_levels_mut(draft)[0].perks[0] = ProjectV2ProficiencyPerk::SkillBonus {
+            skill: ProjectV2ProficiencySkill::Sword,
+            value: ratio(0, 1),
+        };
+    }));
+    assert!(rejects(&|draft| {
+        proficiency_levels_mut(draft)[1].perks[2] =
+            ProjectV2ProficiencyPerk::AutoAttackCriticalExtraDamage {
+                value: ratio(2, 20),
+            };
+    }));
+    assert!(rejects(&|draft| {
+        proficiency_levels_mut(draft)[1].perks[1] = ProjectV2ProficiencyPerk::HomingMissile {
+            element: ProjectV2ProficiencyElement::Earth,
+            missile_client_id: 71,
+            probability: ratio(3, 2),
+            multiplier: ratio(2, 1),
+        };
+    }));
+    assert!(rejects(&|draft| {
+        item_proficiency_mut(draft).profile_binding.family = ProjectV2Family::Charm;
+    }));
+    assert!(rejects(&|draft| {
+        item_proficiency_mut(draft).profile_binding.key =
+            "oteryn:content.proficiency.missing".into();
+    }));
+}
+
+/// A JSON decimal (as written by the authoring tool) as an exact reduced ratio.
+fn decimal_ratio(number: &Value) -> Value {
+    let text = number.to_string();
+    assert!(!text.contains(['e', 'E']), "exponent form: {text}");
+    let (negative, digits) = match text.strip_prefix('-') {
+        Some(rest) => (true, rest),
+        None => (false, text.as_str()),
+    };
+    let (whole, fraction) = digits.split_once('.').unwrap_or((digits, ""));
+    let denominator = 10_u64.pow(u32::try_from(fraction.len()).expect("scale"));
+    let magnitude: u64 = format!("{whole}{fraction}")
+        .parse()
+        .expect("decimal digits");
+    let (mut a, mut b) = (magnitude, denominator);
+    while b != 0 {
+        (a, b) = (b, a % b);
+    }
+    let gcd = a.max(1);
+    let numerator = i64::try_from(magnitude / gcd).expect("numerator");
+    json!({
+        "numerator": if negative { -numerator } else { numerator },
+        "denominator": denominator / gcd,
+    })
+}
+
+#[test]
+fn committed_proficiency_content_lowers_to_valid_v2_declarations() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/proficiencies");
+    let read = |path: &std::path::Path| -> Value {
+        serde_json::from_slice(&std::fs::read(path).expect("read")).expect("json")
+    };
+    let index = read(&root.join("index.json"));
+    assert_eq!(index["family"], "Proficiency");
+    let mut draft = item_candidate();
+    let (mut definitions, mut perks) = (0, 0);
+    for shard in index["shards"].as_array().expect("shards") {
+        let shard = read(&root.join("../..").join(shard.as_str().expect("path")));
+        for record in shard["records"].as_array().expect("records") {
+            let definition = &record["definition"];
+            let mut levels = definition["levels"].clone();
+            for level in levels.as_array_mut().expect("levels") {
+                for perk in level["perks"].as_array_mut().expect("perks") {
+                    for field in ["value", "probability", "multiplier"] {
+                        if let Some(number) = perk.get(field).cloned() {
+                            perk[field] = decimal_ratio(&number);
+                        }
+                    }
+                    perks += 1;
+                }
+            }
+            let declaration: ProjectV2Declaration = serde_json::from_value(json!({
+                "kind": "Proficiency",
+                "identity": definition["identity"],
+                "levels": levels,
+                "fields": [],
+            }))
+            .expect("typed Proficiency declaration");
+            draft.state.declarations.push(declaration);
+            definitions += 1;
+        }
+    }
+    assert_eq!((definitions, perks), (443, 3671));
+    let wide = ProjectEvidenceLimits {
+        max_documents: 12,
+        max_document_bytes: 8 << 20,
+        max_total_bytes: 16 << 20,
+        max_decoded_fields: 1 << 20,
+        max_string_bytes: 8 << 20,
+        max_reference_records: 1_024,
+        ..limits()
+    };
+    CanonicalProjectDocuments::from_v2_draft(draft, wide).expect("443 definitions validate");
+}
+
+#[test]
+fn ranged_separate_profile_owners_survive_world_project_roundtrip() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let read = |path: &std::path::Path| -> Value {
+        serde_json::from_slice(&std::fs::read(path).expect("content input")).expect("content JSON")
+    };
+    let profiles = read(&root.join("content/items/ranged-profiles.json"));
+    let index = read(&root.join("content/items/index.json"));
+    let rows: Vec<Value> = index["shards"]
+        .as_array()
+        .expect("shards")
+        .iter()
+        .flat_map(|path| {
+            read(&root.join(path.as_str().expect("shard path")))["records"]
+                .as_array()
+                .expect("records")
+                .clone()
+        })
+        .collect();
+    for (id, expected_attack, expected_hit) in [
+        (16163, Some(4), None),
+        (3446, None, Some(86)),
+        (3074, None, None),
+    ] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let row = rows
+            .iter()
+            .find(|row| row["definition"]["identity"]["key"] == key)
+            .expect("Item");
+        assert!(row["authoring"].get("ranged").is_none());
+        let profile = profiles["records"]
+            .as_array()
+            .expect("profiles")
+            .iter()
+            .find(|record| record["item"]["key"] == key)
+            .expect("profile");
+        let mut owner = row.get("authoring").cloned().unwrap_or(json!({}));
+        owner["item"] = row["definition"]["identity"].clone();
+        let owner: ProjectV2ItemAuthoring = serde_json::from_value(owner).expect("sealed owner");
+        assert_eq!(
+            owner.weapon_attack_modifier_points.map(|points| points.0),
+            expected_attack
+        );
+        assert_eq!(
+            owner
+                .weapon_absolute_hit_chance_percent
+                .map(|ratio| ratio.numerator),
+            expected_hit
+        );
+        let resolved = ProjectV2RangedWeapon::try_from((&profile["profile"], &owner))
+            .expect("resolved ranged profile");
+        for field in ["attack", "hit_chance", "range_cells", "mana_per_shot"] {
+            let mut missing = profile["profile"].clone();
+            if missing
+                .as_object_mut()
+                .expect("profile object")
+                .remove(field)
+                .is_some()
+            {
+                assert!(ProjectV2RangedWeapon::try_from((&missing, &owner)).is_err());
+            }
+        }
+        for (field, present) in [
+            ("attack", expected_attack.is_some()),
+            ("hit_chance", expected_hit.is_some()),
+        ] {
+            if present {
+                let mut duplicate = profile["profile"].clone();
+                duplicate[field] = json!(0);
+                assert!(ProjectV2RangedWeapon::try_from((&duplicate, &owner)).is_err());
+            }
+        }
+        let mut draft = item_candidate();
+        let authoring = &mut draft.state.item_authoring[0];
+        authoring.weapon_attack_modifier_points = owner.weapon_attack_modifier_points;
+        authoring.weapon_absolute_hit_chance_percent = owner.weapon_absolute_hit_chance_percent;
+        authoring.ranged = Some(resolved.clone());
+        let documents =
+            CanonicalProjectDocuments::from_v2_draft(draft, limits()).expect("ranged documents");
+        let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
+            .expect("admit")
+            .parse(limits())
+            .expect("parse");
+        assert_eq!(
+            parsed.v2().expect("v2 state").item_authoring[0].ranged,
+            Some(resolved)
+        );
+        assert_eq!(
+            parsed
+                .canonical_documents(limits())
+                .expect("rewrite")
+                .documents(),
+            documents.documents()
+        );
+    }
+}
+
+#[test]
+fn intrinsic_weapon_metadata_roundtrips_without_native_mutation_or_absent_defaults() {
+    let original = item_candidate();
+    let old_documents = CanonicalProjectDocuments::from_v2_draft(original.clone(), limits())
+        .expect("old documents");
+    let old_project = ProjectSnapshot::new(old_documents.documents().clone(), limits())
+        .expect("old admit")
+        .parse(limits())
+        .expect("old parse");
+    let old = serde_json::to_value(&original.state.item_authoring[0]).expect("old source overlay");
+    assert!(old.get("weapon_attack_modifier_points").is_none());
+    assert!(old.get("weapon_absolute_hit_chance_percent").is_none());
+    let reread: ProjectV2ItemAuthoring = serde_json::from_value(old.clone()).expect("old source");
+    assert_eq!(serde_json::to_value(reread).expect("old rewrite"), old);
+    let mut draft = original.clone();
+    draft.state.item_authoring[0].weapon_attack_modifier_points = Some(ReferenceSignedPoints(-7));
+    draft.state.item_authoring[0].weapon_absolute_hit_chance_percent = Some(ProjectV2ExactRatio {
+        numerator: 90,
+        denominator: 1,
+    });
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(draft, limits()).expect("source metadata");
+    let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
+        .expect("admit")
+        .parse(limits())
+        .expect("parse");
+    assert_eq!(
+        ProjectV2Draft::from_project(&parsed).core.records,
+        ProjectV2Draft::from_project(&old_project).core.records
+    );
+    let source = &parsed.v2().expect("source state").item_authoring[0];
+    assert_eq!(
+        source.weapon_attack_modifier_points,
+        Some(ReferenceSignedPoints(-7))
+    );
+    assert_eq!(
+        source.weapon_absolute_hit_chance_percent,
+        Some(ProjectV2ExactRatio {
+            numerator: 90,
+            denominator: 1
+        })
+    );
+    assert_eq!(
+        parsed
+            .canonical_documents(limits())
+            .expect("rewrite")
+            .documents(),
+        documents.documents()
+    );
+    for (numerator, denominator) in [(-1, 1), (101, 1), (2, 2), (0, 2), (1, 0)] {
+        let mut bad = original.clone();
+        bad.state.item_authoring[0].weapon_absolute_hit_chance_percent =
+            Some(ProjectV2ExactRatio {
+                numerator,
+                denominator,
+            });
+        assert!(CanonicalProjectDocuments::from_v2_draft(bad, limits()).is_err());
+    }
+    for points in [i32::MIN, i32::MAX] {
+        let mut incoming = old.clone();
+        incoming["weapon_attack_modifier_points"] = json!(points);
+        assert!(serde_json::from_value::<ProjectV2ItemAuthoring>(incoming).is_ok());
+    }
+    for value in [json!(2_147_483_648_i64), json!(true)] {
+        let mut incoming = old.clone();
+        incoming["weapon_attack_modifier_points"] = value;
+        assert!(serde_json::from_value::<ProjectV2ItemAuthoring>(incoming).is_err());
+    }
+}

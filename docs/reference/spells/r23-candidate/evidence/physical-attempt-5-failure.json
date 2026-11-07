@@ -1,0 +1,20 @@
+{
+  "schema": "OTERYN_SPELL_PHYSICAL_ATTEMPT/v1",
+  "attempt": 5,
+  "manifest_sha256": "a0e824b3227996499f8b6d146bfd53a6eec8b38402375eaf5a49a5c6071acbd0",
+  "result": "failed",
+  "process_exit": 101,
+  "duration_seconds": 214.73,
+  "log_sha256": "48df69d18b5994a939415b688f324b9ca8bc921677a0a509b47943ab25b3e394",
+  "observed_boundary": "Actual Game-owned Rat realized at qualified Thalom non-PZ cell with current Channel owner and runtime-role current Item collision proof; actual health20/masterNone",
+  "failure": "UnexpectedMessage { expected: LivenessProbe, actual: StateDelta }",
+  "diagnosis": "Session idle reader rejected asynchronous state updates emitted during real monster AI; client-side protocol consumer repair required",
+  "not_qualified": [
+    "Measured player health loss",
+    "Energy Strike creature damage",
+    "Wounded healing",
+    "Durable final training save"
+  ],
+  "cleanup": "containers, volumes and ephemeral keys removed (actual runner log)",
+  "next_attempt": "6; repaired registered ActorVitals asynchronous reader and wounded-heal scenario; pending execution"
+}

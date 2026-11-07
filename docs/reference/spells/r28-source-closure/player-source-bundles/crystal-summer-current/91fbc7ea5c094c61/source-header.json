@@ -1,0 +1,48 @@
+{
+  "spell": {
+    "base_power": 170,
+    "carrier": "instant",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 110
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 6000,
+        "group": "greatbeams"
+      }
+    ],
+    "name": "Great Energy Beam",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_great_energy_beam"
+    },
+    "reference_spell_id": 23,
+    "requirements": {
+      "level": 29,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "needs_direction": true
+    },
+    "words": "exevo gran vis lux"
+  }
+}

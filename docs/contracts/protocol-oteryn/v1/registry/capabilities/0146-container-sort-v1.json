@@ -1,0 +1,15 @@
+{
+  "id": 146,
+  "name": "CONTAINER_SORT_V1",
+  "owner_decision": "NEWS-HIST-CONTAINER-SORT-1",
+  "owner": "Game item loop owner",
+  "requires": [
+    14
+  ],
+  "command_types": [
+    168
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES: bundle Worlds only. Every request requires a current admitted session, an open carried container view and pinned native item-loop content."
+}

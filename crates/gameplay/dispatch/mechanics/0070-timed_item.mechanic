@@ -1,0 +1,15 @@
+name=timed_item
+commands=38
+[route]
+match routing::timed_item::route(
+    authority,
+    session.actor,
+    &mut session.admitted,
+    command,
+    &mut session.item_view,
+)
+.await
+{
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

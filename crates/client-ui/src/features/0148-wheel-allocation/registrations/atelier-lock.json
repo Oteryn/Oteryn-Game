@@ -1,0 +1,15 @@
+{
+  "mechanic": "0148-wheel-allocation",
+  "kind": "handlers",
+  "id": "0148-wheel-allocation-atelier-lock",
+  "status": "supported",
+  "commands": [
+    309
+  ],
+  "direction": "client_to_server",
+  "capability": 148,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "Allocation, gems and grades are persisted by the server; no local authority settings."
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "INSPECT1-WEIGHT-DEPTH",
+  "owner_contract": "protocol-oteryn/v1/inspection-v1.md",
+  "resource": "Inspected container graph maximum path length including root",
+  "unit": "nodes",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject at the declared bound; no durable mutation.",
+  "client_visible": true,
+  "boundary_tests": [
+    "inspection_wire_roundtrip_and_bounds",
+    "inspection_postgres_inventory_ground_catalogue_and_private_player_dispatch"
+  ],
+  "consumers": [
+    "crates/gameplay/durability/src/durability/inspection.rs"
+  ],
+  "notes": "INSPECT-1 reserved resource number 1627."
+}

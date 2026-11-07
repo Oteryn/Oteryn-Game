@@ -1,0 +1,128 @@
+{
+  "active_content_modified": true,
+  "counts": {
+    "bound_quest_item_occurrences": 311,
+    "canonicalized_held_source_item_references": 67,
+    "corrected_base_fares": 8,
+    "corrected_declarations": 433,
+    "corrected_speech_values": 5,
+    "held_chest_appearance_occurrences": 3,
+    "held_trade_tuples": 457,
+    "native_dialogues": 694,
+    "native_npcs": 1110,
+    "native_offers": 12268,
+    "native_routes": 195,
+    "native_services": 380,
+    "new_identity_source_proposals": 159,
+    "new_proposals_with_literal_speech": 95,
+    "new_proposals_without_literal_speech": 64,
+    "price_parity_pending": 78,
+    "remaining_no_primary": 170,
+    "source_quest_associated_npcs": 275,
+    "source_quest_transitions": 1442
+  },
+  "files": [
+    {
+      "bytes": 5640,
+      "path": "README.md",
+      "sha256": "778c72c6e8c8c7697a2a9b08bc09a343f4e4ddf954e9a063baaddb331bac50b8"
+    },
+    {
+      "bytes": 708324,
+      "path": "corrective-baseline.json",
+      "sha256": "c412610f2665633b8d65f2fcf288bd01824c1a1597d31157d8f2be73382799c6"
+    },
+    {
+      "bytes": 2541204,
+      "path": "corrective-plan.json",
+      "sha256": "efcd9e6c0cc0b1c649af075e4a8530ef2fe1c88e6691b71c8e3c5771a96f18ec"
+    },
+    {
+      "bytes": 727448,
+      "path": "dialogue-qualification-summary.json",
+      "sha256": "5e15c394deba1c25efde4d4a6ac82d904c98d0d57da1c78f2da9c780c5123eba"
+    },
+    {
+      "bytes": 3281861,
+      "path": "inventory-repaired.json",
+      "sha256": "2d9b5b9dcc38b44f1796a7bd613c22b23056f3315beb5afa9e359f7a80987400"
+    },
+    {
+      "bytes": 2939821,
+      "path": "native-repairs.json",
+      "sha256": "07245803e9ef2c1e709c73f73775e141e70318d911921ad57ecb27e86e08b2cb"
+    },
+    {
+      "bytes": 1925,
+      "path": "normalization-report.json",
+      "sha256": "2ae3b3b7c4826d470ec65dc4ffc66ce1e2e3d3c876c4ea467ee9d94844c4f2c0"
+    },
+    {
+      "bytes": 78934,
+      "path": "price-parity-pending.json",
+      "sha256": "92c62eee5d2ed63174b4a205c6bec0ffa51e2d15fa91e7abf2bf42dcb9c2aea2"
+    },
+    {
+      "bytes": 6726138,
+      "path": "quest-stage.json",
+      "sha256": "0902986f4aaed21cb56c5f8ffebd7f08edd1672787249dd42b9b7c09b82d17c1"
+    },
+    {
+      "bytes": 960266,
+      "path": "recovered-dialogue-associations.json",
+      "sha256": "cf0f503d808c3bbd33d8d435aefff540a371786bb81518d5911078c0ab1296c3"
+    },
+    {
+      "bytes": 274634,
+      "path": "source-recovery-index.json",
+      "sha256": "33cb0d9eac9fe535ba9cc82d7228be4c732178dd600549e166229f43a223e5c3"
+    },
+    {
+      "bytes": 65576,
+      "path": "static-dialogue-repairs.json",
+      "sha256": "03a924297712bec56ec52f372c3e73edcc3dba71128c6a9664bd7d383909750c"
+    },
+    {
+      "bytes": 1058828,
+      "path": "trade-r4-overlay-repairs.json",
+      "sha256": "989aa44df02b8085a0942f64dc33233a349758fcf4a46b8810a143868622081c"
+    },
+    {
+      "bytes": 693201,
+      "path": "transport-repaired.json",
+      "sha256": "2f3b24522db072c248b62ca85f9c9f4f14aa00b5de69624a40cd98879833820d"
+    },
+    {
+      "bytes": 1774,
+      "path": "validation.json",
+      "sha256": "6b69280a53f1d8c2cc919c1e32c9e66a4953840666773ee7d9cd38986d766780"
+    }
+  ],
+  "global_complete": false,
+  "project_revision": "g4-npc-source-repairs-r10",
+  "qualification_holds": [
+    "Global completeness, source matcher and handler precedence proof",
+    "Native quest identities, guards and executable bindings",
+    "NPC placement/conversation/trade/travel runtime allocation and implementation",
+    "159 identity proposals and two missing native candidate identities require qualified facts",
+    "Three chest appearance targets missing from source XML and native registry",
+    "78 plain offer prices await qualified official or independent wiki agreement"
+  ],
+  "runtime_qualified": false,
+  "schema": "oteryn.npc-corrective-packet.v1",
+  "scope": "QUALIFIED_EXISTING_NATIVE_CORRECTIONS_AND_SOURCE_ONLY_HOLDS",
+  "tools": [
+    {
+      "path": "tools/content-migration/npc_corrective_overlay.py",
+      "sha256": "1d25d07f938cfa21bd144a679d4feafa52072f8d1182ab47de455de2d8c28ab0"
+    },
+    {
+      "path": "tools/content-migration/npc_source_item_references.py",
+      "sha256": "212f738a296f75b6ae6cc9fa679f9cf1499d31b27d97e713da7201f26f3c8ffe"
+    },
+    {
+      "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "sha256": "a07f4ae4535c0b3d3de2b44bf3cfe67043a82c021ae8bd99d1045cc442b178b8"
+    }
+  ]
+}

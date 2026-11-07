@@ -1,0 +1,10 @@
+{
+  "id": 14,
+  "name": "HIGHSCORES_QUERY_V1",
+  "owner_decision": "HIGHSCORES-0 HIGHSCORES0-WORLD-HIGHSCORES-V1 §6 (docs/architecture/reviews/OTERYN_GAME_HIGHSCORES0_WORLD_HIGHSCORES_DECISION_2026-10-03.md); number leased to HS-WIRE-1 by the #1622 control plane, registered by RANK-1 under CP D1155",
+  "capability": 9,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/highscores_v1.proto#HighscoresQueryV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/highscores_v1.proto#HighscoresResultV1",
+  "max_payload_bytes": 25,
+  "max_result_payload_bytes": 9878
+}

@@ -1,0 +1,15 @@
+{
+  "id": 37,
+  "name": "DEPOT_V1",
+  "owner_decision": "Owner depot vertical wiring task 2026-10-23; DEPOT-1 continuation",
+  "owner": "Character + World + town depot",
+  "requires": [
+    4
+  ],
+  "command_types": [
+    36
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES: bundle Worlds only. Every request requires a current admitted session, pinned native item-loop content and a reachable authored depot binding; capacity reads the native current Premium gate."
+}

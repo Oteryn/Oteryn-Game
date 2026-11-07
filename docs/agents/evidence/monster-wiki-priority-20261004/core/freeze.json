@@ -1,0 +1,45 @@
+{
+  "status": "READY_NO_PRODUCT_MUTATIONS",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "ef2c96037bd27e94e2e2303a24dc7433804b27ab30170e66a0eeb4fbb3450493"
+    },
+    {
+      "path": "fallback-proposal.json",
+      "sha256": "98aad05adb992c79d34d198986f7ed28a87a7ad4c0268632b7e5d2309f0d8f95"
+    },
+    {
+      "path": "finalize.py",
+      "sha256": "d71d75fd6169aaa0094ab877f3642f775a6b9432ecf90013bf88cd19f18508b4"
+    },
+    {
+      "path": "prepare.py",
+      "sha256": "96359b7d256c165d26d602ab9675b3802ca31f74ecf91010246b589c5e85601a"
+    },
+    {
+      "path": "proposal.json",
+      "sha256": "2bee824abc13a293e275816438d30be18ec69cc51eaf2f000db290df35f016ef"
+    }
+  ],
+  "summary": {
+    "rows": 156,
+    "native_apply": 152,
+    "canonical_corrections": 3,
+    "statuses": {
+      "WIKI_CONFIRMED": 154,
+      "UNKNOWN": 1,
+      "WIKI_NORMALIZED_LINEAGE": 1
+    },
+    "native_by_field": {
+      "health": 57,
+      "armor": 24,
+      "experience": 47,
+      "immunities": 7,
+      "speed": 17
+    },
+    "unknown": [
+      "oteryn:creature.egg:immunities"
+    ]
+  }
+}

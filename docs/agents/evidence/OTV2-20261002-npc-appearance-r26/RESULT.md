@@ -1,0 +1,13 @@
+# NPC appearance follow-up R26
+
+All12 held actors reviewed:9 visually approximated mappings,1 documented invisible Opticorder Forge NPC,2 explicit unresolved project defaults (MUD and Planestrider).10 Presentation profiles change.9 numeric mappings remain DERIVED/APPROXIMATE;2 source correspondences remain UNKNOWN. This completes the bounded review and authoring choices; it does not establish exact source fidelity for every actor.
+
+Sugar Cube Worker uses white cube1753 after review of the full labelled portrait; old blank assessment was incorrect. Other visible choices: Demon Mother12, Demonic Messenger237, Dread Guardian object8008, Ivora1604, Jelly982, Mysterious Device object15274, Praline1747, The Dentist857. Jelly category/scale approximation is explicit. Opticorder has explicit Invisible Presentation selection with light_level0 because its Fandom article literally documents an invisible NPC; no numeric invisibility look is invented. MUD and Planestrider keep neutral128, with PROJECT_DEFAULT_NO_SOURCE_SPRITE/unknown flags, no asserted wiki sprite match or hidden status.
+
+All133 actors remain BASIC_AUTHORING_READY_APPROXIMATE. Prior23 source-evidenced profiles and98 R25 selections, dialogue/roles/history, Behavior, services, world/map/editor/assets/source/import data remain preserved. Existing native_entry_room is unchanged. Runtime-loaded NPCs0 and interaction passes0.
+
+Sources/access: retained public HTTP Tibiopedia images and HTML verified by checksum; fresh Fandom read through Remote Desktop+existing real Chrome/CDP after ordinary HTTP402; fresh Tibiopedia technical redirect was unusable. Named Sugar Cube1753 corroborated by pinned Canary and Crystal raw public GitHub sources. Local client appearance metadata controls numeric membership, sprite directions and animation phases;1753 has4 directions/1 idle phase/8 walking phases. These client facts are not an NPC runtime animation test. No original graphics redistributed or owner machine project/system changes.
+
+Actual validation and independent reviews are recorded in validation.json. Canonical publication remains draft PR1433 and does not claim coordinator approval, protected-main integration, deployed server NPCs or runtime rendering.
+
+Packet SHA `65c7c42873224677eaee9c11b4a267b75a5ee0c5a6a983a744df9c1332f813dd`; canonical tree `a59e099cd3818406d8428ecb727f818d44536dbb8b34d6c810274724e441f788`. All14 checks passed, including79 native materializer,7 follow-up,9 prior appearance and7 prior source tests. Independent source and implementation/generated-scope reviews passed. Exact11-document R25 predecessor fast generation and installed-byte parity passed; historical full generation was not rerun.

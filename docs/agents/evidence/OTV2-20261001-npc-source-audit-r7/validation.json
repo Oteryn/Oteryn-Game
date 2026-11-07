@@ -1,0 +1,72 @@
+{
+  "candidate_specific_external_review": "NOT_DISPATCHED_CONTROL_PLANE_OWNS",
+  "checks": {
+    "authoring_tests": {
+      "log_sha256": "d2ef50d5e30dea8885f252e4439c921297d0c9253193a88e7557387134408a3d",
+      "status": "PASS"
+    },
+    "game_server_clippy_all_targets": {
+      "log_sha256": "984a0050d7b0091cd2c5701c8ec6e6b74b8587417704637c594d8849234b24a1",
+      "status": "PASS"
+    },
+    "game_server_tests": {
+      "log_sha256": "016a572e8d1892756966300de5249e9e04b5484507d3379a583b8f21391c704d",
+      "status": "PASS"
+    },
+    "governance_tests": {
+      "log_sha256": "50b82c2a914a9062338b4e8ecf4e625b239e2019aae1cac9b33521be7a8ec9a0",
+      "status": "PASS"
+    },
+    "governance_validator": {
+      "log_sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f",
+      "status": "PASS"
+    },
+    "manual_image_fit": {
+      "log_sha256": "b8fcc5eef79ddb5d650f2a81e238bfb5f790521716ca592e90cff21b1aa8c30d",
+      "status": "PASS"
+    },
+    "materializer_guards": {
+      "log_sha256": "e5dcc5d14f115b9ec1960e18c4945ade15669be9d1ebcff4c1c606e3e6879307",
+      "status": "PASS"
+    },
+    "migration_tests": {
+      "log_sha256": "9b67d8414b837b8c4ee1c0360253ca93aa9a8875ec1c060be9521f0b5f882f39",
+      "status": "PASS"
+    },
+    "ruff_format_manual": {
+      "log_sha256": "fd2299c9f1c6dc869070883e281051bfe93aacf66c1a3b0069f45b4aa410ca50",
+      "status": "PASS"
+    },
+    "ruff_manual": {
+      "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "status": "PASS"
+    },
+    "rustfmt": {
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "PASS"
+    },
+    "successor_tree": {
+      "log_sha256": "97896d114e3e6207c6d91b42b99609481e0e14c570f56c5eb466c217a11caf2b",
+      "status": "PASS"
+    }
+  },
+  "ci": "FRESH_REMOTE_HEAD_REQUIRED",
+  "counts": {
+    "authoring": 137,
+    "dialogue_qualification": 8,
+    "game_server_ignored": 7,
+    "game_server_passed": 16225,
+    "game_server_targets": 57,
+    "governance": 36,
+    "identity_qualification": 8,
+    "isolated_service_proposal_rust": 4,
+    "manual_image_fit": 5,
+    "migration": 59,
+    "native_materializer_guards": 9,
+    "official_price_reducer": 14,
+    "service_proposal_python": 10
+  },
+  "database_execution_qualification": "LEFT_TO_REQUIRED_CI",
+  "runtime_qualified": false,
+  "schema": "NPC_R7_AUTHORING_VALIDATION/v1"
+}

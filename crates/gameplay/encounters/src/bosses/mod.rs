@@ -1,0 +1,25 @@
+//! Source-specific boss and encounter implementations.
+pub mod bone_overlord;
+pub mod boreth;
+pub mod crystal_deaths;
+pub mod endgame_entry;
+pub mod gaz_haragoth;
+pub mod goshnars_greed;
+pub mod hazard_primal;
+pub mod herald_of_fire;
+pub mod icicle;
+pub mod native_combat;
+pub mod resilience;
+pub mod reward_chest;
+pub mod room;
+pub mod rotten_blood;
+pub mod rum_barrel;
+pub mod seven_encounters;
+pub mod smelly_cheese;
+pub mod source_callbacks;
+pub mod summer_2026;
+pub mod tentacles;
+pub mod the_welter;
+pub mod threshold_heals;
+
+pub mod weak_spot;

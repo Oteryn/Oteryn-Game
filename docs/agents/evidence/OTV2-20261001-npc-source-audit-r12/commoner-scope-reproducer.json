@@ -1,0 +1,661 @@
+{
+  "schema": "NPC_R12_COMMONER_SCOPE_PARSER_REPRODUCER/v1",
+  "severity": "P2",
+  "tool_path": "/workspace/Oteryn-Game/tools/content-schema/npc-authoring/rendered_wiki_prices.py",
+  "tool_sha256": "72174f2393c40d1760fc89351bf9c098c7323098a9deda5be3a1ec572ce35e5a",
+  "function": "br_rows",
+  "capture_file": "/workspace/npc-r6-work/br-batch-0.json",
+  "capture_file_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+  "raw_capture_url": "https://www.tibiawiki.com.br/wiki/Alaistar",
+  "raw_capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+  "request_id": "f6f4f062-8a71-4bba-acd6-91308e609b2d",
+  "raw_capture_revision_hints": [
+    "420192"
+  ],
+  "condition_heading_witness": {
+    "byte_start": 6803,
+    "byte_end_exclusive": 6845,
+    "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200",
+    "facts": {
+      "rank_name": "Commoner",
+      "quest_name": "Rathleton",
+      "numeric_threshold": null
+    }
+  },
+  "actual_affected_rows": 16,
+  "native_service_pointer": "/records/2194",
+  "current_native_declarations_sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17",
+  "source_donor_canary_sha256": "4482ebcf4833e683f854e0daabb7f939a94afe030fcd7efc594bf92bcf2254f7",
+  "affected": [
+    {
+      "item_id": 21204,
+      "rendered_before": {
+        "item_name": "Cowbell",
+        "direction": "BuyFromPlayer",
+        "unit_price": 210,
+        "byte_start": 6866,
+        "byte_end": 7047,
+        "row_sha256": "2b7a87d2d6e075fb7b6936c2edf123cfe7f01834f9972ef807cf0682d6258269",
+        "scope_holds": [],
+        "context_sha256": "1e6044a9316e52d6501ae3659c70c667e5ab8e4c8ecb9a9a3a53649d224fc63d",
+        "context_byte_start": 5830,
+        "context_byte_end": 6866
+      },
+      "rendered_after": {
+        "item_name": "Cowbell",
+        "direction": "BuyFromPlayer",
+        "unit_price": 210,
+        "byte_start": 6866,
+        "byte_end": 7047,
+        "row_sha256": "2b7a87d2d6e075fb7b6936c2edf123cfe7f01834f9972ef807cf0682d6258269",
+        "scope_holds": [
+          "CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT"
+        ],
+        "context_sha256": "1e6044a9316e52d6501ae3659c70c667e5ab8e4c8ecb9a9a3a53649d224fc63d",
+        "context_byte_start": 5830,
+        "context_byte_end": 6866
+      },
+      "native_pointer": "/records/2194/offers/12",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21204",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 210
+      }
+    },
+    {
+      "item_id": 21201,
+      "rendered_before": {
+        "item_name": "Execowtioner Mask",
+        "direction": "BuyFromPlayer",
+        "unit_price": 240,
+        "byte_start": 7048,
+        "byte_end": 7269,
+        "row_sha256": "e82123f6e2615bfd82d8d7f9eee5d61f7014b7bd1693699f7752671711dcab17",
+        "scope_holds": [],
+        "context_sha256": "ccd0f7dc8b953e3d1e2c3ed28c59567788e12a5ccebdf7b9fa026dae26afc765",
+        "context_byte_start": 5830,
+        "context_byte_end": 7048
+      },
+      "rendered_after": {
+        "item_name": "Execowtioner Mask",
+        "direction": "BuyFromPlayer",
+        "unit_price": 240,
+        "byte_start": 7048,
+        "byte_end": 7269,
+        "row_sha256": "e82123f6e2615bfd82d8d7f9eee5d61f7014b7bd1693699f7752671711dcab17",
+        "scope_holds": [
+          "CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT"
+        ],
+        "context_sha256": "ccd0f7dc8b953e3d1e2c3ed28c59567788e12a5ccebdf7b9fa026dae26afc765",
+        "context_byte_start": 5830,
+        "context_byte_end": 7048
+      },
+      "native_pointer": "/records/2194/offers/10",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21201",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 240
+      }
+    },
+    {
+      "item_id": 21199,
+      "rendered_before": {
+        "item_name": "Giant Pacifier",
+        "direction": "BuyFromPlayer",
+        "unit_price": 170,
+        "byte_start": 7270,
+        "byte_end": 7479,
+        "row_sha256": "70abfec4fefcf43be6571b0195a4de50dc40ad13b2398a7c476d08664ddd4311",
+        "scope_holds": [],
+        "context_sha256": "85ccb9784105f1882c2aac89a514ec6dc92ad6b071de30dc18a4daec1ad60bd6",
+        "context_byte_start": 5830,
+        "context_byte_end": 7270
+      },
+      "rendered_after": {
+        "item_name": "Giant Pacifier",
+        "direction": "BuyFromPlayer",
+        "unit_price": 170,
+        "byte_start": 7270,
+        "byte_end": 7479,
+        "row_sha256": "70abfec4fefcf43be6571b0195a4de50dc40ad13b2398a7c476d08664ddd4311",
+        "scope_holds": [
+          "CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT"
+        ],
+        "context_sha256": "85ccb9784105f1882c2aac89a514ec6dc92ad6b071de30dc18a4daec1ad60bd6",
+        "context_byte_start": 5830,
+        "context_byte_end": 7270
+      },
+      "native_pointer": "/records/2194/offers/8",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21199",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 170
+      }
+    },
+    {
+      "item_id": 21182,
+      "rendered_before": {
+        "item_name": "Glob of Glooth",
+        "direction": "BuyFromPlayer",
+        "unit_price": 125,
+        "byte_start": 7480,
+        "byte_end": 7689,
+        "row_sha256": "3ef285deb979d49adb070cca62d6ec6a24d40221bcd3f39ecea61adc71f0a22f",
+        "scope_holds": [],
+        "context_sha256": "ac5590f5b5a0a983d099cb1b4facaa1656b526beed30a4ab891bee9b0f49cbfc",
+        "context_byte_start": 5830,
+        "context_byte_end": 7480
+      },
+      "rendered_after": {
+        "item_name": "Glob of Glooth",
+        "direction": "BuyFromPlayer",
+        "unit_price": 125,
+        "byte_start": 7480,
+        "byte_end": 7689,
+        "row_sha256": "3ef285deb979d49adb070cca62d6ec6a24d40221bcd3f39ecea61adc71f0a22f",
+        "scope_holds": [
+          "CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT"
+        ],
+        "context_sha256": "ac5590f5b5a0a983d099cb1b4facaa1656b526beed30a4ab891bee9b0f49cbfc",
+        "context_byte_start": 5830,
+        "context_byte_end": 7480
+      },
+      "native_pointer": "/records/2194/offers/1",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21182",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 125
+      }
+    },
+    {
+      "item_id": 21103,
+      "rendered_before": {
+        "item_name": "Glooth Injection Tube",
+        "direction": "BuyFromPlayer",
+        "unit_price": 350,
+        "byte_start": 7690,
+        "byte_end": 7927,
+        "row_sha256": "d394b8357b3aa95e30a3c27f1e1b27272deac7976c8417fd02bef7c3a0193446",
+        "scope_holds": [],
+        "context_sha256": "8f0d2f87f926c3941d2c7f3f41da998260d1a601705d1d671326b9c889797787",
+        "context_byte_start": 5830,
+        "context_byte_end": 7690
+      },
+      "rendered_after": {
+        "item_name": "Glooth Injection Tube",
+        "direction": "BuyFromPlayer",
+        "unit_price": 350,
+        "byte_start": 7690,
+        "byte_end": 7927,
+        "row_sha256": "d394b8357b3aa95e30a3c27f1e1b27272deac7976c8417fd02bef7c3a0193446",
+        "scope_holds": [
+          "CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT"
+        ],
+        "context_sha256": "8f0d2f87f926c3941d2c7f3f41da998260d1a601705d1d671326b9c889797787",
+        "context_byte_start": 5830,
+        "context_byte_end": 7690
+      },
+      "native_pointer": "/records/2194/offers/0",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21103",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 350
+      }
+    },
+    {
+      "item_id": 21193,
+      "rendered_before": {
+        "item_name": "Metal Jaw",
+        "direction": "BuyFromPlayer",
+        "unit_price": 260,
+        "byte_start": 7928,
+        "byte_end": 8117,
+        "row_sha256": "f0d382f36db524e348206acf8cddc4b1f37cbccc2ba10a3c2388482bb4387bd3",
+        "scope_holds": [],
+        "context_sha256": "e83d8a1f3f60a34be87a3cdfd9b1cc4a556db24d690383a0aa4b4cab3d87cef6",
+        "context_byte_start": 5830,
+        "context_byte_end": 7928
+      },
+      "rendered_after": {
+        "item_name": "Metal Jaw",
+        "direction": "BuyFromPlayer",
+        "unit_price": 260,
+        "byte_start": 7928,
+        "byte_end": 8117,
+        "row_sha256": "f0d382f36db524e348206acf8cddc4b1f37cbccc2ba10a3c2388482bb4387bd3",
+        "scope_holds": [
+          "CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT"
+        ],
+        "context_sha256": "e83d8a1f3f60a34be87a3cdfd9b1cc4a556db24d690383a0aa4b4cab3d87cef6",
+        "context_byte_start": 5830,
+        "context_byte_end": 7928
+      },
+      "native_pointer": "/records/2194/offers/2",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21193",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 260
+      }
+    },
+    {
+      "item_id": 21198,
+      "rendered_before": {
+        "item_name": "Metal Toe",
+        "direction": "BuyFromPlayer",
+        "unit_price": 430,
+        "byte_start": 8118,
+        "byte_end": 8307,
+        "row_sha256": "d71a319285f8f3ea4147930ae4fb6d44e376e74316f5a965a41ad1de2adc03ad",
+        "scope_holds": [],
+        "context_sha256": "fd71dda75110e8cd7fa43af3358c7c58c515d1bc9f29b6d6f5f2beaecb456f9e",
+        "context_byte_start": 5830,
+        "context_byte_end": 8118
+      },
+      "rendered_after": {
+        "item_name": "Metal Toe",
+        "direction": "BuyFromPlayer",
+        "unit_price": 430,
+        "byte_start": 8118,
+        "byte_end": 8307,
+        "row_sha256": "d71a319285f8f3ea4147930ae4fb6d44e376e74316f5a965a41ad1de2adc03ad",
+        "scope_holds": [
+          "CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT"
+        ],
+        "context_sha256": "fd71dda75110e8cd7fa43af3358c7c58c515d1bc9f29b6d6f5f2beaecb456f9e",
+        "context_byte_start": 5830,
+        "context_byte_end": 8118
+      },
+      "native_pointer": "/records/2194/offers/7",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21198",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 430
+      }
+    },
+    {
+      "item_id": 21202,
+      "rendered_before": {
+        "item_name": "Mooh'tah Shell",
+        "direction": "BuyFromPlayer",
+        "unit_price": 110,
+        "byte_start": 8308,
+        "byte_end": 8521,
+        "row_sha256": "51153710924dde29065638fb0139e6f153288db5cbb79c9026e3a61868125831",
+        "scope_holds": [],
+        "context_sha256": "65b9a8e8a2c9ea8c9bc1dd738bf5e7ac5dbc29a67324841a516370669dbe9c40",
+        "context_byte_start": 5830,
+        "context_byte_end": 8308
+      },
+      "rendered_after": {
+        "item_name": "Mooh'tah Shell",
+        "direction": "BuyFromPlayer",
+        "unit_price": 110,
+        "byte_start": 8308,
+        "byte_end": 8521,
+        "row_sha256": "51153710924dde29065638fb0139e6f153288db5cbb79c9026e3a61868125831",
+        "scope_holds": [
+          "CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT"
+        ],
+        "context_sha256": "65b9a8e8a2c9ea8c9bc1dd738bf5e7ac5dbc29a67324841a516370669dbe9c40",
+        "context_byte_start": 5830,
+        "context_byte_end": 8308
+      },
+      "native_pointer": "/records/2194/offers/11",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21202",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 110
+      }
+    },
+    {
+      "item_id": 21200,
+      "rendered_before": {
+        "item_name": "Moohtant Horn",
+        "direction": "BuyFromPlayer",
+        "unit_price": 140,
+        "byte_start": 8522,
+        "byte_end": 8727,
+        "row_sha256": "e201d8d2b06fe680d709cc2cea390af685eb99c0ae82e82bd389f63d6ae3d6a1",
+        "scope_holds": [],
+        "context_sha256": "ce49988809eedb5cb6c63745eee242c986d0574dcd7c2a58c7d02ca43ad1d533",
+        "context_byte_start": 5830,
+        "context_byte_end": 8522
+      },
+      "rendered_after": {
+        "item_name": "Moohtant Horn",
+        "direction": "BuyFromPlayer",
+        "unit_price": 140,
+        "byte_start": 8522,
+        "byte_end": 8727,
+        "row_sha256": "e201d8d2b06fe680d709cc2cea390af685eb99c0ae82e82bd389f63d6ae3d6a1",
+        "scope_holds": [
+          "CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT"
+        ],
+        "context_sha256": "ce49988809eedb5cb6c63745eee242c986d0574dcd7c2a58c7d02ca43ad1d533",
+        "context_byte_start": 5830,
+        "context_byte_end": 8522
+      },
+      "native_pointer": "/records/2194/offers/9",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21200",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 140
+      }
+    },
+    {
+      "item_id": 21196,
+      "rendered_before": {
+        "item_name": "Necromantic Rust",
+        "direction": "BuyFromPlayer",
+        "unit_price": 390,
+        "byte_start": 8728,
+        "byte_end": 8945,
+        "row_sha256": "f2f21e465e4a66c41a938e08d72e9b8f81bd2f27148b45d8493d1343f77c0beb",
+        "scope_holds": [],
+        "context_sha256": "dfed00b9aa5f7dd347e6be2cd09706860774c54f97a683518d0caa45d8f3b5c9",
+        "context_byte_start": 5830,
+        "context_byte_end": 8728
+      },
+      "rendered_after": {
+        "item_name": "Necromantic Rust",
+        "direction": "BuyFromPlayer",
+        "unit_price": 390,
+        "byte_start": 8728,
+        "byte_end": 8945,
+        "row_sha256": "f2f21e465e4a66c41a938e08d72e9b8f81bd2f27148b45d8493d1343f77c0beb",
+        "scope_holds": [
+          "CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT"
+        ],
+        "context_sha256": "dfed00b9aa5f7dd347e6be2cd09706860774c54f97a683518d0caa45d8f3b5c9",
+        "context_byte_start": 5830,
+        "context_byte_end": 8728
+      },
+      "native_pointer": "/records/2194/offers/5",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21196",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 390
+      }
+    },
+    {
+      "item_id": 21195,
+      "rendered_before": {
+        "item_name": "Poisoned Fang",
+        "direction": "BuyFromPlayer",
+        "unit_price": 130,
+        "byte_start": 8946,
+        "byte_end": 9151,
+        "row_sha256": "1328ac4da68d5efe5b557b04db61481288ab20709895cb8863759d3886eb9bfe",
+        "scope_holds": [],
+        "context_sha256": "e41b733461dce5747182b0c0f3264469e3d8128cd21a291a1af84909bb2b6461",
+        "context_byte_start": 5830,
+        "context_byte_end": 8946
+      },
+      "rendered_after": {
+        "item_name": "Poisoned Fang",
+        "direction": "BuyFromPlayer",
+        "unit_price": 130,
+        "byte_start": 8946,
+        "byte_end": 9151,
+        "row_sha256": "1328ac4da68d5efe5b557b04db61481288ab20709895cb8863759d3886eb9bfe",
+        "scope_holds": [
+          "CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT"
+        ],
+        "context_sha256": "e41b733461dce5747182b0c0f3264469e3d8128cd21a291a1af84909bb2b6461",
+        "context_byte_start": 5830,
+        "context_byte_end": 8946
+      },
+      "native_pointer": "/records/2194/offers/4",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21195",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 130
+      }
+    },
+    {
+      "item_id": 21801,
+      "rendered_before": {
+        "item_name": "Seacrest Hair",
+        "direction": "BuyFromPlayer",
+        "unit_price": 260,
+        "byte_start": 9152,
+        "byte_end": 9357,
+        "row_sha256": "651b342d0ae3f43152e4c9b19b304a1ca90d7d71ee0d87337226cb20e2e96400",
+        "scope_holds": [],
+        "context_sha256": "f63bba83c67c309b5b1d0213651e0eae038e455ec99e1ee31e9f1ecef315d3ee",
+        "context_byte_start": 5830,
+        "context_byte_end": 9152
+      },
+      "rendered_after": {
+        "item_name": "Seacrest Hair",
+        "direction": "BuyFromPlayer",
+        "unit_price": 260,
+        "byte_start": 9152,
+        "byte_end": 9357,
+        "row_sha256": "651b342d0ae3f43152e4c9b19b304a1ca90d7d71ee0d87337226cb20e2e96400",
+        "scope_holds": [
+          "CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT"
+        ],
+        "context_sha256": "f63bba83c67c309b5b1d0213651e0eae038e455ec99e1ee31e9f1ecef315d3ee",
+        "context_byte_start": 5830,
+        "context_byte_end": 9152
+      },
+      "native_pointer": "/records/2194/offers/15",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21801",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 260
+      }
+    },
+    {
+      "item_id": 21747,
+      "rendered_before": {
+        "item_name": "Seacrest Pearl",
+        "direction": "BuyFromPlayer",
+        "unit_price": 400,
+        "byte_start": 9358,
+        "byte_end": 9567,
+        "row_sha256": "529fd85ce16bdb2ffb2a6d5bb5a1d969608ddc395c5c162fe0646af63f673b0d",
+        "scope_holds": [],
+        "context_sha256": "bc40364625749025890da0104ba09f237789fd562202970dcd5a77987a2acd1f",
+        "context_byte_start": 5830,
+        "context_byte_end": 9358
+      },
+      "rendered_after": {
+        "item_name": "Seacrest Pearl",
+        "direction": "BuyFromPlayer",
+        "unit_price": 400,
+        "byte_start": 9358,
+        "byte_end": 9567,
+        "row_sha256": "529fd85ce16bdb2ffb2a6d5bb5a1d969608ddc395c5c162fe0646af63f673b0d",
+        "scope_holds": [
+          "CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT"
+        ],
+        "context_sha256": "bc40364625749025890da0104ba09f237789fd562202970dcd5a77987a2acd1f",
+        "context_byte_start": 5830,
+        "context_byte_end": 9358
+      },
+      "native_pointer": "/records/2194/offers/13",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21747",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 400
+      }
+    },
+    {
+      "item_id": 21800,
+      "rendered_before": {
+        "item_name": "Seacrest Scale",
+        "direction": "BuyFromPlayer",
+        "unit_price": 150,
+        "byte_start": 9568,
+        "byte_end": 9777,
+        "row_sha256": "b4462227a8aada576e6b6f13b32b6647e22e53b31b4768883b313ecbb0e74211",
+        "scope_holds": [],
+        "context_sha256": "7297cddd0114624940ffec930177d96cd8f3444703db9506ac6ce96b06ddc1be",
+        "context_byte_start": 5830,
+        "context_byte_end": 9568
+      },
+      "rendered_after": {
+        "item_name": "Seacrest Scale",
+        "direction": "BuyFromPlayer",
+        "unit_price": 150,
+        "byte_start": 9568,
+        "byte_end": 9777,
+        "row_sha256": "b4462227a8aada576e6b6f13b32b6647e22e53b31b4768883b313ecbb0e74211",
+        "scope_holds": [
+          "CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT"
+        ],
+        "context_sha256": "7297cddd0114624940ffec930177d96cd8f3444703db9506ac6ce96b06ddc1be",
+        "context_byte_start": 5830,
+        "context_byte_end": 9568
+      },
+      "native_pointer": "/records/2194/offers/14",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21800",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 150
+      }
+    },
+    {
+      "item_id": 21194,
+      "rendered_before": {
+        "item_name": "Slime Heart",
+        "direction": "BuyFromPlayer",
+        "unit_price": 160,
+        "byte_start": 9778,
+        "byte_end": 9975,
+        "row_sha256": "374a9235ba7f3cb141f1b7346c2074d6fc2f781aa88a2e165fdac70fabaa8916",
+        "scope_holds": [],
+        "context_sha256": "888234195181332ffb92b97f5e31b706ce656d7302150a14f3bbfc512fe17e2b",
+        "context_byte_start": 5830,
+        "context_byte_end": 9778
+      },
+      "rendered_after": {
+        "item_name": "Slime Heart",
+        "direction": "BuyFromPlayer",
+        "unit_price": 160,
+        "byte_start": 9778,
+        "byte_end": 9975,
+        "row_sha256": "374a9235ba7f3cb141f1b7346c2074d6fc2f781aa88a2e165fdac70fabaa8916",
+        "scope_holds": [
+          "CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT"
+        ],
+        "context_sha256": "888234195181332ffb92b97f5e31b706ce656d7302150a14f3bbfc512fe17e2b",
+        "context_byte_start": 5830,
+        "context_byte_end": 9778
+      },
+      "native_pointer": "/records/2194/offers/3",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21194",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 160
+      }
+    },
+    {
+      "item_id": 21197,
+      "rendered_before": {
+        "item_name": "Slimy Leaf Tentacle",
+        "direction": "BuyFromPlayer",
+        "unit_price": 320,
+        "byte_start": 9976,
+        "byte_end": 10205,
+        "row_sha256": "375510fe617231d29bb53393cf4d438ab2027d6da4087be126f0435c09375495",
+        "scope_holds": [],
+        "context_sha256": "856aa9283047ccb0e06302873891dcb063a4cbe5efbecff6deb7bccb575cf828",
+        "context_byte_start": 5830,
+        "context_byte_end": 9976
+      },
+      "rendered_after": {
+        "item_name": "Slimy Leaf Tentacle",
+        "direction": "BuyFromPlayer",
+        "unit_price": 320,
+        "byte_start": 9976,
+        "byte_end": 10205,
+        "row_sha256": "375510fe617231d29bb53393cf4d438ab2027d6da4087be126f0435c09375495",
+        "scope_holds": [
+          "CONDITIONAL_OR_HISTORICAL_SHOP_CONTEXT"
+        ],
+        "context_sha256": "856aa9283047ccb0e06302873891dcb063a4cbe5efbecff6deb7bccb575cf828",
+        "context_byte_start": 5830,
+        "context_byte_end": 9976
+      },
+      "native_pointer": "/records/2194/offers/6",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21197",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 320
+      }
+    }
+  ],
+  "siblings_changed": [
+    "https://www.tibiawiki.com.br/wiki/Alaistar"
+  ],
+  "source_price_vs_eligibility": "Official MetalToe i21198price430 evidence remains valid; Commoner eligibility remains separately held and must not be inferred from an official price row.",
+  "minimal_fix": "Extend only the context qualifier regex to recognize the actual Tendo [o] rank heading. Keep price rows and byte witnesses unchanged; assign existing scope hold rather than fabricate a native Quest gate.",
+  "repository_edited": false
+}

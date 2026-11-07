@@ -1,0 +1,18 @@
+{
+  "id": "PREMCHAN-RL-03",
+  "owner_contract": "GAME-CHANNEL-01 \u00a736 / protocol-oteryn/v1/channel_list_v1.proto",
+  "resource": "Premium warm-up observation interval",
+  "unit": "milliseconds",
+  "hard_maximum": 50,
+  "configurable_range": {
+    "minimum": 50,
+    "maximum": 50
+  },
+  "failure_category": "PREMIUM_REQUIRED",
+  "allocation_impact": "One statically configured served Channel; no cross-node scan. Warm-up reuses the existing PREM-1 puller and releases pending registration on cancellation.",
+  "client_visible": true,
+  "boundary_tests": [
+    "premchan_entry_uses_premium_owner_and_releases_failed_attempts"
+  ],
+  "notes": "PREMIUM-CHANNEL-1 owner allocation 1130-1139."
+}

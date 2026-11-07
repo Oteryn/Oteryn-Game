@@ -1,0 +1,10 @@
+{
+  "id": 169,
+  "name": "HAZARD",
+  "owner_decision": "HAZARD-1, W10 and owner decision 22",
+  "capability": 117,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/hazard_v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/hazard_v1.md#result",
+  "max_payload_bytes": 1,
+  "max_result_payload_bytes": 2
+}

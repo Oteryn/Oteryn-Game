@@ -1,0 +1,18 @@
+{
+  "id": "DUR04-FIRST-PROD-SERVER-ARTIFACT-BYTES",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_03+AMENDMENT_04",
+  "resource": "One server-authoritative bootstrap artifact",
+  "unit": "bytes",
+  "hard_maximum": 4312850,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 4312850
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check server slice length before header parse or input-sized allocation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "4,312,850 bytes accepted only when nested limits pass",
+    "4,312,851 rejected before parse/allocation"
+  ]
+}

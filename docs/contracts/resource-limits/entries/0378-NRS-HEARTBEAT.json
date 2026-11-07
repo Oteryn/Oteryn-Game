@@ -1,0 +1,22 @@
+{
+  "id": "NRS-HEARTBEAT",
+  "owner_contract": "OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md",
+  "resource": "Runtime report heartbeat interval H",
+  "unit": "milliseconds",
+  "hard_maximum": 60000,
+  "configurable_range": {
+    "minimum": 5000,
+    "maximum": 5000
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "One timer per reporter; the heartbeat repeats the committed ready publication only while serving, the durability root is ready and the assignment is unchanged.",
+  "client_visible": false,
+  "boundary_tests": [
+    "5000 ms: the compiled H (U-RS1 proposal)",
+    "heartbeats stop when any heartbeat condition fails"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/runtime_status.rs"
+  ],
+  "notes": "Compiled H = 5000 ms (U-RS1); 60000 ms is the contract hard maximum. Contract sections 3 and 11. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered' and never gates boot, serving, admission or shutdown. Registered by OTV2-20260929-runtime-status-producer (#162 owner-accepted package Q21, 5900403086)."
+}

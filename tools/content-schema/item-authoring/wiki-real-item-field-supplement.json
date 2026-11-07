@@ -1,0 +1,334 @@
+{
+  "schema": "OTERYN_ITEM_AUTHORING_REAL_ITEM_FIELD_SUPPLEMENT/candidate-3",
+  "source_profile": "tibiawiki_br_real_item_pages_20260927_v1",
+  "base_profile": "tibiawiki_br_infobox_item_424807_v1",
+  "authority": "PINNED_REAL_ITEM_PAGE_FIXTURE_SUPPLEMENT",
+  "unknown_field_policy": "unsupported_source_field",
+  "pages": [
+    {
+      "page_id": 7109,
+      "title": "Backpack",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Backpack&oldid=432220",
+      "revision": "432220",
+      "revision_timestamp": "2026-01-27T00:35:10Z",
+      "captured_at": "2026-09-27T07:08:47.439Z",
+      "revision_sha1": "f74a5e4c2bea507c5c2c766f311323073324b521",
+      "content_sha256": "75816d7708357163fc7b007641fa9e703f1a5c6d7dc3fb14df26dc9f3d12b19d",
+      "raw_fields": [
+        "buyfrom",
+        "droppedby",
+        "imbuement",
+        "implemented",
+        "itemclass",
+        "name",
+        "notes",
+        "npcprice",
+        "npcvalue",
+        "primarytype",
+        "sellto",
+        "stackable",
+        "volume",
+        "weight"
+      ]
+    },
+    {
+      "page_id": 6527,
+      "title": "Demon Armor",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Demon_Armor&oldid=379817",
+      "revision": "379817",
+      "revision_timestamp": "2022-12-18T19:26:13Z",
+      "captured_at": "2026-09-27T07:08:47.439Z",
+      "revision_sha1": "1aafcabfd8fd058c16d5f6a07250641518a021a7",
+      "content_sha256": "c5254032ea340db36ec8564515df8f01500d1a748c7a61a8061dbd85f6dc3029",
+      "raw_fields": [
+        "armor",
+        "buyfrom",
+        "classificacao",
+        "imbuement",
+        "itemclass",
+        "max_tier",
+        "name",
+        "notes",
+        "npcprice",
+        "npcvalue",
+        "primarytype",
+        "sellto",
+        "stackable",
+        "value",
+        "weight"
+      ]
+    },
+    {
+      "page_id": 5810,
+      "title": "Magic Sword",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Magic_Sword&oldid=436743",
+      "revision": "436743",
+      "revision_timestamp": "2026-06-16T15:36:49Z",
+      "captured_at": "2026-09-27T07:08:47.439Z",
+      "revision_sha1": "fa042e6cac18e57d36b535cfd6cac46bfc644b92",
+      "content_sha256": "31bc9a48ea263fa02e1e85a82316e9810ae0602183ef52c7da217508da3535a9",
+      "raw_fields": [
+        "attack",
+        "buyfrom",
+        "classificacao",
+        "defense",
+        "defensemod",
+        "droppedby",
+        "enchantable",
+        "flavortext",
+        "hands",
+        "imbuement",
+        "itemclass",
+        "levelrequired",
+        "max_tier",
+        "name",
+        "notes",
+        "npcprice",
+        "npcvalue",
+        "perk1",
+        "perk2",
+        "perk3",
+        "primarytype",
+        "sellto",
+        "stackable",
+        "type",
+        "value",
+        "weight"
+      ]
+    },
+    {
+      "page_id": 8230,
+      "title": "Red Apple",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Red_Apple&oldid=381934",
+      "revision": "381934",
+      "revision_timestamp": "2022-12-18T20:00:31Z",
+      "captured_at": "2026-09-27T07:08:47.439Z",
+      "revision_sha1": "974d6697071e73c455e505edab05f8d54e30f4d7",
+      "content_sha256": "f0f46d71956b08626126d519778ea6aa510d2f56978540758729f166c5bde656",
+      "raw_fields": [
+        "buyfrom",
+        "droppedby",
+        "droppedEventby",
+        "edible",
+        "flavortext",
+        "itemclass",
+        "name",
+        "notes",
+        "npcprice",
+        "npcvalue",
+        "primarytype",
+        "regenseconds",
+        "secondarytype",
+        "sellto",
+        "sounds",
+        "stackable",
+        "value",
+        "weight"
+      ]
+    },
+    {
+      "page_id": 10250,
+      "title": "Sudden Death Rune",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Sudden_Death_Rune&oldid=435712",
+      "revision": "435712",
+      "revision_timestamp": "2026-06-03T03:41:42Z",
+      "captured_at": "2026-09-27T07:08:47.439Z",
+      "revision_sha1": "e3dbb273bb387789a1c7b53d0a061c2c0fa8b569",
+      "content_sha256": "7bae31e2dbd4eb80969b98e411397603faffdc06dd56647f950eff24a5ba5a25",
+      "raw_fields": [
+        "buyfrom",
+        "cooldowngrupo",
+        "cooldownproprio",
+        "damagetype",
+        "droppedby",
+        "droppedRaidby",
+        "effect",
+        "history",
+        "levelrequired",
+        "makelvl",
+        "makemana",
+        "makeqty",
+        "makevoc",
+        "mlrequired",
+        "name",
+        "notes",
+        "npcprice",
+        "premium",
+        "soul",
+        "storevalue",
+        "Subclass",
+        "weight",
+        "words"
+      ]
+    },
+    {
+      "page_id": 7288,
+      "title": "Vial",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Vial&oldid=382884",
+      "revision": "382884",
+      "revision_timestamp": "2022-12-18T20:16:04Z",
+      "captured_at": "2026-09-27T07:08:47.439Z",
+      "revision_sha1": "2caba430cecd7be590e2fd88f3adcd1e0af92229",
+      "content_sha256": "b1390d881313a0b17b1c5ccff510fb001de926130244031f6bf9137aaeb20dbe",
+      "raw_fields": [
+        "attrib",
+        "buyfrom",
+        "droppedby",
+        "itemclass",
+        "name",
+        "notes",
+        "npcprice",
+        "npcvalue",
+        "primarytype",
+        "sellto",
+        "stackable",
+        "value",
+        "weight"
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "source_field": "Subclass",
+      "disposition": "VALUE_DEPENDENT",
+      "kind": "raw_text",
+      "status": "unresolved_semantics",
+      "allowed_destinations": [],
+      "reason": "",
+      "source_value_routes": [
+        {
+          "source_value": "Ataque",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/taxonomy/secondary"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "attack"
+        }
+      ]
+    },
+    {
+      "source_field": "cooldowngrupo",
+      "disposition": "EXTERNAL_BEHAVIOR",
+      "kind": "external_domain",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "Ability/Effect authoring owns executable spell and rune behavior"
+    },
+    {
+      "source_field": "cooldownproprio",
+      "disposition": "EXTERNAL_BEHAVIOR",
+      "kind": "external_domain",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "Ability/Effect authoring owns executable spell and rune behavior"
+    },
+    {
+      "source_field": "effect",
+      "disposition": "EXTERNAL_BEHAVIOR",
+      "kind": "external_domain",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "Ability/Effect authoring owns executable spell and rune behavior"
+    },
+    {
+      "source_field": "history",
+      "disposition": "PROVENANCE",
+      "kind": "provenance",
+      "status": "provenance_only",
+      "allowed_destinations": [],
+      "reason": "community history is evidence, not Item truth"
+    },
+    {
+      "source_field": "makelvl",
+      "disposition": "EXTERNAL_BEHAVIOR",
+      "kind": "external_domain",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "Ability/Effect authoring owns executable spell and rune behavior"
+    },
+    {
+      "source_field": "makemana",
+      "disposition": "EXTERNAL_BEHAVIOR",
+      "kind": "external_domain",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "Ability/Effect authoring owns executable spell and rune behavior"
+    },
+    {
+      "source_field": "makeqty",
+      "disposition": "EXTERNAL_BEHAVIOR",
+      "kind": "external_domain",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "Ability/Effect authoring owns executable spell and rune behavior"
+    },
+    {
+      "source_field": "makevoc",
+      "disposition": "EXTERNAL_BEHAVIOR",
+      "kind": "external_domain",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "Ability/Effect authoring owns executable spell and rune behavior"
+    },
+    {
+      "source_field": "max_tier",
+      "disposition": "ITEM_AUTHORING",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/forge/max_tier"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "mlrequired",
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/requirements/min_magic_level"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "premium",
+      "disposition": "VALUE_DEPENDENT",
+      "kind": "raw_text",
+      "status": "unresolved_semantics",
+      "allowed_destinations": [],
+      "reason": "",
+      "source_value_routes": [
+        {
+          "source_value": "não",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/requirements/premium_only"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": false
+        }
+      ]
+    },
+    {
+      "source_field": "soul",
+      "disposition": "EXTERNAL_BEHAVIOR",
+      "kind": "external_domain",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "Ability/Effect authoring owns executable spell and rune behavior"
+    },
+    {
+      "source_field": "words",
+      "disposition": "EXTERNAL_BEHAVIOR",
+      "kind": "external_domain",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "Ability/Effect authoring owns executable spell and rune behavior"
+    }
+  ]
+}

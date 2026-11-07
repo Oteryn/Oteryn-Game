@@ -1,0 +1,12 @@
+[
+  {
+    "table": "game_native_map_item_receipts",
+    "runtime_share_lock_sqlstate": "42501",
+    "immutable_read": "PASS"
+  },
+  {
+    "table": "game_native_map_item_audit",
+    "runtime_share_lock_sqlstate": "42501",
+    "immutable_read": "PASS"
+  }
+]

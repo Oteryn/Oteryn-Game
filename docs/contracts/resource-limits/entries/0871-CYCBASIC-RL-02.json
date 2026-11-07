@@ -1,0 +1,22 @@
+{
+  "id": "CYCBASIC-RL-02",
+  "owner_contract": "protocol-oteryn/v1/cyclopedia-basic-v1.md",
+  "resource": "result",
+  "unit": "bytes",
+  "hard_maximum": 69,
+  "configurable_range": {
+    "minimum": 69,
+    "maximum": 69
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bound before allocation; reject invalid content or input without writes.",
+  "client_visible": true,
+  "boundary_tests": [
+    "cyclopedia_codec_rejects_invalid_and_bounds_results",
+    "cyclopedia_postgres_real_dispatch"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/cyclopedia.rs",
+    "crates/gameplay/durability/src/durability/character_cyclopedia.rs"
+  ]
+}

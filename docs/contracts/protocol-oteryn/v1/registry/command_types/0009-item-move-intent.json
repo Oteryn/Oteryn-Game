@@ -1,0 +1,10 @@
+{
+  "id": 9,
+  "name": "ITEM_MOVE_INTENT",
+  "owner_decision": "ITEM-MOVE-WIRE-0 ITEM-MOVE-WIRE0-ITEM-VIEW-AND-MOVE-V1 §4 and §5 (docs/architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md, owner D212); numbers assigned by D212 and registered by ITEM-VIEW-1a (#1622 control plane)",
+  "capability": 4,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/item_view_v1.proto#ItemMoveIntentV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/item_view_v1.proto#ItemMoveResultV1",
+  "max_payload_bytes": 31,
+  "max_result_payload_bytes": 4
+}

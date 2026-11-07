@@ -1,0 +1,224 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/forked_thorns",
+        "revision": "spell-p2-r20"
+      },
+      "kind": "spell",
+      "range_tiles": 7,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/forked_thorns/effect",
+          "revision": "spell-p2-r20"
+        }
+      ],
+      "chain": {
+        "max_targets": 5,
+        "range_tiles": 4,
+        "backtracking": false,
+        "chain_asset_binding": "canary.appearance:effect/forked_thorns",
+        "shape": "fork",
+        "initial_range_tiles": 7
+      }
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/forked_thorns/effect",
+        "revision": "spell-p2-r20"
+      },
+      "operation": "damage",
+      "damage_type": "earth",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:formula/spell/forked_thorns/combat-1",
+        "revision": "spell-p2-r20"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "candidate:formula/spell/forked_thorns/combat-1",
+        "revision": "spell-p2-r20"
+      },
+      "kind": "player_expression",
+      "inputs": "level_magic",
+      "minimum": {
+        "op": "add",
+        "args": [
+          {
+            "fn": "level_base_damage_healing",
+            "args": [
+              {
+                "var": "level"
+              }
+            ]
+          },
+          {
+            "op": "floor",
+            "args": [
+              {
+                "op": "mul",
+                "args": [
+                  {
+                    "op": "sub",
+                    "args": [
+                      {
+                        "const": "1"
+                      },
+                      {
+                        "op": "div",
+                        "args": [
+                          {
+                            "op": "div",
+                            "args": [
+                              {
+                                "const": "4"
+                              },
+                              {
+                                "var": "base_power"
+                              }
+                            ]
+                          },
+                          {
+                            "const": "2"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "op": "add",
+                    "args": [
+                      {
+                        "op": "mul",
+                        "args": [
+                          {
+                            "op": "div",
+                            "args": [
+                              {
+                                "var": "base_power"
+                              },
+                              {
+                                "const": "25"
+                              }
+                            ]
+                          },
+                          {
+                            "var": "magic_level"
+                          }
+                        ]
+                      },
+                      {
+                        "op": "div",
+                        "args": [
+                          {
+                            "var": "base_power"
+                          },
+                          {
+                            "const": "4"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "maximum": {
+        "op": "add",
+        "args": [
+          {
+            "fn": "level_base_damage_healing",
+            "args": [
+              {
+                "var": "level"
+              }
+            ]
+          },
+          {
+            "op": "floor",
+            "args": [
+              {
+                "op": "mul",
+                "args": [
+                  {
+                    "op": "add",
+                    "args": [
+                      {
+                        "const": "1"
+                      },
+                      {
+                        "op": "div",
+                        "args": [
+                          {
+                            "op": "div",
+                            "args": [
+                              {
+                                "const": "4"
+                              },
+                              {
+                                "var": "base_power"
+                              }
+                            ]
+                          },
+                          {
+                            "const": "2"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "op": "add",
+                    "args": [
+                      {
+                        "op": "mul",
+                        "args": [
+                          {
+                            "op": "div",
+                            "args": [
+                              {
+                                "var": "base_power"
+                              },
+                              {
+                                "const": "25"
+                              }
+                            ]
+                          },
+                          {
+                            "var": "magic_level"
+                          }
+                        ]
+                      },
+                      {
+                        "op": "div",
+                        "args": [
+                          {
+                            "var": "base_power"
+                          },
+                          {
+                            "const": "4"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

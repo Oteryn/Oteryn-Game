@@ -1,0 +1,14 @@
+{
+  "id": 49,
+  "name": "HOUSE_V1",
+  "owner_decision": "HOUSE-WIRE-1 owner allocation 2026-10-23; OWN0 \u00a711; commands 56/57, capability 49",
+  "owner": "World-global House management",
+  "requires": [],
+  "command_types": [
+    56,
+    57
+  ],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Remote management is available with the shipped server catalogue and current durable property rows. Door edits additionally require qualified native House placement metadata; missing acquisition/exit owners refuse."
+}

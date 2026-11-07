@@ -1,0 +1,18 @@
+{
+  "id": 171,
+  "name": "COIN_CONVERSION_V1",
+  "constant": "coin_conversion::CAPABILITY_COIN_CONVERSION_V1",
+  "requires": [
+    4,
+    15
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

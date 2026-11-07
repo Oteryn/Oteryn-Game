@@ -1,0 +1,26 @@
+{
+  "id": "CREATUREAI0-RL-04",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md",
+  "resource": "Creature actors of one Channel, every kind (replaces AI01-ACTIVE-ACTORS 256 for creatures)",
+  "unit": "actors",
+  "hard_maximum": 262144,
+  "configurable_range": {
+    "minimum": 262144,
+    "maximum": 262144
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked in ChannelActorCarrier::admit_creature against the carrier's occupied-slot count before any slot is selected or written, and in the respawn drive's admission (respawn_into_free_cell) after the dead creature has left; it reserves nothing. The count includes every actor, so it is conservative: the 131,072-slot pre-production carrier never reaches it. The creature ledgers are bounded by the same value: the melee owner is keyed by carrier slot (one live generation per slot; a newer generation replaces a stale entry in place), and the creature bite ledger is keyed by the issuer's exact generation and drops dead issuers' entries when full, so a live issuer is never refused. Native summon and masterless encounter admission (admit_native_summon, admit_native_encounter_masterless) check the same occupied count before anything is written, in place of the D57 envelope of 64 live creatures (Codex 4242954089); the native summon links, one per child actor, are bounded by the same value and indexed by child and parent (Codex 4243039217), and retire_native_summons retires dead children however many there are, examining at most SPAWNCEIL-RL-02 links per call; a summon admission first retires its own parent's dead children.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=262144: a carrier of 262,145 slots admits 262,144 creatures",
+    "max+1=262145: the next creature is refused CAPACITY_EXCEEDED with nothing written, and the free slot still admits a player"
+  ],
+  "consumers": [
+    "apps/game-server/src/foundation/runtime_actor_carrier.rs CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX: ChannelActorCarrier::admit_creature and respawn_into_free_cell",
+    "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::admit_native_summon, admit_native_encounter_masterless and retire_native_summons (no 64-creature or 64-dead-child refusal)",
+    "apps/game-server/src/ability/creature_bite.rs CREATURE_BITE_LEDGER_MAX: CreatureBiteLedger (keyed by exact issuer generation, dead entries dropped when full)",
+    "apps/game-server/src/ai_monster_melee.rs MonsterMeleeOwner (keyed by carrier slot, capped by CREATURE_BITE_LEDGER_MAX)",
+    "apps/game-server/src/ai_think/channel_owner.rs CreatureAiTable::forget_dead (the think table holds live creatures only)"
+  ],
+  "notes": "CREATURE-AI-0 \u00a710. Registered by SPAWN-CEILINGS-1 (Codex 4242381779, 4242381774). Tests: apps/game-server/src/foundation/runtime_actor_carrier.rs creature_admission_refuses_past_the_creature_actor_ceiling; channel_owner_creature_bite_tests.rs the_ledger_keeps_every_live_issuer_past_the_old_envelope_and_a_reused_slot_starts_fresh; ai_monster_melee.rs three_hundred_issuers_each_keep_their_entries_and_a_reused_slot_starts_fresh; channel_owner_creature_ai_tests.rs three_hundred_rats_are_censused_in_slot_order_think_in_one_pass_and_the_dead_are_forgotten; gameplay_transport/monster_ai_cycle.rs a_pass_swings_every_targeting_monster_up_to_the_think_budget (the channel monster pass swings at most CREATUREAI0-RL-05 targeting monsters per pass, round robin). Summons past the old envelope: monster_summon.rs more_than_sixty_four_summoners_each_summon_retire_together_and_summon_again and more_than_sixty_four_defence_summoners_each_summon (100 summoners each). Bounded retirement past them: runtime_actor_carrier.rs summon_retirement_is_bounded_per_call_and_an_admission_retires_its_parent_first (640 children)."
+}

@@ -1,0 +1,522 @@
+#!/usr/bin/env python3
+"""Wiki-first TibiaWiki Item census for Oteryn Content/World evidence.
+
+Discovery starts from direct TibiaWiki `Categoria:Itens` membership rather than from
+the protected Crystal-derived 38,157 identity closure. The product is source
+evidence only: it does not mint Oteryn identities, resolve Crystal/OTS identity,
+promote Reference semantics, or copy long-form page/book prose.
+"""
+from __future__ import annotations
+
+import argparse
+from collections import Counter
+from datetime import datetime, timezone
+import importlib.util
+import re
+from pathlib import Path
+from typing import Any, Iterable
+
+HERE = Path(__file__).resolve().parent
+PREDECESSOR_PATH = HERE / "item_current_source_tibiawiki.py"
+_spec = importlib.util.spec_from_file_location("item_current_source_tibiawiki", PREDECESSOR_PATH)
+if _spec is None or _spec.loader is None:
+    raise RuntimeError("protected TibiaWiki collector import failed")
+predecessor = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(predecessor)
+
+SCHEMA = "OTERYN_ITEM_WIKI_FIRST_CENSUS/v1"
+MANIFEST_SCHEMA = "OTERYN_ITEM_WIKI_FIRST_CENSUS_MANIFEST/v1"
+PROFILE = "OTERYN_ITEM_WIKI_FIRST_CENSUS_COLLECTOR/v1"
+SOURCE_ROLE = predecessor.SOURCE_ROLE
+SOURCE_ID = predecessor.SOURCE_ID
+API_BASE = predecessor.API_BASE
+ITEM_CATEGORY_TITLE = "Categoria:Itens"
+MAX_DISCOVERY_REQUESTS = 128
+MAX_DISCOVERED_PAGES = 20_000
+MAX_CONTINUE_FIELDS = 16
+INFOBOX_MARKER_RE = re.compile(
+    r"\{\{\s*(?:(?:predefinição|template)\s*:\s*)?infobox[\s_]+item\b(?=\s*(?:\||\}\}))",
+    re.IGNORECASE,
+)
+
+CensusError = predecessor.CurrentSourceError
+
+
+def canonical_bytes(value: Any) -> bytes:
+    return predecessor.canonical_bytes(value)
+
+
+def sha256_bytes(value: bytes) -> str:
+    return predecessor.sha256_bytes(value)
+
+
+def normalized_name(value: str) -> str:
+    return predecessor.normalized_name(value)
+
+
+def _validate_continue(value: Any) -> dict[str, str] | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict) or len(value) > MAX_CONTINUE_FIELDS:
+        raise CensusError("DISCOVERY_CONTINUE_INVALID")
+    output: dict[str, str] = {}
+    for key, item in value.items():
+        if not isinstance(key, str) or not isinstance(item, str):
+            raise CensusError("DISCOVERY_CONTINUE_INVALID")
+        predecessor.bounded_text(key, label="DISCOVERY_CONTINUE_KEY", max_bytes=64)
+        predecessor.bounded_text(item, label="DISCOVERY_CONTINUE_VALUE", max_bytes=512)
+        output[key] = item
+    return output
+
+
+def _validate_categorymembers_response(
+    value: Any,
+) -> tuple[list[dict[str, Any]], dict[str, str] | None]:
+    if not isinstance(value, dict):
+        raise CensusError("DISCOVERY_ROOT_INVALID")
+    query = value.get("query")
+    if not isinstance(query, dict):
+        raise CensusError("DISCOVERY_QUERY_INVALID")
+    rows = query.get("categorymembers")
+    if not isinstance(rows, list):
+        raise CensusError("DISCOVERY_ROWS_INVALID")
+    output: list[dict[str, Any]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            raise CensusError("DISCOVERY_ROW_INVALID")
+        page_id, namespace, title = row.get("pageid"), row.get("ns"), row.get("title")
+        if not isinstance(page_id, int) or isinstance(page_id, bool) or page_id <= 0:
+            raise CensusError("DISCOVERY_PAGE_ID_INVALID")
+        if namespace != 0:
+            raise CensusError("DISCOVERY_NAMESPACE_INVALID")
+        predecessor.bounded_text(
+            title, label="DISCOVERY_TITLE", max_bytes=predecessor.MAX_TITLE_BYTES
+        )
+        output.append({"page_id": page_id, "title": title})
+    return output, _validate_continue(value.get("continue"))
+
+
+def discover_item_pages(client: predecessor.ApiClient) -> list[dict[str, Any]]:
+    """Return the bounded deterministic set of direct main-namespace Item category members."""
+    found: dict[int, str] = {}
+    continuation: dict[str, str] | None = {"continue": ""}
+    requests = 0
+    while continuation is not None:
+        requests += 1
+        if requests > MAX_DISCOVERY_REQUESTS:
+            raise CensusError("DISCOVERY_REQUEST_LIMIT_EXCEEDED")
+        params = {
+            "action": "query",
+            "format": "json",
+            "formatversion": "2",
+            "list": "categorymembers",
+            "cmtitle": ITEM_CATEGORY_TITLE,
+            "cmnamespace": "0",
+            "cmtype": "page",
+            "cmlimit": "max",
+            **continuation,
+        }
+        value = client.get_json(params)
+        rows, continuation = _validate_categorymembers_response(value)
+        for row in rows:
+            page_id, title = int(row["page_id"]), str(row["title"])
+            existing = found.get(page_id)
+            if existing is not None and existing != title:
+                raise CensusError("DISCOVERY_PAGE_ID_TITLE_CONFLICT")
+            found[page_id] = title
+        if len(found) > MAX_DISCOVERED_PAGES:
+            raise CensusError("DISCOVERY_PAGE_LIMIT_EXCEEDED")
+    if not found:
+        raise CensusError("DISCOVERY_EMPTY")
+    titles = list(found.values())
+    if len(set(titles)) != len(titles):
+        raise CensusError("DISCOVERY_DUPLICATE_TITLE")
+    return [
+        {"page_id": page_id, "title": found[page_id]}
+        for page_id in sorted(
+            found, key=lambda key: (normalized_name(found[key]), found[key], key)
+        )
+    ]
+
+
+def _extract_infobox(wikitext: str) -> dict[str, Any]:
+    """Normalize MediaWiki-equivalent Item infobox invocation spelling."""
+    match = INFOBOX_MARKER_RE.search(wikitext)
+    if match is None:
+        return {"mapped": {}, "unmapped": {}, "infobox_present": False}
+    normalized = (
+        wikitext[: match.start()]
+        + "{{Infobox_Item"
+        + wikitext[match.end() :]
+    )
+    return predecessor.extract_infobox_item(normalized)
+
+
+def normalize_page(
+    meta: dict[str, Any], wikitext: str, retrieval_timestamp: str
+) -> dict[str, Any]:
+    encoded = wikitext.encode("utf-8")
+    if len(encoded) > predecessor.MAX_WIKITEXT_BYTES:
+        raise CensusError(f"WIKITEXT_MAX_PLUS_ONE:{len(encoded)}")
+    parse_error: str | None = None
+    try:
+        extracted = _extract_infobox(wikitext)
+    except CensusError as exc:
+        parse_error = predecessor.bounded_text(
+            str(exc), label="SOURCE_PARSE_ERROR", max_bytes=256
+        )
+        extracted = {"mapped": {}, "unmapped": {}, "infobox_present": True}
+    infobox_present = extracted["infobox_present"] is True
+    if parse_error is not None:
+        source_shape = "INFOBOX_ITEM_PARSE_ERROR"
+    elif infobox_present:
+        source_shape = "INFOBOX_ITEM"
+    else:
+        source_shape = "NO_INFOBOX_ITEM"
+    return {
+        "source": SOURCE_ID,
+        "source_role": SOURCE_ROLE,
+        "page_id": int(meta["page_id"]),
+        "title": meta["title"],
+        "revision_id": int(meta["revision_id"]),
+        "revision_timestamp": meta["revision_timestamp"],
+        "retrieval_timestamp": retrieval_timestamp,
+        "source_digest": sha256_bytes(encoded),
+        "source_shape": source_shape,
+        "source_parse_error": parse_error,
+        "normalized_fields": extracted["mapped"],
+        "unmapped_infobox_fields": extracted["unmapped"],
+        "infobox_present": infobox_present,
+    }
+
+
+def collect_discovered_pages(
+    discovered: Iterable[dict[str, Any]],
+    *,
+    cache_dir: Path,
+    client: predecessor.ApiClient,
+    retrieval_timestamp: str,
+) -> list[dict[str, Any]]:
+    discovered_rows = list(discovered)
+    expected = {str(row["title"]): int(row["page_id"]) for row in discovered_rows}
+    if len(expected) != len(discovered_rows):
+        raise CensusError("DISCOVERY_TITLE_NOT_UNIQUE")
+    titles = sorted(expected, key=lambda value: (normalized_name(value), value))
+    output: list[dict[str, Any]] = []
+    for batch in predecessor.chunks(titles, predecessor.MAX_BATCH_TITLES):
+        metadata = predecessor.fetch_metadata_for_titles(client, batch)
+        need_content: list[int] = []
+        cached_by_page: dict[int, dict[str, Any]] = {}
+        for title in batch:
+            meta = metadata[title]
+            if meta["missing"]:
+                raise CensusError(f"DISCOVERED_PAGE_BECAME_MISSING:{title}")
+            if int(meta["page_id"]) != expected[title]:
+                raise CensusError(f"DISCOVERY_METADATA_PAGE_ID_DRIFT:{title}")
+            cached = predecessor.load_cached_record(
+                cache_dir, int(meta["page_id"]), int(meta["revision_id"])
+            )
+            if cached is None:
+                need_content.append(int(meta["page_id"]))
+            else:
+                cached_by_page[int(meta["page_id"])] = cached
+        content_by_page: dict[int, str] = {}
+        for page_batch in predecessor.chunks(
+            sorted(set(need_content)), predecessor.MAX_BATCH_PAGEIDS
+        ):
+            content_by_page.update(
+                predecessor.fetch_content_for_pageids(client, page_batch)
+            )
+        for title in batch:
+            meta = metadata[title]
+            page_id = int(meta["page_id"])
+            if page_id in cached_by_page:
+                record = dict(cached_by_page[page_id])
+                record["retrieval_timestamp"] = retrieval_timestamp
+                parse_error = record.get("source_parse_error")
+                if parse_error is not None and not isinstance(parse_error, str):
+                    raise CensusError(
+                        f"DISCOVERED_CACHE_PARSE_ERROR_INVALID:{page_id}"
+                    )
+                if parse_error:
+                    expected_shape = "INFOBOX_ITEM_PARSE_ERROR"
+                elif record.get("infobox_present") is True:
+                    expected_shape = "INFOBOX_ITEM"
+                else:
+                    expected_shape = "NO_INFOBOX_ITEM"
+                if record.get("source_shape") not in (None, expected_shape):
+                    raise CensusError(
+                        f"DISCOVERED_CACHE_SOURCE_SHAPE_INVALID:{page_id}"
+                    )
+                record["source_shape"] = expected_shape
+                record["source_parse_error"] = parse_error
+            else:
+                record = normalize_page(
+                    meta, content_by_page[page_id], retrieval_timestamp
+                )
+                predecessor.write_cached_record(cache_dir, record)
+            output.append(record)
+    output.sort(
+        key=lambda row: (
+            normalized_name(str(row["title"])),
+            str(row["title"]),
+            int(row["page_id"]),
+        )
+    )
+    return output
+
+
+def compile_census(
+    discovered: list[dict[str, Any]],
+    pages: list[dict[str, Any]],
+    *,
+    retrieval_timestamp: str,
+) -> dict[str, Any]:
+    discovered_by_id = {
+        int(row["page_id"]): str(row["title"]) for row in discovered
+    }
+    page_by_id = {int(row["page_id"]): row for row in pages}
+    if len(discovered_by_id) != len(discovered) or len(page_by_id) != len(pages):
+        raise CensusError("CENSUS_DUPLICATE_PAGE_ID")
+    if set(discovered_by_id) != set(page_by_id):
+        raise CensusError("CENSUS_DISCOVERY_FETCH_SET_MISMATCH")
+
+    field_keys: Counter[str] = Counter()
+    mapped_keys: Counter[str] = Counter()
+    unmapped_keys: Counter[str] = Counter()
+    source_shapes: Counter[str] = Counter()
+    stable_pages: list[dict[str, Any]] = []
+    for page_id in sorted(
+        page_by_id,
+        key=lambda key: (
+            normalized_name(discovered_by_id[key]),
+            discovered_by_id[key],
+            key,
+        ),
+    ):
+        page = dict(page_by_id[page_id])
+        if str(page.get("title")) != discovered_by_id[page_id]:
+            raise CensusError("CENSUS_TITLE_DRIFT")
+        infobox_present = page.get("infobox_present")
+        if not isinstance(infobox_present, bool):
+            raise CensusError("CENSUS_INFOBOX_STATE_INVALID")
+        parse_error = page.get("source_parse_error")
+        if parse_error is not None:
+            predecessor.bounded_text(
+                parse_error, label="SOURCE_PARSE_ERROR", max_bytes=256
+            )
+            if not infobox_present:
+                raise CensusError("CENSUS_PARSE_ERROR_WITHOUT_INFOBOX")
+            expected_shape = "INFOBOX_ITEM_PARSE_ERROR"
+        else:
+            expected_shape = (
+                "INFOBOX_ITEM" if infobox_present else "NO_INFOBOX_ITEM"
+            )
+        if page.get("source_shape") != expected_shape:
+            raise CensusError("CENSUS_SOURCE_SHAPE_INVALID")
+        mapped = page.get("normalized_fields")
+        unmapped = page.get("unmapped_infobox_fields")
+        if not isinstance(mapped, dict) or not isinstance(unmapped, dict):
+            raise CensusError("CENSUS_FIELD_MAP_INVALID")
+        if parse_error is not None and (mapped or unmapped):
+            raise CensusError("CENSUS_PARSE_ERROR_WITH_PARTIAL_FIELDS")
+        overlap = set(mapped) & set(unmapped)
+        if overlap:
+            raise CensusError(f"CENSUS_FIELD_PARTITION_OVERLAP:{sorted(overlap)[0]}")
+        mapped_keys.update(mapped.keys())
+        unmapped_keys.update(unmapped.keys())
+        field_keys.update(mapped.keys())
+        field_keys.update(unmapped.keys())
+        source_shapes.update([expected_shape])
+        page.pop("retrieval_timestamp", None)
+        stable_pages.append(page)
+
+    if not stable_pages:
+        raise CensusError("CENSUS_EMPTY")
+    return {
+        "schema": SCHEMA,
+        "collector_profile": PROFILE,
+        "source": {
+            "id": SOURCE_ID,
+            "role": SOURCE_ROLE,
+            "api": API_BASE,
+            "discovery": {
+                "kind": "MEDIAWIKI_CATEGORYMEMBERS",
+                "category": ITEM_CATEGORY_TITLE,
+                "namespace": 0,
+            },
+        },
+        "retrieval_timestamp": retrieval_timestamp,
+        "authority": {
+            "gameplay_truth": "NONE",
+            "identity_minting": "FORBIDDEN",
+            "crystal_ots_identity_resolution": "NOT_PERFORMED",
+            "semantic_promotion": "FORBIDDEN",
+            "long_form_prose_collection": "FORBIDDEN",
+        },
+        "pages": stable_pages,
+        "counts": {
+            "discovered_pages": len(discovered),
+            "fetched_pages": len(stable_pages),
+            "pages_with_infobox": (
+                source_shapes["INFOBOX_ITEM"]
+                + source_shapes["INFOBOX_ITEM_PARSE_ERROR"]
+            ),
+            "pages_without_infobox": source_shapes["NO_INFOBOX_ITEM"],
+            "infobox_parse_errors": source_shapes["INFOBOX_ITEM_PARSE_ERROR"],
+            "source_shapes": {
+                "INFOBOX_ITEM": source_shapes["INFOBOX_ITEM"],
+                "INFOBOX_ITEM_PARSE_ERROR": source_shapes[
+                    "INFOBOX_ITEM_PARSE_ERROR"
+                ],
+                "NO_INFOBOX_ITEM": source_shapes["NO_INFOBOX_ITEM"],
+            },
+            "distinct_infobox_fields": len(field_keys),
+            "mapped_field_occurrences": sum(mapped_keys.values()),
+            "unmapped_field_occurrences": sum(unmapped_keys.values()),
+            "top_fields": [
+                {"field": key, "pages": count}
+                for key, count in sorted(
+                    field_keys.items(), key=lambda item: (-item[1], item[0])
+                )[:100]
+            ],
+        },
+    }
+
+
+def build_manifest(
+    full: dict[str, Any], *, collector_sha256: str, predecessor_sha256: str
+) -> dict[str, Any]:
+    if full.get("schema") != SCHEMA or not isinstance(full.get("pages"), list):
+        raise CensusError("FULL_SCHEMA_INVALID")
+    if any(
+        "content" in page or "wikitext" in page
+        for page in full["pages"]
+        if isinstance(page, dict)
+    ):
+        raise CensusError("RAW_LONG_FORM_TEXT_IN_OUTPUT")
+    stable = dict(full)
+    retrieval_timestamp = stable.pop("retrieval_timestamp", None)
+    counts = full["counts"]
+    return {
+        "schema": MANIFEST_SCHEMA,
+        "status": "WIKI_FIRST_SOURCE_EVIDENCE_ONLY_NO_IDENTITY_PROMOTION",
+        "collector": {
+            "profile": PROFILE,
+            "path": (
+                "tools/reference-world-corridor-census/"
+                "item_wiki_first_census.py"
+            ),
+            "sha256": collector_sha256,
+            "predecessor_parser_path": (
+                "tools/reference-world-corridor-census/"
+                "item_current_source_tibiawiki.py"
+            ),
+            "predecessor_parser_sha256": predecessor_sha256,
+        },
+        "source": full["source"],
+        "retrieval_timestamp": retrieval_timestamp,
+        "counts": counts,
+        "full_output": {
+            "schema": SCHEMA,
+            "sha256": sha256_bytes(canonical_bytes(full)),
+            "stable_without_retrieval_timestamp_sha256": sha256_bytes(
+                canonical_bytes(stable)
+            ),
+            "committed_bulk_corpus": False,
+        },
+        "invariants": {
+            "wiki_first_discovery": True,
+            "starts_from_crystal_38157": False,
+            "source_shape_partition_complete": (
+                counts["discovered_pages"]
+                == sum(counts["source_shapes"].values())
+            ),
+            "no_infobox_member_dropped": True,
+            "infobox_conflict_never_guessed": True,
+            "identity_resolution_performed": False,
+            "semantic_promotion_performed": False,
+            "raw_long_form_prose_collected": False,
+            "raw_wikitext_committed": False,
+        },
+        "limitations": [
+            (
+                "This generation inventories direct namespace-0 members of "
+                "TibiaWiki Categoria:Itens. Members without the base Item "
+                "infobox remain explicit NO_INFOBOX_ITEM source shapes rather "
+                "than being dropped or interpreted from long-form prose."
+            ),
+            (
+                "TibiaWiki is structured source evidence, not Reference "
+                "gameplay truth."
+            ),
+            (
+                "Conflicting or otherwise rejected Item infoboxes remain "
+                "INFOBOX_ITEM_PARSE_ERROR records carrying only a bounded "
+                "parser error code; no conflicting field value is guessed."
+            ),
+            (
+                "The census intentionally does not map pages to "
+                "Crystal/OTS/Oteryn identities; multi-signal identity "
+                "crosswalk is the next gate."
+            ),
+            (
+                "Long-form article and book bodies are not collected. Only "
+                "bounded Infobox Item fields are retained in scratch output."
+            ),
+        ],
+        "next_gate": "WIKI_FIRST_ITEM_IDENTITY_CROSSWALK",
+    }
+
+
+def utc_now_iso() -> str:
+    return (
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--cache-dir", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--manifest-output", type=Path, required=True)
+    parser.add_argument("--retrieval-timestamp", default=None)
+    args = parser.parse_args()
+    retrieval_timestamp = args.retrieval_timestamp or utc_now_iso()
+    client = predecessor.ApiClient()
+    discovered = discover_item_pages(client)
+    pages = collect_discovered_pages(
+        discovered,
+        cache_dir=args.cache_dir,
+        client=client,
+        retrieval_timestamp=retrieval_timestamp,
+    )
+    full = compile_census(
+        discovered, pages, retrieval_timestamp=retrieval_timestamp
+    )
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_bytes(canonical_bytes(full))
+    collector_payload = Path(__file__).read_bytes().replace(b"\r\n", b"\n")
+    predecessor_payload = PREDECESSOR_PATH.read_bytes().replace(b"\r\n", b"\n")
+    manifest = build_manifest(
+        full,
+        collector_sha256=sha256_bytes(collector_payload),
+        predecessor_sha256=sha256_bytes(predecessor_payload),
+    )
+    args.manifest_output.parent.mkdir(parents=True, exist_ok=True)
+    args.manifest_output.write_bytes(canonical_bytes(manifest))
+    counts = manifest["counts"]
+    print(
+        "item-wiki-first-census: PASS "
+        f"pages={counts['discovered_pages']} "
+        f"fields={counts['distinct_infobox_fields']} "
+        f"digest={manifest['full_output']['stable_without_retrieval_timestamp_sha256']}"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

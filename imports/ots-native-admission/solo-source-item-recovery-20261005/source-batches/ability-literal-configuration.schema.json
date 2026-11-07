@@ -1,0 +1,303 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:source-ability-literal-configuration:census:20261005",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "const": "ABILITY_LITERAL_CONFIGURATION"
+    },
+    "source_cut": {
+      "enum": [
+        "canary-47df",
+        "crystal-ff7",
+        "crystal-00ce"
+      ]
+    },
+    "constructor_catalog_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "declared_first_getter": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "attribute_ordinal": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "handler": {
+              "type": "string"
+            },
+            "handler_order": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "key": {
+              "type": "string"
+            },
+            "captured_attribute_projection_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "condition": {
+              "const": "IF_PRIOR_HANDLERS_AND_OWN_INPUT_CONVERSION_RETURN"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "attribute_ordinal",
+            "handler",
+            "handler_order",
+            "key",
+            "captured_attribute_projection_sha256",
+            "condition"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "ordered_assignments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "attribute_ordinal": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "key": {
+            "type": "string"
+          },
+          "key_lexeme": {
+            "type": "string"
+          },
+          "value_lexeme": {
+            "type": "string"
+          },
+          "decoded_value": {
+            "type": "string"
+          },
+          "captured_attribute_projection_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "attribute_ordinal",
+          "key",
+          "key_lexeme",
+          "value_lexeme",
+          "decoded_value",
+          "captured_attribute_projection_sha256"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 18
+    },
+    "ordered_events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "attribute_ordinal": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "key": {
+            "type": "string"
+          },
+          "key_lexeme": {
+            "type": "string"
+          },
+          "value_lexeme": {
+            "type": "string"
+          },
+          "decoded_value": {
+            "type": "string"
+          },
+          "captured_attribute_projection_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "kind": {
+            "enum": [
+              "ASSIGN_STAT_I32",
+              "ASSIGN_STAT_PERCENT_I32",
+              "ASSIGN_SKILL_I32",
+              "ASSIGN_SPEED_I32",
+              "ASSIGN_INVISIBLE_BOOL",
+              "ASSIGN_MANASHIELD_BOOL",
+              "ASSIGN_REGEN_RAW_U32_AND_ENABLE",
+              "ACCUMULATE_FIELD_ABSORB_I16",
+              "ACCUMULATE_GENERAL_ABSORB_I16",
+              "CONDITIONAL_SUPPRESSION_OWN_ENUM",
+              "ASSIGN_ELEMENT_U16_AND_OWN_TYPE",
+              "ACCUMULATE_SPECIAL_MAGIC_I32_AND_ASSIGN_OWN_TYPE",
+              "ACCUMULATE_MAGICSHIELD_I32",
+              "ASSIGN_PERFECT_DAMAGE_I32",
+              "ASSIGN_PERFECT_RANGE_I16_TO_U8",
+              "ACCUMULATE_CLEAVE_I32",
+              "ACCUMULATE_REFLECT_FLAT_I32",
+              "ACCUMULATE_REFLECT_ALL_I32_TO_I16",
+              "CRYSTAL_MANTRA_ACCUMULATE_I16_FOUR_OWN_ELEMENTS",
+              "CRYSTAL_ELEMENTAL_BOND_ASSIGN_OWN_TYPE",
+              "RECOGNIZED_ALIAS_NOOP_ALLOCATION_EVENT"
+            ]
+          },
+          "handler": {
+            "type": "string"
+          },
+          "handler_order": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "own_body_sha256": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "own_input_kind": {
+            "enum": [
+              "OWN_ELEMENT_NAME_LITERAL",
+              "OWN_PUGI_AS_BOOL_PREDICATE",
+              "OWN_UINT32_CAST_INPUT",
+              "OWN_UINT16_CAST_INPUT",
+              "OWN_INT16_CAST_INPUT",
+              "OWN_INT32_CAST_INPUT",
+              "NO_SETTER"
+            ]
+          },
+          "branch": {
+            "enum": [
+              "FALSE_NO_WRITE",
+              "DECLARED_CONDITIONAL_SETTER",
+              "DISPATCH_ALIAS_NO_SETTER"
+            ]
+          },
+          "suppression_default_NONE": {
+            "type": "boolean"
+          },
+          "numeric_result": {
+            "type": "object",
+            "properties": {
+              "state": {
+                "const": "UNKNOWN"
+              }
+            },
+            "required": [
+              "state"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "attribute_ordinal",
+          "key",
+          "key_lexeme",
+          "value_lexeme",
+          "decoded_value",
+          "captured_attribute_projection_sha256",
+          "kind",
+          "handler",
+          "handler_order",
+          "own_body_sha256",
+          "own_input_kind",
+          "branch",
+          "suppression_default_NONE",
+          "numeric_result"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 17
+    },
+    "actual_stored_allocation": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "const": "UNKNOWN"
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "final_sparse_members": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "const": "UNKNOWN"
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "runtime_getter_rates": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "const": "UNKNOWN"
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "Lua_instance_effects": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "const": "UNKNOWN"
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "actual_CPP_execution": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "const": "UNKNOWN"
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "kind",
+    "source_cut",
+    "constructor_catalog_sha256",
+    "declared_first_getter",
+    "ordered_assignments",
+    "ordered_events",
+    "actual_stored_allocation",
+    "final_sparse_members",
+    "runtime_getter_rates",
+    "Lua_instance_effects",
+    "actual_CPP_execution"
+  ],
+  "additionalProperties": false,
+  "$comment": "PROPOSAL ONLY: exact registry/currenttarget/source provenance, actual event/string maxima and bounded combinedbudget required before Nativeadmission. Integer parsing/arithmetic/runtime unexecutedUNKNOWN; declaration traces never finalarrays. V4/V5/V6allnonUnknownfutureguard mandatory; noV7allocation."
+}

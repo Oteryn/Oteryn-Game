@@ -1,0 +1,52 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 1000,
+    "costs": {
+      "mana": 160
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "name": "Ultimate Healing",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_ultimate_healing"
+    },
+    "reference_spell_id": 3,
+    "requirements": {
+      "level": 30,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "exura vita"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "schema": "NPC_R11_AUTHORING_VALIDATION/v1",
+  "phase": "AUTHORING_PRE_PUBLICATION",
+  "baseline_head": "eeb62e54fb87fb32dc174b80d9bceaf854ef8260",
+  "checks": {
+    "all_authoring_tests": {
+      "result": "PASS",
+      "count": 170,
+      "skipped": 0,
+      "log_sha256": "d7014c41cbf22fde9ec8ed101d757a8755f9d25e9a0e32d47e8f2a068b996406"
+    },
+    "dedicated_service_tests": {
+      "result": "PASS",
+      "count": 13,
+      "log_sha256": "f1919ed9ad3ce545d24f9057b1ed71aefc67439299ff6aac2b9eeef9865745c9"
+    },
+    "governance": {
+      "result": "PASS",
+      "log_sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f"
+    },
+    "independent_review": "PASS_R11_CUSTODY_1_FIXED171SIBLINGS",
+    "regeneration": "BYTE_IDENTICAL_TO_REVIEWED_PACKET"
+  },
+  "packet_sha256": "54c8d8d48cb2dd394832b125b2b2ddc955955f453e78b0bdbcbff0b54ea88cae",
+  "native_content_change": false,
+  "original_five_area_goal_complete": false
+}

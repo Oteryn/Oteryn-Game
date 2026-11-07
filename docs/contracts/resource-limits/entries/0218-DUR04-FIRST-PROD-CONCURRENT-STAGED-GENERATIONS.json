@@ -1,0 +1,18 @@
+{
+  "id": "DUR04-FIRST-PROD-CONCURRENT-STAGED-GENERATIONS",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+  "resource": "Concurrent non-authoritative staged candidate generations",
+  "unit": "generations",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Serialize staging; reject a second candidate before retaining its pair/runtime indexes.",
+  "client_visible": false,
+  "boundary_tests": [
+    "one staged candidate accepted",
+    "second concurrent candidate rejected without replacing current active generation"
+  ]
+}

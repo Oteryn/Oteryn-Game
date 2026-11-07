@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-FIRST-PROD-ARTIFACTS-PER-GENERATION",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+  "resource": "Artifacts in one first-production generation",
+  "unit": "artifacts",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 2,
+    "maximum": 2
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Require exactly one server and one client-safe artifact; no third projection/blob artifact can be retained.",
+  "client_visible": false,
+  "boundary_tests": [
+    "exact server+client pair accepted",
+    "missing projection rejected",
+    "third artifact rejected"
+  ]
+}

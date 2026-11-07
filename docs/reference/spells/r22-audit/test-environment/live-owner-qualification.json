@@ -1,0 +1,110 @@
+{
+  "schema": "OTERYN_REAL_OWNER_SPELL_SEAM_QUALIFICATION/v1",
+  "date": "2026-10-02",
+  "implementation_base": "06396d3501feacfc317f6d77b89e54f17b9b36ac",
+  "tested_source_sha256": {
+    "apps/game-server/src/bin/oteryn-game-ops.rs": "c16a39f90f6c29604d39e4ea696e67ef4f84ce3befbb246af2b7810267dc5586",
+    "apps/game-server/src/content/activation.rs": "79bea782d6ac20bca261d9cb4cd9e4ec2b1c9eae8f5d54eb44b86312cfbc1474",
+    "apps/game-server/src/content/native_gameplay.rs": "f9fd8232bebb7286e73cf10fdb1ed342ad40705bc3ca18b0d0bad6f6dc0c966a",
+    "apps/game-server/src/content/project/native_entry.rs": "0df2d5188e9e1cdd40b58dabbaf5a374243d41cf08d94c6f394397829c87ab0d",
+    "apps/game-server/src/durability/character_equipment.rs": "99ed7e17917566062dfc5358f6d025b521048474178f1d066e365c85c0257c34",
+    "apps/game-server/src/durability/native_map_items.rs": "770b51fcc673c1f54b26355a13a144aba1f2549f9973e42091aa354be0be1371",
+    "apps/game-server/src/durability/spell_item_transaction.rs": "9c9e97cf1c5890d342caccfd59dabdc1b6e1da5bf48d58ca7f8577c0afa1733a",
+    "apps/game-server/src/gameplay_transport/connection.rs": "05808d2b2a17ae6e43cf01c8ab54492ae939cdff2f9d6789ca47f2866fbaab1f",
+    "apps/game-server/src/gameplay_transport/mod.rs": "6490027e0b7e6a1a10f14a2a13dc9708bdf5d1464f11f963fec94d81d0ee8e49",
+    "apps/game-server/src/gameplay_transport/native_combat_cast.rs": "8b2dc48b6c77efb9d04e24bdacf49c04426d8331fcf4e04b66e6ce39c8b8e29f",
+    "apps/game-server/src/gameplay_transport/ordinary_combat.rs": "fffff0ebe6f653100201931eec832d1c01acbb2c529315c65877fcb380d451b3",
+    "apps/game-server/src/gameplay_transport/qualification.rs": "070f90ecbda960929e562fa3da57ff68dc9119e0c7aabe5a56e7f4b067cd01e7",
+    "apps/game-server/src/gameplay_transport/source_item_cycle.rs": "921591598eefd682f33ce0aedce182863b618406c43fa6186dd28fdbdf57c003",
+    "apps/game-server/src/spell/source_map_initialization.rs": "b652cfca800594cab709e5ef1329f425da1a8a0001fd46a50122fb8af2c198a6",
+    "apps/game-server/src/spell/world_execution.rs": "651e4ca34bb5b995ee7df961732db4665ac19a718150bb6c88e2121cbe07399f",
+    "tools/qualification/node_boot/run.sh": "52b37314328d1a64dcad1b73717d17aa9606e5da2c9b6d18b1cf0adf76dd1032",
+    "tools/qualification/spells/README.md": "decc17e4d408df671c908cab0046f9e459d97b9efc4cea50e7b454d28e00a36b",
+    "tools/qualification/spells/run.sh": "30b1341e482ba894015bc0bdb1817adfdea76bc67f6b63660271e77ff62cbfc0",
+    "tools/qualification/wp5_s3a/compose.yml": "a4ac7b07256ebb014a607fe8261f32f376659c22b80376e779067b223279f685",
+    "tools/qualification/wp5_s3a/platform-fpm.Dockerfile": "3de0dfbe416ad42e6c8cf5c53e2f75227ed1637dcce95e73401d7781055b2fb4",
+    "tools/qualification/wp5_s3b/run.sh": "718278e12124114ad15e66993eca6f6559b61f36485d7182e785d299883583a1",
+    "apps/game-server/src/gameplay_transport/qualification_spell_character.rs": "28c81a126097f2c98738ff46dd377c8d4fd108e65b982cee92f2f0863c46ca97"
+  },
+  "actual_result": "SPELL_SEAM_PASS",
+  "test_result": {
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "filtered_out": 1569
+  },
+  "log_sha256": "3bd782def2e80f0389fa505670103183ed7744178ecb98da1bd6b46f4fbaaa25",
+  "scope": "Disposable local real Platform/Game owners, PostgreSQL17.6, TCP/TLS dev client; no existing long-lived server deployed",
+  "platform_revision": "5d4883acf7079e26fd51e03f460166730de1ada0",
+  "native_source_map": {
+    "pending_mutable_placements": 57,
+    "qualified_placements": 57,
+    "durably_initialized": true,
+    "source_sha256": "44f860d20712a32e6bc22aa269d3e220d39d164b7738d3c150a406579849b5f5"
+  },
+  "character_setup": "Normal fenced progression and build writers; Sorcerer level8; ordinary disconnect, grace release and re-admission",
+  "exura": {
+    "disposition": "Cast",
+    "mana_before": 90,
+    "mana_after": 70,
+    "immediate_retry": "CoolingDown",
+    "second_payment": false,
+    "health_bounded": true,
+    "wounded_healing_magnitude": "NOT_EVALUATED",
+    "advanced_numeric_modifier_parity": "UNQUALIFIED"
+  },
+  "catalog_probe": {
+    "attempted": 246,
+    "counts": {
+      "NotAvailable": 59,
+      "Rejected": 118,
+      "TargetRequired": 15,
+      "LevelTooLow": 44,
+      "NotEnoughMana": 4,
+      "Cast": 2,
+      "CoolingDown": 4
+    },
+    "target": "none",
+    "gameplay_complete": false
+  },
+  "connection_tests": {
+    "passed": 26,
+    "failed": 0,
+    "ignored": 0,
+    "scope": "Affected connection/snapshot module; separate focused run",
+    "log_sha256": "c20e73f328d2f3360eb3710ea5073f0c0d5dca386f5cd515356f86f001e791bc"
+  },
+  "full_map_pin_equivalence": {
+    "passed": 1,
+    "failed": 0,
+    "log_sha256": "6b18e46ad6dc48501b8e22f3ed0bd5f0a48aebf58120e93c223802ad4025f383"
+  },
+  "platform_image": {
+    "used": "sha256:83c9d98a0824e48fe82ce22d7c9f04addbcb772e181ccc64ec0cf05dc2e28d98",
+    "base": "sha256:2e540a3102f51a42a6318b383533609ded06ae0b3997792786071758fc08aa09",
+    "method": "Retained exact pinned Platform build plus offline read/traverse permissions layer; root source ownership preserved",
+    "final_dockerfile_full_network_rebuild": "NOT_PERFORMED",
+    "composer_tls_verification": true
+  },
+  "independent_review": "Source reviews of activation issuance, immutable reads/custody locks, snapshot continuity, source count rule and self dispatch; no blockers. Final frozen head whole-diff/required review pending.",
+  "unqualified": [
+    "Full vocation/Premium/rune/target/magnitude journeys",
+    "Native source-map future-generation adoption and handoff",
+    "Wild monster scheduling/CreatureIssuer",
+    "Soul War quest and encounters",
+    "Production or long-lived test deployment",
+    "Final candidate CI and complete owning-contract qualification",
+    "Physical standalone node_boot runner; isolated-host-only prerequisite remains"
+  ],
+  "gameplay_complete": false,
+  "production_activation": false,
+  "ops_binary_check": {
+    "exit_code": 0,
+    "warnings": 159,
+    "deny_warnings": false,
+    "log_sha256": "3386ba37bf0d70b24e1314748f50e932a64434446893906a94557410633ab96c"
+  },
+  "format_check": "PASS",
+  "shell_syntax": "PASS",
+  "diff_check": "PASS"
+}

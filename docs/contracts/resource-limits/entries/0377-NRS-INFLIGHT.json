@@ -1,0 +1,22 @@
+{
+  "id": "NRS-INFLIGHT",
+  "owner_contract": "OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md",
+  "resource": "Runtime reports in flight per node",
+  "unit": "requests",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "One reporter task per node sends sequentially on its own capacity, never an admission TransientCapacity slot; the latest committed publication replaces a pending one (no queue).",
+  "client_visible": false,
+  "boundary_tests": [
+    "1 report in flight while the reporter runs",
+    "a second publication during an exchange replaces the pending one and is sent after it (latest wins)"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/runtime_status.rs"
+  ],
+  "notes": "Contract sections 3 and 11. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered' and never gates boot, serving, admission or shutdown. Registered by OTV2-20260929-runtime-status-producer (#162 owner-accepted package Q21, 5900403086)."
+}

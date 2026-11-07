@@ -1,0 +1,17 @@
+{
+  "source": "d7c36b3c0e5d852a78e5ee3211fa814e5711e97d",
+  "full_offline_quest_commands": 23,
+  "unittest_total": 510,
+  "executed_passed": 509,
+  "skipped": 1,
+  "failed": 0,
+  "unit_seconds": 294.868,
+  "raw_log_sha256": "ff03fd93693fee811081ef966043fd09d4db01d240056265f10dca6d384901ac",
+  "raw_zip_sha256": "a7b5884eebded69609496ecac70e1ee565a716405643313fabd1af56a3de0f56",
+  "old_workflow_blob_sha256": "606a9b64e3f376ccd85524580c597d8b8425012357735dd32b88cef9920297a5",
+  "new_workflow_blob_sha256": "749b34cb12b9411278fa8231af17121dd7d2dafa40152e3e671769d0a72ca05d",
+  "only_workflow_change": "finite timeout-minutes 10 -> 20; every trigger, permission, checkout and command byte preserved",
+  "review": "https://github.com/Oteryn/Oteryn-Game/pull/1807#issuecomment-5994335756",
+  "risk": "CI resource budget maintenance; reviewed material source unchanged; no duplicate optional funded review",
+  "scope": "No production or protected integration; PR1805 audit dependency remains"
+}

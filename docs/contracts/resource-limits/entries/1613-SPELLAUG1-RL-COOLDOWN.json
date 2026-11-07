@@ -1,0 +1,22 @@
+{
+  "id": "SPELLAUG1-RL-COOLDOWN",
+  "owner_contract": "ITEM_SPELL_AUGMENTS_V1.md",
+  "resource": "Item augment cooldown reduction",
+  "unit": "milliseconds",
+  "hard_maximum": 86400000,
+  "configurable_range": {
+    "minimum": 86400000,
+    "maximum": 86400000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Active Content rejects excess before activation or gameplay mutation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "at limit accepted",
+    "above limit rejected"
+  ],
+  "consumers": [
+    "crates/gameplay/content/src/content/native_gameplay.rs",
+    "tools/content-schema/native-gameplay/item_spell_augments.py"
+  ]
+}

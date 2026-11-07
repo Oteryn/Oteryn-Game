@@ -1,0 +1,29 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/plagirath",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/1949",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/22761",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/disgusting_ooze",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Ability",
+      "key": "canary:ability/spell/plagirath_summon",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

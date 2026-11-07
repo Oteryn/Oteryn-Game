@@ -1,0 +1,23 @@
+{
+  "id": "DAILYREWARD0-RL-02",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_DAILY_REWARD0_DAILY_REWARD_SYSTEM_DECISION_2026-10-03.md",
+  "resource": "Daily reward item outputs per claim",
+  "unit": "item outputs per claim",
+  "hard_maximum": 20,
+  "configurable_range": {
+    "minimum": 20,
+    "maximum": 20
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked before allocation or value writes; the native Inbox owner independently enforces its twenty-output bound.",
+  "client_visible": true,
+  "boundary_tests": [
+    "daily_reward_claim_codec_canonicalizes_and_bounds_every_field",
+    "daily_reward_real_dispatch_delivers_replays_reloads_and_orders_seven_days"
+  ],
+  "consumers": [
+    "crates/gameplay/durability/src/durability/daily_reward_delivery.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/daily_reward.rs"
+  ],
+  "notes": "DAILY-1 basic server path; Free lane until PREM-3."
+}

@@ -1,0 +1,14 @@
+{
+  "id": 104,
+  "name": "FORGE_CREATURE_V1",
+  "owner_decision": "FORGE-CREATURE-1",
+  "owner": "Forge creature source; native spawn and Character owners",
+  "requires": [
+    6,
+    25
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Requires admitted appearance owner25. Existing domain21 Binding field10 carries the native creature marker only when104 is selected."
+}

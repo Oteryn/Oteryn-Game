@@ -1,0 +1,10 @@
+name=player_typing
+commands=447
+transport=player_typing
+composed=player_typing
+authority=player_typing
+[route]
+match routing::player_typing::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

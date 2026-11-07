@@ -1,0 +1,7 @@
+{
+  "mechanic": "0068-imbue",
+  "kind": "panels",
+  "id": "0068-imbue-panel",
+  "status": "supported",
+  "entry": "mod.rs::panel_text"
+}

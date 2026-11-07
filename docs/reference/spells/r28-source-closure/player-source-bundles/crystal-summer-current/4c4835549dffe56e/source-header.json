@@ -1,0 +1,40 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 130,
+      "soul": 2
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Conjure Poisoned Arrow",
+    "reference_spell_id": 48,
+    "requirements": {
+      "level": 16,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "exevo con pox"
+  }
+}

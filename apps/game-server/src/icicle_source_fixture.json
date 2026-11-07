@@ -1,0 +1,1066 @@
+{
+  "profiles": [
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "..xxx..",
+                ".xxxxx.",
+                "xxxxxxx",
+                "xxxCxxx",
+                "xxxxxxx",
+                ".xxxxx.",
+                "..xxx.."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.icicle.optional-field-core-defenses-1",
+                  "revision": "definition-r1"
+                },
+                "kind": "Executable"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.icicle.optional-field-core-defenses-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "affects": {
+            "creatures": [
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.dragon_egg",
+                "revision": "definition-r1"
+              }
+            ],
+            "excludes_caster_name": false,
+            "includes_caster": false,
+            "kind": "NamedCreatures",
+            "top_creature_only": false
+          },
+          "damage_type": "untyped",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/magic_blue"
+          }
+        }
+      },
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.icicle.optional-field-core-defenses-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "maximum": 100,
+          "minimum": 100
+        }
+      },
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.icicle.optional-field-core-defenses-1",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "records": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.icicle.optional-field-core-defenses-1",
+          "revision": "definition-r1"
+        }
+      ],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.icicle.optional-field-core-defenses-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.icicle.optional-field-core-defenses-1",
+        "revision": "definition-r1"
+      },
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.icicle.optional-field-core-defenses-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Effect"
+    },
+    {
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.icicle.optional-field-core-defenses-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Formula"
+    }
+  ],
+  "test_profiles": [
+    {
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:object/25077",
+          "light_level": 0
+        }
+      },
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.dragon_egg",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/904",
+          "audio_bindings": [
+            {
+              "asset_binding": "canary.sound:effect/102",
+              "cue_id": "canary.sound:effect/102",
+              "event": "Impact"
+            },
+            {
+              "asset_binding": "canary.sound:effect/2034",
+              "cue_id": "canary.sound:effect/2034",
+              "event": "Impact"
+            }
+          ],
+          "light_level": 0
+        }
+      },
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.icicle",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "armor": 10,
+          "details": {
+            "article": "a",
+            "condition_immunities": [
+              "invisible",
+              "outfit"
+            ],
+            "critical_chance_ppm": 0,
+            "defense": 5,
+            "display_name": "Dragon Egg",
+            "encyclopedia_document": {
+              "family": "Document",
+              "key": "oteryn:document/monster-encyclopedia/dragon_egg",
+              "revision": "definition-r1"
+            },
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "healing_from_damage": [
+              {
+                "damage_type": "fire",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              }
+            ],
+            "inspection": "a dragon egg",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": false
+            }
+          },
+          "encounters": [
+            {
+              "family": "Encounter",
+              "key": "oteryn:encounter.dragon_egg",
+              "revision": "definition-r1"
+            }
+          ],
+          "experience": 0,
+          "health": 5000,
+          "mitigation": {
+            "denominator": 1,
+            "numerator": 0
+          },
+          "resistances": [
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": 10
+              }
+            }
+          ],
+          "speed": 0
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.dragon_egg",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.icicle.attack-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.icicle.attack-2",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.icicle.optional-field-core-defenses-1",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 199,
+          "details": {
+            "article": "an",
+            "condition_immunities": [
+              "invisible",
+              "outfit",
+              "paralyze"
+            ],
+            "corpse_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3138",
+              "revision": "definition-r1"
+            },
+            "critical_chance_ppm": 0,
+            "defense": 199,
+            "display_name": "Icicle",
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "an icicle",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": false
+            }
+          },
+          "experience": 0,
+          "health": 8200,
+          "mitigation": {
+            "denominator": 2,
+            "numerator": 1
+          },
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "drowning",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "life_drain",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "mana_drain",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "physical",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            }
+          ],
+          "speed": 0
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.icicle",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "effects": [
+              {
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.icicle.attack-1",
+                  "revision": "definition-r1"
+                },
+                "kind": "Executable"
+              }
+            ],
+            "impact_cue": "canary.sound:effect/102",
+            "kind": "Melee",
+            "needs_direction": false,
+            "needs_target": true,
+            "range_tiles": 1
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.icicle.attack-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "radius_tiles": 4,
+              "shape": "Circle"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.icicle.attack-2",
+                  "revision": "definition-r1"
+                },
+                "kind": "Executable"
+              }
+            ],
+            "impact_cue": "canary.sound:effect/2034",
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": true,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.icicle.attack-2",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "..xxx..",
+                ".xxxxx.",
+                "xxxxxxx",
+                "xxxCxxx",
+                "xxxxxxx",
+                ".xxxxx.",
+                "..xxx.."
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.icicle.optional-field-core-defenses-1",
+                  "revision": "definition-r1"
+                },
+                "kind": "Executable"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.icicle.optional-field-core-defenses-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "physical",
+          "mitigated_by": [
+            "Armor",
+            "Shield"
+          ]
+        }
+      },
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.icicle.attack-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "physical",
+          "mitigated_by": [
+            "Armor"
+          ],
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/magic_blue"
+          }
+        }
+      },
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.icicle.attack-2",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "affects": {
+            "creatures": [
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.dragon_egg",
+                "revision": "definition-r1"
+              }
+            ],
+            "excludes_caster_name": false,
+            "includes_caster": false,
+            "kind": "NamedCreatures",
+            "top_creature_only": false
+          },
+          "damage_type": "untyped",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/magic_blue"
+          }
+        }
+      },
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.icicle.optional-field-core-defenses-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "maximum": 219,
+          "minimum": 0
+        }
+      },
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.icicle.attack-1-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "maximum": 0,
+          "minimum": 0
+        }
+      },
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.icicle.attack-2-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "maximum": 100,
+          "minimum": 100
+        }
+      },
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.icicle.optional-field-core-defenses-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "push_creatures": false,
+            "push_items": true,
+            "pushable": false,
+            "walks_on_energy": true,
+            "walks_on_fire": true,
+            "walks_on_poison": true
+          },
+          "targeting": {
+            "can_target": true,
+            "change_target": {
+              "chance_ppm": 0,
+              "interval_ms": 2000
+            },
+            "flee_health": 0,
+            "hostile": true,
+            "sense_invisible": true,
+            "static_attack_chance_ppm": 900000,
+            "strategy_weights": {
+              "damage": 0,
+              "health": 0,
+              "nearest": 100,
+              "random": 0
+            },
+            "target_distance_tiles": 1
+          }
+        }
+      },
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.dragon_egg",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.icicle.attack-1",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 1000000,
+              "interval_ms": 2000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.icicle.attack-2",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 200000,
+              "interval_ms": 2000
+            }
+          ],
+          "defenses": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.icicle.optional-field-core-defenses-1",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 600000,
+              "interval_ms": 2000
+            }
+          ],
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "push_creatures": true,
+            "push_items": false,
+            "pushable": false,
+            "walks_on_energy": true,
+            "walks_on_fire": true,
+            "walks_on_poison": true
+          },
+          "targeting": {
+            "can_target": true,
+            "change_target": {
+              "chance_ppm": 0,
+              "interval_ms": 2000
+            },
+            "flee_health": 0,
+            "hostile": true,
+            "sense_invisible": true,
+            "static_attack_chance_ppm": 900000,
+            "strategy_weights": {
+              "damage": 0,
+              "health": 0,
+              "nearest": 100,
+              "random": 0
+            },
+            "target_distance_tiles": 1
+          }
+        }
+      },
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.icicle",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Encounter",
+        "profile": {
+          "details": {
+            "covers": [
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.dragon_egg",
+                "revision": "definition-r1"
+              }
+            ],
+            "display_name": "Oteryn source-backed core: dragon_egg",
+            "participants": [
+              {
+                "creatures": [
+                  {
+                    "family": "Creature",
+                    "key": "oteryn:creature.dragon_egg",
+                    "revision": "definition-r1"
+                  }
+                ],
+                "role": "dragon_egg"
+              }
+            ],
+            "rules": [
+              {
+                "actions": [
+                  {
+                    "kind": "prevent_death",
+                    "role": "dragon_egg"
+                  }
+                ],
+                "key": "egg_prevents_death",
+                "trigger": {
+                  "kind": "lethal_damage",
+                  "role": "dragon_egg"
+                }
+              },
+              {
+                "actions": [
+                  {
+                    "component": "primary",
+                    "damage_types": [
+                      "fire"
+                    ],
+                    "kind": "convert_damage_to_heal",
+                    "role": "dragon_egg"
+                  }
+                ],
+                "key": "egg_fire_damage_heals",
+                "trigger": {
+                  "kind": "damage_taken",
+                  "role": "dragon_egg",
+                  "source": "any"
+                }
+              }
+            ],
+            "state": {}
+          },
+          "encounter_type": "Generic",
+          "scope": "Instance"
+        }
+      },
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.dragon_egg",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "test_records": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.icicle.attack-1",
+          "revision": "definition-r1"
+        }
+      ],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.icicle.attack-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.icicle.attack-2",
+          "revision": "definition-r1"
+        }
+      ],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.icicle.attack-2",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.icicle.optional-field-core-defenses-1",
+          "revision": "definition-r1"
+        }
+      ],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.icicle.optional-field-core-defenses-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "client_projection": "ServerOnly",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.dragon_egg",
+        "revision": "definition-r1"
+      },
+      "kind": "Generic"
+    },
+    {
+      "client_projection": "ServerOnly",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.icicle",
+        "revision": "definition-r1"
+      },
+      "kind": "Generic"
+    },
+    {
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.dragon_egg",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.dragon_egg",
+        "revision": "definition-r1"
+      },
+      "kind": "Creature",
+      "loot": null,
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.dragon_egg",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.icicle",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.icicle",
+        "revision": "definition-r1"
+      },
+      "kind": "Creature",
+      "loot": null,
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.icicle",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.icicle.attack-1-1",
+        "revision": "definition-r1"
+      },
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.icicle.attack-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Effect"
+    },
+    {
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.icicle.attack-2-1",
+        "revision": "definition-r1"
+      },
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.icicle.attack-2",
+        "revision": "definition-r1"
+      },
+      "kind": "Effect"
+    },
+    {
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.icicle.optional-field-core-defenses-1",
+        "revision": "definition-r1"
+      },
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.icicle.optional-field-core-defenses-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Effect"
+    },
+    {
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.icicle.attack-1-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Formula"
+    },
+    {
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.icicle.attack-2-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Formula"
+    },
+    {
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.icicle.optional-field-core-defenses-1",
+        "revision": "definition-r1"
+      },
+      "kind": "Formula"
+    },
+    {
+      "client_projection": "ClientSafe",
+      "identity": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i3138",
+        "revision": "definition-r1"
+      },
+      "kind": "Item",
+      "materializable": false,
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "UNKNOWN"
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 570
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "wooden trash"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "stack_class": "Unknown"
+    },
+    {
+      "client_projection": "ClientSafe",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.dragon_egg",
+        "revision": "definition-r1"
+      },
+      "kind": "Generic"
+    },
+    {
+      "client_projection": "ClientSafe",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.icicle",
+        "revision": "definition-r1"
+      },
+      "kind": "Generic"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "spell": {
+    "base_power": 32,
+    "carrier": "instant",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 40
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Whirlwind Throw",
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_whirlwind_throw"
+    },
+    "reference_spell_id": 107,
+    "requirements": {
+      "level": 28,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "needs_target": true,
+      "range_tiles": 5
+    },
+    "words": "exori hur"
+  }
+}

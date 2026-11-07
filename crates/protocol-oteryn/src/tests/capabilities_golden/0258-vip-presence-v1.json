@@ -1,0 +1,18 @@
+{
+  "id": 258,
+  "name": "VIP_PRESENCE_V1",
+  "constant": "vip_presence::CAPABILITY_VIP_PRESENCE_V1",
+  "requires": [
+    7,
+    43
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

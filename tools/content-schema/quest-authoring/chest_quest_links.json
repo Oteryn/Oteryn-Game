@@ -1,0 +1,677 @@
+{
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "method": "Curated chest-to-quest links for claims ots_chests.py could only find a section-header candidate for, or no link at all: each cites the Fandom wiki (item, key or quest page) or the quest-coverage sample's own recorded source evidence. Applied with quest_link_basis \"curated\" and clears quest_candidate_from_section.",
+  "links": [
+    {
+      "claim": "canary:reward-claim/halls_of_hope/reward1",
+      "quest_title": "Forgotten Knowledge Quest",
+      "basis": "wiki_item_note",
+      "evidence": [
+        {
+          "title": "Heavy Old Tome",
+          "pageid": 79434,
+          "revid": 1115648
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/halls_of_hope/reward2",
+      "quest_title": "Forgotten Knowledge Quest",
+      "basis": "wiki_item_note",
+      "evidence": [
+        {
+          "title": "Heavy Old Tome",
+          "pageid": 79434,
+          "revid": 1115648
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/halls_of_hope/reward3",
+      "quest_title": "Forgotten Knowledge Quest",
+      "basis": "wiki_item_note",
+      "evidence": [
+        {
+          "title": "Heavy Old Tome",
+          "pageid": 79434,
+          "revid": 1115648
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/halls_of_hope/reward4",
+      "quest_title": "Forgotten Knowledge Quest",
+      "basis": "wiki_item_note",
+      "evidence": [
+        {
+          "title": "Heavy Old Tome",
+          "pageid": 79434,
+          "revid": 1115648
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/halls_of_hope/reward5",
+      "quest_title": "Forgotten Knowledge Quest",
+      "basis": "wiki_item_note",
+      "evidence": [
+        {
+          "title": "Heavy Old Tome",
+          "pageid": 79434,
+          "revid": 1115648
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/bananafree",
+      "quest_title": "Studded Shield Quest",
+      "basis": "coverage_evidence",
+      "evidence": [
+        {
+          "title": "Studded Shield Quest",
+          "pageid": 3213,
+          "revid": 1044893
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/bananapremium",
+      "quest_title": "Studded Shield Quest",
+      "basis": "coverage_evidence",
+      "evidence": [
+        {
+          "title": "Studded Shield Quest",
+          "pageid": 3213,
+          "revid": 1044893
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/bear_chest2",
+      "quest_title": "Bear Room Quest",
+      "basis": "sibling_claim",
+      "evidence": [
+        {
+          "title": "Bear Room Quest",
+          "pageid": 3158,
+          "revid": 1044894
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/bear_chest3",
+      "quest_title": "Bear Room Quest",
+      "basis": "sibling_claim",
+      "evidence": [
+        {
+          "title": "Bear Room Quest",
+          "pageid": 3158,
+          "revid": 1044894
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/behemothquest1",
+      "quest_title": "Behemoth Quest",
+      "basis": "sibling_claim",
+      "evidence": [
+        {
+          "title": "Behemoth Quest",
+          "pageid": 3785,
+          "revid": 886742
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/behemothquest3",
+      "quest_title": "Behemoth Quest",
+      "basis": "sibling_claim",
+      "evidence": [
+        {
+          "title": "Behemoth Quest",
+          "pageid": 3785,
+          "revid": 886742
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/behemothquest4",
+      "quest_title": "Behemoth Quest",
+      "basis": "sibling_claim",
+      "evidence": [
+        {
+          "title": "Behemoth Quest",
+          "pageid": 3785,
+          "revid": 886742
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/desert1",
+      "quest_title": "The Desert Dungeon Quest",
+      "basis": "wiki_reward_match",
+      "evidence": [
+        {
+          "title": "The Desert Dungeon Quest",
+          "pageid": 2496,
+          "revid": 1103387
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/desert2",
+      "quest_title": "The Desert Dungeon Quest",
+      "basis": "wiki_reward_match",
+      "evidence": [
+        {
+          "title": "The Desert Dungeon Quest",
+          "pageid": 2496,
+          "revid": 1103387
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/devilhemet2",
+      "quest_title": "Devil Helmet Quest",
+      "basis": "wiki_reward_match",
+      "evidence": [
+        {
+          "title": "Devil Helmet Quest",
+          "pageid": 3763,
+          "revid": 1043480
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/devilhemet3",
+      "quest_title": "Devil Helmet Quest",
+      "basis": "wiki_reward_match",
+      "evidence": [
+        {
+          "title": "Devil Helmet Quest",
+          "pageid": 3763,
+          "revid": 1043480
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/honeyflower",
+      "quest_title": "Studded Legs Quest",
+      "basis": "wiki_reward_match",
+      "evidence": [
+        {
+          "title": "Studded Legs Quest",
+          "pageid": 3225,
+          "revid": 1044892
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/imbuing_crystal_quest",
+      "quest_title": "Forgotten Knowledge Quest",
+      "basis": "sibling_claim",
+      "evidence": [
+        {
+          "title": "Forgotten Knowledge Quest",
+          "pageid": 79436,
+          "revid": 1083592
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/katanacorpse2",
+      "quest_title": "Katana Quest",
+      "basis": "sibling_claim",
+      "evidence": [
+        {
+          "title": "Katana Quest",
+          "pageid": 3179,
+          "revid": 1044887
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/legiondawnport",
+      "quest_title": "Newhaven Legion Helmet Quest",
+      "basis": "coverage_evidence",
+      "evidence": [
+        {
+          "title": "Newhaven Legion Helmet Quest",
+          "pageid": 111269,
+          "revid": 1204291
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/lighthouse1",
+      "quest_title": "Thais Lighthouse Quest",
+      "basis": "wiki_reward_match",
+      "evidence": [
+        {
+          "title": "Thais Lighthouse Quest",
+          "pageid": 3159,
+          "revid": 1043475
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/lighthouse2",
+      "quest_title": "Thais Lighthouse Quest",
+      "basis": "wiki_reward_match",
+      "evidence": [
+        {
+          "title": "Thais Lighthouse Quest",
+          "pageid": 3159,
+          "revid": 1043475
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/minohell2",
+      "quest_title": "Minotaur Hell Quest",
+      "basis": "sibling_claim",
+      "evidence": [
+        {
+          "title": "Minotaur Hell Quest",
+          "pageid": 3212,
+          "revid": 1044888
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/minohell3",
+      "quest_title": "Minotaur Hell Quest",
+      "basis": "sibling_claim",
+      "evidence": [
+        {
+          "title": "Minotaur Hell Quest",
+          "pageid": 3212,
+          "revid": 1044888
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/painting_of_agirl_quest",
+      "quest_title": "Forgotten Knowledge Quest",
+      "basis": "sibling_claim",
+      "evidence": [
+        {
+          "title": "Forgotten Knowledge Quest",
+          "pageid": 79436,
+          "revid": 1083592
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/powerbolt1",
+      "quest_title": "Power Bolts Quest",
+      "basis": "coverage_evidence",
+      "evidence": [
+        {
+          "title": "Power Bolts Quest",
+          "pageid": 3780,
+          "revid": 683945
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/ringquest2",
+      "quest_title": "Ring Quest",
+      "basis": "sibling_claim",
+      "evidence": [
+        {
+          "title": "Ring Quest",
+          "pageid": 21743,
+          "revid": 1090712
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/shortswordbook",
+      "quest_title": "Short Sword Quest",
+      "basis": "wiki_reward_match",
+      "evidence": [
+        {
+          "title": "Short Sword Quest",
+          "pageid": 2729,
+          "revid": 1044891
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/simon_the_beggars_favorite_staff",
+      "quest_title": "Beggar Outfits Quest",
+      "basis": "wiki_item_note",
+      "evidence": [
+        {
+          "title": "Staff (Simon)",
+          "pageid": 11880,
+          "revid": 1114331
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/kv/stealhring2",
+      "quest_title": "Stealth Ring Quest",
+      "basis": "sibling_claim",
+      "evidence": [
+        {
+          "title": "Stealth Ring Quest",
+          "pageid": 3230,
+          "revid": 683987
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/key/id3002",
+      "quest_title": "Draconia Quest",
+      "basis": "wiki_key_note",
+      "evidence": [
+        {
+          "title": "Key 3002",
+          "pageid": 5784,
+          "revid": 698673
+        },
+        {
+          "title": "Draconia Quest/Spoiler",
+          "pageid": 5553,
+          "revid": 855037
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/key/id3008",
+      "quest_title": "Draconia Quest",
+      "basis": "wiki_key_note",
+      "evidence": [
+        {
+          "title": "Key 3008",
+          "pageid": 5782,
+          "revid": 698679
+        },
+        {
+          "title": "Draconia Quest/Spoiler",
+          "pageid": 5553,
+          "revid": 855037
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/key/id3301",
+      "quest_title": "The Outlaw Camp Quest",
+      "basis": "wiki_key_note",
+      "evidence": [
+        {
+          "title": "Key 3301",
+          "pageid": 5001,
+          "revid": 1043658
+        },
+        {
+          "title": "Bright Sword Quest",
+          "pageid": 14614,
+          "revid": 87999
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/key/id3302",
+      "quest_title": "The Outlaw Camp Quest",
+      "basis": "wiki_key_note",
+      "evidence": [
+        {
+          "title": "Key 3302",
+          "pageid": 5002,
+          "revid": 1043659
+        },
+        {
+          "title": "Bright Sword Quest",
+          "pageid": 14614,
+          "revid": 87999
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/key/id3303",
+      "quest_title": "The Outlaw Camp Quest",
+      "basis": "wiki_key_note",
+      "evidence": [
+        {
+          "title": "Key 3303",
+          "pageid": 5000,
+          "revid": 1043660
+        },
+        {
+          "title": "Bright Sword Quest",
+          "pageid": 14614,
+          "revid": 87999
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/key/id3304",
+      "quest_title": "The Outlaw Camp Quest",
+      "basis": "wiki_key_note",
+      "evidence": [
+        {
+          "title": "Key 3304",
+          "pageid": 5629,
+          "revid": 1043655
+        },
+        {
+          "title": "Bright Sword Quest",
+          "pageid": 14614,
+          "revid": 87999
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/key/id3520",
+      "quest_title": "Fanfare Quest",
+      "basis": "wiki_key_note",
+      "evidence": [
+        {
+          "title": "Key 3520",
+          "pageid": 4401,
+          "revid": 698690
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/key/id3600",
+      "quest_title": "Ghoul Room Quest",
+      "basis": "wiki_key_note",
+      "evidence": [
+        {
+          "title": "Key 3600",
+          "pageid": 4407,
+          "revid": 1043872
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/key/id3610",
+      "quest_title": "Devil Helmet Quest",
+      "basis": "wiki_key_note",
+      "evidence": [
+        {
+          "title": "Key 3610",
+          "pageid": 5323,
+          "revid": 1043868
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/key/id3667",
+      "quest_title": "Devil Helmet Quest",
+      "basis": "wiki_key_note",
+      "evidence": [
+        {
+          "title": "Key 3667",
+          "pageid": 5438,
+          "revid": 1043869
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/key/id3800",
+      "quest_title": "Emperor's Cookies Quest",
+      "basis": "wiki_key_note",
+      "evidence": [
+        {
+          "title": "Key 3800",
+          "pageid": 5112,
+          "revid": 698701
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/key/id3802",
+      "quest_title": "Emperor's Cookies Quest",
+      "basis": "wiki_key_note",
+      "evidence": [
+        {
+          "title": "Key 3802",
+          "pageid": 5113,
+          "revid": 698703
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/key/id3899",
+      "quest_title": "The Paradox Tower Quest",
+      "basis": "wiki_key_note",
+      "evidence": [
+        {
+          "title": "Key 3899",
+          "pageid": 5114,
+          "revid": 698704
+        },
+        {
+          "title": "Paradox Tower Quest",
+          "pageid": 14616,
+          "revid": 88004
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/key/id4502",
+      "quest_title": "Alawar's Vault Quest",
+      "basis": "wiki_key_note",
+      "evidence": [
+        {
+          "title": "Key 4502",
+          "pageid": 4393,
+          "revid": 748277
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/u7_24/family_brooch/brooch",
+      "quest_title": "The White Raven Monastery Quest",
+      "basis": "wiki_reward_match",
+      "evidence": [
+        {
+          "title": "The White Raven Monastery Quest",
+          "pageid": 3766,
+          "revid": 756263
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/u7_3/the_medusa_quest",
+      "quest_title": "Medusa Shield Quest",
+      "basis": "wiki_reward_match",
+      "evidence": [
+        {
+          "title": "Medusa Shield Quest",
+          "pageid": 3793,
+          "revid": 771196
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/u8_0/shardsof_ancient_winters/formorgar_mines",
+      "quest_title": "Lion Trophy Quest",
+      "basis": "wiki_reward_match",
+      "evidence": [
+        {
+          "title": "Lion Trophy Quest",
+          "pageid": 17387,
+          "revid": 842366
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/u8_0/shardsof_ancient_winters/helheim",
+      "quest_title": "Berserk Potion Quest",
+      "basis": "wiki_reward_match",
+      "evidence": [
+        {
+          "title": "Berserk Potion Quest",
+          "pageid": 17205,
+          "revid": 842195
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/u8_0/shardsof_ancient_winters/inukaya",
+      "quest_title": "Inukaya Quest",
+      "basis": "wiki_reward_match",
+      "evidence": [
+        {
+          "title": "Inukaya Quest",
+          "pageid": 17223,
+          "revid": 842352
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/u8_0/shardsof_ancient_winters/okolnir",
+      "quest_title": "Frost Dragon Quest",
+      "basis": "wiki_reward_match",
+      "evidence": [
+        {
+          "title": "Frost Dragon Quest",
+          "pageid": 17086,
+          "revid": 842275
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/u8_0/shardsof_ancient_winters/tyrsung",
+      "quest_title": "Skeleton Decoration Quest",
+      "basis": "wiki_reward_match",
+      "evidence": [
+        {
+          "title": "Skeleton Decoration Quest",
+          "pageid": 17016,
+          "revid": 842459
+        }
+      ]
+    },
+    {
+      "claim": "canary:reward-claim/quest/u8_1/what_afoolish_quest/bag_book_knife",
+      "quest_title": "What a Foolish Quest",
+      "basis": "sibling_claim",
+      "evidence": [
+        {
+          "title": "What a Foolish Quest",
+          "pageid": 19799,
+          "revid": 1094085
+        }
+      ]
+    },
+    {
+      "claim": "crystalserver:reward-claim/kv/golem_wrench",
+      "quest_title": "Shadows of Yalahar Quest",
+      "basis": "sibling_claim",
+      "evidence": [
+        {
+          "title": "Shadows of Yalahar Quest",
+          "pageid": 37117,
+          "revid": 843939
+        }
+      ]
+    }
+  ]
+}

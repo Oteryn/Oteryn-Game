@@ -1,0 +1,14 @@
+{
+  "id": 199,
+  "name": "CYCLOPEDIA_CHARACTER_V1",
+  "owner_decision": "PAR-P12 Crystal re-audit 2026-10-28 mechanic 44; capability 199",
+  "owner": "Account badge owner; native Character progression and build owners",
+  "requires": [],
+  "command_types": [
+    387,
+    388
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES: a node serving a World booted from a bundle offers this capability; a fixture World never does, so this entry stays offered false. Command type 387 refreshes and returns the requesting account's permanent badges to an admitted session, and command type 388 reads one character window tab of the session's Character or of a Character whose VIP consent allows it; without the capability selected it is refused."
+}

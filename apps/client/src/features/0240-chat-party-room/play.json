@@ -1,0 +1,12 @@
+{
+  "concerns": [
+    "protocol",
+    "input",
+    "view"
+  ],
+  "events": {
+    "ChatLine": "chat_line",
+    "ChatRooms": "chat_rooms",
+    "ChatSnapshot": "chat_snapshot"
+  }
+}

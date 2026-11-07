@@ -1,0 +1,295 @@
+//! Player cast composition (`OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1` §9
+//! step 2): one cast intent through the core checks, the Ability plan and the owner commit, with
+//! the §5 anchor payment in the same mutation.
+//!
+//! [`PlayerSpellState`] is the runtime actor's own vitals and cooldowns (§4, SPELL-D2). The
+//! Channel owner keeps it beside the actor; it is never durable and never belongs to a
+//! GameSession. [`cast`] is pure: it returns the next state, and the owner stores that value in one
+//! write, so a rejected cast changes nothing and an accepted one pays mana, soul and cooldowns
+//! exactly with its heal (SPELL-D3).
+
+use oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle;
+use oteryn_protocol_oteryn::actor_spell::{MAX_SOUL, MAX_VITAL_POOL};
+use serde_json::Value;
+
+use super::chain::{ChainCreature, TilePosition};
+use super::harmony::MonkState;
+use super::party::SoloParty;
+use super::{Cooldowns, SpellBook, Vocation};
+
+macro_rules! starter {
+    ($dir:literal) => {
+        (
+            include_str!(concat!(
+                "../../../../../tools/content-schema/spell-authoring/samples/starter-bundles/",
+                $dir,
+                "/spell.json"
+            )),
+            include_str!(concat!(
+                "../../../../../tools/content-schema/spell-authoring/samples/starter-bundles/",
+                $dir,
+                "/dependencies.json"
+            )),
+        )
+    };
+}
+
+/// The V1 castable set of §6 among the candidate starter bundles: self heal and condition removal
+/// (`exana pox`, `exura gran`, `exura`, `exura infir`). Every member is a plain self-target instant
+/// on the `healing` cooldown group. The stock client bar casts index 1-4 only (`SPELL_SLOTS`), so
+/// `ultimate_healing` and `wound_cleansing` (indices 5-6) and `bruise_bane` (sorts first, shifts
+/// indices 1-3) wait for the client bar and the index-pinned tests.
+const V1_BUNDLES: [(&str, &str); 4] = [
+    starter!("instant-cure_poison"),
+    starter!("instant-intense_healing"),
+    starter!("instant-light_healing"),
+    starter!("instant-magic_patch"),
+];
+
+/// The V1 spell book, in the canonical SPELL-D1 order. Any bundle that does not load fails the
+/// whole book closed; nothing is skipped, so an index never shifts silently.
+pub fn v1_spell_book() -> Result<SpellBook, String> {
+    book_from_bundles(&V1_BUNDLES)
+}
+
+/// The loader behind [`v1_spell_book`], parameterized only so a test can inject a bundle that
+/// does not load (behaviour-neutral for production, which passes `V1_BUNDLES`).
+fn book_from_bundles(bundles: &[(&str, &str)]) -> Result<SpellBook, String> {
+    let spells = bundles
+        .iter()
+        .map(|(spell, dependencies)| {
+            let spell: Value = serde_json::from_str(spell).map_err(|error| error.to_string())?;
+            let dependencies: Value =
+                serde_json::from_str(dependencies).map_err(|error| error.to_string())?;
+            spell_from_bundle(&spell, &dependencies).map_err(|error| error.to_string())
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    SpellBook::canonical(spells).map_err(|error| error.to_string())
+}
+
+/// The Character-owned inputs of a cast and of the vitals maxima (§4). The Character owner
+/// supplies them; the client never does.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CharacterCastFacts {
+    pub vocation: Vocation,
+    pub level: u32,
+    pub magic_level: u32,
+    pub max_health: u32,
+    pub max_mana: u32,
+    pub max_soul: u32,
+}
+
+/// The runtime actor's vitals and cooldowns (§4). `revision` is the `ACTOR_VITALS` revision: 1
+/// when the actor's state is created, one more for every committed cast and for every periodic
+/// evaluation that changes Serene.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PlayerSpellState {
+    /// Tibiadrome suppresses training and soul-cost spells (manual combat.md:258-259).
+    pub drome_practice: bool,
+    pub facts: CharacterCastFacts,
+    /// Character-owner maxima before temporary Wheel dedication is projected.
+    pub(crate) base_max_health: u32,
+    pub(crate) base_max_mana: u32,
+    pub(super) learned: std::collections::BTreeSet<String>,
+    pub(super) premium_current: bool,
+    /// Fenced permanent promotion retained when Premium expires.
+    pub(super) stored_promotion: bool,
+    pub(super) premium_valid_until_micros: Option<u64>,
+    pub health: u32,
+    pub(super) field_attack_history: super::field_history::FieldAttackHistory,
+    pub(super) mana: u32,
+    /// FOOD-REGEN-1: milliseconds of fed time accumulated toward the next health and mana credit.
+    /// Runtime-only; a fresh actor starts at zero.
+    pub(super) regen_health_ms: u32,
+    pub(super) regen_mana_ms: u32,
+    pub(super) regen_health_carry: u32,
+    pub(super) regen_mana_carry: u32,
+    /// Runtime-only clock, anchored when admission makes this actor playable.
+    pub(super) regeneration_next_tick_us: Option<u64>,
+    /// Owner-qualified daily streak for the current resting tile; runtime-only.
+    pub(super) resting_streak: u32,
+    /// I05-r1: one runtime regeneration condition per worn regenerating item; runtime-only.
+    pub(super) equipped_regeneration:
+        Vec<oteryn_gameplay_progression::regeneration::EquipmentRegenerationClock>,
+    pub(super) soul: u32,
+    /// VITALS-SOUL-1: the running soul kill window, if any. Runtime-only.
+    pub(super) soul_window: Option<super::soul_window::SoulWindow>,
+    pub cooldowns: Cooldowns,
+    pub(super) wheel_gift: super::wheel_gift::GiftOfLifeState,
+    pub(super) revision: u64,
+    /// SPELL-D8 §8.2: a monk's live Harmony and Serene; `None` for every other vocation.
+    pub monk: Option<MonkState>,
+    pub(super) virtue_party: (super::harmony::VirtuePartyBonuses, u64),
+    pub(super) equipped_mantra: u32,
+    pub conditions: oteryn_gameplay_foundation::foundation::condition::ConditionStore<String>,
+    pub(super) base_speed: u32,
+    pub(super) stance: Option<oteryn_gameplay_spell_rules::native_actor_states::StandardStance>,
+    pub(super) stance_key: Option<String>,
+    pub(super) pending_stance: Option<Box<super::stance_execution::PreparedStance>>,
+    pub(super) owned_skills: Option<[u16; 7]>,
+    /// Projection of the current committed Wheel allocation and gem vessels.
+    pub(super) wheel_effects: oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects,
+    /// Exact hand facts from the existing committed equipment owner.
+    pub(super) wheel_equipment: Option<WheelEquipment>,
+    pub(super) wheel_proficiency_weapon: Option<String>,
+    /// Runtime-only source window; expires in five seconds and never survives logout.
+    pub(super) wheel_sanctuary: Option<(u64, u8)>,
+    pub(super) wheel_focus_until: Option<u64>,
+    /// ARMOR-MITIGATION-1: the worn armor the last committed equipment read installed.
+    pub(super) equipped_armor: u32,
+    /// ENERGY-RING-1: the active equipment form from the last fenced equipment read.
+    pub(super) equipped_mana_shield: bool,
+    /// I05-r2: a worn item's active form grants invisibility (Crystal CONDITION_INVISIBLE per slot).
+    pub(super) equipped_invisible: bool,
+    /// SHIELD-DEFENCE-1: what the hands of the last committed equipment read defend with.
+    pub(super) equipped_defence:
+        Option<oteryn_gameplay_combat_rules::resolution::player_defence::HandDefence>,
+    /// EQUIP-PROTECTION-1: the summed physical protection of the last committed equipment read.
+    pub(super) equipped_physical_protection:
+        Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
+    /// Current committed equipment protection against direct energy damage (not fields).
+    pub(super) equipped_energy_protection:
+        Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
+    /// Current committed equipment protection against direct fire damage (not fields).
+    pub(super) equipped_fire_protection:
+        Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
+    /// Additional direct damage elements, installed alongside the existing typed projections.
+    pub(super) equipped_element_protections: std::collections::BTreeMap<
+        oteryn_gameplay_content::content::ReferenceResistanceKind,
+        oteryn_gameplay_content::content::ReferenceRationalPercent,
+    >,
+    /// Current committed equipment protection against direct holy damage.
+    pub(super) equipped_holy_protection:
+        Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
+    /// Current committed equipment protection against direct ice damage (not fields).
+    pub(super) equipped_ice_protection:
+        Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
+    /// PARITY-EQUIP-MODIFIERS-1: the critical hit and leech of the last committed equipment read.
+    pub(super) equipped_offence:
+        oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
+    pub(super) training: Option<super::mana_training::LiveManaTraining>,
+    pub(super) training_checkpoint: Option<Box<super::mana_training::RetainedTrainingCheckpoint>>,
+    pub(super) training_payment: Option<super::mana_training::TrainingPaymentWitness>,
+}
+
+/// The Serene world of a runtime actor. No party service exists, so every monk is solo (§4
+/// interim rule) and always Serene by the rule; a solo evaluation never reads the creature.
+fn solo() -> SoloParty {
+    SoloParty(ChainCreature {
+        id: 0,
+        actor: String::new(),
+        position: TilePosition {
+            x: 0,
+            y: 0,
+            floor: 0,
+        },
+    })
+}
+
+impl PlayerSpellState {
+    /// A new runtime actor starts at its maxima (SPELL-D2), with the durable Harmony and remaining
+    /// forced Serene time the Character owner loaded (§8.2; both 0 for any other vocation).
+    /// Maxima above the SPELL-D8 wire bounds, and corrupt Harmony values, are refused.
+    pub fn new(facts: CharacterCastFacts, harmony: u8, serene_forced_micros: u64) -> Option<Self> {
+        let monk = MonkState::load(facts.vocation, harmony, serene_forced_micros).ok()?;
+        // Canary's pinned vocations.xml assigns base speed 110 to every class.
+        // The accepted SPEED-1 curve is class base plus (level - 1).
+        let base_speed = crate::movement::speed::player_base_speed(facts.level)?;
+        (facts.max_health <= MAX_VITAL_POOL
+            && facts.max_mana <= MAX_VITAL_POOL
+            && facts.max_soul <= MAX_SOUL)
+            .then(|| Self {
+                drome_practice: false,
+                facts,
+                base_max_health: facts.max_health,
+                base_max_mana: facts.max_mana,
+                health: facts.max_health,
+                mana: facts.max_mana,
+                regen_health_ms: 0,
+                regen_mana_ms: 0,
+                regen_health_carry: 0,
+                regen_mana_carry: 0,
+                regeneration_next_tick_us: None,
+                resting_streak: 0,
+                equipped_regeneration: Vec::new(),
+                learned: Default::default(),
+                premium_current: false,
+                stored_promotion: false,
+                premium_valid_until_micros: None,
+                soul: facts.max_soul,
+                soul_window: None,
+                cooldowns: Cooldowns::default(),
+                wheel_gift: Default::default(),
+                revision: 1,
+                monk,
+                conditions: oteryn_gameplay_foundation::foundation::condition::ConditionStore::new(
+                ),
+                base_speed,
+                stance: None,
+                stance_key: None,
+                pending_stance: None,
+                owned_skills: None,
+                wheel_effects: Default::default(),
+                wheel_equipment: None,
+                wheel_proficiency_weapon: None,
+                wheel_sanctuary: None,
+                wheel_focus_until: None,
+                virtue_party: Default::default(),
+                equipped_mantra: 0,
+                equipped_armor: 0,
+                equipped_mana_shield: false,
+                equipped_invisible: false,
+                equipped_defence: None,
+                equipped_physical_protection: None,
+                equipped_ice_protection: None,
+                equipped_energy_protection: None,
+                equipped_fire_protection: None,
+                equipped_holy_protection: None,
+                equipped_element_protections: Default::default(),
+                equipped_offence: Default::default(),
+                training: None,
+                training_payment: None,
+                field_attack_history: super::field_history::FieldAttackHistory::default(),
+                training_checkpoint: None,
+            })
+    }
+}
+
+mod equipped_armor;
+mod equipped_invisibility;
+mod equipped_regeneration;
+mod gate;
+mod level_up_vitals;
+mod live_skill;
+mod prepare;
+mod state;
+mod vocationless_vitals;
+mod wheel;
+mod wheel_attack;
+pub use wheel_attack::{PreparedWheelAttackHit, WheelAttackActor, WheelAttackComponents};
+
+pub use gate::{
+    CastContext, admit_condition_gates, cast, condition_gate, disposition, store_condition_gate,
+};
+pub use live_skill::SwingSkills;
+pub use prepare::{
+    PaidFocusOwnerCast, PaidNativeCallbackCast, PaidNativeCast, PaidOrdinaryCast,
+    PaidSourceSelfCast, prepare_conjure_owner_cast_with_caster,
+    prepare_direct_acquisition_owner_cast_with_caster, prepare_focus_owner_cast_with_caster,
+    prepare_locate_name_failure_owner_cast_with_caster,
+    prepare_named_player_failure_owner_cast_with_caster,
+    prepare_native_callback_owner_cast_with_carried_item,
+    prepare_native_callback_owner_cast_with_caster, prepare_native_owner_cast,
+    prepare_native_owner_cast_with_caster, prepare_ordinary_owner_cast_with_caster,
+    prepare_ordinary_owner_cast_with_wheel, prepare_source_self_cast_with_caster,
+    resolve_ordinary_due_effects, resolve_ordinary_due_effects_with_wheel,
+};
+pub use wheel::{
+    WheelEquipment, WheelHand, wheel_adjacent_monsters, wheel_adjacent_monsters_at,
+    wheel_adjacent_target,
+};
+
+#[cfg(test)]
+mod gate_tests;
+#[cfg(test)]
+mod tests;

@@ -1,0 +1,31 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_APPLY_PLAN/v1",
+  "task": "PREY-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "status": "STAGED_FOR_COORDINATOR",
+  "reason": "Every tracked content/services/ file participates in the World Bundle input fingerprint. Owner forbids content/world/pins/* mutation and regeneration; coordinator applies these data packets together with separately qualified pin regeneration.",
+  "target_files": [
+    {
+      "target_path": "content/services/tasks/evidence-00000-00004.json",
+      "staged_path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json",
+      "sha256": "be041e49dfc7dcba6ac7073ac854f8270398a6adcba28790c5fb12b785f81ddd"
+    },
+    {
+      "target_path": "content/services/tasks/index.json",
+      "staged_path": "docs/reference/content-prep/prey-content-1/admission-evidence/tasks-index.json",
+      "sha256": "d7811681953172ae7c800580b105cf55e6c01ec374ebad0f1961f318c27c4b8b"
+    }
+  ],
+  "generated_service_declarations_changed": false,
+  "runtime_switch_authorized": false,
+  "coordinator_must_verify": [
+    "current task target ownership",
+    "target-source conflicts and UNKNOWN fields",
+    "approved native/runtime schema wiring",
+    "generated catalogue equivalence",
+    "World Bundle pins and deterministic bundle",
+    "required exact-head validators"
+  ],
+  "data_completeness": "SOURCE_BACKED_VALUES_AND_ALTERNATIVES_WITH_EXPLICIT_CONFLICTS",
+  "task_reward_source_check": "docs/reference/content-prep/prey-content-1/task-reward-source-check.json"
+}

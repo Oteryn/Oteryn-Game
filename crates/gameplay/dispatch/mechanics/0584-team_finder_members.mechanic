@@ -1,0 +1,10 @@
+name=team_finder_members
+commands=444,445,446
+transport=pub team_finder_members
+composed=team_finder_members
+authority=team_finder_members
+[route]
+match routing::team_finder_members::route(authority, &session.admitted, command, &mut session.team_finder_view).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

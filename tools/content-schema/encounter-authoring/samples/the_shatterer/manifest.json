@@ -1,0 +1,190 @@
+{
+  "encounter": "canary:encounter/the_shatterer",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "TheShattererDeath": [
+      "canary:creature/the_shatterer"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/ferumbras_ascension/bosses/the_shatterer.lua",
+      "blob_sha1": "eb414a427f3de4e900b63cb031fc642d249b443d"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_the_shatterer_kill.lua",
+      "blob_sha1": "b94f3f1e44baac1412ab2e99e599af48dc285b96"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "The Shatterer is the the_shatterer participant; its file registers TheShattererDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        85,
+        86
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of The Shatterer.",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        87,
+        88,
+        89
+      ],
+      "status": "mapped",
+      "resolution": "Every damaging player gets FerumbrasAscension.TheShatterer = 1 (D27 quest domain).",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        82,
+        83,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        99,
+        100,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "status": "mapped",
+      "resolution": "Teleporter 1949 on (33393, 32438, 14) becomes 22761 leading to (33436, 32443, 15); after 2 minutes it turns back into 1949 with its original destination.",
+      "destination": "/encounter/rules/0/actions/1"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        98
+      ],
+      "status": "approved_omission",
+      "resolution": "The thunder effect on the boss position is cosmetic."
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        101,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80
+      ],
+      "status": "approved_omission",
+      "resolution": "revert() puts back the chains of the four corridors and resets the four levers for the next group (actions_the_shatterer_levers.lua removes them); an instance per party starts from the map state (D26)."
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        103,
+        104
+      ],
+      "status": "approved_omission",
+      "resolution": "Global TheShattererLever and TheShattererTimer reset the shared room; an instance per party replaces them (D26)."
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "the_shatterer_defeated",
+      "credited": "damage_contributors",
+      "quest_domain": {
+        "canary_storage": "Storage.Quest.U10_90.FerumbrasAscension.TheShatterer",
+        "set": 1
+      }
+    }
+  ]
+}

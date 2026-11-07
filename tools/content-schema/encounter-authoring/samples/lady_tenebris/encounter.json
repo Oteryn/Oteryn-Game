@@ -1,0 +1,173 @@
+{
+  "identity": {
+    "key": "canary:encounter/lady_tenebris",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Forgotten Knowledge: Lady Tenebris",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "lady_tenebris",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/lady_tenebris",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "shadow_tentacle",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/shadow_tentacle",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "tenebris_room",
+      "kind": "area",
+      "description": "Every tile from Canary (32906, 31594, 14) to (32918, 31604, 14).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              32906,
+              32918
+            ],
+            "y": [
+              31594,
+              31604
+            ],
+            "floor": 14
+          }
+        ]
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "lady_tenebris_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "lady_tenebris"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "lady_tenebris_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    },
+    {
+      "key": "lady_tenebris_unguarded_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "lady_tenebris",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "shadow_tentacle",
+          "near": {
+            "role": "lady_tenebris",
+            "radius": 7
+          },
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "lady_tenebris",
+          "multiplier_percent": 200,
+          "component": "primary",
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "lady_tenebris_unguarded_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "lady_tenebris",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "shadow_tentacle",
+          "near": {
+            "role": "lady_tenebris",
+            "radius": 7
+          },
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "lady_tenebris",
+          "multiplier_percent": 200,
+          "component": "primary",
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "lady_tenebris_revives_a_shadow_fiend",
+      "trigger": {
+        "kind": "ability_cast",
+        "role": "lady_tenebris",
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/tenebris_summon",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/shadow_fiend",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "random_in": "tenebris_room"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "spawned": true
+          },
+          "text": "The shadow fiend revives!",
+          "mode": "say"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "lady_tenebris_defeated"
+  ]
+}

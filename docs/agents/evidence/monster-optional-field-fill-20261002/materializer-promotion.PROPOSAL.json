@@ -1,0 +1,35 @@
+{
+  "schema": "OTERYN_OPTIONAL_MONSTER_MATERIALIZER_PROMOTION_PROPOSAL/v1",
+  "applied": false,
+  "owner_issue": 162,
+  "prepared_index_sha256": "0117ce9b1996a21c609c62d7ba9680614fb1f1fb2337e30d50a4ba1ab2bc049f",
+  "prepared_stage_sha256": "8d906e69c1e111852e75c7c427d1da68cdf83dfc906e450696d2f0767e0895be",
+  "counts": {
+    "creatures": 1763,
+    "deferred_encounter": 0,
+    "deferred_encounters": 0,
+    "deferred_initial_health": 0,
+    "deferred_reference_loot_contract": 0,
+    "deferred_unregistered_items": 0,
+    "deferred_unresolved_reference": 0,
+    "documents": 1609,
+    "encounters": 104,
+    "profiles": 23823,
+    "records": 24933
+  },
+  "source_identity_bindings": 1867,
+  "stage_tool": "tools/content-migration/stage_monster_optional_documents.py",
+  "stage_tool_sha256": "d8cb3d51f150586bc046bdb62e90d004469d9f199b5ae7a3148d151f998eeed0",
+  "production_declaration_fence_path": "apps/game-server/examples/materialize_content_world_project_v2.rs:1237",
+  "existing_contract": "ProjectV2Declaration::Document and Creature.details.encyclopedia_document already exist; no new native family needed.",
+  "required_updates": [
+    "Item owner: existing protected producer must admit Falcon Soul Core47899, three exact corpse Items and72 known loot Item comparisons outside protected map; no invented aliases.",
+    "Content/Item owner: resolve47 unproven item identities and5 cosmetic variant cases;130 phase/summon comparisons must not automatically become ordinary loot.",
+    "Quest/Encounter/effect owner:64 unconverted source rows plus partial-core parity debts,2familiarChallenge rows,5owner lifecycles and104Encounter placement.",
+    "Document consumer owner: existing materializer1237–1244 accepts Encounter declarations only; allow existing typedDocument declarations with separate1609Document/104Encounter count fences, exact SHA and real client text consumers.",
+    "Audio/client owner: qualify actual assets/playback; source cue strings and native defaults are not Global/client qualification.",
+    "Coordinator: integrate/reconcile stacked draft heads and protected-main source/count/sourcebinding pins; qualify live effects/conditionalcores/rewardpools/lootdrop/respawn and separately authorize server deployment."
+  ],
+  "live_main_reconciliation_required": true,
+  "deployment_authorized_by_this_packet": false
+}

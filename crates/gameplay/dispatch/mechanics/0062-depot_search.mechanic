@@ -1,0 +1,7 @@
+name=depot_search
+commands=182
+transport=depot_search
+composed=depot_search
+authority=depot_search
+[route]
+routing::depot_search::route(authority, session.actor, &session.admitted, command).await

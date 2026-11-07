@@ -1,0 +1,10 @@
+name=hazard
+commands=169
+transport=hazard
+composed=hazard
+authority=hazard
+[route]
+match routing::hazard::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

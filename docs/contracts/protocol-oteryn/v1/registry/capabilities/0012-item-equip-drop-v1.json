@@ -1,0 +1,11 @@
+{
+  "id": 12,
+  "name": "ITEM_EQUIP_DROP_V1",
+  "owner_decision": "ITEM-MOVE-WIRE-1 §3 (docs/architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md, #162 5912405163); number allocated by the #1622 control plane and registered by ITEM-EQUIP-WIRE-1",
+  "owner": "current ChannelRuntime (views and handles); Item durability (the TRANSFER behind command type 9)",
+  "requires": [4],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "ITEM-MOVE-2a, ITEM-LOOP-1 (CP D1438): only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES), where command type 9 equips, swaps an occupied slot, drops onto a reachable ground cell and picks up from one; a fixture World never offers it, so this entry stays offered false. It extends command type 9 and domain 9 of capability 4 and owns neither. Without it selected, domain 9 carries no equipment (field 3 fails closed, at most 930 bytes), command type 9 keeps the main backpack destination only (fields 3 and 4 fail closed, at most 13 bytes) and the outcomes 10 to 12 are never sent. The command type 9 and domain 9 max_payload_bytes are the bounds under this capability."
+}

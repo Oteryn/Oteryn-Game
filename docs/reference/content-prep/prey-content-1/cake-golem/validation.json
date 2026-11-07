@@ -1,0 +1,31 @@
+{
+  "source_scope": "OTS_HYPOTHESIS_ONLY",
+  "classification": "DERIVED",
+  "source": {
+    "file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+    "git_blob": "d95b96f4ed3c5e47d9219a3112c6065ea5de1e2d"
+  },
+  "crystal_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "canary_engine_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "method": "Unmodified pinned converter with a temporary process-local loader wrapper that supplies the exact same-revision CakeQuest.Items table. No repository importer or product files changed. Wiki/official overlays are not loaded; this bundle preserves donor values.",
+  "source_field_count": 21,
+  "dependency": {
+    "path": "data-global/scripts/lib/a_piece_of_cake_config.lua",
+    "sha256": "044d68d0ed8a6b73b860365f6c7e917de62e249c7e176aa575788a0de51f4da9",
+    "item": 12143
+  },
+  "structural_semantic_reference_errors": [],
+  "import_manifest_errors": [
+    "manifest: unresolved_semantics data-global/monster/quests/a_piece_of_cake/cake_golem.lua:79 attacks[2]"
+  ],
+  "declared_catalog_is_inventory_only": true,
+  "native_admission_authorized": false,
+  "runtime_activation_authorized": false,
+  "remaining": [
+    "Source-scoped identities and catalog declarations require native binding and asset admission; catalog declaration alone does not establish materializability.",
+    "Event/quest creature classification and encounter admission require their owning implementation task.",
+    "Source isPreyExclusive=false conflicts with the retained wildcard-only community pool; preserve the conflict before native activation.",
+    "Mitigation0.41 is a pinned donor fact; prior wiki0.64 remains a retained source conflict. No controlled current Global test is claimed."
+  ],
+  "pending_definitions": []
+}

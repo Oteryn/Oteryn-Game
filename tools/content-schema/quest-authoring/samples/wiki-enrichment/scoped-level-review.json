@@ -1,0 +1,850 @@
+{
+  "schema": "OTERYN_SOURCE_LEVEL_REVIEW/v1",
+  "entries": [
+    {
+      "wiki_title": "Exchange Quests",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 9667,
+        "revid": 692497,
+        "content_sha256": "54b45a16de6fed198974864e77e959c89677a8e4a5412750bb1e88936c225c9e",
+        "url": "https://tibia.fandom.com/index.php?curid=9667&oldid=692497"
+      },
+      "level": {
+        "source_value": "0-35",
+        "kind": "scoped_or_range",
+        "plain_integer": null,
+        "mentioned_numbers": [
+          0,
+          35
+        ]
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "declared_interval",
+        "bounds": [
+          0,
+          35
+        ],
+        "scope": "source_infobox",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "What a Foolish Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 19799,
+        "revid": 1094085,
+        "content_sha256": "a3cb611718f4424d441dbed82f121360ca72739c4958a1dd4132b79fd9f9cc04",
+        "url": "https://tibia.fandom.com/index.php?curid=19799&oldid=1094085"
+      },
+      "level": {
+        "source_value": "40*",
+        "kind": "scoped_or_range",
+        "plain_integer": null,
+        "mentioned_numbers": [
+          40
+        ]
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "footnoted_or_related_quest",
+        "source_value": "40*",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Against the Spider Cult Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 20036,
+        "revid": 842642,
+        "content_sha256": "df3065c1edc2f7905378420b7009d9ea3cf126d0c191371e1ca823b372779511",
+        "url": "https://tibia.fandom.com/index.php?curid=20036&oldid=842642"
+      },
+      "level": {
+        "source_value": "42?",
+        "kind": "uncertain",
+        "plain_integer": null,
+        "mentioned_numbers": [
+          42
+        ]
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Tibia Tales",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 22849,
+        "revid": 842968,
+        "content_sha256": "e98139093b917ed7cdb19daf4b4d78e5679a54d8e4f0f76272b43cfe2743b515",
+        "url": "https://tibia.fandom.com/index.php?curid=22849&oldid=842968"
+      },
+      "level": {
+        "source_value": "0 - 61",
+        "kind": "scoped_or_range",
+        "plain_integer": null,
+        "mentioned_numbers": [
+          0,
+          61
+        ]
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "declared_interval",
+        "bounds": [
+          0,
+          61
+        ],
+        "scope": "source_infobox",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "The Hidden City of Beregar Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 30690,
+        "revid": 843688,
+        "content_sha256": "201ff2d1c0b680e1bd925e0f1193fa4e1e443068af6e1fe11cff50d7975ef508",
+        "url": "https://tibia.fandom.com/index.php?curid=30690&oldid=843688"
+      },
+      "level": {
+        "source_value": "0 (100 For The Firewalker Boots Part)",
+        "kind": "scoped_or_range",
+        "plain_integer": null,
+        "mentioned_numbers": [
+          0,
+          100
+        ]
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "part_threshold",
+        "entry_value": 0,
+        "part_value": 100,
+        "part": "Firewalker Boots",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Killing in the Name of... Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 36695,
+        "revid": 843864,
+        "content_sha256": "53cced01ad3418368975517ed283b68bba0d485cf0933fc432c3b75d83b22e2f",
+        "url": "https://tibia.fandom.com/index.php?curid=36695&oldid=843864"
+      },
+      "level": {
+        "source_value": "various",
+        "kind": "varies",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "varies_by_task_or_scope",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Treasure Hunt Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 37108,
+        "revid": 843992,
+        "content_sha256": "9ce76d941f223b0b9ca4fccc6c1e8399cc0c6c35853a3f5a235bc08648b0ff15",
+        "url": "https://tibia.fandom.com/index.php?curid=37108&oldid=843992"
+      },
+      "level": {
+        "source_value": "35 ([[The Shattered Isles Quest]])",
+        "kind": "scoped_or_range",
+        "plain_integer": null,
+        "mentioned_numbers": [
+          35
+        ]
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "footnoted_or_related_quest",
+        "source_value": "35 ([[The Shattered Isles Quest]])",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "The New Frontier Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 41754,
+        "revid": 1058656,
+        "content_sha256": "a010f22744255ac717e2bbc18d46a2e329cc63ab0b2272c07e3778845ee6ec5e",
+        "url": "https://tibia.fandom.com/index.php?curid=41754&oldid=1058656"
+      },
+      "level": {
+        "source_value": "77*(for the last mission only)",
+        "kind": "scoped_or_range",
+        "plain_integer": null,
+        "mentioned_numbers": [
+          77
+        ]
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "last_mission_threshold",
+        "value": 77,
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "An Uneasy Alliance Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 41956,
+        "revid": 683776,
+        "content_sha256": "a2bf9f3b74118ddf9f43ac754e473997d2a905878c1e1590b3f1574409b7b23a",
+        "url": "https://tibia.fandom.com/index.php?curid=41956&oldid=683776"
+      },
+      "level": {
+        "source_value": "0?",
+        "kind": "uncertain",
+        "plain_integer": null,
+        "mentioned_numbers": [
+          0
+        ]
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Wrath of the Emperor Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 46607,
+        "revid": 1103764,
+        "content_sha256": "f4a98930a436bca9559764bb048375c4e19052a9f9ecd7f77752086bf7f24a5d",
+        "url": "https://tibia.fandom.com/index.php?curid=46607&oldid=1103764"
+      },
+      "level": {
+        "source_value": "80 (Expertise door during mission 8)",
+        "kind": "scoped_or_range",
+        "plain_integer": null,
+        "mentioned_numbers": [
+          80,
+          8
+        ]
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "expertise_door_threshold",
+        "value": 80,
+        "mission_number": 8,
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "The Rookie Guard Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 53931,
+        "revid": 891816,
+        "content_sha256": "96f3268be16e7faf36153fd7d3f3fcb381e508043ab442397f861d1fef6bdc4f",
+        "url": "https://tibia.fandom.com/index.php?curid=53931&oldid=891816"
+      },
+      "level": {
+        "source_value": "0 - 5",
+        "kind": "scoped_or_range",
+        "plain_integer": null,
+        "mentioned_numbers": [
+          0,
+          5
+        ]
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "declared_interval",
+        "bounds": [
+          0,
+          5
+        ],
+        "scope": "source_infobox",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Thornfire World Change",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 54125,
+        "revid": 844903,
+        "content_sha256": "ed180a2b2511526aa24dc1f1e291546eae3ddfa2da94b42ddbebe18a1beb9e29",
+        "url": "https://tibia.fandom.com/index.php?curid=54125&oldid=844903"
+      },
+      "level": {
+        "source_value": "None",
+        "kind": "explicit_none",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "source_declares_none",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Awash World Change",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 54563,
+        "revid": 1149363,
+        "content_sha256": "c14e8dc57b44eafe1820f287e215c8a9024d8734570c45fbea82f49f092e55ef",
+        "url": "https://tibia.fandom.com/index.php?curid=54563&oldid=1149363"
+      },
+      "level": {
+        "source_value": "None",
+        "kind": "explicit_none",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "source_declares_none",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "The Mummy's Curse World Change",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 54567,
+        "revid": 844898,
+        "content_sha256": "e93af90ea7e5149427b168a2591808ca53d1d25e9de262376969ed86c997e22f",
+        "url": "https://tibia.fandom.com/index.php?curid=54567&oldid=844898"
+      },
+      "level": {
+        "source_value": "None",
+        "kind": "explicit_none",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "source_declares_none",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Their Master's Voice World Change",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 54568,
+        "revid": 1110635,
+        "content_sha256": "66360bb61c4e6268979fbf42f1e1f1d4e7b2d8f9c91b7365d5b342634aa138d4",
+        "url": "https://tibia.fandom.com/index.php?curid=54568&oldid=1110635"
+      },
+      "level": {
+        "source_value": "8+",
+        "kind": "scoped_or_range",
+        "plain_integer": null,
+        "mentioned_numbers": [
+          8
+        ]
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "declared_lower_bound",
+        "value": 8,
+        "scope": "source_infobox",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "The Repenters Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 64474,
+        "revid": 846070,
+        "content_sha256": "a70b0ccb36e9e9e26ec5e60e4bbeac1d3b965d06ba6a3b9535eaaab929f97581",
+        "url": "https://tibia.fandom.com/index.php?curid=64474&oldid=846070"
+      },
+      "level": {
+        "source_value": "0?",
+        "kind": "uncertain",
+        "plain_integer": null,
+        "mentioned_numbers": [
+          0
+        ]
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Spike Tasks Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 65390,
+        "revid": 885773,
+        "content_sha256": "1b519377588a6817ca7f773ca768c627d734c1f29b4723ee354f62ca7e91b93c",
+        "url": "https://tibia.fandom.com/index.php?curid=65390&oldid=885773"
+      },
+      "level": {
+        "source_value": "Varies",
+        "kind": "varies",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "varies_by_task_or_scope",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Dark Trails Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 67961,
+        "revid": 846469,
+        "content_sha256": "e17f0f9aec2c8ea42c7b237be01391ff8aa05e4367d569dfabe96ab01b385ad4",
+        "url": "https://tibia.fandom.com/index.php?curid=67961&oldid=846469"
+      },
+      "level": {
+        "source_value": "?",
+        "kind": "uncertain",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Dawnport Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 68640,
+        "revid": 683819,
+        "content_sha256": "1d6763776297dcfb722619efc4e7d194cf7f508856ddd198c3018e9c65bcdfa1",
+        "url": "https://tibia.fandom.com/index.php?curid=68640&oldid=683819"
+      },
+      "level": {
+        "source_value": "2 - 20",
+        "kind": "scoped_or_range",
+        "plain_integer": null,
+        "mentioned_numbers": [
+          2,
+          20
+        ]
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "declared_interval",
+        "bounds": [
+          2,
+          20
+        ],
+        "scope": "source_infobox",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Sanctuary of the Lizard God Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 68839,
+        "revid": 1198612,
+        "content_sha256": "fe8e2d3b054078252c7436ab7641612a69f3299d6cf076626c835d06aa497c93",
+        "url": "https://tibia.fandom.com/index.php?curid=68839&oldid=1198612"
+      },
+      "level": {
+        "source_value": "2 - 20",
+        "kind": "scoped_or_range",
+        "plain_integer": null,
+        "mentioned_numbers": [
+          2,
+          20
+        ]
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "declared_interval",
+        "bounds": [
+          2,
+          20
+        ],
+        "scope": "source_infobox",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Hero of Rathleton Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 69694,
+        "revid": 1078130,
+        "content_sha256": "5a8f6404b76038962a263babb56421c56127736342f81d955f5d7c8760cfe87d",
+        "url": "https://tibia.fandom.com/index.php?curid=69694&oldid=1078130"
+      },
+      "level": {
+        "source_value": "?",
+        "kind": "uncertain",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Makeshift Warrior Outfits Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 83854,
+        "revid": 849124,
+        "content_sha256": "46e6d6a7ee8c131d19774b1c17ea3a952e500f4b48a3219493909b7e1689a102",
+        "url": "https://tibia.fandom.com/index.php?curid=83854&oldid=849124"
+      },
+      "level": {
+        "source_value": null,
+        "kind": "not_stated",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Battle Mage Outfits Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 85574,
+        "revid": 848685,
+        "content_sha256": "aa89354b54d0b96440c945aac13f0da9258fbf896abe69362b299f46945d0bef",
+        "url": "https://tibia.fandom.com/index.php?curid=85574&oldid=848685"
+      },
+      "level": {
+        "source_value": null,
+        "kind": "not_stated",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Measuring Tibia Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 85619,
+        "revid": 935112,
+        "content_sha256": "ba0b3a1d9ab223ff234ccf0e75ec7b37b412e5766be8fd711ed91ead0a51c7b9",
+        "url": "https://tibia.fandom.com/index.php?curid=85619&oldid=935112"
+      },
+      "level": {
+        "source_value": null,
+        "kind": "not_stated",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Winterlight Solstice",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 87276,
+        "revid": 1048344,
+        "content_sha256": "dce31ff7bd4999029b234b59e98cb3e518342c1e6e793be30404965ab243f9a1",
+        "url": "https://tibia.fandom.com/index.php?curid=87276&oldid=1048344"
+      },
+      "level": {
+        "source_value": null,
+        "kind": "not_stated",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Rascoohan Outfits Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 93016,
+        "revid": 895793,
+        "content_sha256": "cf4aead7ec2d8e268d17f1df4248e871e670d640c14c6bea78f87641fbe82590",
+        "url": "https://tibia.fandom.com/index.php?curid=93016&oldid=895793"
+      },
+      "level": {
+        "source_value": "?",
+        "kind": "uncertain",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Magic Sword Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 95154,
+        "revid": 875253,
+        "content_sha256": "0a231354bf3071ff5fe9255258b1a95b1fe9c49added31e1a397b0500854f54f",
+        "url": "https://tibia.fandom.com/index.php?curid=95154&oldid=875253"
+      },
+      "level": {
+        "source_value": null,
+        "kind": "not_stated",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Falconer Outfits Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 96699,
+        "revid": 909040,
+        "content_sha256": "183b1ec27d1f8687afb9ca6e7639215f87e8f065720492b4d06faecefb9c5f3a",
+        "url": "https://tibia.fandom.com/index.php?curid=96699&oldid=909040"
+      },
+      "level": {
+        "source_value": null,
+        "kind": "not_stated",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Within the Tides Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 98526,
+        "revid": 1036406,
+        "content_sha256": "1bd9be3be8a20d34e6bafbae58b931644c1048fcd2f47449cc51c0d2d8c9ee70",
+        "url": "https://tibia.fandom.com/index.php?curid=98526&oldid=1036406"
+      },
+      "level": {
+        "source_value": null,
+        "kind": "not_stated",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "20 Years a Cook Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 104199,
+        "revid": 1048755,
+        "content_sha256": "a7a88cb9ba0f5a20f70dd0a8db988d8160b5ad81bb9bb383721d7ee3fa1618be",
+        "url": "https://tibia.fandom.com/index.php?curid=104199&oldid=1048755"
+      },
+      "level": {
+        "source_value": null,
+        "kind": "not_stated",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Draccoon Herald Outfits Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 104206,
+        "revid": 1048240,
+        "content_sha256": "f4a488de324e39179fc49318bda4422f18ec934a66eaf700918e6d1b5edc06f3",
+        "url": "https://tibia.fandom.com/index.php?curid=104206&oldid=1048240"
+      },
+      "level": {
+        "source_value": null,
+        "kind": "not_stated",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Targuna Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 110219,
+        "revid": 1172822,
+        "content_sha256": "387c062c52abf97d29309117b07224255820e5ae31fae999dac1cb5bc568bbb2",
+        "url": "https://tibia.fandom.com/index.php?curid=110219&oldid=1172822"
+      },
+      "level": {
+        "source_value": "10 / 12",
+        "kind": "scoped_or_range",
+        "plain_integer": null,
+        "mentioned_numbers": [
+          10,
+          12
+        ]
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "per_mission_thresholds",
+        "thresholds": [
+          10,
+          12
+        ],
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Feral Trappers Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 110524,
+        "revid": 1187332,
+        "content_sha256": "af574f7d373895179789f98191e329a571a8e35d9a0633944598191848938711",
+        "url": "https://tibia.fandom.com/index.php?curid=110524&oldid=1187332"
+      },
+      "level": {
+        "source_value": null,
+        "kind": "not_stated",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Shards of a Broken Moon Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 110935,
+        "revid": 1195699,
+        "content_sha256": "333ec7e473249ac458b5ed7d1ae5e0b6e97846646ef6943a53cabdec9cc3a09a",
+        "url": "https://tibia.fandom.com/index.php?curid=110935&oldid=1195699"
+      },
+      "level": {
+        "source_value": "?",
+        "kind": "uncertain",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Illuminated Warrior Outfits Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 111140,
+        "revid": 1197521,
+        "content_sha256": "4d9550d12601ebb45c747e44d5740d7163c934fa7122013aa937e66c163b4cc8",
+        "url": "https://tibia.fandom.com/index.php?curid=111140&oldid=1197521"
+      },
+      "level": {
+        "source_value": "1000+",
+        "kind": "scoped_or_range",
+        "plain_integer": null,
+        "mentioned_numbers": [
+          1000
+        ]
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "declared_lower_bound",
+        "value": 1000,
+        "scope": "source_infobox",
+        "canonical_promotion": false
+      }
+    },
+    {
+      "wiki_title": "Newhaven Legion Helmet Quest",
+      "source": {
+        "provider": "tibia_fandom",
+        "pageid": 111269,
+        "revid": 1204291,
+        "content_sha256": "6e2c4ba64d43c6ed6f4d7c51c2c7493a736f0fe1b64ae2c4ee0c296ae1bcac2d",
+        "url": "https://tibia.fandom.com/index.php?curid=111269&oldid=1204291"
+      },
+      "level": {
+        "source_value": null,
+        "kind": "not_stated",
+        "plain_integer": null,
+        "mentioned_numbers": []
+      },
+      "policy": "Preserve scoped/unknown source value; no automatic minimum assignment.",
+      "source_interpretation": {
+        "kind": "not_known_from_pinned_source",
+        "canonical_promotion": false
+      }
+    }
+  ],
+  "canonical_updates": [],
+  "helmet_level9_scope": "Only Magic Rope spell alternative; not a quest minimum.",
+  "summary": {
+    "source_nonplain": 36,
+    "source_structurally_scoped": 18,
+    "source_missing_or_uncertain": 18,
+    "canonical_updates": 0
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": 68,
+  "name": "IMBUE_V1",
+  "owner_decision": "PARITY-IMBUE-FORGE-WIRE-1; IMBUE-FORGE0 §3 and §14 (first server slice)",
+  "owner": "Imbuement shrine window over a main backpack direct entry: allowance query from the qualified item policy and the durable imbuement rows, apply and clear admission. Apply and clear fail closed with REQUIREMENT_NOT_MET until the shrine access content and the materials catalogue land; no writer is reachable yet.",
+  "requires": [
+    4
+  ],
+  "command_types": [
+    85
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "IMBUE-WIRE-1: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES), because item imbuement slots come from the native item policy; a fixture World never offers it."
+}

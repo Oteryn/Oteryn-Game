@@ -1,0 +1,14 @@
+{
+  "client_sha256": "c50620c32e7ea95cb7308fb221d1b09eacd5a9ca90a409f3d3ff6e238311fe54",
+  "creature_profile_count": 1508,
+  "executable_spell_count": 246,
+  "item_policy_count": 118,
+  "manifest_sha256": "a0e824b3227996499f8b6d146bfd53a6eec8b38402375eaf5a49a5c6071acbd0",
+  "presentation_profile_count": 1508,
+  "production_stage": "Passed; altered server and client issuance pins rejected",
+  "qualification_boundary": "Actual source-world candidate compiled, strictly decoded and staged under both exact outer pins; runtime activation not performed",
+  "runtime_activation": "Not performed",
+  "schema": "OTERYN_LOCAL_FULL_SPELL_ARTIFACT_QUALIFICATION/v1",
+  "server_sha256": "3de067ba758d719b100481e43b51d002b379ee95d195ebed94e6b549827fda90",
+  "source_world_sha256": "44f860d20712a32e6bc22aa269d3e220d39d164b7738d3c150a406579849b5f5"
+}

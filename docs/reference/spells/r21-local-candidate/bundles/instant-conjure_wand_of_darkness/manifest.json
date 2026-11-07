@@ -1,0 +1,417 @@
+{
+  "sources": [
+    {
+      "kind": "official_capture",
+      "url": "https://www.tibia.com/library/?subtopic=spells",
+      "title": "Conjure Wand of Darkness",
+      "captured": "2026-09-28",
+      "content_sha256": "c4800d7d0fac37238a9101afbc2060a3afcf8ddc76b9e71286fd5feb628b70f2"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Conjure Wand of Darkness",
+      "page_id": 80915,
+      "revision_id": 1182640,
+      "content_sha256": "d65be317d9146bf5938a1b7de6521dafecdceb6465d5d1986d67be9eb8eb0325"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://www.tibiawiki.com.br/api.php",
+      "title": "Conjure Wand of Darkness",
+      "page_id": 40707,
+      "revision_id": 434635,
+      "content_sha256": "e393a303523bef0cd60769c15c7d7ff43b8f957e99e3ac8cb3eafd0134e232dd"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "Conjure Wand of Darkness",
+      "source_line": 1,
+      "source_field": "words",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/words",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Conjure Wand of Darkness",
+      "source_line": 1,
+      "source_field": "spellid",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/reference_spell_id",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Conjure Wand of Darkness",
+      "source_line": 1,
+      "source_field": "librarytext",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/library_text",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Conjure Wand of Darkness",
+      "source_line": 1,
+      "source_field": "voc",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Conjure Wand of Darkness",
+      "source_line": 1,
+      "source_field": "voc",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Conjure Wand of Darkness",
+      "source_line": 1,
+      "source_field": "levelrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/level",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Conjure Wand of Darkness",
+      "source_line": 1,
+      "source_field": "premium",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/premium",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Conjure Wand of Darkness",
+      "source_line": 1,
+      "source_field": "mana",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/mana",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Conjure Wand of Darkness",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Conjure Wand of Darkness",
+      "source_line": 1,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Conjure Wand of Darkness",
+      "source_line": 1,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Conjure Wand of Darkness",
+      "source_line": 1,
+      "source_field": "subclass",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/group",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Conjure Wand of Darkness",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Conjure Wand of Darkness",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 19,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 19,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 18,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 18,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 11,
+      "source_field": "castSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/cast_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 11,
+      "source_field": "castSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/cast_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/spell/spell/execution/conjure",
+      "resolution": "Player:conjureItem(reagent, result, count) is the S2 conjure execution."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/conjuring/conjure_wand_of_darkness.lua",
+      "source_line": 1,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/spell/spell/execution/conjure",
+      "resolution": "Player:conjureItem(reagent, result, count) is the S2 conjure execution."
+    }
+  ]
+}

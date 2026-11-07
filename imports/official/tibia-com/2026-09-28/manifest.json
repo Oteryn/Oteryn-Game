@@ -1,0 +1,55 @@
+{
+ "schema": "OTERYN_TIBIACOM_CAPTURE_MANIFEST/v1",
+ "captured_at": "2026-09-28T15:43:17Z",
+ "pages": [
+  {
+   "section": "controls",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=controls",
+   "fetched_at": "2026-09-28T15:43:17Z",
+   "http_status": 200,
+   "sha256": "3e81233e776e640db760a37be728fa82b56d2691d5d62819af290ef6665dde70",
+   "visible_text_chars": 28225
+  },
+  {
+   "section": "characters",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=characters",
+   "fetched_at": "2026-09-28T15:43:19Z",
+   "http_status": 200,
+   "sha256": "0289b3235b2c6154afa7eb66695a5340cf281a40a0502494a491a16f6d174605",
+   "visible_text_chars": 52791
+  },
+  {
+   "section": "combat",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=combat",
+   "fetched_at": "2026-09-28T15:43:21Z",
+   "http_status": 200,
+   "sha256": "9734fb6f1112a468ff95d9a0b82df671ccef90039309fac143e80451822d80fc",
+   "visible_text_chars": 56815
+  },
+  {
+   "section": "world",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=world",
+   "fetched_at": "2026-09-28T15:43:24Z",
+   "http_status": 200,
+   "sha256": "841ee4046adcaa56d921ca3c4fab4b1a4e3365131b7681d85d11d663e1a1030b",
+   "visible_text_chars": 38406
+  },
+  {
+   "section": "controls_trading",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=controls_trading",
+   "fetched_at": "2026-09-28T15:43:26Z",
+   "http_status": 200,
+   "sha256": "578a31c1995f98b0a92727ce9f18bee34578139ed9f7afaffc9c6442a915913d",
+   "visible_text_chars": 18169
+  },
+  {
+   "section": "starting",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=starting",
+   "fetched_at": "2026-09-28T15:43:28Z",
+   "http_status": 200,
+   "sha256": "d2b0882480d5a8368dffc23fae631971263a53466ad00a2cb514e822c833d98f",
+   "visible_text_chars": 24250
+  }
+ ],
+ "spells": "PENDING_1077"
+}

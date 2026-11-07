@@ -1,0 +1,22 @@
+{
+  "id": "SPELLPRES0-RL-06",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md",
+  "resource": "spell words range: players on the caster's floor within the CHAT-0 say range receive spell_words",
+  "unit": "tiles from the caster (8 on x, 6 on y)",
+  "hard_maximum": 8,
+  "configurable_range": {
+    "minimum": 8,
+    "maximum": 8
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "No allocation: the spell_words event goes only to players on the caster's floor within \u00b18 x \u00b16 tiles, using the VIS-2 interest index, whether or not they hold CHAT_V1. Players farther away receive nothing.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=8 x 6: a player 8 tiles east and 6 tiles south of the caster on its floor receives spell_words (SPELL-PRESENT-1 emission test)",
+    "max+1: a player 9 tiles east, or 7 tiles south, or on another floor receives none (SPELL-PRESENT-1 emission test)"
+  ],
+  "consumers": [
+    "SPELL-PRESENT-1 spell words emission (not yet composed)"
+  ],
+  "notes": "SPELL-PRESENT-0 \u00a76 and \u00a713 (CHAT-0 say range). The row carries the x extent; the y extent is 6. Registered by PRESENT-WIRE-1 (MAGIC-CAST-1, #1622)."
+}

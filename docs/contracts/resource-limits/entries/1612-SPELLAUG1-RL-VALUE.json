@@ -1,0 +1,22 @@
+{
+  "id": "SPELLAUG1-RL-VALUE",
+  "owner_contract": "ITEM_SPELL_AUGMENTS_V1.md",
+  "resource": "Item augment percentage value",
+  "unit": "permyriad",
+  "hard_maximum": 100000,
+  "configurable_range": {
+    "minimum": 100000,
+    "maximum": 100000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Active Content rejects excess before activation or gameplay mutation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "at limit accepted",
+    "above limit rejected"
+  ],
+  "consumers": [
+    "crates/gameplay/content/src/content/native_gameplay.rs",
+    "tools/content-schema/native-gameplay/item_spell_augments.py"
+  ]
+}

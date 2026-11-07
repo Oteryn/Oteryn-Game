@@ -1,0 +1,23 @@
+{
+  "id": "MAPW-RL-02",
+  "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+  "resource": "Tiles of one WorldMapViewSnapshotV1 (domain 17)",
+  "unit": "tiles per snapshot",
+  "hard_maximum": 2016,
+  "configurable_range": {
+    "minimum": 2016,
+    "maximum": 2016
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The 18x14 window over at most 8 floors: 18 x 14 x 8 = 2,016 tiles, each at most 360 bytes.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=2016: a full window encodes and decodes",
+    "max+1=2017: a snapshot with one more tile fails closed"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/world_map.rs MAX_SNAPSHOT_TILES",
+    "apps/game-server/src/gameplay_transport/world_map.rs"
+  ],
+  "notes": "MAP-WIRE-1 \u00a73. Test: world_map::tests::encoded_sizes_stay_within_the_bounds. Registered by OTV2-20261004-map-wire-2."
+}

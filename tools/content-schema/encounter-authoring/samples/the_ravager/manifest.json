@@ -1,0 +1,97 @@
+{
+  "encounter": "canary:encounter/the_ravager",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "TheRavagerDeath": [
+      "canary:creature/the_ravager"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/dark_trails/the_ravager.lua",
+      "blob_sha1": "a8683a6f92ed8e3ff4abec9c60b6749bdbf8c7e7"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/dark_trails/creaturescripts_kill_the_ravager.lua",
+      "blob_sha1": "9a88a6673dcfa41079c06adff0e82f4e60bb20b1"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "The Ravager is the the_ravager participant; its file registers TheRavagerDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        9,
+        10
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of The Ravager.",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        13,
+        14,
+        15,
+        16,
+        22,
+        1,
+        2,
+        3,
+        4,
+        6
+      ],
+      "status": "mapped",
+      "resolution": "A teleporter 1949 on (33496, 32070, 8) leading to (33459, 32083, 8), removed after 5 minutes.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "status": "mapped",
+      "resolution": "Every damaging player gets DarkTrails.Mission11 = 1 unless already set (D27 quest domain).",
+      "destination": "/encounter/rules/0/actions/1"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        5,
+        11,
+        12
+      ],
+      "status": "approved_omission",
+      "resolution": "Magic effects are cosmetic."
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "the_ravager_defeated",
+      "credited": "damage_contributors",
+      "quest_domain": {
+        "canary_storage": "Storage.Quest.U10_50.DarkTrails.Mission11",
+        "raise_to_at_least": 1
+      }
+    }
+  ]
+}

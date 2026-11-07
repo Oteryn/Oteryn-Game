@@ -1,0 +1,22 @@
+{
+  "id": "PUSH-RL-02",
+  "owner_contract": "CREATURE_PUSH_V1.md",
+  "resource": "creature push intents per second per connection",
+  "unit": "intents",
+  "hard_maximum": 25,
+  "configurable_range": {
+    "minimum": 25,
+    "maximum": 25
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounded before decode or any owner read; the shared attack intent window holds 25 instants and retains nothing else.",
+  "client_visible": true,
+  "boundary_tests": [
+    "creature_push_real_dispatch_moves_and_refuses_on_postgres"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/creature_push.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/creature_push.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/creature_push.rs"
+  ]
+}

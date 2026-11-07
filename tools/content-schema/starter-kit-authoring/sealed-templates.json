@@ -1,0 +1,10 @@
+{
+  "schema": "OTERYN_STARTER_KIT_SEALS/v1",
+  "seals": [
+    {
+      "label": "oteryn:starter-template.main",
+      "record_count": 1,
+      "records_sha256": "31c650c4c2171296595151d2153f8b9c6a17911cc5bc57e9fed91a6b73d159f9"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": 258,
+  "name": "VIP_PRESENCE_V1",
+  "owner_decision": "S04a chat-vip allocation 2026-10-31; accepted VIP0 section 8 and existing VIP_V1 owner",
+  "owner": "World communication / VIP presence",
+  "requires": [
+    7,
+    43
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Extends CHAT domain 12 with delta type 5 VIP_PRESENCE_DELTA_V1, schema vip-presence-v1.proto#VipPresenceBatchV1. Existing VIP commands 48-50 own list and consent; clients without 258 receive no presence payload. Accepted per-Character consent, hidden status and ten-second confirmation lifetime apply."
+}

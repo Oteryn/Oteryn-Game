@@ -1,0 +1,66 @@
+{
+  "schema": "OTERYN_GLOBAL_SOURCE_ARCHIVE/v1",
+  "task": "WEATHER-CONTENT-1",
+  "scope": "ARCHIVED_GLOBAL_EVIDENCE_NOT_ACTIVE_OTERYN_PARAMETER_FIELDS",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "predecessor": "e561e02a0fc163e246b1331ce248afcacd8d602d",
+  "explanation": "Original Tibia evidence is retained verbatim here. Active target fields now contain explicitly scoped Oteryn working values; no Global fact has been proven by a design choice.",
+  "records": [
+    {
+      "original_field_path": "docs/reference/weather-presets.md/embedded_json/0/records/0/facts/intensity",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "Architecture must define normalization and renderer units."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/weather-presets.md/embedded_json/0/records/0/facts/duration_seconds",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "No proven Global schedule or approved Oteryn duration."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/weather-presets.md/embedded_json/0/records/0/facts/area",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "No approved world/channel scope or affected-area binding."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/weather-presets.md/embedded_json/0/records/1/facts/density",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "Renderer units and physical interpretation await architecture."
+      }
+    },
+    {
+      "original_field_path": "docs/reference/weather-presets.md/embedded_json/0/records/2/facts/intensity",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "No accepted renderer contract."
+      }
+    }
+  ]
+}

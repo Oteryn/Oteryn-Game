@@ -1,0 +1,7 @@
+{
+  "mechanic": "0225-boss-difficulty",
+  "kind": "panels",
+  "id": "0225-boss-difficulty-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

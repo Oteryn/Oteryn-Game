@@ -1,0 +1,22 @@
+{
+  "id": "MAIL0-RL-03-DIRECT",
+  "status": "CANDIDATE",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md",
+  "resource": "Parcel direct contents",
+  "unit": "direct child ItemInstances",
+  "hard_maximum": 10,
+  "configurable_range": {
+    "minimum": 10,
+    "maximum": 10
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Pure rules reject the whole input; no truncation, partial delivery or alternate Inbox.",
+  "client_visible": false,
+  "boundary_tests": [
+    "mail_reference_parity_table"
+  ],
+  "consumers": [
+    "crates/gameplay/items/src/mail.rs"
+  ],
+  "notes": "MAIL-1 independent L3 rules checkpoint. MAIL0-RL-03 is split into its accepted direct, height and whole-tree bounds. CANDIDATE for runtime activation: BAGS-DEPOT-1 Inbox trees and qualified MAIL-CONTENT-1 stamp/mailbox bindings remain absent. This row authorizes no delivery or storage grant."
+}

@@ -1,0 +1,37 @@
+#![allow(clippy::expect_used)]
+// Dedicated PostgreSQL 18.6 qualification for ACHIEVEMENT step 3 account
+// facts (migration 0021). Ordinary workspace runs report PRE-ROUTING/NONCANONICAL
+// when the routed database is absent.
+extern crate oteryn_game_server as production_server;
+extern crate self as oteryn_game_server;
+
+pub use production_server::admission_evidence;
+#[allow(dead_code, unused_imports)]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
+pub mod character_bootstrap_intent;
+#[allow(dead_code, unused_imports)]
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+#[path = "support/domain_shim.rs"]
+pub mod domain;
+use oteryn_gameplay_durability::durability;
+#[allow(dead_code, unused_imports)]
+pub use oteryn_gameplay_entities as foundation;
+#[allow(dead_code, unused_imports)]
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
+// The runtime Achievement catalogue of the display read, with the narrow
+// `content` shim it names (as `character_authority_postgres` includes them).
+#[allow(dead_code, unused_imports)]
+#[path = "../../../crates/gameplay/social/src/achievement_catalogue.rs"]
+pub mod achievement_catalogue;
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_shim.rs"]
+pub mod content;
+
+#[allow(dead_code)]
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
+// Standalone target for local focused runs; the cases need only the shared
+// CHARM-2 harness above, so the protected PostgreSQL lane includes the same
+// cases file.
+#[path = "support/account_achievement_postgres_cases.rs"]
+mod account_achievement_postgres_cases;

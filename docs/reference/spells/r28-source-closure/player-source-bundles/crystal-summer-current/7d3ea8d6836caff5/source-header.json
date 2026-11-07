@@ -1,0 +1,48 @@
+{
+  "spell": {
+    "base_power": 200,
+    "carrier": "instant",
+    "cooldown_ms": 40000,
+    "costs": {
+      "mana": 1050
+    },
+    "groups": [
+      {
+        "cooldown_ms": 4000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 40000,
+        "group": "focus"
+      }
+    ],
+    "name": "Eternal Winter",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_eternal_winter"
+    },
+    "reference_spell_id": 118,
+    "requirements": {
+      "level": 60,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "range_tiles": 5,
+      "self_target": true
+    },
+    "words": "exevo gran mas frigo"
+  }
+}

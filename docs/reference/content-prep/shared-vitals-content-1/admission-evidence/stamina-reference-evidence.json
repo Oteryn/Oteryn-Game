@@ -1,0 +1,155 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "SHARED-VITALS-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "stamina.pool",
+      "facts": {
+        "maximum_hours": {
+          "value": 42,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.4"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "bonus_threshold_hours": {
+          "value": 39,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.4"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "bonus_percent": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.4"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "premium_bonus": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.4"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "low_threshold_hours": {
+          "value": 14,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.4"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "offline_minutes_per_minute": {
+          "value": 3,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.4"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "bonus_offline_minutes_per_minute": {
+          "value": 6,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.4"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "offline_delay_minutes": {
+          "value": 10,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.4"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "initial_combat_drain_minutes": {
+          "value": {
+            "status": "COMMUNITY_OBSERVATION_GLOBAL_MEASUREMENT_UNQUALIFIED",
+            "reported_minimum_initial_minutes": 2,
+            "trigger": "first XP-yielding monster kill after inactive combat period",
+            "selected_for_native_runtime": false
+          },
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-19",
+          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "sources": [
+            {
+              "source": "wiki:8516:1071529",
+              "selector": "Stamina initial two-minute drain"
+            }
+          ],
+          "note": "The2minute value exists on wiki and is retained as a reported candidate. This review found no primary numeric confirmation; do not treat an assistant-selected default as controlled gameplay evidence.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#rulesets/character/stamina/reference-evidence.json/records/0/facts/initial_combat_drain_minutes",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "online_resting_regeneration": {
+          "value": "Premium + sufficient daily reward streak + resting area.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.4"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        }
+      }
+    }
+  ],
+  "evidence_scope": "SOURCE_OBSERVATIONS_WITH_EXPLICIT_OTERYN_WORKING_DEFAULTS"
+}

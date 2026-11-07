@@ -1,0 +1,22 @@
+{
+  "id": "CHARM5-RL-05",
+  "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+  "resource": "Largest available balance of Charm Points or Minor Charm Echoes in CharmViewV1",
+  "unit": "Charm Points or Minor Charm Echoes",
+  "hard_maximum": 1000000,
+  "configurable_range": {
+    "minimum": 1000000,
+    "maximum": 1000000
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "A balance above 1000000 is refused in both directions.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=1000000: both balances at 1000000 round-trip",
+    "max+1=1000001: refused by the encoder and the decoder"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/charm.rs MAX_CHARM_BALANCE"
+  ],
+  "notes": "Earned Charm Points are at most 1024 x 100. CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+}

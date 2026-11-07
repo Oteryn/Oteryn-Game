@@ -1,0 +1,48 @@
+[
+  {
+    "mechanic": "0199-cyclopedia-character",
+    "kind": "handlers",
+    "id": "0199-cyclopedia-character-387",
+    "status": "supported",
+    "direction": "client_to_server",
+    "capability": 199,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "No persistent client settings."
+    },
+    "commands": [
+      387
+    ]
+  },
+  {
+    "mechanic": "0199-cyclopedia-character",
+    "kind": "handlers",
+    "id": "0199-cyclopedia-character-388",
+    "status": "supported",
+    "direction": "client_to_server",
+    "capability": 199,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "No persistent client settings."
+    },
+    "commands": [
+      388
+    ]
+  },
+  {
+    "mechanic": "0199-cyclopedia-character",
+    "kind": "keybindings",
+    "id": "0199-cyclopedia-character-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+U",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0199-cyclopedia-character",
+    "kind": "panels",
+    "id": "0199-cyclopedia-character-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  }
+]

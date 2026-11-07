@@ -1,0 +1,11 @@
+{
+  "id": 18,
+  "name": "WORLD_MAP_VIEW_V1",
+  "owner_decision": "ARCH-MAP-WIRE-1 \u00a71.1-\u00a71.5 (docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_WIRE_PACKETS_2026-10-04.md) with the MAP-WIRE-1 contract \u00a73 (docs/contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md); numbers leased by the #1622 control plane and registered by MAP-WIRE-2",
+  "owner": "current ChannelRuntime (the session's map view: the composed tile stacks of the bundle World and its channel overlay in the window around the actor)",
+  "requires": [4, 6],
+  "command_types": [],
+  "state_domains": [17],
+  "offered": false,
+  "offer_gate": "MAP-CUTOVER-1b: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. A World offers it only while the snapshot p99 of an 18x14 viewport over 8 floors (compose, handles and encode) is within MAP01-VIEWPORT-SNAPSHOT-US, which holds on a testing or preproduction World only; a production World does not offer it before the snapshot and delta limits of MAP-VIEWPORT-MEASURE-1 are registered and met (ARCH-MAP-VIEWPORT-BUDGET-V1). MAP01-VIEWPORT-US stays the assembly budget. It requires 4 ITEM_VIEW_MOVE_V1 (the handles of its entries) and 6 WORLD_SPATIAL_ENTITIES. Without it selected, domain 17 is never sent, a bundle World refuses admission with CAPABILITY_MISMATCH and a fixture World keeps domain 2. With it selected, domain 2 WORLD_OBJECT_OVERLAY is never sent on join, resume or delta (MAP-WIRE-1 \u00a73); its object states are domain 17 tile changes."
+}

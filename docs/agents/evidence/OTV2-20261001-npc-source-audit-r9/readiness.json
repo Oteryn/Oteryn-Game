@@ -1,0 +1,36 @@
+{
+  "schema": "NPC_R9_SCOPE_AND_SOURCE_READINESS/v1",
+  "baseline_head": "03530a12f8832c2915b79bd3128f9ab967bfbcce",
+  "source_access": "Existing official client asset/manifest in Linux workspace; public Tibiopedia detail pages originally captured by ordinary HTTP and independently byte-verified. No RDC action in this batch.",
+  "root_only_writer": true,
+  "original_five_area_goal_complete": false,
+  "native_world_content_changes": 0,
+  "source_observations_added": 135,
+  "qualified_target_names": 117,
+  "new_native_NPCs_admitted": 0,
+  "required_unknowns": [
+    "presentation_asset_binding",
+    "movement_can_walk",
+    "movement_interval_ms",
+    "movement_radius_tiles",
+    "world_key",
+    "map_revision",
+    "coordinate_frame",
+    "spawn_interval",
+    "direction"
+  ],
+  "actor_population": {
+    "targets": 161,
+    "genuine_new": 158,
+    "deferred": 2,
+    "excluded_duplicate": "A Bloodshade already has two native variants"
+  },
+  "runtime_dependency_probe": {
+    "main_head": "9ea6edcc4d2f0b05c23d096312dbfd4bf2b26f83",
+    "NPC0": "CANDIDATE",
+    "QUEST_STATE0": "CANDIDATE",
+    "QUEST_GATE0": "CANDIDATE",
+    "native_allocation_granted": false
+  },
+  "remaining_work": "Dialogue class and quest/service source compilers in parallel, still source-only pending native owning dependencies."
+}

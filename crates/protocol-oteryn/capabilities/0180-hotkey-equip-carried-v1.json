@@ -1,0 +1,17 @@
+{
+  "id": 180,
+  "name": "HOTKEY_EQUIP_CARRIED_V1",
+  "constant": "hotkey_equip::CAPABILITY_HOTKEY_EQUIP_CARRIED_V1",
+  "requires": [
+    179
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

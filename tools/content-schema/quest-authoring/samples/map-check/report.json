@@ -1,0 +1,5123 @@
+{
+  "format": "oteryn-ots-map-check-v1",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "map_sources": {
+    "canary": {
+      "url": "https://github.com/opentibiabr/canary/releases/download/v3.6.1/otservbr.otbm",
+      "sha256": "a80de1dda6a9aca3956a9d5b7fb2e0caebb451570d26853fc21beb40d5f31da2",
+      "path_basename": "otservbr.otbm"
+    },
+    "crystalserver": {
+      "source": "zimbadev/crystalserver@9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d :: data-global/world/world.otbm (gzip-compressed in the repository; decompressed before use)",
+      "sha256": "f1080fbefdea904f1b7465b7479beb98080e74f5d27dfdfd8e38e69be2399726",
+      "path_basename": "crystalserver_world.otbm"
+    }
+  },
+  "extra_maps_canary_config_references": [
+    {
+      "path": "data-otservbr-global/world/custom/otservbr-custom.otbm",
+      "loaded_at_startup": true,
+      "reason": "toggleMapCustom=true (config.lua.dist default): CanaryServer::loadMaps loads every *.otbm under world/custom/ right after the main map."
+    },
+    {
+      "path": "data-otservbr-global/world/quest/soul_war/ebb_and_flow/*.otbm",
+      "loaded_at_startup": false,
+      "reason": "Loaded later, at runtime, by Game.loadMap(...) in lib/quests/soul_war.lua cycling the Ebb and Flow water-level overlay; not part of CanaryServer::loadMaps."
+    },
+    {
+      "path": "data-otservbr-global/world/quest/ferumbras_ascendant/habitats.otbm",
+      "loaded_at_startup": false,
+      "reason": "Loaded on demand by Game.loadMap(...) in data/libs/functions/functions.lua when the Ferumbras habitats are reset; not part of CanaryServer::loadMaps."
+    },
+    {
+      "path": "data-otservbr-global/world/world_changes/**/*.otbm (fury_gates, nightmare_isle, oriental_trader, full_moon)",
+      "loaded_at_startup": false,
+      "reason": "Loaded on demand by Game.loadMap(...) from world_changes/*.lua globalevents (gate rotation, full-moon werewolf event, etc.); not part of CanaryServer::loadMaps."
+    },
+    {
+      "path": "data-otservbr-global/world/quest/the_dream_courts/*.otbm, data-otservbr-global/world/quest/cults_of_tibia/misguided/*.otbm",
+      "loaded_at_startup": false,
+      "reason": "Same pattern: quest-triggered Game.loadMap(...) overlays, not startup-loaded."
+    }
+  ],
+  "chests": {
+    "note": "Matched/mismatched compare the chest's expected ITEM ID (appearance) against the raw map, mirroring loadLuaMapUnique's own precondition check; the runtime unique id itself is assigned by Canary's Map Attributes Loader startup event, not baked into the distributed map, so its absence here is expected and not a mismatch.",
+    "total_checked": 343,
+    "matched": 343,
+    "mismatched_count": 0,
+    "tile_missing_count": 0,
+    "crystalserver_only_placements_not_checked": 16,
+    "already_embedded_unique_id_in_raw_map": 0,
+    "mismatches": []
+  },
+  "doors": {
+    "note": "Matched/mismatched compare the door's expected ITEM ID (appearance) against the raw map; the door's runtime action id itself is assigned by Canary's Map Attributes Loader startup event (loadLuaMapAction), not baked into the distributed map.",
+    "total_checked": 370,
+    "matched": 33,
+    "mismatched_count": 0,
+    "tile_missing_count": 0,
+    "crystalserver_only_placements_not_checked": 67,
+    "no_expected_item_id_tile_has_content": 337,
+    "no_expected_item_id_tile_empty_count": 0,
+    "no_expected_item_id_tile_empty": [],
+    "mismatches": []
+  },
+  "interactions": {
+    "note": "Anchors are positions a script names (targets, spawn points), so only their tile is checked. A trigger id (aid()/uid() registration) is searched on the whole raw map, then in Canary's startup tables, which stamp ids onto placed items; there the listed item must be on the listed tile.",
+    "anchors_with_tile_present": 332,
+    "anchors_with_tile_missing": 0,
+    "missing_tiles": [],
+    "trigger_ids_registered": 349,
+    "trigger_ids_found_on_map": 160,
+    "trigger_ids_assigned_at_startup": 124,
+    "trigger_ids_not_found_on_map": 65,
+    "startup_placements_by_state": {
+      "item_present": 244,
+      "item_missing": 0,
+      "tile_present": 337,
+      "tile_missing": 0
+    },
+    "found": {
+      "aid:1004": {
+        "placements": 1,
+        "positions": [
+          [
+            33146,
+            31639,
+            11
+          ]
+        ]
+      },
+      "aid:1108": {
+        "placements": 1,
+        "positions": [
+          [
+            32660,
+            32192,
+            8
+          ]
+        ]
+      },
+      "aid:2002": {
+        "placements": 2,
+        "positions": [
+          [
+            32779,
+            31979,
+            9
+          ],
+          [
+            32779,
+            31980,
+            9
+          ]
+        ]
+      },
+      "aid:2070": {
+        "placements": 2,
+        "positions": [
+          [
+            31914,
+            32716,
+            6
+          ],
+          [
+            31915,
+            32716,
+            6
+          ]
+        ]
+      },
+      "aid:4001": {
+        "placements": 1,
+        "positions": [
+          [
+            32848,
+            32277,
+            9
+          ]
+        ]
+      },
+      "aid:4002": {
+        "placements": 1,
+        "positions": [
+          [
+            32854,
+            32326,
+            11
+          ]
+        ]
+      },
+      "aid:4201": {
+        "placements": 3,
+        "positions": [
+          [
+            33190,
+            31787,
+            7
+          ],
+          [
+            33191,
+            31787,
+            7
+          ],
+          [
+            33192,
+            31787,
+            7
+          ]
+        ]
+      },
+      "aid:4254": {
+        "placements": 1,
+        "positions": [
+          [
+            33130,
+            31796,
+            11
+          ]
+        ]
+      },
+      "aid:4536": {
+        "placements": 1,
+        "positions": [
+          [
+            33015,
+            32438,
+            11
+          ]
+        ]
+      },
+      "aid:4630": {
+        "placements": 5,
+        "positions": [
+          [
+            32969,
+            32421,
+            9
+          ],
+          [
+            32970,
+            32420,
+            9
+          ],
+          [
+            32974,
+            32425,
+            9
+          ],
+          [
+            32975,
+            32421,
+            9
+          ],
+          [
+            32977,
+            32425,
+            9
+          ]
+        ]
+      },
+      "aid:4631": {
+        "placements": 2,
+        "positions": [
+          [
+            33022,
+            32329,
+            10
+          ],
+          [
+            33023,
+            32329,
+            10
+          ]
+        ]
+      },
+      "aid:4636": {
+        "placements": 1,
+        "positions": [
+          [
+            32998,
+            32416,
+            11
+          ]
+        ]
+      },
+      "aid:4650": {
+        "placements": 1,
+        "positions": [
+          [
+            32972,
+            32412,
+            11
+          ]
+        ]
+      },
+      "aid:4662": {
+        "placements": 1,
+        "positions": [
+          [
+            33007,
+            32384,
+            10
+          ]
+        ]
+      },
+      "aid:4669": {
+        "placements": 1,
+        "positions": [
+          [
+            32994,
+            32442,
+            11
+          ]
+        ]
+      },
+      "aid:4935": {
+        "placements": 2,
+        "positions": [
+          [
+            32119,
+            31734,
+            7
+          ],
+          [
+            32460,
+            32928,
+            7
+          ]
+        ]
+      },
+      "aid:5517": {
+        "placements": 1,
+        "positions": [
+          [
+            33459,
+            32267,
+            10
+          ]
+        ]
+      },
+      "aid:5520": {
+        "placements": 2,
+        "positions": [
+          [
+            33299,
+            32144,
+            10
+          ],
+          [
+            33302,
+            32139,
+            10
+          ]
+        ]
+      },
+      "aid:5522": {
+        "placements": 1,
+        "positions": [
+          [
+            33279,
+            32169,
+            8
+          ]
+        ]
+      },
+      "aid:5523": {
+        "placements": 1,
+        "positions": [
+          [
+            33300,
+            32277,
+            12
+          ]
+        ]
+      },
+      "aid:5524": {
+        "placements": 2,
+        "positions": [
+          [
+            32395,
+            31808,
+            8
+          ],
+          [
+            32400,
+            31793,
+            8
+          ]
+        ]
+      },
+      "aid:5532": {
+        "placements": 6,
+        "positions": [
+          [
+            32698,
+            31405,
+            8
+          ],
+          [
+            32706,
+            31440,
+            8
+          ],
+          [
+            32707,
+            31440,
+            8
+          ],
+          [
+            32708,
+            31440,
+            8
+          ],
+          [
+            32709,
+            31440,
+            8
+          ],
+          [
+            32710,
+            31440,
+            8
+          ]
+        ]
+      },
+      "aid:5533": {
+        "placements": 3,
+        "positions": [
+          [
+            32682,
+            31412,
+            8
+          ],
+          [
+            32683,
+            31412,
+            8
+          ],
+          [
+            32684,
+            31412,
+            8
+          ]
+        ]
+      },
+      "aid:5535": {
+        "placements": 11,
+        "positions": [
+          [
+            32683,
+            31537,
+            9
+          ],
+          [
+            32685,
+            31430,
+            8
+          ],
+          [
+            32720,
+            31545,
+            8
+          ],
+          [
+            32731,
+            31531,
+            9
+          ],
+          [
+            32739,
+            31489,
+            9
+          ],
+          [
+            32739,
+            31507,
+            9
+          ],
+          [
+            32742,
+            31410,
+            8
+          ],
+          [
+            32745,
+            31423,
+            8
+          ],
+          [
+            32745,
+            31523,
+            9
+          ],
+          [
+            32746,
+            31462,
+            8
+          ],
+          [
+            32761,
+            31518,
+            9
+          ]
+        ]
+      },
+      "aid:5536": {
+        "placements": 2,
+        "positions": [
+          [
+            32740,
+            31494,
+            9
+          ],
+          [
+            32741,
+            31494,
+            9
+          ]
+        ]
+      },
+      "aid:5540": {
+        "placements": 7,
+        "positions": [
+          [
+            33128,
+            31885,
+            11
+          ],
+          [
+            33129,
+            31885,
+            11
+          ],
+          [
+            33135,
+            31859,
+            10
+          ],
+          [
+            33136,
+            31859,
+            10
+          ],
+          [
+            33175,
+            31923,
+            12
+          ],
+          [
+            33176,
+            31923,
+            12
+          ],
+          [
+            33177,
+            31923,
+            12
+          ]
+        ]
+      },
+      "aid:5560": {
+        "placements": 27,
+        "positions": [
+          [
+            33479,
+            32264,
+            10
+          ],
+          [
+            33479,
+            32265,
+            10
+          ],
+          [
+            33479,
+            32266,
+            10
+          ],
+          [
+            33479,
+            32267,
+            10
+          ],
+          [
+            33479,
+            32268,
+            10
+          ],
+          [
+            33479,
+            32269,
+            10
+          ],
+          [
+            33479,
+            32270,
+            10
+          ],
+          [
+            33479,
+            32271,
+            10
+          ],
+          [
+            33479,
+            32272,
+            10
+          ],
+          [
+            33479,
+            32273,
+            10
+          ],
+          [
+            33479,
+            32274,
+            10
+          ],
+          [
+            33479,
+            32275,
+            10
+          ],
+          [
+            33479,
+            32276,
+            10
+          ],
+          [
+            33479,
+            32277,
+            10
+          ],
+          [
+            33479,
+            32278,
+            10
+          ],
+          [
+            33479,
+            32279,
+            10
+          ],
+          [
+            33479,
+            32280,
+            10
+          ],
+          [
+            33479,
+            32281,
+            10
+          ],
+          [
+            33479,
+            32282,
+            10
+          ],
+          [
+            33479,
+            32283,
+            10
+          ]
+        ]
+      },
+      "aid:5581": {
+        "placements": 19,
+        "positions": [
+          [
+            32327,
+            31692,
+            9
+          ],
+          [
+            32328,
+            31692,
+            9
+          ],
+          [
+            32329,
+            31692,
+            9
+          ],
+          [
+            32350,
+            31657,
+            8
+          ],
+          [
+            32351,
+            31657,
+            8
+          ],
+          [
+            32352,
+            31657,
+            8
+          ],
+          [
+            32353,
+            31657,
+            8
+          ],
+          [
+            32528,
+            32468,
+            10
+          ],
+          [
+            32529,
+            32468,
+            10
+          ],
+          [
+            32530,
+            32468,
+            10
+          ],
+          [
+            32531,
+            32468,
+            10
+          ],
+          [
+            32532,
+            32468,
+            10
+          ],
+          [
+            32533,
+            32468,
+            10
+          ],
+          [
+            32534,
+            32468,
+            10
+          ],
+          [
+            32535,
+            32468,
+            10
+          ],
+          [
+            32536,
+            32468,
+            10
+          ],
+          [
+            32537,
+            32468,
+            10
+          ],
+          [
+            32538,
+            32468,
+            10
+          ],
+          [
+            32539,
+            32468,
+            10
+          ]
+        ]
+      },
+      "aid:5632": {
+        "placements": 1,
+        "positions": [
+          [
+            33151,
+            32861,
+            7
+          ]
+        ]
+      },
+      "aid:5633": {
+        "placements": 1,
+        "positions": [
+          [
+            33152,
+            32866,
+            8
+          ]
+        ]
+      },
+      "aid:7799": {
+        "placements": 3,
+        "positions": [
+          [
+            32842,
+            32274,
+            9
+          ],
+          [
+            32842,
+            32275,
+            9
+          ],
+          [
+            32842,
+            32276,
+            9
+          ]
+        ]
+      },
+      "aid:7812": {
+        "placements": 4,
+        "positions": [
+          [
+            32950,
+            31182,
+            6
+          ],
+          [
+            32950,
+            31183,
+            6
+          ],
+          [
+            32951,
+            31182,
+            6
+          ],
+          [
+            32951,
+            31183,
+            6
+          ]
+        ]
+      },
+      "aid:8033": {
+        "placements": 2,
+        "positions": [
+          [
+            32834,
+            32285,
+            14
+          ],
+          [
+            32836,
+            32278,
+            14
+          ]
+        ]
+      },
+      "aid:8815": {
+        "placements": 4,
+        "positions": [
+          [
+            32805,
+            32318,
+            11
+          ],
+          [
+            32805,
+            32319,
+            11
+          ],
+          [
+            32806,
+            32318,
+            11
+          ],
+          [
+            32806,
+            32319,
+            11
+          ]
+        ]
+      },
+      "aid:9049": {
+        "placements": 26,
+        "positions": [
+          [
+            32933,
+            32270,
+            13
+          ],
+          [
+            32933,
+            32271,
+            13
+          ],
+          [
+            32933,
+            32272,
+            13
+          ],
+          [
+            32933,
+            32273,
+            13
+          ],
+          [
+            32933,
+            32274,
+            13
+          ],
+          [
+            32933,
+            32275,
+            13
+          ],
+          [
+            32933,
+            32276,
+            13
+          ],
+          [
+            32933,
+            32277,
+            13
+          ],
+          [
+            32933,
+            32278,
+            13
+          ],
+          [
+            32933,
+            32279,
+            13
+          ],
+          [
+            32933,
+            32280,
+            13
+          ],
+          [
+            32933,
+            32281,
+            13
+          ],
+          [
+            32933,
+            32282,
+            13
+          ],
+          [
+            32934,
+            32270,
+            13
+          ],
+          [
+            32934,
+            32271,
+            13
+          ],
+          [
+            32934,
+            32272,
+            13
+          ],
+          [
+            32934,
+            32273,
+            13
+          ],
+          [
+            32934,
+            32274,
+            13
+          ],
+          [
+            32934,
+            32275,
+            13
+          ],
+          [
+            32934,
+            32276,
+            13
+          ]
+        ]
+      },
+      "aid:12101": {
+        "placements": 162,
+        "positions": [
+          [
+            33147,
+            32873,
+            11
+          ],
+          [
+            33147,
+            32876,
+            11
+          ],
+          [
+            33147,
+            32879,
+            11
+          ],
+          [
+            33147,
+            32882,
+            11
+          ],
+          [
+            33147,
+            32888,
+            11
+          ],
+          [
+            33147,
+            32891,
+            11
+          ],
+          [
+            33148,
+            32876,
+            11
+          ],
+          [
+            33148,
+            32879,
+            11
+          ],
+          [
+            33148,
+            32882,
+            11
+          ],
+          [
+            33148,
+            32885,
+            11
+          ],
+          [
+            33148,
+            32888,
+            11
+          ],
+          [
+            33149,
+            32873,
+            11
+          ],
+          [
+            33149,
+            32876,
+            11
+          ],
+          [
+            33149,
+            32885,
+            11
+          ],
+          [
+            33149,
+            32888,
+            11
+          ],
+          [
+            33149,
+            32891,
+            11
+          ],
+          [
+            33150,
+            32873,
+            11
+          ],
+          [
+            33150,
+            32879,
+            11
+          ],
+          [
+            33150,
+            32882,
+            11
+          ],
+          [
+            33150,
+            32885,
+            11
+          ]
+        ]
+      },
+      "aid:12105": {
+        "placements": 8,
+        "positions": [
+          [
+            33188,
+            32660,
+            15
+          ],
+          [
+            33188,
+            32669,
+            15
+          ],
+          [
+            33189,
+            32660,
+            15
+          ],
+          [
+            33189,
+            32669,
+            15
+          ],
+          [
+            33190,
+            32660,
+            15
+          ],
+          [
+            33190,
+            32669,
+            15
+          ],
+          [
+            33191,
+            32660,
+            15
+          ],
+          [
+            33191,
+            32669,
+            15
+          ]
+        ]
+      },
+      "aid:12107": {
+        "placements": 4,
+        "positions": [
+          [
+            33118,
+            32761,
+            14
+          ],
+          [
+            33118,
+            32762,
+            14
+          ],
+          [
+            33118,
+            32763,
+            14
+          ],
+          [
+            33122,
+            32765,
+            14
+          ]
+        ]
+      },
+      "aid:12124": {
+        "placements": 1,
+        "positions": [
+          [
+            33305,
+            32861,
+            13
+          ]
+        ]
+      },
+      "aid:12129": {
+        "placements": 6,
+        "positions": [
+          [
+            32756,
+            32494,
+            11
+          ],
+          [
+            32775,
+            32583,
+            11
+          ],
+          [
+            32799,
+            32556,
+            11
+          ],
+          [
+            32808,
+            32613,
+            11
+          ],
+          [
+            32843,
+            32649,
+            11
+          ],
+          [
+            32891,
+            32590,
+            11
+          ]
+        ]
+      },
+      "aid:12333": {
+        "placements": 9,
+        "positions": [
+          [
+            32990,
+            31496,
+            1
+          ],
+          [
+            32990,
+            31497,
+            1
+          ],
+          [
+            32990,
+            31498,
+            1
+          ],
+          [
+            32991,
+            31496,
+            1
+          ],
+          [
+            32991,
+            31497,
+            1
+          ],
+          [
+            32991,
+            31498,
+            1
+          ],
+          [
+            32992,
+            31496,
+            1
+          ],
+          [
+            32992,
+            31497,
+            1
+          ],
+          [
+            32992,
+            31498,
+            1
+          ]
+        ]
+      },
+      "aid:12571": {
+        "placements": 1,
+        "positions": [
+          [
+            32640,
+            32735,
+            7
+          ]
+        ]
+      },
+      "aid:12574": {
+        "placements": 1,
+        "positions": [
+          [
+            32576,
+            31862,
+            14
+          ]
+        ]
+      },
+      "aid:12585": {
+        "placements": 1,
+        "positions": [
+          [
+            31919,
+            32600,
+            10
+          ]
+        ]
+      },
+      "aid:14320": {
+        "placements": 1,
+        "positions": [
+          [
+            32090,
+            31327,
+            12
+          ]
+        ]
+      },
+      "aid:14326": {
+        "placements": 1,
+        "positions": [
+          [
+            32079,
+            31312,
+            13
+          ]
+        ]
+      },
+      "aid:14328": {
+        "placements": 1,
+        "positions": [
+          [
+            32227,
+            31342,
+            11
+          ]
+        ]
+      },
+      "aid:14332": {
+        "placements": 1,
+        "positions": [
+          [
+            32272,
+            31373,
+            14
+          ]
+        ]
+      },
+      "aid:19049": {
+        "placements": 1,
+        "positions": [
+          [
+            33657,
+            31657,
+            7
+          ]
+        ]
+      },
+      "aid:24545": {
+        "placements": 4,
+        "positions": [
+          [
+            33085,
+            32094,
+            13
+          ],
+          [
+            33180,
+            32197,
+            13
+          ],
+          [
+            33262,
+            32202,
+            13
+          ],
+          [
+            33329,
+            32074,
+            13
+          ]
+        ]
+      },
+      "aid:24861": {
+        "placements": 8,
+        "positions": [
+          [
+            33598,
+            31929,
+            14
+          ],
+          [
+            33598,
+            31960,
+            14
+          ],
+          [
+            33614,
+            31989,
+            14
+          ],
+          [
+            33635,
+            31958,
+            14
+          ],
+          [
+            33661,
+            31937,
+            14
+          ],
+          [
+            33674,
+            31989,
+            14
+          ],
+          [
+            33693,
+            31929,
+            14
+          ],
+          [
+            33711,
+            31961,
+            14
+          ]
+        ]
+      },
+      "aid:24862": {
+        "placements": 1,
+        "positions": [
+          [
+            33726,
+            31953,
+            14
+          ]
+        ]
+      },
+      "aid:24863": {
+        "placements": 8,
+        "positions": [
+          [
+            33582,
+            31960,
+            15
+          ],
+          [
+            33606,
+            31935,
+            15
+          ],
+          [
+            33636,
+            31932,
+            15
+          ],
+          [
+            33641,
+            31964,
+            15
+          ],
+          [
+            33650,
+            31945,
+            15
+          ],
+          [
+            33675,
+            31931,
+            15
+          ],
+          [
+            33679,
+            31949,
+            15
+          ],
+          [
+            33704,
+            31963,
+            15
+          ]
+        ]
+      },
+      "aid:24864": {
+        "placements": 1,
+        "positions": [
+          [
+            33570,
+            31949,
+            15
+          ]
+        ]
+      },
+      "aid:24865": {
+        "placements": 8,
+        "positions": [
+          [
+            33375,
+            31981,
+            15
+          ],
+          [
+            33382,
+            31928,
+            15
+          ],
+          [
+            33427,
+            31948,
+            15
+          ],
+          [
+            33442,
+            31981,
+            15
+          ],
+          [
+            33455,
+            31932,
+            15
+          ],
+          [
+            33469,
+            31965,
+            15
+          ],
+          [
+            33514,
+            31957,
+            15
+          ],
+          [
+            33515,
+            31932,
+            15
+          ]
+        ]
+      },
+      "aid:24866": {
+        "placements": 1,
+        "positions": [
+          [
+            33369,
+            31955,
+            15
+          ]
+        ]
+      },
+      "aid:24868": {
+        "placements": 1,
+        "positions": [
+          [
+            33662,
+            32060,
+            15
+          ]
+        ]
+      },
+      "aid:24872": {
+        "placements": 1,
+        "positions": [
+          [
+            33714,
+            32101,
+            15
+          ]
+        ]
+      },
+      "aid:24873": {
+        "placements": 14,
+        "positions": [
+          [
+            32205,
+            31036,
+            10
+          ],
+          [
+            32325,
+            32087,
+            7
+          ],
+          [
+            32328,
+            32087,
+            7
+          ],
+          [
+            32331,
+            32087,
+            7
+          ],
+          [
+            32332,
+            32094,
+            7
+          ],
+          [
+            32334,
+            32087,
+            7
+          ],
+          [
+            32337,
+            32087,
+            7
+          ],
+          [
+            32340,
+            32087,
+            7
+          ],
+          [
+            32637,
+            32255,
+            7
+          ],
+          [
+            32780,
+            32684,
+            14
+          ],
+          [
+            32786,
+            32818,
+            13
+          ],
+          [
+            32805,
+            31657,
+            8
+          ],
+          [
+            32906,
+            32846,
+            13
+          ],
+          [
+            33341,
+            31167,
+            7
+          ]
+        ]
+      },
+      "aid:24875": {
+        "placements": 2,
+        "positions": [
+          [
+            32859,
+            31644,
+            10
+          ],
+          [
+            32860,
+            31644,
+            10
+          ]
+        ]
+      },
+      "aid:25001": {
+        "placements": 4,
+        "positions": [
+          [
+            33527,
+            32299,
+            4
+          ],
+          [
+            33527,
+            32300,
+            4
+          ],
+          [
+            33528,
+            32299,
+            4
+          ],
+          [
+            33528,
+            32300,
+            4
+          ]
+        ]
+      },
+      "aid:25100": {
+        "placements": 3,
+        "positions": [
+          [
+            32238,
+            31101,
+            7
+          ],
+          [
+            32241,
+            31101,
+            7
+          ],
+          [
+            32246,
+            31097,
+            7
+          ]
+        ]
+      },
+      "aid:26668": {
+        "placements": 1,
+        "positions": [
+          [
+            33396,
+            31129,
+            9
+          ]
+        ]
+      },
+      "aid:28570": {
+        "placements": 32,
+        "positions": [
+          [
+            33353,
+            31271,
+            14
+          ],
+          [
+            33358,
+            31252,
+            14
+          ],
+          [
+            33358,
+            31277,
+            14
+          ],
+          [
+            33360,
+            31262,
+            14
+          ],
+          [
+            33364,
+            31243,
+            14
+          ],
+          [
+            33364,
+            31250,
+            14
+          ],
+          [
+            33365,
+            31273,
+            14
+          ],
+          [
+            33365,
+            31279,
+            14
+          ],
+          [
+            33365,
+            31280,
+            14
+          ],
+          [
+            33366,
+            31279,
+            14
+          ],
+          [
+            33367,
+            31256,
+            14
+          ],
+          [
+            33371,
+            31262,
+            14
+          ],
+          [
+            33372,
+            31243,
+            14
+          ],
+          [
+            33377,
+            31269,
+            14
+          ],
+          [
+            33378,
+            31237,
+            14
+          ],
+          [
+            33378,
+            31284,
+            14
+          ],
+          [
+            33379,
+            31240,
+            14
+          ],
+          [
+            33379,
+            31252,
+            14
+          ],
+          [
+            33380,
+            31277,
+            14
+          ],
+          [
+            33382,
+            31282,
+            14
+          ]
+        ]
+      },
+      "aid:28572": {
+        "placements": 21,
+        "positions": [
+          [
+            33522,
+            31194,
+            14
+          ],
+          [
+            33524,
+            31200,
+            14
+          ],
+          [
+            33525,
+            31216,
+            14
+          ],
+          [
+            33528,
+            31207,
+            14
+          ],
+          [
+            33529,
+            31209,
+            14
+          ],
+          [
+            33529,
+            31221,
+            14
+          ],
+          [
+            33531,
+            31188,
+            14
+          ],
+          [
+            33531,
+            31200,
+            14
+          ],
+          [
+            33533,
+            31194,
+            14
+          ],
+          [
+            33536,
+            31182,
+            14
+          ],
+          [
+            33536,
+            31189,
+            14
+          ],
+          [
+            33536,
+            31205,
+            14
+          ],
+          [
+            33536,
+            31219,
+            14
+          ],
+          [
+            33540,
+            31209,
+            14
+          ],
+          [
+            33546,
+            31208,
+            14
+          ],
+          [
+            33549,
+            31198,
+            14
+          ],
+          [
+            33551,
+            31204,
+            14
+          ],
+          [
+            33552,
+            31188,
+            14
+          ],
+          [
+            33557,
+            31192,
+            14
+          ],
+          [
+            33562,
+            31196,
+            14
+          ]
+        ]
+      },
+      "aid:33216": {
+        "placements": 1,
+        "positions": [
+          [
+            32406,
+            32794,
+            9
+          ]
+        ]
+      },
+      "aid:34300": {
+        "placements": 1,
+        "positions": [
+          [
+            33476,
+            32700,
+            14
+          ]
+        ]
+      },
+      "aid:34305": {
+        "placements": 1,
+        "positions": [
+          [
+            33628,
+            32665,
+            12
+          ]
+        ]
+      },
+      "aid:34306": {
+        "placements": 1,
+        "positions": [
+          [
+            33631,
+            32665,
+            12
+          ]
+        ]
+      },
+      "aid:34307": {
+        "placements": 1,
+        "positions": [
+          [
+            33628,
+            32683,
+            12
+          ]
+        ]
+      },
+      "aid:34308": {
+        "placements": 1,
+        "positions": [
+          [
+            33631,
+            32683,
+            12
+          ]
+        ]
+      },
+      "aid:34309": {
+        "placements": 1,
+        "positions": [
+          [
+            33628,
+            32701,
+            12
+          ]
+        ]
+      },
+      "aid:34310": {
+        "placements": 1,
+        "positions": [
+          [
+            33631,
+            32701,
+            12
+          ]
+        ]
+      },
+      "aid:34311": {
+        "placements": 1,
+        "positions": [
+          [
+            33628,
+            32719,
+            12
+          ]
+        ]
+      },
+      "aid:34312": {
+        "placements": 1,
+        "positions": [
+          [
+            33631,
+            32719,
+            12
+          ]
+        ]
+      },
+      "aid:34323": {
+        "placements": 2,
+        "positions": [
+          [
+            33629,
+            32621,
+            11
+          ],
+          [
+            33666,
+            32624,
+            11
+          ]
+        ]
+      },
+      "aid:34324": {
+        "placements": 2,
+        "positions": [
+          [
+            33628,
+            32616,
+            11
+          ],
+          [
+            33671,
+            32623,
+            11
+          ]
+        ]
+      },
+      "aid:50022": {
+        "placements": 4,
+        "positions": [
+          [
+            32966,
+            32626,
+            5
+          ],
+          [
+            32967,
+            32630,
+            8
+          ],
+          [
+            32968,
+            32629,
+            7
+          ],
+          [
+            32968,
+            32630,
+            7
+          ]
+        ]
+      },
+      "aid:50027": {
+        "placements": 1,
+        "positions": [
+          [
+            32625,
+            31698,
+            11
+          ]
+        ]
+      },
+      "aid:50087": {
+        "placements": 1,
+        "positions": [
+          [
+            32732,
+            32264,
+            15
+          ]
+        ]
+      },
+      "aid:50091": {
+        "placements": 1,
+        "positions": [
+          [
+            32607,
+            31501,
+            13
+          ]
+        ]
+      },
+      "aid:50160": {
+        "placements": 1,
+        "positions": [
+          [
+            32853,
+            32318,
+            9
+          ]
+        ]
+      },
+      "aid:50806": {
+        "placements": 2,
+        "positions": [
+          [
+            32991,
+            32642,
+            8
+          ],
+          [
+            33007,
+            32607,
+            8
+          ]
+        ]
+      },
+      "aid:50808": {
+        "placements": 6,
+        "positions": [
+          [
+            32994,
+            32625,
+            6
+          ],
+          [
+            33010,
+            32638,
+            5
+          ],
+          [
+            33010,
+            32687,
+            7
+          ],
+          [
+            33037,
+            32662,
+            7
+          ],
+          [
+            33039,
+            32652,
+            6
+          ],
+          [
+            33078,
+            32657,
+            6
+          ]
+        ]
+      },
+      "aid:53800": {
+        "placements": 1,
+        "positions": [
+          [
+            33201,
+            31425,
+            11
+          ]
+        ]
+      },
+      "aid:53801": {
+        "placements": 1,
+        "positions": [
+          [
+            33395,
+            32460,
+            13
+          ]
+        ]
+      },
+      "aid:53802": {
+        "placements": 1,
+        "positions": [
+          [
+            33422,
+            32374,
+            12
+          ]
+        ]
+      },
+      "aid:53812": {
+        "placements": 1,
+        "positions": [
+          [
+            33626,
+            32621,
+            13
+          ]
+        ]
+      },
+      "aid:53813": {
+        "placements": 1,
+        "positions": [
+          [
+            33635,
+            32682,
+            13
+          ]
+        ]
+      },
+      "aid:53814": {
+        "placements": 1,
+        "positions": [
+          [
+            33660,
+            32627,
+            13
+          ]
+        ]
+      },
+      "aid:54386": {
+        "placements": 1,
+        "positions": [
+          [
+            33482,
+            32774,
+            11
+          ]
+        ]
+      },
+      "aid:54390": {
+        "placements": 2,
+        "positions": [
+          [
+            33453,
+            32809,
+            11
+          ],
+          [
+            33453,
+            32810,
+            11
+          ]
+        ]
+      },
+      "aid:55021": {
+        "placements": 1,
+        "positions": [
+          [
+            33080,
+            32582,
+            3
+          ]
+        ]
+      },
+      "aid:55023": {
+        "placements": 1,
+        "positions": [
+          [
+            32827,
+            31493,
+            6
+          ]
+        ]
+      },
+      "aid:56421": {
+        "placements": 1,
+        "positions": [
+          [
+            32242,
+            32611,
+            11
+          ]
+        ]
+      },
+      "aid:57230": {
+        "placements": 3,
+        "positions": [
+          [
+            33777,
+            32192,
+            14
+          ],
+          [
+            33827,
+            32172,
+            14
+          ],
+          [
+            33829,
+            32128,
+            14
+          ]
+        ]
+      },
+      "aid:57231": {
+        "placements": 2,
+        "positions": [
+          [
+            33773,
+            32249,
+            14
+          ],
+          [
+            33774,
+            32249,
+            14
+          ]
+        ]
+      },
+      "aid:57234": {
+        "placements": 1,
+        "positions": [
+          [
+            33841,
+            32080,
+            14
+          ]
+        ]
+      },
+      "aid:57240": {
+        "placements": 12,
+        "positions": [
+          [
+            33924,
+            32217,
+            14
+          ],
+          [
+            33924,
+            32218,
+            14
+          ],
+          [
+            33925,
+            32215,
+            14
+          ],
+          [
+            33925,
+            32216,
+            14
+          ],
+          [
+            33925,
+            32217,
+            14
+          ],
+          [
+            33932,
+            32162,
+            14
+          ],
+          [
+            33933,
+            32162,
+            14
+          ],
+          [
+            33933,
+            32163,
+            14
+          ],
+          [
+            33979,
+            32206,
+            14
+          ],
+          [
+            33979,
+            32207,
+            14
+          ],
+          [
+            33979,
+            32208,
+            14
+          ],
+          [
+            33979,
+            32209,
+            14
+          ]
+        ]
+      },
+      "aid:57241": {
+        "placements": 7,
+        "positions": [
+          [
+            33983,
+            32206,
+            14
+          ],
+          [
+            33983,
+            32207,
+            14
+          ],
+          [
+            33983,
+            32208,
+            14
+          ],
+          [
+            33983,
+            32209,
+            14
+          ],
+          [
+            33990,
+            32195,
+            14
+          ],
+          [
+            33991,
+            32195,
+            14
+          ],
+          [
+            33992,
+            32195,
+            14
+          ]
+        ]
+      },
+      "aid:57242": {
+        "placements": 8,
+        "positions": [
+          [
+            33863,
+            32175,
+            14
+          ],
+          [
+            33863,
+            32176,
+            14
+          ],
+          [
+            33863,
+            32177,
+            14
+          ],
+          [
+            33863,
+            32178,
+            14
+          ],
+          [
+            33863,
+            32179,
+            14
+          ],
+          [
+            33863,
+            32180,
+            14
+          ],
+          [
+            33863,
+            32181,
+            14
+          ],
+          [
+            33863,
+            32182,
+            14
+          ]
+        ]
+      },
+      "aid:57745": {
+        "placements": 3,
+        "positions": [
+          [
+            33510,
+            31333,
+            8
+          ],
+          [
+            33511,
+            31333,
+            8
+          ],
+          [
+            33512,
+            31333,
+            8
+          ]
+        ]
+      },
+      "aid:57746": {
+        "placements": 2,
+        "positions": [
+          [
+            33439,
+            31282,
+            14
+          ],
+          [
+            33453,
+            31282,
+            14
+          ]
+        ]
+      },
+      "aid:57747": {
+        "placements": 1,
+        "positions": [
+          [
+            33478,
+            31312,
+            7
+          ]
+        ]
+      },
+      "aid:59601": {
+        "placements": 1,
+        "positions": [
+          [
+            32456,
+            32508,
+            6
+          ]
+        ]
+      },
+      "aid:59602": {
+        "placements": 1,
+        "positions": [
+          [
+            33182,
+            31757,
+            7
+          ]
+        ]
+      },
+      "aid:59603": {
+        "placements": 1,
+        "positions": [
+          [
+            32423,
+            32446,
+            7
+          ]
+        ]
+      },
+      "aid:59604": {
+        "placements": 1,
+        "positions": [
+          [
+            32371,
+            32496,
+            7
+          ]
+        ]
+      },
+      "aid:59605": {
+        "placements": 1,
+        "positions": [
+          [
+            32374,
+            32498,
+            3
+          ]
+        ]
+      },
+      "uid:1001": {
+        "placements": 1,
+        "positions": [
+          [
+            32710,
+            32398,
+            7
+          ]
+        ]
+      },
+      "uid:1010": {
+        "placements": 1,
+        "positions": [
+          [
+            33269,
+            31835,
+            10
+          ]
+        ]
+      },
+      "uid:1015": {
+        "placements": 1,
+        "positions": [
+          [
+            32682,
+            31242,
+            6
+          ]
+        ]
+      },
+      "uid:1017": {
+        "placements": 1,
+        "positions": [
+          [
+            33172,
+            31896,
+            8
+          ]
+        ]
+      },
+      "uid:1020": {
+        "placements": 1,
+        "positions": [
+          [
+            33664,
+            31936,
+            9
+          ]
+        ]
+      },
+      "uid:1035": {
+        "placements": 1,
+        "positions": [
+          [
+            33388,
+            31409,
+            14
+          ]
+        ]
+      },
+      "uid:1037": {
+        "placements": 1,
+        "positions": [
+          [
+            32800,
+            32339,
+            11
+          ]
+        ]
+      },
+      "uid:1038": {
+        "placements": 1,
+        "positions": [
+          [
+            32113,
+            31370,
+            14
+          ]
+        ]
+      },
+      "uid:1052": {
+        "placements": 1,
+        "positions": [
+          [
+            32982,
+            31431,
+            1
+          ]
+        ]
+      },
+      "uid:1053": {
+        "placements": 1,
+        "positions": [
+          [
+            32801,
+            32640,
+            15
+          ]
+        ]
+      },
+      "uid:1061": {
+        "placements": 1,
+        "positions": [
+          [
+            32455,
+            31166,
+            12
+          ]
+        ]
+      },
+      "uid:1105": {
+        "placements": 1,
+        "positions": [
+          [
+            33604,
+            31369,
+            15
+          ]
+        ]
+      },
+      "uid:1106": {
+        "placements": 1,
+        "positions": [
+          [
+            33509,
+            31189,
+            14
+          ]
+        ]
+      },
+      "uid:2002": {
+        "placements": 1,
+        "positions": [
+          [
+            32906,
+            32287,
+            12
+          ]
+        ]
+      },
+      "uid:2004": {
+        "placements": 1,
+        "positions": [
+          [
+            32873,
+            32263,
+            14
+          ]
+        ]
+      },
+      "uid:2243": {
+        "placements": 1,
+        "positions": [
+          [
+            32849,
+            32233,
+            9
+          ]
+        ]
+      },
+      "uid:2244": {
+        "placements": 1,
+        "positions": [
+          [
+            32857,
+            32225,
+            11
+          ]
+        ]
+      },
+      "uid:2272": {
+        "placements": 1,
+        "positions": [
+          [
+            32838,
+            32263,
+            14
+          ]
+        ]
+      },
+      "uid:3070": {
+        "placements": 1,
+        "positions": [
+          [
+            33281,
+            32447,
+            8
+          ]
+        ]
+      },
+      "uid:3086": {
+        "placements": 1,
+        "positions": [
+          [
+            32783,
+            31166,
+            10
+          ]
+        ]
+      },
+      "uid:3087": {
+        "placements": 1,
+        "positions": [
+          [
+            32781,
+            31162,
+            14
+          ]
+        ]
+      },
+      "uid:3118": {
+        "placements": 1,
+        "positions": [
+          [
+            32514,
+            32248,
+            8
+          ]
+        ]
+      },
+      "uid:3143": {
+        "placements": 1,
+        "positions": [
+          [
+            33101,
+            31908,
+            10
+          ]
+        ]
+      },
+      "uid:3163": {
+        "placements": 1,
+        "positions": [
+          [
+            33177,
+            31193,
+            7
+          ]
+        ]
+      },
+      "uid:3164": {
+        "placements": 1,
+        "positions": [
+          [
+            33318,
+            31410,
+            8
+          ]
+        ]
+      },
+      "uid:3169": {
+        "placements": 1,
+        "positions": [
+          [
+            33265,
+            31116,
+            8
+          ]
+        ]
+      },
+      "uid:3170": {
+        "placements": 1,
+        "positions": [
+          [
+            33348,
+            31412,
+            8
+          ]
+        ]
+      },
+      "uid:3198": {
+        "placements": 1,
+        "positions": [
+          [
+            33361,
+            31410,
+            9
+          ]
+        ]
+      },
+      "uid:3200": {
+        "placements": 1,
+        "positions": [
+          [
+            33073,
+            31173,
+            8
+          ]
+        ]
+      },
+      "uid:3300": {
+        "placements": 1,
+        "positions": [
+          [
+            32850,
+            32268,
+            10
+          ]
+        ]
+      },
+      "uid:3303": {
+        "placements": 1,
+        "positions": [
+          [
+            32826,
+            32273,
+            11
+          ]
+        ]
+      },
+      "uid:3304": {
+        "placements": 1,
+        "positions": [
+          [
+            32826,
+            32263,
+            12
+          ]
+        ]
+      },
+      "uid:4663": {
+        "placements": 1,
+        "positions": [
+          [
+            33017,
+            32358,
+            11
+          ]
+        ]
+      },
+      "uid:9000": {
+        "placements": 1,
+        "positions": [
+          [
+            32716,
+            32344,
+            7
+          ]
+        ]
+      },
+      "uid:9030": {
+        "placements": 1,
+        "positions": [
+          [
+            32762,
+            32290,
+            14
+          ]
+        ]
+      },
+      "uid:9234": {
+        "placements": 1,
+        "positions": [
+          [
+            32857,
+            32230,
+            11
+          ]
+        ]
+      },
+      "uid:9307": {
+        "placements": 1,
+        "positions": [
+          [
+            33502,
+            32545,
+            7
+          ]
+        ]
+      },
+      "uid:50105": {
+        "placements": 1,
+        "positions": [
+          [
+            32821,
+            32346,
+            13
+          ]
+        ]
+      },
+      "uid:50106": {
+        "placements": 1,
+        "positions": [
+          [
+            32915,
+            32215,
+            15
+          ]
+        ]
+      },
+      "uid:50127": {
+        "placements": 1,
+        "positions": [
+          [
+            32598,
+            31402,
+            15
+          ]
+        ]
+      },
+      "uid:50135": {
+        "placements": 1,
+        "positions": [
+          [
+            33393,
+            32802,
+            14
+          ]
+        ]
+      },
+      "uid:50136": {
+        "placements": 1,
+        "positions": [
+          [
+            33362,
+            32811,
+            14
+          ]
+        ]
+      },
+      "uid:50137": {
+        "placements": 1,
+        "positions": [
+          [
+            33083,
+            32569,
+            13
+          ]
+        ]
+      },
+      "uid:50138": {
+        "placements": 1,
+        "positions": [
+          [
+            33179,
+            32890,
+            11
+          ]
+        ]
+      },
+      "uid:50146": {
+        "placements": 1,
+        "positions": [
+          [
+            33263,
+            32668,
+            13
+          ]
+        ]
+      },
+      "uid:50147": {
+        "placements": 1,
+        "positions": [
+          [
+            32826,
+            32347,
+            9
+          ]
+        ]
+      },
+      "uid:57234": {
+        "placements": 1,
+        "positions": [
+          [
+            33841,
+            32124,
+            14
+          ]
+        ]
+      },
+      "uid:57505": {
+        "placements": 1,
+        "positions": [
+          [
+            33899,
+            31643,
+            9
+          ]
+        ]
+      },
+      "uid:57506": {
+        "placements": 1,
+        "positions": [
+          [
+            33936,
+            31647,
+            9
+          ]
+        ]
+      },
+      "uid:57743": {
+        "placements": 1,
+        "positions": [
+          [
+            33519,
+            31308,
+            8
+          ]
+        ]
+      },
+      "uid:57744": {
+        "placements": 1,
+        "positions": [
+          [
+            33517,
+            31306,
+            8
+          ]
+        ]
+      }
+    },
+    "assigned_at_startup": {
+      "aid:4900": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 14,
+        "by_state": {
+          "tile_present": 14
+        }
+      },
+      "aid:4905": {
+        "table": [
+          "ItemAction",
+          "TeleportAction"
+        ],
+        "placements": 7,
+        "by_state": {
+          "item_present": 2,
+          "tile_present": 5
+        }
+      },
+      "aid:4906": {
+        "table": [
+          "ItemAction",
+          "LeverAction",
+          "TeleportAction"
+        ],
+        "placements": 9,
+        "by_state": {
+          "item_present": 6,
+          "tile_present": 3
+        }
+      },
+      "aid:4910": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "aid:4911": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 2,
+        "by_state": {
+          "tile_present": 2
+        }
+      },
+      "aid:4930": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 15,
+        "by_state": {
+          "tile_present": 15
+        }
+      },
+      "aid:4931": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 44,
+        "by_state": {
+          "tile_present": 44
+        }
+      },
+      "aid:4932": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 6,
+        "by_state": {
+          "tile_present": 6
+        }
+      },
+      "aid:4933": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 3,
+        "by_state": {
+          "tile_present": 3
+        }
+      },
+      "aid:4950": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 12,
+        "by_state": {
+          "tile_present": 12
+        }
+      },
+      "aid:4952": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 5,
+        "by_state": {
+          "tile_present": 5
+        }
+      },
+      "aid:12106": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 8,
+        "by_state": {
+          "tile_present": 8
+        }
+      },
+      "aid:14579": {
+        "table": [
+          "TeleportAction"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "aid:15005": {
+        "table": [
+          "TeleportItemAction"
+        ],
+        "placements": 2,
+        "by_state": {
+          "tile_present": 2
+        }
+      },
+      "aid:20002": {
+        "table": [
+          "CorpseAction"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "aid:23100": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 20,
+        "by_state": {
+          "tile_present": 20
+        }
+      },
+      "aid:23101": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 17,
+        "by_state": {
+          "tile_present": 17
+        }
+      },
+      "aid:23102": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 3,
+        "by_state": {
+          "tile_present": 3
+        }
+      },
+      "aid:23103": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 5,
+        "by_state": {
+          "tile_present": 5
+        }
+      },
+      "aid:23105": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 3,
+        "by_state": {
+          "tile_present": 3
+        }
+      },
+      "aid:23106": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 9,
+        "by_state": {
+          "tile_present": 9
+        }
+      },
+      "aid:23108": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 13,
+        "by_state": {
+          "tile_present": 13
+        }
+      },
+      "aid:23111": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 6,
+        "by_state": {
+          "tile_present": 6
+        }
+      },
+      "aid:23120": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 21,
+        "by_state": {
+          "tile_present": 21
+        }
+      },
+      "aid:25019": {
+        "table": [
+          "TileAction"
+        ],
+        "placements": 3,
+        "by_state": {
+          "item_present": 3
+        }
+      },
+      "aid:25023": {
+        "table": [
+          "TileAction"
+        ],
+        "placements": 2,
+        "by_state": {
+          "item_present": 2
+        }
+      },
+      "aid:25029": {
+        "table": [
+          "TileAction"
+        ],
+        "placements": 2,
+        "by_state": {
+          "item_present": 2
+        }
+      },
+      "aid:30002": {
+        "table": [
+          "LeverAction"
+        ],
+        "placements": 9,
+        "by_state": {
+          "tile_present": 9
+        }
+      },
+      "aid:30003": {
+        "table": [
+          "LeverAction"
+        ],
+        "placements": 1,
+        "by_state": {
+          "tile_present": 1
+        }
+      },
+      "aid:30005": {
+        "table": [
+          "LeverAction"
+        ],
+        "placements": 4,
+        "by_state": {
+          "tile_present": 4
+        }
+      },
+      "aid:30007": {
+        "table": [
+          "LeverAction"
+        ],
+        "placements": 2,
+        "by_state": {
+          "tile_present": 2
+        }
+      },
+      "aid:30008": {
+        "table": [
+          "LeverAction"
+        ],
+        "placements": 1,
+        "by_state": {
+          "tile_present": 1
+        }
+      },
+      "aid:35002": {
+        "table": [
+          "TeleportAction"
+        ],
+        "placements": 2,
+        "by_state": {
+          "item_present": 2
+        }
+      },
+      "aid:40003": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 18,
+        "by_state": {
+          "tile_present": 18
+        }
+      },
+      "aid:40004": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 4,
+        "by_state": {
+          "item_present": 4
+        }
+      },
+      "aid:40005": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 3,
+        "by_state": {
+          "item_present": 3
+        }
+      },
+      "aid:40010": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 16,
+        "by_state": {
+          "tile_present": 16
+        }
+      },
+      "aid:40011": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 4,
+        "by_state": {
+          "item_present": 4
+        }
+      },
+      "aid:40022": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 1,
+        "by_state": {
+          "tile_present": 1
+        }
+      },
+      "aid:40023": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 20,
+        "by_state": {
+          "tile_present": 20
+        }
+      },
+      "aid:40024": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 15,
+        "by_state": {
+          "tile_present": 15
+        }
+      },
+      "aid:40025": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 1,
+        "by_state": {
+          "tile_present": 1
+        }
+      },
+      "aid:40029": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "aid:40030": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 1,
+        "by_state": {
+          "tile_present": 1
+        }
+      },
+      "aid:40040": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "aid:50000": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 11,
+        "by_state": {
+          "tile_present": 11
+        }
+      },
+      "aid:50307": {
+        "table": [
+          "TileAction"
+        ],
+        "placements": 3,
+        "by_state": {
+          "tile_present": 3
+        }
+      },
+      "aid:50334": {
+        "table": [
+          "TileAction"
+        ],
+        "placements": 7,
+        "by_state": {
+          "tile_present": 7
+        }
+      },
+      "aid:50339": {
+        "table": [
+          "TileAction"
+        ],
+        "placements": 138,
+        "by_state": {
+          "item_present": 138
+        }
+      },
+      "aid:50365": {
+        "table": [
+          "TileAction"
+        ],
+        "placements": 6,
+        "by_state": {
+          "tile_present": 6
+        }
+      },
+      "aid:55000": {
+        "table": [
+          "ItemAction"
+        ],
+        "placements": 5,
+        "by_state": {
+          "tile_present": 5
+        }
+      },
+      "uid:1022": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:1023": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:1024": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:1025": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:1026": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:1027": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:1028": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:3263": {
+        "table": [
+          "CorpseUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:14024": {
+        "table": [
+          "ChestUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:14091": {
+        "table": [
+          "ChestUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:20001": {
+        "table": [
+          "CorpseUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:24889": {
+        "table": [
+          "TeleportUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:25010": {
+        "table": [
+          "TileUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:25011": {
+        "table": [
+          "TileUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:25012": {
+        "table": [
+          "TileUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:25016": {
+        "table": [
+          "TileUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:25017": {
+        "table": [
+          "TileUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:25022": {
+        "table": [
+          "TileUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:25023": {
+        "table": [
+          "TileUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:25024": {
+        "table": [
+          "TileUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:25028": {
+        "table": [
+          "TileUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:25030": {
+        "table": [
+          "TileUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:30001": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:30002": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:30006": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:30007": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:30008": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:30009": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:30024": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:30025": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:30026": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:30027": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:30028": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:30030": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:30031": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:30032": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:30033": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:30034": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:30035": {
+        "table": [
+          "LeverUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:35010": {
+        "table": [
+          "TeleportUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:35011": {
+        "table": [
+          "TeleportUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:35012": {
+        "table": [
+          "TeleportUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:35013": {
+        "table": [
+          "TeleportUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:35014": {
+        "table": [
+          "TeleportUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:35015": {
+        "table": [
+          "TeleportUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:35016": {
+        "table": [
+          "TeleportUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:35017": {
+        "table": [
+          "TeleportUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:35018": {
+        "table": [
+          "TeleportUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:35019": {
+        "table": [
+          "TeleportUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40027": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40029": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40030": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40031": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40042": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40044": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40046": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40047": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40055": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40056": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40057": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40071": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40072": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40075": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40076": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40083": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40084": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40085": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40086": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40087": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40088": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40089": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40090": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      },
+      "uid:40091": {
+        "table": [
+          "ItemUnique"
+        ],
+        "placements": 1,
+        "by_state": {
+          "item_present": 1
+        }
+      }
+    },
+    "not_found": [
+      {
+        "id": "aid:4901",
+        "interactions": [
+          "canary:interaction/the_secret_library_quest/liquid_death/movements_boss_way"
+        ]
+      },
+      {
+        "id": "aid:4951",
+        "interactions": [
+          "canary:interaction/the_secret_library_quest/library_area/movements_mazzinor"
+        ]
+      },
+      {
+        "id": "aid:4953",
+        "interactions": [
+          "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission09_yalahari_folio"
+        ]
+      },
+      {
+        "id": "aid:4954",
+        "interactions": [
+          "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission09_yalahari_inkwell"
+        ]
+      },
+      {
+        "id": "aid:4955",
+        "interactions": [
+          "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission11"
+        ]
+      },
+      {
+        "id": "aid:4968",
+        "interactions": [
+          "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission12_elevator_fenrock"
+        ]
+      },
+      {
+        "id": "aid:4969",
+        "interactions": [
+          "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission02_yalahar_telescope"
+        ]
+      },
+      {
+        "id": "aid:4970",
+        "interactions": [
+          "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission02_yalahar_core_dispenser"
+        ]
+      },
+      {
+        "id": "aid:5580",
+        "interactions": [
+          "canary:interaction/cults_of_tibia/movements_task_teleport"
+        ]
+      },
+      {
+        "id": "aid:5595",
+        "interactions": [
+          "canary:interaction/cults_of_tibia/movements_sandking"
+        ]
+      },
+      {
+        "id": "aid:9029",
+        "interactions": [
+          "canary:interaction/elemental_spheres/movements_aoe_teleport_out"
+        ]
+      },
+      {
+        "id": "aid:9032",
+        "interactions": [
+          "canary:interaction/dreamers_challenge_quest/movement_tic_teleport"
+        ]
+      },
+      {
+        "id": "aid:9299",
+        "interactions": [
+          "canary:interaction/hero_of_rathleton/actions_machines_professor_maxxen"
+        ]
+      },
+      {
+        "id": "aid:10102",
+        "interactions": [
+          "canary:interaction/the_annihilator/door"
+        ]
+      },
+      {
+        "id": "aid:12108",
+        "interactions": [
+          "crystalserver:interaction/the_ancient_tombs/movements_oasis_lever_door"
+        ]
+      },
+      {
+        "id": "aid:12441",
+        "interactions": [
+          "canary:interaction/the_lost_brother/actions_asura_mirror"
+        ]
+      },
+      {
+        "id": "aid:14561",
+        "interactions": [
+          "canary:interaction/grave_danger_quest/movements_duke_exit_tp"
+        ]
+      },
+      {
+        "id": "aid:19910",
+        "interactions": [
+          "canary:interaction/others/actions_steal_from_thieves"
+        ]
+      },
+      {
+        "id": "aid:25030",
+        "interactions": [
+          "crystalserver:interaction/shadows_of_yalahar_quest/movements_mission05"
+        ]
+      },
+      {
+        "id": "aid:25031",
+        "interactions": [
+          "crystalserver:interaction/shadows_of_yalahar_quest/movements_mission11"
+        ]
+      },
+      {
+        "id": "aid:25032",
+        "interactions": [
+          "crystalserver:interaction/shadows_of_yalahar_quest/movements_mission12_mission12_drunk_floor"
+        ]
+      },
+      {
+        "id": "aid:26665",
+        "interactions": [
+          "canary:interaction/forgotten_knowledge/movements_servant_teleport"
+        ]
+      },
+      {
+        "id": "aid:26667",
+        "interactions": [
+          "canary:interaction/forgotten_knowledge/movements_ice_teleport"
+        ]
+      },
+      {
+        "id": "aid:27830",
+        "interactions": [
+          "canary:interaction/forgotten_knowledge/movements_teleport_tree"
+        ]
+      },
+      {
+        "id": "aid:34065",
+        "interactions": [
+          "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_enter_lever_ichgahal"
+        ]
+      },
+      {
+        "id": "aid:34101",
+        "interactions": [
+          "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_exit_putrefactory"
+        ]
+      },
+      {
+        "id": "aid:34120",
+        "interactions": [
+          "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_enter_putrefactory"
+        ]
+      },
+      {
+        "id": "aid:34200",
+        "interactions": [
+          "canary:interaction/ferumbras_ascension/movements_mazoran_fire"
+        ]
+      },
+      {
+        "id": "aid:34301",
+        "interactions": [
+          "canary:interaction/ferumbras_ascension/movements_shulgrax_lever"
+        ]
+      },
+      {
+        "id": "aid:35508",
+        "interactions": [
+          "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_action"
+        ]
+      },
+      {
+        "id": "aid:36568",
+        "interactions": [
+          "canary:interaction/grave_danger_quest/movements_cobra_mini_bosses"
+        ]
+      },
+      {
+        "id": "aid:36569",
+        "interactions": [
+          "canary:interaction/grave_danger_quest/actions_custodian_door"
+        ]
+      },
+      {
+        "id": "aid:40532",
+        "interactions": [
+          "canary:interaction/koshei_the_deathless_quest/action_bag"
+        ]
+      },
+      {
+        "id": "aid:47501",
+        "interactions": [
+          "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_portal_cheesy"
+        ]
+      },
+      {
+        "id": "aid:47502",
+        "interactions": [
+          "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_portal_cheesy_chess"
+        ]
+      },
+      {
+        "id": "aid:47710",
+        "interactions": [
+          "canary:interaction/their_masters_voice/movements_entrance"
+        ]
+      },
+      {
+        "id": "aid:47949",
+        "interactions": [
+          "crystalserver:interaction/rotten_blood_quest/movements_fields_create_spore"
+        ]
+      },
+      {
+        "id": "aid:47953",
+        "interactions": [
+          "crystalserver:interaction/rotten_blood_quest/creaturescripts_putrefactory_x"
+        ]
+      },
+      {
+        "id": "aid:50001",
+        "interactions": [
+          "crystalserver:interaction/rotten_blood_quest/teleport_step_event"
+        ]
+      },
+      {
+        "id": "aid:50111",
+        "interactions": [
+          "canary:interaction/the_hidden_city_of_beregar/moviments_gap"
+        ]
+      },
+      {
+        "id": "aid:50161",
+        "interactions": [
+          "canary:interaction/others/actions_calassa_comb_door"
+        ]
+      },
+      {
+        "id": "aid:51394",
+        "interactions": [
+          "canary:interaction/the_thieves_guild_quest/actions_fish_napping_door"
+        ]
+      },
+      {
+        "id": "aid:53821",
+        "interactions": [
+          "canary:interaction/ferumbras_ascension/actions_lever_first"
+        ]
+      },
+      {
+        "id": "aid:53822",
+        "interactions": [
+          "canary:interaction/ferumbras_ascension/actions_lever_second"
+        ]
+      },
+      {
+        "id": "aid:53823",
+        "interactions": [
+          "canary:interaction/ferumbras_ascension/actions_lever_third"
+        ]
+      },
+      {
+        "id": "aid:53824",
+        "interactions": [
+          "canary:interaction/ferumbras_ascension/actions_lever_four"
+        ]
+      },
+      {
+        "id": "aid:57233",
+        "interactions": [
+          "canary:interaction/dangerous_depth/actions_wooden_trash"
+        ]
+      },
+      {
+        "id": "aid:57235",
+        "interactions": [
+          "crystalserver:interaction/shadows_of_yalahar_quest/action_telas_teleport"
+        ]
+      },
+      {
+        "id": "aid:57236",
+        "interactions": [
+          "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission13"
+        ]
+      },
+      {
+        "id": "aid:57237",
+        "interactions": [
+          "crystalserver:interaction/the_isle_of_evil_quest/actions_lever_teleport"
+        ]
+      },
+      {
+        "id": "aid:57243",
+        "interactions": [
+          "canary:interaction/dangerous_depth/movements_boss_entrance"
+        ]
+      },
+      {
+        "id": "aid:57303",
+        "interactions": [
+          "canary:interaction/dangerous_depth/actions_crude_lava_pump_achievements"
+        ]
+      },
+      {
+        "id": "uid:14043",
+        "interactions": [
+          "crystalserver:interaction/blood_brothers_quest/actions_castle_book_blood_brothers_library"
+        ]
+      },
+      {
+        "id": "uid:14052",
+        "interactions": [
+          "crystalserver:interaction/blood_brothers_quest/actions_blood_goblet"
+        ]
+      },
+      {
+        "id": "uid:24850",
+        "interactions": [
+          "canary:interaction/hero_of_rathleton/actions_reward"
+        ]
+      },
+      {
+        "id": "uid:57504",
+        "interactions": [
+          "crystalserver:interaction/kilmaresh/actions_books"
+        ]
+      },
+      {
+        "id": "uid:57518",
+        "interactions": [
+          "canary:interaction/kilmaresh_quest/actions_peeler",
+          "crystalserver:interaction/kilmaresh/actions_peeler"
+        ]
+      },
+      {
+        "id": "uid:57525",
+        "interactions": [
+          "canary:interaction/kilmaresh_quest/actions_coruja",
+          "crystalserver:interaction/kilmaresh/actions_coruja"
+        ]
+      },
+      {
+        "id": "uid:57526",
+        "interactions": [
+          "canary:interaction/kilmaresh_quest/actions_sangra",
+          "crystalserver:interaction/kilmaresh/actions_sangra"
+        ]
+      },
+      {
+        "id": "uid:57527",
+        "interactions": [
+          "canary:interaction/kilmaresh_quest/actions_basin",
+          "crystalserver:interaction/kilmaresh/actions_basin"
+        ]
+      },
+      {
+        "id": "uid:57528",
+        "interactions": [
+          "canary:interaction/kilmaresh_quest/actions_tortoise",
+          "crystalserver:interaction/kilmaresh/actions_tortoise"
+        ]
+      },
+      {
+        "id": "uid:57529",
+        "interactions": [
+          "canary:interaction/kilmaresh_quest/actions_lyre",
+          "crystalserver:interaction/kilmaresh/actions_lyre"
+        ]
+      },
+      {
+        "id": "uid:57530",
+        "interactions": [
+          "canary:interaction/kilmaresh_quest/actions_cagekey",
+          "crystalserver:interaction/kilmaresh/actions_cagekey"
+        ]
+      },
+      {
+        "id": "uid:57543",
+        "interactions": [
+          "canary:interaction/kilmaresh_quest/actions_tumulo",
+          "crystalserver:interaction/kilmaresh/actions_tumulo"
+        ]
+      },
+      {
+        "id": "uid:57544",
+        "interactions": [
+          "canary:interaction/kilmaresh_quest/actions_tumuloerro",
+          "crystalserver:interaction/kilmaresh/actions_tumuloerro"
+        ]
+      }
+    ],
+    "overlay_maps": {
+      "note": "Overlay .otbm maps Canary's own Lua loads over the live world (at startup for world/custom, at runtime for quest/world-change overlays); scanned for whichever trigger ids check_interactions could not find on the raw map or in the startup tables. Pinned by the Canary checkout revision plus each file's own sha256 (not downloaded separately: they are part of the same git-tracked checkout the startup tables come from).",
+      "canary_checkout_revision": "04b83b51",
+      "maps": [
+        {
+          "path": "data-otservbr-global/world/custom/otservbr-custom.otbm",
+          "loaded_at_startup": true,
+          "loader": "src/canary_server.cpp:346 CanaryServer::loadMaps -> g_game().loadCustomMaps(DATA_DIRECTORY/world/custom/) (toggleMapCustom=true, config.lua.dist default); every *.otbm under world/custom/ loads right after the main map, at server start.",
+          "present": true,
+          "sha256": "cdaca76caf36567c116bca42a9ca869a3c685a8b50ef014174534a583f7d6d37"
+        },
+        {
+          "path": "data-otservbr-global/world/annual_events/winterlight_solstice/island.otbm",
+          "loaded_at_startup": false,
+          "loader": "no Game.loadMap(...)/loadCustomMaps(...) reference to this path found anywhere in scripts/ or src/ at the pinned revision: this overlay appears unwired, not currently loaded by any known code path.",
+          "present": true,
+          "sha256": "1e718e01e53be8aa35df9c0c6a67797ffdd6816e4e38c59a0f46263b772594cf"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/soul_war/ebb_and_flow/ebb-flow-empty.otbm",
+          "loaded_at_startup": false,
+          "loader": "lib/quests/soul_war.lua mapsPath.empty; loaded by scripts/quests/soul_war/soul_war_mechanics.lua:304 and scripts/quests/soul_war/globalevent-ebb_and_flow_change_maps.lua:78 (event-triggered: the Ebb and Flow water-level cycle).",
+          "present": true,
+          "sha256": "6b52ade34776b4f3ba1ccc047233940bffb3f4f88667de8d3d79f982f79b05ce"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/soul_war/ebb_and_flow/ebb-flow-inundate.otbm",
+          "loaded_at_startup": false,
+          "loader": "lib/quests/soul_war.lua mapsPath.inundate; loaded by scripts/quests/soul_war/soul_war_mechanics.lua:306 and scripts/quests/soul_war/globalevent-ebb_and_flow_change_maps.lua:153 (event-triggered).",
+          "present": true,
+          "sha256": "f99cee95f55ec67526115def195f9d81fdcb4e487e8dadd2d63fae3f1d1ee726"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/soul_war/ebb_and_flow/ebb-flow.otbm",
+          "loaded_at_startup": false,
+          "loader": "lib/quests/soul_war.lua mapsPath.ebbFlow; loaded by scripts/quests/soul_war/soul_war_mechanics.lua:308 and scripts/quests/soul_war/globalevent-ebb_and_flow_change_maps.lua:175 (event-triggered).",
+          "present": true,
+          "sha256": "38725fb32054e71b9c736d4ac5a8c0072ef24ff2efb64c3b01a6a5e919eb2d7e"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/ferumbras_ascendant/habitats.otbm",
+          "loaded_at_startup": false,
+          "loader": "data/libs/functions/functions.lua:385, on demand when the Ferumbras habitats are reset (event-triggered).",
+          "present": true,
+          "sha256": "5877b9fd7ce8ea72acfe2fc27a5f60a79f7fab055618366cc82451cca713a061"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/the_dream_courts/alptramun.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/quests/the_dream_courts_quest/globalevents_the_dream_courts.lua:21, one of dayConfig.map's daily rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "a1af2ddb2edf30fb0cafdd7e4b1efb36e6f7296ebbc19704857440ad886eb1cf"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/the_dream_courts/izcandar_the_banished.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/quests/the_dream_courts_quest/globalevents_the_dream_courts.lua:21, one of dayConfig.map's daily rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "d728b50d5391fc40d39c7a76a9980a6dc9362ef17eac06a1a43e59e129e8a295"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/the_dream_courts/malofur_mangrinder.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/quests/the_dream_courts_quest/globalevents_the_dream_courts.lua:21, one of dayConfig.map's daily rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "83575fa533973bcb1d2da8d554d4ace84cf16e7d4f4f8cad7b551458485d172c"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/the_dream_courts/maxxenius.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/quests/the_dream_courts_quest/globalevents_the_dream_courts.lua:21, one of dayConfig.map's daily rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "718073764d4a1e60e391e840d1ed7d7e07927c23e80486b43110b373fbb368da"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/the_dream_courts/plagueroot.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/quests/the_dream_courts_quest/globalevents_the_dream_courts.lua:21, one of dayConfig.map's daily rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "d15d4bebce14e464819219e581e0e08b25e0608fd1d83bc21058607f51ae8b8d"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/cults_of_tibia/misguided/illusion.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/quests/cults_of_tibia/actions_misguided.lua:33 (event-triggered).",
+          "present": true,
+          "sha256": "5cfc549bf7632a977291c753bad894594c2160f5816d83f117c7dad5a65b4e46"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/cults_of_tibia/misguided/reality.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/quests/cults_of_tibia/actions_misguided.lua:36 (event-triggered).",
+          "present": true,
+          "sha256": "03dc34e946dff2d065ffbfdd455f2f6537b916757d0d4a6037d1005bb2fe7f78"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/full_moon/final.otbm",
+          "loaded_at_startup": false,
+          "loader": "lib/quests/grimvale.lua:15 (event-triggered).",
+          "present": true,
+          "sha256": "502015045cfa0e27442c67cc352a1570fbffb2f0c1c5f3b29c8cbd1ed6d36629"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/full_moon/middle.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/quests/grimvale/globalevents_grimvale_feroxa.lua:18, via addEvent(Game.loadMap, ...) (event-triggered, 30-minute delay).",
+          "present": true,
+          "sha256": "c322389e8619bc18789ddc97d9f7d960c0dec04d369cdbe926d92d6c6029cf53"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/abdendriel.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "54150cb97714dd0378cf92f0f7d748fb977bc8d9bb8339beb99f36b7391eb81b"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/ankrahmun.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "73fb96a28a97777b1162f56f1814cd2c2a039edcd13cff2dcf8ec8d883b86398"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/carlin.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "adc06e12aff7eec1c17ea2d0f5eab26d9a79830cc55e2a27fc8f11526a4c104c"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/darashia.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "e45ff336e021d4293e74e9a68ee21e6139de94fdd398bbf46b987c64df96b9a8"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/edron.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "1d79a68bd3a03f75a5569d46cbf5fda897ceba6fdd07821dc4fd39b48d91db47"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/kazordoon.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "f9bb26a910ac417800c2e55d4f5d157206def91a3bb921626827829d73f0fe86"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/libertybay.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "8839e5b21ed6fbb566de9c5a480f2690078608437d143e9003c061d3b81c7829"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/porthope.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "cde3621c0e5cf3fc5f0fc86b373ff981c2bb8282f46c368bd7d1968fa3287f3d"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/thais.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "87da7cc3229327313d063ec3e52c69e0e08da6ce491efc697ba230dc8426be18"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/venore.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "9679e8a15e9d29f67cd291ef26a6fe7a72b766a22926a371abf6b1784fe31fa9"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/nightmare_isle/ankrahmun-north.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/nightmare_isles.lua:19, one of randomMap.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "81d174a520c7e0dcf0b1ce83f9203104b2a65da6fc5e6807406b5d06fefc1c42"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/nightmare_isle/darashia-north.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/nightmare_isles.lua:19, one of randomMap.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "8fdf5184da45afa00e70f9b38cd2a14ec1a9b2240304dd343f111c46457af725"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/nightmare_isle/darashia-west.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/nightmare_isles.lua:19, one of randomMap.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "92dbd3254c10dac5cf9111aa99c5f5ce257a87ce1c10b992a8d5b598a40185c1"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/oriental_trader/ankrahmun.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/oriental_trader.lua:62, one of mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "6300477cb81e36237436d02d835f6b8390c602685dbafa6cd955c311b271b167"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/oriental_trader/carlin.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/oriental_trader.lua:62, one of mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "ee767080d637c6352c7facd47a729101396596a9d1b88f7b22daf2ab9076a292"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/oriental_trader/libertybay.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/oriental_trader.lua:62, one of mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "56d618bc23e51d73d52d2d100d768cb7d36c96229ed38f4983b94e9ae9fa08f6"
+        }
+      ],
+      "found": {}
+    },
+    "runtime_script_resolution": {
+      "note": "For ids the overlay maps did not resolve: grepped both servers' Lua for the literal runtime id-assignment calls (setActionId/setUniqueId/setAttribute with ITEM_ATTRIBUTE_ACTIONID|UNIQUEID). assigned_by_script cites the assigning file:line; crystalserver_only_script means the id is never registered anywhere in Canary at all (CrystalServer-only content, not a Canary gap); not_found_anywhere means neither server's Lua assigns it anywhere this check can see, so the registration is likely a dead script.",
+      "crystalserver_source_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "assigned_by_script": {
+        "aid:5580": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_carlin_vortex_spawn.lua:5"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/cults_of_tibia/creaturescripts_carlin_vortex_spawn.lua:5"
+          ]
+        },
+        "aid:5595": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_sandking.lua:115"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/cults_of_tibia/creaturescripts_sandking.lua:115"
+          ]
+        },
+        "aid:9032": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/dreamers_challenge_quest/actions_tic_tac_teleport.lua:47"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/dreamers_challenge_quest/actions_tic_tac_teleport.lua:47"
+          ]
+        },
+        "aid:26665": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_replica_servants.lua:25"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/forgotten_knowledge/creaturescripts_replica_servants.lua:25"
+          ]
+        },
+        "aid:27830": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/forgotten_knowledge/actions_plant.lua:489"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/forgotten_knowledge/actions_plant.lua:489"
+          ]
+        },
+        "aid:34200": {
+          "canary": [
+            "data-otservbr-global/scripts/spells/monster/mazoran_fire.lua:948"
+          ],
+          "crystalserver": [
+            "data-crystal/scripts/spells/monster/mazoran_fire.lua:948",
+            "data-global/scripts/spells/monster/mazoran_fire.lua:948"
+          ]
+        },
+        "aid:50001": {
+          "crystalserver": [
+            "data-global/monster/quests/rotten_blood_quest/bakragore.lua:271",
+            "data-global/monster/quests/rotten_blood_quest/chagorz.lua:253",
+            "data-global/monster/quests/rotten_blood_quest/vemiath.lua:263",
+            "data-global/scripts/quests/rotten_blood_quest/test_teleport_command.lua:44"
+          ]
+        },
+        "aid:53821": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua:69",
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua:70"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua:69",
+            "data-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua:70"
+          ]
+        },
+        "aid:53822": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua:70",
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua:71"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua:70",
+            "data-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua:71"
+          ]
+        },
+        "aid:53823": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua:71",
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua:72"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua:71",
+            "data-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua:72"
+          ]
+        },
+        "aid:53824": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua:72",
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua:73",
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_red_gem.lua:73"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua:72",
+            "data-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua:73",
+            "data-global/scripts/quests/ferumbras_ascension/movements_red_gem.lua:73"
+          ]
+        },
+        "aid:57233": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua:72"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua:72"
+          ]
+        },
+        "aid:57243": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:441",
+            "data-otservbr-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:476",
+            "data-otservbr-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:511"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:441",
+            "data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:476",
+            "data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:511"
+          ]
+        }
+      },
+      "crystalserver_only_script": {
+        "aid:4953": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission09.lua:62"
+          ]
+        },
+        "aid:4954": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission09.lua:89"
+          ]
+        },
+        "aid:4955": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission11.lua:66"
+          ]
+        },
+        "aid:4968": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission12.lua:121"
+          ]
+        },
+        "aid:4969": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission02.lua:111"
+          ]
+        },
+        "aid:4970": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission02.lua:143"
+          ]
+        },
+        "aid:12108": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/the_ancient_tombs/movements_oasis_lever_door.lua:14"
+          ]
+        },
+        "aid:25030": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/movements_mission05.lua:29"
+          ]
+        },
+        "aid:25031": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/movements_mission11.lua:35"
+          ]
+        },
+        "aid:25032": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/movements_mission12.lua:70"
+          ]
+        },
+        "aid:34065": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:65"
+          ]
+        },
+        "aid:34101": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:30"
+          ]
+        },
+        "aid:34120": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:14"
+          ]
+        },
+        "aid:35508": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:43"
+          ]
+        },
+        "aid:47501": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:75"
+          ]
+        },
+        "aid:47502": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:107"
+          ]
+        },
+        "aid:47949": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/rotten_blood_quest/movements_fields.lua:71"
+          ]
+        },
+        "aid:47953": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/rotten_blood_quest/creaturescripts_putrefactory-x.lua:223"
+          ]
+        },
+        "aid:57235": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/action_telas_teleport.lua:40"
+          ]
+        },
+        "aid:57236": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission13.lua:43"
+          ]
+        },
+        "aid:57237": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/the_isle_of_evil_quest/actions_lever_teleport.lua:20"
+          ]
+        },
+        "uid:14043": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/blood_brothers_quest/actions_castle_book.lua:40"
+          ]
+        },
+        "uid:14052": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/blood_brothers_quest/actions_blood_goblet.lua:18"
+          ]
+        },
+        "uid:57504": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/kilmaresh/actions_books.lua:13"
+          ]
+        }
+      },
+      "not_found_anywhere": [
+        "aid:10102",
+        "aid:12441",
+        "aid:14561",
+        "aid:19910",
+        "aid:26667",
+        "aid:34301",
+        "aid:36568",
+        "aid:36569",
+        "aid:40532",
+        "aid:47710",
+        "aid:4901",
+        "aid:4951",
+        "aid:50111",
+        "aid:50161",
+        "aid:51394",
+        "aid:57303",
+        "aid:9029",
+        "aid:9299",
+        "uid:24850",
+        "uid:57518",
+        "uid:57525",
+        "uid:57526",
+        "uid:57527",
+        "uid:57528",
+        "uid:57529",
+        "uid:57530",
+        "uid:57543",
+        "uid:57544"
+      ]
+    },
+    "trigger_ids_by_resolution": {
+      "found_on_raw_map": 160,
+      "assigned_at_startup": 124,
+      "found_on_overlay_map": 0,
+      "assigned_by_script": 13,
+      "crystalserver_only_script": 24,
+      "not_found_anywhere": 28,
+      "total": 349
+    }
+  },
+  "map_decisions": {
+    "corpse_chest": {
+      "note": "Both servers claim uid 5016 at this position (D25: 'equivalent', canary kept); the raw map's own item id at that position (not the runtime-assigned uid, which is not baked into the file; see check_chests) is what actually decides which appearance is real.",
+      "position": [
+        32576,
+        32216,
+        15
+      ],
+      "uid": 5016,
+      "canary_claimed_item_id": 3204,
+      "crystalserver_claimed_item_id": 4240,
+      "canary_map_item_ids_at_position": [
+        354,
+        3204
+      ],
+      "crystalserver_map_item_ids_at_position": [
+        354,
+        4240
+      ],
+      "crystalserver_map_checked": true
+    },
+    "wrath_of_the_emperor_chest": {
+      "note": "Canary-only chest_items claim (uid 14092, present_only_in_canary) vs a CrystalServer-only chest_items claim (uid 7825) a few tiles away, same reward. Each server's own map is also checked at the OTHER server's position, to tell 'one chest moved' apart from 'both servers place a chest at both spots but only one is wired up'.",
+      "canary_only_position": [
+        33074,
+        31170,
+        8
+      ],
+      "canary_only_uid": 14092,
+      "canary_map_item_ids_at_canary_only_position": [
+        11001,
+        2473
+      ],
+      "canary_map_item_ids_at_crystalserver_position": [
+        11001
+      ],
+      "crystalserver_position": [
+        33079,
+        31173,
+        8
+      ],
+      "crystalserver_only_uid": 7825,
+      "crystalserver_map_item_ids_at_crystalserver_position": [
+        11001,
+        2473
+      ],
+      "crystalserver_map_item_ids_at_canary_only_position": [
+        11001
+      ],
+      "crystalserver_map_checked": true
+    }
+  }
+}

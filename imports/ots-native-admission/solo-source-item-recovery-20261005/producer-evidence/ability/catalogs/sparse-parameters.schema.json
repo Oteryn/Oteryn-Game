@@ -1,0 +1,1330 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "source_cut": {
+      "enum": [
+        "CANARY_47DF",
+        "CRYSTAL_FF7",
+        "CRYSTAL_00CE"
+      ]
+    },
+    "default_catalog_sha256": {
+      "enum": [
+        "818dee6f0be445b39450b4e3eecc06682eea75f399c149ab9dd44b8888744c4a",
+        "91a7f1c2f88aef0586fca26f2c6483ba6a5a12b9917107fa8ed886f45f1df7ad",
+        "6e5e6a9819109dacf0454120829429667b6ecc450aeb9062d50252b0a9c19d74"
+      ]
+    },
+    "allocation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "const": "ABSENT_STORED_OBJECT"
+            }
+          },
+          "required": [
+            "state"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "const": "INITIALIZED_STORED_OBJECT"
+            },
+            "first_attribute_ordinal": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "first_handler": {
+              "enum": [
+                "parseAbsorbPercent",
+                "parseCleavePercent",
+                "parseCriticalHit",
+                "parseElement",
+                "parseElementalBond",
+                "parseFieldAbsorbPercent",
+                "parseHealthAndMana",
+                "parseInvisible",
+                "parseLifeAndManaLeech",
+                "parseMagicLevelPoint",
+                "parseMagicShieldCapacity",
+                "parseMantra",
+                "parseMaxHitAndManaPoints",
+                "parsePerfecShot",
+                "parseReflectDamage",
+                "parseSkills",
+                "parseSpecializedMagicLevelPoint",
+                "parseSpeed",
+                "parseSupressDrunk"
+              ]
+            },
+            "registered_key": {
+              "enum": [
+                "absorbpercentall",
+                "absorbpercentallelements",
+                "absorbpercentdeath",
+                "absorbpercentdrown",
+                "absorbpercentearth",
+                "absorbpercentelements",
+                "absorbpercentenergy",
+                "absorbpercentfire",
+                "absorbpercenthealing",
+                "absorbpercentholy",
+                "absorbpercentice",
+                "absorbpercentlifedrain",
+                "absorbpercentmagic",
+                "absorbpercentmanadrain",
+                "absorbpercentphysical",
+                "absorbpercentpoison",
+                "allowdistread",
+                "allowpickupable",
+                "ammotype",
+                "armor",
+                "attack",
+                "augments",
+                "bedpart",
+                "bedpartof",
+                "blocking",
+                "blockprojectile",
+                "charges",
+                "cleavepercent",
+                "containersize",
+                "criticalhitchance",
+                "criticalhitdamage",
+                "deathmagiclevelpoints",
+                "decayto",
+                "defense",
+                "description",
+                "destroyto",
+                "duration",
+                "earthmagiclevelpoints",
+                "effect",
+                "elementalbond",
+                "elementdeath",
+                "elementearth",
+                "elementenergy",
+                "elementfire",
+                "elementholy",
+                "elementice",
+                "energymagiclevelpoints",
+                "extradef",
+                "femalesleeper",
+                "femaletransformto",
+                "field",
+                "fieldabsorbpercentearth",
+                "fieldabsorbpercentenergy",
+                "fieldabsorbpercentfire",
+                "fieldabsorbpercentpoison",
+                "firemagiclevelpoints",
+                "floorchange",
+                "fluidsource",
+                "healingmagiclevelpoints",
+                "healthgain",
+                "healthticks",
+                "hitchance",
+                "holymagiclevelpoints",
+                "icemagiclevelpoints",
+                "imbuementslot",
+                "invisible",
+                "leveldoor",
+                "lifeleechamount",
+                "lifeleechchance",
+                "loottype",
+                "magiclevelpoints",
+                "magicpoints",
+                "magicpointspercent",
+                "magicshieldcapacityflat",
+                "magicshieldcapacitypercent",
+                "malesleeper",
+                "maletransformto",
+                "managain",
+                "manaleechamount",
+                "manaleechchance",
+                "manashield",
+                "manaticks",
+                "mantra",
+                "maxhitchance",
+                "maxhitpoints",
+                "maxhitpointspercent",
+                "maxmanapoints",
+                "maxmanapointspercent",
+                "maxtextlen",
+                "meleeattackeffect",
+                "movable",
+                "partnerdirection",
+                "perfectshotdamage",
+                "perfectshotrange",
+                "physicalmagiclevelpoints",
+                "pickupable",
+                "primarytype",
+                "proficiency",
+                "range",
+                "readable",
+                "reflectdamage",
+                "reflectpercentall",
+                "replaceable",
+                "rotateto",
+                "runespellname",
+                "script",
+                "shoottype",
+                "showattributes",
+                "showcharges",
+                "showcount",
+                "showduration",
+                "skillaxe",
+                "skillclub",
+                "skilldist",
+                "skillfish",
+                "skillfist",
+                "skillshield",
+                "skillsword",
+                "slottype",
+                "speed",
+                "stacksize",
+                "stopduration",
+                "suppresscurse",
+                "suppressdazzle",
+                "suppressdrown",
+                "suppressdrunk",
+                "suppressenergy",
+                "suppressfire",
+                "suppressfreeze",
+                "suppressphysical",
+                "suppresspoison",
+                "transformdeequipto",
+                "transformequipto",
+                "transformonuse",
+                "type",
+                "unwrapableto",
+                "usedbyhouseguests",
+                "walkstack",
+                "weapontype",
+                "weight",
+                "wrapableto",
+                "wrapcontainer",
+                "writeable",
+                "writeonceitemid"
+              ]
+            },
+            "raw_attribute_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "state",
+            "first_attribute_ordinal",
+            "first_handler",
+            "registered_key",
+            "raw_attribute_sha256"
+          ]
+        }
+      ]
+    },
+    "ordered_events": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ASSIGN_STAT_I32"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "stat": {
+                "enum": [
+                  "STAT_CAPACITY",
+                  "STAT_MAGICPOINTS",
+                  "STAT_MAXHITPOINTS",
+                  "STAT_MAXMANAPOINTS",
+                  "STAT_SOULPOINTS"
+                ]
+              },
+              "value_i32": {
+                "type": "integer",
+                "minimum": -2147483648,
+                "maximum": 2147483647
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "stat",
+              "value_i32"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ASSIGN_STAT_PERCENT_I32"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "stat": {
+                "enum": [
+                  "STAT_CAPACITY",
+                  "STAT_MAGICPOINTS",
+                  "STAT_MAXHITPOINTS",
+                  "STAT_MAXMANAPOINTS",
+                  "STAT_SOULPOINTS"
+                ]
+              },
+              "value_i32": {
+                "type": "integer",
+                "minimum": -2147483648,
+                "maximum": 2147483647
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "stat",
+              "value_i32"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ASSIGN_SKILL_I32"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "skill": {
+                "enum": [
+                  "SKILL_AXE",
+                  "SKILL_CLUB",
+                  "SKILL_CRITICAL_HIT_CHANCE",
+                  "SKILL_CRITICAL_HIT_DAMAGE",
+                  "SKILL_DISTANCE",
+                  "SKILL_FISHING",
+                  "SKILL_FIST",
+                  "SKILL_LIFE_LEECH_AMOUNT",
+                  "SKILL_LIFE_LEECH_CHANCE",
+                  "SKILL_MANA_LEECH_AMOUNT",
+                  "SKILL_MANA_LEECH_CHANCE",
+                  "SKILL_SHIELD",
+                  "SKILL_SWORD"
+                ]
+              },
+              "value_i32": {
+                "type": "integer",
+                "minimum": -2147483648,
+                "maximum": 2147483647
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "skill",
+              "value_i32"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ASSIGN_SPEED_I32"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "value_i32": {
+                "type": "integer",
+                "minimum": -2147483648,
+                "maximum": 2147483647
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "value_i32"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ASSIGN_INVISIBLE_BOOL"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "value_bool": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "value_bool"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ASSIGN_MANASHIELD_BOOL"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "value_bool": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "value_bool"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ASSIGN_REGEN_RAW_U32_AND_ENABLE"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "member": {
+                "enum": [
+                  "HEALTH_GAIN",
+                  "HEALTH_TICKS",
+                  "MANA_GAIN",
+                  "MANA_TICKS"
+                ]
+              },
+              "value_u32": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4294967295
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "member",
+              "value_u32"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ACCUMULATE_FIELD_ABSORB_I16"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "combat_members": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "COMBAT_AGONYDAMAGE",
+                    "COMBAT_DEATHDAMAGE",
+                    "COMBAT_DROWNDAMAGE",
+                    "COMBAT_EARTHDAMAGE",
+                    "COMBAT_ENERGYDAMAGE",
+                    "COMBAT_FIREDAMAGE",
+                    "COMBAT_HEALING",
+                    "COMBAT_HOLYDAMAGE",
+                    "COMBAT_ICEDAMAGE",
+                    "COMBAT_LIFEDRAIN",
+                    "COMBAT_MANADRAIN",
+                    "COMBAT_NEUTRALDAMAGE",
+                    "COMBAT_PHYSICALDAMAGE",
+                    "COMBAT_UNDEFINEDDAMAGE"
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 14,
+                "uniqueItems": true
+              },
+              "operand_i16": {
+                "type": "integer",
+                "minimum": -32768,
+                "maximum": 32767
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "combat_members",
+              "operand_i16"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ACCUMULATE_GENERAL_ABSORB_I16"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "combat_members": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "COMBAT_AGONYDAMAGE",
+                    "COMBAT_DEATHDAMAGE",
+                    "COMBAT_DROWNDAMAGE",
+                    "COMBAT_EARTHDAMAGE",
+                    "COMBAT_ENERGYDAMAGE",
+                    "COMBAT_FIREDAMAGE",
+                    "COMBAT_HEALING",
+                    "COMBAT_HOLYDAMAGE",
+                    "COMBAT_ICEDAMAGE",
+                    "COMBAT_LIFEDRAIN",
+                    "COMBAT_MANADRAIN",
+                    "COMBAT_NEUTRALDAMAGE",
+                    "COMBAT_PHYSICALDAMAGE",
+                    "COMBAT_UNDEFINEDDAMAGE"
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 14,
+                "uniqueItems": true
+              },
+              "operand_i16": {
+                "type": "integer",
+                "minimum": -32768,
+                "maximum": 32767
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "combat_members",
+              "operand_i16"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "CONDITIONAL_SUPPRESSION_OWN_ENUM"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "condition": {
+                "enum": [
+                  "CONDITION_AGONY",
+                  "CONDITION_ATTRIBUTES",
+                  "CONDITION_BAKRAGORE",
+                  "CONDITION_BLEEDING",
+                  "CONDITION_CHANNELMUTEDTICKS",
+                  "CONDITION_CURSED",
+                  "CONDITION_DAZZLED",
+                  "CONDITION_DROWN",
+                  "CONDITION_DRUNK",
+                  "CONDITION_ENERGY",
+                  "CONDITION_EXHAUST",
+                  "CONDITION_EXHAUST_COMBAT",
+                  "CONDITION_EXHAUST_HEAL",
+                  "CONDITION_FEARED",
+                  "CONDITION_FIRE",
+                  "CONDITION_FREEZING",
+                  "CONDITION_GOSHNARTAINT",
+                  "CONDITION_GREATERHEX",
+                  "CONDITION_HASTE",
+                  "CONDITION_INFIGHT",
+                  "CONDITION_INTENSEHEX",
+                  "CONDITION_INVISIBLE",
+                  "CONDITION_LESSERHEX",
+                  "CONDITION_LIGHT",
+                  "CONDITION_MANASHIELD",
+                  "CONDITION_MENTOROTHER",
+                  "CONDITION_MUTED",
+                  "CONDITION_NONE",
+                  "CONDITION_OUTFIT",
+                  "CONDITION_PACIFIED",
+                  "CONDITION_PARALYZE",
+                  "CONDITION_POISON",
+                  "CONDITION_POWERLESS",
+                  "CONDITION_REGENERATION",
+                  "CONDITION_ROOTED",
+                  "CONDITION_SERENE",
+                  "CONDITION_SOUL",
+                  "CONDITION_SPELLCOOLDOWN",
+                  "CONDITION_SPELLGROUPCOOLDOWN",
+                  "CONDITION_YELLTICKS"
+                ]
+              },
+              "parsed_bool": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "condition",
+              "parsed_bool"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ASSIGN_ELEMENT_U16_AND_OWN_TYPE"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "own_combat": {
+                "enum": [
+                  "COMBAT_AGONYDAMAGE",
+                  "COMBAT_DEATHDAMAGE",
+                  "COMBAT_DROWNDAMAGE",
+                  "COMBAT_EARTHDAMAGE",
+                  "COMBAT_ENERGYDAMAGE",
+                  "COMBAT_FIREDAMAGE",
+                  "COMBAT_HEALING",
+                  "COMBAT_HOLYDAMAGE",
+                  "COMBAT_ICEDAMAGE",
+                  "COMBAT_LIFEDRAIN",
+                  "COMBAT_MANADRAIN",
+                  "COMBAT_NEUTRALDAMAGE",
+                  "COMBAT_PHYSICALDAMAGE",
+                  "COMBAT_UNDEFINEDDAMAGE"
+                ]
+              },
+              "value_u16": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "own_combat",
+              "value_u16"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ACCUMULATE_SPECIAL_MAGIC_I32_AND_ASSIGN_OWN_TYPE"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "own_combat": {
+                "enum": [
+                  "COMBAT_AGONYDAMAGE",
+                  "COMBAT_DEATHDAMAGE",
+                  "COMBAT_DROWNDAMAGE",
+                  "COMBAT_EARTHDAMAGE",
+                  "COMBAT_ENERGYDAMAGE",
+                  "COMBAT_FIREDAMAGE",
+                  "COMBAT_HEALING",
+                  "COMBAT_HOLYDAMAGE",
+                  "COMBAT_ICEDAMAGE",
+                  "COMBAT_LIFEDRAIN",
+                  "COMBAT_MANADRAIN",
+                  "COMBAT_NEUTRALDAMAGE",
+                  "COMBAT_PHYSICALDAMAGE",
+                  "COMBAT_UNDEFINEDDAMAGE"
+                ]
+              },
+              "operand_i32": {
+                "type": "integer",
+                "minimum": -2147483648,
+                "maximum": 2147483647
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "own_combat",
+              "operand_i32"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ACCUMULATE_MAGICSHIELD_I32"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "member": {
+                "enum": [
+                  "FLAT",
+                  "PERCENT"
+                ]
+              },
+              "operand_i32": {
+                "type": "integer",
+                "minimum": -2147483648,
+                "maximum": 2147483647
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "member",
+              "operand_i32"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ASSIGN_PERFECT_DAMAGE_I32"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "value_i32": {
+                "type": "integer",
+                "minimum": -2147483648,
+                "maximum": 2147483647
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "value_i32"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ASSIGN_PERFECT_RANGE_I16_TO_U8"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "parsed_i16": {
+                "type": "integer",
+                "minimum": -32768,
+                "maximum": 32767
+              },
+              "stored_u8": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "parsed_i16",
+              "stored_u8"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ACCUMULATE_CLEAVE_I32"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "operand_i32": {
+                "type": "integer",
+                "minimum": -2147483648,
+                "maximum": 2147483647
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "operand_i32"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ACCUMULATE_REFLECT_FLAT_I32"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "own_combat": {
+                "enum": [
+                  "COMBAT_AGONYDAMAGE",
+                  "COMBAT_DEATHDAMAGE",
+                  "COMBAT_DROWNDAMAGE",
+                  "COMBAT_EARTHDAMAGE",
+                  "COMBAT_ENERGYDAMAGE",
+                  "COMBAT_FIREDAMAGE",
+                  "COMBAT_HEALING",
+                  "COMBAT_HOLYDAMAGE",
+                  "COMBAT_ICEDAMAGE",
+                  "COMBAT_LIFEDRAIN",
+                  "COMBAT_MANADRAIN",
+                  "COMBAT_NEUTRALDAMAGE",
+                  "COMBAT_PHYSICALDAMAGE",
+                  "COMBAT_UNDEFINEDDAMAGE"
+                ]
+              },
+              "operand_i32": {
+                "type": "integer",
+                "minimum": -2147483648,
+                "maximum": 2147483647
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "own_combat",
+              "operand_i32"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "ACCUMULATE_REFLECT_ALL_I32_TO_I16"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "operand_i32": {
+                "type": "integer",
+                "minimum": -2147483648,
+                "maximum": 2147483647
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "operand_i32"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "CRYSTAL_MANTRA_ACCUMULATE_I16_FOUR_OWN_ELEMENTS"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "operand_i16": {
+                "type": "integer",
+                "minimum": -32768,
+                "maximum": 32767
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "operand_i16"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "CRYSTAL_ELEMENTAL_BOND_ASSIGN_OWN_TYPE"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "own_combat": {
+                "enum": [
+                  "COMBAT_ENERGYDAMAGE",
+                  "COMBAT_EARTHDAMAGE",
+                  "COMBAT_PHYSICALDAMAGE"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "own_combat"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "RECOGNIZED_ALIAS_NOOP_ALLOCATION_EVENT"
+              },
+              "attribute_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "handler_ordinal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535
+              },
+              "raw_attribute_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "raw_lexeme": {
+                "type": "string"
+              },
+              "key": {
+                "enum": [
+                  "magicpointspercent"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "attribute_ordinal",
+              "handler_ordinal",
+              "raw_attribute_sha256",
+              "raw_lexeme",
+              "key"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "source_cut",
+    "default_catalog_sha256",
+    "allocation",
+    "ordered_events"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "source_cut": {
+            "const": "CANARY_47DF"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "default_catalog_sha256": {
+            "const": "818dee6f0be445b39450b4e3eecc06682eea75f399c149ab9dd44b8888744c4a"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "source_cut": {
+            "const": "CRYSTAL_FF7"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "default_catalog_sha256": {
+            "const": "91a7f1c2f88aef0586fca26f2c6483ba6a5a12b9917107fa8ed886f45f1df7ad"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "source_cut": {
+            "const": "CRYSTAL_00CE"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "default_catalog_sha256": {
+            "const": "6e5e6a9819109dacf0454120829429667b6ecc450aeb9062d50252b0a9c19d74"
+          }
+        }
+      }
+    }
+  ],
+  "x-status": "PROSPECTIVE_PARAMETER_SCHEMA_ONLY_NOTFORMAL_ADMISSION",
+  "x-openholds": [
+    "Commonowncut/binding/prototype/XMLphaseheader enrollment required",
+    "ActualmaxItems/rawlexemebytes/handlerordinal from45721afterlockrelease; noinventedlimit",
+    "Crystalconditionmembers blockedonCanary byowncatalogidentity registry; schemamembershipalone notqualification",
+    "Numericfailurepath/magic_enum/allwriters/signed32accumulation closure required"
+  ]
+}

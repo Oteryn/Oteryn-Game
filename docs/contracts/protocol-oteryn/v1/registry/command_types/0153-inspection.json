@@ -1,0 +1,10 @@
+{
+  "id": 153,
+  "name": "INSPECTION",
+  "owner_decision": "INSPECT-1",
+  "capability": 132,
+  "payload_schema": "inspection-v1.md#request",
+  "result_schema": "inspection-v1.md#reply",
+  "max_payload_bytes": 128,
+  "max_result_payload_bytes": 65536
+}

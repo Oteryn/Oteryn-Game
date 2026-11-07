@@ -1,0 +1,15 @@
+# OTV2-20261002-monster-lab-arena
+
+Owner explicitly requested execution of the fast monster-completion plan and reuse of the existing test-map fragment. One writer owns `codex/monster-lab-arena-20261002`, based on draft PR #1533 head `e1d75be9eb7ced159650b52dd4130ecd77b23e3c`. Phase: AUTHORING closeout; status: completed implementation. Draft PR number and exact frozen head are recorded by the publication readback; required remote CI/review remain pending. This is an isolated offline laboratory; no production deployment or integration is selected.
+
+Owned paths: `tools/monster-lab/**`, `apps/game-server/src/monster_lab.rs`, bounded cfg(test) factories in `apps/game-server/src/foundation/runtime_actor_carrier.rs`, the cfg(test) registration in `apps/game-server/src/lib.rs`, this record and bounded evidence for the final laboratory run. Workers have disjoint file ownership. Original source/data changes and the archival packet from #1533 remain preserved.
+
+Acceptance: one shared input/cache/config; whole-population inventory with quality flags; existing native room source verified; actual native schedule/replay execution; actual authored-HP owner damage/death lifecycle; separately named approximate profiles with full schema/reference validation; one command to run all eligible profiles; partial batches cannot report full success. Explicitly distinguish component preparation from live spell effects/gameplay.
+
+The first native run identified `Seacrest Serpent`'s defensive melee schedule as unsupported. The isolated approximation removes that action while preserving attacks and stats/loot. The native scheduler contract remains intact. Encounter-dependent training profiles retain standalone behavior and explicitly disable external Encounter mechanics; canonical original profiles are not changed.
+
+The small existing room has two adjacent walkable slots and one-monster capacity. It is sufficient for per-profile schedule/component smoke tests, not large-area or whole-Encounter spatial coverage. The default carrier fixture retains 20 HP, while the new test-only factory admits each selected source key and its authored HP. Each authored HP also runs native owner damage/replay/death/despawn in the existing separate position fixture. Live owner-loop/Ability effect wiring, summon installation, per-monster loot commit and respawn remain unqualified.
+
+Final output/qualification will be recorded outside the source tree and in the PR description; GitHub head/check state governs publication. Architecture/integration work remains coordinated through #162. No paid review, merge, runtime authority, Item identity invention or Remote Desktop project mutation is selected.
+
+Local qualification: 1660/1660 native batch profiles passed (48 isolated variants), 40 Python tests, 36 governance tests, governance validator, 1300 Rust library tests passed with 2 ignored. Final fmt and all-target Clippy are recorded in the evidence packet. Independent source review found no open actionable issues. Merge/production rollout is not selected.

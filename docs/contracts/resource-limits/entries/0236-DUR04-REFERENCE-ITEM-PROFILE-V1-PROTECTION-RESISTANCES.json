@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-PROTECTION-RESISTANCES",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Typed resistance entries in one Protection record",
+  "unit": "entries",
+  "hard_maximum": 12,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 12
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check count before allocation; validate closed kinds, canonical order, uniqueness and rational parameters.",
+  "client_visible": true,
+  "boundary_tests": [
+    "12 unique typed resistances accepted",
+    "13th entry rejected before allocation",
+    "duplicate kind or zero denominator rejected"
+  ]
+}

@@ -1,0 +1,1512 @@
+{
+  "schema": 1,
+  "runtime_admission": {
+    "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+    "loaded_by_current_runtime": false,
+    "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+    "qualification": "Literal dialogue and selected owned source rules for the coordinator shared-adapter PR. Source dispatch constraints are mandatory; this is not the active Dialogue family or an executable replacement."
+  },
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission01",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:589",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission02",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:580",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/rata_mari",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:581",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/the_djinn_war_efreet/partos/supplies",
+      "npc": "oteryn:npc.partos",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "keywords": [
+        "supplies"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission01",
+          "comparison": "eq",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission01",
+          "value": 2
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "What!? I bet, Baa'leal sent you! ...",
+        "I won't tell you anything! Shove off!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/partos.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "prior_keyword_handler",
+          "status": "HELD_UNTIL_SHARED_ADAPTER",
+          "phase": "before_CALLBACK_MESSAGE_DEFAULT",
+          "matching": {
+            "engine": "lua_string_find",
+            "message": "lowercase",
+            "keyword_relation": "all_keywords_first_match_positions_nondecreasing",
+            "node_iteration": "lua_pairs",
+            "fallback": "only_when_keyword_handler_returns_false"
+          },
+          "explicit_nodes": [
+            {
+              "keywords": [
+                "prison"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/partos.lua:81"
+            },
+            {
+              "keywords": [
+                "jail"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/partos.lua:82"
+            },
+            {
+              "keywords": [
+                "cell"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/partos.lua:83"
+            }
+          ],
+          "coverage": "Explicit addKeyword/addAliasKeyword only; module nodes and callback return/effects require qualification.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:95-113",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:144-194",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_djinn_war_efreet/partos/supplies-refusal",
+      "npc": "oteryn:npc.partos",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "keywords": [
+        "supplies"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission01",
+          "comparison": "ne",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I won't talk about that."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/partos.lua:61-70"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "prior_keyword_handler",
+          "status": "HELD_UNTIL_SHARED_ADAPTER",
+          "phase": "before_CALLBACK_MESSAGE_DEFAULT",
+          "matching": {
+            "engine": "lua_string_find",
+            "message": "lowercase",
+            "keyword_relation": "all_keywords_first_match_positions_nondecreasing",
+            "node_iteration": "lua_pairs",
+            "fallback": "only_when_keyword_handler_returns_false"
+          },
+          "explicit_nodes": [
+            {
+              "keywords": [
+                "prison"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/partos.lua:81"
+            },
+            {
+              "keywords": [
+                "jail"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/partos.lua:82"
+            },
+            {
+              "keywords": [
+                "cell"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/partos.lua:83"
+            }
+          ],
+          "coverage": "Explicit addKeyword/addAliasKeyword only; module nodes and callback return/effects require qualification.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:95-113",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:144-194",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_djinn_war_efreet/shauna/job",
+      "npc": "oteryn:npc.shauna",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "keywords": [
+        "job"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission01",
+          "comparison": "eq",
+          "value": 2
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "What do you think? I am the sheriff of Carlin."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:61-66"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "prior_keyword_handler",
+          "status": "HELD_UNTIL_SHARED_ADAPTER",
+          "phase": "before_CALLBACK_MESSAGE_DEFAULT",
+          "matching": {
+            "engine": "lua_string_find",
+            "message": "lowercase",
+            "keyword_relation": "all_keywords_first_match_positions_nondecreasing",
+            "node_iteration": "lua_pairs",
+            "fallback": "only_when_keyword_handler_returns_false"
+          },
+          "explicit_nodes": [
+            {
+              "keywords": [
+                "news"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:92"
+            },
+            {
+              "keywords": [
+                "queen"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:93"
+            },
+            {
+              "keywords": [
+                "leader"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:94"
+            },
+            {
+              "keywords": [
+                "how",
+                "are",
+                "you"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:95"
+            },
+            {
+              "keywords": [
+                "sell"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:96"
+            },
+            {
+              "keywords": [
+                "yes"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:97"
+            },
+            {
+              "keywords": [
+                "army"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:98"
+            },
+            {
+              "keywords": [
+                "guard"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:99"
+            },
+            {
+              "keywords": [
+                "general"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:100"
+            },
+            {
+              "keywords": [
+                "bonecrusher"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:101"
+            },
+            {
+              "keywords": [
+                "enemies"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:102"
+            },
+            {
+              "keywords": [
+                "enemy"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:103"
+            },
+            {
+              "keywords": [
+                "criminal"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:104"
+            },
+            {
+              "keywords": [
+                "murderer"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:105"
+            },
+            {
+              "keywords": [
+                "castle"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:106"
+            },
+            {
+              "keywords": [
+                "subject"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:107"
+            },
+            {
+              "keywords": [
+                "tbi"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:108"
+            },
+            {
+              "keywords": [
+                "todd"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:109"
+            },
+            {
+              "keywords": [
+                "city"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:110"
+            },
+            {
+              "keywords": [
+                "hain"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:111"
+            },
+            {
+              "keywords": [
+                "rowenna"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:112"
+            },
+            {
+              "keywords": [
+                "weapon"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:113"
+            },
+            {
+              "keywords": [
+                "cornelia"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:114"
+            },
+            {
+              "keywords": [
+                "armor"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:115"
+            },
+            {
+              "keywords": [
+                "legola"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:116"
+            },
+            {
+              "keywords": [
+                "padreia"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:117"
+            },
+            {
+              "keywords": [
+                "god"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:118"
+            },
+            {
+              "keywords": [
+                "banor"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:119"
+            },
+            {
+              "keywords": [
+                "zathroth"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:120"
+            },
+            {
+              "keywords": [
+                "brog"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:121"
+            },
+            {
+              "keywords": [
+                "monster"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:122"
+            },
+            {
+              "keywords": [
+                "excalibug"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:123"
+            },
+            {
+              "keywords": [
+                "rebellion"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:124"
+            },
+            {
+              "keywords": [
+                "alcohol"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:125"
+            }
+          ],
+          "coverage": "Explicit addKeyword/addAliasKeyword only; module nodes and callback return/effects require qualification.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:95-113",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:144-194",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_djinn_war_efreet/shauna/water-pipe",
+      "npc": "oteryn:npc.shauna",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "keywords": [
+        "water pipe"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "job"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "guards": [],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Oh, there's a waterpipe in one of my cells? ...",
+        "I guess my last {prisoner} forgot it there."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:67-74"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "prior_keyword_handler",
+          "status": "HELD_UNTIL_SHARED_ADAPTER",
+          "phase": "before_CALLBACK_MESSAGE_DEFAULT",
+          "matching": {
+            "engine": "lua_string_find",
+            "message": "lowercase",
+            "keyword_relation": "all_keywords_first_match_positions_nondecreasing",
+            "node_iteration": "lua_pairs",
+            "fallback": "only_when_keyword_handler_returns_false"
+          },
+          "explicit_nodes": [
+            {
+              "keywords": [
+                "news"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:92"
+            },
+            {
+              "keywords": [
+                "queen"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:93"
+            },
+            {
+              "keywords": [
+                "leader"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:94"
+            },
+            {
+              "keywords": [
+                "how",
+                "are",
+                "you"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:95"
+            },
+            {
+              "keywords": [
+                "sell"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:96"
+            },
+            {
+              "keywords": [
+                "yes"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:97"
+            },
+            {
+              "keywords": [
+                "army"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:98"
+            },
+            {
+              "keywords": [
+                "guard"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:99"
+            },
+            {
+              "keywords": [
+                "general"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:100"
+            },
+            {
+              "keywords": [
+                "bonecrusher"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:101"
+            },
+            {
+              "keywords": [
+                "enemies"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:102"
+            },
+            {
+              "keywords": [
+                "enemy"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:103"
+            },
+            {
+              "keywords": [
+                "criminal"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:104"
+            },
+            {
+              "keywords": [
+                "murderer"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:105"
+            },
+            {
+              "keywords": [
+                "castle"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:106"
+            },
+            {
+              "keywords": [
+                "subject"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:107"
+            },
+            {
+              "keywords": [
+                "tbi"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:108"
+            },
+            {
+              "keywords": [
+                "todd"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:109"
+            },
+            {
+              "keywords": [
+                "city"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:110"
+            },
+            {
+              "keywords": [
+                "hain"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:111"
+            },
+            {
+              "keywords": [
+                "rowenna"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:112"
+            },
+            {
+              "keywords": [
+                "weapon"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:113"
+            },
+            {
+              "keywords": [
+                "cornelia"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:114"
+            },
+            {
+              "keywords": [
+                "armor"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:115"
+            },
+            {
+              "keywords": [
+                "legola"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:116"
+            },
+            {
+              "keywords": [
+                "padreia"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:117"
+            },
+            {
+              "keywords": [
+                "god"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:118"
+            },
+            {
+              "keywords": [
+                "banor"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:119"
+            },
+            {
+              "keywords": [
+                "zathroth"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:120"
+            },
+            {
+              "keywords": [
+                "brog"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:121"
+            },
+            {
+              "keywords": [
+                "monster"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:122"
+            },
+            {
+              "keywords": [
+                "excalibug"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:123"
+            },
+            {
+              "keywords": [
+                "rebellion"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:124"
+            },
+            {
+              "keywords": [
+                "alcohol"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:125"
+            }
+          ],
+          "coverage": "Explicit addKeyword/addAliasKeyword only; module nodes and callback return/effects require qualification.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:95-113",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:144-194",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_djinn_war_efreet/shauna/prisoner",
+      "npc": "oteryn:npc.shauna",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "keywords": [
+        "prisoner"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "job",
+            "water pipe"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "guards": [],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission01",
+          "value": 3
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "My last prisoner? Hmm. ...",
+        "I think he was some guy from Darama. Can't remember his name. ...",
+        "He was here just for one night, because he got drunk and annoyed our citizens. ...",
+        "Obviously he wasn't pleased with this place, because he headed for Thais the next day. ...",
+        "Something tells me that he won't stay out of trouble for too long."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:75-87"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "prior_keyword_handler",
+          "status": "HELD_UNTIL_SHARED_ADAPTER",
+          "phase": "before_CALLBACK_MESSAGE_DEFAULT",
+          "matching": {
+            "engine": "lua_string_find",
+            "message": "lowercase",
+            "keyword_relation": "all_keywords_first_match_positions_nondecreasing",
+            "node_iteration": "lua_pairs",
+            "fallback": "only_when_keyword_handler_returns_false"
+          },
+          "explicit_nodes": [
+            {
+              "keywords": [
+                "news"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:92"
+            },
+            {
+              "keywords": [
+                "queen"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:93"
+            },
+            {
+              "keywords": [
+                "leader"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:94"
+            },
+            {
+              "keywords": [
+                "how",
+                "are",
+                "you"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:95"
+            },
+            {
+              "keywords": [
+                "sell"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:96"
+            },
+            {
+              "keywords": [
+                "yes"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:97"
+            },
+            {
+              "keywords": [
+                "army"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:98"
+            },
+            {
+              "keywords": [
+                "guard"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:99"
+            },
+            {
+              "keywords": [
+                "general"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:100"
+            },
+            {
+              "keywords": [
+                "bonecrusher"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:101"
+            },
+            {
+              "keywords": [
+                "enemies"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:102"
+            },
+            {
+              "keywords": [
+                "enemy"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:103"
+            },
+            {
+              "keywords": [
+                "criminal"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:104"
+            },
+            {
+              "keywords": [
+                "murderer"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:105"
+            },
+            {
+              "keywords": [
+                "castle"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:106"
+            },
+            {
+              "keywords": [
+                "subject"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:107"
+            },
+            {
+              "keywords": [
+                "tbi"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:108"
+            },
+            {
+              "keywords": [
+                "todd"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:109"
+            },
+            {
+              "keywords": [
+                "city"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:110"
+            },
+            {
+              "keywords": [
+                "hain"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:111"
+            },
+            {
+              "keywords": [
+                "rowenna"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:112"
+            },
+            {
+              "keywords": [
+                "weapon"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:113"
+            },
+            {
+              "keywords": [
+                "cornelia"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:114"
+            },
+            {
+              "keywords": [
+                "armor"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:115"
+            },
+            {
+              "keywords": [
+                "legola"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:116"
+            },
+            {
+              "keywords": [
+                "padreia"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:117"
+            },
+            {
+              "keywords": [
+                "god"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:118"
+            },
+            {
+              "keywords": [
+                "banor"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:119"
+            },
+            {
+              "keywords": [
+                "zathroth"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:120"
+            },
+            {
+              "keywords": [
+                "brog"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:121"
+            },
+            {
+              "keywords": [
+                "monster"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:122"
+            },
+            {
+              "keywords": [
+                "excalibug"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:123"
+            },
+            {
+              "keywords": [
+                "rebellion"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:124"
+            },
+            {
+              "keywords": [
+                "alcohol"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:125"
+            }
+          ],
+          "coverage": "Explicit addKeyword/addAliasKeyword only; module nodes and callback return/effects require qualification.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:95-113",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:144-194",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_djinn_war_marid/rata_mari/request-report",
+      "npc": "oteryn:npc.rata_mari",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "keywords": [
+        "spy report"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission02",
+          "comparison": "ne",
+          "value": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/rata_mari",
+          "comparison": "lt",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/rata_mari",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "You have come for the report? Great! I have been working hard on it during the last months. And nobody came to pick it up. I thought everybody had forgotten about me! ...",
+        "Do you have any idea how difficult it is to hold a pen when you have claws instead of hands? ...",
+        "But - you know - now I have worked so hard on this report I somehow don't want to part with it. At least not without some decent payment. ...",
+        "All right - listen - I know Fa'hradin would not approve of this, but I can't help it. I need some cheese! I need it now! ...",
+        "And I will not give the report to you until you get me some! Meep!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rata_mari.lua:48-54",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rata_mari.lua:64-74"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "prior_keyword_handler",
+          "status": "HELD_UNTIL_SHARED_ADAPTER",
+          "phase": "before_CALLBACK_MESSAGE_DEFAULT",
+          "matching": {
+            "engine": "lua_string_find",
+            "message": "lowercase",
+            "keyword_relation": "all_keywords_first_match_positions_nondecreasing",
+            "node_iteration": "lua_pairs",
+            "fallback": "only_when_keyword_handler_returns_false"
+          },
+          "explicit_nodes": [
+            {
+              "keywords": [
+                "rat"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rata_mari.lua:98"
+            }
+          ],
+          "coverage": "Explicit addKeyword/addAliasKeyword only; module nodes and callback return/effects require qualification.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:95-113",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:144-194",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_djinn_war_marid/rata_mari/cheese-prompt",
+      "npc": "oteryn:npc.rata_mari",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "keywords": [
+        "spy report"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission02",
+          "comparison": "ne",
+          "value": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/rata_mari",
+          "comparison": "eq",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Ok, have you brought me the cheese, I've asked for?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rata_mari.lua:48-54",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rata_mari.lua:75-77"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "prior_keyword_handler",
+          "status": "HELD_UNTIL_SHARED_ADAPTER",
+          "phase": "before_CALLBACK_MESSAGE_DEFAULT",
+          "matching": {
+            "engine": "lua_string_find",
+            "message": "lowercase",
+            "keyword_relation": "all_keywords_first_match_positions_nondecreasing",
+            "node_iteration": "lua_pairs",
+            "fallback": "only_when_keyword_handler_returns_false"
+          },
+          "explicit_nodes": [
+            {
+              "keywords": [
+                "rat"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rata_mari.lua:98"
+            }
+          ],
+          "coverage": "Explicit addKeyword/addAliasKeyword only; module nodes and callback return/effects require qualification.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:95-113",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:144-194",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/the_djinn_war_marid/rata_mari/report-given",
+      "npc": "oteryn:npc.rata_mari",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "keywords": [
+        "spy report"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission02",
+          "comparison": "ne",
+          "value": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/rata_mari",
+          "comparison": "gt",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "I already gave you the report. I'm not going to write another one!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rata_mari.lua:48-54",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rata_mari.lua:78-80"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "kind": "crystal_msg_contains",
+        "phase": "CALLBACK_MESSAGE_DEFAULT",
+        "keyword_relation": "any",
+        "sources": [
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+        ]
+      },
+      "source_dispatch_constraints": [
+        {
+          "kind": "prior_keyword_handler",
+          "status": "HELD_UNTIL_SHARED_ADAPTER",
+          "phase": "before_CALLBACK_MESSAGE_DEFAULT",
+          "matching": {
+            "engine": "lua_string_find",
+            "message": "lowercase",
+            "keyword_relation": "all_keywords_first_match_positions_nondecreasing",
+            "node_iteration": "lua_pairs",
+            "fallback": "only_when_keyword_handler_returns_false"
+          },
+          "explicit_nodes": [
+            {
+              "keywords": [
+                "rat"
+              ],
+              "declaration": "keyword",
+              "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rata_mari.lua:98"
+            }
+          ],
+          "coverage": "Explicit addKeyword/addAliasKeyword only; module nodes and callback return/effects require qualification.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:95-113",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:144-194",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455"
+          ]
+        }
+      ],
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NPC opt-in/routing is prohibited in this batch."
+      }
+    }
+  ],
+  "conversations": [
+    {
+      "npc": "oteryn:npc.partos",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [],
+          "reply": "Welcome to my little kingdom, |PLAYERNAME|.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/partos.lua:85"
+          ]
+        }
+      ],
+      "farewell": "Good bye, visit me again. I will be here, promised.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/partos.lua:85",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/partos.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NpcTalkBook opt-in is prohibited in this batch."
+      }
+    },
+    {
+      "npc": "oteryn:npc.shauna",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [],
+          "reply": "Howdy, |PLAYERNAME|!",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:128"
+          ]
+        }
+      ],
+      "farewell": "LONG LIVE THE QUEEN!",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:128",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:129",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NpcTalkBook opt-in is prohibited in this batch."
+      }
+    },
+    {
+      "npc": "oteryn:npc.rata_mari",
+      "quest": "oteryn:quest.the_djinn_war_marid_faction",
+      "greetings": [
+        "hi",
+        "hello",
+        "piedpiper"
+      ],
+      "greet": [
+        {
+          "guards": [
+            {
+              "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission02",
+              "comparison": "ne",
+              "value": -1
+            }
+          ],
+          "reply": "Meep? I mean - hello! Sorry, |PLAYERNAME|... Being a {rat} has kind of grown on me.",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rata_mari.lua:103"
+          ]
+        }
+      ],
+      "farewell": "Meep!",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rata_mari.lua:103",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rata_mari.lua:104",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "runtime_left_out": {
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "reason": "New shared NpcTalkBook opt-in is prohibited in this batch."
+      }
+    }
+  ],
+  "source_documents": [
+    {
+      "name": "the_djinn_war_efreet.npc.json",
+      "authoring_readiness": {
+        "runtime_loaded": false,
+        "note": "Selected source branches only; complete dispatch/matching/greeting qualification is held."
+      },
+      "preparation": {
+        "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+        "format": "offline_authoring_with_source_dispatch_constraints",
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      }
+    },
+    {
+      "name": "the_djinn_war_marid.npc.json",
+      "authoring_readiness": {
+        "runtime_loaded": false,
+        "note": "Selected source branches only; complete dispatch/matching/greeting qualification is held."
+      },
+      "preparation": {
+        "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+        "format": "offline_authoring_with_source_dispatch_constraints",
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      }
+    }
+  ]
+}

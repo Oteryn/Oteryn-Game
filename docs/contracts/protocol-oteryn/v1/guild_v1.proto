@@ -1,0 +1,51 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+// GUILD-WIRE-1 basic server scope, capability 40, commands 40/41.
+// IDs are UUIDv7 DATA selectors, exactly 16 bytes, never authority.
+// Requests <=128 bytes; unknown/duplicate fields and mixed oneofs fail closed.
+// Fields are required on wire unless marked optional/repeated, including empty
+// title/message strings. An empty own-summary message alone means no membership.
+message GuildSelector { bytes guild = 1; }
+message GuildInvite { bytes guild = 1; string name = 2; } // canonical CharacterName selector
+message GuildTarget { bytes guild = 1; bytes character = 2; }
+message GuildFound { string name = 1; } // <=29 ASCII bytes; canonical 0022 name grammar
+message GuildSetRank { bytes guild = 1; bytes character = 2; uint32 level = 3; uint64 expected_revision = 4; }
+message GuildIntent {
+  oneof action {
+    GuildFound found = 1;
+    GuildInvite invite = 2;
+    GuildSelector join = 3;
+    GuildSelector leave = 4;
+    GuildTarget kick = 5;
+    GuildSetRank set_rank = 6;
+    GuildTarget revoke_invite = 7;
+  }
+}
+// Native GuildResult.code()+1: OK=1, NOT_ALLOWED=2, ALREADY_IN_GUILD=3,
+// GUILD_FULL=4, NOT_INVITED=5, INVITATION_LIMIT=6, GUILD_DISBANDING=7,
+// GUILD_DEADLINE_PASSED=8, NAME_TAKEN=9, ACCOUNT_HAS_POSITION=10,
+// NOT_PREMIUM=11, JUNIOR=12, STALE_REVISION=13, NAME_INVALID=14.
+// Common REJECTED has no payload. Unknown commit disconnects without sequencing.
+message GuildIntentResult { uint32 code = 1; bytes guild = 2; optional uint64 revision = 3; }
+message GuildEmpty {}
+message GuildRosterCursor { bytes guild = 1; uint32 level = 2; bytes character = 3; }
+message GuildRosterQuery { bytes guild = 1; optional GuildRosterCursor after = 2; }
+message GuildQuery {
+  oneof section { GuildEmpty own = 1; GuildRosterQuery roster = 2; GuildEmpty invitations = 3; }
+}
+// Empty own payload means no membership. Summary/title/message are members-only.
+message GuildSummary {
+  bytes guild = 1; string name = 2; uint32 state = 3; uint64 revision = 4;
+  uint32 own_rank = 5; string title = 6; string message = 7;
+  repeated string ranks = 8; // 3..20 nonempty names, each <=128 bytes
+}
+message GuildMember { bytes character = 1; string name = 2; uint32 level = 3; string title = 4; }
+message GuildRoster {
+  bytes guild = 1; uint64 revision = 2; repeated GuildMember members = 3;
+  optional GuildRosterCursor next = 4;
+} // <=100 entries <=512 bytes each, ordered by (level, Character UUID)
+message GuildInvitation { bytes guild = 1; string name = 2; uint64 expires_at_unix_ms = 3; }
+message GuildInvitations { repeated GuildInvitation entries = 1; } // <=50, Guild UUID order
+message GuildQueryResult {
+  oneof section { GuildSummary own = 1; GuildRoster roster = 2; GuildInvitations invitations = 3; }
+} // <=65536 bytes; no Account, Channel, position or other-guild private data

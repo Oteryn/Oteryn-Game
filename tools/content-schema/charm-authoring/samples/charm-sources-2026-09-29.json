@@ -1,0 +1,1068 @@
+{
+  "canary": {
+    "charms": [
+      {
+        "category": "major",
+        "chance": [
+          5,
+          10,
+          11
+        ],
+        "charm_id": 0,
+        "damage_type": "physical",
+        "kind": "offensive",
+        "name": "Wound",
+        "percent": 5,
+        "points": [
+          240,
+          360,
+          1200
+        ]
+      },
+      {
+        "category": "major",
+        "chance": [
+          5,
+          10,
+          11
+        ],
+        "charm_id": 1,
+        "damage_type": "fire",
+        "kind": "offensive",
+        "name": "Enflame",
+        "percent": 5,
+        "points": [
+          400,
+          600,
+          2000
+        ]
+      },
+      {
+        "category": "major",
+        "chance": [
+          5,
+          10,
+          11
+        ],
+        "charm_id": 2,
+        "damage_type": "earth",
+        "kind": "offensive",
+        "name": "Poison",
+        "percent": 5,
+        "points": [
+          240,
+          360,
+          1200
+        ]
+      },
+      {
+        "category": "major",
+        "chance": [
+          5,
+          10,
+          11
+        ],
+        "charm_id": 3,
+        "damage_type": "ice",
+        "kind": "offensive",
+        "name": "Freeze",
+        "percent": 5,
+        "points": [
+          320,
+          480,
+          1600
+        ]
+      },
+      {
+        "category": "major",
+        "chance": [
+          5,
+          10,
+          11
+        ],
+        "charm_id": 4,
+        "damage_type": "energy",
+        "kind": "offensive",
+        "name": "Zap",
+        "percent": 5,
+        "points": [
+          320,
+          480,
+          1600
+        ]
+      },
+      {
+        "category": "major",
+        "chance": [
+          5,
+          10,
+          11
+        ],
+        "charm_id": 5,
+        "damage_type": "death",
+        "kind": "offensive",
+        "name": "Curse",
+        "percent": 5,
+        "points": [
+          360,
+          540,
+          1800
+        ]
+      },
+      {
+        "category": "minor",
+        "chance": [
+          6,
+          9,
+          12
+        ],
+        "charm_id": 6,
+        "damage_type": null,
+        "kind": "offensive",
+        "name": "Cripple",
+        "percent": null,
+        "points": [
+          100,
+          150,
+          225
+        ]
+      },
+      {
+        "category": "major",
+        "chance": [
+          5,
+          10,
+          11
+        ],
+        "charm_id": 7,
+        "damage_type": "physical",
+        "kind": "defensive",
+        "name": "Parry",
+        "percent": null,
+        "points": [
+          400,
+          600,
+          2000
+        ]
+      },
+      {
+        "category": "major",
+        "chance": [
+          5,
+          10,
+          11
+        ],
+        "charm_id": 8,
+        "damage_type": null,
+        "kind": "defensive",
+        "name": "Dodge",
+        "percent": null,
+        "points": [
+          240,
+          360,
+          1200
+        ]
+      },
+      {
+        "category": "minor",
+        "chance": [
+          6,
+          9,
+          12
+        ],
+        "charm_id": 9,
+        "damage_type": null,
+        "kind": "defensive",
+        "name": "Adrenaline Burst",
+        "percent": null,
+        "points": [
+          100,
+          150,
+          225
+        ]
+      },
+      {
+        "category": "minor",
+        "chance": [
+          6,
+          9,
+          12
+        ],
+        "charm_id": 10,
+        "damage_type": null,
+        "kind": "defensive",
+        "name": "Numb",
+        "percent": null,
+        "points": [
+          100,
+          150,
+          225
+        ]
+      },
+      {
+        "category": "minor",
+        "chance": [
+          6,
+          9,
+          12
+        ],
+        "charm_id": 11,
+        "damage_type": null,
+        "kind": "defensive",
+        "name": "Cleanse",
+        "percent": null,
+        "points": [
+          100,
+          150,
+          225
+        ]
+      },
+      {
+        "category": "minor",
+        "chance": [
+          6,
+          9,
+          12
+        ],
+        "charm_id": 12,
+        "damage_type": null,
+        "kind": "passive",
+        "name": "Bless",
+        "percent": 10,
+        "points": [
+          100,
+          150,
+          225
+        ]
+      },
+      {
+        "category": "minor",
+        "chance": [
+          60,
+          90,
+          120
+        ],
+        "charm_id": 13,
+        "damage_type": null,
+        "kind": "passive",
+        "name": "Scavenge",
+        "percent": null,
+        "points": [
+          100,
+          150,
+          225
+        ]
+      },
+      {
+        "category": "minor",
+        "chance": [
+          6,
+          9,
+          12
+        ],
+        "charm_id": 14,
+        "damage_type": null,
+        "kind": "passive",
+        "name": "Gut",
+        "percent": null,
+        "points": [
+          100,
+          150,
+          225
+        ]
+      },
+      {
+        "category": "major",
+        "chance": [
+          4,
+          8,
+          9
+        ],
+        "charm_id": 15,
+        "damage_type": null,
+        "kind": "passive",
+        "name": "Low Blow",
+        "percent": null,
+        "points": [
+          800,
+          1200,
+          4000
+        ]
+      },
+      {
+        "category": "major",
+        "chance": [
+          5,
+          10,
+          11
+        ],
+        "charm_id": 16,
+        "damage_type": "holy",
+        "kind": "offensive",
+        "name": "Divine Wrath",
+        "percent": 5,
+        "points": [
+          600,
+          900,
+          3000
+        ]
+      },
+      {
+        "category": "minor",
+        "chance": [
+          1.6,
+          2.4,
+          3.2
+        ],
+        "charm_id": 17,
+        "damage_type": null,
+        "kind": "passive",
+        "name": "Vampiric Embrace",
+        "percent": null,
+        "points": [
+          100,
+          150,
+          225
+        ]
+      },
+      {
+        "category": "minor",
+        "chance": [
+          0.8,
+          1.2,
+          1.6
+        ],
+        "charm_id": 18,
+        "damage_type": null,
+        "kind": "passive",
+        "name": "Void's Call",
+        "percent": null,
+        "points": [
+          100,
+          150,
+          225
+        ]
+      },
+      {
+        "category": "major",
+        "chance": [
+          20,
+          40,
+          44
+        ],
+        "charm_id": 19,
+        "damage_type": null,
+        "kind": "passive",
+        "name": "Savage Blow",
+        "percent": null,
+        "points": [
+          800,
+          1200,
+          4000
+        ]
+      },
+      {
+        "category": "minor",
+        "chance": [
+          30,
+          45,
+          60
+        ],
+        "charm_id": 20,
+        "damage_type": null,
+        "kind": "passive",
+        "name": "Fatal Hold",
+        "percent": null,
+        "points": [
+          100,
+          150,
+          225
+        ]
+      },
+      {
+        "category": "minor",
+        "chance": [
+          20,
+          30,
+          40
+        ],
+        "charm_id": 21,
+        "damage_type": null,
+        "kind": "passive",
+        "name": "Void Inversion",
+        "percent": null,
+        "points": [
+          100,
+          150,
+          225
+        ]
+      },
+      {
+        "category": "major",
+        "chance": [
+          10,
+          20,
+          22
+        ],
+        "charm_id": 22,
+        "damage_type": "neutral",
+        "kind": "offensive",
+        "name": "Carnage",
+        "percent": 15,
+        "points": [
+          600,
+          900,
+          3000
+        ]
+      },
+      {
+        "category": "major",
+        "chance": [
+          5,
+          10,
+          11
+        ],
+        "charm_id": 23,
+        "damage_type": "neutral",
+        "kind": "offensive",
+        "name": "Overpower",
+        "percent": 5,
+        "points": [
+          600,
+          900,
+          3000
+        ]
+      },
+      {
+        "category": "major",
+        "chance": [
+          5,
+          10,
+          11
+        ],
+        "charm_id": 24,
+        "damage_type": "neutral",
+        "kind": "offensive",
+        "name": "Overflux",
+        "percent": 2.5,
+        "points": [
+          600,
+          900,
+          3000
+        ]
+      }
+    ],
+    "file_sha256": "19350ba311a04797705d0e82f608d61080924ac95f8b0d592ae93fe0bb8debd6",
+    "path": "data/scripts/systems/bestiary_charms.lua",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+  },
+  "schema": "OTERYN_CHARM_SOURCE_FACTS/v1",
+  "tibiawiki": {
+    "api": "https://tibia.fandom.com/api.php",
+    "pages": [
+      {
+        "confirmed_phrases": [
+          "after getting hit",
+          "move faster for 10 seconds"
+        ],
+        "cost": [
+          100,
+          150,
+          225
+        ],
+        "implemented": "11.50.6055",
+        "name": "Adrenaline Burst",
+        "pageid": 87950,
+        "revid": 1084310,
+        "stage_values": [
+          6,
+          9,
+          12
+        ],
+        "timestamp": "2024-11-26T21:46:30Z",
+        "title": "Adrenaline Burst",
+        "type": "minor",
+        "wikitext_sha256": "7b3025db9f2f946b992eaa195dc5ec7ae27fc83c201ce7c2207a3fbe24034062"
+      },
+      {
+        "confirmed_phrases": [
+          "reduces skill and xp loss by"
+        ],
+        "cost": [
+          100,
+          150,
+          225
+        ],
+        "implemented": "11.50.6055",
+        "name": "Bless",
+        "pageid": 87953,
+        "revid": 1084311,
+        "stage_values": [
+          6,
+          9,
+          12
+        ],
+        "timestamp": "2024-11-26T21:48:35Z",
+        "title": "Bless",
+        "type": "minor",
+        "wikitext_sha256": "1ce4821126b6f129de1a24aaa9171fb295ac936382191b12a3533ff9f49a39df"
+      },
+      {
+        "confirmed_phrases": [
+          "killing a monster",
+          "physical damage equal to 15% of its maximum health to all monsters",
+          "damage is limited up to 6 times the character level",
+          "the damage from this charm is reduced by creatures' armor"
+        ],
+        "cost": [
+          600,
+          900,
+          3000
+        ],
+        "implemented": "14.10.4e0c16",
+        "name": "Carnage",
+        "pageid": 107639,
+        "revid": 1188155,
+        "stage_values": [
+          10,
+          20,
+          22
+        ],
+        "timestamp": "2026-06-01T21:06:35Z",
+        "title": "Carnage",
+        "type": "major",
+        "wikitext_sha256": "c1558913fdbf68a7cdf82ff4ed2be76500e15e5dfcd6a61640c6c22146066d2c"
+      },
+      {
+        "confirmed_phrases": [
+          "after you get hit",
+          "removes one random active negative"
+        ],
+        "cost": [
+          100,
+          150,
+          225
+        ],
+        "implemented": "11.50.6055",
+        "name": "Cleanse",
+        "pageid": 87952,
+        "revid": 1203554,
+        "stage_values": [
+          6,
+          9,
+          12
+        ],
+        "timestamp": "2026-08-25T21:03:44Z",
+        "title": "Cleanse",
+        "type": "minor",
+        "wikitext_sha256": "24f46bfe026c0216bae2d271d34a48e45077b89fab308e0cb1ebfc4d8b2b6541"
+      },
+      {
+        "confirmed_phrases": [
+          "paralyses it for 10 seconds"
+        ],
+        "cost": [
+          100,
+          150,
+          225
+        ],
+        "implemented": "11.50.6055",
+        "name": "Cripple",
+        "pageid": 87946,
+        "revid": 1084315,
+        "stage_values": [
+          6,
+          9,
+          12
+        ],
+        "timestamp": "2024-11-26T21:57:05Z",
+        "title": "Cripple",
+        "type": "minor",
+        "wikitext_sha256": "f39a8bdebfa0ca2b1ebe9ce9f50794edc49df46bc1926a3f873d6d99b90c2ce6"
+      },
+      {
+        "confirmed_phrases": [
+          "5% of its maximum hit points as death damage",
+          "damage is limited to 2 times the character's level",
+          "applied on top of the creature's elemental resistances"
+        ],
+        "cost": [
+          360,
+          540,
+          1800
+        ],
+        "implemented": "11.50.6055",
+        "name": "Curse",
+        "pageid": 87945,
+        "revid": 1084560,
+        "stage_values": [
+          5,
+          10,
+          11
+        ],
+        "timestamp": "2024-11-30T13:48:54Z",
+        "title": "Curse (Charm)",
+        "type": "major",
+        "wikitext_sha256": "3b2a9ac701d45ce5a6405371db308fe78d5993e9f9cfc7b85d330b4304e6989d"
+      },
+      {
+        "confirmed_phrases": [
+          "5% of its maximum hit points as holy damage",
+          "damage is limited to 2 times the character's level",
+          "applied on top of the creature's elemental resistances"
+        ],
+        "cost": [
+          600,
+          900,
+          3000
+        ],
+        "implemented": "12.40.9997",
+        "name": "Divine Wrath",
+        "pageid": 91372,
+        "revid": 1088511,
+        "stage_values": [
+          5,
+          10,
+          11
+        ],
+        "timestamp": "2025-01-16T10:14:55Z",
+        "title": "Divine Wrath",
+        "type": "major",
+        "wikitext_sha256": "3aee96d11fdcc174bc988d698bf8d4df51b36259d4bfe0b069df8ee862aa4e3e"
+      },
+      {
+        "confirmed_phrases": [
+          "dodges an attack",
+          "taking no damage"
+        ],
+        "cost": [
+          240,
+          360,
+          1200
+        ],
+        "implemented": "11.50.6055",
+        "name": "Dodge",
+        "pageid": 87948,
+        "revid": 1083914,
+        "stage_values": [
+          5,
+          10,
+          11
+        ],
+        "timestamp": "2024-11-25T19:45:11Z",
+        "title": "Dodge",
+        "type": "major",
+        "wikitext_sha256": "9260e62de221085d4592b0d1f804ea4a4c4270379398a18d353c8817926d87a3"
+      },
+      {
+        "confirmed_phrases": [
+          "5% of its maximum hit points as fire damage",
+          "damage is limited to 2 times the character's level",
+          "applied on top of the creature's elemental resistances"
+        ],
+        "cost": [
+          400,
+          600,
+          2000
+        ],
+        "implemented": "11.50.6055",
+        "name": "Enflame",
+        "pageid": 87942,
+        "revid": 1084562,
+        "stage_values": [
+          5,
+          10,
+          11
+        ],
+        "timestamp": "2024-11-30T13:49:12Z",
+        "title": "Enflame",
+        "type": "major",
+        "wikitext_sha256": "6790717a478da7a7ef82ae748cda50fffab9f86e61383877e92f068ad0bac47c"
+      },
+      {
+        "confirmed_phrases": [
+          "prevent creatures from fleeing",
+          "for 30 seconds"
+        ],
+        "cost": [
+          100,
+          150,
+          225
+        ],
+        "implemented": "14.10.4e0c16",
+        "name": "Fatal Hold",
+        "pageid": 107646,
+        "revid": 1202419,
+        "stage_values": [
+          30,
+          45,
+          60
+        ],
+        "timestamp": "2026-08-19T22:32:19Z",
+        "title": "Fatal Hold",
+        "type": "minor",
+        "wikitext_sha256": "4f8b773aefa036da2ff9e06d89ea482ddd5f6b51848e1e7af66eb0ae29341c92"
+      },
+      {
+        "confirmed_phrases": [
+          "5% of its maximum hit points as ice damage",
+          "damage is limited to 2 times the character's level",
+          "applied on top of the creature's elemental resistances"
+        ],
+        "cost": [
+          320,
+          480,
+          1600
+        ],
+        "implemented": "11.50.6055",
+        "name": "Freeze",
+        "pageid": 87943,
+        "revid": 1084557,
+        "stage_values": [
+          5,
+          10,
+          11
+        ],
+        "timestamp": "2024-11-30T13:45:10Z",
+        "title": "Freeze",
+        "type": "major",
+        "wikitext_sha256": "03761a588fbf58e70f3a1aa9be44e0d254e0ac7c13374d1cc9b7ee8ff71992b7"
+      },
+      {
+        "confirmed_phrases": [
+          "more creature products"
+        ],
+        "cost": [
+          100,
+          150,
+          225
+        ],
+        "implemented": "11.50.6055",
+        "name": "Gut",
+        "pageid": 87955,
+        "revid": 1084324,
+        "stage_values": [
+          6,
+          9,
+          12
+        ],
+        "timestamp": "2024-11-26T22:08:36Z",
+        "title": "Gut",
+        "type": "minor",
+        "wikitext_sha256": "b15aa57062cd454bc31bff4fc35b006d233cb71d53928e0b0df116f7f45324aa"
+      },
+      {
+        "confirmed_phrases": [
+          "critical hit chance to attacks with critical hit weapons"
+        ],
+        "cost": [
+          800,
+          1200,
+          4000
+        ],
+        "implemented": "11.50.6055",
+        "name": "Low Blow",
+        "pageid": 87956,
+        "revid": 1197516,
+        "stage_values": [
+          4,
+          8,
+          9
+        ],
+        "timestamp": "2026-07-23T18:20:29Z",
+        "title": "Low Blow",
+        "type": "major",
+        "wikitext_sha256": "881e850025716e8538ae5ce361cb3545eb9d4d701f6841a0347f8c0a768cb35f"
+      },
+      {
+        "confirmed_phrases": [
+          "after its attack",
+          "paralyses the creature for 10 seconds"
+        ],
+        "cost": [
+          100,
+          150,
+          225
+        ],
+        "implemented": "11.50.6055",
+        "name": "Numb",
+        "pageid": 87951,
+        "revid": 1118193,
+        "stage_values": [
+          6,
+          9,
+          12
+        ],
+        "timestamp": "2025-07-29T16:03:03Z",
+        "title": "Numb",
+        "type": "minor",
+        "wikitext_sha256": "a9ed899058488ec6de226c10fe7159d450610a8ed2d2b37bab50db490b52cafd"
+      },
+      {
+        "confirmed_phrases": [
+          "physical damage equal to 2.5% of your maximum mana",
+          "limited up to 8% of the creature's maximum health",
+          "it is neutral and will damage the creature regardless of its resistances"
+        ],
+        "cost": [
+          600,
+          900,
+          3000
+        ],
+        "implemented": "14.10.4e0c16",
+        "name": "Overflux",
+        "pageid": 107641,
+        "revid": 1091164,
+        "stage_values": [
+          5,
+          10,
+          11
+        ],
+        "timestamp": "2025-02-18T13:30:18Z",
+        "title": "Overflux",
+        "type": "major",
+        "wikitext_sha256": "af28c5c333e6600670f78e969afddac87e0f4f4481079f9a5a9acbe9ab0bbdb5"
+      },
+      {
+        "confirmed_phrases": [
+          "physical damage equal to 5% of your maximum health",
+          "limited up to 8% of the creature's maximum health",
+          "it is neutral and will damage the creature regardless of its resistances"
+        ],
+        "cost": [
+          600,
+          900,
+          3000
+        ],
+        "implemented": "14.10.4e0c16",
+        "name": "Overpower",
+        "pageid": 107643,
+        "revid": 1091163,
+        "stage_values": [
+          5,
+          10,
+          11
+        ],
+        "timestamp": "2025-02-18T13:29:38Z",
+        "title": "Overpower",
+        "type": "major",
+        "wikitext_sha256": "e065ac8032bf59d651969fa7ff1fb08d30a034f9bf4a937282f98707d765c895"
+      },
+      {
+        "confirmed_phrases": [
+          "reflected to the aggressor",
+          "it is neutral and will damage the creature regardless of its resistances",
+          "it will, however, be affected by the creature's armor"
+        ],
+        "cost": [
+          400,
+          600,
+          2000
+        ],
+        "implemented": "11.50.6055",
+        "name": "Parry",
+        "pageid": 87947,
+        "revid": 1084043,
+        "stage_values": [
+          5,
+          10,
+          11
+        ],
+        "timestamp": "2024-11-25T22:37:06Z",
+        "title": "Parry",
+        "type": "major",
+        "wikitext_sha256": "b06277e176e6f529be47f25353122bc44c4ce159cd09d15365536ed85ba5317e"
+      },
+      {
+        "confirmed_phrases": [
+          "5% of its maximum hit points as earth damage",
+          "damage is limited to 2 times the character's level",
+          "applied on top of the creature's elemental resistances"
+        ],
+        "cost": [
+          240,
+          360,
+          1200
+        ],
+        "implemented": "11.50.6055",
+        "name": "Poison",
+        "pageid": 31700,
+        "revid": 1084564,
+        "stage_values": [
+          5,
+          10,
+          11
+        ],
+        "timestamp": "2024-11-30T13:49:23Z",
+        "title": "Poison",
+        "type": "major",
+        "wikitext_sha256": "2305adecb785124737453fee6a1b37d3e71e3d5fedc9790eae46add0c6693f25"
+      },
+      {
+        "confirmed_phrases": [
+          "critical extra damage to attacks with critical hit weapons"
+        ],
+        "cost": [
+          800,
+          1200,
+          4000
+        ],
+        "implemented": "14.10.4e0c16",
+        "name": "Savage Blow",
+        "pageid": 107645,
+        "revid": 1084050,
+        "stage_values": [
+          20,
+          40,
+          44
+        ],
+        "timestamp": "2024-11-25T22:41:14Z",
+        "title": "Savage Blow",
+        "type": "major",
+        "wikitext_sha256": "37475adbc9fbc83ddaf5dae3c4d33b62ee63068d7487dd170802a437e8348866"
+      },
+      {
+        "confirmed_phrases": [
+          "skin/dust a skinnable/dustable creature"
+        ],
+        "cost": [
+          100,
+          150,
+          225
+        ],
+        "implemented": "11.50.6055",
+        "name": "Scavenge",
+        "pageid": 87954,
+        "revid": 1197613,
+        "stage_values": [
+          60,
+          90,
+          120
+        ],
+        "timestamp": "2026-07-24T21:37:35Z",
+        "title": "Scavenge",
+        "type": "minor",
+        "wikitext_sha256": "9c3b5b940f9ffd30331566b064d7793be223b2d893ecbb35d1536e533b699caf"
+      },
+      {
+        "confirmed_phrases": [
+          "life leech to attacks"
+        ],
+        "cost": [
+          100,
+          150,
+          225
+        ],
+        "implemented": "12.40.9997",
+        "name": "Vampiric Embrace",
+        "pageid": 91373,
+        "revid": 1089899,
+        "stage_values": [
+          1.6,
+          2.4,
+          3.2
+        ],
+        "timestamp": "2025-02-01T16:36:52Z",
+        "title": "Vampiric Embrace",
+        "type": "minor",
+        "wikitext_sha256": "7d3090349e798be0cb8cb424b582913b9ca94611b0737d242b6a169410c5fff0"
+      },
+      {
+        "confirmed_phrases": [
+          "gain mana instead of losing it when taking mana drain damage"
+        ],
+        "cost": [
+          100,
+          150,
+          225
+        ],
+        "implemented": "14.10.4e0c16",
+        "name": "Void Inversion",
+        "pageid": 107647,
+        "revid": 1084322,
+        "stage_values": [
+          20,
+          30,
+          40
+        ],
+        "timestamp": "2024-11-26T22:06:46Z",
+        "title": "Void Inversion",
+        "type": "minor",
+        "wikitext_sha256": "7fd104ae8608fa726b57e8fd5eee32f17f657eebdbed12be05d8baf95592353f"
+      },
+      {
+        "confirmed_phrases": [
+          "mana leech to attacks"
+        ],
+        "cost": [
+          100,
+          150,
+          225
+        ],
+        "implemented": "12.40.9997",
+        "name": "Void's Call",
+        "pageid": 91374,
+        "revid": 1084323,
+        "stage_values": [
+          0.8,
+          1.2,
+          1.6
+        ],
+        "timestamp": "2024-11-26T22:07:13Z",
+        "title": "Void's Call",
+        "type": "minor",
+        "wikitext_sha256": "e84ba5f0ef02a7655154df67185f5471354ae22d89bf1c688c8925f07c8b0c26"
+      },
+      {
+        "confirmed_phrases": [
+          "5% of its maximum hit points as physical damage",
+          "damage is limited to 2 times the character's level",
+          "applied on top of the creature's elemental resistances"
+        ],
+        "cost": [
+          240,
+          360,
+          1200
+        ],
+        "implemented": "11.50.6055",
+        "name": "Wound",
+        "pageid": 87941,
+        "revid": 1084565,
+        "stage_values": [
+          5,
+          10,
+          11
+        ],
+        "timestamp": "2024-11-30T13:49:31Z",
+        "title": "Wound",
+        "type": "major",
+        "wikitext_sha256": "26a693ae4f4189cb1c61d8f7cc45cc4960ef0de859d593a5cc53056ca50ce43d"
+      },
+      {
+        "confirmed_phrases": [
+          "5% of its maximum hit points as energy damage",
+          "damage is limited to 2 times the character's level",
+          "applied on top of the creature's elemental resistances"
+        ],
+        "cost": [
+          320,
+          480,
+          1600
+        ],
+        "implemented": "11.50.6055",
+        "name": "Zap",
+        "pageid": 87944,
+        "revid": 1084566,
+        "stage_values": [
+          5,
+          10,
+          11
+        ],
+        "timestamp": "2024-11-30T13:49:38Z",
+        "title": "Zap",
+        "type": "major",
+        "wikitext_sha256": "00fa1b0d9a01fc9b5fb3caf89d05b731d70cbf27464354f6e3ed133c8df318b6"
+      }
+    ]
+  }
+}

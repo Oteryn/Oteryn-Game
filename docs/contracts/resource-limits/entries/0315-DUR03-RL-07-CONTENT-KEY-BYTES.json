@@ -1,0 +1,24 @@
+{
+  "id": "DUR03-RL-07-CONTENT-KEY-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+  "resource": "One content key or revision string in the event type 2 payload: production_key, revision_ref, map revision, ground content revision, loot table key and revision, loot purpose key, provenance content revision, ruleset and SIM revisions",
+  "unit": "UTF-8 bytes",
+  "hard_maximum": 512,
+  "configurable_range": {
+    "minimum": 512,
+    "maximum": 512
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Validate each field length before retaining or copying; oversize input is rejected, never truncated.",
+  "client_visible": false,
+  "boundary_tests": [
+    "512-byte content key accepted",
+    "513 bytes rejected, not truncated"
+  ],
+  "consumers": [
+    "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+    "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: checked before encode allocation and on decode; migration 0010 column CHECKs mirror the bound)",
+    "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+  ],
+  "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Aligned with DUR04-FIRST-PROD-KEY-BYTES and DUR04-FIRST-PROD-STRING-BYTES."
+}

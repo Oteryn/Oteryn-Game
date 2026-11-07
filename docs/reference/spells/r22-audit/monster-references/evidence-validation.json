@@ -1,0 +1,33 @@
+{
+  "actual_import_slots_sha256": "c48ed14a11f8e65cf824312c5e5c230a135b1ffb21b38510b24a48a24bd11818",
+  "actual_import_profiles_sha256": "01e48fb6f17ee9559536ffd58d4fd7ca41517f55938ae076d9e76e8949c5edfd",
+  "field_comparisons_sha256": "d1edf36d058b6d6fc07f3407eb9d6e317a248cbf08d95eebc06bfce79e72cad9",
+  "public_facts_sha256": "833c7ff3e44388bde6e8f89d4a22b35d10fd6684b0128962b05799e993c81989",
+  "status": "PASS",
+  "actual_import_slots_verified": 20640,
+  "reference_union_slots": 20640,
+  "unique_monster_page_records": 1820,
+  "page_statuses": {
+    "attack_facts_read": 1692,
+    "unavailable": 128
+  },
+  "source_parameters_and_hash_mismatches": 0,
+  "missing_actual_slots": 0,
+  "incorrect_complete_verification_claims": 0,
+  "canonical_spelling_aliases": [
+    {
+      "source_name": "Pinata Dragon",
+      "wiki_title": "Piñata Dragon",
+      "url": "https://tibiopedia.pl/monsters/Pinata_Dragon"
+    }
+  ],
+  "checks": [
+    "All actual import slots joined",
+    "Every source parameter preserved exactly",
+    "Every source whole-file SHA matched",
+    "No complete-all-field claim while external values unknown",
+    "Unique slot keys and unique fact species",
+    "All successful pages normal HTTP200 with SHA256",
+    "Page title identity equals source identity modulo diacritics"
+  ]
+}

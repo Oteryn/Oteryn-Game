@@ -1,0 +1,293 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:area-authoring:candidate:1",
+  "title": "Area authoring schema candidate v1 — structural validation",
+  "description": "CANDIDATE authoring schema for static Area definitions (content/world/areas/): the 15.30 client map areas as regions, subregions and cities, and the hometown temple of a city. Not a WorldProject/v2 contract or runtime activation; Area shapes (the client overlay images) are not modelled. Semantic rules live in validate_areas.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "areas"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_AREA_AUTHORING/candidate-1"
+    },
+    "areas": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Area"
+      },
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "Area": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "name",
+        "kind",
+        "parent",
+        "position",
+        "hometown",
+        "provenance"
+      ],
+      "properties": {
+        "identity": {
+          "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/identity"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Display name from the official client, whitespace-normalized (the verbatim form is provenance.source_name).",
+          "pattern": "^\\S+( \\S+)*$"
+        },
+        "kind": {
+          "enum": [
+            "region",
+            "subregion",
+            "city"
+          ],
+          "description": "region: a client top-level area (flag 1). subregion: a client area listed by a region (flag 2). city: a subregion that is a town (a House town or a hometown)."
+        },
+        "parent": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/AreaRef"
+            }
+          ],
+          "description": "The region that lists this area; null for a region."
+        },
+        "position": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/Position"
+            }
+          ],
+          "description": "Official client area position (map field 5), present for 158 of 465 areas; presentation only."
+        },
+        "hometown": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/Hometown"
+            }
+          ],
+          "description": "Set on the cities a Character can choose as home; null otherwise."
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      }
+    },
+    "Hometown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "temple"
+      ],
+      "properties": {
+        "temple": {
+          "$ref": "#/$defs/Position",
+          "description": "The temple tile a Character is placed on at login without a position and after death. The client does not ship it; the evidence is in provenance.hometown."
+        }
+      }
+    },
+    "AreaRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "family",
+        "key"
+      ],
+      "properties": {
+        "family": {
+          "const": "Area"
+        },
+        "key": {
+          "type": "string",
+          "pattern": "^oteryn:content\\.area\\.region\\.[a-z0-9_]+$",
+          "maxLength": 512
+        }
+      }
+    },
+    "Position": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "properties": {
+        "x": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "z": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15
+        }
+      }
+    },
+    "Provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "client_version",
+        "source_id",
+        "source_name",
+        "source_record_sha256",
+        "hometown"
+      ],
+      "properties": {
+        "source": {
+          "const": "cipsoft/map_area"
+        },
+        "client_version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+$"
+        },
+        "source_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Verbatim official name."
+        },
+        "source_record_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "hometown": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/HometownProvenance"
+            }
+          ]
+        }
+      }
+    },
+    "HometownProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "engine_town",
+        "wiki_temple_npc",
+        "owner_check"
+      ],
+      "properties": {
+        "engine_town": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "engine",
+            "revision",
+            "town_id",
+            "name",
+            "temple"
+          ],
+          "description": "The engine town the temple comes from (CrystalServer world.otbm towns); not an Oteryn identity.",
+          "properties": {
+            "engine": {
+              "const": "crystalserver"
+            },
+            "revision": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "town_id": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "temple": {
+              "$ref": "#/$defs/Position"
+            }
+          }
+        },
+        "wiki_temple_npc": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "title",
+                "pageid",
+                "revid",
+                "position",
+                "distance"
+              ],
+              "description": "The TibiaWiki Cleric/Healer NPC nearest to the temple: cross-check only. distance is the Chebyshev distance on the same floor, null on another floor.",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "pageid": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "revid": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "position": {
+                  "$ref": "#/$defs/Position"
+                },
+                "distance": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                }
+              }
+            }
+          ]
+        },
+        "owner_check": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "An owner in-game observation that overrides the engine value, verbatim with its date."
+        }
+      }
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

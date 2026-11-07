@@ -1,0 +1,1 @@
+{"scope": "Encounter schema and semantic validator, synthetic fixtures only; no Lua or Oteryn runtime executed", "checks": 194, "passed": 194, "failed": 0}

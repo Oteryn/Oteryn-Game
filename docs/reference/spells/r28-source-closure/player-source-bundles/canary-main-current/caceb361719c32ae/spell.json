@@ -1,0 +1,77 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/canary-main-current/caceb361719c32ae/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/caceb361719c32ae",
+      "revision": "source-player-r28"
+    },
+    "name": "firebomb rune",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_fire_bomb_rune"
+    },
+    "pz_locks_caster": true,
+    "reference_rune_item_id": 3192,
+    "reference_spell_id": 17,
+    "requirements": {
+      "learning_required": false,
+      "level": 27,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "none",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": false
+      },
+      "charges": 2,
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/source/canary-main-current/3192",
+        "revision": "source-player-r28"
+      },
+      "magic_level": 5
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    }
+  }
+}

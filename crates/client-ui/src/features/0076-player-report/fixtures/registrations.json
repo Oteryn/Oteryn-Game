@@ -1,0 +1,33 @@
+[
+  {
+    "mechanic": "0076-player-report",
+    "kind": "handlers",
+    "id": "0076-player-report-command",
+    "status": "supported",
+    "commands": [
+      93
+    ],
+    "direction": "client_to_server",
+    "capability": 76,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "This panel has no persistent client settings."
+    }
+  },
+  {
+    "mechanic": "0076-player-report",
+    "kind": "keybindings",
+    "id": "0076-player-report-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+R",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0076-player-report",
+    "kind": "panels",
+    "id": "0076-player-report-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  }
+]

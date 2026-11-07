@@ -1,0 +1,21 @@
+{
+  "id": "FND02-ORDINARY-REPEATED-ENTRIES",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "Foundation protobuf repeated field without a smaller named limit",
+  "unit": "entries",
+  "hard_maximum": 4096,
+  "configurable_range": {
+    "minimum": 4096,
+    "maximum": 4096
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bound collection growth before materializing peer-controlled repeated values.",
+  "client_visible": true,
+  "boundary_tests": [
+    "4,096 accepted where semantically valid",
+    "4,097 rejected before unbounded collection growth"
+  ],
+  "consumers": [
+    "all foundation protobuf decoders"
+  ]
+}

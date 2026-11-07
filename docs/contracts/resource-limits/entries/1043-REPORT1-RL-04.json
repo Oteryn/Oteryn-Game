@@ -1,0 +1,18 @@
+{
+  "id": "REPORT1-RL-04",
+  "owner_contract": "protocol-oteryn/v1/player_report_v1.proto",
+  "resource": "Player report token refill interval",
+  "unit": "seconds",
+  "hard_maximum": 60,
+  "configurable_range": {
+    "minimum": 60,
+    "maximum": 60
+  },
+  "failure_category": "REJECTED",
+  "allocation_impact": "Refill is computed from the durable bucket time at write; no timer or scheduler is retained.",
+  "client_visible": true,
+  "boundary_tests": [
+    "player_report_postgres_real_wire_queue_replay_refusals_and_fences"
+  ],
+  "notes": "One token per interval up to REPORT1-RL-03."
+}

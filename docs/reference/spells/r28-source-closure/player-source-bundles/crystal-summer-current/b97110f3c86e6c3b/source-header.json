@@ -1,0 +1,73 @@
+{
+  "spell": {
+    "base_power": 40,
+    "carrier": "instant",
+    "cooldown_ms": 1000,
+    "costs": {
+      "mana": 20
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "name": "Light Healing",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_light_healing"
+    },
+    "reference_spell_id": 1,
+    "requirements": {
+      "level": 8,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "exalted_monk",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "exura"
+  }
+}

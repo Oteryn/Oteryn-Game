@@ -1,0 +1,2196 @@
+{
+  "pairs": [
+    {
+      "file": {
+        "graph": "canary:interaction/bigfoot_burden/actions_rewards",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/bigfoot_burden/actions_rewards.lua",
+        "sha256": "f239889e8451bec1dd966a28390423dab1525295c2a35768baf7ed0f5a34c968",
+        "git_blob_sha1": "54c53b65ee9adde138a914cb75db848cbb85823d",
+        "read_method": "normal HTTPS raw.githubusercontent.com",
+        "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/bigfoot_burden/actions_rewards.lua"
+      },
+      "old": {
+        "identity": {
+          "key": "canary:interaction/bigfoot_burden/actions_rewards",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "uid(3147, 3148, 3149, 3150)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "object": {
+                    "role": "source",
+                    "field": "unique_id",
+                    "op": "==",
+                    "value": 3147
+                  },
+                  "negate": false
+                },
+                "then": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "quest_stage": {
+                            "progress": "canary:quest-progress/quest/u9_60/bigfoots_burden/warzone_status",
+                            "op": "==",
+                            "value": 4
+                          },
+                          "negate": false
+                        },
+                        "then": [
+                          {
+                            "owner": "Quest",
+                            "request": "set_progress",
+                            "progress": "canary:quest-progress/quest/u9_60/bigfoots_burden/warzone_status",
+                            "to": 5
+                          },
+                          {
+                            "owner": "Item",
+                            "request": "hand_out",
+                            "item": {
+                              "family": "Item",
+                              "key": "canary:item/3020",
+                              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                            },
+                            "count": 1
+                          },
+                          {
+                            "owner": "Presentation",
+                            "effect": "message",
+                            "authoritative": false,
+                            "source_line": 50
+                          }
+                        ]
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "owner": "Presentation",
+                        "effect": "message",
+                        "authoritative": false,
+                        "source_line": 52
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "when": {
+                  "unresolved": {
+                    "line": 54
+                  }
+                },
+                "then": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 56
+                          }
+                        },
+                        "then": []
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 60
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 61
+                              }
+                            ]
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "branch": [
+                              {
+                                "when": {
+                                  "unresolved": {
+                                    "line": 66
+                                  }
+                                },
+                                "then": [
+                                  {
+                                    "owner": "Presentation",
+                                    "effect": "message",
+                                    "authoritative": false,
+                                    "source_line": 67
+                                  }
+                                ]
+                              }
+                            ],
+                            "otherwise": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "value_source_line": 75,
+                                "repeated": true
+                              },
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "value_source_line": 78,
+                                "repeated": true
+                              },
+                              {
+                                "branch": [
+                                  {
+                                    "when": {
+                                      "unresolved": {
+                                        "line": 82
+                                      }
+                                    },
+                                    "then": [
+                                      {
+                                        "branch": [
+                                          {
+                                            "when": {
+                                              "unresolved": {
+                                                "line": 83
+                                              }
+                                            },
+                                            "then": [
+                                              {
+                                                "owner": "Item",
+                                                "request": "hand_out",
+                                                "item": {
+                                                  "family": "Item",
+                                                  "key": "canary:item/15276",
+                                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                                },
+                                                "count": 1
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "owner": "Achievement",
+                                "request": "grant",
+                                "value_source_line": 89
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [
+          {
+            "line": 71,
+            "reason": "loop with its own control flow"
+          },
+          {
+            "line": 88,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 90,
+            "reason": "statement outside the transcribed vocabulary"
+          }
+        ]
+      },
+      "new": {
+        "identity": {
+          "key": "canary:interaction/bigfoot_burden/actions_rewards",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "uid(3147, 3148, 3149, 3150)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "object": {
+                    "role": "source",
+                    "field": "unique_id",
+                    "op": "==",
+                    "value": 3147
+                  },
+                  "negate": false
+                },
+                "then": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "quest_stage": {
+                            "progress": "canary:quest-progress/quest/u9_60/bigfoots_burden/warzone_status",
+                            "op": "==",
+                            "value": 4
+                          },
+                          "negate": false
+                        },
+                        "then": [
+                          {
+                            "owner": "Quest",
+                            "request": "set_progress",
+                            "progress": "canary:quest-progress/quest/u9_60/bigfoots_burden/warzone_status",
+                            "to": 5
+                          },
+                          {
+                            "owner": "Item",
+                            "request": "hand_out",
+                            "item": {
+                              "family": "Item",
+                              "key": "canary:item/3020",
+                              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                            },
+                            "count": 1
+                          },
+                          {
+                            "owner": "Presentation",
+                            "effect": "message",
+                            "authoritative": false,
+                            "source_line": 50
+                          }
+                        ]
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "owner": "Presentation",
+                        "effect": "message",
+                        "authoritative": false,
+                        "source_line": 52
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "when": {
+                  "any": [
+                    {
+                      "object": {
+                        "role": "source",
+                        "field": "unique_id",
+                        "op": "==",
+                        "value": 3148
+                      },
+                      "negate": false
+                    },
+                    {
+                      "object": {
+                        "role": "source",
+                        "field": "unique_id",
+                        "op": "==",
+                        "value": 3149
+                      },
+                      "negate": false
+                    },
+                    {
+                      "object": {
+                        "role": "source",
+                        "field": "unique_id",
+                        "op": "==",
+                        "value": 3150
+                      },
+                      "negate": false
+                    }
+                  ]
+                },
+                "then": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 56
+                          }
+                        },
+                        "then": []
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 60
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 61
+                              }
+                            ]
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "branch": [
+                              {
+                                "when": {
+                                  "unresolved": {
+                                    "line": 66
+                                  }
+                                },
+                                "then": [
+                                  {
+                                    "owner": "Presentation",
+                                    "effect": "message",
+                                    "authoritative": false,
+                                    "source_line": 67
+                                  }
+                                ]
+                              }
+                            ],
+                            "otherwise": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "value_source_line": 75,
+                                "repeated": true
+                              },
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "value_source_line": 78,
+                                "repeated": true
+                              },
+                              {
+                                "branch": [
+                                  {
+                                    "when": {
+                                      "unresolved": {
+                                        "line": 82
+                                      }
+                                    },
+                                    "then": [
+                                      {
+                                        "branch": [
+                                          {
+                                            "when": {
+                                              "unresolved": {
+                                                "line": 83
+                                              }
+                                            },
+                                            "then": [
+                                              {
+                                                "owner": "Item",
+                                                "request": "hand_out",
+                                                "item": {
+                                                  "family": "Item",
+                                                  "key": "canary:item/15276",
+                                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                                },
+                                                "count": 1
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "owner": "Achievement",
+                                "request": "grant",
+                                "value_source_line": 89
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [
+          {
+            "line": 71,
+            "reason": "loop with its own control flow"
+          },
+          {
+            "line": 88,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 90,
+            "reason": "statement outside the transcribed vocabulary"
+          }
+        ]
+      },
+      "changed": [
+        {
+          "pointer": "/rules/0/branch/1/when",
+          "old": {
+            "unresolved": {
+              "line": 54
+            }
+          },
+          "new": {
+            "any": [
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 3148
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 3149
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 3150
+                },
+                "negate": false
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "file": {
+        "graph": "canary:interaction/bigfoot_burden/actions_rewards",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/bigfoot_burden/actions_rewards.lua",
+        "sha256": "f239889e8451bec1dd966a28390423dab1525295c2a35768baf7ed0f5a34c968",
+        "git_blob_sha1": "54c53b65ee9adde138a914cb75db848cbb85823d",
+        "read_method": "normal HTTPS raw.githubusercontent.com",
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/bigfoot_burden/actions_rewards.lua"
+      },
+      "old": {
+        "identity": {
+          "key": "crystalserver:interaction/bigfoot_burden/actions_rewards",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "uid(3147, 3148, 3149, 3150)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "object": {
+                    "role": "source",
+                    "field": "unique_id",
+                    "op": "==",
+                    "value": 3147
+                  },
+                  "negate": false
+                },
+                "then": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "quest_stage": {
+                            "progress": "canary:quest-progress/quest/u9_60/bigfoots_burden/warzone_status",
+                            "op": "==",
+                            "value": 4
+                          },
+                          "negate": false
+                        },
+                        "then": [
+                          {
+                            "owner": "Quest",
+                            "request": "set_progress",
+                            "progress": "canary:quest-progress/quest/u9_60/bigfoots_burden/warzone_status",
+                            "to": 5
+                          },
+                          {
+                            "owner": "Item",
+                            "request": "hand_out",
+                            "item": {
+                              "family": "Item",
+                              "key": "crystalserver:item/3020",
+                              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                            },
+                            "count": 1
+                          },
+                          {
+                            "owner": "Presentation",
+                            "effect": "message",
+                            "authoritative": false,
+                            "source_line": 50
+                          }
+                        ]
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "owner": "Presentation",
+                        "effect": "message",
+                        "authoritative": false,
+                        "source_line": 52
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "when": {
+                  "unresolved": {
+                    "line": 54
+                  }
+                },
+                "then": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 56
+                          }
+                        },
+                        "then": []
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 60
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 61
+                              }
+                            ]
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "branch": [
+                              {
+                                "when": {
+                                  "unresolved": {
+                                    "line": 66
+                                  }
+                                },
+                                "then": [
+                                  {
+                                    "owner": "Presentation",
+                                    "effect": "message",
+                                    "authoritative": false,
+                                    "source_line": 67
+                                  }
+                                ]
+                              }
+                            ],
+                            "otherwise": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "value_source_line": 75,
+                                "repeated": true
+                              },
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "value_source_line": 78,
+                                "repeated": true
+                              },
+                              {
+                                "branch": [
+                                  {
+                                    "when": {
+                                      "unresolved": {
+                                        "line": 82
+                                      }
+                                    },
+                                    "then": [
+                                      {
+                                        "branch": [
+                                          {
+                                            "when": {
+                                              "unresolved": {
+                                                "line": 83
+                                              }
+                                            },
+                                            "then": [
+                                              {
+                                                "owner": "Item",
+                                                "request": "hand_out",
+                                                "item": {
+                                                  "family": "Item",
+                                                  "key": "crystalserver:item/15276",
+                                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                                },
+                                                "count": 1
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "owner": "Achievement",
+                                "request": "grant",
+                                "value_source_line": 89
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [
+          {
+            "line": 71,
+            "reason": "loop with its own control flow"
+          },
+          {
+            "line": 88,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 90,
+            "reason": "statement outside the transcribed vocabulary"
+          }
+        ]
+      },
+      "new": {
+        "identity": {
+          "key": "crystalserver:interaction/bigfoot_burden/actions_rewards",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "uid(3147, 3148, 3149, 3150)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "object": {
+                    "role": "source",
+                    "field": "unique_id",
+                    "op": "==",
+                    "value": 3147
+                  },
+                  "negate": false
+                },
+                "then": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "quest_stage": {
+                            "progress": "canary:quest-progress/quest/u9_60/bigfoots_burden/warzone_status",
+                            "op": "==",
+                            "value": 4
+                          },
+                          "negate": false
+                        },
+                        "then": [
+                          {
+                            "owner": "Quest",
+                            "request": "set_progress",
+                            "progress": "canary:quest-progress/quest/u9_60/bigfoots_burden/warzone_status",
+                            "to": 5
+                          },
+                          {
+                            "owner": "Item",
+                            "request": "hand_out",
+                            "item": {
+                              "family": "Item",
+                              "key": "crystalserver:item/3020",
+                              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                            },
+                            "count": 1
+                          },
+                          {
+                            "owner": "Presentation",
+                            "effect": "message",
+                            "authoritative": false,
+                            "source_line": 50
+                          }
+                        ]
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "owner": "Presentation",
+                        "effect": "message",
+                        "authoritative": false,
+                        "source_line": 52
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "when": {
+                  "any": [
+                    {
+                      "object": {
+                        "role": "source",
+                        "field": "unique_id",
+                        "op": "==",
+                        "value": 3148
+                      },
+                      "negate": false
+                    },
+                    {
+                      "object": {
+                        "role": "source",
+                        "field": "unique_id",
+                        "op": "==",
+                        "value": 3149
+                      },
+                      "negate": false
+                    },
+                    {
+                      "object": {
+                        "role": "source",
+                        "field": "unique_id",
+                        "op": "==",
+                        "value": 3150
+                      },
+                      "negate": false
+                    }
+                  ]
+                },
+                "then": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 56
+                          }
+                        },
+                        "then": []
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 60
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 61
+                              }
+                            ]
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "branch": [
+                              {
+                                "when": {
+                                  "unresolved": {
+                                    "line": 66
+                                  }
+                                },
+                                "then": [
+                                  {
+                                    "owner": "Presentation",
+                                    "effect": "message",
+                                    "authoritative": false,
+                                    "source_line": 67
+                                  }
+                                ]
+                              }
+                            ],
+                            "otherwise": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "value_source_line": 75,
+                                "repeated": true
+                              },
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "value_source_line": 78,
+                                "repeated": true
+                              },
+                              {
+                                "branch": [
+                                  {
+                                    "when": {
+                                      "unresolved": {
+                                        "line": 82
+                                      }
+                                    },
+                                    "then": [
+                                      {
+                                        "branch": [
+                                          {
+                                            "when": {
+                                              "unresolved": {
+                                                "line": 83
+                                              }
+                                            },
+                                            "then": [
+                                              {
+                                                "owner": "Item",
+                                                "request": "hand_out",
+                                                "item": {
+                                                  "family": "Item",
+                                                  "key": "crystalserver:item/15276",
+                                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                                },
+                                                "count": 1
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "owner": "Achievement",
+                                "request": "grant",
+                                "value_source_line": 89
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [
+          {
+            "line": 71,
+            "reason": "loop with its own control flow"
+          },
+          {
+            "line": 88,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 90,
+            "reason": "statement outside the transcribed vocabulary"
+          }
+        ]
+      },
+      "changed": [
+        {
+          "pointer": "/rules/0/branch/1/when",
+          "old": {
+            "unresolved": {
+              "line": 54
+            }
+          },
+          "new": {
+            "any": [
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 3148
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 3149
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 3150
+                },
+                "negate": false
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "file": {
+        "graph": "canary:interaction/the_pits_of_inferno_quest/actions_levers",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/the_pits_of_inferno_quest/actions_levers.lua",
+        "sha256": "d55989f4158166b1a3225950c641da9b429b60f8d40c74f50189e14e9881ccb2",
+        "git_blob_sha1": "97e7bbb2280a08d8ff7b4e9f49696c11a9d2c866",
+        "read_method": "normal HTTPS raw.githubusercontent.com",
+        "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/the_pits_of_inferno_quest/actions_levers.lua"
+      },
+      "old": {
+        "identity": {
+          "key": "canary:interaction/the_pits_of_inferno_quest/actions_levers",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "uid(value)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "object": {
+                    "role": "source",
+                    "field": "item_type",
+                    "op": "~=",
+                    "item": {
+                      "family": "Item",
+                      "key": "canary:item/2772",
+                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                    }
+                  },
+                  "negate": false
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 49
+                      }
+                    },
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 51
+                              }
+                            },
+                            "then": []
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "owner": "Quest",
+                            "request": "set_world_state",
+                            "key": "canary:world-state/global_storage_pits_of_inferno_levers",
+                            "value_source_line": 55
+                          },
+                          {
+                            "owner": "Presentation",
+                            "effect": "message",
+                            "authoritative": false,
+                            "source_line": 56
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "when": {
+                      "object": {
+                        "role": "source",
+                        "field": "unique_id",
+                        "op": "==",
+                        "value": 2065
+                      },
+                      "negate": false
+                    },
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 58
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 59
+                              }
+                            ]
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "owner": "WorldObject",
+                            "operation": "REMOVE",
+                            "value_source_line": 67,
+                            "repeated": true
+                          },
+                          {
+                            "owner": "Presentation",
+                            "effect": "magic_effect",
+                            "authoritative": false,
+                            "repeated": true
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "owner": "WorldObject",
+                "operation": "TRANSFORM",
+                "value_source_line": 75
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [
+          {
+            "line": 63,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 65,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 64,
+            "reason": "loop with its own control flow"
+          },
+          {
+            "line": 72,
+            "reason": "delayed callback (addEvent) without a scheduler owner"
+          },
+          {
+            "line": 76,
+            "reason": "delayed callback (addEvent) without a scheduler owner"
+          }
+        ]
+      },
+      "new": {
+        "identity": {
+          "key": "canary:interaction/the_pits_of_inferno_quest/actions_levers",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "uid(value)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "object": {
+                    "role": "source",
+                    "field": "item_type",
+                    "op": "~=",
+                    "item": {
+                      "family": "Item",
+                      "key": "canary:item/2772",
+                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                    }
+                  },
+                  "negate": false
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "any": [
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2050
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2051
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2052
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2053
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2054
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2055
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2056
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2057
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2058
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2059
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2060
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2061
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2062
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2063
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2064
+                          },
+                          "negate": false
+                        }
+                      ]
+                    },
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 51
+                              }
+                            },
+                            "then": []
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "owner": "Quest",
+                            "request": "set_world_state",
+                            "key": "canary:world-state/global_storage_pits_of_inferno_levers",
+                            "value_source_line": 55
+                          },
+                          {
+                            "owner": "Presentation",
+                            "effect": "message",
+                            "authoritative": false,
+                            "source_line": 56
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "when": {
+                      "object": {
+                        "role": "source",
+                        "field": "unique_id",
+                        "op": "==",
+                        "value": 2065
+                      },
+                      "negate": false
+                    },
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 58
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 59
+                              }
+                            ]
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "owner": "WorldObject",
+                            "operation": "REMOVE",
+                            "value_source_line": 67,
+                            "repeated": true
+                          },
+                          {
+                            "owner": "Presentation",
+                            "effect": "magic_effect",
+                            "authoritative": false,
+                            "repeated": true
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "owner": "WorldObject",
+                "operation": "TRANSFORM",
+                "value_source_line": 75
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [
+          {
+            "line": 63,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 65,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 64,
+            "reason": "loop with its own control flow"
+          },
+          {
+            "line": 72,
+            "reason": "delayed callback (addEvent) without a scheduler owner"
+          },
+          {
+            "line": 76,
+            "reason": "delayed callback (addEvent) without a scheduler owner"
+          }
+        ]
+      },
+      "changed": [
+        {
+          "pointer": "/rules/0/otherwise/0/branch/0/when",
+          "old": {
+            "unresolved": {
+              "line": 49
+            }
+          },
+          "new": {
+            "any": [
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2050
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2051
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2052
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2053
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2054
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2055
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2056
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2057
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2058
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2059
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2060
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2061
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2062
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2063
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2064
+                },
+                "negate": false
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "file": {
+        "graph": "canary:interaction/the_pits_of_inferno_quest/actions_levers",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/the_pits_of_inferno_quest/actions_levers.lua",
+        "sha256": "d55989f4158166b1a3225950c641da9b429b60f8d40c74f50189e14e9881ccb2",
+        "git_blob_sha1": "97e7bbb2280a08d8ff7b4e9f49696c11a9d2c866",
+        "read_method": "normal HTTPS raw.githubusercontent.com",
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/the_pits_of_inferno_quest/actions_levers.lua"
+      },
+      "old": {
+        "identity": {
+          "key": "crystalserver:interaction/the_pits_of_inferno_quest/actions_levers",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "uid(value)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "object": {
+                    "role": "source",
+                    "field": "item_type",
+                    "op": "~=",
+                    "item": {
+                      "family": "Item",
+                      "key": "crystalserver:item/2772",
+                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                    }
+                  },
+                  "negate": false
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 49
+                      }
+                    },
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 51
+                              }
+                            },
+                            "then": []
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "owner": "Quest",
+                            "request": "set_world_state",
+                            "key": "crystalserver:world-state/global_storage_pits_of_inferno_levers",
+                            "value_source_line": 55
+                          },
+                          {
+                            "owner": "Presentation",
+                            "effect": "message",
+                            "authoritative": false,
+                            "source_line": 56
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "when": {
+                      "object": {
+                        "role": "source",
+                        "field": "unique_id",
+                        "op": "==",
+                        "value": 2065
+                      },
+                      "negate": false
+                    },
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 58
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 59
+                              }
+                            ]
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "owner": "WorldObject",
+                            "operation": "REMOVE",
+                            "value_source_line": 67,
+                            "repeated": true
+                          },
+                          {
+                            "owner": "Presentation",
+                            "effect": "magic_effect",
+                            "authoritative": false,
+                            "repeated": true
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "owner": "WorldObject",
+                "operation": "TRANSFORM",
+                "value_source_line": 75
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [
+          {
+            "line": 63,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 65,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 64,
+            "reason": "loop with its own control flow"
+          },
+          {
+            "line": 72,
+            "reason": "delayed callback (addEvent) without a scheduler owner"
+          },
+          {
+            "line": 76,
+            "reason": "delayed callback (addEvent) without a scheduler owner"
+          }
+        ]
+      },
+      "new": {
+        "identity": {
+          "key": "crystalserver:interaction/the_pits_of_inferno_quest/actions_levers",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "uid(value)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "object": {
+                    "role": "source",
+                    "field": "item_type",
+                    "op": "~=",
+                    "item": {
+                      "family": "Item",
+                      "key": "crystalserver:item/2772",
+                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                    }
+                  },
+                  "negate": false
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "any": [
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2050
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2051
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2052
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2053
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2054
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2055
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2056
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2057
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2058
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2059
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2060
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2061
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2062
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2063
+                          },
+                          "negate": false
+                        },
+                        {
+                          "object": {
+                            "role": "source",
+                            "field": "unique_id",
+                            "op": "==",
+                            "value": 2064
+                          },
+                          "negate": false
+                        }
+                      ]
+                    },
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 51
+                              }
+                            },
+                            "then": []
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "owner": "Quest",
+                            "request": "set_world_state",
+                            "key": "crystalserver:world-state/global_storage_pits_of_inferno_levers",
+                            "value_source_line": 55
+                          },
+                          {
+                            "owner": "Presentation",
+                            "effect": "message",
+                            "authoritative": false,
+                            "source_line": 56
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "when": {
+                      "object": {
+                        "role": "source",
+                        "field": "unique_id",
+                        "op": "==",
+                        "value": 2065
+                      },
+                      "negate": false
+                    },
+                    "then": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 58
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 59
+                              }
+                            ]
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "owner": "WorldObject",
+                            "operation": "REMOVE",
+                            "value_source_line": 67,
+                            "repeated": true
+                          },
+                          {
+                            "owner": "Presentation",
+                            "effect": "magic_effect",
+                            "authoritative": false,
+                            "repeated": true
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "owner": "WorldObject",
+                "operation": "TRANSFORM",
+                "value_source_line": 75
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [
+          {
+            "line": 63,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 65,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 64,
+            "reason": "loop with its own control flow"
+          },
+          {
+            "line": 72,
+            "reason": "delayed callback (addEvent) without a scheduler owner"
+          },
+          {
+            "line": 76,
+            "reason": "delayed callback (addEvent) without a scheduler owner"
+          }
+        ]
+      },
+      "changed": [
+        {
+          "pointer": "/rules/0/otherwise/0/branch/0/when",
+          "old": {
+            "unresolved": {
+              "line": 49
+            }
+          },
+          "new": {
+            "any": [
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2050
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2051
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2052
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2053
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2054
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2055
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2056
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2057
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2058
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2059
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2060
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2061
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2062
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2063
+                },
+                "negate": false
+              },
+              {
+                "object": {
+                  "role": "source",
+                  "field": "unique_id",
+                  "op": "==",
+                  "value": 2064
+                },
+                "negate": false
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

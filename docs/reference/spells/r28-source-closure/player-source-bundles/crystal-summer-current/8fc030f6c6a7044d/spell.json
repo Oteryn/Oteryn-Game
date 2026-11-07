@@ -1,0 +1,66 @@
+{
+  "spell": {
+    "base_power": 130,
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 175,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/8fc030f6c6a7044d/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/8fc030f6c6a7044d",
+      "revision": "source-player-r28"
+    },
+    "name": "Divine Barrage",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_divine_caldera"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 302,
+    "requirements": {
+      "learning_required": false,
+      "level": 70,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "cast_at_position": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "none",
+      "range_tiles": 7,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exori dir san"
+  }
+}

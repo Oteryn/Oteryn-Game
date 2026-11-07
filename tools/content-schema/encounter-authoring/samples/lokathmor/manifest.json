@@ -1,0 +1,76 @@
+{
+  "encounter": "canary:encounter/lokathmor",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "lokathmorDeath": [
+      "canary:creature/lokathmor"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/the_secret_library/bosses/lokathmor.lua",
+      "blob_sha1": "8ef0357fca8845553981338284145f8384d7d71e"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/the_secret_library/dark_knowledge.lua",
+      "blob_sha1": "2a063417f265097cd29803cfc2da835f238e0524"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_lokathmor.lua",
+      "blob_sha1": "b01ec8373c5e7522d0e727486b088655b5e0b168"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Lokathmor is the lokathmor participant; its file registers lokathmorDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Dark Knowledge is the dark_knowledge participant.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        3,
+        5,
+        6,
+        7,
+        10
+      ],
+      "status": "approved_omission",
+      "resolution": "The event is registered only by Lokathmor, but its body acts only on a creature named \"dark knowledge\", so Lokathmor's death has no effect; Dark Knowledge (corpse 0) registers no event, so in Canary no parchment ever appears."
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        8,
+        9
+      ],
+      "status": "mapped",
+      "resolution": "The reference-date wiki (Dark Knowledge: \"When it dies, it becomes a Parchment of Dark Knowledge\"; The Secret Library Quest/Spoiler: its parchment is used on the writing desk to free Lokathmor) decides (D25): parchment 28488 (actions_parchment.lua) on the death position of a dark knowledge.",
+      "destination": "/encounter/rules/0"
+    }
+  ],
+  "outcome_evidence": []
+}

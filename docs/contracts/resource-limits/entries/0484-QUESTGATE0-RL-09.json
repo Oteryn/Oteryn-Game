@@ -1,0 +1,22 @@
+{
+  "id": "QUESTGATE0-RL-09",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+  "resource": "QUEST_LOG_QUERY commands (command type 22) of one GameSession",
+  "unit": "commands per second",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 2,
+    "maximum": 2
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A per-GameSession sliding window of at most 2 query instants in any 1 s, carried in the session continuity so a reconnect, resume or transfer never resets it. Each query reads the session copy once and sends one whole-domain delta of at most 180,268 bytes, so a session costs at most 2 projections and about 360 KB of deltas per second. An over-rate query has no effect and gets CommandStatus REJECTED with an empty payload.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=2: two queries in one second are served",
+    "max+1=3: a third query in the same second is REJECTED without effect, also after a reconnect; one a second later is served"
+  ],
+  "consumers": [
+    "apps/game-server/src/gameplay_transport/quest_log.rs QueryWindow"
+  ],
+  "notes": "QUEST-GATE-0 \u00a77 and \u00a79 (the BAGS-WIRE-1b per-GameSession window); test: gameplay_transport::connection::quest_log::tests::queries_are_limited_to_2_per_second_per_game_session. Registered by OTV2-20261004-quest-log-wire-1."
+}

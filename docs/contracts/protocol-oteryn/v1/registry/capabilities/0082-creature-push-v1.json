@@ -1,0 +1,15 @@
+{
+  "id": 82,
+  "name": "CREATURE_PUSH_V1",
+  "owner_decision": "PARITY-PUSH-ROUTE-1 owner slice 2026-10-25",
+  "owner": "Channel Movement owner; one adjacent creature or player push per accepted command; ordinary step and creature relocation admission",
+  "requires": [
+    6,
+    13
+  ],
+  "command_types": [
+    98
+  ],
+  "state_domains": [],
+  "offered": true
+}

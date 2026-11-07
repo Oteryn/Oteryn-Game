@@ -1,0 +1,29 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/cult_believer",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/cult_enforcer",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/cult_scholar",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/32414",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/32415",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

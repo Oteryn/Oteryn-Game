@@ -1,0 +1,97 @@
+{
+  "active_content_modified": false,
+  "global_complete": false,
+  "inputs": [
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/price-parity-pending.json",
+      "sha256": "92c62eee5d2ed63174b4a205c6bec0ffa51e2d15fa91e7abf2bf42dcb9c2aea2"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/dialogue-qualification-summary.json",
+      "sha256": "5e15c394deba1c25efde4d4a6ac82d904c98d0d57da1c78f2da9c780c5123eba"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/inventory-repaired.json",
+      "sha256": "2d9b5b9dcc38b44f1796a7bd613c22b23056f3315beb5afa9e359f7a80987400"
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/source-recovery-index.json",
+      "sha256": "33cb0d9eac9fe535ba9cc82d7228be4c732178dd600549e166229f43a223e5c3"
+    }
+  ],
+  "payloads": [
+    {
+      "bytes": 12519,
+      "file": "presentation-source-check.json",
+      "sha256": "ff1a36b84a4ec66185919a51013a210e9f3c9527010322830e9f21ea51ab1d0c"
+    },
+    {
+      "bytes": 73826,
+      "file": "price-comparison.json",
+      "sha256": "c5bc43a0c88825d36243cb580f06364f9c25a4c8234209a54385858dcd10aa66"
+    },
+    {
+      "bytes": 1035870,
+      "file": "rendered-price-facts.json",
+      "sha256": "42da30144581c467fab178bdeba0d0d4beb790209ce73ad71fc8d0ef48424a73"
+    },
+    {
+      "bytes": 2831,
+      "file": "source-recovery-r6-summary.json",
+      "sha256": "dc7f2f2aaa0c64bfe713d1778c92431c1080f0ad1ef5b01fa5d48ae295ae567d"
+    },
+    {
+      "bytes": 1100349,
+      "file": "source-recovery-r6.json",
+      "sha256": "00bdc469e59f46cbc6d49df331b32c48b50fce34b6c07b43ab93974dccb6aac1"
+    },
+    {
+      "bytes": 1618,
+      "file": "tibiopedia-search-status.json",
+      "sha256": "be7d6154eace4944e06493cf90e3902d636b35070e0be8af61c41da66d775faf"
+    },
+    {
+      "bytes": 440,
+      "file": "validation.json",
+      "sha256": "025904c21c75b540524adb3f4fe286ea5c332858f021c75a71e7a985d1ac72c7"
+    },
+    {
+      "bytes": 306256,
+      "file": "vendor-price-comparison.json",
+      "sha256": "303f73dd2b8326b494924aed996ee9d255f61122dda3c5c6a80bfe88e420c041"
+    },
+    {
+      "bytes": 82121,
+      "file": "vendor-source-index.json",
+      "sha256": "547f645a2029a9f45797860e9f81865698dd4fc0ad642afbfb49002078d66b82"
+    }
+  ],
+  "predecessor": "42aeacc910065f6a6d918d8fba9040bcc62412f7",
+  "runtime_qualified": false,
+  "schema": "NPC_SOURCE_AUDIT_R6_MANIFEST/v1",
+  "scope": "NPC_REFERENCE_SOURCE_CONTINUATION_AND_RENDERED_PRICE_TOOLING",
+  "source_capture_limits": [
+    "Tavily UTF-8 extracted Markdown, not original HTTP/wikitext bytes.",
+    "Rendered oldid is a hint, transcluded templates may change independently.",
+    "Raw capture artifacts retained outside repository; wiki prose not redistributed in committed packet.",
+    "Indexed Tibiopedia excerpts are discovery evidence only."
+  ],
+  "source_pins": {
+    "canary": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "crystal_summer_update": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  },
+  "tools": [
+    {
+      "path": "tools/content-schema/npc-authoring/rendered_wiki_prices.py",
+      "sha256": "72174f2393c40d1760fc89351bf9c098c7323098a9deda5be3a1ec572ce35e5a"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/test_rendered_wiki_prices.py",
+      "sha256": "8403baa310b99de25a2007131e67a80ba824a2fc45bc6e9238ac4a0e801108a9"
+    },
+    {
+      "path": "tools/content-schema/npc-authoring/samples/rendered-price-parser-fixtures.json",
+      "sha256": "7b47b3916bce7ecebde23e47facb53535eee472df88d92bb38efbef44e322d52"
+    }
+  ]
+}

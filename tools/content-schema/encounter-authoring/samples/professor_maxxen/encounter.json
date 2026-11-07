@@ -1,0 +1,78 @@
+{
+  "identity": {
+    "key": "canary:encounter/professor_maxxen",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Hero of Rathleton: Professor Maxxen",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "professor_maxxen",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/professor_maxxen",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "exit_teleporter",
+      "kind": "point",
+      "description": "Boss-room teleporter; Canary (33718, 32047, 15).",
+      "location": {
+        "x": 33718,
+        "y": 32047,
+        "floor": 15
+      }
+    },
+    {
+      "key": "next_destination",
+      "kind": "point",
+      "description": "Destination while open; Canary (33707, 32107, 15).",
+      "location": {
+        "x": 33707,
+        "y": 32107,
+        "floor": 15
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "professor_maxxen_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "professor_maxxen"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/1949",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/22761",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_teleporter",
+          "destination": "next_destination",
+          "revert_after_ms": 120000
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

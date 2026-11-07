@@ -1,0 +1,67 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 880,
+      "soul": 5
+    },
+    "execution": {
+      "conjure": {
+        "count": 2,
+        "reagent": {
+          "family": "Item",
+          "key": "candidate:item/source/canary-main-current/3147",
+          "revision": "source-player-r28"
+        },
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/source/canary-main-current/3149",
+          "revision": "source-player-r28"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/ee3ffffa2b368447",
+      "revision": "source-player-r28"
+    },
+    "name": "Energy Bomb Rune",
+    "needs_weapon": false,
+    "pz_locks_caster": false,
+    "requirements": {
+      "learning_required": false,
+      "level": 37,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "adevo mas vis"
+  }
+}

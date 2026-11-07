@@ -1,0 +1,6 @@
+----------------------------------------------------------------------
+Ran 255 tests in 66.945s
+
+OK
+PASS imbuement static import: 24 families, 72 tiers; runtime admission blocked
+PASS imbuement static import: 24 families, 72 tiers; runtime admission blocked

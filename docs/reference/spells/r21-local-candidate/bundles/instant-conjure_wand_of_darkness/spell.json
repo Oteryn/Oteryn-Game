@@ -1,0 +1,60 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/conjure_wand_of_darkness",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Conjure Wand of Darkness",
+    "carrier": "instant",
+    "words": "exevo gran mort",
+    "reference_spell_id": 92,
+    "library_text": "Through this wand sorcerers are able to execute deadly attacks. It channels the darkness of this world and hurls it towards its wielder's foes in a relentless barrage of death.",
+    "requirements": {
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 41,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 250,
+      "soul": 0
+    },
+    "cooldown_ms": 1800000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_conjure_wand_of_darkness"
+    },
+    "execution": {
+      "conjure": {
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/25760",
+          "revision": "spell-p2-r21"
+        },
+        "count": 1,
+        "effect_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  }
+}

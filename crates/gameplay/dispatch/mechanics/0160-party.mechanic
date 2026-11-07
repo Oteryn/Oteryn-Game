@@ -1,0 +1,10 @@
+name=party
+commands=45,46
+[route]
+routing::party::route(
+    authority,
+    &session.admitted,
+    command,
+    &mut session.party_view,
+)
+.await

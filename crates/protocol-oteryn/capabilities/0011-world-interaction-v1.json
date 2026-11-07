@@ -1,0 +1,21 @@
+{
+  "id": 11,
+  "name": "WORLD_INTERACTION_V1",
+  "constant": "world_interaction::CAPABILITY_WORLD_INTERACTION_V1",
+  "requires": [
+    15,
+    18
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    15,
+    31
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

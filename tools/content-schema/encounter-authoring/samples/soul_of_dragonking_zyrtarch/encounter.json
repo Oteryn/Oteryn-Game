@@ -1,0 +1,47 @@
+{
+  "identity": {
+    "key": "canary:encounter/soul_of_dragonking_zyrtarch",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Forgotten Knowledge: Soul of Dragonking Zyrtarch",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "soul_of_dragonking_zyrtarch",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/soul_of_dragonking_zyrtarch",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "soul_of_dragonking_zyrtarch_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "soul_of_dragonking_zyrtarch"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "soul_of_dragonking_zyrtarch_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "soul_of_dragonking_zyrtarch_defeated"
+  ]
+}

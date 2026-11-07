@@ -1,0 +1,19 @@
+{
+  "id": "AI01-ROUTE-BYTES",
+  "owner_contract": "GAME-AI-01_CREATURE_AI_SPAWN_PATHFINDING_CONTRACT_CANDIDATE.md",
+  "resource": "aggregate retained route bytes in one path proposal",
+  "unit": "bytes",
+  "hard_maximum": 4096,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 4096
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
+  "client_visible": false,
+  "boundary_tests": [
+    "hard maximum accepted",
+    "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+    "checked arithmetic overflow rejected before allocation or partial mutation"
+  ]
+}

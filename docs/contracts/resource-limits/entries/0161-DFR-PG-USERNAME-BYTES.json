@@ -1,0 +1,20 @@
+{
+  "id": "DFR-PG-USERNAME-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+  "resource": "Retained explicit PostgreSQL username/role name",
+  "unit": "UTF-8 bytes",
+  "hard_maximum": 63,
+  "configurable_range": {
+    "minimum": 63,
+    "maximum": 63
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Validate UTF-8 byte length from borrowed/already-bounded source before any retained String copy; checked aggregate configuration arithmetic and same-root I reservation must succeed before allocation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "63 UTF-8 bytes accepted when the role name is otherwise valid and all coupled retained-config checks pass",
+    "64 UTF-8 bytes rejected as UNAVAILABLE before retained allocation or authentication setup",
+    "No silent PostgreSQL identifier truncation is accepted"
+  ],
+  "notes": "First-slice product cap matches PostgreSQL 17's default max_identifier_length of 63 bytes for identifiers. A server recompiled for a larger NAMEDATALEN does not widen this Oteryn profile."
+}

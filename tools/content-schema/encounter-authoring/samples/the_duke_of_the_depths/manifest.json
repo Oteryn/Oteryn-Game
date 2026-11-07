@@ -1,0 +1,82 @@
+{
+  "encounter": "canary:encounter/the_duke_of_the_depths",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "DepthWarzoneBossDeath": [
+      "canary:creature/the_duke_of_the_depths"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/dangerous_depth/bosses/the_duke_of_the_depths.lua",
+      "blob_sha1": "bbd96f52a65a029ceeedd65e795e6c441dca352a"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_bosses_mission_depths.lua",
+      "blob_sha1": "9880d96626e7bdba1fcbb7747c440339f5a756b5"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "The Duke of the Depths is the the_duke_of_the_depths participant; its file registers DepthWarzoneBossDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        3
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the configured boss \"the duke of the depths\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        22,
+        23,
+        24,
+        25,
+        26,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        3
+      ],
+      "status": "mapped",
+      "resolution": "Teleporter 1949 on (33719, 32302, 15) becomes 22761 leading to (33691, 32301, 15); after 20 minutes revert turns it back into 1949 leading to (33275, 32318, 15).",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        3
+      ],
+      "status": "mapped",
+      "resolution": "teleportPosition, toPosition and toPositionBack become the three point anchors.",
+      "destination": "/encounter/anchors"
+    }
+  ],
+  "outcome_evidence": []
+}

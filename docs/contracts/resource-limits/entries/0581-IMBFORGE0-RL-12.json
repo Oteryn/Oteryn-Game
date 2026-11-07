@@ -1,0 +1,24 @@
+{
+  "id": "IMBFORGE0-RL-12",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+  "failure_category": "CAPACITY_EXCEEDED",
+  "client_visible": false,
+  "consumers": [
+    "apps/game-server/src/durability/character_forge_dust.rs",
+    "apps/game-server/src/durability/character_forge_dust_audit.rs",
+    "apps/game-server/tests/support/forge_dust_limit_postgres_cases.rs"
+  ],
+  "notes": "Private complete-code review proposal only; root rechecks allocations before publication. No new event type/schema/retention tuple or Forge runtime admission.",
+  "resource": "Forge history rows per Character",
+  "unit": "history rows per Character",
+  "hard_maximum": 1000,
+  "configurable_range": {
+    "minimum": 1000,
+    "maximum": 1000
+  },
+  "allocation_impact": "Oldest overflow only is deleted in an append transaction; receipts and ledger are retained. This DustLimit-only table can contain at most225 successful upgrades; later Forge shapes must compose into the one total budget before FORGE_V1 history is exposed.",
+  "boundary_tests": [
+    "native all225 legitimate unlocks retain225 history rows and never more than1000",
+    "deleting a non-overflow row or inserting history without the exact same-transaction successful receipt rejects"
+  ]
+}

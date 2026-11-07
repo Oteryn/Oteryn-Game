@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-FIRST-PROD-SPAWN-POPULATION-PER-SPAWN",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_01+AMENDMENT_04",
+  "resource": "Concurrent content-spawned population for one FIRST_PRODUCTION_CONTENT_PROFILE/v1 spawn",
+  "unit": "content-spawned actors per spawn",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 2
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Validate the production spawn population before artifact lowering or any runtime actor/container/task allocation; never clamp/default a value outside the profile.",
+  "client_visible": false,
+  "boundary_tests": [
+    "population 1 and 2 accepted for the single semantically valid production spawn",
+    "population 0 rejected as semantically incomplete",
+    "population 3 rejected before artifact lowering/runtime actor allocation"
+  ]
+}

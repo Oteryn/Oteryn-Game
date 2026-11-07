@@ -1,0 +1,22 @@
+{
+  "authority": "SOURCE_OBSERVATIONS_ONLY; no Oteryn ProductionKeys or gameplay promotion",
+  "client_version": "15.30",
+  "family": "Achievement",
+  "files": [
+    {
+      "path": "achievements-00000-00367.json",
+      "records": 368,
+      "sha256": "517061404f4c5448c9c5aea76e2ef87f76643986c6664179eb72f030ff387862"
+    }
+  ],
+  "identity_namespace": "cipsoft/staticdata/achievement_id",
+  "inputs": {
+    "staticdata": {
+      "file": "content/assets/files/staticdata-62d3f5f761a4c8cab02c89bd1a351770aca3504a74f1b34f457f0a0451dcd128.dat",
+      "sha256": "62d3f5f761a4c8cab02c89bd1a351770aca3504a74f1b34f457f0a0451dcd128"
+    }
+  },
+  "record_count": 368,
+  "schema": "OTERYN_CIPSOFT_STATICDATA_ACHIEVEMENT_SOURCE_MANIFEST/v1",
+  "source": "CIPSOFT_CLIENT_STATICDATA"
+}

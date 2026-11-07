@@ -1,0 +1,593 @@
+{
+ "cleric_and_healer_npcs": [
+  {
+   "city": "Edron",
+   "pageid": 55611,
+   "position": {
+    "x": 33257,
+    "y": 31936,
+    "z": 15
+   },
+   "revid": 1116766,
+   "title": "A Dark Priestess"
+  },
+  {
+   "city": "Venore",
+   "pageid": 5349,
+   "position": {
+    "x": 32660,
+    "y": 32112,
+    "z": 8
+   },
+   "revid": 1114104,
+   "title": "Adrenius"
+  },
+  {
+   "city": "Edron",
+   "pageid": 4896,
+   "position": {
+    "x": 33312,
+    "y": 31762,
+    "z": 7
+   },
+   "revid": 851488,
+   "title": "Albert"
+  },
+  {
+   "city": "Carlin",
+   "pageid": 4514,
+   "position": {
+    "x": 32360,
+    "y": 31785,
+    "z": 7
+   },
+   "revid": 1051740,
+   "title": "Alia"
+  },
+  {
+   "city": "Edron",
+   "pageid": 4877,
+   "position": {
+    "x": 33222,
+    "y": 31814,
+    "z": 8
+   },
+   "revid": 1114032,
+   "title": "Amanda"
+  },
+  {
+   "city": "Ankrahmun",
+   "pageid": 53940,
+   "position": {
+    "x": 33029,
+    "y": 32706,
+    "z": 7
+   },
+   "revid": 923674,
+   "title": "An Ancient Priest"
+  },
+  {
+   "city": "Venore",
+   "pageid": 5345,
+   "position": {
+    "x": 32635,
+    "y": 32402,
+    "z": 10
+   },
+   "revid": 1114103,
+   "title": "Angelina"
+  },
+  {
+   "city": "Rookgaard",
+   "pageid": 53942,
+   "position": {
+    "x": 32097,
+    "y": 32219,
+    "z": 5
+   },
+   "revid": 1116755,
+   "title": "Asralius"
+  },
+  {
+   "city": "Rathleton",
+   "pageid": 68004,
+   "position": {
+    "x": 33593,
+    "y": 31899,
+    "z": 6
+   },
+   "revid": 1073463,
+   "title": "Azalea"
+  },
+  {
+   "city": "Port Hope",
+   "pageid": 5263,
+   "position": {
+    "x": 32595,
+    "y": 32744,
+    "z": 7
+   },
+   "revid": 1114089,
+   "title": "Brewster"
+  },
+  {
+   "city": "Rookgaard",
+   "pageid": 1217,
+   "position": {
+    "x": 32097,
+    "y": 32217,
+    "z": 7
+   },
+   "revid": 1043342,
+   "title": "Cipfried"
+  },
+  {
+   "city": "Carlin",
+   "pageid": 4633,
+   "position": {
+    "x": 32180,
+    "y": 31936,
+    "z": 7
+   },
+   "revid": 1114015,
+   "title": "Costello"
+  },
+  {
+   "city": "Rookgaard",
+   "pageid": 2779,
+   "position": {
+    "x": 32093,
+    "y": 32180,
+    "z": 6
+   },
+   "revid": 1043348,
+   "title": "Dallheim"
+  },
+  {
+   "city": "Ab'Dendriel",
+   "pageid": 4544,
+   "position": {
+    "x": 32698,
+    "y": 31718,
+    "z": 2
+   },
+   "revid": 1114008,
+   "title": "Edala"
+  },
+  {
+   "city": "Darashia",
+   "pageid": 64594,
+   "position": {
+    "x": 33013,
+    "y": 32359,
+    "z": 11
+   },
+   "revid": 1116804,
+   "title": "Elyen Ravenlock"
+  },
+  {
+   "city": "Quirefang",
+   "pageid": 108054,
+   "position": {
+    "x": 33603,
+    "y": 31468,
+    "z": 7
+   },
+   "revid": 1171457,
+   "title": "Enpa-Deia Pema"
+  },
+  {
+   "city": "Edron",
+   "pageid": 1410,
+   "position": {
+    "x": 33322,
+    "y": 31883,
+    "z": 7
+   },
+   "revid": 1178772,
+   "title": "Eremo"
+  },
+  {
+   "city": "Kazordoon",
+   "pageid": 37024,
+   "position": {
+    "x": 32649,
+    "y": 31911,
+    "z": 11
+   },
+   "revid": 851736,
+   "title": "Ferus"
+  },
+  {
+   "city": "Carlin",
+   "pageid": 3081,
+   "position": {
+    "x": 32359,
+    "y": 31683,
+    "z": 6
+   },
+   "revid": 908526,
+   "title": "Humphrey"
+  },
+  {
+   "city": "Issavi",
+   "pageid": 89023,
+   "position": {
+    "x": 33919,
+    "y": 31476,
+    "z": 5
+   },
+   "revid": 851853,
+   "title": "Iptar-Sin"
+  },
+  {
+   "city": "Kazordoon",
+   "pageid": 5048,
+   "position": {
+    "x": 32653,
+    "y": 31925,
+    "z": 11
+   },
+   "revid": 1114058,
+   "title": "Isimov"
+  },
+  {
+   "city": "Thais",
+   "pageid": 79439,
+   "position": {
+    "x": 32329,
+    "y": 32091,
+    "z": 7
+   },
+   "revid": 1116863,
+   "title": "Ivalisse"
+  },
+  {
+   "city": "Port Hope",
+   "pageid": 80829,
+   "position": {
+    "x": 32911,
+    "y": 32512,
+    "z": 8
+   },
+   "revid": 908554,
+   "title": "Kais"
+  },
+  {
+   "city": "Darashia",
+   "pageid": 5039,
+   "position": {
+    "x": 33212,
+    "y": 32452,
+    "z": 1
+   },
+   "revid": 1114056,
+   "title": "Kasmir"
+  },
+  {
+   "city": "Kazordoon",
+   "pageid": 5357,
+   "position": {
+    "x": 32644,
+    "y": 31969,
+    "z": 12
+   },
+   "revid": 1114108,
+   "title": "Kawill"
+  },
+  {
+   "city": "Svargrond",
+   "pageid": 17127,
+   "position": {
+    "x": 32212,
+    "y": 31128,
+    "z": 7
+   },
+   "revid": 851907,
+   "title": "Kjesse"
+  },
+  {
+   "city": "Venore",
+   "pageid": 5143,
+   "position": {
+    "x": 32695,
+    "y": 32310,
+    "z": 7
+   },
+   "revid": 1114078,
+   "title": "Lorbas"
+  },
+  {
+   "city": "Yalahar",
+   "pageid": 30721,
+   "position": {
+    "x": 32787,
+    "y": 31277,
+    "z": 7
+   },
+   "revid": 851936,
+   "title": "Lorietta"
+  },
+  {
+   "city": "Rookgaard",
+   "pageid": 4524,
+   "position": {
+    "x": 32015,
+    "y": 32197,
+    "z": 7
+   },
+   "revid": 851938,
+   "title": "Loui"
+  },
+  {
+   "city": "Thais",
+   "pageid": 5376,
+   "position": {
+    "x": 32389,
+    "y": 32118,
+    "z": 8
+   },
+   "revid": 1114117,
+   "title": "Lugri"
+  },
+  {
+   "city": "Thais",
+   "pageid": 5377,
+   "position": {
+    "x": 32333,
+    "y": 32200,
+    "z": 7
+   },
+   "revid": 1114118,
+   "title": "Lynda"
+  },
+  {
+   "city": "Ab'Dendriel",
+   "pageid": 5264,
+   "position": {
+    "x": 32732,
+    "y": 31631,
+    "z": 7
+   },
+   "revid": 1114090,
+   "title": "Maealil"
+  },
+  {
+   "city": "Issavi",
+   "pageid": 89024,
+   "position": {
+    "x": 33868,
+    "y": 31527,
+    "z": 7
+   },
+   "revid": 1116925,
+   "title": "Ninev"
+  },
+  {
+   "city": "Tiquanda",
+   "pageid": 102854,
+   "position": {
+    "x": 33030,
+    "y": 32911,
+    "z": 9
+   },
+   "revid": 1197715,
+   "title": "Niral"
+  },
+  {
+   "city": "Svargrond",
+   "pageid": 80830,
+   "position": {
+    "x": 31940,
+    "y": 31305,
+    "z": 6
+   },
+   "revid": 908611,
+   "title": "Nomad"
+  },
+  {
+   "city": "Thais",
+   "pageid": 5379,
+   "position": {
+    "x": 32346,
+    "y": 32363,
+    "z": 6
+   },
+   "revid": 1090708,
+   "title": "Norf"
+  },
+  {
+   "city": "Venore",
+   "pageid": 4674,
+   "position": {
+    "x": 32816,
+    "y": 32260,
+    "z": 6
+   },
+   "revid": 1114018,
+   "title": "Oldrak"
+  },
+  {
+   "city": "Dawnport",
+   "pageid": 68596,
+   "position": {
+    "x": 32064,
+    "y": 31892,
+    "z": 6
+   },
+   "revid": 996808,
+   "title": "Oressa"
+  },
+  {
+   "city": "Farmine",
+   "pageid": 41716,
+   "position": {
+    "x": 33029,
+    "y": 31523,
+    "z": 15
+   },
+   "revid": 927501,
+   "title": "Prezil"
+  },
+  {
+   "city": "Kazordoon",
+   "pageid": 6502,
+   "position": {
+    "x": 32655,
+    "y": 31893,
+    "z": 11
+   },
+   "revid": 1114159,
+   "title": "Pydar"
+  },
+  {
+   "city": "Thais",
+   "pageid": 5265,
+   "position": {
+    "x": 32369,
+    "y": 32239,
+    "z": 7
+   },
+   "revid": 1114091,
+   "title": "Quentin"
+  },
+  {
+   "city": "Ankrahmun",
+   "pageid": 5343,
+   "position": {
+    "x": 33194,
+    "y": 32848,
+    "z": 7
+   },
+   "revid": 1114102,
+   "title": "Rahkem"
+  },
+  {
+   "city": "Gray Beach",
+   "pageid": 57059,
+   "position": {
+    "x": 33444,
+    "y": 31321,
+    "z": 9
+   },
+   "revid": 852100,
+   "title": "Rock With A Soft Spot"
+  },
+  {
+   "city": "Issavi",
+   "pageid": 96306,
+   "position": {
+    "x": 33815,
+    "y": 31464,
+    "z": 7
+   },
+   "revid": 1116953,
+   "title": "Taya"
+  },
+  {
+   "city": "Carlin",
+   "pageid": 3092,
+   "position": {
+    "x": 32318,
+    "y": 31783,
+    "z": 7
+   },
+   "revid": 1113933,
+   "title": "Tibra"
+  },
+  {
+   "city": "Liberty Bay",
+   "pageid": 9310,
+   "position": {
+    "x": 32317,
+    "y": 32823,
+    "z": 7
+   },
+   "revid": 1114303,
+   "title": "Tyrias"
+  },
+  {
+   "city": "Farmine",
+   "pageid": 41724,
+   "position": {
+    "x": 32995,
+    "y": 31469,
+    "z": 1
+   },
+   "revid": 852234,
+   "title": "Ulala"
+  },
+  {
+   "city": "Venore",
+   "pageid": 5262,
+   "position": {
+    "x": 32961,
+    "y": 32076,
+    "z": 7
+   },
+   "revid": 1114088,
+   "title": "Yberius"
+  },
+  {
+   "city": "Farmine",
+   "pageid": 41588,
+   "position": {
+    "x": 33356,
+    "y": 31411,
+    "z": 8
+   },
+   "revid": 1116724,
+   "title": "Zalamon"
+  },
+  {
+   "city": "Roshamuul",
+   "pageid": 65989,
+   "position": {
+    "x": 33513,
+    "y": 32363,
+    "z": 6
+   },
+   "revid": 852293,
+   "title": "Zedrulon the Fallen"
+  },
+  {
+   "city": "Rookgaard",
+   "pageid": 4786,
+   "position": {
+    "x": 32022,
+    "y": 32203,
+    "z": 6
+   },
+   "revid": 852294,
+   "title": "Zerbrus"
+  }
+ ],
+ "fetched": "2026-09-30",
+ "hometowns": {
+  "pageid": 16158,
+  "revid": 994802,
+  "title": "Template:Hometowns",
+  "towns": [
+   "Dawnport",
+   "Rookgaard",
+   "Ab'Dendriel",
+   "Carlin",
+   "Thais",
+   "Venore",
+   "Ankrahmun",
+   "Edron",
+   "Darashia",
+   "Liberty Bay",
+   "Port Hope",
+   "Farmine",
+   "Gray Beach",
+   "Issavi",
+   "Kazordoon",
+   "Rathleton",
+   "Roshamuul",
+   "Svargrond",
+   "Yalahar"
+  ]
+ },
+ "source": "tibia.fandom.com"
+}

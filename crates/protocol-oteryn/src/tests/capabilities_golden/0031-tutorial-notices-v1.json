@@ -1,0 +1,17 @@
+{
+  "id": 31,
+  "name": "TUTORIAL_NOTICES_V1",
+  "constant": "tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [
+    23
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

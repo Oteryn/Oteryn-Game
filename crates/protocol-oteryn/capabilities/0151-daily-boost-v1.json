@@ -1,0 +1,17 @@
+{
+  "id": 151,
+  "name": "DAILY_BOOST_V1",
+  "constant": "daily_boost::CAPABILITY_DAILY_BOOST_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    177
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

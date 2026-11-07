@@ -1,0 +1,20 @@
+{
+  "id": "DFR-PG-PARAMETER-DESCRIPTION-PARAMETERS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+  "resource": "Parameter OIDs announced by one PostgreSQL ParameterDescription on the first-slice production root profile",
+  "unit": "parameters",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Validate peer count <=32 and exact body size 2 + 4*count before SmallVec::with_capacity or parameter metadata retention.",
+  "client_visible": false,
+  "boundary_tests": [
+    "32 parameters accepted when the complete body and built-in-only OID policy pass",
+    "33 parameters rejected as UNAVAILABLE before SmallVec allocation",
+    "Truncated, overlong or checked-arithmetic-invalid bodies rejected before retained parameter metadata"
+  ],
+  "notes": "Current composed WP3/WP4 SQL uses no more than 15 positional bind parameters; 32 is the owner-selected finite first-slice compatibility ceiling, not the PostgreSQL u16 protocol maximum."
+}

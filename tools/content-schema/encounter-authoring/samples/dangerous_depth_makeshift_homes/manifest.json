@@ -1,0 +1,57 @@
+{
+  "encounter": "canary:encounter/dangerous_depth_makeshift_homes",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "MakeshiftHomeDeath": [
+      "canary:creature/makeshift_home"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/dangerous_depth/makeshift_home.lua",
+      "blob_sha1": "0b64ccee736a8090528c5aef8160f2be3982d651"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua",
+      "blob_sha1": "2802324b3c3faaa57fd9c514cad50a558a1c3d58"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        18
+      ],
+      "status": "mapped",
+      "resolution": "Makeshift Home is the makeshift_home participant; its file registers MakeshiftHomeDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        68,
+        70
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of a makeshift home.",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        71,
+        72
+      ],
+      "status": "mapped",
+      "resolution": "Wooden trash 398 with action id 57233 on the death position. Action id 57233 is dangerous_depth/actions_wooden_trash.lua: searching it may start a prisoner escort (quest interaction).",
+      "destination": "/encounter/rules/0/actions/0"
+    }
+  ],
+  "outcome_evidence": []
+}

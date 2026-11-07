@@ -1,0 +1,18 @@
+{
+  "id": "GAMECAT-V1-RELATION-COUNT",
+  "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+  "resource": "Relation records in one native catalog snapshot",
+  "unit": "entries",
+  "hard_maximum": 1000000,
+  "configurable_range": {
+    "minimum": 1000000,
+    "maximum": 1000000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject relation count before endpoint validation or canonical sorting exceeds the fixed v1 ceiling.",
+  "client_visible": false,
+  "boundary_tests": [
+    "1,000,000 relations accepted when otherwise valid",
+    "1,000,001 rejected before unbounded relation processing"
+  ]
+}

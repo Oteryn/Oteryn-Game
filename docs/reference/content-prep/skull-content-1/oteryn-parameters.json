@@ -1,0 +1,25 @@
+{
+  "schema": "OTERYN_WORKING_REFERENCE_PARAMETERS/v1",
+  "task": "SKULL-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "SOURCE_RECONCILED_WITH_EXPLICIT_GAPS",
+  "owner_instruction_source": "owner:oteryn-data-completion:2026-10-19",
+  "filled_fields": 1,
+  "normalized_companion_fields": 0,
+  "remaining_unfilled_fields": 0,
+  "originating_proposals": "docs/reference/content-prep/skull-content-1/oteryn-proposals.json",
+  "source_archive": "docs/reference/content-prep/skull-content-1/tibia-source-archive.json",
+  "shared_policies": {},
+  "selection_policy": "Official policy observations are retained. Unsupported point/clock defaults are withdrawn, not silently adopted as Global or Oteryn rules.",
+  "remaining_unresolved_source_fields": 3,
+  "source_repair": {
+    "source_check": "docs/reference/content-prep/skull-content-1/skull-source-reconciliation.json",
+    "withdrawn_fixed_kill_thresholds": 2,
+    "conditional_white_timing": "SOURCE_BACKED",
+    "exact_unjustified_point_allocation": "UNRESOLVED",
+    "clock_boundary": "CONFLICT_DONOR_VS_OFFICIAL_WINDOW",
+    "remaining_unresolved_source_fields": 3,
+    "selected_for_native_runtime": false
+  }
+}

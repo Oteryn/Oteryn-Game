@@ -1,0 +1,15 @@
+// TUTORIAL-1, owner Q3(a): capability 31, domain 23. Envelopes own revisions.
+// Snapshot type 1 is exactly [0x08,0x01]. Delta type 1 contains exactly one
+// notice. Unknown/repeated fields, zero hints, empty text and invalid UTF-8
+// refuse. Text is 1..=255 UTF-8 bytes; a delta is at most 260 bytes.
+// USE-AUTOWALK-1 (NIGHT-W1 owner decision 15): status_text also carries
+// "There is no way." after an item action's no-path refusal. Hints remain tutorial-only.
+syntax = "proto3";
+package oteryn.protocol.v1.tutorial_notices;
+message TutorialNoticesSnapshotV1 { uint32 empty = 1; }
+message TutorialNoticeV1 {
+  oneof notice {
+    uint32 hint_id = 1; // 1..=255; IDs come from the client tutorial table.
+    string status_text = 2;
+  }
+}

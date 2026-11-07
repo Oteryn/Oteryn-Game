@@ -1,0 +1,21 @@
+{
+  "id": "PUBPROJ-ONLINE-REQUEST-BYTES",
+  "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+  "resource": "Encoded PublishWorldOnlineV1 request body",
+  "unit": "bytes",
+  "hard_maximum": 524288,
+  "configurable_range": {
+    "minimum": 524288,
+    "maximum": 524288
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Encoded from at most 4,096 grammar-checked entries of at most 112 bytes plus the envelope; the length is checked before the exchange.",
+  "client_visible": false,
+  "boundary_tests": [
+    "apps/game-server/src/native_admission_source/public_projections_tests.rs worst_case_bodies_fit_their_bounds: 4,096 entries with 64-byte names encode within 524288 bytes"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/public_projections.rs"
+  ],
+  "notes": "Contract sections 3, 5 and 8. Internal Game-to-Platform boundary; no client wire. Every failure is 'not delivered': the outbox row stays queued (or the World is retried by the next scan), the watermark stalls and Platform hides the family once it is stale; gameplay, admission and the change that caused it are unaffected. Registered by OTV2-20261015-public-projections-producer."
+}

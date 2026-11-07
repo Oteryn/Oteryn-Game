@@ -1,0 +1,49 @@
+{
+  "spell": {
+    "base_power": 72,
+    "carrier": "instant",
+    "cooldown_ms": 12000,
+    "costs": {
+      "mana": 150
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Mystic Repulse",
+    "needs_weapon": false,
+    "presentation": {
+      "source_cast_sound": {
+        "binding_status": "unbound",
+        "constant": "SOUND_EFFECT_TYPE_SPELL_MYSTIC_REPULSE"
+      }
+    },
+    "reference_spell_id": 290,
+    "requirements": {
+      "level": 30,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "needs_target": true,
+      "range_tiles": 7
+    },
+    "words": "exori amp pug"
+  }
+}

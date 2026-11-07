@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:proficiency-authoring:shaping:1",
+  "title": "Weapon Proficiency shaping authoring schema candidate v1 - structural validation",
+  "description": "CANDIDATE ProficiencyShaping catalogue (PROFICIENCY-1B section 3). One shaping definition per Proficiency definition: the modification pool with draw weights, each entry's values at ranks 1-10, and the dust and orb costs. Every value is a cell: UNKNOWN, or KNOWN with its evidence class (official, owner-verified TibiaPal or tibiatools.io, English TibiaWiki). OTS sources are not an evidence class here, and no cost is gold. Semantic rules and operation admission live in shaping_authoring.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "decision", "shapings"],
+  "properties": {
+    "schema": {"const": "OTERYN_PROFICIENCY_SHAPING_CATALOGUE/v1"},
+    "decision": {"const": "PROFICIENCY1B-PERK-MODIFICATION-VALUE-SHAPES-V1"},
+    "shapings": {"type": "array", "items": {"$ref": "#/$defs/shaping"}}
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["class", "source_ref"],
+      "properties": {
+        "class": {
+          "enum": [
+            "CIPSOFT_OFFICIAL",
+            "OWNER_VERIFIED_TIBIAPAL",
+            "OWNER_VERIFIED_TIBIATOOLS",
+            "TIBIAWIKI_EN"
+          ]
+        },
+        "source_ref": {"type": "string", "minLength": 1, "maxLength": 512}
+      }
+    },
+    "unknown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state"],
+      "properties": {"state": {"const": "UNKNOWN"}}
+    },
+    "dustCell": {
+      "oneOf": [
+        {"$ref": "#/$defs/unknown"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "dust", "evidence"],
+          "properties": {
+            "state": {"const": "KNOWN"},
+            "dust": {"type": "integer", "minimum": 0, "maximum": 1000000},
+            "evidence": {"$ref": "#/$defs/evidence"}
+          }
+        }
+      ]
+    },
+    "orbCell": {
+      "oneOf": [
+        {"$ref": "#/$defs/unknown"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "orbs", "evidence"],
+          "properties": {
+            "state": {"const": "KNOWN"},
+            "orbs": {"enum": [0, 1]},
+            "evidence": {"$ref": "#/$defs/evidence"}
+          }
+        }
+      ]
+    },
+    "weightCell": {
+      "oneOf": [
+        {"$ref": "#/$defs/unknown"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "weight", "evidence"],
+          "properties": {
+            "state": {"const": "KNOWN"},
+            "weight": {"type": "integer", "minimum": 1, "maximum": 1000000},
+            "evidence": {"$ref": "#/$defs/evidence"}
+          }
+        }
+      ]
+    },
+    "valueCell": {
+      "description": "The entry's numeric values at one rank: the value fields its perk kind carries (value, or probability and multiplier).",
+      "oneOf": [
+        {"$ref": "#/$defs/unknown"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "values", "evidence"],
+          "properties": {
+            "state": {"const": "KNOWN"},
+            "values": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {"type": "number"}
+            },
+            "evidence": {"$ref": "#/$defs/evidence"}
+          }
+        }
+      ]
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "weight", "rank_values"],
+      "properties": {
+        "identity": {
+          "description": "The perk option's full non-value identity (PROFICIENCY-0 section 4.2): a perk of the Proficiency schema without its value fields.",
+          "type": "object",
+          "required": ["kind"],
+          "properties": {"kind": {"type": "string", "minLength": 1}}
+        },
+        "weight": {"$ref": "#/$defs/weightCell"},
+        "rank_values": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "items": {"$ref": "#/$defs/valueCell"}
+        }
+      }
+    },
+    "pool": {
+      "oneOf": [
+        {"$ref": "#/$defs/unknown"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "entries", "evidence"],
+          "properties": {
+            "state": {"const": "KNOWN"},
+            "entries": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 64,
+              "items": {"$ref": "#/$defs/entry"}
+            },
+            "evidence": {"$ref": "#/$defs/evidence"}
+          }
+        }
+      ]
+    },
+    "costs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["modify", "rank_steps", "reshape_offer", "clear", "orb_rank"],
+      "properties": {
+        "modify": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["slot_1", "slot_2"],
+          "properties": {
+            "slot_1": {"$ref": "#/$defs/dustCell"},
+            "slot_2": {"$ref": "#/$defs/dustCell"}
+          }
+        },
+        "rank_steps": {
+          "description": "Dust for the steps 1-2, 2-3, ..., 9-10.",
+          "type": "array",
+          "minItems": 9,
+          "maxItems": 9,
+          "items": {"$ref": "#/$defs/dustCell"}
+        },
+        "reshape_offer": {"$ref": "#/$defs/dustCell"},
+        "clear": {"$ref": "#/$defs/dustCell"},
+        "orb_rank": {"$ref": "#/$defs/orbCell"}
+      }
+    },
+    "shaping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "proficiency", "pool", "costs"],
+      "properties": {
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["family", "key", "revision"],
+          "properties": {
+            "family": {"const": "ProficiencyShaping"},
+            "key": {"type": "string", "pattern": "^oteryn:proficiency-shaping\\.tibia\\.p[0-9]+$"},
+            "revision": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}
+          }
+        },
+        "proficiency": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["key", "revision"],
+          "properties": {
+            "key": {"type": "string", "pattern": "^oteryn:proficiency\\.tibia\\.p[0-9]+$"},
+            "revision": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}
+          }
+        },
+        "pool": {"$ref": "#/$defs/pool"},
+        "costs": {"$ref": "#/$defs/costs"}
+      }
+    }
+  }
+}

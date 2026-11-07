@@ -1,0 +1,16 @@
+{
+  "id": 60,
+  "name": "PLAYER_TRADE_V1",
+  "owner_decision": "PLAYER-TRADE0-DIRECT-TRADE-V1; TRADE-WIRE-1",
+  "owner": "Channel trade owner",
+  "requires": [
+    4
+  ],
+  "command_types": [
+    78
+  ],
+  "state_domains": [
+    26
+  ],
+  "offered": true
+}

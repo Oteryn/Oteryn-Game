@@ -1,0 +1,19 @@
+{
+  "id": "ANL01-REPLAY-BATCH-EVENTS",
+  "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+  "resource": "Events decoded/applied to a derived consumer in one replay batch",
+  "unit": "events",
+  "hard_maximum": 4096,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 4096
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bound replay work per batch and preserve checkpoint/cancellation between batches.",
+  "client_visible": false,
+  "boundary_tests": [
+    "4,096 events accepted subject to byte bound",
+    "4,097 split into another batch",
+    "batch replay never invokes gameplay mutation"
+  ]
+}

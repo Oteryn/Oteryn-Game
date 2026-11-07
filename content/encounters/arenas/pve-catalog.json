@@ -1,0 +1,204 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.honour_guard",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.scar_tribe_warrior",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.dire_penguin",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.bonelord",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.deepling_brawler",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.deathbine",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.wyvern",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.bane_of_light",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.cult_scholar",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.pirat_bombardier",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.warlord_ruzad",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.goldhanded_cultist",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.enslaved_dwarf",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.two_headed_turtle",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.draken_abomination",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.rhindeer",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.kerberos",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.rootthing_nutshell",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.juggernaut",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.noxious_ripptor",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.sulphider",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.branchy_crawler",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.grand_master_oberon",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.wandering_pillar",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.the_monster",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.the_pale_count",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.zoralurk",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.lloyd",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.melting_frozen_horror",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.tentugly_s_head",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.hazardous_phantom",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.overseer_osverger",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.court_warlock",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.soul_of_dragonking_zyrtarch",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.magma_bubble",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.infernatil",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.essence_of_malice",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.the_corruptor_of_souls",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.prince_drazzak",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Creature",
+      "key": "oteryn:creature.the_pale_worm",
+      "revision": "definition-r1"
+    }
+  ]
+}

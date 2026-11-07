@@ -1,0 +1,936 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:proficiency-authoring:candidate:1",
+  "title": "Weapon Proficiency authoring schema candidate v1 - structural validation",
+  "description": "CANDIDATE static Proficiency definition catalogue (PROFICIENCY-0 §4.1). Not a runtime contract: accrual, level-up, perk selection, shaping and Mastery rules belong to rulesets/progression/weapon-proficiency/, and a Character's progress and selected perks are durable Character state. Semantic rules live in proficiency_authoring.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "client_version",
+    "source",
+    "perk_code_map",
+    "threshold_tables",
+    "proficiencies"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_PROFICIENCY_AUTHORING_CATALOGUE/v1"
+    },
+    "client_version": {
+      "const": "15.30"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "staging",
+        "proficiencies_sha256",
+        "staged_files"
+      ],
+      "properties": {
+        "staging": {
+          "const": "imports/cipsoft-staticdata/proficiencies"
+        },
+        "proficiencies_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "staged_files": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^proficiencies-[0-9]{5}-[0-9]{5}\\.json$"
+              },
+              "sha256": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          }
+        }
+      }
+    },
+    "perk_code_map": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision",
+        "source"
+      ],
+      "properties": {
+        "decision": {
+          "const": "D199"
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "description": "The owner-accepted mapping from source Type/SkillId/ElementId/DamageType/AugmentType codes to perk kinds and enums. proficiency_authoring.py holds the table; build rejects any unmapped code."
+    },
+    "threshold_tables": {
+      "$ref": "#/$defs/thresholdTables"
+    },
+    "proficiencies": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/proficiency"
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "key": {
+      "type": "string",
+      "pattern": "^oteryn:proficiency\\.tibia\\.p[1-9][0-9]*$",
+      "description": "oteryn:proficiency.tibia.p<ProficiencyId> (PROFICIENCY-0 §4.1, A12 pattern)."
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^definition-r[1-9][0-9]*$"
+    },
+    "value": {
+      "type": "number",
+      "description": "Source Value as given. Unit per kind (D199): flat or fraction (x100 = %)."
+    },
+    "skill": {
+      "enum": [
+        "magic_level",
+        "shielding",
+        "distance",
+        "sword",
+        "club",
+        "axe",
+        "fist",
+        "fishing"
+      ]
+    },
+    "element": {
+      "enum": [
+        "physical",
+        "fire",
+        "earth",
+        "energy",
+        "ice",
+        "holy",
+        "death",
+        "healing"
+      ]
+    },
+    "augment": {
+      "enum": [
+        "base_damage",
+        "healing",
+        "cooldown",
+        "life_leech",
+        "mana_leech",
+        "critical_extra_damage",
+        "critical_hit_chance"
+      ]
+    },
+    "thresholds": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "description": "Cumulative progress for levels 1..9. A tree of n levels uses entries 1..n; Mastery is entry n + mastery_offset."
+    },
+    "thresholdTables": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "mastery_offset",
+        "standard",
+        "knight",
+        "crossbow"
+      ],
+      "description": "Per threshold class. The class is chosen per weapon binding (D197, D198, D200), not per definition, so a definition does not carry thresholds.",
+      "properties": {
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "url",
+            "revid",
+            "acceptance"
+          ],
+          "properties": {
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "revid": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "acceptance": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "mastery_offset": {
+          "const": 2
+        },
+        "standard": {
+          "$ref": "#/$defs/thresholds"
+        },
+        "knight": {
+          "$ref": "#/$defs/thresholds"
+        },
+        "crossbow": {
+          "$ref": "#/$defs/thresholds"
+        }
+      }
+    },
+    "perk": {
+      "description": "One closed shape per perk kind; the kind names the source Type code (D199).",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 0. Flat attack.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "attack_damage"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 1. Flat defence.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "defence"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 2. Flat weapon shield defence modifier.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "weapon_shield_defence"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 7. Fraction of extra damage against bosses and Sinister Embraced.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "boss_damage"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 8. Fraction.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "critical_hit_chance"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 10. Fraction.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "rune_critical_hit_chance"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 11. Fraction.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "auto_attack_critical_hit_chance"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 12. Fraction.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "critical_extra_damage"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 14. Fraction.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "rune_critical_extra_damage"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 15. Fraction.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "auto_attack_critical_extra_damage"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 16. Fraction.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "mana_leech"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 17. Fraction.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "life_leech"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 18. Flat.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "mana_on_hit"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 19. Flat.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "life_on_hit"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 20. Flat.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "mana_on_kill"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 21. Flat.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "life_on_kill"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 23. Fraction.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "ranged_hit_chance"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 24. Flat tiles.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "attack_range"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 28. Fraction of extra damage against targets above 95% health.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "alpha_strike_damage"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 29. Fraction of extra damage against targets below 30% health.",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "omega_strike_damage"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 30. Fraction (1.0 = +100%).",
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "armor_penetration"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 3. Flat skill levels.",
+          "required": [
+            "kind",
+            "skill",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "skill_bonus"
+            },
+            "skill": {
+              "$ref": "#/$defs/skill"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 25. Fraction of the skill added as auto-attack damage.",
+          "required": [
+            "kind",
+            "skill",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "skill_scaled_auto_attack_damage"
+            },
+            "skill": {
+              "$ref": "#/$defs/skill"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 26. Fraction of the skill added as spell damage.",
+          "required": [
+            "kind",
+            "skill",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "skill_scaled_spell_damage"
+            },
+            "skill": {
+              "$ref": "#/$defs/skill"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 27. Fraction of the skill added as healing.",
+          "required": [
+            "kind",
+            "skill",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "skill_scaled_healing"
+            },
+            "skill": {
+              "$ref": "#/$defs/skill"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 4 (source key DamageType). Flat magic levels for one element.",
+          "required": [
+            "kind",
+            "element",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "specialized_magic_level"
+            },
+            "element": {
+              "$ref": "#/$defs/element"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 9. Fraction.",
+          "required": [
+            "kind",
+            "element",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "elemental_critical_hit_chance"
+            },
+            "element": {
+              "$ref": "#/$defs/element"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 13. Fraction.",
+          "required": [
+            "kind",
+            "element",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "elemental_critical_extra_damage"
+            },
+            "element": {
+              "$ref": "#/$defs/element"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 31. Fraction.",
+          "required": [
+            "kind",
+            "element",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "elemental_pierce"
+            },
+            "element": {
+              "$ref": "#/$defs/element"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 5. Fraction, except augment cooldown: negative seconds.",
+          "required": [
+            "kind",
+            "spell_client_id",
+            "augment",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "spell_augment"
+            },
+            "spell_client_id": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Client spell id (source SpellId). Numeric provenance; the Spell key crosswalk is not part of this schema."
+            },
+            "augment": {
+              "$ref": "#/$defs/augment"
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 6. Fraction of extra damage against one Bestiary class (source BestiaryId, BestiaryName).",
+          "required": [
+            "kind",
+            "bestiary_class_id",
+            "bestiary_class_name",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "bestiary_class_damage"
+            },
+            "bestiary_class_id": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "bestiary_class_name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 22. Source Range and Value, both kept as given (D199: flat, in tiles).",
+          "required": [
+            "kind",
+            "range",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "damage_at_range"
+            },
+            "range": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Source Range, in tiles."
+            },
+            "value": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Type 32. Source ElementId, MissileId, Probability (fraction) and Multiplier. No Value.",
+          "required": [
+            "kind",
+            "element",
+            "missile_client_id",
+            "probability",
+            "multiplier"
+          ],
+          "properties": {
+            "kind": {
+              "const": "homing_missile"
+            },
+            "element": {
+              "$ref": "#/$defs/element"
+            },
+            "missile_client_id": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "probability": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "multiplier": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        }
+      ]
+    },
+    "level": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "level",
+        "perks"
+      ],
+      "properties": {
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7
+        },
+        "perks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/perk"
+          },
+          "description": "The level's options in source order; a Character selects at most one (selection index = array position)."
+        }
+      }
+    },
+    "proficiency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "name",
+        "source",
+        "levels"
+      ],
+      "properties": {
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "family",
+            "key",
+            "revision"
+          ],
+          "properties": {
+            "family": {
+              "const": "Proficiency"
+            },
+            "key": {
+              "$ref": "#/$defs/key"
+            },
+            "revision": {
+              "$ref": "#/$defs/revision"
+            }
+          }
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "proficiency_id",
+            "version",
+            "source_record_sha256"
+          ],
+          "properties": {
+            "proficiency_id": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Source Version, raw; its meaning is not derived."
+            },
+            "source_record_sha256": {
+              "$ref": "#/$defs/sha256"
+            }
+          }
+        },
+        "levels": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 7,
+          "items": {
+            "$ref": "#/$defs/level"
+          }
+        }
+      }
+    }
+  }
+}

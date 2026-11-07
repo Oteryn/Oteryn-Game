@@ -1,0 +1,107 @@
+{
+  "encounter": "canary:encounter/death_priest_shargon",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "DeathPriestShargonDeath": [
+      "canary:creature/death_priest_shargon"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/dark_trails/death_priest_shargon.lua",
+      "blob_sha1": "61eb2974aa5103bf26fd00a795022025a1867c85"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/dark_trails/creaturescripts_kill_death_priest_shargon.lua",
+      "blob_sha1": "445e6299f372c7dceeae1a65dd9cce7a17f27bb9"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Death Priest Shargon is the death_priest_shargon participant; its file registers DeathPriestShargonDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        18,
+        20
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of Death Priest Shargon.",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        23,
+        24,
+        25,
+        26,
+        36,
+        10,
+        11,
+        12,
+        13,
+        15,
+        16
+      ],
+      "status": "mapped",
+      "resolution": "A teleporter 1949 on (33487, 32101, 9) leading to (33489, 32088, 9), removed after 5 minutes.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        5,
+        6,
+        7,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34
+      ],
+      "status": "mapped",
+      "resolution": "onDeathForParty credits the party of the top damage dealer (functions.lua lines 1087-1096; party.lua Participants tests a misspelt requiredSharedExperience, so shared experience is never required): DarkTrails.Mission18 = 1 unless already set (D27 quest domain).",
+      "destination": "/encounter/rules/0/actions/1"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        14,
+        21,
+        22
+      ],
+      "status": "approved_omission",
+      "resolution": "Magic effects are cosmetic."
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "death_priest_shargon_defeated",
+      "credited": "party",
+      "quest_domain": {
+        "canary_storage": "Storage.Quest.U10_50.DarkTrails.Mission18",
+        "raise_to_at_least": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "id": 82,
+  "name": "CREATURE_PUSH_V1",
+  "constant": "creature_push::CAPABILITY_CREATURE_PUSH_V1",
+  "requires": [
+    6,
+    13
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    98
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

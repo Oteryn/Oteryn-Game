@@ -1,0 +1,7 @@
+{
+  "mechanic": "0008-achievement-notices",
+  "kind": "panels",
+  "id": "0008-achievement-notices-panel",
+  "status": "supported",
+  "entry": "view.rs::notices_panel_text"
+}

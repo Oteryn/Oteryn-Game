@@ -1,0 +1,58 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/groundshaker",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Groundshaker",
+    "carrier": "instant",
+    "words": "exori mas",
+    "reference_spell_id": 106,
+    "library_text": "Often enough, a knight finds himself in a situation in which he is surrounded by various enemies. Of course it would take very long and would therefore be also quite dangerous if the knight needed to kill them all one by one. For this reason some smart knights have set together and developed the Groundshaker. If a knight speaks the magic words for this spell, his weapon will be dashed against the floor and let the ground shake. The power of the attack will rise with his skill to handle the weapon he is fighting with. The type of damage a knight is dealing when casting this spell depends on the weapon he is carrying. Covering an area up to 36 square metres, this spell should be used carefully as it will not only bring down monsters surrounding you but might also hurt your close-by friends.",
+    "requirements": {
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ],
+      "level": 33,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 200,
+      "soul": 0
+    },
+    "cooldown_ms": 8000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 4,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_groundshaker"
+    },
+    "base_power": 32,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/groundshaker",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

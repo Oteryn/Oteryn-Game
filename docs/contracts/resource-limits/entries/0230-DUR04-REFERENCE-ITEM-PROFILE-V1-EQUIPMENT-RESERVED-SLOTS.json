@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-EQUIPMENT-RESERVED-SLOTS",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Additional reserved semantic slots per Equipment pattern",
+  "unit": "slots",
+  "hard_maximum": 9,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 9
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check count before allocation; require sorted unique slots and reject the primary slot.",
+  "client_visible": true,
+  "boundary_tests": [
+    "9 unique non-primary slots accepted",
+    "10th additional slot rejected",
+    "duplicate or primary-slot repetition rejected"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "PARTYPVP0-RL-06",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md",
+  "resource": "Shared-XP committed activity age at the original kill time",
+  "unit": "microseconds",
+  "hard_maximum": 120000000,
+  "configurable_range": {
+    "minimum": 120000000,
+    "maximum": 120000000
+  },
+  "failure_category": "SHARED_EXPERIENCE_DISABLED",
+  "allocation_impact": "Retain one committed activity cell per Character/session-generation. A replay never refreshes its original semantic clock; future or older-than-window activity cannot qualify.",
+  "client_visible": false,
+  "boundary_tests": [
+    "120000000 inclusive accepted; 120000001 disables: shared_experience_exact_boundaries_and_every_failed_participant_disable; party_xp_spell_death_preserves_original_precise_clock_on_replay"
+  ],
+  "consumers": [
+    "crates/gameplay/social-rules/src/shared_experience_split.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/party_xp.rs"
+  ]
+}

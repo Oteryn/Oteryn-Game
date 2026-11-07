@@ -1,0 +1,206 @@
+{
+  "evidence/final-disposition-review.md": {
+    "sha256": "853d519744eb78ade4c068f453021acc5c37b5a0658cc07e312f8782f4268829",
+    "bytes": 2734
+  },
+  "evidence/gem/FINAL162_FRAGMENT_FACTS.md": {
+    "sha256": "4f3f1f5bb58bfe6e346108d703e42e91c23677709e4dff0f686fe47696500803",
+    "bytes": 4277
+  },
+  "evidence/gem/current-file-coverage.json": {
+    "sha256": "63763c2ed0154fb8885736527e84600c40cb9272df3cd7109cce6c5b81ba0b35",
+    "bytes": 4859
+  },
+  "evidence/ink-provider-candidate/RESULT.md": {
+    "sha256": "a2a8632250dbc2049a9338d550cbe4017987c21e5915ee38b35ba85598379493",
+    "bytes": 7503
+  },
+  "evidence/ink-provider-candidate/candidate-paths-and-sha256.json": {
+    "sha256": "b97d1f52d7f20103aee5cb0dc1d602a90c57ec01e751e345db38661c4264a0b0",
+    "bytes": 1232
+  },
+  "evidence/ink-provider-candidate/candidate-proof.json": {
+    "sha256": "36dab64ea6a3edcb15c66c0e6cbd4340adafd894bd6b71bd8eb8414a7fdac135",
+    "bytes": 830
+  },
+  "evidence/ink-provider-candidate/candidate.patch.gz": {
+    "sha256": "0208a9c2c22d760f2cce4ecb753e78c75e85a189bcfc400d7419358c351a0abd",
+    "bytes": 6220
+  },
+  "evidence/ink-provider-candidate/portable-test-report.log.gz": {
+    "sha256": "59420ed02a300c687eaa8a09232ea34288c9dad8d1b42d791e854c809d990bfd",
+    "bytes": 355
+  },
+  "evidence/ink-provider-candidate/snowball-qualification.log.gz": {
+    "sha256": "859f38ff1edec9eb081ab1a35a48646003c1a1bd05f870a2f0c0b92c0c9832a6",
+    "bytes": 800
+  },
+  "evidence/ink-provider-candidate/snowball-qualified/proof.json": {
+    "sha256": "69f397971afac2df286f6bf89747f07a9e7d1d0b798bd7ff9bf527c971bfe311",
+    "bytes": 1628
+  },
+  "evidence/ink-provider-candidate/test-report.log.gz": {
+    "sha256": "654003478f6f30c2ba7e0df1e52870baaac7c4671399d09448b3f2e3247d839d",
+    "bytes": 863
+  },
+  "evidence/issue162-own-final-body.md.gz": {
+    "sha256": "6664d0601c8929d821cf1348ace49edee7fd09c0e93edd425f4329cb303bb933",
+    "bytes": 13154
+  },
+  "evidence/issue162-own-final-receipt.json": {
+    "sha256": "e04a07cf424945c291f4e2c5a55326b39d77d5f76f46953737d122cec706f54d",
+    "bytes": 153
+  },
+  "evidence/prof1-binding-integrity-structural-review.md": {
+    "sha256": "93741fa3de1a002f162cfe071b933878a05411cda71999537695723dd6d0935b",
+    "bytes": 1977
+  },
+  "evidence/prof1-combined-tests/qualification.md": {
+    "sha256": "15f1725626fba8af6ef1d06406514536fa35989a1dca5f3ab3bfd5e5b1dc0a0a",
+    "bytes": 4596
+  },
+  "evidence/prof1-final-native-structural-review.md": {
+    "sha256": "18f3ed4dc9e98c6a8eb391feb23e111d6126f5295f6d8e6b056c96d4bc1c9cf9",
+    "bytes": 3348
+  },
+  "evidence/prof1-source-recovery-tests/INDEPENDENT_REVIEW.md": {
+    "sha256": "6fd0adc5a957de0be1e7611b6435dd1f7684c0c1ba34969b538751c777bed32e",
+    "bytes": 1936
+  },
+  "evidence/prof1-source-recovery-tests/qualification.md": {
+    "sha256": "ce40fddffe1621df4428a9441c82412022e7f7cf6d5160eda55e91958f9da89a",
+    "bytes": 3859
+  },
+  "evidence/prof1-source-recovery-tests/source_recovery_cases.rs": {
+    "sha256": "ca50048d8894b2c99acf79c8ed9219c2d3aa144866e3e8846bf5e214fa281cd0",
+    "bytes": 6673
+  },
+  "evidence/prof1-sql/README_DESIGN.md": {
+    "sha256": "01eeaaf6594679db6b77ad27e17ed1c120e59968596061a65e7c7ba0b3afc3ea",
+    "bytes": 7063
+  },
+  "evidence/prof1-sql/check_isolated_pg.py": {
+    "sha256": "c98ec7fbaa3c3aa81a9b4426add9f22f7691d7e74f5809b9896bb9bd2480476d",
+    "bytes": 4973
+  },
+  "evidence/prof1-sql/concurrency-results.json": {
+    "sha256": "ddcb78d0c41507aea9c26d2954f648170adf595fad2c097e92fae2d53655e867",
+    "bytes": 575
+  },
+  "evidence/prof1-sql/postgres-qualification.json": {
+    "sha256": "6370962ce0921673c9fef1cb8e7c4e8e027069ae66d869893ad849bcb342e0e8",
+    "bytes": 594
+  },
+  "evidence/prof1-sql/qualify_concurrency.py": {
+    "sha256": "aadd92053831a19c518778eedbb2b0d96116a1d0d1ff07f84a3527aed3e65900",
+    "bytes": 2417
+  },
+  "evidence/prof1-sql/qualify_semantics.py": {
+    "sha256": "042da8b5cd3d28274f9578e994fbc02da69f1038c039a532bff6358daf2a4dd1",
+    "bytes": 20619
+  },
+  "evidence/prof1-sql/rust-harness.log.gz": {
+    "sha256": "39681820eb1221f4af261963d6a10a8ddb21118258634bba7e8dd0785a20175f",
+    "bytes": 575
+  },
+  "evidence/prof1-sql/semantic-cases.json": {
+    "sha256": "cfe5de4407bbfb516337c9de8f3e38917a2a5ff832b682750c2386858f1bbcc0",
+    "bytes": 474319
+  },
+  "evidence/prof1-sql/semantic-matrix.md": {
+    "sha256": "16f7c04c69c9fdcc3b162f621d525e32b0d3088ebd4e7c6f1ea5bc91a806c79b",
+    "bytes": 2464
+  },
+  "evidence/prof1-sql/semantic-qualification.json": {
+    "sha256": "ddfd8392c57099229c2e8a3f7112828f208c8323b3cfd355c093b3e8711189b2",
+    "bytes": 1169
+  },
+  "evidence/prof1-sql/semantic-qualification.md": {
+    "sha256": "ff629d047d3d8249437b8da7e87035abe1572e3e8ef8a65b41414a28619a0875",
+    "bytes": 4969
+  },
+  "evidence/prof1-sql/semantic-results.json": {
+    "sha256": "060a622a3b3e16802eac0fc62076dcae3bae981b346e2e35b61d69f65238d3f3",
+    "bytes": 83482
+  },
+  "evidence/prof1-writer-final-proof.json": {
+    "sha256": "39d38073d1d40c0d00934e3e8cdefa598ef151aaf186c0a7d534b863a676c1fb",
+    "bytes": 4046
+  },
+  "ink-proposal-source/tools/content-schema/item-authoring/item_weapon_proficiency.py": {
+    "sha256": "c8ba9f789266943dbb9e861181ea1bbe321071f8c3e47c4b2ec0c12a5a8ed8ba",
+    "bytes": 33826
+  },
+  "ink-proposal-source/tools/content-schema/item-authoring/samples/weapon-threshold-tibiopedia-ink-manifest.json": {
+    "sha256": "54dcb65092d8c370adcaa99f03d1ad87b62cce3d679d7ccfcd8567347a0712d9",
+    "bytes": 1007
+  },
+  "ink-proposal-source/tools/content-schema/item-authoring/samples/weapon-threshold-tibiopedia-ink-observations.json": {
+    "sha256": "252190a37ebbf26f2b8846431ad04250e22910fd09a5705c53885c031c929166",
+    "bytes": 1221
+  },
+  "ink-proposal-source/tools/content-schema/item-authoring/test_item_weapon_proficiency.py": {
+    "sha256": "121f388818f70435e8fb5ae9083dd9fe4825bf257d351fdb93fe02f63dd6f71c",
+    "bytes": 17763
+  },
+  "logs/prof1-authority-complete-final-qualified.exit": {
+    "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "bytes": 2
+  },
+  "logs/prof1-authority-complete-final-qualified.log.gz": {
+    "sha256": "5ff7c8bac263101614c88b01e837d66d55d66dbf32c65e34ebbee2f0b831cc3b",
+    "bytes": 285
+  },
+  "logs/prof1-binding-integrity-red.log.gz": {
+    "sha256": "c847a66ba55edfdeb87675d8d12b042cb447d74a340e30065aa2da89264be084",
+    "bytes": 722
+  },
+  "logs/prof1-native-pg-final-qualified.exit": {
+    "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "bytes": 2
+  },
+  "logs/prof1-native-pg-final-qualified.log.gz": {
+    "sha256": "d3d18e7e5d6f1033c00f146ffd71b2fbf878c099be4140f45cc2aba689cab4eb",
+    "bytes": 285
+  },
+  "logs/prof1-progression-complete-final-qualified.exit": {
+    "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "bytes": 2
+  },
+  "logs/prof1-progression-complete-final-qualified.log.gz": {
+    "sha256": "3ebdaf9d7d8ee59821bfe9cdf17ba597e4e03cfd5aa5209ba9aa8df46ddae051",
+    "bytes": 285
+  },
+  "logs/prof1-writer-complete-final-clippy.exit": {
+    "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "bytes": 2
+  },
+  "logs/prof1-writer-complete-final-clippy.log.gz": {
+    "sha256": "c87c1fb761a5ad6733d16c01cf08f50273da65f01265dab92f07f89efe10ef9b",
+    "bytes": 216
+  },
+  "logs/prof1-writer-complete-final-fmt.exit": {
+    "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "bytes": 2
+  },
+  "logs/prof1-writer-complete-final-fmt.log.gz": {
+    "sha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+    "bytes": 20
+  },
+  "logs/prof1-writer-complete-final-package.exit": {
+    "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "bytes": 2
+  },
+  "logs/prof1-writer-complete-final-package.log.gz": {
+    "sha256": "188007fc16c2b38ed7dba241fd4231648a89727903cbe09a86baeb50a719628f",
+    "bytes": 1559
+  },
+  "logs/prof1-writer-final-governance.log.gz": {
+    "sha256": "cc518cff3d4c0bc21024f9f969aca32ea929ada8f49be71e0e057e60e03acccd",
+    "bytes": 115
+  },
+  "logs/prof1-writer-governance-tests.log.gz": {
+    "sha256": "e12df26347f5e4b390e7d4a70ec74c2bba06489ec767479d722bd21c47013c19",
+    "bytes": 55
+  }
+}

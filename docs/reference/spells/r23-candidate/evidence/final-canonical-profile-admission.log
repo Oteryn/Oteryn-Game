@@ -1,0 +1,8 @@
+
+running 1 test
+test content::native_gameplay::tests::actual_full_manifest_qualifies_source_world_and_all_owner_profiles has been running for over 60 seconds
+qualified and staged full source candidate: server=c7f8cfd14dcda5e90e7e9b47914d888df8af49b0e453d3100a28ccd0051d6d4a, client=c50620c32e7ea95cb7308fb221d1b09eacd5a9ca90a409f3d3ff6e238311fe54, source_world=44f860d20712a32e6bc22aa269d3e220d39d164b7738d3c150a406579849b5f5
+test content::native_gameplay::tests::actual_full_manifest_qualifies_source_world_and_all_owner_profiles ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1593 filtered out; finished in 67.67s
+

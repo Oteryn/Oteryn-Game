@@ -1,0 +1,36 @@
+{
+  "schema": "OTERYN_SPELL_SCENARIO_TOOL_VALIDATION/v1",
+  "command": "python -m unittest discover -s tools/qualification/spells -p test_qualification_tools.py -v",
+  "exit_code": 0,
+  "tests_passed": 12,
+  "executed_gameplay_scenarios": 0,
+  "definitions": 246,
+  "selected": 241,
+  "inactive_aliases": 5,
+  "executable_path_requires_fixture": 101,
+  "requires_runtime_owner_integration": 140,
+  "fixes": [
+    "require all mandatory v5 providers before output creation",
+    "validate locator/digest/training revision types and values",
+    "reject unknown provisioning fields and numerical policy",
+    "bounded manifest/provider/overlay reads before allocation",
+    "full scenario coverage and source-selected/equivalent alias refusal plans"
+  ],
+  "files": {
+    "tools/qualification/spells/prepare_test_manifest.py": "798715c95c2e4fc583ca41897b8dba76728c2856adb6426c03cd2e10238cd0a4",
+    "tools/qualification/spells/build_scenarios.py": "90726808bb050ff81475c242d3fa9a2dc5ccc7c1caf45d40b0ae6a6d81248e27",
+    "tools/qualification/spells/test_qualification_tools.py": "eba6e3b2d5eceb68a0e684da620d07b7d910b93dbe45baee0378166240ce1bc3",
+    "docs/reference/spells/r24-candidate/scenarios/player-spell-scenarios.json": "475e70be17ea4723d5d64b301f202805a10c5ee33742cc74890a09fbb834449d",
+    "docs/reference/spells/r24-candidate/scenarios/README.md": "4431ccbd095c6db121e929c06f15f56f5b4891e2b46ea0b28713d6681eb38dd9",
+    "tools/qualification/spells/README.md": "24e9eb3a2829f9d7d71b91cf9edd583ffd1489415bd84ee5ca90890f9c122205"
+  },
+  "scope": "Parser/qualification tooling only; not runtime owner integration or live gameplay receipt",
+  "actual_preserved_manifest_prepare": {
+    "source_manifest_sha256": "f4b41d2269a48d8308dacc7fb31e48686fb168042ed20ab074d8c89e574157a2",
+    "derived_manifest_sha256": "7a0d65b241b365e9c55190d28c1e159d10fa211636b87d40bf1edcc53936be2e",
+    "policy": "baseline_test",
+    "training_revision": "s3b-content-1",
+    "payloads": 11,
+    "runtime_activation": false
+  }
+}

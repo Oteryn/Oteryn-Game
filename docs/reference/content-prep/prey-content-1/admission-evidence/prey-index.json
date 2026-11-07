@@ -1,0 +1,24 @@
+{
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+  "path": "rulesets/progression/prey/",
+  "kind": "ruleset",
+  "owner": "Character progression/Economy",
+  "repository": "Oteryn/Oteryn-Game",
+  "population_state": "POPULATED",
+  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+  "notes": "Slots, roll/bonus/reroll rules and costs; current rolls durable.",
+  "runtime_admission": "BLOCKED",
+  "runtime_switch_authorized": false,
+  "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED",
+  "source_snapshot_target": "current-at-fetch-2026-10-18",
+  "payloads": [
+    {
+      "path": "rulesets/progression/prey/reference-evidence.json",
+      "sha256": "bc1d595a7747780894789ad78a56e17ba5eb367dd36d79affd1773c076352699"
+    },
+    {
+      "path": "rulesets/progression/prey/creature-eligibility.json",
+      "sha256": "9ef6058b2ca578d15168266f82b8f5b129b725b7d7de51944afc8ed5489d2136"
+    }
+  ]
+}

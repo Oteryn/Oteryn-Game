@@ -1,0 +1,20 @@
+{
+  "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+  "boundary_tests": [
+    "Configured 2000 ms cap accepted; 2001 ms configured cap rejected; smaller configured cap unsupported",
+    "Just-before, at and after deadline verified against trusted monotonic clock; contained connection/handshake deadlines never extend exchange deadline",
+    "Timeout after submission preserves original identity, pending checkpoint and occupied capacity until definitive classification; no automatic retry or detached work"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "minimum": 2000,
+    "maximum": 2000
+  },
+  "failure_category": "UNAVAILABLE",
+  "hard_maximum": 2000,
+  "id": "NSRC-HANDSHAKE-MS",
+  "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Connect and handshake are contained in exchange, not additive extensions; publication never extends authenticated source-age limit of five seconds. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+  "resource": "Handshake within exchange",
+  "unit": "milliseconds"
+}

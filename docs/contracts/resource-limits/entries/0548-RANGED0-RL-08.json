@@ -1,0 +1,23 @@
+{
+  "id": "RANGED0-RL-08",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md",
+  "resource": "chase refused-cell memory per chasing player (cells the Movement owner refused a chase step into as Blocked)",
+  "unit": "cells",
+  "hard_maximum": 8,
+  "configurable_range": {
+    "minimum": 8,
+    "maximum": 8
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Runtime-only and bounded before retention: a ninth Blocked cell evicts the oldest; each cell leaves the search after 2,000 ms (TTL, as the RANGED-0 \u00a78 failed-search wait); a target or mode change clears the memory. Any other refusal only drops the route and remembers nothing.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=8: apps/game-server/src/combat/attack/chase.rs refused_cells_expire_after_two_seconds_and_at_most_eight_are_kept (eight cells are kept)",
+    "max+1=9: the same test blocks nine cells and keeps the newest eight, the oldest evicted; at 2,000 ms every cell expires"
+  ],
+  "consumers": [
+    "apps/game-server/src/combat/attack/chase.rs CHASE_REFUSED_CELLS and CHASE_REFUSED_CELL_MICROS",
+    "CHASE-1 player chase (gameplay_transport::attack chase_step_refused)"
+  ],
+  "notes": "RANGED-0 \u00a78 CHASE-1: the Movement owner alone judges passability from committed facts (a blocking item has no in-memory projection), so the search avoids a cell it just refused as Blocked for 2,000 ms. Registered by LOOP-COMBAT-MODES-1."
+}

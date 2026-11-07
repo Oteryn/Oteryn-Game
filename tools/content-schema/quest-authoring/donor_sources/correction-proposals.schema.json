@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oteryn:correction-proposals.schema.json",
+  "title": "Donor source inventory evidence only",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "native_admission",
+    "semantic_quest_completion",
+    "new_canonical_quest_identity_created",
+    "formal_journal_declarations_missing_primary",
+    "missing_primary_declaration_ids",
+    "default_pack_configuration_evidence",
+    "unjoined_alternative_declarations",
+    "known_alternative_fallbacks",
+    "raw_only_baseline_script_files",
+    "raw_only_by_source",
+    "raw_only_by_pack",
+    "mechanism_candidates",
+    "summer_journal_comparison",
+    "followup_policy"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_DONOR_COMPONENT_FOLLOWUP/v1"
+    },
+    "native_admission": {
+      "const": false
+    },
+    "semantic_quest_completion": {
+      "const": false
+    },
+    "new_canonical_quest_identity_created": {
+      "const": false
+    },
+    "formal_journal_declarations_missing_primary": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "missing_primary_declaration_ids": {
+      "type": "array"
+    },
+    "default_pack_configuration_evidence": {
+      "type": "array"
+    },
+    "unjoined_alternative_declarations": {
+      "type": "array"
+    },
+    "known_alternative_fallbacks": {
+      "type": "array"
+    },
+    "raw_only_baseline_script_files": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "raw_only_by_source": {
+      "type": "object"
+    },
+    "raw_only_by_pack": {
+      "type": "object"
+    },
+    "mechanism_candidates": {
+      "type": "object"
+    },
+    "summer_journal_comparison": {
+      "type": "object"
+    },
+    "followup_policy": {
+      "type": "string"
+    }
+  }
+}

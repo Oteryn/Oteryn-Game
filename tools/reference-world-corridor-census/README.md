@@ -1,0 +1,61 @@
+# Reference world corridor census
+
+This is a thin Phase-A consumer of the protected
+`tools/game-atlas-fullworld-source/producer.py` API. It streams the exact pinned
+migration source once, retains only the two independent 32x32 floor `-7`
+starting shards, and writes one canonical JSON summary. It does not parse OTBM,
+select Global geometry, publish assets, or define production resource maxima.
+
+```bash
+python tools/reference-world-corridor-census/census.py \
+  --legacy-root /path/to/Otheryn \
+  --map /path/to/world.otbm \
+  --asset-zip /path/to/15.32.zip \
+  --assets /path/to/extracted/assets \
+  --output /tmp/reference-world-corridor-census.json
+```
+
+The command must run in a fresh one-shot interpreter and fails before counting
+unless the complete legacy checkout is clean, its loaded parser files match the
+pinned Git blobs, and all producer-owned input identities match. Edge occupancy
+is diagnostic only; any actual or ambiguous clipping need terminates as
+`WINDOW_EXPANSION_REQUIRED` before another shard is counted. Canonical byte
+evidence hashes direct concatenation of exact producer records while raw bytes
+remain ephemeral. Output classifications remain
+`MIGRATION_EVIDENCE / OTS_HYPOTHESIS_ONLY`.
+
+## B6 interaction-binding catalogue
+
+The tracked B6 evidence
+(`docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings*`)
+is regenerated locally with `interaction_binding_catalog.py`, against the pinned
+source recorded in the evidence index `source` field and the pinned parser
+lineage and 15.32 asset inputs that the generator checks. Run it twice and with
+`--enumeration reverse`, and require byte-identical output before replacing the
+tracked files. Since GAME-DECANARY-2a, Game CI no longer fetches that source:
+the `Content World B6 interaction bindings` workflow runs the offline
+self-tests and an offline closure check. The check requires that:
+
+- the `game_inputs` blobs recorded in the index match the checked-out files,
+  both the committed blob and the worktree bytes;
+- every recorded `tracked_path` is the full path the generator writes;
+- the tracked file set is exactly the referenced set;
+- each record re-normalizes unchanged with the checked-out mapper;
+- the index, family and shard files are byte-identical to an offline rebuild
+  with the checked-out generator.
+
+The external source and parser pins can only be compared with the checked-out
+generator's constants, because CI does not fetch them. The check runs whenever
+the tracked evidence, the generator or a recorded Game input changes.
+
+
+## Scope evolution
+
+This directory also contains protected successor census/crosswalk utilities that
+grew out of the original corridor work. Their existing paths are intentionally
+preserved to avoid cosmetic churn and workflow/import breakage.
+
+New tooling for the repository-wide Tibia content census programme belongs under
+`tools/content-census/`, organized by content family as each real lane is
+implemented. Do not add further unrelated family scripts to this flat directory
+unless they are required to maintain an existing protected workflow.

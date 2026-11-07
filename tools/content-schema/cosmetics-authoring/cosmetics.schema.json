@@ -1,0 +1,496 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "profile",
+    "client_version",
+    "document",
+    "promotions"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_CHARACTER_COSMETICS_AUTHORING/v1"
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "revision",
+        "mount_speed_bonus"
+      ],
+      "properties": {
+        "kind": {
+          "const": "reference"
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[ -~]+$"
+        },
+        "mount_speed_bonus": {
+          "const": 10
+        }
+      }
+    },
+    "client_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[ -~]+$"
+    },
+    "document": {
+      "$ref": "#/$defs/document"
+    },
+    "promotions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/promotion"
+      },
+      "minItems": 1,
+      "maxItems": 65536
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "OTERYN_CHARACTER_COSMETICS_AUTHORING/v1",
+  "$defs": {
+    "citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference",
+        "revision",
+        "sha256"
+      ],
+      "properties": {
+        "reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "^[ -~]+$"
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[ -~]+$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^(?!0{64}$)[0-9a-f]{64}$"
+        }
+      }
+    },
+    "look": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_record_sha256"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "source_record_sha256": {
+          "type": "string",
+          "pattern": "^(?!0{64}$)[0-9a-f]{64}$"
+        }
+      }
+    },
+    "outfit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "revision",
+        "female",
+        "male",
+        "addon_count",
+        "starter_female",
+        "starter_male",
+        "starter_addons_female",
+        "starter_addons_male",
+        "premium",
+        "unlock_sources",
+        "source"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^oteryn:[a-z0-9][a-z0-9._/:-]*$"
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[ -~]+$"
+        },
+        "female": {
+          "$ref": "#/$defs/look"
+        },
+        "male": {
+          "$ref": "#/$defs/look"
+        },
+        "addon_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8
+        },
+        "starter_female": {
+          "type": "boolean"
+        },
+        "starter_male": {
+          "type": "boolean"
+        },
+        "starter_addons_female": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "starter_addons_male": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "premium": {
+          "type": "boolean"
+        },
+        "unlock_sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/citation"
+          },
+          "minItems": 0,
+          "maxItems": 4096
+        },
+        "source": {
+          "$ref": "#/$defs/citation"
+        }
+      }
+    },
+    "mount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "revision",
+        "look",
+        "speed_bonus",
+        "premium",
+        "source"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^oteryn:[a-z0-9][a-z0-9._/:-]*$"
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[ -~]+$"
+        },
+        "look": {
+          "$ref": "#/$defs/look"
+        },
+        "speed_bonus": {
+          "const": 10
+        },
+        "premium": {
+          "type": "boolean"
+        },
+        "source": {
+          "$ref": "#/$defs/citation"
+        }
+      }
+    },
+    "fallback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outfit_key",
+        "colours"
+      ],
+      "properties": {
+        "outfit_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^oteryn:[a-z0-9][a-z0-9._/:-]*$"
+        },
+        "colours": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 132
+          },
+          "minItems": 4,
+          "maxItems": 4
+        }
+      }
+    },
+    "palette": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "revision",
+        "colours",
+        "source"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^oteryn:[a-z0-9][a-z0-9._/:-]*$"
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[ -~]+$"
+        },
+        "colours": {
+          "type": "array",
+          "minItems": 133,
+          "maxItems": 133,
+          "items": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            }
+          }
+        },
+        "source": {
+          "$ref": "#/$defs/citation"
+        }
+      }
+    },
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "content_revision",
+        "source_manifest_sha256",
+        "source_appearances_sha256",
+        "palette",
+        "outfits",
+        "mounts",
+        "fallbacks"
+      ],
+      "properties": {
+        "schema": {
+          "const": "OTERYN_CHARACTER_COSMETICS/v1"
+        },
+        "content_revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[ -~]+$"
+        },
+        "source_manifest_sha256": {
+          "type": "string",
+          "pattern": "^(?!0{64}$)[0-9a-f]{64}$"
+        },
+        "source_appearances_sha256": {
+          "type": "string",
+          "pattern": "^(?!0{64}$)[0-9a-f]{64}$"
+        },
+        "palette": {
+          "$ref": "#/$defs/palette"
+        },
+        "outfits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/outfit"
+          },
+          "minItems": 1,
+          "maxItems": 4096
+        },
+        "mounts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mount"
+          },
+          "minItems": 0,
+          "maxItems": 4096
+        },
+        "fallbacks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "female",
+            "male"
+          ],
+          "properties": {
+            "female": {
+              "$ref": "#/$defs/fallback"
+            },
+            "male": {
+              "$ref": "#/$defs/fallback"
+            }
+          }
+        },
+        "grant_mappings": {
+          "type": "array",
+          "maxItems": 4096,
+          "items": {
+            "$ref": "#/$defs/grantMapping"
+          }
+        }
+      }
+    },
+    "promotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "value",
+        "state",
+        "decision",
+        "source_kind",
+        "source"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[ -~]+$"
+        },
+        "value": {},
+        "state": {
+          "const": "PROMOTED"
+        },
+        "decision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "^[ -~]+$"
+        },
+        "source_kind": {
+          "enum": [
+            "STRUCTURED_REFERENCE_DATA",
+            "OWNER_DECISION",
+            "ACCEPTED_REFERENCE_EVIDENCE"
+          ]
+        },
+        "source": {
+          "$ref": "#/$defs/citation"
+        }
+      }
+    },
+    "grantMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "grant_key",
+        "target",
+        "compatible_provenance"
+      ],
+      "properties": {
+        "grant_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[ -~]+$"
+        },
+        "target": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "outfit_key"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "Outfit"
+                },
+                "outfit_key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160,
+                  "pattern": "^oteryn:[a-z0-9][a-z0-9._/:-]*$"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "outfit_key",
+                "addon"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "Addon"
+                },
+                "outfit_key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160,
+                  "pattern": "^oteryn:[a-z0-9][a-z0-9._/:-]*$"
+                },
+                "addon": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "mount_key"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "Mount"
+                },
+                "mount_key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160,
+                  "pattern": "^oteryn:[a-z0-9][a-z0-9._/:-]*$"
+                }
+              }
+            }
+          ]
+        },
+        "compatible_provenance": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[ -~]+$"
+          }
+        }
+      }
+    }
+  }
+}

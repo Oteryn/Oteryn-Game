@@ -1,0 +1,23 @@
+{
+  "id": "MARKET0-MAX-TOTAL",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md",
+  "resource": "Market piece price and checked offer total",
+  "unit": "gold pieces",
+  "hard_maximum": 999999999999,
+  "configurable_range": {
+    "minimum": 999999999999,
+    "maximum": 999999999999
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Bounded MARKET0 rules and dormant storage; no runtime value writer is enabled.",
+  "client_visible": false,
+  "boundary_tests": [
+    "market_property_checked_totals_and_fees"
+  ],
+  "consumers": [
+    "crates/gameplay/economy/src/market.rs",
+    "crates/gameplay/durability/src/durability/market.rs",
+    "apps/game-server/migrations/0155_market_offer_book.sql"
+  ],
+  "notes": "MARKET-1 dependency fallback. Native escrow admission, atomic Bank/Inbox settlement, audit and wire remain unfinished."
+}

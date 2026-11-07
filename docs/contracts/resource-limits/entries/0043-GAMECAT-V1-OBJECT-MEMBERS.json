@@ -1,0 +1,18 @@
+{
+  "id": "GAMECAT-V1-OBJECT-MEMBERS",
+  "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+  "resource": "Members in one nested entity/relation data object",
+  "unit": "members",
+  "hard_maximum": 4096,
+  "configurable_range": {
+    "minimum": 4096,
+    "maximum": 4096
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bound object members before recursive validation and canonical serialization.",
+  "client_visible": false,
+  "boundary_tests": [
+    "4,096 members accepted when otherwise valid",
+    "4,097 rejected before unbounded object work"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "id": 233,
+  "name": "PLAYER_TYPING_V1",
+  "constant": "player_typing::CAPABILITY_PLAYER_TYPING_V1",
+  "requires": [
+    6,
+    7
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    447
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

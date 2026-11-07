@@ -1,0 +1,2962 @@
+{
+  "base": {
+    "engine": "crystal",
+    "repository": "zimbadev/crystalserver",
+    "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+  },
+  "blockers_by_item_count": [
+    {
+      "blocker": "family_profile_unresolved",
+      "items": 9
+    }
+  ],
+  "by_profile": {
+    "decoration": 127,
+    "document": 24,
+    "equipment_armor": 5,
+    "food": 1,
+    "light_source": 2,
+    "material_valuable": 80,
+    "plant": 2,
+    "tool": 2,
+    "weapon_distance": 4,
+    "weapon_magic": 4,
+    "weapon_melee": 14
+  },
+  "donor": {
+    "artifact_digests": {
+      "data/items/appearances.dat": {
+        "digest_mode": "raw_bytes",
+        "sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1"
+      },
+      "data/items/items.xml": {
+        "digest_mode": "text_lf_normalized",
+        "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece"
+      }
+    },
+    "branch": "summer-update",
+    "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "repository": "zimbadev/crystalserver"
+  },
+  "family_profile_basis": {
+    "engine_attribute": 257,
+    "wiki_evidence_fallback": 8
+  },
+  "family_profile_rule": {},
+  "items": {
+    "34338": {
+      "key": "oteryn:item.registry.i00038094",
+      "name": "refiner of magic",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "35500": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "donor:crystalserver@00ce02a5:item/35500",
+      "name": "magic portal",
+      "outcome": "resolved"
+    },
+    "40527": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038095",
+      "name": "rotten feather",
+      "outcome": "resolved"
+    },
+    "40528": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038096",
+      "name": "ritual tooth",
+      "outcome": "resolved"
+    },
+    "40529": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038097",
+      "name": "gold-brocaded cloth",
+      "outcome": "resolved"
+    },
+    "43670": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038098",
+      "name": "cauldron (witchcraft)",
+      "outcome": "resolved"
+    },
+    "43674": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038099",
+      "name": "table (without candles)",
+      "outcome": "resolved"
+    },
+    "43675": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038100",
+      "name": "table with candles",
+      "outcome": "resolved"
+    },
+    "43676": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038101",
+      "name": "table with burning candles",
+      "outcome": "resolved"
+    },
+    "43677": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038102",
+      "name": "chest full of witchcraft",
+      "outcome": "resolved"
+    },
+    "43681": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038103",
+      "name": "witchcraft chair",
+      "outcome": "resolved"
+    },
+    "43687": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038104",
+      "name": "witchcraft cabinet",
+      "outcome": "resolved"
+    },
+    "43689": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038105",
+      "name": "witchcraft portal",
+      "outcome": "resolved"
+    },
+    "43693": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038106",
+      "name": "witchcraft fireplace",
+      "outcome": "resolved"
+    },
+    "43697": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038107",
+      "name": "witchcraft cupboard",
+      "outcome": "resolved"
+    },
+    "43701": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038108",
+      "name": "witchcraft summoning circle",
+      "outcome": "resolved"
+    },
+    "43703": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038109",
+      "name": "witchcraft bookstand",
+      "outcome": "resolved"
+    },
+    "43707": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038110",
+      "name": "witchcraft cage",
+      "outcome": "resolved"
+    },
+    "43709": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038111",
+      "name": "witchcraft scroll",
+      "outcome": "resolved"
+    },
+    "43711": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038112",
+      "name": "witchcraft forest herbs",
+      "outcome": "resolved"
+    },
+    "43713": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038113",
+      "name": "witchcraft sweet herbs",
+      "outcome": "resolved"
+    },
+    "43715": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038114",
+      "name": "witchcraft bed",
+      "outcome": "resolved"
+    },
+    "43739": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038115",
+      "name": "moon compass",
+      "outcome": "resolved"
+    },
+    "43847": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038116",
+      "name": "rotten vermin ichor",
+      "outcome": "resolved"
+    },
+    "43848": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038117",
+      "name": "worm sponge",
+      "outcome": "resolved"
+    },
+    "43856": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038118",
+      "name": "bloated maggot",
+      "outcome": "resolved"
+    },
+    "43857": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038119",
+      "name": "blooded worm",
+      "outcome": "resolved"
+    },
+    "43858": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038120",
+      "name": "basalt crumbs",
+      "outcome": "resolved"
+    },
+    "43859": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038121",
+      "name": "basalt core",
+      "outcome": "resolved"
+    },
+    "43888": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038122",
+      "name": "closed pocket sundial",
+      "outcome": "resolved"
+    },
+    "43903": {
+      "key": "oteryn:item.registry.i00038123",
+      "name": "blue lava",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "43961": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038124",
+      "name": "darklight figurine",
+      "outcome": "resolved"
+    },
+    "43962": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038125",
+      "name": "putrefactive figurine",
+      "outcome": "resolved"
+    },
+    "43963": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038126",
+      "name": "figurine of Bakragore",
+      "outcome": "resolved"
+    },
+    "43964": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038127",
+      "name": "Ichgahal's fungal infestation",
+      "outcome": "resolved"
+    },
+    "43965": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038128",
+      "name": "Murcion's mycelium",
+      "outcome": "resolved"
+    },
+    "43966": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038129",
+      "name": "Chagorz igneous obsidian",
+      "outcome": "resolved"
+    },
+    "43967": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038130",
+      "name": "Vemiath's infused basalt",
+      "outcome": "resolved"
+    },
+    "43968": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038131",
+      "name": "Bakragore's amalgamation",
+      "outcome": "resolved"
+    },
+    "44030": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038132",
+      "name": "mask of the defiler",
+      "outcome": "resolved"
+    },
+    "44073": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038133",
+      "name": "cave bench",
+      "outcome": "resolved"
+    },
+    "44077": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038134",
+      "name": "cave chair",
+      "outcome": "resolved"
+    },
+    "44078": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038135",
+      "name": "cave chest",
+      "outcome": "resolved"
+    },
+    "44082": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038136",
+      "name": "cave table",
+      "outcome": "resolved"
+    },
+    "44083": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038137",
+      "name": "cave cabinet",
+      "outcome": "resolved"
+    },
+    "44087": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038138",
+      "name": "cave floor lamp",
+      "outcome": "resolved"
+    },
+    "44089": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038139",
+      "name": "cave wall lamp",
+      "outcome": "resolved"
+    },
+    "44091": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038140",
+      "name": "gathered cave floor earth",
+      "outcome": "resolved"
+    },
+    "44092": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038141",
+      "name": "cave floor earth",
+      "outcome": "resolved"
+    },
+    "44093": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038142",
+      "name": "skelaptor",
+      "outcome": "resolved"
+    },
+    "44098": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038143",
+      "name": "cave bed",
+      "outcome": "resolved"
+    },
+    "44110": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038144",
+      "name": "cave wall panel (1)",
+      "outcome": "resolved"
+    },
+    "44114": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038145",
+      "name": "cave weapon display",
+      "outcome": "resolved"
+    },
+    "44116": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038146",
+      "name": "cave firewood",
+      "outcome": "resolved"
+    },
+    "44118": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038147",
+      "name": "cave remains",
+      "outcome": "resolved"
+    },
+    "44120": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038148",
+      "name": "cave bones",
+      "outcome": "resolved"
+    },
+    "44122": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038149",
+      "name": "cave mural",
+      "outcome": "resolved"
+    },
+    "44124": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038150",
+      "name": "low cave mural",
+      "outcome": "resolved"
+    },
+    "44126": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038151",
+      "name": "cave panel",
+      "outcome": "resolved"
+    },
+    "44128": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038152",
+      "name": "low cave panel",
+      "outcome": "resolved"
+    },
+    "44130": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038153",
+      "name": "cave fence",
+      "outcome": "resolved"
+    },
+    "44132": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038154",
+      "name": "low cave fence",
+      "outcome": "resolved"
+    },
+    "44134": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038155",
+      "name": "cave rampart",
+      "outcome": "resolved"
+    },
+    "44136": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038156",
+      "name": "low cave rampart",
+      "outcome": "resolved"
+    },
+    "44138": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038157",
+      "name": "cave wall border",
+      "outcome": "resolved"
+    },
+    "44140": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038158",
+      "name": "cave panel border",
+      "outcome": "resolved"
+    },
+    "44142": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038159",
+      "name": "cave fence border",
+      "outcome": "resolved"
+    },
+    "44144": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038160",
+      "name": "cave rampart border",
+      "outcome": "resolved"
+    },
+    "44146": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038161",
+      "name": "cave fireplace",
+      "outcome": "resolved"
+    },
+    "44438": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038162",
+      "name": "broken Mitmah necklace",
+      "outcome": "resolved"
+    },
+    "44439": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038163",
+      "name": "crystal of the Mitmah",
+      "outcome": "resolved"
+    },
+    "44440": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038164",
+      "name": "yapunac dagger",
+      "outcome": "resolved"
+    },
+    "44449": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038165",
+      "name": "crystal chair",
+      "outcome": "resolved"
+    },
+    "44453": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038166",
+      "name": "crystal chest",
+      "outcome": "resolved"
+    },
+    "44457": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038167",
+      "name": "crystal table (store)",
+      "outcome": "resolved"
+    },
+    "44458": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038168",
+      "name": "crystal cabinet",
+      "outcome": "resolved"
+    },
+    "44460": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038169",
+      "name": "crystal floor lamp",
+      "outcome": "resolved"
+    },
+    "44515": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038170",
+      "name": "crystal wall lamp",
+      "outcome": "resolved"
+    },
+    "44517": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038171",
+      "name": "gnome baby",
+      "outcome": "resolved"
+    },
+    "44545": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038172",
+      "name": "crystal bed",
+      "outcome": "resolved"
+    },
+    "44727": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038173",
+      "name": "broken Mitmah chestplate",
+      "outcome": "resolved"
+    },
+    "44728": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038174",
+      "name": "splintered Mitmah gem",
+      "outcome": "resolved"
+    },
+    "44729": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038175",
+      "name": "Atab's Mitmah helmet",
+      "outcome": "resolved"
+    },
+    "44736": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038176",
+      "name": "bulltaur horn",
+      "outcome": "resolved"
+    },
+    "44737": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038177",
+      "name": "bulltaur hoof",
+      "outcome": "resolved"
+    },
+    "44738": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038178",
+      "name": "bulltaur armor scrap",
+      "outcome": "resolved"
+    },
+    "44739": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038179",
+      "name": "encrypted notes",
+      "outcome": "resolved"
+    },
+    "44740": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038180",
+      "name": "strange substance",
+      "outcome": "resolved"
+    },
+    "44741": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038181",
+      "name": "staff piece",
+      "outcome": "resolved"
+    },
+    "44742": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038182",
+      "name": "idol of the forge",
+      "outcome": "resolved"
+    },
+    "45318": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038183",
+      "name": "gravestone chair",
+      "outcome": "resolved"
+    },
+    "45322": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038184",
+      "name": "spooky chest",
+      "outcome": "resolved"
+    },
+    "45326": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038185",
+      "name": "skull cabinet",
+      "outcome": "resolved"
+    },
+    "45328": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038186",
+      "name": "gravestone table",
+      "outcome": "resolved"
+    },
+    "45331": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038187",
+      "name": "reaper clock",
+      "outcome": "resolved"
+    },
+    "45333": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038188",
+      "name": "tomb bed",
+      "outcome": "resolved"
+    },
+    "45345": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038189",
+      "name": "morbid floor lamp",
+      "outcome": "resolved"
+    },
+    "45349": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038190",
+      "name": "black heart",
+      "outcome": "resolved"
+    },
+    "45352": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038191",
+      "name": "reaper painting",
+      "outcome": "resolved"
+    },
+    "45353": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038192",
+      "name": "spooky mirror",
+      "outcome": "resolved"
+    },
+    "45355": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038193",
+      "name": "vulture",
+      "outcome": "resolved"
+    },
+    "45493": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038194",
+      "name": "blossom chair",
+      "outcome": "resolved"
+    },
+    "45497": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038195",
+      "name": "blossom chest",
+      "outcome": "resolved"
+    },
+    "45501": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038196",
+      "name": "lilypad table",
+      "outcome": "resolved"
+    },
+    "45503": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038197",
+      "name": "blossom cabinet",
+      "outcome": "resolved"
+    },
+    "45505": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038198",
+      "name": "blossom bed",
+      "outcome": "resolved"
+    },
+    "45517": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038199",
+      "name": "pink blossom lamp",
+      "outcome": "resolved"
+    },
+    "45521": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038200",
+      "name": "purple blossom lamp",
+      "outcome": "resolved"
+    },
+    "45523": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038201",
+      "name": "red heart",
+      "outcome": "resolved"
+    },
+    "45526": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038202",
+      "name": "unicorn painting",
+      "outcome": "resolved"
+    },
+    "45527": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038203",
+      "name": "flowering log",
+      "outcome": "resolved"
+    },
+    "48253": {
+      "family_profile": "food",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038204",
+      "name": "beijinho",
+      "outcome": "resolved"
+    },
+    "48574": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038205",
+      "name": "candy chest",
+      "outcome": "resolved"
+    },
+    "48575": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038206",
+      "name": "candy chest",
+      "outcome": "resolved"
+    },
+    "48576": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038207",
+      "name": "beehive",
+      "outcome": "resolved"
+    },
+    "48577": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038208",
+      "name": "beehive",
+      "outcome": "resolved"
+    },
+    "49199": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038209",
+      "name": "wicker bed",
+      "outcome": "resolved"
+    },
+    "49211": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038210",
+      "name": "overgrown floor lamp",
+      "outcome": "resolved"
+    },
+    "49215": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038211",
+      "name": "water floor in a bucket",
+      "outcome": "resolved"
+    },
+    "49216": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038212",
+      "name": "water floor",
+      "outcome": "resolved"
+    },
+    "49217": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038213",
+      "name": "wall growth",
+      "outcome": "resolved"
+    },
+    "49218": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038214",
+      "name": "kapok tree",
+      "outcome": "resolved"
+    },
+    "49219": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038215",
+      "name": "cormayan beech",
+      "outcome": "resolved"
+    },
+    "49220": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038216",
+      "name": "sycamore tree",
+      "outcome": "resolved"
+    },
+    "49221": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038217",
+      "name": "vanduran tuft palm",
+      "outcome": "resolved"
+    },
+    "49222": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038218",
+      "name": "chill nettle shrub",
+      "outcome": "resolved"
+    },
+    "49223": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038219",
+      "name": "umbrella fern",
+      "outcome": "resolved"
+    },
+    "49224": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038220",
+      "name": "spotted jungle orchid",
+      "outcome": "resolved"
+    },
+    "49225": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038221",
+      "name": "blue witches' cauldron flower",
+      "outcome": "resolved"
+    },
+    "49226": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038222",
+      "name": "sloth",
+      "outcome": "resolved"
+    },
+    "49230": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038223",
+      "name": "ember chair",
+      "outcome": "resolved"
+    },
+    "49234": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038224",
+      "name": "ember bench",
+      "outcome": "resolved"
+    },
+    "49238": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038225",
+      "name": "ember chest",
+      "outcome": "resolved"
+    },
+    "49242": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038226",
+      "name": "ember table",
+      "outcome": "resolved"
+    },
+    "49244": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038227",
+      "name": "ember cabinet",
+      "outcome": "resolved"
+    },
+    "49246": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038228",
+      "name": "ember bed",
+      "outcome": "resolved"
+    },
+    "49258": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038229",
+      "name": "small volcano",
+      "outcome": "resolved"
+    },
+    "49260": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038230",
+      "name": "ember veins",
+      "outcome": "resolved"
+    },
+    "49262": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038231",
+      "name": "ember floor crack",
+      "outcome": "resolved"
+    },
+    "49264": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038232",
+      "name": "small fire elemental",
+      "outcome": "resolved"
+    },
+    "49268": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038233",
+      "name": "ember fissure",
+      "outcome": "resolved"
+    },
+    "50065": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038234",
+      "name": "Rotrender scalp",
+      "outcome": "resolved"
+    },
+    "50066": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038235",
+      "name": "Rotrender claw",
+      "outcome": "resolved"
+    },
+    "50172": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038236",
+      "name": "sickbay table",
+      "outcome": "resolved"
+    },
+    "50177": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038237",
+      "name": "sickbay cabinet",
+      "outcome": "resolved"
+    },
+    "50205": {
+      "key": "oteryn:item.registry.i00038238",
+      "name": "sickbed",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "50206": {
+      "key": "oteryn:item.registry.i00038239",
+      "name": "sickbed",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "50207": {
+      "key": "oteryn:item.registry.i00038240",
+      "name": "sickbed",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "50208": {
+      "key": "oteryn:item.registry.i00038241",
+      "name": "sickbed",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "50209": {
+      "key": "oteryn:item.registry.i00038242",
+      "name": "sickbed",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "50210": {
+      "key": "oteryn:item.registry.i00038243",
+      "name": "sickbed",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "50211": {
+      "key": "oteryn:item.registry.i00038244",
+      "name": "sickbed",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "50212": {
+      "key": "oteryn:item.registry.i00038245",
+      "name": "sickbed",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "50213": {
+      "family_profile": "decoration",
+      "family_profile_basis": "wiki_evidence_fallback",
+      "key": "oteryn:item.registry.i00038246",
+      "name": "sickbed",
+      "outcome": "resolved"
+    },
+    "50214": {
+      "family_profile": "decoration",
+      "family_profile_basis": "wiki_evidence_fallback",
+      "key": "oteryn:item.registry.i00038247",
+      "name": "sickbed",
+      "outcome": "resolved"
+    },
+    "50215": {
+      "family_profile": "decoration",
+      "family_profile_basis": "wiki_evidence_fallback",
+      "key": "oteryn:item.registry.i00038248",
+      "name": "sickbed",
+      "outcome": "resolved"
+    },
+    "50216": {
+      "family_profile": "decoration",
+      "family_profile_basis": "wiki_evidence_fallback",
+      "key": "oteryn:item.registry.i00038249",
+      "name": "sickbed",
+      "outcome": "resolved"
+    },
+    "50217": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038250",
+      "name": "creatures in jars",
+      "outcome": "resolved"
+    },
+    "50219": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038251",
+      "name": "small creatures in jars",
+      "outcome": "resolved"
+    },
+    "50221": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038252",
+      "name": "brain in a jar (store)",
+      "outcome": "resolved"
+    },
+    "50223": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038253",
+      "name": "leech terrarium",
+      "outcome": "resolved"
+    },
+    "50236": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038254",
+      "name": "several skulls",
+      "outcome": "resolved"
+    },
+    "50238": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038255",
+      "name": "paramedic demon",
+      "outcome": "resolved"
+    },
+    "51424": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038256",
+      "name": "cookbook",
+      "outcome": "resolved"
+    },
+    "51428": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038257",
+      "name": "pressed flower",
+      "outcome": "resolved"
+    },
+    "51429": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038258",
+      "name": "axe of Sir Leonard",
+      "outcome": "resolved"
+    },
+    "51430": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038259",
+      "name": "helmet of Sir Leonard",
+      "outcome": "resolved"
+    },
+    "51636": {
+      "key": "oteryn:item.registry.i00038260",
+      "name": "richly ornamented floor",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53207": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038261",
+      "name": "moonsilver epee",
+      "outcome": "resolved"
+    },
+    "53208": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038262",
+      "name": "stellar moonsilver epee",
+      "outcome": "resolved"
+    },
+    "53209": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038263",
+      "name": "moonsilver claymore",
+      "outcome": "resolved"
+    },
+    "53210": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038264",
+      "name": "stellar moonsilver claymore",
+      "outcome": "resolved"
+    },
+    "53211": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038265",
+      "name": "moonsilver axe",
+      "outcome": "resolved"
+    },
+    "53212": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038266",
+      "name": "stellar moonsilver axe",
+      "outcome": "resolved"
+    },
+    "53213": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038267",
+      "name": "moonsilver chopper",
+      "outcome": "resolved"
+    },
+    "53214": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038268",
+      "name": "stellar moonsilver chopper",
+      "outcome": "resolved"
+    },
+    "53215": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038269",
+      "name": "moonsilver crusher",
+      "outcome": "resolved"
+    },
+    "53216": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038270",
+      "name": "stellar moonsilver crusher",
+      "outcome": "resolved"
+    },
+    "53217": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038271",
+      "name": "moonsilver mace",
+      "outcome": "resolved"
+    },
+    "53218": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038272",
+      "name": "stellar moonsilver mace",
+      "outcome": "resolved"
+    },
+    "53219": {
+      "family_profile": "weapon_magic",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038273",
+      "name": "moonsilver channeler",
+      "outcome": "resolved"
+    },
+    "53220": {
+      "family_profile": "weapon_magic",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038274",
+      "name": "stellar moonsilver channeler",
+      "outcome": "resolved"
+    },
+    "53221": {
+      "family_profile": "weapon_magic",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038275",
+      "name": "moonsilver specre",
+      "outcome": "resolved"
+    },
+    "53222": {
+      "family_profile": "weapon_magic",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038276",
+      "name": "stellar moonsilver specre",
+      "outcome": "resolved"
+    },
+    "53223": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038277",
+      "name": "moonsilver katar",
+      "outcome": "resolved"
+    },
+    "53224": {
+      "family_profile": "weapon_melee",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038278",
+      "name": "stellar moonsilver katar",
+      "outcome": "resolved"
+    },
+    "53225": {
+      "family_profile": "weapon_distance",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038279",
+      "name": "moonsilver bow",
+      "outcome": "resolved"
+    },
+    "53226": {
+      "family_profile": "weapon_distance",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038280",
+      "name": "stellar moonsilver bow",
+      "outcome": "resolved"
+    },
+    "53227": {
+      "family_profile": "weapon_distance",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038281",
+      "name": "moonsilver crossbow",
+      "outcome": "resolved"
+    },
+    "53228": {
+      "family_profile": "weapon_distance",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038282",
+      "name": "stellar moonsilver crossbow",
+      "outcome": "resolved"
+    },
+    "53229": {
+      "family_profile": "equipment_armor",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038283",
+      "name": "moonsilver battle visor",
+      "outcome": "resolved"
+    },
+    "53230": {
+      "family_profile": "equipment_armor",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038284",
+      "name": "moonsilver trail hood",
+      "outcome": "resolved"
+    },
+    "53231": {
+      "family_profile": "equipment_armor",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038285",
+      "name": "moonsilver nimbus hat",
+      "outcome": "resolved"
+    },
+    "53232": {
+      "family_profile": "equipment_armor",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038286",
+      "name": "moonsilver spirit mask",
+      "outcome": "resolved"
+    },
+    "53233": {
+      "family_profile": "equipment_armor",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038287",
+      "name": "moonsilver strike helm",
+      "outcome": "resolved"
+    },
+    "53380": {
+      "key": "donor:crystalserver@00ce02a5:item/53380",
+      "name": "closed door",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "53430": {
+      "key": "oteryn:item.registry.i00038288",
+      "name": "stone stairs",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "53431": {
+      "key": "oteryn:item.registry.i00038289",
+      "name": "stone stairs",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "53514": {
+      "key": "oteryn:item.registry.i00038290",
+      "name": "crystal apparatus",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "53532": {
+      "family_profile": "plant",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038291",
+      "name": "bluish whisper reed",
+      "outcome": "resolved"
+    },
+    "53542": {
+      "family_profile": "plant",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038292",
+      "name": "bluish tide veil",
+      "outcome": "resolved"
+    },
+    "53573": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038293",
+      "name": "cyclops steel bed",
+      "outcome": "resolved"
+    },
+    "53609": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038294",
+      "name": "cyclops baby",
+      "outcome": "resolved"
+    },
+    "53615": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038295",
+      "name": "framework room divider",
+      "outcome": "resolved"
+    },
+    "53617": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038296",
+      "name": "dark framework room divider",
+      "outcome": "resolved"
+    },
+    "53619": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038297",
+      "name": "ancient stone room divider",
+      "outcome": "resolved"
+    },
+    "53621": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038298",
+      "name": "sandstone room divider",
+      "outcome": "resolved"
+    },
+    "53623": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038299",
+      "name": "stone room divider",
+      "outcome": "resolved"
+    },
+    "53625": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038300",
+      "name": "white stone room divider",
+      "outcome": "resolved"
+    },
+    "53627": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038301",
+      "name": "gothic stone room divider",
+      "outcome": "resolved"
+    },
+    "53629": {
+      "family_profile": "decoration",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038302",
+      "name": "bamboo room divider",
+      "outcome": "resolved"
+    },
+    "53678": {
+      "key": "oteryn:item.registry.i00038303",
+      "name": "energy cannon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "primarytype_world_object"
+    },
+    "53679": {
+      "key": "oteryn:item.registry.i00038304",
+      "name": "energy cannon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "primarytype_world_object"
+    },
+    "53680": {
+      "key": "oteryn:item.registry.i00038305",
+      "name": "energy cannon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "primarytype_world_object"
+    },
+    "53681": {
+      "key": "oteryn:item.registry.i00038306",
+      "name": "energy cannon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "primarytype_world_object"
+    },
+    "53692": {
+      "blocker": "family_profile_unresolved",
+      "key": "oteryn:item.registry.i00038307",
+      "name": "sample of bluish tide veil",
+      "outcome": "unresolved"
+    },
+    "53693": {
+      "blocker": "family_profile_unresolved",
+      "key": "oteryn:item.registry.i00038308",
+      "name": "sample of bluish whisper reed",
+      "outcome": "unresolved"
+    },
+    "53695": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": "wiki_evidence_fallback",
+      "key": "oteryn:item.registry.i00038309",
+      "name": "lunar ascension orb",
+      "outcome": "resolved"
+    },
+    "53696": {
+      "blocker": "family_profile_unresolved",
+      "key": "oteryn:item.registry.i00038310",
+      "name": "empty crystal flask",
+      "outcome": "unresolved"
+    },
+    "53751": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038311",
+      "name": "basic bash scroll",
+      "outcome": "resolved"
+    },
+    "53752": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038312",
+      "name": "basic blockade scroll",
+      "outcome": "resolved"
+    },
+    "53753": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038313",
+      "name": "basic chop scroll",
+      "outcome": "resolved"
+    },
+    "53754": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038314",
+      "name": "basic cloud fabric scroll",
+      "outcome": "resolved"
+    },
+    "53755": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038315",
+      "name": "basic demon presence scroll",
+      "outcome": "resolved"
+    },
+    "53756": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038316",
+      "name": "basic dragon hide scroll",
+      "outcome": "resolved"
+    },
+    "53757": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038317",
+      "name": "basic electrify scroll",
+      "outcome": "resolved"
+    },
+    "53758": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038318",
+      "name": "basic epiphany scroll",
+      "outcome": "resolved"
+    },
+    "53759": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038319",
+      "name": "basic featherweight scroll",
+      "outcome": "resolved"
+    },
+    "53760": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038320",
+      "name": "basic frost scroll",
+      "outcome": "resolved"
+    },
+    "53761": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038321",
+      "name": "basic lich shroud scroll",
+      "outcome": "resolved"
+    },
+    "53762": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038322",
+      "name": "basic precision scroll",
+      "outcome": "resolved"
+    },
+    "53763": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038323",
+      "name": "basic punch scroll",
+      "outcome": "resolved"
+    },
+    "53764": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038324",
+      "name": "basic quara scale scroll",
+      "outcome": "resolved"
+    },
+    "53765": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038325",
+      "name": "basic reap scroll",
+      "outcome": "resolved"
+    },
+    "53766": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038326",
+      "name": "basic scorch scroll",
+      "outcome": "resolved"
+    },
+    "53767": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038327",
+      "name": "basic slash scroll",
+      "outcome": "resolved"
+    },
+    "53768": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038328",
+      "name": "basic snake skin scroll",
+      "outcome": "resolved"
+    },
+    "53769": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038329",
+      "name": "basic strike scroll",
+      "outcome": "resolved"
+    },
+    "53770": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038330",
+      "name": "basic swiftness scroll",
+      "outcome": "resolved"
+    },
+    "53771": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038331",
+      "name": "basic vampirism scroll",
+      "outcome": "resolved"
+    },
+    "53772": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038332",
+      "name": "basic venom scroll",
+      "outcome": "resolved"
+    },
+    "53773": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038333",
+      "name": "basic vibrancy scroll",
+      "outcome": "resolved"
+    },
+    "53774": {
+      "family_profile": "document",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038334",
+      "name": "basic void scroll",
+      "outcome": "resolved"
+    },
+    "53778": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038335",
+      "name": "catnip",
+      "outcome": "resolved"
+    },
+    "53782": {
+      "key": "oteryn:item.registry.i00038336",
+      "name": "tide marker",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "53783": {
+      "blocker": "family_profile_unresolved",
+      "key": "oteryn:item.registry.i00038337",
+      "name": "shell gauge",
+      "outcome": "unresolved"
+    },
+    "53823": {
+      "key": "oteryn:item.registry.i00038338",
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53824": {
+      "key": "oteryn:item.registry.i00038339",
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53825": {
+      "key": "oteryn:item.registry.i00038340",
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53826": {
+      "key": "oteryn:item.registry.i00038341",
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53827": {
+      "key": "oteryn:item.registry.i00038342",
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53828": {
+      "key": "oteryn:item.registry.i00038343",
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53829": {
+      "key": "oteryn:item.registry.i00038344",
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53830": {
+      "key": "oteryn:item.registry.i00038345",
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53831": {
+      "key": "oteryn:item.registry.i00038346",
+      "name": "uncharged soul plate",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "53841": {
+      "key": "oteryn:item.registry.i00038347",
+      "name": "sealed passage",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "53873": {
+      "key": "oteryn:item.registry.i00038348",
+      "name": "cloud tile",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53874": {
+      "key": "oteryn:item.registry.i00038349",
+      "name": "glass floor",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53875": {
+      "key": "oteryn:item.registry.i00038350",
+      "name": "glass floor",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53876": {
+      "key": "oteryn:item.registry.i00038351",
+      "name": "glass floor",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53877": {
+      "key": "oteryn:item.registry.i00038352",
+      "name": "glass floor",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53878": {
+      "key": "oteryn:item.registry.i00038353",
+      "name": "glass floor",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53879": {
+      "key": "oteryn:item.registry.i00038354",
+      "name": "cloud tile",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53880": {
+      "key": "oteryn:item.registry.i00038355",
+      "name": "cloud tile",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53881": {
+      "key": "oteryn:item.registry.i00038356",
+      "name": "cloud tile",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53882": {
+      "key": "oteryn:item.registry.i00038357",
+      "name": "cloud tile",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53883": {
+      "key": "oteryn:item.registry.i00038358",
+      "name": "cloud tile",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53884": {
+      "key": "oteryn:item.registry.i00038359",
+      "name": "cloud tile",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "53897": {
+      "key": "oteryn:item.registry.i00038360",
+      "name": "glass floor",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "primarytype_world_object"
+    },
+    "54128": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038361",
+      "name": "ice shard",
+      "outcome": "resolved"
+    },
+    "54133": {
+      "key": "oteryn:item.registry.i00038362",
+      "name": "echo warden portal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54235": {
+      "key": "oteryn:item.registry.i00038363",
+      "name": "moonsilver drift",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54236": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038364",
+      "name": "noxious catnip",
+      "outcome": "resolved"
+    },
+    "54261": {
+      "key": "oteryn:item.registry.i00038365",
+      "name": "rocks with moon paintings",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54262": {
+      "blocker": "family_profile_unresolved",
+      "key": "oteryn:item.registry.i00038366",
+      "name": "key",
+      "outcome": "unresolved"
+    },
+    "54267": {
+      "blocker": "family_profile_unresolved",
+      "key": "oteryn:item.registry.i00038367",
+      "name": "moonsilver crystals",
+      "outcome": "unresolved"
+    },
+    "54268": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038368",
+      "name": "figurine of Mimar Haffar",
+      "outcome": "resolved"
+    },
+    "54269": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038369",
+      "name": "figurine of Maior Domus",
+      "outcome": "resolved"
+    },
+    "54270": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038370",
+      "name": "figurine of Phosphorus",
+      "outcome": "resolved"
+    },
+    "54335": {
+      "key": "oteryn:item.registry.i00038371",
+      "name": "slain iceplume strider",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54336": {
+      "key": "oteryn:item.registry.i00038372",
+      "name": "slain iceplume strider",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54337": {
+      "key": "oteryn:item.registry.i00038373",
+      "name": "slain iceplume strider",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54339": {
+      "key": "oteryn:item.registry.i00038374",
+      "name": "slain moonstone excavator",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54340": {
+      "key": "oteryn:item.registry.i00038375",
+      "name": "slain moonstone excavator",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54341": {
+      "key": "oteryn:item.registry.i00038376",
+      "name": "slain moonstone excavator",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54342": {
+      "key": "oteryn:item.registry.i00038377",
+      "name": "slain moonstone excavator",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54343": {
+      "key": "oteryn:item.registry.i00038378",
+      "name": "dead mimar haffar",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54344": {
+      "key": "oteryn:item.registry.i00038379",
+      "name": "dead mimar haffar",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54345": {
+      "key": "oteryn:item.registry.i00038380",
+      "name": "dead mimar haffar",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54346": {
+      "key": "oteryn:item.registry.i00038381",
+      "name": "dead mimar haffar",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54352": {
+      "key": "oteryn:item.registry.i00038382",
+      "name": "dead phosphorus",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54353": {
+      "key": "oteryn:item.registry.i00038383",
+      "name": "dead phosphorus",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54354": {
+      "key": "oteryn:item.registry.i00038384",
+      "name": "dead phosphorus",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54355": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038385",
+      "name": "tatty robe",
+      "outcome": "resolved"
+    },
+    "54356": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038386",
+      "name": "broken arrow",
+      "outcome": "resolved"
+    },
+    "54357": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038387",
+      "name": "book of faith",
+      "outcome": "resolved"
+    },
+    "54358": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038388",
+      "name": "ceremonial bowl",
+      "outcome": "resolved"
+    },
+    "54359": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038389",
+      "name": "golden belt",
+      "outcome": "resolved"
+    },
+    "54360": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038390",
+      "name": "loose prayer beads",
+      "outcome": "resolved"
+    },
+    "54361": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038391",
+      "name": "cloud familiar",
+      "outcome": "resolved"
+    },
+    "54362": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038392",
+      "name": "gilded bell",
+      "outcome": "resolved"
+    },
+    "54363": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038393",
+      "name": "moonspawn tentacle",
+      "outcome": "resolved"
+    },
+    "54364": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038394",
+      "name": "moonspawn headpiece",
+      "outcome": "resolved"
+    },
+    "54369": {
+      "key": "oteryn:item.registry.i00038395",
+      "name": "slain moonsilver guardian",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54370": {
+      "key": "oteryn:item.registry.i00038396",
+      "name": "slain moonsilver guardian",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54371": {
+      "key": "oteryn:item.registry.i00038397",
+      "name": "slain moonsilver guardian",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54372": {
+      "key": "oteryn:item.registry.i00038398",
+      "name": "slain moonsilver guardian",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54373": {
+      "key": "oteryn:item.registry.i00038399",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54374": {
+      "key": "oteryn:item.registry.i00038400",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54375": {
+      "key": "oteryn:item.registry.i00038401",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54376": {
+      "key": "oteryn:item.registry.i00038402",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54386": {
+      "key": "oteryn:item.registry.i00038403",
+      "name": "dead jaracal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54387": {
+      "key": "oteryn:item.registry.i00038404",
+      "name": "dead jaracal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54388": {
+      "key": "oteryn:item.registry.i00038405",
+      "name": "dead jaracal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54389": {
+      "key": "oteryn:item.registry.i00038406",
+      "name": "dead jaracal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54390": {
+      "key": "oteryn:item.registry.i00038407",
+      "name": "knight pedestal",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "54391": {
+      "key": "oteryn:item.registry.i00038408",
+      "name": "paladin pedestal",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "54392": {
+      "key": "oteryn:item.registry.i00038409",
+      "name": "sorcerer pedestal",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "54393": {
+      "key": "oteryn:item.registry.i00038410",
+      "name": "druid pedestal",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "54394": {
+      "key": "oteryn:item.registry.i00038411",
+      "name": "monk pedestal",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "54396": {
+      "key": "oteryn:item.registry.i00038412",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54397": {
+      "key": "oteryn:item.registry.i00038413",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54398": {
+      "key": "oteryn:item.registry.i00038414",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54399": {
+      "key": "oteryn:item.registry.i00038415",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54404": {
+      "key": "oteryn:item.registry.i00038416",
+      "name": "dead radiant paragon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54405": {
+      "key": "oteryn:item.registry.i00038417",
+      "name": "dead radiant paragon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54406": {
+      "key": "oteryn:item.registry.i00038418",
+      "name": "dead radiant paragon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54407": {
+      "key": "oteryn:item.registry.i00038419",
+      "name": "dead radiant paragon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54408": {
+      "key": "oteryn:item.registry.i00038420",
+      "name": "dead devoted radiant paragon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54409": {
+      "key": "oteryn:item.registry.i00038421",
+      "name": "dead devoted radiant paragon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54410": {
+      "key": "oteryn:item.registry.i00038422",
+      "name": "dead devoted radiant paragon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54411": {
+      "key": "oteryn:item.registry.i00038423",
+      "name": "dead devoted radiant paragon",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54412": {
+      "key": "oteryn:item.registry.i00038424",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54413": {
+      "key": "oteryn:item.registry.i00038425",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54414": {
+      "key": "oteryn:item.registry.i00038426",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54415": {
+      "key": "oteryn:item.registry.i00038427",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54416": {
+      "key": "oteryn:item.registry.i00038428",
+      "name": "dead devoted radiant acolyte",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54417": {
+      "key": "oteryn:item.registry.i00038429",
+      "name": "dead devoted radiant acolyte",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54418": {
+      "key": "oteryn:item.registry.i00038430",
+      "name": "dead devoted radiant acolyte",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54419": {
+      "key": "oteryn:item.registry.i00038431",
+      "name": "dead devoted radiant acolyte",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54433": {
+      "key": "oteryn:item.registry.i00038432",
+      "name": "dead maior domus",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54434": {
+      "key": "oteryn:item.registry.i00038433",
+      "name": "dead maior domus",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54435": {
+      "key": "oteryn:item.registry.i00038434",
+      "name": "dead maior domus",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54436": {
+      "key": "oteryn:item.registry.i00038435",
+      "name": "dead moonspawn blightspitter",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54437": {
+      "key": "oteryn:item.registry.i00038436",
+      "name": "dead moonspawn blightspitter",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54438": {
+      "key": "oteryn:item.registry.i00038437",
+      "name": "dead moonspawn blightspitter",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54439": {
+      "key": "oteryn:item.registry.i00038438",
+      "name": "dead moonspawn blightspitter",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54440": {
+      "key": "oteryn:item.registry.i00038439",
+      "name": "dead moonspawn oozecrown",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54441": {
+      "key": "oteryn:item.registry.i00038440",
+      "name": "dead moonspawn oozecrown",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54442": {
+      "key": "oteryn:item.registry.i00038441",
+      "name": "dead moonspawn oozecrown",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54443": {
+      "key": "oteryn:item.registry.i00038442",
+      "name": "dead moonspawn oozecrown",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54475": {
+      "key": "oteryn:item.registry.i00038443",
+      "name": "petrified fanatic",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54480": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": "wiki_evidence_fallback",
+      "key": "oteryn:item.registry.i00038444",
+      "name": "auric moon sigil",
+      "outcome": "resolved"
+    },
+    "54515": {
+      "key": "oteryn:item.registry.i00038445",
+      "name": "crystal plinth",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54564": {
+      "blocker": "family_profile_unresolved",
+      "key": "oteryn:item.registry.i00038446",
+      "name": "crystal flask with blue lava",
+      "outcome": "unresolved"
+    },
+    "54566": {
+      "blocker": "family_profile_unresolved",
+      "key": "oteryn:item.registry.i00038447",
+      "name": "crystal flask with blessed blue lava",
+      "outcome": "unresolved"
+    },
+    "54568": {
+      "key": "oteryn:item.registry.i00038448",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54569": {
+      "key": "oteryn:item.registry.i00038449",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54570": {
+      "key": "oteryn:item.registry.i00038450",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54571": {
+      "key": "oteryn:item.registry.i00038451",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54587": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038452",
+      "name": "winged jaracal soul core",
+      "outcome": "resolved"
+    },
+    "54588": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038453",
+      "name": "iceplume strider soul core",
+      "outcome": "resolved"
+    },
+    "54589": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038454",
+      "name": "silverfrost sentinel soul core",
+      "outcome": "resolved"
+    },
+    "54590": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038455",
+      "name": "true feverbloom asura soul core",
+      "outcome": "resolved"
+    },
+    "54591": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038456",
+      "name": "radiant warden soul core",
+      "outcome": "resolved"
+    },
+    "54592": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038457",
+      "name": "devoted radiant warden soul core",
+      "outcome": "resolved"
+    },
+    "54593": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038458",
+      "name": "radiant paragon soul core",
+      "outcome": "resolved"
+    },
+    "54594": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038459",
+      "name": "devoted radiant paragon soul core",
+      "outcome": "resolved"
+    },
+    "54595": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038460",
+      "name": "radiant acolyte soul core",
+      "outcome": "resolved"
+    },
+    "54596": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038461",
+      "name": "devoted radiant acolyte soul core",
+      "outcome": "resolved"
+    },
+    "54597": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038462",
+      "name": "radiant templar soul core",
+      "outcome": "resolved"
+    },
+    "54598": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038463",
+      "name": "devoted radiant templar soul core",
+      "outcome": "resolved"
+    },
+    "54599": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038464",
+      "name": "radiant inquisitor soul core",
+      "outcome": "resolved"
+    },
+    "54600": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038465",
+      "name": "devoted radiant inquisitor soul core",
+      "outcome": "resolved"
+    },
+    "54601": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038466",
+      "name": "radiant zealot soul core",
+      "outcome": "resolved"
+    },
+    "54602": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038467",
+      "name": "devoted radiant zealot soul core",
+      "outcome": "resolved"
+    },
+    "54603": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038468",
+      "name": "moonspawn blightspitter soul core",
+      "outcome": "resolved"
+    },
+    "54604": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038469",
+      "name": "moonspawn oozecrown soul core",
+      "outcome": "resolved"
+    },
+    "54609": {
+      "family_profile": "light_source",
+      "family_profile_basis": null,
+      "key": "donor:crystalserver@00ce02a5:item/54609",
+      "name": "torch",
+      "outcome": "resolved"
+    },
+    "54610": {
+      "family_profile": "light_source",
+      "family_profile_basis": null,
+      "key": "donor:crystalserver@00ce02a5:item/54610",
+      "name": "lit torch",
+      "outcome": "resolved"
+    },
+    "54611": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038470",
+      "name": "frozen peacock feather",
+      "outcome": "resolved"
+    },
+    "54613": {
+      "key": "donor:crystalserver@00ce02a5:item/54613",
+      "name": "closed door",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54614": {
+      "key": "donor:crystalserver@00ce02a5:item/54614",
+      "name": "closed door",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54615": {
+      "key": "donor:crystalserver@00ce02a5:item/54615",
+      "name": "open door",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54616": {
+      "key": "donor:crystalserver@00ce02a5:item/54616",
+      "name": "open door",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "immovable_unclassified"
+    },
+    "54630": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038471",
+      "name": "jaracal soul core",
+      "outcome": "resolved"
+    },
+    "54631": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038472",
+      "name": "moonstone excavator soul core",
+      "outcome": "resolved"
+    },
+    "54632": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038473",
+      "name": "moonstone overseer soul core",
+      "outcome": "resolved"
+    },
+    "54636": {
+      "key": "oteryn:item.registry.i00038474",
+      "name": "shimmering field",
+      "outcome": "routed",
+      "owner": "Terrain",
+      "reason": "ground_or_border"
+    },
+    "54638": {
+      "family_profile": "tool",
+      "family_profile_basis": "wiki_evidence_fallback",
+      "key": "oteryn:item.registry.i00038475",
+      "name": "skewered fish",
+      "outcome": "resolved"
+    },
+    "54639": {
+      "family_profile": "material_valuable",
+      "family_profile_basis": null,
+      "key": "oteryn:item.registry.i00038476",
+      "name": "pyrophyte seed pod",
+      "outcome": "resolved"
+    },
+    "54640": {
+      "blocker": "family_profile_unresolved",
+      "key": "oteryn:item.registry.i00038477",
+      "name": "scraps of a radiant attire",
+      "outcome": "unresolved"
+    },
+    "54647": {
+      "key": "oteryn:item.registry.i00038478",
+      "name": "dead winged jaracal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54648": {
+      "key": "oteryn:item.registry.i00038479",
+      "name": "dead winged jaracal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54649": {
+      "key": "oteryn:item.registry.i00038480",
+      "name": "dead winged jaracal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54650": {
+      "key": "oteryn:item.registry.i00038481",
+      "name": "dead winged jaracal",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54651": {
+      "family_profile": "tool",
+      "family_profile_basis": "wiki_evidence_fallback",
+      "key": "oteryn:item.registry.i00038482",
+      "name": "cloud in a bottle",
+      "outcome": "resolved"
+    },
+    "54667": {
+      "key": "oteryn:item.registry.i00038483",
+      "name": "dead true feverbloom asura",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54668": {
+      "key": "oteryn:item.registry.i00038484",
+      "name": "dead true feverbloom asura",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54669": {
+      "key": "oteryn:item.registry.i00038485",
+      "name": "dead true feverbloom asura",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54670": {
+      "key": "oteryn:item.registry.i00038486",
+      "name": "dead the moonsnow magnolia",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54671": {
+      "key": "oteryn:item.registry.i00038487",
+      "name": "dead the moonsnow magnolia",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54672": {
+      "key": "oteryn:item.registry.i00038488",
+      "name": "dead the moonsnow magnolia",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54673": {
+      "key": "oteryn:item.registry.i00038489",
+      "name": "dead the moonsnow magnolia",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54674": {
+      "key": "oteryn:item.registry.i00038490",
+      "name": "dead moonstone miner",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54675": {
+      "key": "oteryn:item.registry.i00038491",
+      "name": "dead moonstone miner",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54676": {
+      "key": "oteryn:item.registry.i00038492",
+      "name": "dead moonstone miner",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54677": {
+      "key": "oteryn:item.registry.i00038493",
+      "name": "dead moonstone miner",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54678": {
+      "key": "oteryn:item.registry.i00038494",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54679": {
+      "key": "oteryn:item.registry.i00038495",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54680": {
+      "key": "oteryn:item.registry.i00038496",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    },
+    "54681": {
+      "key": "oteryn:item.registry.i00038497",
+      "name": "shattered remains",
+      "outcome": "routed",
+      "owner": "WorldObject",
+      "reason": "corpse"
+    }
+  },
+  "outcome": {
+    "resolved": 265,
+    "routed": 138,
+    "unresolved": 9
+  },
+  "owner_leftover_table_resolved": 0,
+  "principle": "The donor is a source of facts only (items.xml, appearances.dat); Oteryn decides classification with its own rules, never upstream's.",
+  "routed_non_item": [
+    {
+      "items": 80,
+      "owner_reason": "WorldObject:corpse"
+    },
+    {
+      "items": 24,
+      "owner_reason": "WorldObject:immovable_unclassified"
+    },
+    {
+      "items": 16,
+      "owner_reason": "Terrain:ground_or_border"
+    },
+    {
+      "items": 14,
+      "owner_reason": "Terrain:primarytype_world_object"
+    },
+    {
+      "items": 4,
+      "owner_reason": "WorldObject:primarytype_world_object"
+    }
+  ],
+  "schema": "OTERYN_ITEM_DONOR_CENSUS/v1",
+  "scope": "Family-profile classification only, for donor-only ids (present in the donor items.xml, absent from the pinned base items.xml). No Oteryn identity is minted; the committed epoch-2 keys (B1b) are only read. Delivery-task eligibility, field mapping and Presentation binding are out of scope. The wiki-evidence fallback and the owner leftover-family table are both keyed by Oteryn registry key: a minted donor id joins under its epoch-2 key (B1b), a held id (no key) never matches -- see the module docstring.",
+  "totals": {
+    "base_items_xml_ids": 38157,
+    "donor_items_xml_ids": 38568,
+    "new_ids": 412,
+    "new_ids_in_15_30_appearance_range": 244,
+    "new_ids_older_than_15_25": 168
+  },
+  "wiki_evidence_fallback_resolved": 8
+}

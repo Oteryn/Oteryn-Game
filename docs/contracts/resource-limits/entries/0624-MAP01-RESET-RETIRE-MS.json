@@ -1,0 +1,22 @@
+{
+  "allocation_impact": "Alarm budget for the World reset retirement run; retirement stays resumable and no unretired Ground is admitted to a new epoch.",
+  "boundary_tests": [
+    "elapsed at or below 600,000 ms does not raise world_reset_alarm",
+    "elapsed above 600,000 ms raises world_reset_alarm; no partial activation"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "maximum": 600000,
+    "minimum": 600000
+  },
+  "consumers": [
+    "game server World reset boot recovery"
+  ],
+  "failure_category": "CAPACITY_EXCEEDED",
+  "hard_maximum": 600000,
+  "id": "MAP01-RESET-RETIRE-MS",
+  "notes": "ADR-0021 \u00a74.7\u20134.8; MAP-OVERLAY-1c. Ground completion reports elapsed drain/retirement time with activation pending. Full reset and real-data qualification await the atomic activation writer and representative measurement.",
+  "owner_contract": "ADR-0021-world-map-runtime-loading.md",
+  "resource": "Elapsed time for draining and retiring the World Ground overlay during a planned reset",
+  "unit": "milliseconds"
+}

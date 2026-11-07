@@ -1,0 +1,10 @@
+{
+  "schema": "OTERYN_MONK_PILGRIMAGE/v1",
+  "final_promotion_points": 10,
+  "achievement": "oteryn:achievement/hope_of_the_merudri",
+  "title": "Pensive Wanderer",
+  "sources": [
+    "TibiaWiki The Way of the Monk Quest/Spoiler revision 1203780",
+    "Crystal ff7ede593c69d4c658b382c97443e8155926924a data-global/npc/enpa_deia_pema.lua:70-98"
+  ]
+}

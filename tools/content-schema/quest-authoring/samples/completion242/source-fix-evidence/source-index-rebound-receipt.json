@@ -1,0 +1,37 @@
+{
+  "schema": "OTERYN_SOURCE_INDEX_REBOUND_RECEIPT/v1",
+  "status": "VERIFIED",
+  "previous_receipt": {
+    "path": "/tmp/quest-completion-round4/source-index-reuse-receipt.json",
+    "sha256": "07ad01d3b5da2242c33160334cb171e0dcf349123c715c09f96dd0a77d20cd09"
+  },
+  "cache": {
+    "path": "/tmp/quest-completion-round4/progress-effects/source-index.json",
+    "sha256": "55512d1f0ff38c0b4e3e61814c6decaad5e20051b964f58d8e2f5735cd301cd1"
+  },
+  "semantic_proof_sha256": "32417bd97d67664adebca1f0c97b5bf02a270ea223e6ff956bff44f2abf1c8ce",
+  "producer_sha256": {
+    "lua_writers.py": "b1e6a164a3c2941b77eb3a0faabee5f5b7adeadf28e46091f7b7bb483105c4a2",
+    "lua_tables.py": "5b6c9975725ffafecc7faccce53bf6f570896b11a2e04a3b18021df8b57c7b84",
+    "scoped_storage_aliases.py": "bd4de58f4a60ab14ae57285bde15673baf4626c6da2721311b34bb6228d77e20",
+    "ots_chests.py": "7e954d46d03c88206dd55f8174c186da857ae05d2276672f8b98c50ac3b2102d"
+  },
+  "index_function_sha256": {
+    "norm": "ed7d395b55fdeded39074f7357bbeb677c8737ff862d4e9fcb7080fd62b85643",
+    "track_of": "eaf98350ca7740a3aa6409678c6665832ada7b1bb7775a8572e44ecfbd7b5f44",
+    "script_of": "a927b01ae0febea470db24adce32a05f4dc468d8f5b05893f80065bc52da58a9",
+    "effect_of": "e08c0140cfa3c76c114f2e238b8b3110a5b81d281563e6915c17b3f05e046bf7",
+    "transition_index": "d51fdccd83af918b480f2a01b817b112585b75ab6c4b49b5c66f09b0cf660c27"
+  },
+  "donor_pins": {
+    "canary": [
+      "/tmp/quest-sources/canary",
+      "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    ],
+    "crystalserver": [
+      "/tmp/quest-sources/crystal",
+      "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+    ]
+  },
+  "acquisition": "REUSED_IMMUTABLE_CACHE_WITH_PROVEN_SCAN_EQUIVALENCE_NOT_FRESH_FULL_SCAN"
+}

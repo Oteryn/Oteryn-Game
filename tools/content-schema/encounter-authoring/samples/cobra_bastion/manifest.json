@@ -1,0 +1,162 @@
+{
+  "encounter": "canary:encounter/cobra_bastion",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "mType.onSpawn": [
+      "canary:creature/cobra_assassin",
+      "canary:creature/cobra_scout",
+      "canary:creature/cobra_vizier"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/humans/cobra_assassin.lua",
+      "blob_sha1": "fa834503e567ed8a5c8eea3185f79e0f8f669163"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/lib/monster_functions.lua",
+      "blob_sha1": "0b362de27a90df94d8519661635a1b38adfcee5d"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/humans/cobra_scout.lua",
+      "blob_sha1": "6fc3e89349753dc1a7e809628292474720505e8a"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/humans/cobra_vizier.lua",
+      "blob_sha1": "934b015842a15f0c42184bf3059fa66eb78f7fd6"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        124
+      ],
+      "status": "mapped",
+      "resolution": "Cobra Assassin is the cobra_assassin participant; its file registers mType.onSpawn.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        124,
+        125,
+        126
+      ],
+      "status": "mapped",
+      "resolution": "onSpawn calls handleCobraOnSpawn.",
+      "destination": "/encounter/rules/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1,
+        2,
+        3,
+        5,
+        7,
+        8
+      ],
+      "status": "mapped",
+      "resolution": "While Global.Storage.CobraFlask is still running (the quest domain publishes it, D29), setHealth(max * 0.75) takes the fresh cobra assassin from 8200 to 6150: 2050 untyped damage that credits no one (D31).",
+      "destination": "/encounter/rules/0"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        129
+      ],
+      "status": "mapped",
+      "resolution": "Cobra Scout is the cobra_scout participant; its file registers mType.onSpawn.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        129,
+        130,
+        131
+      ],
+      "status": "mapped",
+      "resolution": "onSpawn calls handleCobraOnSpawn.",
+      "destination": "/encounter/rules/1"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1,
+        2,
+        3,
+        5,
+        7,
+        8
+      ],
+      "status": "mapped",
+      "resolution": "While Global.Storage.CobraFlask is still running (the quest domain publishes it, D29), setHealth(max * 0.75) takes the fresh cobra scout from 8500 to 6375: 2125 untyped damage that credits no one (D31).",
+      "destination": "/encounter/rules/1"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        132
+      ],
+      "status": "mapped",
+      "resolution": "Cobra Vizier is the cobra_vizier participant; its file registers mType.onSpawn.",
+      "destination": "/encounter/participants/2/creatures"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        132,
+        133,
+        134
+      ],
+      "status": "mapped",
+      "resolution": "onSpawn calls handleCobraOnSpawn.",
+      "destination": "/encounter/rules/2"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1,
+        2,
+        3,
+        5,
+        7,
+        8
+      ],
+      "status": "mapped",
+      "resolution": "While Global.Storage.CobraFlask is still running (the quest domain publishes it, D29), setHealth(max * 0.75) takes the fresh cobra vizier from 8500 to 6375: 2125 untyped damage that credits no one (D31).",
+      "destination": "/encounter/rules/2"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        4
+      ],
+      "status": "approved_omission",
+      "resolution": "The green rings effect is cosmetic."
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        6
+      ],
+      "status": "approved_omission",
+      "resolution": "An expired flask is reset to -1 in the world value; the quest domain owns that value."
+    }
+  ],
+  "outcome_evidence": []
+}

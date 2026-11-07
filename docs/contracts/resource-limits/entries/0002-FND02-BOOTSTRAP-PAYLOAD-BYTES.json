@@ -1,0 +1,23 @@
+{
+  "id": "FND02-BOOTSTRAP-PAYLOAD-BYTES",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "Encoded ClientBootstrap or ClientResume protobuf payload",
+  "unit": "bytes",
+  "hard_maximum": 65536,
+  "configurable_range": {
+    "minimum": 65536,
+    "maximum": 65536
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bound total payload and nested byte fields before retaining or performing credential work.",
+  "client_visible": true,
+  "boundary_tests": [
+    "65,536 bytes accepted if all field limits pass",
+    "65,537 rejected",
+    "oversized unknown fields cannot bypass the total bound"
+  ],
+  "consumers": [
+    "ClientBootstrap decoder",
+    "ClientResume decoder"
+  ]
+}

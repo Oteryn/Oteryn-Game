@@ -1,0 +1,10 @@
+{
+  "id": 378,
+  "name": "PROFICIENCY_SELECT_PERK",
+  "owner_decision": "P08",
+  "capability": 195,
+  "payload_schema": "weapon-proficiency-v1.md#request",
+  "result_schema": "weapon-proficiency-v1.md#reply",
+  "max_payload_bytes": 6,
+  "max_result_payload_bytes": 9
+}

@@ -1,0 +1,12 @@
+{
+  "id": 76,
+  "name": "PLAYER_REPORT_V1",
+  "owner_decision": "PARITY-REPORT-1 coordinator decision 2026-10-25",
+  "owner": "Player bug and rule-violation reports into the Game-owned append-only report queue. No spatial content required; every world including BUNDLE_WORLD_OFFERED_CAPABILITIES offers it. Platform export, staff UI and moderation actions are the Platform control-plane boundary.",
+  "requires": [],
+  "command_types": [
+    93
+  ],
+  "state_domains": [],
+  "offered": true
+}

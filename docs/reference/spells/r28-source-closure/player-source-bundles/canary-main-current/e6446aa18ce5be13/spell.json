@@ -1,0 +1,77 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/canary-main-current/e6446aa18ce5be13/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/e6446aa18ce5be13",
+      "revision": "source-player-r28"
+    },
+    "name": "light stone shower rune",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_light_stone_shower_rune"
+    },
+    "pz_locks_caster": false,
+    "reference_rune_item_id": 21351,
+    "reference_spell_id": 116,
+    "requirements": {
+      "learning_required": false,
+      "level": 1,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "none",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": false
+      },
+      "charges": 4,
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/source/canary-main-current/21351",
+        "revision": "source-player-r28"
+      },
+      "magic_level": 0
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    }
+  }
+}

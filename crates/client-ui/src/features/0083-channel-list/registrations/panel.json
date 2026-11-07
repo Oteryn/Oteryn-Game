@@ -1,0 +1,7 @@
+{
+  "mechanic": "0083-channel-list",
+  "kind": "panels",
+  "id": "0083-channel-list-status",
+  "status": "supported",
+  "entry": "view.rs::channel_text"
+}

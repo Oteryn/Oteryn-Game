@@ -1,0 +1,101 @@
+{
+  "requests": 15,
+  "receipts": [
+    {
+      "case_id": "knight-001",
+      "http_status": 200,
+      "response_sha256": "9bc7cf844cf69a4d2e414f49b2200785cf96a47344c28ab2ed9eca2400ee1db3",
+      "bytes": 2517,
+      "same_as_pinned_recording": true
+    },
+    {
+      "case_id": "knight-023",
+      "http_status": 200,
+      "response_sha256": "ecc700888afd6982af81f035968355dc0d99d09e812ed82ed1a78ea097e50201",
+      "bytes": 2562,
+      "same_as_pinned_recording": true
+    },
+    {
+      "case_id": "knight-027",
+      "http_status": 200,
+      "response_sha256": "e0139442ca06792973024f09234c4f4bc845f44c1d372047bf8471286e4cab13",
+      "bytes": 2562,
+      "same_as_pinned_recording": true
+    },
+    {
+      "case_id": "paladin-035",
+      "http_status": 200,
+      "response_sha256": "971be81a9b7e48a11a27fc0a3b5af179d0778b7709da4cae1402e8eb746db07a",
+      "bytes": 2256,
+      "same_as_pinned_recording": true
+    },
+    {
+      "case_id": "paladin-057",
+      "http_status": 200,
+      "response_sha256": "cde1c9e532fb3d60c431dee931e9471687d39f93da27547c9a8eb73bd38ac996",
+      "bytes": 2289,
+      "same_as_pinned_recording": true
+    },
+    {
+      "case_id": "paladin-061",
+      "http_status": 200,
+      "response_sha256": "3899e687769342e0d826c20da94222b38c196c182a9ca21c31b5408c661b0c42",
+      "bytes": 2283,
+      "same_as_pinned_recording": true
+    },
+    {
+      "case_id": "druid-069",
+      "http_status": 200,
+      "response_sha256": "030e6f885e8875c711cc801dc8c1915c1cb8afd42b110124c09e493aa55b28ae",
+      "bytes": 3625,
+      "same_as_pinned_recording": true
+    },
+    {
+      "case_id": "druid-091",
+      "http_status": 200,
+      "response_sha256": "267e7fd8db50f0be8a1ce1d809459e50966038ea0e001acdda2bf736f0425f1b",
+      "bytes": 3648,
+      "same_as_pinned_recording": true
+    },
+    {
+      "case_id": "druid-095",
+      "error": "HTTP Error 429: Too Many Requests"
+    },
+    {
+      "case_id": "sorcerer-103",
+      "http_status": 200,
+      "response_sha256": "22488f44296672489c94947b6a8bbad57aa76612e6ba2c0d12027a03810ed5bb",
+      "bytes": 4134,
+      "same_as_pinned_recording": true
+    },
+    {
+      "case_id": "sorcerer-125",
+      "http_status": 200,
+      "response_sha256": "599846133a77d60e7408d216609c478a0a8ec2a903db60870474e172d143e0ac",
+      "bytes": 4168,
+      "same_as_pinned_recording": true
+    },
+    {
+      "case_id": "sorcerer-129",
+      "http_status": 200,
+      "response_sha256": "1eeebc16f05c0ce8c8f3744e5e0d54131bf7869d07b3f35213ebfba78d2c2a19",
+      "bytes": 4168,
+      "same_as_pinned_recording": true
+    },
+    {
+      "case_id": "monk-137",
+      "error": "HTTP Error 429: Too Many Requests"
+    },
+    {
+      "case_id": "monk-159",
+      "error": "HTTP Error 429: Too Many Requests"
+    },
+    {
+      "case_id": "monk-163",
+      "http_status": 200,
+      "response_sha256": "6156f4499b681e75b6b480a7c5e5b6f91005251e5c8bb6d3b046365bd66875d0",
+      "bytes": 2759,
+      "same_as_pinned_recording": true
+    }
+  ]
+}

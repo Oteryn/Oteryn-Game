@@ -1,0 +1,610 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/energy_beam",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Energy Beam",
+    "carrier": "instant",
+    "words": "exevo vis lux",
+    "reference_spell_id": 22,
+    "library_text": "The Energy Beam was one of the first instant attack spells to be devised. Its development sprang from the need to allow for quick offensive magic that did not rely on the use of runes. The result of this endeavour was this handy spell which is capable of dealing massive damage in the blink of an eye. On casting this spell, a ray of concentrated energy is shot in the direction the caster is facing, electrifying everything in its way. A clever sorcerer will use this spell in narrow passageways where his opponents have no choice but to line up.",
+    "requirements": {
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 23,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 40,
+      "soul": 0
+    },
+    "cooldown_ms": 4000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": true,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 5,
+      "parameter": "none",
+      "aim_at_target": true
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_energy_beam"
+    },
+    "base_power": 60,
+    "execution": {
+      "native_behavior": {
+        "key": "wheel_combat",
+        "parameters": {
+          "origin": "spell",
+          "block_armor": false,
+          "use_weapon_charges": false,
+          "sign": "positive_magnitude",
+          "target_legality": "world_combat_rules",
+          "element": "energy",
+          "effect_asset_binding": "appearance:effect/energyhit",
+          "formula": {
+            "minimum": {
+              "op": "add",
+              "args": [
+                {
+                  "fn": "level_base_damage_healing",
+                  "args": [
+                    {
+                      "var": "level"
+                    }
+                  ]
+                },
+                {
+                  "op": "floor",
+                  "args": [
+                    {
+                      "op": "sub",
+                      "args": [
+                        {
+                          "op": "add",
+                          "args": [
+                            {
+                              "op": "mul",
+                              "args": [
+                                {
+                                  "op": "div",
+                                  "args": [
+                                    {
+                                      "const": "60"
+                                    },
+                                    {
+                                      "const": "25"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "var": "magic_level"
+                                }
+                              ]
+                            },
+                            {
+                              "op": "div",
+                              "args": [
+                                {
+                                  "const": "60"
+                                },
+                                {
+                                  "const": "4"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "op": "div",
+                          "args": [
+                            {
+                              "op": "sub",
+                              "args": [
+                                {
+                                  "op": "add",
+                                  "args": [
+                                    {
+                                      "op": "add",
+                                      "args": [
+                                        {
+                                          "const": "0"
+                                        },
+                                        {
+                                          "op": "mul",
+                                          "args": [
+                                            {
+                                              "var": "magic_level"
+                                            },
+                                            {
+                                              "const": "3"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "const": "19"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "op": "add",
+                                  "args": [
+                                    {
+                                      "op": "add",
+                                      "args": [
+                                        {
+                                          "const": "0"
+                                        },
+                                        {
+                                          "op": "mul",
+                                          "args": [
+                                            {
+                                              "var": "magic_level"
+                                            },
+                                            {
+                                              "const": "1.8"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "const": "11"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "const": "2"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "maximum": {
+              "op": "add",
+              "args": [
+                {
+                  "fn": "level_base_damage_healing",
+                  "args": [
+                    {
+                      "var": "level"
+                    }
+                  ]
+                },
+                {
+                  "op": "floor",
+                  "args": [
+                    {
+                      "op": "add",
+                      "args": [
+                        {
+                          "op": "add",
+                          "args": [
+                            {
+                              "op": "mul",
+                              "args": [
+                                {
+                                  "op": "div",
+                                  "args": [
+                                    {
+                                      "const": "60"
+                                    },
+                                    {
+                                      "const": "25"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "var": "magic_level"
+                                }
+                              ]
+                            },
+                            {
+                              "op": "div",
+                              "args": [
+                                {
+                                  "const": "60"
+                                },
+                                {
+                                  "const": "4"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "op": "div",
+                          "args": [
+                            {
+                              "op": "sub",
+                              "args": [
+                                {
+                                  "op": "add",
+                                  "args": [
+                                    {
+                                      "op": "add",
+                                      "args": [
+                                        {
+                                          "const": "0"
+                                        },
+                                        {
+                                          "op": "mul",
+                                          "args": [
+                                            {
+                                              "var": "magic_level"
+                                            },
+                                            {
+                                              "const": "3"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "const": "19"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "op": "add",
+                                  "args": [
+                                    {
+                                      "op": "add",
+                                      "args": [
+                                        {
+                                          "const": "0"
+                                        },
+                                        {
+                                          "op": "mul",
+                                          "args": [
+                                            {
+                                              "var": "magic_level"
+                                            },
+                                            {
+                                              "const": "1.8"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "const": "11"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "const": "2"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "quantization": "truncate_each_bound_before_draw",
+            "distribution": "world_damage_roll"
+          },
+          "base_area": {
+            "orthogonal": [
+              [
+                1
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ],
+              [
+                3
+              ]
+            ],
+            "diagonal": [
+              [
+                1,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                1,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                0,
+                3
+              ]
+            ],
+            "directional": true,
+            "encoding": "0_inactive_1_hit_2_origin_3_origin_hit",
+            "same_floor": true,
+            "clear_sight": true
+          },
+          "enhanced_area": {
+            "orthogonal": [
+              [
+                1
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ],
+              [
+                1
+              ],
+              [
+                3
+              ]
+            ],
+            "diagonal": [
+              [
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                3
+              ]
+            ],
+            "directional": true,
+            "encoding": "0_inactive_1_hit_2_origin_3_origin_hit",
+            "same_floor": true,
+            "clear_sight": true
+          },
+          "wheel": {
+            "owner": "wheel_of_destiny",
+            "perk": "Beam Mastery",
+            "stage_kind": "revelation",
+            "stage_min": 0,
+            "stage_max": 3,
+            "stage_zero": "base_cast",
+            "snapshot": "cast_start"
+          },
+          "enhanced_area_from_stage": 1,
+          "target_selection": "caster_direction",
+          "damage_or_heal_bonus_percent": {
+            "0": 0,
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "beam_mastery": {
+            "side_damage_percent": {
+              "0": 0,
+              "1": 25,
+              "2": 40,
+              "3": 70
+            },
+            "side_rounding": "round_nearest_half_away_from_zero",
+            "side_offsets_by_direction": {
+              "north": [
+                [
+                  -1,
+                  0
+                ],
+                [
+                  1,
+                  0
+                ]
+              ],
+              "south": [
+                [
+                  -1,
+                  0
+                ],
+                [
+                  1,
+                  0
+                ]
+              ],
+              "east": [
+                [
+                  0,
+                  -1
+                ],
+                [
+                  0,
+                  1
+                ]
+              ],
+              "west": [
+                [
+                  0,
+                  -1
+                ],
+                [
+                  0,
+                  1
+                ]
+              ],
+              "northwest": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  0,
+                  1
+                ]
+              ],
+              "northeast": [
+                [
+                  -1,
+                  0
+                ],
+                [
+                  0,
+                  1
+                ]
+              ],
+              "southwest": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  0,
+                  -1
+                ]
+              ],
+              "southeast": [
+                [
+                  -1,
+                  0
+                ],
+                [
+                  0,
+                  -1
+                ]
+              ]
+            },
+            "side_geometry": "translate_active_central_tiles_then_exclude_caster_and_central_and_duplicates",
+            "reject_side_floor_change_tiles": true,
+            "side_sight_origin": "source_adjacent_caster_tile",
+            "central_target_bonus_percent": {
+              "0": 0,
+              "1": 10,
+              "2": 12,
+              "3": 14
+            },
+            "central_target_count_cap": 3,
+            "counted_targets": "combat_legal_central_creatures_before_health_resolution",
+            "central_bonus_applies_to": "central_targets_only",
+            "hit_once_per_creature": true,
+            "critical_and_fatal_resolution": "once_for_complete_beam",
+            "reduce_all_spell_cooldowns_ms_per_counted_target": 1000,
+            "cooldown_reduction_timing": "before_health_resolution"
+          },
+          "elemental_stance": {
+            "owner": "elemental_stance",
+            "snapshot": "cast_start",
+            "routes": {
+              "none": "energy",
+              "master_of_thunder": "energy",
+              "master_of_flames": "fire",
+              "master_of_decay": "death"
+            },
+            "formula_changes": false,
+            "presentation_owner": "elemental_stance"
+          }
+        }
+      }
+    }
+  }
+}

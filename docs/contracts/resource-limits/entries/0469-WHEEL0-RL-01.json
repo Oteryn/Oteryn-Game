@@ -1,0 +1,23 @@
+{
+  "id": "WHEEL0-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+  "resource": "Wheel of Destiny slots of one Character",
+  "unit": "slots per Character",
+  "hard_maximum": 36,
+  "configurable_range": {
+    "minimum": 36,
+    "maximum": 36
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "A fixed [u16; 36] in memory; slot rows CHECK slot BETWEEN 1 AND 36 and receipt vectors have cardinality 36; a slot is at most its capacity (50..200), so a Character holds at most 4 x 1000 = 4000 points (allocated_total CHECK).",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=36: slots 1..36 are stored and the ruleset reader requires exactly 36 topology slots",
+    "max+1=37: slot 37 fails the slot CHECK and an adjacency entry naming slot 37 refuses the ruleset"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/character_wheel.rs WHEEL_SLOTS, WheelSlots, WheelRuleset::from_catalogue",
+    "apps/game-server/migrations/0070_character_wheel_allocation.sql"
+  ],
+  "notes": "WHEEL-0 \u00a74 and \u00a78; tests: character_wheel::tests::a_malformed_catalogue_is_refused, slots_and_occurrences_are_bounded. Registered by WHEEL-W1."
+}

@@ -1,0 +1,35 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+// Capability 68 IMBUE_V1 (requires 4 ITEM_VIEW_MOVE_V1); command 85.
+// Strict bounded codec: canonical field order, duplicate/unknown fields refused.
+// The item is an item-view handle of a main backpack direct entry. The window is stateless:
+// there is no open/close state and no close command. No client identity/fence input.
+message ImbuementRequestV1 {
+  uint32 action = 1; // 1 query, 2 apply, 3 clear
+  uint64 item = 2; // nonzero item-view handle
+  optional uint32 slot = 3; // apply and clear only; < 3
+  optional uint32 imbuement = 4; // apply only; index into the queried offers, < 60
+}
+message AppliedImbuementV1 {
+  uint32 slot = 1; // < slot_count, ascending
+  uint32 family = 2; // 1..20
+  uint32 tier = 3; // 1 basic, 2 intricate, 3 powerful
+  uint32 remaining_ms = 4; // <= 72000000
+}
+message ImbuementOfferV1 {
+  uint32 family = 1; // 1..20, offers ascending by (family, tier)
+  uint32 tier = 2;
+  uint32 gold = 3;
+  bool requires_premium = 4;
+}
+message ImbuementReplyV1 {
+  // 1 OK, 2 REQUIREMENT_NOT_MET, 3 MATERIALS_MISSING, 4 INSUFFICIENT_FUNDS, 5 SLOT_OCCUPIED,
+  // 6 NOT_ALLOWED, 7 REVISION_CHANGED
+  uint32 result = 1;
+  // Fields 2-5 are present only for an OK query. Success is always 100% and there is no
+  // protection charm (IMBUE-FORGE0 R2), so neither is carried.
+  optional uint32 slot_count = 2; // <= 3
+  repeated AppliedImbuementV1 applied = 3; // <= slot_count
+  repeated ImbuementOfferV1 offers = 4; // <= 60
+  optional uint32 clear_gold = 5;
+}

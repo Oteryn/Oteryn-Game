@@ -1,0 +1,16 @@
+name=npc
+commands=7
+[route]
+match routing::npc::route(
+    authority,
+    session.actor,
+    &session.admitted,
+    command,
+    &mut session.buffered,
+    &mut outcome.npc_relocation,
+)
+.await
+{
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

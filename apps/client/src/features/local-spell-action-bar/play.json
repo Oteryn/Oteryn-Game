@@ -1,0 +1,8 @@
+{
+  "concerns": [
+    "input",
+    "protocol",
+    "view"
+  ],
+  "events": {}
+}

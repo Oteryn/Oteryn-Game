@@ -1,0 +1,349 @@
+//! Apply typed domain deltas to this connection after envelope validation.
+use super::*;
+
+impl<S: SessionStream> Session<S> {
+    /// The domain store: applies one validated `StateDelta` by its own domain. It must be based
+    /// on exactly the stored revision, carry the domain's registered `delta_type` and, where the
+    /// domain has one, the loaded `content_generation`. Nothing is stored unless every check and
+    /// the typed decode pass.
+    pub(crate) fn apply_state_delta(
+        &mut self,
+        server_sequence: u64,
+        payload: &[u8],
+    ) -> Result<SessionEvent, SessionError> {
+        let delta = decode_state_delta(payload)?;
+        let (domain_id, base_revision, new_revision) =
+            (delta.domain_id, delta.base_revision, delta.new_revision);
+        fn applied<T>(sequence: u64, base: u64, new: u64, value: T) -> AppliedDelta<T> {
+            AppliedDelta {
+                server_sequence: sequence,
+                base_revision: base,
+                new_revision: new,
+                value,
+            }
+        }
+        match domain_id {
+            15 => crate::analyser_transport::apply(self, server_sequence, payload),
+            100 => crate::spell_catalog::apply(self, server_sequence, payload),
+            player_trade::STATE_DOMAIN_PLAYER_TRADE => {
+                self.apply_trade_delta(server_sequence, delta)
+            }
+            npc_service::STATE_DOMAIN_NPC_CONVERSATION
+            | npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW => {
+                if !self.is_selected(npc_service::CAPABILITY_NPC_SERVICE_V1) {
+                    return Err(SessionError::UnselectedDomain { domain_id });
+                }
+                let revision = self
+                    .gated_revisions
+                    .iter()
+                    .find(|(id, _)| *id == domain_id)
+                    .map_or(0, |(_, revision)| *revision);
+                check_delta(&delta, 1, revision)?;
+                let event = if domain_id == npc_service::STATE_DOMAIN_NPC_CONVERSATION {
+                    let value = npc_service::decode_npc_conversation(delta.payload)
+                        .map_err(|_| SessionError::SessionUnusable)?;
+                    SessionEvent::NpcConversation(applied(
+                        server_sequence,
+                        base_revision,
+                        new_revision,
+                        value,
+                    ))
+                } else {
+                    let value = npc_service::decode_npc_trade_window(delta.payload)
+                        .map_err(|_| SessionError::SessionUnusable)?;
+                    SessionEvent::NpcTradeWindow(applied(
+                        server_sequence,
+                        base_revision,
+                        new_revision,
+                        value,
+                    ))
+                };
+                match self
+                    .gated_revisions
+                    .iter_mut()
+                    .find(|(id, _)| *id == domain_id)
+                {
+                    Some((_, revision)) => *revision = new_revision,
+                    None => self.gated_revisions.push((domain_id, new_revision)),
+                }
+                Ok(event)
+            }
+            52 => crate::pvp_expert::apply(self, server_sequence, payload),
+            18 => crate::world_light::apply(self, server_sequence, payload),
+            22 => crate::weather::apply(self, server_sequence, payload),
+            19 | 20 | 101 => crate::presentation::apply(self, server_sequence, payload),
+            14 => crate::container_tree::apply(self, server_sequence, delta),
+            16 => crate::quest_log_transport::apply(self, server_sequence, delta),
+            40 => crate::server_save_countdown::apply(self, server_sequence, payload),
+            23 => crate::tutorial_notices::apply(self, server_sequence, payload),
+            oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES => {
+                crate::achievement_notices_transport::apply(self, server_sequence, payload)
+            }
+            oteryn_protocol_oteryn::zones_nologout::STATE_DOMAIN_SERVER_MESSAGES => {
+                crate::server_messages::apply(self, server_sequence, payload)
+            }
+            17 => crate::map_transport::apply(self, server_sequence, payload),
+            oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE => {
+                self.appearance_delta(server_sequence, delta)
+            }
+            world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY if self.entities.is_some() => {
+                check_delta(
+                    &delta,
+                    world_spatial_entities::DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+                    self.spatial_revision,
+                )?;
+                let fields =
+                    world_spatial_entities::EntityFields::selected(self.selected_capabilities());
+                let (entities_delta, lights, icons) =
+                    world_spatial_entities::decode_world_spatial_entities_delta_with_icons(
+                        delta.payload,
+                        fields,
+                    )?;
+                if entities_delta.content_generation != self.world_spatial.content_generation {
+                    return Err(SessionError::ContentGenerationMismatch { domain_id });
+                }
+                let next = match &self.entities {
+                    Some(stored) => stored.after(&entities_delta, &lights)?,
+                    None => {
+                        return Err(SessionError::UnselectedDomain { domain_id });
+                    }
+                };
+                appearance_state::validate_entities(self.appearance.as_ref(), Some(&next))?;
+                if icons.as_ref().is_some_and(|icons| icons.iter().any(|icon| {
+                    !next.get(&icon.entity).is_some_and(|entity| entity.kind == EntityKind::Player)
+                })) {
+                    return Err(SessionError::Protocol(FoundationProtocolError::MalformedFrame));
+                }
+                self.entities = Some(next);
+                self.world_spatial.actor_position = entities_delta.actor_position;
+                self.spatial_revision = new_revision;
+                if let Some(icons) = icons {
+                    return Ok(SessionEvent::PartyIcons(applied(server_sequence, base_revision, new_revision, icons)));
+                }
+                Ok(SessionEvent::WorldSpatialEntities(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    entities_delta,
+                )))
+            }
+            world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY => {
+                check_delta(
+                    &delta,
+                    world_spatial::DELTA_TYPE_WORLD_SPATIAL_V1,
+                    self.spatial_revision,
+                )?;
+                let observation = world_spatial::decode_world_spatial(delta.payload)?;
+                if observation.content_generation != self.world_spatial.content_generation {
+                    return Err(SessionError::ContentGenerationMismatch { domain_id });
+                }
+                self.world_spatial = observation;
+                self.spatial_revision = new_revision;
+                Ok(SessionEvent::WorldSpatial(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    observation,
+                )))
+            }
+            world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY => {
+                check_delta(
+                    &delta,
+                    world_object::DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                    self.overlay_revision,
+                )?;
+                let entry = world_object::decode_world_object_overlay_delta(delta.payload)?;
+                if entry.revision != new_revision {
+                    return Err(SessionError::OverlayEntryRevisionMismatch {
+                        new_revision,
+                        entry_revision: entry.revision,
+                    });
+                }
+                if entry.content_generation != self.world_spatial.content_generation {
+                    return Err(SessionError::ContentGenerationMismatch { domain_id });
+                }
+                match self
+                    .world_object_overlay
+                    .iter_mut()
+                    .find(|existing| existing.placement == entry.placement)
+                {
+                    Some(existing) => *existing = entry.clone(),
+                    None => self.world_object_overlay.push(entry.clone()),
+                }
+                self.overlay_revision = new_revision;
+                Ok(SessionEvent::WorldObjectOverlay(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    entry,
+                )))
+            }
+            actor_spell::STATE_DOMAIN_ACTOR_VITALS => {
+                check_delta(
+                    &delta,
+                    actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
+                    self.vitals_revision,
+                )?;
+                let vitals = actor_spell::decode_actor_vitals(delta.payload)?;
+                self.actor_vitals = Some(vitals);
+                self.vitals_revision = new_revision;
+                Ok(SessionEvent::ActorVitals(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    vitals,
+                )))
+            }
+            attack::STATE_DOMAIN_ACTOR_COMBAT_STATE if self.is_selected(CAPABILITY_ATTACK_V1) => {
+                check_delta(
+                    &delta,
+                    attack::DELTA_TYPE_ACTOR_COMBAT_STATE_V1,
+                    self.combat_revision,
+                )?;
+                let state = attack::decode_actor_combat_state(delta.payload)
+                    .map_err(SessionError::Attack)?;
+                self.combat_state = Some(state);
+                self.combat_revision = new_revision;
+                Ok(SessionEvent::ActorCombatState(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    state,
+                )))
+            }
+            attack::STATE_DOMAIN_ACTOR_COMBAT_STATE => {
+                Err(SessionError::UnselectedDomain { domain_id })
+            }
+            STATE_DOMAIN_CHAT if self.chat.is_some() => {
+                // Both delta types are registered for domain 12; each is checked against the
+                // one stored revision and decoded before anything is stored.
+                let delta_type = delta.delta_type;
+                check_delta(&delta, delta_type, self.chat_revision)?;
+                let event = match delta_type {
+                    chat::DELTA_TYPE_CHAT_LINE_V1 => {
+                        let line =
+                            guild_chat::decode_line(delta.payload, &self.selected_capabilities)?;
+                        SessionEvent::ChatLine(applied(
+                            server_sequence,
+                            base_revision,
+                            new_revision,
+                            line,
+                        ))
+                    }
+                    oteryn_protocol_oteryn::vip_presence::DELTA_TYPE_VIP_PRESENCE_V1 => {
+                        use oteryn_protocol_oteryn::vip_presence as wire;
+                        if !self.is_selected(wire::CAPABILITY_VIP_PRESENCE_V1) {
+                            return Err(SessionError::CapabilityNotSelected {
+                                capability: wire::CAPABILITY_VIP_PRESENCE_V1,
+                            });
+                        }
+                        let batch = wire::decode(delta.payload)?;
+                        self.vip_presence =
+                            Some(vip_presence::VipPresenceStore::new(batch.clone()));
+                        SessionEvent::VipPresence(applied(
+                            server_sequence,
+                            base_revision,
+                            new_revision,
+                            batch,
+                        ))
+                    }
+                    player_typing::DELTA_TYPE_PLAYER_TYPING_V1 => {
+                        if !self.is_selected(player_typing::CAPABILITY_PLAYER_TYPING_V1) {
+                            return Err(SessionError::CapabilityNotSelected {
+                                capability: player_typing::CAPABILITY_PLAYER_TYPING_V1,
+                            });
+                        }
+                        SessionEvent::PlayerTyping(applied(
+                            server_sequence,
+                            base_revision,
+                            new_revision,
+                            player_typing::decode_update(delta.payload)?,
+                        ))
+                    }
+                    chat::private_channel::DELTA_TYPE_CHAT_CHANNEL_LIST_V1 => {
+                        let list =
+                            private_channels::decode(delta.payload, &self.selected_capabilities)?;
+                        SessionEvent::ChatChannelList(applied(
+                            server_sequence,
+                            base_revision,
+                            new_revision,
+                            list,
+                        ))
+                    }
+                    chat::DELTA_TYPE_CHAT_ROOMS_V1 => {
+                        let rooms = chat::decode_chat_rooms(delta.payload)?;
+                        guild_chat::check_rooms(rooms, &self.selected_capabilities)?;
+                        SessionEvent::ChatRooms(applied(
+                            server_sequence,
+                            base_revision,
+                            new_revision,
+                            rooms,
+                        ))
+                    }
+                    _ => {
+                        return Err(SessionError::UnregisteredDeltaType {
+                            domain_id,
+                            delta_type,
+                        });
+                    }
+                };
+                if let Some(log) = self.chat.as_mut() {
+                    match &event {
+                        SessionEvent::ChatLine(line) => log.push(line.value.clone()),
+                        SessionEvent::ChatRooms(rooms) => log.rooms = rooms.value,
+                        SessionEvent::ChatChannelList(list) => {
+                            log.private_channels = Some(list.value.clone())
+                        }
+                        _ => {}
+                    }
+                }
+                self.chat_revision = new_revision;
+                Ok(event)
+            }
+            STATE_DOMAIN_CHAT => Err(SessionError::UnselectedDomain { domain_id }),
+            STATE_DOMAIN_CHARACTER_INVENTORY if self.inventory.is_some() => {
+                check_delta(
+                    &delta,
+                    item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1,
+                    self.inventory_revision,
+                )?;
+                let value = item_view::decode_character_inventory_with_equip_drop(
+                    delta.payload,
+                    self.is_selected(item_view::CAPABILITY_ITEM_EQUIP_DROP_V1),
+                )
+                .map_err(SessionError::ItemView)?;
+                self.inventory = Some(value.clone());
+                self.inventory_revision = new_revision;
+                Ok(SessionEvent::Inventory(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    value,
+                )))
+            }
+            STATE_DOMAIN_OPEN_CONTAINER if self.open_container.is_some() => {
+                check_delta(
+                    &delta,
+                    item_view::DELTA_TYPE_OPEN_CONTAINER_V1,
+                    self.container_revision,
+                )?;
+                let value = item_view::decode_open_container(delta.payload)
+                    .map_err(SessionError::ItemView)?;
+                self.open_container = Some(value.clone());
+                self.container_revision = new_revision;
+                Ok(SessionEvent::OpenContainer(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    value,
+                )))
+            }
+            _ => Err(match capability_of_domain(domain_id) {
+                Some(capability) if !self.is_selected(capability) => {
+                    SessionError::UnselectedDomain { domain_id }
+                }
+                _ => SessionError::UnsupportedPushedDomain { domain_id },
+            }),
+        }
+    }
+}

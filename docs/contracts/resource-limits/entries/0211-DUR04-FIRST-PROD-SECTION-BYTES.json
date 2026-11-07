@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-FIRST-PROD-SECTION-BYTES",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_04",
+  "resource": "One bootstrap artifact section",
+  "unit": "bytes",
+  "hard_maximum": 4303314,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 4303314
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Validate section length and checked range before retaining or parsing section bytes.",
+  "client_visible": false,
+  "boundary_tests": [
+    "4,303,314-byte section accepted only when total artifact also passes",
+    "4,303,315 rejected",
+    "offset+length overflow rejected"
+  ]
+}

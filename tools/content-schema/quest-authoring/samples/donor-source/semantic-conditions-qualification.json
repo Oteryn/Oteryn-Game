@@ -1,0 +1,20 @@
+{
+  "schema": "OTERYN_DONOR_SEMANTIC_CONDITION_QUALIFICATION/v1",
+  "packet_sha256": "53c191d820fa203f42fb426ce7a4b696808383bf8473a3e33385411380b50fee",
+  "decoder_sha256": "a7ca21412ab93b4e80bad8355d6ed80680617e9765e4deff503ad7e8eed4802c",
+  "schema_sha256": "d46ca081841e8503499adb7f6a50c8581c92acd9dfc295a4edbdd1990ed960ec",
+  "conditions_verified": 64,
+  "interaction_definitions_supplemented": 37,
+  "counts": {
+    "new_comparisons": 64,
+    "clock_comparisons": 21,
+    "position_comparisons": 43,
+    "existing_leaves_retained": 8,
+    "opaque_leaves": 2
+  },
+  "source_file_hashes_verified": 37,
+  "native_semantic_admission": false,
+  "canonical_opaque_replacements": 0,
+  "tests_passed": 15,
+  "state": "PASS"
+}

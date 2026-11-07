@@ -1,0 +1,21 @@
+{
+  "id": "CHARCMD-RECEIPT-RESPONSE-BYTES",
+  "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+  "resource": "PublishCharacterCommandReceiptV1 response body",
+  "unit": "bytes",
+  "hard_maximum": 256,
+  "configurable_range": {
+    "minimum": 256,
+    "maximum": 256
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Read with a 256-byte cap before decoding.",
+  "client_visible": false,
+  "boundary_tests": [
+    "a receipt response above 256 bytes is refused"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/character_commands.rs"
+  ],
+  "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+}

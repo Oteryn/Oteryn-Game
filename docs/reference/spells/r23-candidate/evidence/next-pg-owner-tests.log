@@ -1,0 +1,25 @@
+result                                                 
+--------------------------------------------------------------------------------------------------------
+ privacy receipt/successor/history guards; House foreign-World/one-use/rebind/no-selfgrant guards: PASS
+(1 row)
+result                                     
+--------------------------------------------------------------------------------
+ parameter outbox XID/immutable/duplicate/digest/World/cost/editor guards: PASS
+(1 row)
+result                                          
+-----------------------------------------------------------------------------------------
+ World-House Instance same-XID/immutable/unique/World/no-runtime-allocation guards: PASS
+(1 row)
+test_map_row 
+--------------
+ 
+(1 row)
+
+                                                         result                                                         
+------------------------------------------------------------------------------------------------------------------------
+ Map initialization exact Item/Ground/audit, immutable provenance, intent substitution, current-generation guards: PASS
+(1 row)
+result                                                                          
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+ due read exact Rust SQL predicate: committed-source/current-XID/missing/Character/World/Channel/generation/lease/placement/artifact/spell/revision: PASS
+(1 row)

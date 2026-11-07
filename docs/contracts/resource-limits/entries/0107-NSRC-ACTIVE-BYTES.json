@@ -1,0 +1,20 @@
+{
+  "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+  "boundary_tests": [
+    "262144 retained bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+    "262145 rejected before excess allocation, retention or effect",
+    "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "minimum": 262144,
+    "maximum": 262144
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "hard_maximum": 262144,
+  "id": "NSRC-ACTIVE-BYTES",
+  "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+  "resource": "Both active slots together",
+  "unit": "retained bytes"
+}

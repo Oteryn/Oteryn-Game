@@ -1,0 +1,9 @@
+{
+  "id": 10,
+  "name": "ACCOUNT_ACHIEVEMENTS_QUERY",
+  "owner_decision": "OTERYN_ACHIEVEMENT_DISPLAY_CONTRACT_V1 D223-D228 (#162 owner decision record 5911933242)",
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/account_achievements_v1.proto#AccountAchievementsQuery",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/account_achievements_v1.proto#AccountAchievementsResult",
+  "max_payload_bytes": 6,
+  "max_result_payload_bytes": 32788
+}

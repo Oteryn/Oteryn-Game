@@ -1,0 +1,296 @@
+{
+  "profile_repairs": [
+    {
+      "after": {
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "asset_binding": "canary.appearance:outfit/129",
+            "light_level": 0,
+            "palette_bindings": [
+              {
+                "asset_binding": "canary.appearance:palette/19",
+                "slot": "Head"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/58",
+                "slot": "Body"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/105",
+                "slot": "Legs"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/94",
+                "slot": "Feet"
+              }
+            ]
+          }
+        },
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.hagor",
+          "revision": "definition-r1"
+        }
+      },
+      "before": {
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "asset_binding": "canary.appearance:outfit/129",
+            "light_level": 0,
+            "palette_bindings": [
+              {
+                "asset_binding": "canary.appearance:palette/57",
+                "slot": "Head"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/116",
+                "slot": "Body"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/63",
+                "slot": "Legs"
+              },
+              {
+                "asset_binding": "canary.appearance:palette/1156",
+                "slot": "Feet"
+              }
+            ]
+          }
+        },
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.hagor",
+          "revision": "definition-r1"
+        }
+      }
+    },
+    {
+      "after": {
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "asset_binding": "canary.appearance:object/11402",
+            "light_level": 0
+          }
+        },
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.a_sleeping_dragon",
+          "revision": "definition-r1"
+        }
+      },
+      "before": {
+        "data": {
+          "kind": "Presentation",
+          "profile": {
+            "asset_binding": "canary.appearance:object/168",
+            "light_level": 0
+          }
+        },
+        "target": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.a_sleeping_dragon",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  ],
+  "project_revision": "g4-npc-qualified-source-r11",
+  "repairs": [
+    {
+      "after": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.hagor",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.presentation_reference_hold",
+            "value": {
+              "type": "Text",
+              "value": "{\"admission_eligible\":true,\"disposition\":\"RESOLVED\",\"known_problem\":\"PALETTE_INDEX_1156_OUTSIDE_0_132\",\"npc_key\":\"oteryn:npc.hagor\",\"replacement_appearance\":{\"addons\":0,\"body\":58,\"feet\":94,\"head\":19,\"legs\":105,\"look_type\":129,\"mount\":null},\"resolution_proof\":{\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/qualified-corrections.json\",\"record_pointer\":\"/hagor\",\"sha256\":\"56e44c655c33ea9d51f2b74f7905f63d4032ce199f094644a6c401014a7f7d8a\"},\"source_proofs\":[{\"bytes\":1370,\"file\":\"canary-hagor.lua\",\"sha256\":\"4b6d9d40944d2fb81d3cc276d7f4504e8e8bff04ce240b32cc73309cc9835a1f\",\"url\":\"https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/hagor.lua\"},{\"bytes\":1301,\"file\":\"crystal-hagor.lua\",\"sha256\":\"f144c08022f16e87b2de61119814ee2b6b075f4910036ffc9b7d1b5f06ba1e9b\",\"url\":\"https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/data-global/npc/hagor.lua\"}],\"source_reference\":{\"family\":\"Presentation\",\"key\":\"oteryn:presentation.npc.hagor\",\"revision\":\"definition-r1\"}}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.qualified_presentation",
+            "value": {
+              "type": "Text",
+              "value": "{\"appearances_sha256\":\"2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2\",\"frame_group\":1,\"image_sha1\":\"b8580bef438bf85d9807d06667cce36f931b4d05\",\"npc_key\":\"oteryn:npc.hagor\",\"phase\":0,\"proof\":{\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/qualified-corrections.json\",\"record_pointer\":\"/hagor\",\"sha256\":\"56e44c655c33ea9d51f2b74f7905f63d4032ce199f094644a6c401014a7f7d8a\"},\"qualified\":true,\"replacement_appearance\":{\"addons\":0,\"body\":58,\"feet\":94,\"head\":19,\"legs\":105,\"look_type\":129,\"mount\":null},\"rule\":\"WIKI_IMAGE_FIT\",\"schema\":\"OTERYN_NPC_QUALIFIED_PRESENTATION/v1\",\"score\":0.64,\"second_image_score\":0.42,\"target_client\":\"15.30\"}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.hagor",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.hagor",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      "before": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.hagor",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.presentation_reference_hold",
+            "value": {
+              "type": "Text",
+              "value": "{\"admission_eligible\":false,\"known_problem\":\"PALETTE_INDEX_1156_OUTSIDE_0_132\",\"npc_key\":\"oteryn:npc.hagor\",\"replacement_appearance\":null,\"source_proofs\":[{\"bytes\":1370,\"file\":\"canary-hagor.lua\",\"sha256\":\"4b6d9d40944d2fb81d3cc276d7f4504e8e8bff04ce240b32cc73309cc9835a1f\",\"url\":\"https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/hagor.lua\"},{\"bytes\":1301,\"file\":\"crystal-hagor.lua\",\"sha256\":\"f144c08022f16e87b2de61119814ee2b6b075f4910036ffc9b7d1b5f06ba1e9b\",\"url\":\"https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/data-global/npc/hagor.lua\"}],\"source_reference\":{\"family\":\"Presentation\",\"key\":\"oteryn:presentation.npc.hagor\",\"revision\":\"definition-r1\"}}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "normal"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.hagor",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": null,
+        "services": []
+      }
+    },
+    {
+      "after": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.a_sleeping_dragon",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.presentation_reference_hold",
+            "value": {
+              "type": "Text",
+              "value": "{\"admission_eligible\":true,\"disposition\":\"RESOLVED\",\"known_problem\":\"OBJECT_168_ABSENT_PINNED_CLIENT\",\"npc_key\":\"oteryn:npc.a_sleeping_dragon\",\"replacement_appearance\":{\"item_look\":11402},\"resolution_proof\":{\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/qualified-corrections.json\",\"record_pointer\":\"/a_sleeping_dragon\",\"sha256\":\"56e44c655c33ea9d51f2b74f7905f63d4032ce199f094644a6c401014a7f7d8a\"},\"source_proofs\":[{\"bytes\":15809,\"file\":\"canary-a_sleeping_dragon.lua\",\"sha256\":\"db531f04f22f58f2f36b11a756aa7ae95a0d7921be462069683ee776527e7c8e\",\"url\":\"https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/a_sleeping_dragon.lua\"},{\"bytes\":15740,\"file\":\"crystal-a_sleeping_dragon.lua\",\"sha256\":\"58d58e2b0f81be49c29082555c6486175d81817a0f62d1c56f30bc0fc510385a\",\"url\":\"https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/data-global/npc/a_sleeping_dragon.lua\"}],\"source_reference\":{\"family\":\"Presentation\",\"key\":\"oteryn:presentation.npc.a_sleeping_dragon\",\"revision\":\"definition-r1\"}}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "sailor"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.qualified_presentation",
+            "value": {
+              "type": "Text",
+              "value": "{\"appearances_sha256\":\"2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2\",\"image_sha1\":\"4fd3589f8dd11304eb7da7dc248714e0b5e63466\",\"legacy_client_id\":11402,\"legacy_server_id\":12358,\"npc_key\":\"oteryn:npc.a_sleeping_dragon\",\"proof\":{\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/qualified-corrections.json\",\"record_pointer\":\"/a_sleeping_dragon\",\"sha256\":\"56e44c655c33ea9d51f2b74f7905f63d4032ce199f094644a6c401014a7f7d8a\"},\"qualified\":true,\"render_coverage\":1.0,\"replacement_appearance\":{\"item_look\":11402},\"rule\":\"WIKI_IMAGE\",\"schema\":\"OTERYN_NPC_QUALIFIED_PRESENTATION/v1\",\"score\":1.35160812,\"target_client\":\"15.30\"}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.quest_bindings",
+            "value": {
+              "type": "Text",
+              "value": "{\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/quest-stage.json\",\"record_pointer\":\"/records/3\",\"runtime_eligible\":false,\"sha256\":\"0902986f4aaed21cb56c5f8ffebd7f08edd1672787249dd42b9b7c09b82d17c1\"}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "sailor"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.a_sleeping_dragon",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.a_sleeping_dragon",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      "before": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.a_sleeping_dragon",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.presentation_reference_hold",
+            "value": {
+              "type": "Text",
+              "value": "{\"admission_eligible\":false,\"known_problem\":\"OBJECT_168_ABSENT_PINNED_CLIENT\",\"npc_key\":\"oteryn:npc.a_sleeping_dragon\",\"replacement_appearance\":null,\"source_proofs\":[{\"bytes\":15809,\"file\":\"canary-a_sleeping_dragon.lua\",\"sha256\":\"db531f04f22f58f2f36b11a756aa7ae95a0d7921be462069683ee776527e7c8e\",\"url\":\"https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/a_sleeping_dragon.lua\"},{\"bytes\":15740,\"file\":\"crystal-a_sleeping_dragon.lua\",\"sha256\":\"58d58e2b0f81be49c29082555c6486175d81817a0f62d1c56f30bc0fc510385a\",\"url\":\"https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/data-global/npc/a_sleeping_dragon.lua\"}],\"source_reference\":{\"family\":\"Presentation\",\"key\":\"oteryn:presentation.npc.a_sleeping_dragon\",\"revision\":\"definition-r1\"}}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "sailor"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.quest_bindings",
+            "value": {
+              "type": "Text",
+              "value": "{\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/quest-stage.json\",\"record_pointer\":\"/records/3\",\"runtime_eligible\":false,\"sha256\":\"0902986f4aaed21cb56c5f8ffebd7f08edd1672787249dd42b9b7c09b82d17c1\"}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "sailor"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.a_sleeping_dragon",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": null,
+        "services": []
+      }
+    }
+  ],
+  "schema": "OTERYN_NPC_PRESENTATION_REPAIRS/v1"
+}

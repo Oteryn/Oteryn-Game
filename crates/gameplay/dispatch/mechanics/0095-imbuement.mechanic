@@ -1,0 +1,10 @@
+name=imbuement
+commands=85
+transport=imbuement
+composed=imbuement
+authority=imbuement
+[route]
+match routing::imbuement::route(authority, &session.admitted, command, &session.item_view).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

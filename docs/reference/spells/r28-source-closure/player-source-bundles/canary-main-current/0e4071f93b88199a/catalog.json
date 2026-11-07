@@ -1,0 +1,39 @@
+{
+  "definitions": [
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/3577",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/3582",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/3585",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/3592",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/3600",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/3601",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/3607",
+      "revision": "source-player-r28"
+    }
+  ]
+}

@@ -1,0 +1,443 @@
+{
+  "schema": "OTERYN_SOURCE_FORMULA_POPULATION/v1",
+  "selection_scope": "Immutable source-identity cohort:60 helper/input formulas and27 scalar-free Combat records identified before conversion; retained after successful conversion",
+  "records": [
+    {
+      "registration_key": "canary-main-current/data/scripts/runes/energy_bomb.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "4bd3444f79d1085b07e617b6d6d3b2f698c698d2cb931952225f5d0bc1aa6200"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/runes/energy_field.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "1299e06adaa5fdcbe411000e8b5fcfe2dbbd9f9b4944d162739a5abac70f2113"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/runes/energy_wall.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "68b18638782b4749d56377579a5c93c560b63fb3ae4505771545f5219eb86fda"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/runes/fire_bomb.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "7c6302f375f07f32c3d29d55e5a95f600f683d6aac59904fbf00cbf60d7c8b05"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/runes/fire_field.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "8bc94b5be5e2f7b6b17d07fe607e967433cf5821ad366554c8bf405581a82214"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/runes/fire_wall.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "e5427721add57f2c0e5497821cab40ba9335237f36886fc0237fd762b9b9bdda"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/runes/poison_bomb.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "5ad52d5f1d4a39fea8edeeda8d50a7662701ce8cf6d5e9fd4b000ad3fa69df3e"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/runes/poison_field.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "8c7bc499f71fc1270319eed5526af3a95b38dbffe112c8bd56acd933fc80a963"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/runes/poison_wall.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "cc9d2c608ec2bc5118d1e12836351ad42f4636525c6fefbb52dbdd8370b64c72"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/runes/soul_fire.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "ac11d3eb37caf6e6cbcba4f1d63816509882785284d3725de07d659f85a9f239"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/spells/attack/curse.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "749e16b8f516efdf154f902dcbd843fe0d9dc35cc26b4c5943635e62758f4073"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/spells/attack/double_jab.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "9e728c37472fc6f332b5ad077b721c6285ff02dbf05f2e8653bf9e7c12fd597e"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/spells/attack/electrify.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "a80e58e291719c5a3c71bdf4ccdb30721e6052ab333692e9831e512dc0aea519"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/spells/attack/envenom.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "cfb92a64ff3f6cd886000e0453055d50c1ef6a29778961adaa45ddcbca0362bf"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/spells/attack/flurry_of_blows.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "79bf99ebd02d533160ea9909ae8b6a5e3d801189c5b8e5f6306575509b83cbac"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/spells/attack/forceful_uppercut.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "38531e5357ae9164a94f2ae77bca10eaceff35dfe119d61903d95246f6bc914c"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/spells/attack/greater_flurry_of_blows.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "f590c25e12aea6006e5028c6e60009d96378d3d94bddda59fbdf61c077f2762d"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/spells/attack/holy_flash.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "e64ec028d5e31c082d66fc944376ecaacd207c01aeac081be204d80e71fc89f1"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/spells/attack/ignite.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "4aeb16c12f5b72c0b5300f361f6a8066329b92a5eb944a8e863949cf79d4dca6"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/spells/attack/mystic_repulse.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "c7d196c15087a2e5ae0b6a3c6745f962e6ba6a40e39097848b3498d96ccc032f"
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/spells/attack/swift_jab.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "cc8b0a61b517b2f507d089da68144a8f330df5d089260888a220476790d6f7cc"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/avalanche.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "db9f0336014c8a948adbae0295f3e9a0335661e9fae793c32d7571d465a5a156"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/energy_bomb.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "4bd3444f79d1085b07e617b6d6d3b2f698c698d2cb931952225f5d0bc1aa6200"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/energy_field.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "1299e06adaa5fdcbe411000e8b5fcfe2dbbd9f9b4944d162739a5abac70f2113"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/energy_wall.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "68b18638782b4749d56377579a5c93c560b63fb3ae4505771545f5219eb86fda"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/explosion.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "71951e9310ec3d038d5d5701b74cd1bd9037a615542dfa0880247c84a118813c"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/fire_bomb.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "7c6302f375f07f32c3d29d55e5a95f600f683d6aac59904fbf00cbf60d7c8b05"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/fire_field.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "8bc94b5be5e2f7b6b17d07fe607e967433cf5821ad366554c8bf405581a82214"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/fire_wall.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "e5427721add57f2c0e5497821cab40ba9335237f36886fc0237fd762b9b9bdda"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/fireball.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "d58028c0c493800ee3889e44e041c7acf54dbf74f859cf1aac0614efe45ba94b"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/great_fireball.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "01ca50bde26c8634ec9bb9ee18acf05af712bb4772ede3bdc24e37e42cb24f45"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/heavy_magic_missile.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "e3f02a4e9caca9370c523a62f535b01ba87b9a6020a3e60e13023c993890d7d1"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/holy_missile.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "d6fbb280dc5d0af94c928afd4ffdfe11f564a889932041f187058398f5e503cf"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/icicle.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "1529129762c807622111eebed1bb7a8b852bbf7d0319eb2b6cbb4f6a8fb536e0"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/light_magic_missile.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "4cd84d30072e7a7e3e0b56aa230a9a443ba87cfee61e4c7c2c9bcff057df3b6d"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/light_stone_shower.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "313164d334a6791c750a807ee3a9c98e00cdbcef1bd1d1a9227afaa1e8db09af"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/lightest_magic_missile.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "8e709c634fe761e65923f023a078025833967a74bd11dc50e4ef254a73958bda"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/lightest_missile.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "e53e7ea793149b08b4d45e8aa15421452c6636e9a7fabb19141fc26f2cfd646a"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/poison_bomb.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "5ad52d5f1d4a39fea8edeeda8d50a7662701ce8cf6d5e9fd4b000ad3fa69df3e"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/poison_field.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "8c7bc499f71fc1270319eed5526af3a95b38dbffe112c8bd56acd933fc80a963"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/poison_wall.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "cc9d2c608ec2bc5118d1e12836351ad42f4636525c6fefbb52dbdd8370b64c72"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/soul_fire.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "ac11d3eb37caf6e6cbcba4f1d63816509882785284d3725de07d659f85a9f239"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/stalagmite.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "934acae6edf22ade5aab1311df662892dc0ba1a7738aad1696c8a0340e886d3b"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/stone_shower.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "21facb637283e2f82f99440e55323b79eb8519657dd3adce7bdd8cdca737c873"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/sudden_death.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "8631651a8ad3642e00a1280cfc3188b2395ecbe2716952db739b3a1a4cd9b57d"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/runes/thunderstorm.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "145b4d083c4bb3e296052be838c004b0dc68f6df414f454412ca6bb85145d21b"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/annihilation.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "ccb37767f2e682f9f531de295e764d935f77c0a07fc8aba1459daa05b439fa91"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/apprentice's_strike.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "81cdad587238f1521de3769ab4faac492e6d4e745380d215f5123e08eec1c01a"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/berserk.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "a480eaf12e3ab530e83cc4bd287cef7aab6629abc9b4072171f2bdef60d6b0e8"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/brutal_strike.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "add8cdcddf4277a50cff34936ea53d6d5b69501847d418c4a4c03dc207c60a65"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/chill_out.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "97ce42074f67cb80ae935da613a77ea3668ab14c80b4349ea91ec1dfe22f5c98"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/divine_barrage.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "25aea3579343c438246202a3f29015598b6c46311f9bd42da5ab20fc99821f83"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/divine_caldera.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "2fa27e32f0991ff20171ecc86fbd112b691c53fd7f12d3fc096e1c1f98cbda99"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/divine_missile.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "79ec981fe388c2f92c74b33269048d1467b1467dfe6f91eef7a4650fdc73f4b0"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/energy_strike.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "d4a5147aefc4579e72fc3c2dd1386e82daa51ef64965d54a30593c39d26bd635"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/envenom.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "996a5a18f9eb6fd359e11b86863f15572e006b36f8fb4c64c09635e945255656"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/eternal_winter.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "ac1dc8aabd70bda895677cf6b6a601ab7d37b7f6a2b0ecfc12d631a8906f8bf7"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/ethereal_barrage.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "a86974701a16b73c3d94289ce4999bcb84c5612cc5162db323b35497d92ea15d"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/ethereal_spear.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "075373e61daee36de70217687ad25d61060690aef27e1474fc0e701dec06e0f5"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/fierce_berserk.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "47178f22b39af0c729f488538fe0055abf1fc50b53fc6621e4d1341129a36265"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/groundshaker.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "efa53264f89d28834c6062fe8f9b34cf5e63fb487c972039d0d8f5afdeae21b5"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/holy_flash.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "cd43b7568ced819b6bcacce5e6e069de58389473ca6ef7074c17fa1270c264ef"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/ice_strike.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "f806bedc37a8dfefc3820c9bfeb8987a6bf76c4e689a7279bbc564205667d325"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/ice_wave.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "06c99f24cb55fbbcac3a63601112d3bd8033e59fcfc5b69a7d93122afe3549c8"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/lesser_ethereal_spear.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "a4879563d886c62ca3368feb20576edf763e9969b4aa14364d7927e4cc8092d4"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/lesser_front_sweep.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "4b0cf17de0dbb9bd6381ebe4fd5bbfa5f93b2aa5a75b5b9d6e930c6c147b337b"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/mud_attack.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "c58b1fdffb26a50c8dddf2575c7ad323830778568293093055b544be55744a27"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/physical_strike.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "671326649773501086de2b3315d36fb828d9e3f0ef8ab6d8234578dc6f9a4655"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/strong_ethereal_spear.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "2a1980f926631b841a0b29bc3eabc9a7f3575523218eadd6b5e19c5a60d1b96a"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/strong_ice_strike.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "94b523c2052a58fadc460cceb05d39b71bfc13fee8a05ab7122829bdb099f749"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/strong_terra_strike.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "9fdbe2a6d66cfe7cabebc9731a31bfc83116c93751b21eaec0c523f623db44e9"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/terra_strike.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "5895b98d092859e6e1cc6a042dabe510ca9cbf820c56ccf8ca56dad77f9c6d2d"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/terra_wave.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "a472f4918378c32eeb4d4e5e936f0095e3049a6aaa4ecbe59ba4e671dc229ef2"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/ultimate_ice_strike.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "4ec9132ca000302f601afdf688db41ac446cb6a6ee693af8fde35bc25ee8f9f1"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/ultimate_terra_strike.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "cae331e5a666a69101546cbc8e746ce6c77d60b14d8461fcd7a4f1222a7ab165"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/whirlwind_throw.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "969a3796a59118788caaa6e4c16b813f6d307b07051dd90c94a229feed480b46"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/wrath_of_nature.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "38541056827c02a77afbdef63b535e641f5dd938da3c529c677c91a2c5978619"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/bruise_bane.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "1958ecdb2cb42f68915c45ddd03f5801b9982867e7d7d2cbea5062dca72ec376"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/divine_healing.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "0b4daab8a77d6bb1737a2f95ec85732d065fb40cf068ab3678482c01a8bc548e"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/fair_wound_cleansing.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "abf86115bca5a78bf3723d1a18dace1118d801b25a8a06cd50f14e6d17500a16"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/intense_healing.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "efc6811aeabe2d3c4728541d695256c7c48914853ddb7649654d9c39ad43993d"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/intense_wound_cleansing.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "57ba64aba68520f4febc2ddf3b542fb4e614650371e08cf7c7458868b1518763"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/light_healing.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "4a406c0ba980a707be46f6f24615512eba7747a27c62e8969f9b47f5ee441371"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/salvation.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "94af6b04bbdb7c357ee8b3cd2c958c528f3809b2d2de4b2eb91ee873d2aae26f"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/spirit_mend.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "c9587b7852fa46933bf77915ee5f98f8de9cb9f9730fab202add600ed5277db2"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/ultimate_healing.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "534b5787801f5c436614c41291dd3005ee836984b330ae3fe82de1ceea0558af"
+    },
+    {
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/wound_cleansing.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "795d40436944c7714f3860cf0c2c131e09bc22fd8a434102dae9b46b41f685ea"
+    }
+  ],
+  "record_count": 87,
+  "runtime_activation": false
+}

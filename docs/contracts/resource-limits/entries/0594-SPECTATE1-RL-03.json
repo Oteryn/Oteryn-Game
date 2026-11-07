@@ -1,0 +1,20 @@
+{
+  "id": "SPECTATE1-RL-03",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_SPECTATE1_DECISION_2026-10-15.md",
+  "resource": "production observer sessions per node pending measurement and CP activation",
+  "unit": "observer sessions",
+  "hard_maximum": 0,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 0
+  },
+  "failure_category": "NOT_AVAILABLE",
+  "allocation_impact": "No production observer admission or activation default. The Game-only kernel requires explicit measured node, rate-account and audit capacities; it never derives them from this dormant zero ceiling.",
+  "client_visible": false,
+  "boundary_tests": [
+    "spectate_all_observer_bootstraps_fail_before_player_authority",
+    "spectate_node_capacity_and_rolling_attempts_fail_uniformly"
+  ],
+  "status": "DORMANT_PENDING_MEASUREMENT",
+  "notes": "RL-03 is a measurement gate. Before production activation CP must register the measured positive ceiling; Game-only test capacities are not a production measurement."
+}

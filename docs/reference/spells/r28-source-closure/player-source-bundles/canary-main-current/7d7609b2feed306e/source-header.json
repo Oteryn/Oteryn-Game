@@ -1,0 +1,48 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 8000,
+    "costs": {
+      "mana": 60
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 8000,
+        "group": "special"
+      }
+    ],
+    "name": "Lightning",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_lightning"
+    },
+    "reference_spell_id": 149,
+    "requirements": {
+      "level": 55,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "range_tiles": 4,
+      "target_or_direction": true
+    },
+    "words": "exori amp vis"
+  }
+}

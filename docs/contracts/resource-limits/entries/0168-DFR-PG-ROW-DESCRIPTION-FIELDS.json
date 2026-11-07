@@ -1,0 +1,20 @@
+{
+  "id": "DFR-PG-ROW-DESCRIPTION-FIELDS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+  "resource": "Fields announced by one PostgreSQL RowDescription on the first-slice production root profile",
+  "unit": "fields",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Validate peer count <=32, all field-name byte limits and complete body structure before Vec::with_capacity, owned field-name String allocation or statement-metadata construction.",
+  "client_visible": false,
+  "boundary_tests": [
+    "32 fields accepted only when every name/profile/built-in-OID check and root funding also passes",
+    "33 fields rejected as UNAVAILABLE before RowDescription vector or String allocation",
+    "Malformed/truncated field bodies rejected before retained RowDescription or statement metadata"
+  ],
+  "notes": "The result-shape ceiling matches the admitted DataRow profile. It is a product compatibility limit, not an inference from protocol representation width."
+}

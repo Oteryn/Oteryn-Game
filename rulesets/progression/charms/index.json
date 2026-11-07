@@ -1,0 +1,10 @@
+{
+  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+  "kind": "ruleset",
+  "notes": "Declarative mechanics.json and progression.json preparation for all 25 charms; schema: tools/content-schema/charm-authoring/mechanics.schema.json. Runtime connection is not qualified by this population marker; unresolved and excluded references cannot activate effects.",
+  "owner": "Character progression",
+  "path": "rulesets/progression/charms/",
+  "population_state": "POPULATED",
+  "repository": "Oteryn/Oteryn-Game",
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1"
+}

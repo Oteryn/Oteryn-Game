@@ -1,0 +1,27 @@
+{
+  "authority": "SOURCE_OBSERVATIONS_ONLY; no Oteryn ProductionKeys or gameplay promotion",
+  "client_version": "15.30",
+  "family": "Boss",
+  "files": [
+    {
+      "path": "bosses-00000-00249.json",
+      "records": 250,
+      "sha256": "4bd71cf4b80740c184183366afdea9208c8d3176229bab2f1d09ac76587cb484"
+    },
+    {
+      "path": "bosses-00250-00446.json",
+      "records": 197,
+      "sha256": "ec3806370dc2fbda86b71ff8c8106e7743ffd195276ee56496ebdf3d33892268"
+    }
+  ],
+  "identity_namespace": "cipsoft/staticdata/boss_id",
+  "inputs": {
+    "staticdata": {
+      "file": "content/assets/files/staticdata-62d3f5f761a4c8cab02c89bd1a351770aca3504a74f1b34f457f0a0451dcd128.dat",
+      "sha256": "62d3f5f761a4c8cab02c89bd1a351770aca3504a74f1b34f457f0a0451dcd128"
+    }
+  },
+  "record_count": 447,
+  "schema": "OTERYN_CIPSOFT_STATICDATA_BOSS_SOURCE_MANIFEST/v1",
+  "source": "CIPSOFT_CLIENT_STATICDATA"
+}

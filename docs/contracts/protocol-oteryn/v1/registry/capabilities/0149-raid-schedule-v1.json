@@ -1,0 +1,15 @@
+{
+  "id": 149,
+  "name": "RAID_SCHEDULE_V1",
+  "owner_decision": "RAIDS-WIRE-1",
+  "owner": "Game raid owner",
+  "requires": [],
+  "command_types": [
+    171,
+    172,
+    173
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "RAIDS-2: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. Command type 171 is a read-only view of the admitted channel's latest raid run; raid firing, waves and cleanup stay server-owned, and command types 172 and 173 remain reserved and unrouted."
+}

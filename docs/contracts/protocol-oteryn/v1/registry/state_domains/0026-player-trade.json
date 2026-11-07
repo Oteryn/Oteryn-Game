@@ -1,0 +1,24 @@
+{
+  "id": 26,
+  "name": "PLAYER_TRADE",
+  "owner_decision": "PLAYER-TRADE0-DIRECT-TRADE-V1",
+  "owner": "Channel trade owner",
+  "capability": 60,
+  "revision": "per GameSessionId; monotonic across reconnect",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "PLAYER_TRADE_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/player_trade_v1.proto#PlayerTradeStateV1",
+      "max_payload_bytes": 4608
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "PLAYER_TRADE_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/player_trade_v1.proto#PlayerTradeStateV1",
+      "max_payload_bytes": 4608
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "spell": {
+    "base_power": 40,
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 135
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Ethereal Barrage",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_strong_ethereal_spear",
+      "impact_cue": "canary.sound:spell_strong_ethereal_spear"
+    },
+    "reference_spell_id": 303,
+    "requirements": {
+      "learning_required": false,
+      "level": 60,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "cast_at_position": true,
+      "needs_target": true,
+      "range_tiles": 7
+    },
+    "words": "exori dir moe"
+  }
+}

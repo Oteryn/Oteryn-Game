@@ -1,0 +1,16 @@
+{
+  "mechanic": "0007-chat",
+  "kind": "handlers",
+  "id": "0007-chat-input",
+  "status": "supported",
+  "commands": [
+    13
+  ],
+  "direction": "client_to_server",
+  "capability": 7,
+  "entry": "protocol.rs::request",
+  "test": "tests/state.rs::speech_and_named_private_input_are_validated_and_serialized",
+  "not_applicable": {
+    "settings": "Chat policy is server-owned."
+  }
+}

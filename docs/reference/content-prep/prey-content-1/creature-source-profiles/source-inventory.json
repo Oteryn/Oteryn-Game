@@ -1,0 +1,71 @@
+{
+  "checked_at": "2026-10-19T09:55:30.829137+00:00",
+  "source_scope": "OTS_HYPOTHESIS_ONLY",
+  "donor_scans": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "exact_registration_matches": {
+        "Berrypest": [],
+        "Elder Forest Fury": [],
+        "Furious Fire Elemental": [],
+        "Nightslayer": [],
+        "Undead Jester": []
+      },
+      "scope": "Committed Lua monster paths across all datapacks; exact registration-name scan of available files, not just filenames.",
+      "committed_monster_paths": 1723,
+      "unavailable_path_count": 0,
+      "unavailable_prefix_counts": {},
+      "unavailable_paths_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "qualification": "Complete committed monster-file registration scan; no exact name match."
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "committed_monster_paths": 3526,
+      "unique_blobs": 2444,
+      "exact_registration_matches": {
+        "Berrypest": [],
+        "Elder Forest Fury": [],
+        "Furious Fire Elemental": [],
+        "Nightslayer": [],
+        "Undead Jester": []
+      },
+      "full_text_name_mentions": {
+        "Berrypest": [],
+        "Elder Forest Fury": [],
+        "Furious Fire Elemental": [],
+        "Nightslayer": [],
+        "Undead Jester": []
+      },
+      "nonliteral_registration_calls": [],
+      "source_inventory_sha256": "78c2739f5f5f23f2d53645a7bffa720f27fcf173c7a097ea9507fbe4216fe32d",
+      "scope": "All committed Lua monster definitions across data-global and data-crystal, including every missing local blob fetched into isolated cache. Every blob verified against committed tree SHA; no lazy fetch or worktree changes.",
+      "unavailable_path_count": 0,
+      "unavailable_prefix_counts": {},
+      "unavailable_paths_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "qualification": "Complete committed monster-file registration scan; no exact name match."
+    }
+  ],
+  "tfs16_revision": "098641981400f8ff89959f427f0e8718d9dd22e2",
+  "tfs16_tree_complete": true,
+  "tfs16_matching_definitions": [
+    {
+      "repository": "otland/forgottenserver",
+      "revision": "098641981400f8ff89959f427f0e8718d9dd22e2",
+      "path": "data/monster/monsters/elder_forest_fury.xml",
+      "git_blob": "5fda28210c31d4a3efbf2cc4b09a00099da185ba",
+      "sha256": "2302f793d77a1febe6e3c9e6a57394cf19a2e922bb67d67f2407fed5fd28e801",
+      "url": "https://raw.githubusercontent.com/otland/forgottenserver/098641981400f8ff89959f427f0e8718d9dd22e2/data/monster/monsters/elder_forest_fury.xml"
+    },
+    {
+      "repository": "otland/forgottenserver",
+      "revision": "098641981400f8ff89959f427f0e8718d9dd22e2",
+      "path": "data/monster/monsters/undead_jester.xml",
+      "git_blob": "f99e241a3e63cafc7a64230d6c8c41113e76544f",
+      "sha256": "1e33b008388746ac601882ab7e439ff39bdb876ab54f41abcbdc5db66baba328",
+      "url": "https://raw.githubusercontent.com/otland/forgottenserver/098641981400f8ff89959f427f0e8718d9dd22e2/data/monster/monsters/undead_jester.xml"
+    }
+  ],
+  "qualification": "All3526Crystal monster files across both datapacks were read and blob-verified with no unavailable objects; none defines or mentions these five exact names. TFS profiles supplement source evidence, are not an approved native converter source and do not establish Global parity. Three complete monster registrations were not recovered in this bounded search."
+}

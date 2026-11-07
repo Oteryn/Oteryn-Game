@@ -1,0 +1,67 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 140,
+      "soul": 2
+    },
+    "execution": {
+      "conjure": {
+        "count": 5,
+        "effect_asset_binding": "canary.appearance:effect/magic_blue",
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/source/canary-main-current/3446",
+          "revision": "source-player-r28"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/136373a2bd3092fd",
+      "revision": "source-player-r28"
+    },
+    "name": "Conjure Bolt",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_conjure_arrow"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 79,
+    "requirements": {
+      "learning_required": false,
+      "level": 17,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "exevo con mort"
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "authority": "SOURCE_OBSERVATIONS_ONLY; no Oteryn ProductionKeys or gameplay promotion",
+  "client_version": "15.30",
+  "excluded_top_level": {
+    "field_1_objects": 43516,
+    "field_5": {
+      "count": 1,
+      "note": "top-level field 5, not staged",
+      "sha256": "481b1193cc4d97da27c24de67f63cb9fd191e5faa0eb047efe757c878cf79576"
+    }
+  },
+  "family": "Outfit",
+  "files": [
+    {
+      "path": "outfits-00000-00149.json",
+      "records": 150,
+      "sha256": "96366490dc5c35a5d00f7b1989d3c5831015a4cadac54ade45251f6ed98b568a"
+    },
+    {
+      "path": "outfits-00150-00299.json",
+      "records": 150,
+      "sha256": "2392fd16b3c384e8d30142f1af0b00ecc8dba4d1eddeffaa279b344092d6b526"
+    },
+    {
+      "path": "outfits-00300-00449.json",
+      "records": 150,
+      "sha256": "83709109f9f4f5c6e61e5403658de63df58f7a2ce1ec06acf67135866a421269"
+    },
+    {
+      "path": "outfits-00450-00599.json",
+      "records": 150,
+      "sha256": "f300edd2035e6d691656eb01735c729a4c6c805ee4bd9e6220a8b9fc749ffad3"
+    },
+    {
+      "path": "outfits-00600-00749.json",
+      "records": 150,
+      "sha256": "dfec25f5d44a0e486ab087d8833cdb7b5be46c67d2211581ab0a185b91f5628e"
+    },
+    {
+      "path": "outfits-00750-00899.json",
+      "records": 150,
+      "sha256": "7f25c72179c6646788bdea5e21bfe5e954eeb26290587d4ca73dd66fb37b4960"
+    },
+    {
+      "path": "outfits-00900-01049.json",
+      "records": 150,
+      "sha256": "0f6473ea078f516f3a5b877b8a38c47bdc22d6848d44349d47a7e3c75794aada"
+    },
+    {
+      "path": "outfits-01050-01199.json",
+      "records": 150,
+      "sha256": "291f591df0016a330c7b9571c2ea5a5adac22a441073b5ea99475c93b4f4fddc"
+    },
+    {
+      "path": "outfits-01200-01349.json",
+      "records": 150,
+      "sha256": "8bade550af7f491c402b011d9f7d9f6ff5889949acb463dc4037b2c3db5cb940"
+    },
+    {
+      "path": "outfits-01350-01479.json",
+      "records": 130,
+      "sha256": "2bb91cf5c3522d72acfc088a23f87ee9b058b7d9514c2c6280999867924f11eb"
+    }
+  ],
+  "identity_namespace": "cipsoft/appearance-outfits",
+  "inputs": {
+    "appearances": {
+      "file": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+      "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+    }
+  },
+  "record_count": 1480,
+  "schema": "OTERYN_CIPSOFT_APPEARANCE_OUTFIT_SOURCE_MANIFEST/v1",
+  "source": "CIPSOFT_CLIENT_ASSETS",
+  "top_level_field": 2
+}

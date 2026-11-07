@@ -1,0 +1,23 @@
+{
+  "id": "CHAT0-RL-07",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md",
+  "resource": "Chat rooms one session can have open",
+  "unit": "rooms per session",
+  "hard_maximum": 8,
+  "configurable_range": {
+    "minimum": 4,
+    "maximum": 8
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Capability 259 expands the existing bounded u8 room mask to eight bits; peers without it retain four bits. The domain 12 room payload stays within four bytes.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=8: public_channel_room_ids_roundtrip_without_renumbering_existing_rooms",
+    "max+1: bit 8 is refused",
+    "public_room_negotiation_never_admits_new_rooms_to_an_old_peer"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/chat.rs MAX_CHAT_OPEN_ROOMS, ChatRoomSet"
+  ],
+  "notes": "S04c adds Advertising-Rookgaard, Tutor, Gamemaster and Guild Leaders only for negotiated capability 259; legacy peers retain World, English, Help and Advertising."
+}

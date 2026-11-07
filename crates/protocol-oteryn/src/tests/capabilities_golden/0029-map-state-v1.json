@@ -1,0 +1,17 @@
+{
+  "id": 29,
+  "name": "MAP_STATE_V1",
+  "constant": "capability_tables::CAPABILITY_MAP_STATE_V1",
+  "requires": [
+    6
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

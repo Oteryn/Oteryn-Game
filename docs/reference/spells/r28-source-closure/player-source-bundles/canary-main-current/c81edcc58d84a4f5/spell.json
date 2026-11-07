@@ -1,0 +1,69 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 30000,
+    "costs": {
+      "mana": 100,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/canary-main-current/c81edcc58d84a4f5/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 30000,
+        "group": "ultimatestrikes"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/c81edcc58d84a4f5",
+      "revision": "source-player-r28"
+    },
+    "name": "Ultimate Ice Strike",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_ultimate_ice_strike"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 156,
+    "requirements": {
+      "learning_required": false,
+      "level": 100,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "range_tiles": 3,
+      "self_target": false,
+      "target_or_direction": true
+    },
+    "words": "exori max frigo"
+  }
+}

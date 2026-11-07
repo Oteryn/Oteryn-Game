@@ -1,0 +1,80 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/rune/great_fireball_rune",
+      "revision": "spell-p2-r20"
+    },
+    "name": "great fireball rune",
+    "carrier": "rune",
+    "reference_spell_id": 16,
+    "library_text": "As may be taken from the title, the Great Fireball is basically an enlarged version of the trusty Fireball rune. In contrast to the single shot of a Fireball rune, the Great Fireball affects a huge area, up to 37 square metres! This way any average sized room is easily filled with the searing blaze, scorching all creatures that are in it except for the rune user himself. It stands to reason that the Great Fireball is a favourite of most Tibians, as it is well suited both to hit whole crowds of monsters and individual targets that are difficult to hit because they are fast or hard to spot. There are few adventurers who do not cherish those moments of silent glory when they have just brought down a whole crowd of enemies with a single Great Fireball. Still, due to the large blast radius the users are well advised not to be too trigger happy with this rune to make sure no friend is near when it is used.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 30,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 7,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_great_fireball_rune"
+    },
+    "base_power": 50,
+    "rune": {
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/3191",
+        "revision": "spell-p2-r21"
+      },
+      "charges": 4,
+      "magic_level": 4,
+      "allow_far_use": true,
+      "blocking": {
+        "solid": false,
+        "creature": false
+      }
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/rune/great_fireball_rune",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

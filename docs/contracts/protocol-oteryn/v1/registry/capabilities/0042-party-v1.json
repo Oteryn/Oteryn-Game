@@ -1,0 +1,16 @@
+{
+  "id": 42,
+  "name": "PARTY_V1",
+  "owner_decision": "PARTY-1 owner direction 2026-10-23; PARTYPVP0-PARTIES-AND-PVP-V1 basic server membership",
+  "owner": "World party membership",
+  "requires": [
+    6
+  ],
+  "command_types": [
+    45,
+    46
+  ],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Basic dedicated command/query results on all Channel worlds; no content-specific assets required. Query returns session-local handles and names only; no party/character UUIDs or remote presence. Full PARTY/PVP domains remain separate work."
+}

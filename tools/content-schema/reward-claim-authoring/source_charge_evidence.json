@@ -1,0 +1,584 @@
+{
+  "definition_charge_basis": {
+    "basis": "D277 explicitly requires the Item definition charges fact before normalization; reward arguments never create or replace it.",
+    "exact_wiki_observations": [
+      {
+        "content_sha256": "382b78db78d5390b3f9fe779cd897fd3ce166f6a0fed086f7807446c51e3681a",
+        "fields": {
+          "actualname": "stone skin amulet",
+          "charges": "5",
+          "immobile": "no",
+          "itemid": "3081",
+          "name": "Stone Skin Amulet",
+          "pickupable": "yes",
+          "slot": "Neck",
+          "stackable": "no",
+          "weight": "7.00"
+        },
+        "page_id": 2463,
+        "revision_id": 1194185,
+        "revision_timestamp": "2026-07-04T18:28:45Z",
+        "url": "https://tibia.fandom.com/wiki/Stone_Skin_Amulet"
+      }
+    ],
+    "field": "semantics.charges.value.count",
+    "item": "oteryn:item.tibia.i3081",
+    "owning_item_packet": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",
+    "source": "TibiaWiki",
+    "value": 5
+  },
+  "native_evidence": [
+    {
+      "finding": "OneItemStateV1 has no charges field.",
+      "lines": [
+        78,
+        90
+      ],
+      "path": "apps/game-server/src/durability/item_mint_audit.rs"
+    },
+    {
+      "finding": "Request and after-state have quantity and definition only; no charge initialization.",
+      "lines": [
+        109,
+        128,
+        819,
+        825
+      ],
+      "path": "apps/game-server/src/durability/reward_claim_mint.rs"
+    }
+  ],
+  "rewards": [
+    {
+      "item": "oteryn:item.tibia.i3082",
+      "pilot_key": "canary:reward-claim/kv/deeperfibula4",
+      "project_position": {
+        "x": 32245,
+        "y": 32492,
+        "z": 10
+      },
+      "source_bindings": [
+        {
+          "destination": "canary:reward-claim/kv/deeperfibula4",
+          "position": [
+            32245,
+            32492,
+            10
+          ],
+          "resolution": "present in both servers and identical",
+          "sources": [
+            {
+              "source": "canary",
+              "source_lines": [
+                361
+              ],
+              "uid": 6011
+            },
+            {
+              "source": "crystalserver",
+              "source_lines": [
+                660
+              ],
+              "uid": 6011
+            }
+          ],
+          "status": "mapped"
+        }
+      ],
+      "source_count_argument": 1,
+      "source_default_charges": 50
+    },
+    {
+      "item": "oteryn:item.tibia.i3054",
+      "pilot_key": "canary:reward-claim/kv/edrongoblin1",
+      "project_position": {
+        "x": 33095,
+        "y": 31800,
+        "z": 10
+      },
+      "source_bindings": [
+        {
+          "destination": "canary:reward-claim/kv/edrongoblin1",
+          "position": [
+            33095,
+            31800,
+            10
+          ],
+          "resolution": "present in both servers and identical",
+          "sources": [
+            {
+              "source": "canary",
+              "source_lines": [
+                536
+              ],
+              "uid": 6034
+            },
+            {
+              "source": "crystalserver",
+              "source_lines": [
+                835
+              ],
+              "uid": 6034
+            }
+          ],
+          "status": "mapped"
+        }
+      ],
+      "source_count_argument": 200,
+      "source_default_charges": 200
+    },
+    {
+      "item": "oteryn:item.tibia.i3083",
+      "pilot_key": "canary:reward-claim/kv/ghoulroom1",
+      "project_position": {
+        "x": 32500,
+        "y": 32175,
+        "z": 14
+      },
+      "source_bindings": [
+        {
+          "destination": "canary:reward-claim/kv/ghoulroom1",
+          "position": [
+            32500,
+            32175,
+            14
+          ],
+          "resolution": "present in both servers and identical",
+          "sources": [
+            {
+              "source": "canary",
+              "source_lines": [
+                1351
+              ],
+              "uid": 6136
+            },
+            {
+              "source": "crystalserver",
+              "source_lines": [
+                1636
+              ],
+              "uid": 6136
+            }
+          ],
+          "status": "mapped"
+        }
+      ],
+      "source_count_argument": 150,
+      "source_default_charges": 150
+    },
+    {
+      "item": "oteryn:item.tibia.i3081",
+      "pilot_key": "canary:reward-claim/kv/madmageroom3",
+      "project_position": {
+        "x": 32572,
+        "y": 32195,
+        "z": 14
+      },
+      "source_bindings": [
+        {
+          "destination": "canary:reward-claim/kv/madmageroom3",
+          "position": [
+            32572,
+            32195,
+            14
+          ],
+          "resolution": "present in both servers and identical",
+          "sources": [
+            {
+              "source": "canary",
+              "source_lines": [
+                908
+              ],
+              "uid": 6082
+            },
+            {
+              "source": "crystalserver",
+              "source_lines": [
+                1207
+              ],
+              "uid": 6082
+            }
+          ],
+          "status": "mapped"
+        }
+      ],
+      "source_count_argument": 5,
+      "source_default_charges": 5
+    },
+    {
+      "item": "oteryn:item.tibia.i3056",
+      "pilot_key": "canary:reward-claim/kv/powerring2",
+      "project_position": {
+        "x": 32601,
+        "y": 31776,
+        "z": 9
+      },
+      "source_bindings": [
+        {
+          "destination": "canary:reward-claim/kv/powerring2",
+          "position": [
+            32601,
+            31776,
+            9
+          ],
+          "resolution": "present in both servers and identical",
+          "sources": [
+            {
+              "source": "canary",
+              "source_lines": [
+                1477
+              ],
+              "uid": 6152
+            },
+            {
+              "source": "crystalserver",
+              "source_lines": [
+                1762
+              ],
+              "uid": 6152
+            }
+          ],
+          "status": "mapped"
+        }
+      ],
+      "source_count_argument": 200,
+      "source_default_charges": 200
+    },
+    {
+      "item": "oteryn:item.tibia.i3054",
+      "pilot_key": "canary:reward-claim/kv/silveramulet",
+      "project_position": {
+        "x": 32506,
+        "y": 32269,
+        "z": 9
+      },
+      "source_bindings": [
+        {
+          "destination": "canary:reward-claim/kv/silveramulet",
+          "position": [
+            32506,
+            32269,
+            9
+          ],
+          "resolution": "present in both servers and identical",
+          "sources": [
+            {
+              "source": "canary",
+              "source_lines": [
+                1495
+              ],
+              "uid": 6154
+            },
+            {
+              "source": "crystalserver",
+              "source_lines": [
+                1780
+              ],
+              "uid": 6154
+            }
+          ],
+          "status": "mapped"
+        }
+      ],
+      "source_count_argument": 200,
+      "source_default_charges": 200
+    },
+    {
+      "item": "oteryn:item.tibia.i3084",
+      "pilot_key": "canary:reward-claim/kv/stealhring1",
+      "project_position": {
+        "x": 33315,
+        "y": 32277,
+        "z": 11
+      },
+      "source_bindings": [
+        {
+          "destination": "canary:reward-claim/kv/stealhring1",
+          "position": [
+            33315,
+            32277,
+            11
+          ],
+          "resolution": "present in both servers and identical",
+          "sources": [
+            {
+              "source": "canary",
+              "source_lines": [
+                1664
+              ],
+              "uid": 6174
+            },
+            {
+              "source": "crystalserver",
+              "source_lines": [
+                1949
+              ],
+              "uid": 6174
+            }
+          ],
+          "status": "mapped"
+        }
+      ],
+      "source_count_argument": 250,
+      "source_default_charges": 250
+    },
+    {
+      "item": "oteryn:item.tibia.i3082",
+      "pilot_key": "canary:reward-claim/kv/timering3",
+      "project_position": {
+        "x": 33040,
+        "y": 32171,
+        "z": 9
+      },
+      "source_bindings": [
+        {
+          "destination": "canary:reward-claim/kv/timering3",
+          "position": [
+            33040,
+            32171,
+            9
+          ],
+          "resolution": "present in both servers and identical",
+          "sources": [
+            {
+              "source": "canary",
+              "source_lines": [
+                663
+              ],
+              "uid": 6051
+            },
+            {
+              "source": "crystalserver",
+              "source_lines": [
+                962
+              ],
+              "uid": 6051
+            }
+          ],
+          "status": "mapped"
+        }
+      ],
+      "source_count_argument": 50,
+      "source_default_charges": 50
+    },
+    {
+      "item": "oteryn:item.tibia.i3083",
+      "pilot_key": "canary:reward-claim/kv/trollcave1",
+      "project_position": {
+        "x": 33143,
+        "y": 31719,
+        "z": 10
+      },
+      "source_bindings": [
+        {
+          "destination": "canary:reward-claim/kv/trollcave1",
+          "position": [
+            33143,
+            31719,
+            10
+          ],
+          "resolution": "present in both servers and identical",
+          "sources": [
+            {
+              "source": "canary",
+              "source_lines": [
+                574
+              ],
+              "uid": 6039
+            },
+            {
+              "source": "crystalserver",
+              "source_lines": [
+                873
+              ],
+              "uid": 6039
+            }
+          ],
+          "status": "mapped"
+        }
+      ],
+      "source_count_argument": 150,
+      "source_default_charges": 150
+    },
+    {
+      "item": "oteryn:item.tibia.i3085",
+      "pilot_key": "canary:reward-claim/kv/weddingring1",
+      "project_position": {
+        "x": 33158,
+        "y": 31621,
+        "z": 15
+      },
+      "source_bindings": [
+        {
+          "destination": "canary:reward-claim/kv/weddingring1",
+          "position": [
+            33158,
+            31621,
+            15
+          ],
+          "resolution": "present in both servers and identical",
+          "sources": [
+            {
+              "source": "canary",
+              "source_lines": [
+                604
+              ],
+              "uid": 6043
+            },
+            {
+              "source": "crystalserver",
+              "source_lines": [
+                903
+              ],
+              "uid": 6043
+            }
+          ],
+          "status": "mapped"
+        }
+      ],
+      "source_count_argument": 200,
+      "source_default_charges": 200
+    },
+    {
+      "item": "oteryn:item.tibia.i3054",
+      "pilot_key": "crystalserver:reward-claim/quest/u15_24/targuna/silver_amulet_chest",
+      "project_position": {
+        "x": 31909,
+        "y": 31908,
+        "z": 9
+      },
+      "source_bindings": [
+        {
+          "destination": "crystalserver:reward-claim/quest/u15_24/targuna/silver_amulet_chest",
+          "position": [
+            31909,
+            31908,
+            9
+          ],
+          "resolution": "present only in crystalserver",
+          "sources": [
+            {
+              "source": "crystalserver",
+              "source_lines": [
+                3487
+              ],
+              "uid": 14093
+            }
+          ],
+          "status": "mapped"
+        }
+      ],
+      "source_count_argument": 1,
+      "source_default_charges": 200
+    },
+    {
+      "item": "oteryn:item.tibia.i3081",
+      "pilot_key": "canary:reward-claim/quest/u7_2/the_queen_of_the_banshees/reward/stone_skin_amulet",
+      "project_position": {
+        "x": 32212,
+        "y": 31896,
+        "z": 15
+      },
+      "source_bindings": [
+        {
+          "destination": "canary:reward-claim/quest/u7_2/the_queen_of_the_banshees/reward/stone_skin_amulet",
+          "position": [
+            32212,
+            31896,
+            15
+          ],
+          "resolution": "present in both servers and identical",
+          "sources": [
+            {
+              "source": "canary",
+              "source_lines": [
+                701
+              ],
+              "uid": 6056
+            },
+            {
+              "source": "crystalserver",
+              "source_lines": [
+                1000
+              ],
+              "uid": 6056
+            }
+          ],
+          "status": "mapped"
+        }
+      ],
+      "source_count_argument": 1,
+      "source_default_charges": 5
+    }
+  ],
+  "ruling": {
+    "body": "**Architect (Sol), 2026-10-01: rulings on quest data (5933181185) and Wheel/Gem values (#1456, 5932656862).** No owner gate and no new contract; the closed vocabularies are unchanged.\n\n**1. Quest data (D277)**\n\n| Case | Ruling |\n|---|---|\n| Container chests (a filled container) | **Covered.** BAGS-0 (containers with contents) is the nested-bags decision that the reward-chest slice \u00a75.1 waited on. A contents field in the quest reward schema is a content-lane child after close-out. Until then, these rows stay `waiting_data`. |\n| Key chests | **Covered.** Quest format \u00a73/\u00a73.1 `reward.key_binding` (`\u2026:door-key/<n>`) and DUR-03 \u00a739.3. Author them now. |\n| Text chests (book or letter) | **Covered.** Quest format \u00a73 `reward.written_text` and WRITE-0 (merged). Author them now. |\n| Random chests | **Covered.** Quest format \u00a73 `reward.random_one_of` and QUEST-STATE-0 \u00a78 (CHEST-RANDOM-1). Author them now. |\n| Cooldown chests | **Covered.** Quest format `repeat: cooldown(hours)`, with identity per reward-chest \u00a75.1 (claim, character, cycle ordinal). Author the data now; the runtime is a later child. |\n| Achievement chests | **New architecture item after close-out** (an Achievement owner, per reward-chest \u00a76). Author the typed grant reference; the claim records the grant request. Runtime admission waits for that item. |\n| Item 3081 (charged amulet) | **Covered.** The reward is **one** ItemInstance with count 1. Its 5 charges come from the Item definition's `charges.count` (item schema; EQUIP-0 \u00a73.1), never from the reward line. Add the charges fact from TibiaWiki first. The charge behaviour itself waits for TIMED-ITEM-0 (EQUIP-0: `timed` items grant nothing until then). |\n| Conditions or effects outside the closed vocabulary | **Stay `unresolved`/`waiting_data`.** Group them by kind in the closeout packet. Each new kind is a new architecture item after close-out. Do not widen the vocabulary in data. |\n\nIntegrating this owner-directed continuation into the D252 close-out schedule is the control plane's call.\n\n**2. Wheel/Gem (#1456).** All five values are ruleset data, not owner decisions. 250 and 12M were Canary values marked PARITY_PENDING in WHEEL-GEM-0 \u00a72/\u00a75.1. The FORMULA rule settles them, in this order: official statement, then English TibiaWiki, then Canary as the fallback. A conflict that remains is PARITY_PENDING and stays unadmitted at runtime.\n\n| Item | Ruling |\n|---|---|\n| Revealed-gem cap 250 vs 225 | **225** (TibiaWiki) unless an official statement says otherwise; record Canary's 250 as conflict evidence. |\n| Supreme Grade III 12M vs 12.5M | **12.5M** (TibiaWiki); record Canary's 12M as conflict evidence. |\n| Mystic Repulse II +40% / +15% (BR) / +60% (planner) | Use English TibiaWiki's value if it gives one, otherwise Canary's. The BR wiki and the planner are corroboration only. The Sept 27 +40% stays only if one of those two sources supports it; otherwise it is **PARITY_PENDING**. |\n| Guiding Presence Q5 (relative vs points, rounding, monk's own copy) | Canary's arithmetic decides where TibiaWiki is silent. If Canary does not implement it, it is **PARITY_PENDING** with no runtime admission. No owner gate. |\n| Task Shop +50 / Grade IV max 69 | **OUT_OF_SCOPE** for now. These belong to systems that are not admitted, so they stay recorded as references only and no value is accepted. |\n\nMitigation wording, runtime effect and asset admission, and paid-gem execution stay in the GEM-R/DUR-02 scope. Nothing here goes to the owner.\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_",
+    "body_sha256": "2dfccda677ff1ab5db3a90ad222130eea73933115b9a4c615dd26774e53b6ee9",
+    "comment_id": 5933264015,
+    "created_at": "2026-10-01T14:13:19Z",
+    "url": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015"
+  },
+  "schema": "OTERYN_REWARD_CLAIM_SOURCE_CHARGE_EVIDENCE/v1",
+  "scope": "Exact historical two-argument OTS chest helper calls; source count remains raw evidence. Definition charges, never reward lines, initialize the intended instance under D277. Native initialization is not implemented.",
+  "source_refs": [
+    {
+      "path": "data/items/items.xml",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "server": "canary",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    {
+      "path": "data-otservbr-global/startup/tables/chest.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "server": "canary",
+      "sha256": "2b130d4196afc9700eb0b7c2f5594e331edee4d25811a0d2020fb9d8757d6cda"
+    },
+    {
+      "path": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "server": "canary",
+      "sha256": "3394214ca803640b0148854f3a2cb8dd8e4ecd3749268800d4a3f8c50330f1cd"
+    },
+    {
+      "path": "src/lua/functions/creatures/player/player_functions.cpp",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "server": "canary",
+      "sha256": "d9860d99eb8893b80d7b6d77ac2fad433733c360ce143c1d723d78a0d7de2aac"
+    },
+    {
+      "path": "src/items/item.cpp",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "server": "canary",
+      "sha256": "9bbf46dbecd43748737a2636eb2200f39f5a35d7fa524a800adabaa10473b3bb"
+    },
+    {
+      "path": "data/items/items.xml",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "server": "crystalserver",
+      "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+    },
+    {
+      "path": "data-global/startup/tables/chest.lua",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "server": "crystalserver",
+      "sha256": "0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca"
+    },
+    {
+      "path": "data-global/scripts/actions/system/quest_reward_common.lua",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "server": "crystalserver",
+      "sha256": "9b38b43e800e05bd0262753198ec3b9adcb64a523ff3b085bf2e79fba05b95ad"
+    },
+    {
+      "path": "src/lua/functions/creatures/player/player_functions.cpp",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "server": "crystalserver",
+      "sha256": "37e768c6c77db1e555bcfb02de5b549a8661e4bcc94ec0cb506244035427f11e"
+    },
+    {
+      "path": "src/items/item.cpp",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "server": "crystalserver",
+      "sha256": "3484af408e0b25a7204a03725318b6e0c55811cef4922bbfd54af33f4b6661f5"
+    }
+  ]
+}

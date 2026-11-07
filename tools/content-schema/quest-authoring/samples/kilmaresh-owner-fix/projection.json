@@ -1,0 +1,175 @@
+{
+  "parent_head": "495ae76a9d7aa140a3b5ac26c2e64c3b9db5630c",
+  "source_replayed_paths": [
+    {
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/npc/kallimae.lua",
+      "blob_sha256": "ad56b65b287717603c78ea587e54aad3a916aaa30edcf4c5662a376090006d1a"
+    },
+    {
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/npc/the_empress.lua",
+      "blob_sha256": "403c005a051d9e972f2ded4ca18c4f56e5990b87132531164f3a9a190508d555"
+    },
+    {
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/scripts/actions/other/gems.lua",
+      "blob_sha256": "3ebd502dc5bcdda7b284cb7901e443a302351aed9f1787b24b4a4cbf81d7d5f9"
+    },
+    {
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/7-four-masks.lua",
+      "blob_sha256": "e8518199a170ede7f941704a26e81a4bd5c280ed320da2fac16034040d7318dd"
+    },
+    {
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/8-blessing-the-statues.lua",
+      "blob_sha256": "cf695f1c9f98a19f4b1d11cdb1f411d8394d605d1a69681bc46269729fe42ce4"
+    }
+  ],
+  "write_occurrences_preserved": 9,
+  "changed_source_tracks": 2,
+  "changed_canonical_cores": [
+    "oteryn:quest.grave_danger_quest",
+    "oteryn:quest.kilmaresh_quest"
+  ],
+  "progress_membership": {
+    "GraveDanger": "remove exactly two Kilmaresh tracks",
+    "Kilmaresh": "add exact same two tracks with corrected owners"
+  },
+  "source_graph_inventory_changed": false,
+  "wrong_grave_graph_associations_removed": 1,
+  "kilmaresh_graphs_untouched": true,
+  "old_native_holds_preserved": true,
+  "readiness_deltas": [
+    {
+      "before": {
+        "quest": "canary:quest/grave_danger_quest",
+        "kind": "storyline",
+        "features": [
+          "condition",
+          "door_progress",
+          "item_consume",
+          "item_hand_out",
+          "npc_dialogue",
+          "quest_state",
+          "scheduler",
+          "summon",
+          "teleport",
+          "trigger_kill",
+          "trigger_step",
+          "trigger_use",
+          "world_object"
+        ],
+        "interactions": 42,
+        "data_gaps": {
+          "interactions_with_gaps": 29,
+          "unresolved_items": 99
+        }
+      },
+      "after": {
+        "quest": "canary:quest/grave_danger_quest",
+        "kind": "storyline",
+        "features": [
+          "condition",
+          "door_progress",
+          "item_consume",
+          "item_hand_out",
+          "npc_dialogue",
+          "quest_state",
+          "scheduler",
+          "summon",
+          "teleport",
+          "trigger_kill",
+          "trigger_step",
+          "trigger_use",
+          "world_object"
+        ],
+        "interactions": 41,
+        "data_gaps": {
+          "interactions_with_gaps": 28,
+          "unresolved_items": 97
+        }
+      }
+    }
+  ],
+  "global_counts_before": {
+    "quests": 284,
+    "by_kind": {
+      "reward_only": 105,
+      "script_only": 121,
+      "storyline": 58
+    },
+    "quests_needing_feature": {
+      "achievement": 23,
+      "boss_cooldown": 10,
+      "condition": 21,
+      "creature_removal": 17,
+      "door_progress": 55,
+      "experience": 2,
+      "item_consume": 64,
+      "item_hand_out": 50,
+      "kv_state": 8,
+      "mount": 3,
+      "npc_dialogue": 92,
+      "outfit": 4,
+      "quest_state": 114,
+      "reward_claim": 135,
+      "scheduler": 53,
+      "summon": 38,
+      "teleport": 89,
+      "trigger_kill": 50,
+      "trigger_step": 85,
+      "trigger_use": 198,
+      "world_object": 91
+    },
+    "quests_without_data_gaps": 103,
+    "interactions_joined": 1210,
+    "interactions_unlinked": 11
+  },
+  "global_counts_after": {
+    "quests": 284,
+    "by_kind": {
+      "reward_only": 105,
+      "script_only": 121,
+      "storyline": 58
+    },
+    "quests_needing_feature": {
+      "achievement": 23,
+      "boss_cooldown": 10,
+      "condition": 21,
+      "creature_removal": 17,
+      "door_progress": 55,
+      "experience": 2,
+      "item_consume": 64,
+      "item_hand_out": 50,
+      "kv_state": 8,
+      "mount": 3,
+      "npc_dialogue": 92,
+      "outfit": 4,
+      "quest_state": 114,
+      "reward_claim": 135,
+      "scheduler": 53,
+      "summon": 38,
+      "teleport": 89,
+      "trigger_kill": 50,
+      "trigger_step": 85,
+      "trigger_use": 198,
+      "world_object": 91
+    },
+    "quests_without_data_gaps": 103,
+    "interactions_joined": 1210,
+    "interactions_unlinked": 11
+  },
+  "runtime_enabled": false
+}

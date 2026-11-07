@@ -1,0 +1,4 @@
+name=logout
+commands=23
+[route]
+logout(stream, authority, session, command, outcome).await?

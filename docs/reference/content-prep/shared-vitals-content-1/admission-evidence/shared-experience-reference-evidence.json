@@ -1,0 +1,158 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "SHARED-VITALS-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "shared_experience.eligibility",
+      "facts": {
+        "level_rule": {
+          "value": "3 * lowest_level >= 2 * highest_level",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.13.c"
+            }
+          ],
+          "note": "Integer-equivalent form of lowest >= two thirds of highest; no floating-point boundary assumption."
+        },
+        "distance_tiles": {
+          "value": 30,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.13.c"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "activity_timeout": {
+          "value": {
+            "status": "EXACT_GLOBAL_TIMEOUT_UNQUALIFIED",
+            "donor_distributed_default_seconds": 120,
+            "donor_runtime_parameter": "IN_FIGHT_DURATION configurable milliseconds",
+            "official_requirement": "recent participation",
+            "selected_for_native_runtime": false
+          },
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-19",
+          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "sources": [
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "official:party-recheck:91:20261019",
+              "selector": "SharedXPbonuses20/30/60/100%; base monsterXP>=20"
+            }
+          ],
+          "note": "120seconds is a known donor configuration default. Official text says recent activity without establishing this exact numeric timeout; withdraw the selected project timeout.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#rulesets/party/shared-experience/reference-evidence.json/records/0/facts/activity_timeout",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "bonus_by_distinct_vocations": {
+          "value": {
+            "1": 20,
+            "2": 30,
+            "3": 60,
+            "4_or_more": 100
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.13.c"
+            }
+          ],
+          "note": "Live official primary source takes precedence over conflicting community list; discrepancy retained separately."
+        },
+        "rounding": {
+          "value": "Round each uneven shared-XP split up to the next integer.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.13.c"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "floors": {
+          "value": {
+            "max_absolute_floor_difference": 1
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.13.c / one floor up or down"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        },
+        "bonus_source_disagreement": {
+          "value": {
+            "distinct_professions_1": 20,
+            "distinct_professions_2": 30,
+            "distinct_professions_3": 60,
+            "distinct_professions_4_plus": 100,
+            "minimum_creature_base_xp": 20
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "sources": [
+            {
+              "source": "official:party-recheck:91:20261019",
+              "selector": "SharedXPbonuses20/30/60/100%; base monsterXP>=20"
+            }
+          ],
+          "note": "Resolved by primary official support; not an invented Oteryn bonus table. Exact activity timeout remains separately unqualified.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#rulesets/party/shared-experience/reference-evidence.json/records/0/facts/bonus_source_disagreement",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        }
+      }
+    }
+  ],
+  "evidence_scope": "SOURCE_OBSERVATIONS_WITH_EXPLICIT_OTERYN_WORKING_DEFAULTS"
+}

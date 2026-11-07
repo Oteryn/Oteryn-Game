@@ -1,0 +1,40 @@
+{
+  "evidence": "OtsHypothesisOnly",
+  "extracted_by": "tools/content-migration/imbuement_item_profiles.py --stage-crystal",
+  "records": {
+    "2854": {
+      "families": {
+        "INCREASE_CAPACITY": "3"
+      },
+      "slot_count": 1
+    },
+    "3264": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_SWORD": "3"
+      },
+      "slot_count": 2
+    },
+    "3349": {
+      "families": {
+        "CRITICAL_HIT": "3",
+        "ELEMENTAL_DAMAGE": "3",
+        "LIFE_LEECH": "3",
+        "MANA_LEECH": "3",
+        "SKILL_DISTANCE": "3"
+      },
+      "slot_count": 3
+    }
+  },
+  "schema": "OTERYN_CRYSTAL_ITEM_IMBUEMENT_SLOT_FACTS/v1",
+  "scope": "imbuementslot of the native item policy source ids",
+  "source": {
+    "path": "data/items/items.xml",
+    "repository": "zimbadev/crystalserver",
+    "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+    "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+  }
+}

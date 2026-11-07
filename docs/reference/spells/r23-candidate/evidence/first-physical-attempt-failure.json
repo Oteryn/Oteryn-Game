@@ -1,0 +1,14 @@
+{
+  "schema": "OTERYN_R23_PHYSICAL_ATTEMPT_FAILURE_OBSERVATION/v1",
+  "attempt": 1,
+  "full_log_retained": false,
+  "full_log_sha256": null,
+  "observation_source": "Exact tool output read from coordinator log before it was overwritten by second attempt; excerpt is a retained observation, not a full log",
+  "manifest_sha256": "f3f1fac9cb6dd473824938c4c7a24f8de01e86e3160403a78bf3c5e7a653d2d6",
+  "failure": "representative real cast failed words=exori vis result=CastOutcome { command_id: 10, status: Rejected, disposition: Rejected, result_server_sequence: 19, actor_vitals_delta: None } before=ActorVitals { health: 5145, max_health: 5145, mana: 28000, max_mana: 29850, soul: 100, harmony: 0, serene: false } after=ActorVitals { health: 5145, max_health: 5145, mana: 28000, max_mana: 29850, soul: 100, harmony: 0, serene: false }",
+  "test_result": "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1589 filtered out; finished in 214.76s",
+  "harness_result": "S3B_RESULT=COMPOSED_FAIL",
+  "cleanup_observation": "cleanup=complete containers=removed volumes=removed ephemeral_keys=removed",
+  "after_reported_successful_self_casts": 7,
+  "reported_by": "Coordinator for seven self-casts; rejection and failed-body excerpt independently observed by report producer"
+}

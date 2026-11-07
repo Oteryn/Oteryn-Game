@@ -1,0 +1,46 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_APPLY_PLAN/v1",
+  "task": "SHARED-VITALS-CONTENT-1",
+  "status": "STAGED_FOR_COORDINATOR",
+  "reason": "Tracked content/ files participate in content-tree validation and World Bundle inputs. This packet is staged as docs-only reference evidence; the coordinator applies it to the target paths together with any separately qualified pin or seal regeneration.",
+  "target_files": [
+    {
+      "target_path": "rulesets/character/soul/index.json",
+      "staged_path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/soul-index.json",
+      "sha256": "9db1ccb16b5d8b33f1aca2d4a7450edaf60f76867b7f501511fb0f160da267ff"
+    },
+    {
+      "target_path": "rulesets/character/soul/reference-evidence.json",
+      "staged_path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/soul-reference-evidence.json",
+      "sha256": "ad7a6b10c10430f06730bd64dd17dc511d39380bbbd915c3cd84d20987cb472b"
+    },
+    {
+      "target_path": "rulesets/character/stamina/index.json",
+      "staged_path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/stamina-index.json",
+      "sha256": "c215d7f83553b980f496dd76adf8a0c0ae9b5c714aa35a32180f747f4e3bd30d"
+    },
+    {
+      "target_path": "rulesets/character/stamina/reference-evidence.json",
+      "staged_path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/stamina-reference-evidence.json",
+      "sha256": "823a8009a66e7596241c9004c06867d1daa14e183f6a8ff43de70dc0534b0338"
+    },
+    {
+      "target_path": "rulesets/party/shared-experience/index.json",
+      "staged_path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/shared-experience-index.json",
+      "sha256": "7537ab4baf5e6fe29fc7177e43d52b3de9c07b017b7d4a0e8db58eed90b74411"
+    },
+    {
+      "target_path": "rulesets/party/shared-experience/reference-evidence.json",
+      "staged_path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/shared-experience-reference-evidence.json",
+      "sha256": "ceb906444a17f51daf0720d175b6d7261ce6d8f8a05bbc8e985b9be5d1f0355e"
+    }
+  ],
+  "runtime_switch_authorized": false,
+  "coordinator_must_verify": [
+    "current task target ownership",
+    "target-source conflicts and UNKNOWN fields",
+    "approved native/runtime schema wiring",
+    "World Bundle pins and deterministic bundle",
+    "required exact-head validators"
+  ]
+}

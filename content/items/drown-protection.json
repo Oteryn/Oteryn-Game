@@ -1,0 +1,38 @@
+{
+  "schema": "OTERYN_ITEM_DROWN_PROTECTION/v1",
+  "task": "PAR-M10",
+  "sources": {
+    "tibiawiki_helmet_of_the_deep": {
+      "page": "https://tibia.fandom.com/wiki/Helmet_of_the_Deep",
+      "revision_id": 1148766
+    },
+    "tibiawiki_depth_galea": {
+      "page": "https://tibia.fandom.com/wiki/Depth_Galea",
+      "revision_id": 1148776
+    },
+    "tibiawiki_diving_equipment": {
+      "page": "https://tibia.fandom.com/wiki/Diving_Equipment",
+      "revision_id": 880956
+    },
+    "crystal_drowning_step_in": {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data/scripts/movements/drowning.lua"
+    }
+  },
+  "provenance": "TibiaWiki lists Helmet of the Deep and Depth Galea as Diving Equipment that stops drowning damage underwater. Crystal's underwater StepIn skips the drown condition when the head slot holds 5460, 11585 or 13995. 11585 already carries SUPPRESS_DROWN from the equip-abilities facts packet; this ledger gives 5460 and 13995 the same Known modifier. Each override fills an Unknown skill_modifiers group only; any other baseline fails closed.",
+  "overrides": [
+    {
+      "item": 5460,
+      "name": "helmet of the deep",
+      "modifier": "SUPPRESS_DROWN",
+      "source": "tibiawiki_helmet_of_the_deep"
+    },
+    {
+      "item": 13995,
+      "name": "depth galea",
+      "modifier": "SUPPRESS_DROWN",
+      "source": "tibiawiki_depth_galea"
+    }
+  ]
+}

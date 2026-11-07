@@ -1,0 +1,68 @@
+{
+  "spell": {
+    "base_power": 175,
+    "carrier": "instant",
+    "cooldown_ms": 40000,
+    "costs": {
+      "mana": 700,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/8cf7b2a2e7272cd2/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 4000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 40000,
+        "group": "focus"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/8cf7b2a2e7272cd2",
+      "revision": "source-player-r28"
+    },
+    "name": "Wrath of Nature",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_wrath_of_nature"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 56,
+    "requirements": {
+      "learning_required": false,
+      "level": 55,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "exevo gran mas tera"
+  }
+}

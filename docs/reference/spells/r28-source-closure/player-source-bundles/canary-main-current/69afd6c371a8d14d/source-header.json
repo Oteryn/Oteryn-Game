@@ -1,0 +1,43 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 6
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Lesser Front Sweep",
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_front_sweep"
+    },
+    "reference_spell_id": 168,
+    "requirements": {
+      "level": 1,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "needs_direction": true
+    },
+    "words": "exori infir min"
+  }
+}

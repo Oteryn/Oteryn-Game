@@ -1,0 +1,35 @@
+{
+  "schema": "OTERYN_AUTHORED_EVENT_COUNT_CORRECTIONS/v1",
+  "runtime_enabled": false,
+  "native_admission": false,
+  "source_holds_preserved": true,
+  "baseline_events_sha256": "4b77071f3e44e90c64260c4db6830c5acab7f0142627d9819d2b4266c6d100a1",
+  "corrections": [
+    {
+      "quest": "oteryn:quest.authored.make_believe_quest",
+      "stage": "s8",
+      "old_kind": "use",
+      "old_count": 3,
+      "new_kind": "use",
+      "new_count": 5,
+      "reason": "Post-release Make Believe uses a five-colour gong sequence rather than the pre-release three-device approximation.",
+      "evidence": [
+        "https://www.tibiawiki.com.br/wiki/Make_Believe_Quest",
+        "https://www.youtube.com/watch?v=LJ5k5TZGiCQ"
+      ]
+    },
+    {
+      "quest": "oteryn:quest.authored.make_believe_quest",
+      "stage": "s14",
+      "old_kind": "use",
+      "old_count": 6,
+      "new_kind": "use",
+      "new_count": 8,
+      "reason": "Post-release Make Believe requires eight Elite Fanatics to be Petrified simultaneously; the video captured the earlier six-Fanatic test-server state.",
+      "evidence": [
+        "https://www.tibiawiki.com.br/wiki/Make_Believe_Quest",
+        "https://www.youtube.com/watch?v=LJ5k5TZGiCQ"
+      ]
+    }
+  ]
+}

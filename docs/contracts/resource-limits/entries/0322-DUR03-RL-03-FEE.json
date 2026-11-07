@@ -1,0 +1,25 @@
+{
+  "id": "DUR03-RL-03-FEE",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md",
+  "resource": "Value lines in one DUR-03 fee BURN transaction (the bank part of a fee)",
+  "unit": "value lines per logical transaction",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 1
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Checked in the payload gate and before any write; never truncated. 1 when the eligible coins are worth less than the fee and the rest is debited from the payer's (Account, World) bank balance (one FEE_DEBIT value line, class BURN, OneItemFeeBurnV1 field 13); 0 for a coin-only fee. Admitted only under the (2, DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2) tuple.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=1: a fee with a bank part carries exactly one value line and is accepted",
+    "0: a coin-only fee carries none",
+    "max+1=2 rejected (INVALID_INPUT)",
+    "a (1, V1) event carrying the value line is rejected (INVALID_INPUT)"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/item_fee_burn_audit.rs",
+    "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN with its bank part; migration 0072 proves the one FEE_DEBIT entry at commit)"
+  ],
+  "notes": "BANK-FEE-0 \u00a74.3 and ARCH-BATCH-ROOT-PACKETS-V1 \u00a72.5 (GOLD-FEE-2); fee shape only: DUR03-RL-03 stays 0 for every one-item shape and for coin-only fees (D174 stage 1 text). Registered by GOLD-FEE-2."
+}

@@ -1,0 +1,110 @@
+name: World Metadata Authoring
+
+on:
+  pull_request:
+    paths:
+      - tools/content-schema/world-authoring/**
+      - tools/content-schema/validate_materialized_game_tree.py
+      - content/world/transitions/**
+      - content/world/placements/**
+      - content/world/worlds/**
+      - content/world/objects/**
+      - content/world/terrain/**
+      - content/world/areas/hunting-places/**
+      - content/world/areas/islands/**
+      - content/world/areas/cities/**
+      - content/world/areas/regions/**
+      - imports/crystalserver/bindings/items.json
+      - content/items/definitions/**
+      - imports/tibiawiki/hunting-places/**
+      - imports/tibiawiki/islands/**
+      - content/npcs/definitions/**
+      - content/assets/files/catalog-content.json
+      - content/assets/files/appearances-*.dat
+      - imports/official/client-assets/15.30/manifest.json
+      - content/world/definitions/reference.json
+      - .github/workflows/world-metadata-authoring.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  world-metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: tools/content-schema/world-authoring
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify checked-out SHA
+        working-directory: .
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
+      - name: Install pinned requirements
+        run: python -m pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Validate committed world metadata and base map families
+        run: |
+          set -euo pipefail
+          python convert_hunting_places.py --check
+          python convert_islands.py --check
+          python validate_islands.py
+          python validate_world_metadata.py
+          python validate_world_base.py
+          python convert_world_record.py --check
+          python validate_world_record.py
+          python ../validate_materialized_game_tree.py
+
+      - name: Reader, converter and validator fixture tests
+        run: |
+          set -euo pipefail
+          python test_world_authoring.py
+          python test_world_base.py
+          python test_edron_rework.py
+          python test_minimap_draft.py
+          python test_world_record.py
+          python test_islands.py
+
+      - name: Ruff check and format
+        working-directory: .
+        run: |
+          set -euo pipefail
+          ruff check tools/content-schema/world-authoring
+          ruff format --check tools/content-schema/world-authoring
+
+      - name: Verify the checkout stayed clean
+        if: ${{ always() }}
+        working-directory: .
+        run: test -z "$(git status --short --untracked-files=all)"
+
+  # `convert_world_metadata.py --check`, `convert_world_base.py --check`,
+  # `convert_appearance_only_ids.py --check` and
+  # `convert_islands.py --crystal-root` need the pinned
+  # zimbadev/crystalserver checkout, which this repository's CI does not fetch; whoever
+  # regenerates the families runs them locally and commits the output together with
+  # samples/source-capture-v1.json, samples/world-base-capture-v1.json,
+  # samples/appearance-only-ids-v1.json.
+  # `convert_world_base.py` also reads
+  # data-global/world/maps.7z (fill) and needs py7zr from requirements-regenerate.txt; the
+  # Edron rework and the minimap draft also need Pillow (same file) and the pinned tibiamaps
+  # files (floors 6, 7 and 9-11) in a directory given as --tibiamaps-root.

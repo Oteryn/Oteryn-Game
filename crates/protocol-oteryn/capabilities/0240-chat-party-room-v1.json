@@ -1,0 +1,18 @@
+{
+  "id": 240,
+  "name": "CHAT_PARTY_ROOM_V1",
+  "constant": "chat::party_room::CAPABILITY_CHAT_PARTY_ROOM_V1",
+  "requires": [
+    7,
+    42
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

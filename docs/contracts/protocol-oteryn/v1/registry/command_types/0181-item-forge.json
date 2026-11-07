@@ -1,0 +1,10 @@
+{
+  "id": 181,
+  "name": "ITEM_FORGE",
+  "owner_decision": "FORGE-LIVE-1",
+  "capability": 152,
+  "payload_schema": "item-forge-v1.md#request",
+  "result_schema": "item-forge-v1.md#reply",
+  "max_payload_bytes": 51,
+  "max_result_payload_bytes": 32768
+}

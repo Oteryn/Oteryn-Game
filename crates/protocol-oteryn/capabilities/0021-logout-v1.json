@@ -1,0 +1,17 @@
+{
+  "id": 21,
+  "name": "LOGOUT_V1",
+  "constant": "logout::CAPABILITY_LOGOUT_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    23
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

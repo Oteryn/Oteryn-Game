@@ -1,0 +1,34 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/lesser_splinter_of_madness",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/greater_splinter_of_madness",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/mighty_splinter_of_madness",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/goshnar_s_megalomania_blue",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/goshnar_s_megalomania_green",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/goshnar_s_megalomania_purple",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

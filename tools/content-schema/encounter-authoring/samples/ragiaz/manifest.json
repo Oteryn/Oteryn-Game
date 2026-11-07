@@ -1,0 +1,184 @@
+{
+  "encounter": "canary:encounter/ragiaz",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "AscendantBossesDeath": [
+      "canary:creature/ragiaz"
+    ],
+    "DeathDragon": [
+      "canary:creature/death_dragon"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/ferumbras_ascension/bosses/ragiaz.lua",
+      "blob_sha1": "856dbf02d2bd88b5b5105ed60d24c2b754f7baff"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua",
+      "blob_sha1": "2c9515d9786c140168dd4af255961cf7ab3f6ac2"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/ferumbras_ascension/bosses/death_dragon.lua",
+      "blob_sha1": "09c0bd382be0eb83a191c8d57767be470d7d39a3"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_death_dragon.lua",
+      "blob_sha1": "2f952dd81d873395a75fb32b69f3c196f1765369"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Ragiaz is the ragiaz participant; its file registers AscendantBossesDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        97,
+        109,
+        110,
+        111,
+        112,
+        113,
+        14
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the configured boss \"Ragiaz\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125
+      ],
+      "status": "mapped",
+      "resolution": "onDeathForDamagingPlayers credits every damaging player (D27): the reward domain sets FerumbrasAscension.RagiazTimer to now + 44 h and tells the player when the boss can be fought again.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95
+      ],
+      "status": "mapped",
+      "resolution": "The teleporter item 1949 on the teleport position becomes 22761 with a thunder effect and leads to the Godbreaker; after 60 s revertTeleport turns it back into 1949 leading to (33319, 32318, 13).",
+      "destination": "/encounter/rules/0/actions/1"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        15,
+        16
+      ],
+      "status": "mapped",
+      "resolution": "teleportPos and godbreakerPos become the exit_teleporter and godbreaker anchors (bound by the map project).",
+      "destination": "/encounter/anchors"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        56
+      ],
+      "status": "mapped",
+      "resolution": "Death Dragon is the death_dragon participant; its file registers DeathDragon.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        21,
+        23
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of a death dragon. The guard reads the undefined global targetMonster, so Canary always returns here and the rest never runs. The reference-date wiki (Ferumbras' Ascension Quest/Spoiler: \"The Death Dragons respawn immediately after being killed\") decides (D25): the body below is transcribed.",
+      "destination": "/encounter/rules/1/trigger"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        7,
+        8,
+        9,
+        10
+      ],
+      "status": "mapped",
+      "resolution": "A new death dragon, forced, on the death position one second later (addEvent returns an event id, so the nil check never stops it).",
+      "destination": "/encounter/rules/1/actions/0"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "status": "mapped",
+      "resolution": "Ragiaz within 10 tiles of the dead dragon says the line.",
+      "destination": "/encounter/rules/2"
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "ragiaz_defeated",
+      "credited": "damage_contributors",
+      "reward_domain": {
+        "canary_storage": "Storage.Quest.U10_90.FerumbrasAscension.RagiazTimer",
+        "cooldown_seconds": 158400,
+        "message": "You have defeated <boss>. You can challenge this boss again in <cooldown>."
+      }
+    }
+  ]
+}

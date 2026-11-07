@@ -1,0 +1,34 @@
+{
+  "schema": "OTERYN_PENDING_INDEX_METADATA/v1",
+  "task": "SKULL-CONTENT-1",
+  "runtime_switch_authorized": false,
+  "updates": [
+    {
+      "target_path": "rulesets/pvp/skulls/index.json",
+      "held_by_prs": [
+        2203
+      ],
+      "replacement": {
+        "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+        "path": "rulesets/pvp/skulls/",
+        "kind": "ruleset",
+        "owner": "PvP",
+        "repository": "Oteryn/Oteryn-Game",
+        "population_state": "POPULATED",
+        "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+        "notes": "Skull/frag policy.",
+        "runtime_admission": "BLOCKED",
+        "runtime_switch_authorized": false,
+        "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED",
+        "source_snapshot_target": "current-at-fetch-2026-10-18",
+        "payloads": [
+          {
+            "path": "rulesets/pvp/skulls/reference-evidence.json",
+            "sha256": "a0ace10c37c643e9e102865b0d44edd8c90ada819e4b9ce10e76d79a1e43349d"
+          }
+        ]
+      },
+      "reason": "Do not edit overlapping open PR files; coordinator applies metadata only with native qualification."
+    }
+  ]
+}

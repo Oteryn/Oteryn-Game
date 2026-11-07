@@ -1,0 +1,25 @@
+{
+  "id": "HOUSEOWN0-RL-14",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md",
+  "resource": "ItemInstances stored in one House interior, including container contents",
+  "unit": "ItemInstances per House interior",
+  "hard_maximum": 2000,
+  "configurable_range": {
+    "minimum": 2000,
+    "maximum": 2000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The House advisory/assignment/access locks serialize the count before the one-item insertion. A container with contents is refused, so this shape never imports uncounted descendants. At 2,000 the next placement returns typed HouseWriterError::StorageFull before reservation commit, custody or audit changes; no truncation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "1,999 independently seeded inactive occupancy DATA plus a genuine current actor/native item placement reaches 2,000",
+    "the next actual placement is refused StorageFull without source, event or reservation changes",
+    "empty containers are admitted; containers with contents are refused before write"
+  ],
+  "consumers": [
+    "apps/game-server/migrations/0095_house_interior_shapes.sql (game_house_item_apply)",
+    "apps/game-server/src/durability/house_interior.rs (typed StorageFull refusal)",
+    "apps/game-server/tests/support/house_interior_postgres_cases.rs (real PostgreSQL 18.6 boundary)"
+  ],
+  "notes": "Accepted HOUSE-OWN-0 §§7/12 (HOUSEOWN0-RL-14); HOUSE_RUNTIME0 §6.1 and HOUSE_RT_INBOX_PACKETS §1.3/§2.1. This storage count is separate from the 200-Character scope admission limit HOUSERT0-RL-03. Test occupancy is synthetic inactive DATA, never current actor/session/access authority or a 100-Character capacity claim."
+}

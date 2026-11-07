@@ -1,0 +1,24 @@
+{
+  "id": 18,
+  "name": "WORLD_CLOCK",
+  "owner_decision": "WORLD-INTERACTION-0 §10.2 and §11 (docs/architecture/reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md, owner answer 7a); number leased to LOOP-CLOCK-1 by the #1622 control plane",
+  "owner": "current ChannelRuntime",
+  "capability": 19,
+  "revision": "per GameSessionId, monotonic and never reused (FND-02 \u00a715): 0 at the initial snapshot, plus 1 for each delta sent; never reset or wound back at a resync snapshot, a reconnect or a channel transfer within the same GameSession; a resync, reconnect or channel transfer sends only a snapshot of the current clock and never replays a delta",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "WORLD_CLOCK_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/world_clock_v1.proto#WorldClockV1",
+      "max_payload_bytes": 9
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "WORLD_CLOCK_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/world_clock_v1.proto#WorldClockV1",
+      "max_payload_bytes": 9
+    }
+  ]
+}

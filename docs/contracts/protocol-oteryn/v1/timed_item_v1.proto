@@ -1,0 +1,21 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+// Capability 39, command 38. Strict singular fields; unknown fields rejected.
+// Inspect/use require a carried target; repair additionally requires Aldo in talk range.
+// Repair selects the first direct worn Soft Boots in B3 order; target must identify it.
+// Elapsed time, item definitions, fee and identity/fences always come from the server.
+message TimedItemIntentV1 {
+  uint32 action = 1; // 1 inspect, 2 use one charge, 3 repair for 10000 gold
+  uint64 item_handle = 2;
+  uint64 expected_timed_revision = 3; // 0: lazy full row
+  bytes npc_identity = 4; // exactly 16 bytes, only action 3
+  uint64 npc_generation = 5; // positive, only action 3
+}
+message TimedItemResultV1 {
+  uint32 disposition = 1; // 1 OK, 2 REJECTED, 3 STALE, 4 INSUFFICIENT_FUNDS
+  uint64 timed_revision = 2;
+  optional uint32 charges = 3;
+  optional uint64 remaining_ms = 4;
+  bool retired = 5;
+  uint32 fee_gold = 6; // 0 or 10000
+}

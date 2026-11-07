@@ -1,0 +1,14 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/egg",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/spawn_of_the_welter",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

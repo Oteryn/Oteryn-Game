@@ -1,0 +1,288 @@
+{
+  "scope": "OFFLINE_CONTENT_FOLLOWUP_NOT_NPC_GAMEPLAY",
+  "baseline_head": "560108b6b42a9ba615c5733661890cd873c72b78",
+  "counts": {
+    "actors": 133,
+    "dialogue_changed": 85,
+    "source_messages": 52,
+    "source_keywords": 103,
+    "role_selections": 58,
+    "original_role_job_replies": 38,
+    "portrait_references": 112,
+    "source_selected_dialogues": 96,
+    "role_only_dialogues": 19,
+    "generic_dialogues": 18
+  },
+  "npc_catalogue": 1282,
+  "dialogue_catalogue": 836,
+  "wiki_known_professions": 47,
+  "wiki_unknown_professions_preserved": 86,
+  "no_selected_role": 28,
+  "donor_appearances": 21,
+  "placeholder_appearances": 112,
+  "runtime_loaded": 0,
+  "interaction_smoke_passed": 0,
+  "checks": {
+    "phase": "AUTHORING",
+    "result": "PASS",
+    "checks": [
+      {
+        "check": "prepare",
+        "exit_code": 0,
+        "log_sha256": "489866bf6ff062366b54765d49c99061a1ce90da6856e44398a57d0221c2ca2f",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/content-schema/npc-authoring/bulk_workbench.py",
+          "prepare",
+          "--workdir",
+          "/workspace/npc-enrichment-r22/workbench"
+        ]
+      },
+      {
+        "check": "format",
+        "exit_code": 0,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "command": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--check"
+        ]
+      },
+      {
+        "check": "clippy",
+        "exit_code": 0,
+        "log_sha256": "984a0050d7b0091cd2c5701c8ec6e6b74b8587417704637c594d8849234b24a1",
+        "command": [
+          "cargo",
+          "clippy",
+          "--offline",
+          "--locked",
+          "--quiet",
+          "-p",
+          "oteryn-game-server",
+          "--all-targets",
+          "--",
+          "-D",
+          "warnings"
+        ]
+      },
+      {
+        "check": "native",
+        "exit_code": 0,
+        "log_sha256": "2af15e3ea0c3b7a4cdc35951c64a7a82640b0a939e9a46dc18892339f5e59d45",
+        "command": [
+          "cargo",
+          "test",
+          "--offline",
+          "--locked",
+          "--quiet",
+          "-p",
+          "oteryn-game-server",
+          "--example",
+          "materialize_content_world_project_v2",
+          "--test",
+          "content_world_project_repository",
+          "--test",
+          "content_native_entry_room"
+        ]
+      },
+      {
+        "check": "stage",
+        "exit_code": 0,
+        "log_sha256": "fc009d8b77c61e56804b9c0008aa8fc16a881b36cb78a2f95c2a829f6060c413",
+        "command": [
+          "python",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools/content-migration",
+          "-p",
+          "test_npc_bulk_followup.py"
+        ]
+      },
+      {
+        "check": "successor-validate",
+        "exit_code": 0,
+        "log_sha256": "888db9e97c139e244f281dd6246ac1d7ac102bde8e4ddf43fbfdcd9bfd982305",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/content-migration/validate_world_project_v2_to_tree.py"
+        ]
+      },
+      {
+        "check": "successor-test",
+        "exit_code": 0,
+        "log_sha256": "a51bf448332667ae7a481793ecc857e07293b12931ac7c5175f916eb9ea2de2e",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/content-migration/test_world_project_v2_to_tree.py"
+        ]
+      },
+      {
+        "check": "workbench",
+        "exit_code": 0,
+        "log_sha256": "46c8014dac72eec691501d504fda95fafeb4fe51b7db90753ca9acdbb9a28dd4",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/content-schema/npc-authoring/bulk_workbench.py",
+          "check",
+          "--workdir",
+          "/workspace/npc-enrichment-r22/workbench"
+        ]
+      },
+      {
+        "check": "authoring-smoke",
+        "exit_code": 0,
+        "log_sha256": "0b01afb88f150064753a224a7931b9bd35337ed59d64c9e823ff162659147894",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/content-schema/npc-authoring/bulk_workbench.py",
+          "smoke",
+          "--workdir",
+          "/workspace/npc-enrichment-r22/workbench"
+        ]
+      },
+      {
+        "check": "governance",
+        "exit_code": 0,
+        "log_sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/agents/validate_governance.py"
+        ]
+      },
+      {
+        "check": "governance-tests",
+        "exit_code": 0,
+        "log_sha256": "826eb7a7091cf08fe57d0a2f84247f1137d042e2afdbd802e7498837fb1ffbdb",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools/agents/tests"
+        ]
+      },
+      {
+        "check": "diff",
+        "exit_code": 0,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "command": [
+          "git",
+          "diff",
+          "--check"
+        ]
+      }
+    ]
+  },
+  "previous_stage_checks": [
+    {
+      "log": "previous-original-stage.log",
+      "sha256": "22c147df949f8498951654d427f6e3e0668fa57debb56b1a2df3720dd550f761",
+      "passed": 7
+    },
+    {
+      "log": "previous-enrichment-stage.log",
+      "sha256": "0c27a203e010dbe8230c63d249f76e85485ba6df39eea6eafce72029a743f06b",
+      "passed": 5
+    }
+  ],
+  "full_fast_parity": {
+    "result": "PASS",
+    "canonical_documents": 11,
+    "tree_sha256": "4c395bf099d057bae2619f49f4124f0eb5593aa7a297e19d53ee04f98f17d394",
+    "full_log_sha256": "cd4f7e8472bfa1c507258285a9b3105657a3479ff90fe62f945579c98ea598f2",
+    "fast_log_sha256": "21053d4381c2f3c917b94c8ef25df365c48d07e6af3b210b38d31ba4f6ca9e48",
+    "note": "Full generation ran before a semantics-preserving Clippy collapse of nested if-let; final native tests exercise final code. Outputs exactly match final fast and committed candidate data."
+  },
+  "generation_preservation": {
+    "result": "PASS",
+    "tree_sha256": "4c395bf099d057bae2619f49f4124f0eb5593aa7a297e19d53ee04f98f17d394",
+    "documents": [
+      {
+        "path": "assets/catalog.json",
+        "bytes": 56,
+        "sha256": "fa61df1076ef66e8c69b6182db1b13fe2ccb92653ab16a148d1fbaf773adb344"
+      },
+      {
+        "path": "content.lock.json",
+        "bytes": 415,
+        "sha256": "d51326d0b179189002e67d75b7fba40c2284fb3c89c9059d13f5e69d028db06d"
+      },
+      {
+        "path": "definitions/declarations.json",
+        "bytes": 19026086,
+        "sha256": "72a82d84e70c29a0362258c13ef31d85dd6c85eee0759d23bebc3e3f9abb2fac"
+      },
+      {
+        "path": "definitions/reference.json",
+        "bytes": 22591819,
+        "sha256": "e96cbd5baa1690a54d73ecde228c18008f16b6cf352bc5001bf8b3fac45b9a97"
+      },
+      {
+        "path": "editor/author.json",
+        "bytes": 120557,
+        "sha256": "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb"
+      },
+      {
+        "path": "manifest.json",
+        "bytes": 1954,
+        "sha256": "7cb8f864955d918121062fa4da79959d7a857229a654fde0af66912c03204ade"
+      },
+      {
+        "path": "presentations/bindings.json",
+        "bytes": 73,
+        "sha256": "b7d27b2d7fde6370b7ae56c2c60412f2b213a4a5e92e7db82dd4b59a64359cd7"
+      },
+      {
+        "path": "project.json",
+        "bytes": 407,
+        "sha256": "03d195fb39280fce3c36588ce94f7d0192cb3aefe25924335cc42bd08701ee2a"
+      },
+      {
+        "path": "provenance/imports.json",
+        "bytes": 41360,
+        "sha256": "27cb79a06ac9ade63e9a447dc35e44b4267510c0d5fca0bccb40c383ac31e595"
+      },
+      {
+        "path": "provenance/sources.json",
+        "bytes": 1425775,
+        "sha256": "1ccf2a4b85d78540e142e991b42f4c005e236478dd74ac95c488b2d9c8750c9b"
+      },
+      {
+        "path": "worlds/world.json",
+        "bytes": 72,
+        "sha256": "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa"
+      }
+    ],
+    "changed_declarations": 204,
+    "changed_profiles": 0,
+    "unrelated_declarations_profiles_sources_imports_assets_world_editor_preserved": true,
+    "closed_declaration_repairs": 218
+  },
+  "independent_authoring_reviews": {
+    "source-review.json": {
+      "sha256": "a96210c86020a73558db2f9a48a8cc3ee7c2f09fa1dedb8dbc840652849e62bf",
+      "verdict": "PASS_BOUNDED_PREPUBLICATION_SOURCE_REVIEW"
+    },
+    "native-review.json": {
+      "sha256": "b0011cfac9b55dff1d7c8e9609b2ff4480579e16bab21574fd6effb2e19a2a67",
+      "verdict": "PASS_BOUNDED_NATIVE_REVIEW"
+    }
+  },
+  "native_cases": {
+    "materializer_passed": 77,
+    "repository_passed": 4,
+    "map_mechanics_passed": 2,
+    "map_real_issued_world_ignored": 1,
+    "npc_interactions_passed": 0
+  },
+  "limits": [
+    "Not formal coordinator review/protected CI/current-main integration/MQ",
+    "No new runtime lease or production activation",
+    "Source static utterance selection is Oteryn approximation; original game state matching unproven"
+  ]
+}

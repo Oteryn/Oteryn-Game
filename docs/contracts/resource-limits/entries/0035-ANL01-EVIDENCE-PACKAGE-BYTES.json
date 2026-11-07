@@ -1,0 +1,19 @@
+{
+  "id": "ANL01-EVIDENCE-PACKAGE-BYTES",
+  "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+  "resource": "One generated investigation/export evidence package",
+  "unit": "bytes",
+  "hard_maximum": 268435456,
+  "configurable_range": {
+    "minimum": 1048576,
+    "maximum": 268435456
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Package generation must stream/chunk or explicitly split before 256 MiB; privacy/export authorization is checked before inclusion.",
+  "client_visible": false,
+  "boundary_tests": [
+    "256 MiB maximum package generated only for authorized data",
+    "one byte over requires split/new package",
+    "split packages retain manifest/correlation without leaking unauthorized records"
+  ]
+}

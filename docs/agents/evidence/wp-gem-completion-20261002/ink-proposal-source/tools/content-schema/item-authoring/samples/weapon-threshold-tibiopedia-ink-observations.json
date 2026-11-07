@@ -1,0 +1,38 @@
+{
+  "schema": "OTERYN_WEAPON_THRESHOLD_OBSERVATIONS/v1",
+  "source": {
+    "url": "https://tibiopedia.pl/items/Ink_Sword",
+    "captured_at": "2026-10-01T17:23:19.085311+00:00",
+    "html_sha256": "4e4668b92aae54cf6c29ce18125e6643da6291f67a1e3ba45bd527984e721ac0",
+    "provider": "tibiopedia",
+    "locale": "pl",
+    "revision_id": null,
+    "publication_timestamp": null
+  },
+  "item": {
+    "client_object_id": 51666,
+    "item_key": "oteryn:item.tibia.i51666",
+    "client_name": "ink sword",
+    "proficiency_id": 371,
+    "profile_name": "Sword 1H Ink Sword"
+  },
+  "observations": {
+    "vocation_literal": "Każda",
+    "displayed_levels": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "mastery_points": 8000000
+  },
+  "limits": [
+    "No source revision/publication timestamp; target-date continuity unproven.",
+    "Thresholds per level are derived from the existing table, not observed here.",
+    "No item stats or perks adopted; community mana-on-kill 5 conflicts with primary client 8."
+  ],
+  "extraction_provenance": {
+    "proposal_sha256": "7c4bf5e24bfc33124ef33a07853fb96ef9e2709633b4caade73edc405dc35bb3",
+    "method": "Minimal factual extraction from digest-bound full public item article"
+  }
+}

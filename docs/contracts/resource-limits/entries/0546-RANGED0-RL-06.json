@@ -1,0 +1,23 @@
+{
+  "id": "RANGED0-RL-06",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md",
+  "resource": "chase searches per chasing player",
+  "unit": "searches per 1,000 ms",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Runtime-only: a second search inside the 1,000 ms waits (the held route is followed meanwhile); the cooldown survives a target or mode change and a client step.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=1: apps/game-server/src/combat/attack/chase.rs a_second_search_waits_the_full_second (one search at 0 ms, the next at 1,000 ms)",
+    "max+1=2: the same test refuses a second search at 999,999 us; a_reset_keeps_the_per_player_search_cooldown covers a target or mode change"
+  ],
+  "consumers": [
+    "apps/game-server/src/combat/attack/chase.rs CHASE_SEARCH_INTERVAL_MICROS",
+    "CHASE-1 player chase (combat_attack::chase ChaseState::decide)"
+  ],
+  "notes": "RANGED-0 \u00a78 CHASE-1. Registered by LOOP-COMBAT-MODES-1."
+}

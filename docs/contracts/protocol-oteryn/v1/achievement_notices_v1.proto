@@ -1,0 +1,32 @@
+// ACHIEVEMENT-0 §5 (ACHIEVEMENT0-GRANT-RUNTIME-V1, D292, docs/architecture/reviews/
+// OTERYN_GAME_ACHIEVEMENT0_ACHIEVEMENT_GRANT_RUNTIME_DECISION_2026-10-03.md): typed payloads of
+// capability 8 ACHIEVEMENT_NOTICES_V1 and state domain 13 ACCOUNT_ACHIEVEMENT_NOTICES (snapshot
+// type 1, delta type 1). Numbers leased by the #1622 control plane; the capability has no command
+// type. FND-02 envelopes own server sequence, domain ID and revisions; these payloads never
+// duplicate them. The domain's state is the account's achievement watermark. The revision is
+// cumulative per GameSession and never reset; a resync or reconnect sends only the snapshot, and
+// a delta is never replayed. Unknown fields, repeated singular fields, a key outside the
+// `oteryn:achievement/<slug>` grammar, invalid UTF-8, an empty name, a delta whose fact_count is 0,
+// and a value outside its declared bound all fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.achievement_notices;
+
+// StateDomainSnapshot.payload of snapshot type 1. At most 16 bytes. It names no achievement.
+message AchievementNoticesSnapshotV1 {
+  // The number of facts of the account.
+  uint32 fact_count = 1;
+  // The sum of the catalogue points over all facts of the account.
+  uint32 total_points = 2;
+}
+
+// StateDelta.payload of delta type 1: one committed `Granted` outcome. At most 250 bytes.
+message AchievementEarnedV1 {
+  // `oteryn:achievement/<slug>`, at most 160 bytes.
+  string key = 1;
+  // Catalogue text, 1..=64 UTF-8 bytes.
+  string name = 2;
+  // The account watermark after the grant; fact_count is at least 1.
+  uint32 fact_count = 3;
+  uint32 total_points = 4;
+}

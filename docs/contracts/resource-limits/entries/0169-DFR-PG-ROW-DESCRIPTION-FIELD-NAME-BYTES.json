@@ -1,0 +1,20 @@
+{
+  "id": "DFR-PG-ROW-DESCRIPTION-FIELD-NAME-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+  "resource": "One RowDescription field name on the selected stock PostgreSQL 18.6 compatibility profile",
+  "unit": "UTF-8 bytes excluding NUL",
+  "hard_maximum": 63,
+  "configurable_range": {
+    "minimum": 63,
+    "maximum": 63
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Validate UTF-8 and byte length <=63 from the bounded message before creating an owned field-name String or statement-metadata name backing.",
+  "client_visible": false,
+  "boundary_tests": [
+    "63 UTF-8 bytes accepted when the complete RowDescription and aggregate-name limits also pass",
+    "64 UTF-8 bytes rejected as UNAVAILABLE before owned field-name allocation",
+    "A PostgreSQL server reporting max_identifier_length above 63 is outside this first-slice compatibility profile and does not widen the limit"
+  ],
+  "notes": "Owner-selected stock PostgreSQL 18.6 compatibility ceiling. It is not a protocol-wide invariant; support for a build with larger NAMEDATALEN/max_identifier_length requires an explicit successor decision."
+}

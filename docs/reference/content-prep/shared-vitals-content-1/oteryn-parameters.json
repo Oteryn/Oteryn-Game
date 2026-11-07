@@ -1,0 +1,44 @@
+{
+  "schema": "OTERYN_WORKING_REFERENCE_PARAMETERS/v1",
+  "task": "SHARED-VITALS-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "MEASURED_NORMAL_REFERENCES_AND_OWNER_DERIVED_SORCERER",
+  "owner_instruction_source": "owner:oteryn-data-completion:2026-10-19",
+  "filled_fields": 5,
+  "normalized_companion_fields": 0,
+  "remaining_unfilled_fields": 0,
+  "originating_proposals": "docs/reference/content-prep/shared-vitals-content-1/oteryn-proposals.json",
+  "source_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json",
+  "shared_policies": {},
+  "selection_policy": "Controlled observations and source-backed candidates only; no universal or native runtime formula selected.",
+  "remaining_unresolved_source_fields": 12,
+  "source_repair": {
+    "source_check": "docs/reference/content-prep/shared-vitals-content-1/gameplay-source-reconciliation.json",
+    "remaining_unresolved_source_fields": 12,
+    "selected_for_native_runtime": false,
+    "summary": "Four unpromoted vocations have controlled regeneration observations. Sorcerer is copied1:1from measured Druid by explicit owner instruction and classified DERIVED, not measured. Ten promoted regeneration fields, party activity timeout and initial stamina debit remain unresolved. Knight fed HP has only two full gains and one3s interval; capped gain excluded. Food observations and prior owner choices unchanged; no runtime selection."
+  },
+  "live_client_measurements": {
+    "probe_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
+    "active_fields_resolved": 8,
+    "hungry_fed_observations": 16,
+    "qualified_recordings": 12,
+    "vocations": [
+      "Druid",
+      "Monk",
+      "Paladin",
+      "Knight"
+    ],
+    "active_promotion": false,
+    "selected_for_native_runtime": false,
+    "short_series": "Knight fed HP: two uncapped gains and one3s interval"
+  },
+  "owner_derived_sorcerer_equivalence": {
+    "source": "owner:sorcerer-druid-equivalence:20261019",
+    "field_count": 2,
+    "derived_from": "measured normal Druid",
+    "direct_sorcerer_measurement": false,
+    "runtime_selected": false
+  }
+}

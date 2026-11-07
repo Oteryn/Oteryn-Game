@@ -1,0 +1,9 @@
+{
+  "mechanic": "0021-logout",
+  "kind": "keybindings",
+  "id": "0021-logout-logout-l",
+  "status": "supported",
+  "context": "global",
+  "chord": "CTRL+L",
+  "entry": "input.rs::default_logout_binding"
+}

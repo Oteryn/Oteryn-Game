@@ -1,0 +1,123 @@
+{
+  "task": "PREY-CONTENT-1",
+  "review_date": "2026-10-19",
+  "scope": "SOURCE_RECONCILED_REFERENCE_DATA_WITH_EXPLICIT_CONFLICTS",
+  "research_status": "SOURCE_REPAIR_PUBLISHED_CANDIDATE_RUNTIME_UNQUALIFIED",
+  "runtime_admission": "BLOCKED",
+  "coverage": "649source-listed Prey creatures retain643unique existing native bindings and six pending native admissions. Five missing-creature profiles now include two complete supplementary TFS source definitions and three wiki-sourced partial profiles. All13native exclusive flags match donor defaults: preserve13source-precedence conflicts, not an automatic correction plan. No native or runtime admission is claimed. Bounty/Weekly correction remains separate. Task Board repair withdraws four unsupported10%defaults, preserves three Weekly model alternatives, qualifies Expert kill-range conflict, and corroborates HTP thresholds and Soulseals with the official manual.",
+  "source_registry": "sources.json",
+  "record_counts": {
+    "docs/reference/content-prep/prey-content-1/admission-evidence/reference-evidence.json": 41,
+    "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json": 649,
+    "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json": 5
+  },
+  "evidence_field_counts": {
+    "DERIVED": 1420,
+    "PROVEN": 688,
+    "CONFLICT": 6
+  },
+  "unresolved_fields": [
+    {
+      "path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/0/facts/experience_reward",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/prey-content-1/task-reward-source-check.json"
+    },
+    {
+      "path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/1/facts/experience_reward",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/prey-content-1/task-reward-source-check.json"
+    },
+    {
+      "path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/2/facts/experience_reward",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/prey-content-1/task-reward-source-check.json"
+    },
+    {
+      "path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/3/facts/experience_reward",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/prey-content-1/task-reward-source-check.json"
+    },
+    {
+      "path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/4/facts/weekly_experience_candidate",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/prey-content-1/task-reward-source-check.json"
+    },
+    {
+      "path": "docs/reference/content-prep/prey-content-1/admission-evidence/evidence-00000-00004.json/records/2/facts/kill_count_range",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/prey-content-1/task-reward-source-check.json"
+    }
+  ],
+  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete.",
+  "filled_parameter_fields": 12,
+  "remaining_unfilled_parameter_fields": 0,
+  "normalized_companion_fields": 0,
+  "global_source_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json",
+  "global_source_archive_counts": {
+    "CONFLICT": 6,
+    "UNKNOWN": 11
+  },
+  "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
+  "pending_index_metadata": [],
+  "selection_pool_source_correction": {
+    "fields": [
+      "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/0/facts/selection_pool",
+      "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/90/facts/selection_pool",
+      "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/157/facts/selection_pool",
+      "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/173/facts/selection_pool",
+      "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json/records/374/facts/selection_pool"
+    ],
+    "source_check": "docs/reference/content-prep/prey-content-1/source-correction-check.json",
+    "qualification": "Pinned Crystal and Canary both mark these creatures exclusive; select wildcard_only as a derived reference correction. Conflicting historical wiki sections remain archived. No current official-server pool measurement is claimed."
+  },
+  "native_binding_source_correction": {
+    "source_check": "docs/reference/content-prep/prey-content-1/creature-identity-source-check.json",
+    "native_handoff": "docs/reference/content-prep/prey-content-1/native-prey-handoff.json",
+    "source_creatures": 649,
+    "existing_native_bindings": 643,
+    "source_identities_resolved": 6,
+    "pending_native_creature_admissions": 6,
+    "native_flag_disagreements": 13,
+    "invented_launch_exclusions_removed": 6,
+    "runtime_admission": "BLOCKED"
+  },
+  "prior_binding_summary": {
+    "coverage": "All ten grades for every bonus, reroll/wildcard costs, 649 source-listed prey creatures and the current Task Board are covered. Native bindings resolve 643 creatures; six have no supported identity among all 1863 existing native definitions. Complete rendered eligibility tables contain Beginner 153, Adept 450, Expert 498 and Master 280 rows. Current weekly limits, points, multipliers and Soulseals are included. Five source pool contradictions remain visible. Bounty XP and unqualified weekly XP formulas remain held.",
+    "evidence_field_counts": {
+      "DERIVED": 1425,
+      "PROVEN": 683
+    }
+  },
+  "five_creature_source_reconciliation": {
+    "profiles": 5,
+    "full_supplementary_tfs_definitions": 2,
+    "partial_profiles": 3,
+    "profile_index": "docs/reference/content-prep/prey-content-1/creature-source-profiles/README.md",
+    "source_scope": "REFERENCE_ONLY_NO_NATIVE_ADMISSION",
+    "pool_source_reconciliation": "docs/reference/content-prep/prey-content-1/native-pool-source-reconciliation.json",
+    "pool_conflicts": 13,
+    "proven_native_import_errors": 0,
+    "supersedes_automatic_thirteen_flag_change_plan": true
+  },
+  "prior_pool_diagnosis_coverage": "649source-listed Prey creatures are retained.643bindings resolve to current native definitions with no dangling or duplicate bindings. Six externally identified creatures await native definition admission; invented launch exclusions are withdrawn.13native exclusive flags differ from source pool references and have an explicit coordinator handoff. Existing five donor-based pool corrections are retained with historical secondary corroboration. Bounty/Weekly XP repair remains separate.",
+  "remaining_unresolved_source_fields": 6,
+  "source_backed_unselected_candidate_fields": 5,
+  "task_reward_source_repair": {
+    "source_check": "docs/reference/content-prep/prey-content-1/task-reward-source-check.json",
+    "withdrawn_ten_percent_defaults": 4,
+    "bounty_source_candidates": 4,
+    "weekly_formula_alternatives": 3,
+    "expert_kill_range_conflict": true,
+    "unresolved_active_source_fields": 6,
+    "current_global_numeric_xp_formula_selected": false,
+    "primary_official_htp_thresholds": [
+      4,
+      8,
+      12,
+      16
+    ],
+    "soulseals_per_task": 1,
+    "soulseal_weekly_multiplier": false,
+    "master_no_cap": "SOURCE_CORROBORATED"
+  }
+}

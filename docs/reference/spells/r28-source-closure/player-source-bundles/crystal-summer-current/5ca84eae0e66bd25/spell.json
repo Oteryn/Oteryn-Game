@@ -1,0 +1,73 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 60000,
+    "costs": {
+      "mana": 75,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/5ca84eae0e66bd25/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/5ca84eae0e66bd25",
+      "revision": "source-player-r28"
+    },
+    "name": "Recovery",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_recovery"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 159,
+    "requirements": {
+      "learning_required": false,
+      "level": 50,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight",
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "utura"
+  }
+}

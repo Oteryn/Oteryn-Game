@@ -1,0 +1,100 @@
+{
+  "identity": {
+    "key": "canary:encounter/azerus",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "In Service of Yalahar: Azerus",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "azerus",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/azerus",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/azerus2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "azerus_escape",
+      "kind": "point",
+      "description": "Teleporter destination; Canary (32780, 31168, 14).",
+      "location": {
+        "x": 32780,
+        "y": 31168,
+        "floor": 14
+      }
+    },
+    {
+      "key": "arena",
+      "kind": "area",
+      "description": "Tiles within 10 of Canary (32783, 31166, 10) on that floor.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              32773,
+              32793
+            ],
+            "y": [
+              31156,
+              31176
+            ],
+            "floor": 10
+          }
+        ]
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "azerus_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "azerus"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "create",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/1949",
+            "revision": "canary-47dfd51f"
+          },
+          "at": "death_position",
+          "destination": "azerus_escape",
+          "revert_after_ms": 120000
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "azerus"
+          },
+          "text": "Azerus ran into teleporter! It will disappear in 2 minutes. Enter it!",
+          "mode": "say"
+        },
+        {
+          "kind": "remove",
+          "all_in": "arena"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

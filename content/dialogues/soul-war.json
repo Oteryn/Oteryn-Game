@@ -1,0 +1,326 @@
+{
+  "schema": "OTERYN_DIALOGUE_AUTHORING_SHARD/v1",
+  "family": "Dialogue",
+  "shard": {
+    "index": 0,
+    "start": 0,
+    "end": 0,
+    "count": 1
+  },
+  "source_legacy_role": "data-global/npc/flickering_soul.lua",
+  "records": [
+    {
+      "declaration": {
+        "kind": "Dialogue",
+        "identity": {
+          "key": "oteryn:dialogue.npc.flickering_soul",
+          "revision": "definition-r1"
+        },
+        "greet": [
+          "Be greeted, living soul!"
+        ],
+        "keywords": [
+          {
+            "key": "living",
+            "triggers": [
+              "living"
+            ],
+            "reply": [
+              "It has been a while since I roamed the world of the living in a mortal shell."
+            ]
+          },
+          {
+            "key": "mortal",
+            "triggers": [
+              "mortal"
+            ],
+            "reply": [
+              "I had many names in my live. The one that would be the most recognizable is probably the name Goshnar. Even that was an assumed name that I took when I left my mundane past behind."
+            ]
+          },
+          {
+            "key": "goshnar",
+            "triggers": [
+              "goshnar"
+            ],
+            "reply": [
+              "I was once known as the necromant king. ...",
+              "For some it was meant as a curse, others used the name with reverence. To me it was just another stepping stone, in a life that burned with ambition."
+            ]
+          },
+          {
+            "key": "ambition",
+            "triggers": [
+              "ambition"
+            ],
+            "reply": [
+              "My ambitions were high and knew no limits. Mastery over life and death was but a milestone that I wanted to accomplish. In the end I aspired probably somewhat like godhood. ...",
+              "Though in hindsight even that wouldn't have been enough. There was a hunger in me that nothing could put to rest."
+            ]
+          },
+          {
+            "key": "milestone",
+            "triggers": [
+              "milestone"
+            ],
+            "reply": [
+              "Everything in my life was just a tool to further my goals. The brotherhood of bones was just a tool for me. As was everyone or everything. In the path I had chosen nothing mattered but me and my ambitions."
+            ]
+          },
+          {
+            "key": "everything",
+            "triggers": [
+              "everything"
+            ],
+            "reply": [
+              "Necromancy was a passion at first, another tool while I amassed power and a crutch when my ambitions surpassed that what it could accomplish."
+            ]
+          },
+          {
+            "key": "accomplish",
+            "triggers": [
+              "accomplish"
+            ],
+            "reply": [
+              "I was so convinced about my brilliance, my greatness, my destiny. And this hunger for more, it let me not have peace at any point in my life. I was always driven. There was no time to rest. ...",
+              "And there was no looking back. I never cared to remember my humble beginnings, what I had sacrificed to get where I was. All that I had left behind and that I had lost forever. ...",
+              "Now I see the bitter irony. I could bring back the dead, but I couldn't create second chances. I couldn't restore the truly important things that I had lost."
+            ]
+          },
+          {
+            "key": "dead",
+            "triggers": [
+              "dead"
+            ],
+            "reply": [
+              "My demise did not meet me unprepared. As a powerful necromancer I had fettered my soul in the living world and the realms beyond. I had prepared for my return and was confident in my power."
+            ]
+          },
+          {
+            "key": "confident",
+            "triggers": [
+              "confident"
+            ],
+            "reply": [
+              "My soul wandered the plains of Zarganash, waiting for my wards to power up. Waiting for my soul to be slowly pulled back and manifest in the world of the living once again. What I had not taken into consideration was peace."
+            ]
+          },
+          {
+            "key": "peace",
+            "triggers": [
+              "peace"
+            ],
+            "reply": [
+              "Zarganash was not a place without its dangers, but for a soul as powerful as mine, there was little threat at all. For the first time in my existence I had to stop running forward. I had to wait for things to fit into their places. ...",
+              "And me, who had seen things that horrible, they would have obliterated a lesser man's mind, finally took the time to look back. And what I saw was frightening in its own right. ...",
+              "A great tiredness overcame me. With the flames of my ambitions calming down for the first time since I could remember, all my aspirations and plans seemed to petty and futile. ...",
+              "Everything I had worked for and my plans for the things to come seemed pointless, and the things I had lost and never allowed myself to experience weighed heavily on my soul."
+            ]
+          },
+          {
+            "key": "soul",
+            "triggers": [
+              "soul"
+            ],
+            "reply": [
+              "I talked to other souls, lost in Zarganash, and most of them seemed like mirrors to myself. Their faults, their shortcomings, the things that were important to them and the things they had lost. ...",
+              "It was all like miniature copies of my own grand plans and losses. It made me think. And the great tiredness weighed even more heavy on me. A weariness of the world, of the hunger that drove me."
+            ]
+          },
+          {
+            "key": "weariness",
+            "triggers": [
+              "weariness"
+            ],
+            "reply": [
+              "Then I met a wise soul. A teacher that did not lecture. I never was impressed by anything but my own accomplishments. But the inner balance and peace of this soul, it did impress me. A lot. ...",
+              "I, who fancied myself to have been the epitome of knowledge, learned things that were entirely new to me. But this knowledge wasn't about power. It was about me."
+            ]
+          },
+          {
+            "key": "knowledge",
+            "triggers": [
+              "knowledge"
+            ],
+            "reply": [
+              "I recognized the extent of my folly and failure. I decided not to return to the world of the living."
+            ]
+          },
+          {
+            "key": "return",
+            "triggers": [
+              "return"
+            ],
+            "reply": [
+              "I decided to stay here, even pass on into the great beyond at some point. Yet I still feel the pull of my fetters. I can faintly hear those who think they are my followers, calling to me.",
+              "And I feel others, many others who crave my powers and try to bring me back for their own gain."
+            ]
+          },
+          {
+            "key": "fetters",
+            "triggers": [
+              "fetters"
+            ],
+            "reply": [
+              "Over my time in Zarganash I split away the parts of me that my worldly fetters were bound to. Yet I had to recognize that they are still a part of me and I'm bound to them. ...",
+              "The fetters and the efforts to call me back are empowering them. I feel them growing in strength and gaining awareness on their own. ...",
+              "They are beginning to feed not only on the fetters and incarnations but also on me. As I grow weaker, they grow more powerful over time."
+            ]
+          },
+          {
+            "key": "powerful",
+            "triggers": [
+              "powerful"
+            ],
+            "reply": [
+              "The only way I can get rid of them is to disperse them, to 'kill' them so to say. But they are tainted parts of myself and even going near them might endanger my sanity and stability. So all I can do is to ask you to do this daunting task."
+            ]
+          },
+          {
+            "key": "task_complete",
+            "triggers": [
+              "task"
+            ],
+            "reply": [
+              "You did it! For the first time I can feel free from the pull of my past. Now I'm free at last. ...",
+              "I might stay a while and teach other souls about the inner peace, but will eventually pass on. Thank you so much, my hero. My eternal gratitude and blessings will be with you!"
+            ]
+          },
+          {
+            "key": "task_offer",
+            "triggers": [
+              "task"
+            ],
+            "reply": [
+              "I'm aware I have no right to ask and I have little to offer as a payment, but I ask you nonetheless. Will you face my fettered vices and destroy them for me?"
+            ]
+          },
+          {
+            "key": "accept",
+            "triggers": [
+              "yes"
+            ],
+            "reply": [
+              "Thank you for accepting this burden."
+            ]
+          },
+          {
+            "key": "burden",
+            "triggers": [
+              "burden"
+            ],
+            "reply": [
+              "You will have to reach each of the negative parts of my personality that I split away. They are hidden deep in the depths of Zarganash and will have corrupted and twisted their surroundings into dangerous nightmares. ...",
+              "Even worse, you'll likely encounter minions of those who want to claim my soul as their prize for their own depraved reasons. You will have to destroy my shards to set me free."
+            ]
+          },
+          {
+            "key": "shards",
+            "triggers": [
+              "shards"
+            ],
+            "reply": [
+              "You haven't killed Malice yet. You haven't killed Hatred yet. You haven't killed Spite yet. You haven't killed Cruelty yet. You haven't killed Greed yet."
+            ]
+          },
+          {
+            "key": "hate",
+            "triggers": [
+              "hate"
+            ],
+            "reply": [
+              "I hated the world for its flaws and the reluctance of people to comply with my will. I was convinced I was destined for greatness and to change everything. Ordinary beings were far beneath me and my consideration. ...",
+              "All this opposition, all the wars were a nuisance on my way to greatness. I would have sacrificed the whole world to reach my goals."
+            ]
+          },
+          {
+            "key": "fermuba",
+            "triggers": [
+              "fermuba"
+            ],
+            "reply": [
+              "My daughter was as ambitious as me, yet she lacked my intellect and my raw talent. She still was great and talented yet I sadly let her feel my disdain. One of the many errors that my way of hubris made me do."
+            ]
+          },
+          {
+            "key": "ferumbras",
+            "triggers": [
+              "ferumbras"
+            ],
+            "reply": [
+              "Even in the lands of the dead, this one caused a stir. The dead were whispering his name. It made me feel jealous and angry at first, but at some point, after much self-reflection, I could recognize my own faults in the stories about him.",
+              "It was almost like looking into a mirror for the first time. However, he lived way later than me, and I never met his soul here, so I can't tell more about him."
+            ]
+          },
+          {
+            "key": "grandson",
+            "triggers": [
+              "grandson"
+            ],
+            "reply": [
+              " I'm not aware of the fate of my linage. Neither I'm able to relate to the mortal world in that way. Each of us is an individual, not bound by ties of blood or herritage."
+            ]
+          },
+          {
+            "key": "pale_worm",
+            "triggers": [
+              "pale worm"
+            ],
+            "reply": [
+              "His avatar might be destroyed for now and it'd grip on Zarganash considerably weakened. Yet he burrowed to deep into the essence of this realm to be annihilated this easy."
+            ]
+          },
+          {
+            "key": "necromant_king",
+            "triggers": [
+              "necromant king"
+            ],
+            "reply": [
+              "They called me the necromant king, in an act of reverence, but to me it was always more of a slander. To limit my greatness to this insignificant aspect was an insult to my ego. But I let it slip for the greater good. ...",
+              "I felt it was beneath me to correct them and I went along."
+            ]
+          },
+          {
+            "key": "followers",
+            "triggers": [
+              "minions",
+              "followers"
+            ],
+            "reply": [
+              "I despised my followers for their petty agendas and for their limited vision of my own goals and personality."
+            ]
+          },
+          {
+            "key": "cleansed",
+            "triggers": [
+              "taints",
+              "penalties"
+            ],
+            "reply": [
+              "I have cleansed you from the taints that you carried with you. You are now free from the burden that you should not have to bear."
+            ]
+          },
+          {
+            "key": "untainted",
+            "triggers": [
+              "taints",
+              "penalties"
+            ],
+            "reply": [
+              "You are not tainted by the darkness of the world. You are pure and free from the burdens that others carry."
+            ]
+          }
+        ],
+        "fields": [
+          {
+            "field_path": "oteryn:source.quest.soul_war.dialogue",
+            "value": {
+              "type": "Text",
+              "value": "{\"greeting_line\": 198, \"matcher_source\": \"data/npclib/npc.lua:13-20\", \"path\": \"data-global/npc/flickering_soul.lua\", \"repository\": \"zimbadev/crystalserver\", \"revision\": \"201189f871d23597b82caf88fd611454a2ddefb8\", \"sha256\": \"67a704c084d2490ea37ad337d472a7f3075375f0a3a043b1a615be12d5ac2405\", \"speech\": [{\"key\": \"living\", \"line\": 63, \"source_interval_ms\": null}, {\"key\": \"mortal\", \"line\": 65, \"source_interval_ms\": null}, {\"key\": \"goshnar\", \"line\": 67, \"source_interval_ms\": 4000}, {\"key\": \"ambition\", \"line\": 72, \"source_interval_ms\": 4000}, {\"key\": \"milestone\", \"line\": 77, \"source_interval_ms\": null}, {\"key\": \"everything\", \"line\": 79, \"source_interval_ms\": null}, {\"key\": \"accomplish\", \"line\": 81, \"source_interval_ms\": 4000}, {\"key\": \"dead\", \"line\": 87, \"source_interval_ms\": null}, {\"key\": \"confident\", \"line\": 89, \"source_interval_ms\": null}, {\"key\": \"peace\", \"line\": 91, \"source_interval_ms\": 4000}, {\"key\": \"soul\", \"line\": 98, \"source_interval_ms\": 4000}, {\"key\": \"weariness\", \"line\": 103, \"source_interval_ms\": 4000}, {\"key\": \"knowledge\", \"line\": 108, \"source_interval_ms\": null}, {\"key\": \"return\", \"line\": 110, \"source_interval_ms\": 4000}, {\"key\": \"fetters\", \"line\": 115, \"source_interval_ms\": 4000}, {\"key\": \"powerful\", \"line\": 121, \"source_interval_ms\": null}, {\"key\": \"task_complete\", \"line\": 126, \"source_interval_ms\": 2000}, {\"key\": \"task_offer\", \"line\": 133, \"source_interval_ms\": null}, {\"key\": \"accept\", \"line\": 137, \"source_interval_ms\": null}, {\"key\": \"burden\", \"line\": 140, \"source_interval_ms\": 5000}, {\"key\": \"shards\", \"line\": 145, \"source_interval_ms\": null}, {\"key\": \"hate\", \"line\": 147, \"source_interval_ms\": 4000}, {\"key\": \"fermuba\", \"line\": 152, \"source_interval_ms\": null}, {\"key\": \"ferumbras\", \"line\": 154, \"source_interval_ms\": 4000}, {\"key\": \"grandson\", \"line\": 159, \"source_interval_ms\": null}, {\"key\": \"pale_worm\", \"line\": 161, \"source_interval_ms\": null}, {\"key\": \"necromant_king\", \"line\": 163, \"source_interval_ms\": 4000}, {\"key\": \"followers\", \"line\": 168, \"source_interval_ms\": null}, {\"key\": \"cleansed\", \"line\": 187, \"source_interval_ms\": null}, {\"key\": \"untainted\", \"line\": 191, \"source_interval_ms\": null}], \"unreachable_shards_branch\": {\"empty_expression\": \"message = \\\"You have defeated all the Goshnar's Bosses. Your soul shines brighter with each victory.\\\"\", \"line\": 169, \"nonempty_expression\": \"message = \\\"You haven't killed \\\" .. table.concat(bossesYetToDefeat, \\\", \\\") .. \\\" yet.\\\"\", \"shadowed_by_line\": 144}}"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

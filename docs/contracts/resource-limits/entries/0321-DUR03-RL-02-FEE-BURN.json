@@ -1,0 +1,23 @@
+{
+  "id": "DUR03-RL-02-FEE-BURN",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
+  "resource": "Location/custody lines in one DUR-03 fee BURN transaction",
+  "unit": "location/custody lines per logical transaction",
+  "hard_maximum": 22,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 22
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked before any write; never truncated. One removal per whole-burned stack (at most 20) plus one new backpack entry per change stack (at most 2); a partial burn keeps its entry.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=22 admitted",
+    "max+1=23 rejected (CAPACITY_EXCEEDED)"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/item_fee_burn_audit.rs",
+    "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)"
+  ],
+  "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1a burns gold coins only (no change output yet); GOLD-FEE-1b adds platinum/crystal and the change MINTs within these rows and re-measures the RL-07 byte rows."
+}

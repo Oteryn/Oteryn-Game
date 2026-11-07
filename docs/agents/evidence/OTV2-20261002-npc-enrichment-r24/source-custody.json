@@ -1,0 +1,17 @@
+{
+  "portable_facts_sha256": "348f334f43debd8a36eacec7cba9346a36ed177eadc739224c23f760e4663549",
+  "scratch_source_packets": {
+    "roles/rolemerged-upgrades.json": "b92de9d2b12d3e7ab48b29973b12927be95b63e947fdac03a39c7dedd3f98acc",
+    "roles/final-validation.json": "477a9a58117bcca4e2c925db8f6738b8ebf490a87e9812577c245e86bb1cc15a",
+    "dialogue/upgrades.json": "bfc1eb6530926f39a6f37ede678668d1bf03d6aa3ebe5191ae8f78bdc93ce13a",
+    "dialogue/normalized-proposals.json": "77552cde847d37c6fc95e7abb5982896f4e4921e833e2adb8bf84c921c3c7321",
+    "dialogue/last-additions.json": "393090cded5c1be2fdea6afa24290dd8957db21faf771dc385d841d7c0a9b137",
+    "dialogue/validation.json": "b10fbc3c2f1d7b4f3ee9ef253fdb9bca0acb9e0b47c8292db8205ee5c4e7a07b",
+    "dialogue/last-validation.json": "b5a20112df60389317802e6bb01ca19cf3087de7acf1a412b018e53838744f54",
+    "appearance-a/handoff.json": "701e0c14235fc8530c65bed5ddaf4a8ac923cbfc7d5037ca9038bec2373ae862",
+    "appearance-b/improvements.json": "27e902169cf14a0ffadb9d4371e7e4702c9bac2165a806d41e46b2e52a90f814",
+    "source-review-partial.json": "6f820cf97c04f653b49f68ba3529a4bf03880687a1ef687803b5638d7fe8af6d"
+  },
+  "research_access": "NormalHTTP/GitHub first; HTTP402/403/GoogleJSredirect\u2192realChrome/CDP viaRemoteDesktop browser-only",
+  "source_fidelity_canonical_claim": false
+}

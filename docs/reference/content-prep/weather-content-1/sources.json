@@ -1,0 +1,31 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_SOURCE_MANIFEST/v1",
+  "task": "WEATHER-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "owner_cut_override": "Owner explicitly requested fresh current data on 2026-10-18; historical 2026-09-27 programme cut is not changed repository-wide.",
+  "sources": {
+    "repo:docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json": {
+      "path": "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "1c19e989a6c72f9b99b37b6a09a16cb154c6c93bc347b5e9098ba1acce408ec3",
+      "source_class": "REPOSITORY_REFERENCE",
+      "fetched_at": "2026-10-18"
+    },
+    "owner:2026-10-18-weather-task": {
+      "source_class": "OWNER_REQUEST",
+      "date": "2026-10-18",
+      "description": "User-supplied content preparation task 13: proposal-only weather presets, architecture ruling pending.",
+      "attachment": "Pasted text.txt / task 13",
+      "sha256": "95105831f6c7388e05f5696630b98ec0f588c25d30fc05075ef5b9b6930a2243"
+    },
+    "owner:oteryn-data-completion:2026-10-19": {
+      "source_class": "OWNER_AUTHORIZED_OTERYN_WORKING_PARAMETERS",
+      "instruction": "No to uzupełnij te dane bo piszę ci to5raz",
+      "prior_instruction": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+      "parameter_document": "docs/reference/content-prep/weather-content-1/oteryn-parameters.json",
+      "selection_actor": "assistant completing owner-authorized reference/data task",
+      "scope": "Populate working Oteryn data defaults, keeping evidence limits explicit; no runtime or architectural acceptance is implied."
+    }
+  }
+}

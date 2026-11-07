@@ -1,0 +1,4410 @@
+{
+  "schema": "OTERYN_CW2_NATIVE_ITEM_BINDING_BATCH/v1",
+  "task": "Oteryn: content world import",
+  "protected_main_at_selection": "256aa3b152c944cb8451906effe1f0090c5b798d",
+  "batch": {
+    "batch_id": "cw2-b1-native-item-batch-64",
+    "item_count": 64,
+    "resolved_native_bindings": 64,
+    "unresolved": 0,
+    "ambiguous": 0,
+    "conflict": 0,
+    "class_counts": {
+      "currency_stackable": 8,
+      "equipment": 12,
+      "consumable_charges": 8,
+      "container": 8,
+      "physical_decor": 16,
+      "weapon": 12
+    },
+    "scope": "CW2_BINDING_CANDIDATES_READY_FOR_CW3_TYPED_PROMOTION"
+  },
+  "protected_inputs": {
+    "b1_catalogue": {
+      "repository_path": "docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json",
+      "git_blob": "2f0121f3ea6586477b4535840b9a1f1bc28c677c",
+      "sha256": "7836c78cad130a5c404f648e76e0823f53ae6a34c6952b9b88c8bed2e50d96a7",
+      "product_digest_sha256": "d773076b576599b6ced7eb53e262cdc6363515d842da3e8518b610e2106db0fc",
+      "byte_length": 16877870,
+      "source_item_identities": 38157
+    },
+    "b1_mapper": {
+      "git_blob": "904d62e1277ceae76434f75bca104686a7303ff2",
+      "sha256": "320ce69f516de2a6e3cec669493ec59a6f3103f405e624478cf2a76acd3d01b6"
+    },
+    "b3_loot_bindings": {
+      "repository_path": "docs/agents/evidence/OTV2-20260919-content-world-cw2-b3-loot-item-bindings.json",
+      "git_blob": "184543847dc080fd4966e7bd8d3c8f04e9c4abbf",
+      "sha256": "be5d523b642caf10163f6e520aeec77517bbf3d59cedbb0e373d5da87dd792d1",
+      "product_digest_sha256": "5251d211b531481f340a4093a2e70af473ea721f6b51c7109ee7e516b33b1460",
+      "loot_rows": 17086,
+      "native_resolutions_before_overlay": 0
+    }
+  },
+  "binding_map": [
+    {
+      "representative_class": "currency_stackable",
+      "source_label": "arrow",
+      "authored_stack_class": "StackCapable",
+      "source_identity": "crystal:item:3447",
+      "source_node_sha256": "f2b3c59423df63a433fda13ca945ee7510f1664b03c9f4d45de75136b72030bd",
+      "field_profile_sha256": "f58edc73b19db6864b4d88c89ead00d0dc3b842368746a3e0bf310d9686cb299",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.ammunition.arrow",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "ammo_type",
+          "nested_values": [],
+          "normalized_source_key": "ammotype",
+          "semantic_family": "weapon_use",
+          "source_key": "ammotype",
+          "source_value": "arrow"
+        },
+        {
+          "native_field": "attack",
+          "nested_values": [],
+          "normalized_source_key": "attack",
+          "semantic_family": "weapon_use",
+          "source_key": "attack",
+          "source_value": "25"
+        },
+        {
+          "native_field": "max_hit_chance",
+          "nested_values": [],
+          "normalized_source_key": "maxhitchance",
+          "semantic_family": "weapon_use",
+          "source_key": "maxhitchance",
+          "source_value": "91"
+        },
+        {
+          "native_field": "weapon_type",
+          "nested_values": [],
+          "normalized_source_key": "weapontype",
+          "semantic_family": "weapon_use",
+          "source_key": "weaponType",
+          "source_value": "ammunition"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "70"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 18,
+        "first_row_identity": "definition:monster:0010:loot:0002",
+        "first_row_sha256": "621d705ffbb77389b36ae94144ef1c87b85f137133be0c3dacd56fa494b37edd"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "equipment",
+      "source_label": "plate armor",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3357",
+      "source_node_sha256": "006dd5aac4ea304f1cfbede93b9b757e9697b6d89bafc533fab5fe5d397a6793",
+      "field_profile_sha256": "83c2e166d10682deea3f6eda02904f6a9ced4da21b0486545360aa76d0e48823",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.armor.plate_armor",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "armor",
+          "nested_values": [],
+          "normalized_source_key": "armor",
+          "semantic_family": "protection",
+          "source_key": "armor",
+          "source_value": "10"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "12000"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 37,
+        "first_row_identity": "definition:monster:0041:loot:0002",
+        "first_row_sha256": "bc35816191bafef356a1745c9455c43a314a3f8dbe653f4f347666501388f458"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "consumable_charges",
+      "source_label": "might ring",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3048",
+      "source_node_sha256": "a52e35b19f031bc94f44c71c402eb29a97928b91c649efb655e7c68aa8c759a0",
+      "field_profile_sha256": "ab35b1698f5a53bb4b4f29991e7e23aaa7cc0af72540f070e17b87b053b68782",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.charged.might_ring",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "charge_count",
+          "nested_values": [],
+          "normalized_source_key": "charges",
+          "semantic_family": "charges",
+          "source_key": "charges",
+          "source_value": "20"
+        },
+        {
+          "native_field": "modifier.absorbpercentdeath",
+          "nested_values": [],
+          "normalized_source_key": "absorbpercentdeath",
+          "semantic_family": "modifier",
+          "source_key": "absorbpercentdeath",
+          "source_value": "20"
+        },
+        {
+          "native_field": "modifier.absorbpercentenergy",
+          "nested_values": [],
+          "normalized_source_key": "absorbpercentenergy",
+          "semantic_family": "modifier",
+          "source_key": "absorbpercentenergy",
+          "source_value": "20"
+        },
+        {
+          "native_field": "modifier.absorbpercentfire",
+          "nested_values": [],
+          "normalized_source_key": "absorbpercentfire",
+          "semantic_family": "modifier",
+          "source_key": "absorbpercentfire",
+          "source_value": "20"
+        },
+        {
+          "native_field": "modifier.absorbpercentholy",
+          "nested_values": [],
+          "normalized_source_key": "absorbpercentholy",
+          "semantic_family": "modifier",
+          "source_key": "absorbpercentholy",
+          "source_value": "20"
+        },
+        {
+          "native_field": "modifier.absorbpercentice",
+          "nested_values": [],
+          "normalized_source_key": "absorbpercentice",
+          "semantic_family": "modifier",
+          "source_key": "absorbpercentice",
+          "source_value": "20"
+        },
+        {
+          "native_field": "modifier.absorbpercentphysical",
+          "nested_values": [],
+          "normalized_source_key": "absorbpercentphysical",
+          "semantic_family": "modifier",
+          "source_key": "absorbpercentphysical",
+          "source_value": "20"
+        },
+        {
+          "native_field": "modifier.absorbpercentpoison",
+          "nested_values": [],
+          "normalized_source_key": "absorbpercentpoison",
+          "semantic_family": "modifier",
+          "source_key": "absorbpercentpoison",
+          "source_value": "20"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "100"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 41,
+        "first_row_identity": "definition:monster:0076:loot:0032",
+        "first_row_sha256": "69bcd6fa3c867b3771fe90e18cfdfdcbd17f6b76c8b00d68e87eee325d732910"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "consumable_charges",
+      "source_label": "sacred tree amulet",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:9302",
+      "source_node_sha256": "7e0f1cf96e72d0b1cacb220d195b00c86f29da2acfa4a2107712d20ef463037b",
+      "field_profile_sha256": "ed3d4a2dd94bf1ff705516c36454de2f39091d9392078521915bde405bc0ce9a",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.charged.sacred_tree_amulet",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "charge_count",
+          "nested_values": [],
+          "normalized_source_key": "charges",
+          "semantic_family": "charges",
+          "source_key": "charges",
+          "source_value": "5"
+        },
+        {
+          "native_field": "modifier.absorbpercentphysical",
+          "nested_values": [],
+          "normalized_source_key": "absorbpercentphysical",
+          "semantic_family": "modifier",
+          "source_key": "absorbpercentphysical",
+          "source_value": "60"
+        },
+        {
+          "native_field": "modifier.absorbpercentpoison",
+          "nested_values": [],
+          "normalized_source_key": "absorbpercentpoison",
+          "semantic_family": "modifier",
+          "source_key": "absorbpercentpoison",
+          "source_value": "40"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "700"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 35,
+        "first_row_identity": "definition:monster:0101:loot:0006",
+        "first_row_sha256": "eee8aa239f9fef6db6bcfcf5e3f13924d021faf01f1b82a9ad140677991e3fa7"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "consumable_charges",
+      "source_label": "stone skin amulet",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3081",
+      "source_node_sha256": "5c6c64e234b76e1b79e5e2d1d2228cbe5ab13bd854482cb455a12f5a6743ef7b",
+      "field_profile_sha256": "02b64132c553e683d58fa5910a5ae55fc96b91e203fe30cf20aeaa2fbd87da37",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.charged.stone_skin_amulet",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "charge_count",
+          "nested_values": [],
+          "normalized_source_key": "charges",
+          "semantic_family": "charges",
+          "source_key": "charges",
+          "source_value": "5"
+        },
+        {
+          "native_field": "modifier.absorbpercentdeath",
+          "nested_values": [],
+          "normalized_source_key": "absorbpercentdeath",
+          "semantic_family": "modifier",
+          "source_key": "absorbpercentdeath",
+          "source_value": "80"
+        },
+        {
+          "native_field": "modifier.absorbpercentphysical",
+          "nested_values": [],
+          "normalized_source_key": "absorbpercentphysical",
+          "semantic_family": "modifier",
+          "source_key": "absorbpercentphysical",
+          "source_value": "80"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "700"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 60,
+        "first_row_identity": "definition:monster:0076:loot:0048",
+        "first_row_sha256": "0aaec6f1720addeb92452741f85dbd64c4a893f5906efab8117cc70fdd27352f"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "consumable_charges",
+      "source_label": "great health potion",
+      "authored_stack_class": "StackCapable",
+      "source_identity": "crystal:item:239",
+      "source_node_sha256": "1676d400a1f7e4a37efa63f06e8bf1ad012ef4732b74fa816f78b4211824b7f8",
+      "field_profile_sha256": "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.consumable.potion.great_health",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "310"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 154,
+        "first_row_identity": "definition:monster:0017:loot:0008",
+        "first_row_sha256": "f72c3eadec3a20f7bb65904ecbf7cc65e6d94f3281cd3bcbe7e40abfc3356cc4"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "consumable_charges",
+      "source_label": "health potion",
+      "authored_stack_class": "StackCapable",
+      "source_identity": "crystal:item:266",
+      "source_node_sha256": "29d71d0e7dbd3f57adabafdef63b6224e0d0eb97aca0820a2ca5c1fc9b8036ed",
+      "field_profile_sha256": "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.consumable.potion.health",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "270"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 65,
+        "first_row_identity": "definition:monster:0010:loot:0006",
+        "first_row_sha256": "8db9fb2ffd1c5ba9193aaac8944d88d8031aebe19d9dbd2fceb31e562435673c"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "consumable_charges",
+      "source_label": "mana potion",
+      "authored_stack_class": "StackCapable",
+      "source_identity": "crystal:item:268",
+      "source_node_sha256": "4f3104c0a2a4cfc7ee1eb50f21cc39bae73a31c697d160a82d3c8e8905cc5b2c",
+      "field_profile_sha256": "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.consumable.potion.mana",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "270"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 47,
+        "first_row_identity": "definition:monster:0077:loot:0005",
+        "first_row_sha256": "22a988cf9b727f2af5eef2d9628410645abd013d46c6741aa254f76af06e7d64"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "consumable_charges",
+      "source_label": "strong mana potion",
+      "authored_stack_class": "StackCapable",
+      "source_identity": "crystal:item:237",
+      "source_node_sha256": "8107df439e0b1965dc6a7ba8b8590581fa4e87c30d6b1a9dd40a0048b17f1853",
+      "field_profile_sha256": "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.consumable.potion.strong_mana",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "290"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 115,
+        "first_row_identity": "definition:monster:0016:loot:0001",
+        "first_row_sha256": "fd57cedc199c645142df7364797211144f6e3cf53f8f4a85928163e064d8e421"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "consumable_charges",
+      "source_label": "sudden death rune",
+      "authored_stack_class": "StackCapable",
+      "source_identity": "crystal:item:3155",
+      "source_node_sha256": "574e1ee5c03676abdcbdc3a5120db3d85ba693279a05a59ffd62b0341a0e223f",
+      "field_profile_sha256": "1d153b0d9524f79947e3d3a5adb4719798354e011c5d2ec977b4abf561479dbc",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.consumable.sudden_death_rune",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "charge_count",
+          "nested_values": [],
+          "normalized_source_key": "charges",
+          "semantic_family": "charges",
+          "source_key": "charges",
+          "source_value": "3"
+        },
+        {
+          "native_field": "item_type",
+          "nested_values": [],
+          "normalized_source_key": "type",
+          "semantic_family": "classification",
+          "source_key": "type",
+          "source_value": "rune"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "70"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 3,
+        "first_row_identity": "definition:monster:1525:loot:0003",
+        "first_row_sha256": "6657360afe738c5c6451919c0d0640a42bc86379c5ffce3c27b83cd6534d843f"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "container",
+      "source_label": "book backpack",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:28571",
+      "source_node_sha256": "235d4b3daaac7b30759bb8108c49fbcd163a1c2d134fe036e68f16c17b0a63cf",
+      "field_profile_sha256": "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.container.book_backpack",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "capacity",
+          "nested_values": [],
+          "normalized_source_key": "containersize",
+          "semantic_family": "container",
+          "source_key": "containersize",
+          "source_value": "22"
+        },
+        {
+          "native_field": "slot_and_allowed_family_tier",
+          "nested_values": [
+            {
+              "key": "increase capacity",
+              "value": "3"
+            }
+          ],
+          "normalized_source_key": "imbuementslot",
+          "semantic_family": "imbuement",
+          "source_key": "imbuementslot",
+          "source_value": "1"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "1800"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 1,
+        "first_row_identity": "definition:monster:1308:loot:0002",
+        "first_row_sha256": "ce70f78bc6f2aa7da8861071a5e019279f6b0a298d06c34dd0c249e330334d93"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "container",
+      "source_label": "deepling backpack",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:14248",
+      "source_node_sha256": "7a496de66726bf3e6e469372cfed2506bf08a7c8ac4d0958e6d95343a737f968",
+      "field_profile_sha256": "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.container.deepling_backpack",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "capacity",
+          "nested_values": [],
+          "normalized_source_key": "containersize",
+          "semantic_family": "container",
+          "source_key": "containersize",
+          "source_value": "20"
+        },
+        {
+          "native_field": "slot_and_allowed_family_tier",
+          "nested_values": [
+            {
+              "key": "increase capacity",
+              "value": "3"
+            }
+          ],
+          "normalized_source_key": "imbuementslot",
+          "semantic_family": "imbuement",
+          "source_key": "imbuementslot",
+          "source_value": "1"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "1800"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 2,
+        "first_row_identity": "definition:monster:0021:loot:0013",
+        "first_row_sha256": "686432c60cdf2297fab5dfeeb5596232605ed55300ba89f6ed716c2b5a503ea8"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "container",
+      "source_label": "fur bag",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:7343",
+      "source_node_sha256": "da1c5482ade8e41fe0efbe3a884de0e6ff792863efc0ae06f87f8be55ab15306",
+      "field_profile_sha256": "93cd457c45acf4b2a6d5dc4044e42c2094715f09db1e484629d011fe5aca5172",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.container.fur_bag",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "capacity",
+          "nested_values": [],
+          "normalized_source_key": "containersize",
+          "semantic_family": "container",
+          "source_key": "containersize",
+          "source_value": "8"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "800"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 2,
+        "first_row_identity": "definition:monster:0480:loot:0006",
+        "first_row_sha256": "ea514603987c118fc3c87bd71acf36aa29c1bb7d5e066847b02d153fe54c09a0"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "container",
+      "source_label": "golden backpack",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:2871",
+      "source_node_sha256": "d8fe87b4bd22a5244ba83289b406ca2a6930d2482c963d9e6cc6bc6778534d2f",
+      "field_profile_sha256": "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.container.golden_backpack",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "capacity",
+          "nested_values": [],
+          "normalized_source_key": "containersize",
+          "semantic_family": "container",
+          "source_key": "containersize",
+          "source_value": "20"
+        },
+        {
+          "native_field": "slot_and_allowed_family_tier",
+          "nested_values": [
+            {
+              "key": "increase capacity",
+              "value": "3"
+            }
+          ],
+          "normalized_source_key": "imbuementslot",
+          "semantic_family": "imbuement",
+          "source_key": "imbuementslot",
+          "source_value": "1"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "1800"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 2,
+        "first_row_identity": "definition:monster:0879:loot:0007",
+        "first_row_sha256": "31cb3d98a1d4ba0839772ff67004d56faae857579cf3a813eefab44f4a53b010"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "container",
+      "source_label": "moon backpack",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:9604",
+      "source_node_sha256": "8dffabf589c66a3cf8cda4cac92e5b23c3ed91cc1d50ec4dd646c5f2df8d8afc",
+      "field_profile_sha256": "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.container.moon_backpack",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "capacity",
+          "nested_values": [],
+          "normalized_source_key": "containersize",
+          "semantic_family": "container",
+          "source_key": "containersize",
+          "source_value": "20"
+        },
+        {
+          "native_field": "slot_and_allowed_family_tier",
+          "nested_values": [
+            {
+              "key": "increase capacity",
+              "value": "3"
+            }
+          ],
+          "normalized_source_key": "imbuementslot",
+          "semantic_family": "imbuement",
+          "source_key": "imbuementslot",
+          "source_value": "1"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "1800"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 2,
+        "first_row_identity": "definition:monster:0362:loot:0000",
+        "first_row_sha256": "4c75089ebbcb30c26c9d5dc0a2df4a22075719ab29c2bc8b98b5c2fb1fcb5982"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "container",
+      "source_label": "pillow backpack",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:24393",
+      "source_node_sha256": "733323428cf4d2461b64136380355b719cee9e46d14acf960b82fedb20587754",
+      "field_profile_sha256": "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.container.pillow_backpack",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "capacity",
+          "nested_values": [],
+          "normalized_source_key": "containersize",
+          "semantic_family": "container",
+          "source_key": "containersize",
+          "source_value": "24"
+        },
+        {
+          "native_field": "slot_and_allowed_family_tier",
+          "nested_values": [
+            {
+              "key": "increase capacity",
+              "value": "3"
+            }
+          ],
+          "normalized_source_key": "imbuementslot",
+          "semantic_family": "imbuement",
+          "source_key": "imbuementslot",
+          "source_value": "1"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "1450"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 1,
+        "first_row_identity": "definition:monster:0971:loot:0035",
+        "first_row_sha256": "86f38dbdfadc4d8b40f3431e179de89f345974759c31cc84c379c7c8e59d0378"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "container",
+      "source_label": "pirate backpack",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:5926",
+      "source_node_sha256": "508b2a6740ce10e609c6452676c011931366fd278659b89208642f61e026011d",
+      "field_profile_sha256": "612572db278dc67cc5abedaadef3826f40701bb8a0e409030b01adac6e09c7fa",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.container.pirate_backpack",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "capacity",
+          "nested_values": [],
+          "normalized_source_key": "containersize",
+          "semantic_family": "container",
+          "source_key": "containersize",
+          "source_value": "20"
+        },
+        {
+          "native_field": "slot_and_allowed_family_tier",
+          "nested_values": [
+            {
+              "key": "increase capacity",
+              "value": "3"
+            }
+          ],
+          "normalized_source_key": "imbuementslot",
+          "semantic_family": "imbuement",
+          "source_key": "imbuementslot",
+          "source_value": "1"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "1800"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 6,
+        "first_row_identity": "definition:monster:0528:loot:0010",
+        "first_row_sha256": "cc3fd75b03da65ba6d3bd684e4d2897a3bfaabae0734a7cb86be7a6341a2d6a5"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "container",
+      "source_label": "pirate bag",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:5927",
+      "source_node_sha256": "133ea978d3ea2b922a77f4f6255a2c058570e550c45e9219a8cd540740250dc4",
+      "field_profile_sha256": "93cd457c45acf4b2a6d5dc4044e42c2094715f09db1e484629d011fe5aca5172",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.container.pirate_bag",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "capacity",
+          "nested_values": [],
+          "normalized_source_key": "containersize",
+          "semantic_family": "container",
+          "source_key": "containersize",
+          "source_value": "8"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "800"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 4,
+        "first_row_identity": "definition:monster:0530:loot:0008",
+        "first_row_sha256": "e8e80f5d302373e4217bf4c61170f48011d157dcdecee6c07274e7f9abe7da4d"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "currency_stackable",
+      "source_label": "crystal coin",
+      "authored_stack_class": "StackCapable",
+      "source_identity": "crystal:item:3043",
+      "source_node_sha256": "a5538fe905de344f0df8e9994859ab7d2cdc0cdc40df51b3f584a95fe42501c1",
+      "field_profile_sha256": "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.currency.crystal_coin",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "10"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 140,
+        "first_row_identity": "definition:monster:0060:loot:0000",
+        "first_row_sha256": "b2125ed9cd6c3eeccb7eb4eb8e9f1ae8bfe2f22f1a7b19656c2d40565fdb70c9"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "currency_stackable",
+      "source_label": "platinum coin",
+      "authored_stack_class": "StackCapable",
+      "source_identity": "crystal:item:3035",
+      "source_node_sha256": "2a2400eb87de8067677d3d00b82e973135b12fe3e29348040dbc1724d3da12d8",
+      "field_profile_sha256": "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.currency.platinum_coin",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "10"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 514,
+        "first_row_identity": "definition:monster:0008:loot:0000",
+        "first_row_sha256": "8c472c69cc80d7961d571961a084487c363bdea8c7980df651ef9ba7b0a88afd"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "physical_decor",
+      "source_label": "candlestick",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:2917",
+      "source_node_sha256": "34410387d5be6973f665aa2f038c32311763e4a7ba02e25018e6191ad96a21e6",
+      "field_profile_sha256": "5974cb399f5abd02cee50220bb2d5ab4cbb97af42ac30c6b4605ddf9e70b5ed0",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.decor.candlestick",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "stop_duration",
+          "nested_values": [],
+          "normalized_source_key": "stopduration",
+          "semantic_family": "temporal",
+          "source_key": "stopduration",
+          "source_value": "1"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "300"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 8,
+        "first_row_identity": "definition:monster:0087:loot:0016",
+        "first_row_sha256": "d935d190b07b2a23f676507d17d36144248a2fbd0ef9e4a147d1b80dba4bd775"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "physical_decor",
+      "source_label": "brown flask",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:2885",
+      "source_node_sha256": "876efad2b78488af6aa09fd7dde055a460a0b2f9316b632e3ccc9b361ad05bd3",
+      "field_profile_sha256": "11da415530a0c8678cdb3d05c3205f21f3cc708f13a7342674538f97b911472e",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.decor.flask.brown",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "pickup_eligibility",
+          "nested_values": [],
+          "normalized_source_key": "allowpickupable",
+          "semantic_family": "physical",
+          "source_key": "allowpickUpAble",
+          "source_value": "1"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "300"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 4,
+        "first_row_identity": "definition:monster:0232:loot:0000",
+        "first_row_sha256": "a4d789f81b8555a32b9d2fc93504a7678e8b7fe39ff9fefdfd0ec30d2fa8b6e0"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "physical_decor",
+      "source_label": "small oil lamp",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:2933",
+      "source_node_sha256": "2d168d5565f0c7fe94a9d10f6f31c55d2203af837c443ea5cfdad3378a9e0926",
+      "field_profile_sha256": "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.decor.oil_lamp.small",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "900"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 5,
+        "first_row_identity": "definition:monster:0579:loot:0001",
+        "first_row_sha256": "63bc5a59fd2ec760df635d77941179af8f9926dd870d04992da546e26ae49407"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "physical_decor",
+      "source_label": "panpipes",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:2953",
+      "source_node_sha256": "638ecc4852144c304f962dfb44b4dfc319485bd69e7293439013f0b4f1f2e5d7",
+      "field_profile_sha256": "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.decor.panpipes",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "819"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 5,
+        "first_row_identity": "definition:monster:0300:loot:0007",
+        "first_row_sha256": "39d1e949efb5769cc304c8e91d84c018916a4d1fb44178042743d7245cac5e77"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "physical_decor",
+      "source_label": "piggy bank",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:2995",
+      "source_node_sha256": "5414b44e1d5e986d5c883e38dcad0dfd7378d99e490fd66bff55265801b20b95",
+      "field_profile_sha256": "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.decor.piggy_bank",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "750"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 30,
+        "first_row_identity": "definition:monster:0046:loot:0013",
+        "first_row_sha256": "41447149eb8ce8b601d7b17e3d0678b9fd83bab6b9af80c26d12d2f56bef6bc7"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "physical_decor",
+      "source_label": "small blue pillow",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:2389",
+      "source_node_sha256": "9326478595c91bdc0cd132c264f3072cd182885f000f35f5d42db0b5ef6cc233",
+      "field_profile_sha256": "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.decor.pillow.small_blue",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "1500"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 1,
+        "first_row_identity": "definition:monster:0492:loot:0000",
+        "first_row_sha256": "29c5e057d111408f11d8a64cf0f22c37615637e56c006cd9f4658901b36bbf59"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "physical_decor",
+      "source_label": "teddy bear",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:2993",
+      "source_node_sha256": "339845df118885389556307c190d38f504edebd8baebb14b0714aed59a5fa88b",
+      "field_profile_sha256": "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.decor.teddy_bear",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "590"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 7,
+        "first_row_identity": "definition:monster:0072:loot:0030",
+        "first_row_sha256": "a10cc17e2227deda03905a7c4d0f66990149b4ca1e3474a78fbf01d0fd3dde9c"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "physical_decor",
+      "source_label": "blue tome",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:2850",
+      "source_node_sha256": "9557feb1f960911e48aa89b3c066d4ba0525bf9e23fa219be7eef98b14b16335",
+      "field_profile_sha256": "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.decor.tome.blue",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "1900"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 1,
+        "first_row_identity": "definition:monster:1493:loot:0000",
+        "first_row_sha256": "387e7ac6078addffdc0a47092b348dc3a8f50bf0c96cf5a57450630705285c85"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "physical_decor",
+      "source_label": "purple tome",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:2848",
+      "source_node_sha256": "f7a5a3f46ed282e8c3b13d61712a0484f4b6f6b82ad8de01f63a5b863b6b474a",
+      "field_profile_sha256": "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.decor.tome.purple",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "1900"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 12,
+        "first_row_identity": "definition:monster:0072:loot:0025",
+        "first_row_sha256": "ceb4d0224af50e8cdddc4354751475f007ebcf6cb6807c0c48341ea9bfb30102"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "physical_decor",
+      "source_label": "red tome",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:2852",
+      "source_node_sha256": "e22b2abbef6842cd5de6bb8597e0fa9f3cd9ce5d0e4896783a6c47b6b8c22b31",
+      "field_profile_sha256": "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.decor.tome.red",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "1900"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 4,
+        "first_row_identity": "definition:monster:0513:loot:0000",
+        "first_row_sha256": "1ea47deae669d32ed7f9ef6c3c271ba985d2d870f391f0c673c4662b698da711"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "physical_decor",
+      "source_label": "vase",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:2876",
+      "source_node_sha256": "b7c5c457cdccf047b251313e27cf283442a7346ddc556eaece8c2fdc30d655c3",
+      "field_profile_sha256": "11da415530a0c8678cdb3d05c3205f21f3cc708f13a7342674538f97b911472e",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.decor.vase",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "pickup_eligibility",
+          "nested_values": [],
+          "normalized_source_key": "allowpickupable",
+          "semantic_family": "physical",
+          "source_key": "allowpickUpAble",
+          "source_value": "1"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "940"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 1,
+        "first_row_identity": "definition:monster:0108:loot:0006",
+        "first_row_sha256": "f5d87a09806776c70a799abb5b9eb657ed66b93346d943053ba3fad6500b2712"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "equipment",
+      "source_label": "crown helmet",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3385",
+      "source_node_sha256": "3f773e34581386ee337a89049a586d49a5135c8c835572d4465abe85820e1c4f",
+      "field_profile_sha256": "f59e1b9f71ca5347cca5d5aa9c18ca05c1e31d6ecc8c2197e1a596a212613a72",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.equipment.crown_helmet",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "armor",
+          "nested_values": [],
+          "normalized_source_key": "armor",
+          "semantic_family": "protection",
+          "source_key": "armor",
+          "source_value": "7"
+        },
+        {
+          "native_field": "slot_and_allowed_family_tier",
+          "nested_values": [
+            {
+              "key": "mana leech",
+              "value": "3"
+            },
+            {
+              "key": "skillboost axe",
+              "value": "3"
+            },
+            {
+              "key": "skillboost club",
+              "value": "3"
+            },
+            {
+              "key": "skillboost distance",
+              "value": "3"
+            },
+            {
+              "key": "skillboost shielding",
+              "value": "3"
+            },
+            {
+              "key": "skillboost sword",
+              "value": "3"
+            }
+          ],
+          "normalized_source_key": "imbuementslot",
+          "semantic_family": "imbuement",
+          "source_key": "imbuementslot",
+          "source_value": "2"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "2950"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 10,
+        "first_row_identity": "definition:monster:0185:loot:0007",
+        "first_row_sha256": "8e47f44f322a10c05d9ca3a263cc300daad63d9978f319fdbd617014fc3464f4"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "equipment",
+      "source_label": "crusader helmet",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3391",
+      "source_node_sha256": "c5d4953ee231b39adf03d2340c4cd9a2c37fd1b930c5ed80e983c1a87944654c",
+      "field_profile_sha256": "f59e1b9f71ca5347cca5d5aa9c18ca05c1e31d6ecc8c2197e1a596a212613a72",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.equipment.crusader_helmet",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "armor",
+          "nested_values": [],
+          "normalized_source_key": "armor",
+          "semantic_family": "protection",
+          "source_key": "armor",
+          "source_value": "8"
+        },
+        {
+          "native_field": "slot_and_allowed_family_tier",
+          "nested_values": [
+            {
+              "key": "mana leech",
+              "value": "3"
+            },
+            {
+              "key": "skillboost axe",
+              "value": "3"
+            },
+            {
+              "key": "skillboost club",
+              "value": "3"
+            },
+            {
+              "key": "skillboost distance",
+              "value": "3"
+            },
+            {
+              "key": "skillboost shielding",
+              "value": "3"
+            },
+            {
+              "key": "skillboost sword",
+              "value": "3"
+            }
+          ],
+          "normalized_source_key": "imbuementslot",
+          "semantic_family": "imbuement",
+          "source_key": "imbuementslot",
+          "source_value": "2"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "5200"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 14,
+        "first_row_identity": "definition:monster:0077:loot:0014",
+        "first_row_sha256": "70b5c8d0d71661c07795799a9895257a18531971977885989a725dd085c702a4"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "equipment",
+      "source_label": "glacier robe",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:824",
+      "source_node_sha256": "4a1d051d07a643a181e3ddf411d2b8488daf6c7f65b909eb1f0e3c739c84e4ae",
+      "field_profile_sha256": "e856903cf287582b2a100f4e9bbc75be584b243ffd45e42e342718339c882286",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.equipment.glacier_robe",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "armor",
+          "nested_values": [],
+          "normalized_source_key": "armor",
+          "semantic_family": "protection",
+          "source_key": "armor",
+          "source_value": "11"
+        },
+        {
+          "native_field": "modifier.absorbpercentenergy",
+          "nested_values": [],
+          "normalized_source_key": "absorbpercentenergy",
+          "semantic_family": "modifier",
+          "source_key": "absorbpercentenergy",
+          "source_value": "-8"
+        },
+        {
+          "native_field": "modifier.absorbpercentice",
+          "nested_values": [],
+          "normalized_source_key": "absorbpercentice",
+          "semantic_family": "modifier",
+          "source_key": "absorbpercentice",
+          "source_value": "8"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "2250"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 25,
+        "first_row_identity": "definition:monster:0037:loot:0012",
+        "first_row_sha256": "771dcfffd51ee7aa0f35ae1d99492c7018f8927ab28b903bf47150f3f50656e6"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "equipment",
+      "source_label": "knight armor",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3370",
+      "source_node_sha256": "a087ba076bcbc6b3f967d339b9d00ddcf99d352214bb78f1d7daec8e9cfff0da",
+      "field_profile_sha256": "f59e1b9f71ca5347cca5d5aa9c18ca05c1e31d6ecc8c2197e1a596a212613a72",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.equipment.knight_armor",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "armor",
+          "nested_values": [],
+          "normalized_source_key": "armor",
+          "semantic_family": "protection",
+          "source_key": "armor",
+          "source_value": "12"
+        },
+        {
+          "native_field": "slot_and_allowed_family_tier",
+          "nested_values": [
+            {
+              "key": "elemental protection death",
+              "value": "3"
+            },
+            {
+              "key": "elemental protection earth",
+              "value": "3"
+            },
+            {
+              "key": "elemental protection energy",
+              "value": "3"
+            },
+            {
+              "key": "elemental protection fire",
+              "value": "3"
+            },
+            {
+              "key": "elemental protection holy",
+              "value": "3"
+            },
+            {
+              "key": "elemental protection ice",
+              "value": "3"
+            },
+            {
+              "key": "life leech",
+              "value": "3"
+            }
+          ],
+          "normalized_source_key": "imbuementslot",
+          "semantic_family": "imbuement",
+          "source_key": "imbuementslot",
+          "source_value": "2"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "12000"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 45,
+        "first_row_identity": "definition:monster:0035:loot:0010",
+        "first_row_sha256": "aa89f1cc8c33c8dbd95c14f1d7b62a826a3774b3589a110ab6bbe5157de21954"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "equipment",
+      "source_label": "magma monocle",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:827",
+      "source_node_sha256": "c9a4ddc01bf25a279e3c533c5d31f96617eb9a8003531bf4ad0816fcc88065e5",
+      "field_profile_sha256": "13c9be2c1b84f9b7199d50c4f43b8597c1cc9a35fd58a8182ff5cab02b6bded3",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.equipment.magma_monocle",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "armor",
+          "nested_values": [],
+          "normalized_source_key": "armor",
+          "semantic_family": "protection",
+          "source_key": "armor",
+          "source_value": "5"
+        },
+        {
+          "native_field": "modifier.absorbpercentfire",
+          "nested_values": [],
+          "normalized_source_key": "absorbpercentfire",
+          "semantic_family": "modifier",
+          "source_key": "absorbpercentfire",
+          "source_value": "4"
+        },
+        {
+          "native_field": "modifier.absorbpercentice",
+          "nested_values": [],
+          "normalized_source_key": "absorbpercentice",
+          "semantic_family": "modifier",
+          "source_key": "absorbpercentice",
+          "source_value": "-5"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "1000"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 22,
+        "first_row_identity": "definition:monster:0105:loot:0018",
+        "first_row_sha256": "0c8fbb57d976b77dd82063818d5cfc773c24c4a595b669a8b81c32d29d11ff19"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "equipment",
+      "source_label": "plate legs",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3557",
+      "source_node_sha256": "63249035017fa13d9ac598bc41babf466e0bc45b9c185f173f36131099423ee1",
+      "field_profile_sha256": "83c2e166d10682deea3f6eda02904f6a9ced4da21b0486545360aa76d0e48823",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.equipment.plate_legs",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "armor",
+          "nested_values": [],
+          "normalized_source_key": "armor",
+          "semantic_family": "protection",
+          "source_key": "armor",
+          "source_value": "7"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "5000"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 20,
+        "first_row_identity": "definition:monster:0077:loot:0010",
+        "first_row_sha256": "c01bba8c95a518f528566d701fd72531fd50a4566717dc3fcd46691677316867"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "equipment",
+      "source_label": "platinum amulet",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3055",
+      "source_node_sha256": "8e22605db18521528f2aff0e289ebfd7350a7b5ac676e0b09f9ccc8fb8a4e6a4",
+      "field_profile_sha256": "ff3a4d3b8cdb492ccba844425f2a28a9e9cc361417170d9986af4be07e691834",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.equipment.platinum_amulet",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "armor",
+          "nested_values": [],
+          "normalized_source_key": "armor",
+          "semantic_family": "protection",
+          "source_key": "armor",
+          "source_value": "2"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "600"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 32,
+        "first_row_identity": "definition:monster:0076:loot:0035",
+        "first_row_sha256": "7441c645659588ded37f8969bd3b965364aedfec0d8cd439f2d5f5036f20c266"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "equipment",
+      "source_label": "steel helmet",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3351",
+      "source_node_sha256": "b7ac518e8a97c0efb4e52ec4c1daf77dd38944da841ae50eddadb45119825dda",
+      "field_profile_sha256": "83c2e166d10682deea3f6eda02904f6a9ced4da21b0486545360aa76d0e48823",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.equipment.steel_helmet",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "armor",
+          "nested_values": [],
+          "normalized_source_key": "armor",
+          "semantic_family": "protection",
+          "source_key": "armor",
+          "source_value": "6"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "4600"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 19,
+        "first_row_identity": "definition:monster:0079:loot:0007",
+        "first_row_sha256": "3abcefc9b92087252ee149286823725f669500c50cebe5cfd8579d8b8266ab28"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "equipment",
+      "source_label": "steel shield",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3409",
+      "source_node_sha256": "6dd9ed793bc00b52b980402ad0ae7c76fe37a761592c4325128714914c368082",
+      "field_profile_sha256": "1151295383ab15474f226cac81b4d6f5242094e371fcb06b6a3402fc0006b04d",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.equipment.steel_shield",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "defense",
+          "nested_values": [],
+          "normalized_source_key": "defense",
+          "semantic_family": "protection",
+          "source_key": "defense",
+          "source_value": "21"
+        },
+        {
+          "native_field": "slot_and_allowed_family_tier",
+          "nested_values": [
+            {
+              "key": "elemental protection death",
+              "value": "3"
+            },
+            {
+              "key": "elemental protection earth",
+              "value": "3"
+            },
+            {
+              "key": "elemental protection energy",
+              "value": "3"
+            },
+            {
+              "key": "elemental protection fire",
+              "value": "3"
+            },
+            {
+              "key": "elemental protection holy",
+              "value": "3"
+            },
+            {
+              "key": "elemental protection ice",
+              "value": "3"
+            },
+            {
+              "key": "skillboost shielding",
+              "value": "3"
+            }
+          ],
+          "normalized_source_key": "imbuementslot",
+          "semantic_family": "imbuement",
+          "source_key": "imbuementslot",
+          "source_value": "1"
+        },
+        {
+          "native_field": "weapon_type",
+          "nested_values": [],
+          "normalized_source_key": "weapontype",
+          "semantic_family": "weapon_use",
+          "source_key": "weaponType",
+          "source_value": "shield"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "6900"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 19,
+        "first_row_identity": "definition:monster:0099:loot:0014",
+        "first_row_sha256": "18e1b48cd90ecd8137c6f4d70e416df1d59dcb5d04cc44d277ab2e3ce415bed2"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "equipment",
+      "source_label": "terra legs",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:812",
+      "source_node_sha256": "9f3f20696e67671ed262557fd3dce4d6c82b5d5a5f9d72561174fb247b2f3b21",
+      "field_profile_sha256": "8c7df30bd6dee7644067aee2b2090162c428dbd84fb03ab59eef9ddc135566ed",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.equipment.terra_legs",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "armor",
+          "nested_values": [],
+          "normalized_source_key": "armor",
+          "semantic_family": "protection",
+          "source_key": "armor",
+          "source_value": "8"
+        },
+        {
+          "native_field": "modifier.absorbpercentfire",
+          "nested_values": [],
+          "normalized_source_key": "absorbpercentfire",
+          "semantic_family": "modifier",
+          "source_key": "absorbpercentfire",
+          "source_value": "-6"
+        },
+        {
+          "native_field": "modifier.absorbpercentpoison",
+          "nested_values": [],
+          "normalized_source_key": "absorbpercentpoison",
+          "semantic_family": "modifier",
+          "source_key": "absorbpercentpoison",
+          "source_value": "6"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "1900"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 27,
+        "first_row_identity": "definition:monster:0215:loot:0012",
+        "first_row_sha256": "dab961e53c2ebb822a669345f523c25bfca3d12d1afc27f8dcf346ebcc59fd99"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "equipment",
+      "source_label": "wooden shield",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3412",
+      "source_node_sha256": "a7fcf4b6cbd73783256bd0d58767af814668ac4138d36b6e083d9b8b971fd371",
+      "field_profile_sha256": "127dca5e2e2ecb8b26898d5f19e4957156ed8268423288c429e690ae69bc312d",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.equipment.wooden_shield",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "defense",
+          "nested_values": [],
+          "normalized_source_key": "defense",
+          "semantic_family": "protection",
+          "source_key": "defense",
+          "source_value": "14"
+        },
+        {
+          "native_field": "weapon_type",
+          "nested_values": [],
+          "normalized_source_key": "weapontype",
+          "semantic_family": "weapon_use",
+          "source_key": "weaponType",
+          "source_value": "shield"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "4000"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 6,
+        "first_row_identity": "definition:monster:0078:loot:0006",
+        "first_row_sha256": "556e0a1dfea8d1d33821778b940e1166440cdaf64ed5a3f6ebbc5a31e34d7a38"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "currency_stackable",
+      "source_label": "small enchanted amethyst",
+      "authored_stack_class": "StackCapable",
+      "source_identity": "crystal:item:678",
+      "source_node_sha256": "342a7ebfd1e74252c3e1f5132cce2909dd85c5a5ff057beec41fb7a56841a97c",
+      "field_profile_sha256": "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.material.gem.small_enchanted_amethyst",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "10"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 11,
+        "first_row_identity": "definition:monster:0115:loot:0005",
+        "first_row_sha256": "e2bf4109b63b0c013eca41145f7cb9a0ce93ba1ed8537a6039268127abe6edf3"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "currency_stackable",
+      "source_label": "small enchanted emerald",
+      "authored_stack_class": "StackCapable",
+      "source_identity": "crystal:item:677",
+      "source_node_sha256": "34428b6f050f90adb424e4bd6898317f0f58c449ea971184bb42b59dfb335ea8",
+      "field_profile_sha256": "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.material.gem.small_enchanted_emerald",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "10"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 13,
+        "first_row_identity": "definition:monster:0115:loot:0008",
+        "first_row_sha256": "ff9cb7d291fb3f3beb5fbbf8978ce6ddd6e5930a267eed412d7d2c86c01c57c6"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "currency_stackable",
+      "source_label": "small enchanted ruby",
+      "authored_stack_class": "StackCapable",
+      "source_identity": "crystal:item:676",
+      "source_node_sha256": "36112a05b9c2be382ba24e97234e888bb54c4cf0a6ac1a414bc0885aa45a89d5",
+      "field_profile_sha256": "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.material.gem.small_enchanted_ruby",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "10"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 17,
+        "first_row_identity": "definition:monster:0115:loot:0009",
+        "first_row_sha256": "a55173217d8075b4ad23d439c1ffc644261e37397135bd8f36ab7ee79788a0f8"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "currency_stackable",
+      "source_label": "small enchanted sapphire",
+      "authored_stack_class": "StackCapable",
+      "source_identity": "crystal:item:675",
+      "source_node_sha256": "2fa3ffba601d8a3dad55a6cd545d403ff295d5a5c693d2b722c95f5387507765",
+      "field_profile_sha256": "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.material.gem.small_enchanted_sapphire",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "10"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 17,
+        "first_row_identity": "definition:monster:0017:loot:0006",
+        "first_row_sha256": "21e2dec1ba46f29294017aefbdcb3692314b66da2eab33a28f86efd5697a82f4"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "currency_stackable",
+      "source_label": "worm",
+      "authored_stack_class": "StackCapable",
+      "source_identity": "crystal:item:3492",
+      "source_node_sha256": "85c932f8c74f5147c4d834ccb0811a0c959035749a8ef1b706c8de6347419ba9",
+      "field_profile_sha256": "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.material.worm",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "5"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 34,
+        "first_row_identity": "definition:monster:0000:loot:0001",
+        "first_row_sha256": "5f87261626892b0d9781466b7f4935f03eca97fccb6f2a897dd836f43fc30dc0"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "physical_decor",
+      "source_label": "flawless ice crystal",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:942",
+      "source_node_sha256": "7fc23279085c279d190bdbb0d50b106d53b6d8003c28bb22c906d7a89431f5ab",
+      "field_profile_sha256": "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.physical.crystal.ice.flawless",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "250"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 1,
+        "first_row_identity": "definition:monster:1335:loot:0002",
+        "first_row_sha256": "e557b282a98a32166fb4fbeccc353ab1b2607cfefc60da2390d9c33596131245"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "physical_decor",
+      "source_label": "marlin",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:901",
+      "source_node_sha256": "251b4ee4dc7c3b36ec6514f4a5829fc8c90254bd33b03b669c74ca5ca87eff01",
+      "field_profile_sha256": "4f644e9be432a4e94d1bccebb1c3e4ee16850a78a22170597f910f2a0b6c4248",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.physical.marlin",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "1800"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 2,
+        "first_row_identity": "definition:monster:0420:loot:0011",
+        "first_row_sha256": "b8c272165078a13d246b40e2bbf23cd5413166202ebe59408d9ba63629a5c9a3"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "physical_decor",
+      "source_label": "nail",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:953",
+      "source_node_sha256": "bc7dc34b75c7b262d6ba0368f803393cc9ca417a7a9c2dd7c941e1929b4c6e12",
+      "field_profile_sha256": "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.physical.nail",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "5"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 4,
+        "first_row_identity": "definition:monster:0168:loot:0003",
+        "first_row_sha256": "8556990cbca3d2bc9fb3cdbfd2cc9ba8816a209962b4148cb6943121a888ce7f"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "physical_decor",
+      "source_label": "glimmering soil",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:941",
+      "source_node_sha256": "a0429e1e89785d0207f50eaf2043fec97171c9fd939c6f6056f5867cee945882",
+      "field_profile_sha256": "7aaf75e89a491139e016bfa720eefffec0b7c659655db25d1cd13a9e97237d88",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.physical.soil.glimmering",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "250"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 2,
+        "first_row_identity": "definition:monster:1328:loot:0002",
+        "first_row_sha256": "e11932ab9bbed9fca9f79389672306660780580797f39ee36a1baf4feddd8b19"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "physical_decor",
+      "source_label": "natural soil",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:940",
+      "source_node_sha256": "7d030e8ccc016d95cda9eabe533e57032531c5abd9458f978de3a688c45ebd56",
+      "field_profile_sha256": "7aaf75e89a491139e016bfa720eefffec0b7c659655db25d1cd13a9e97237d88",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.physical.soil.natural",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "250"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 2,
+        "first_row_identity": "definition:monster:1336:loot:0007",
+        "first_row_sha256": "b2ddbc6b389a97d4dde7359fd78c86d87562a9415da4421b1d16f50fd51dc5e3"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "weapon",
+      "source_label": "fire axe",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3320",
+      "source_node_sha256": "6312557dbf49bac7366925126cb6b331655456df9aa41ce8dee4043707969fb8",
+      "field_profile_sha256": "00c9f780f6e879239cf4c0639d3f9cd768a5b3255a857e78a1e9a688ab22abf9",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.weapon.axe.fire",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "attack",
+          "nested_values": [],
+          "normalized_source_key": "attack",
+          "semantic_family": "weapon_use",
+          "source_key": "attack",
+          "source_value": "27"
+        },
+        {
+          "native_field": "defense",
+          "nested_values": [],
+          "normalized_source_key": "defense",
+          "semantic_family": "protection",
+          "source_key": "defense",
+          "source_value": "16"
+        },
+        {
+          "native_field": "extra_defense",
+          "nested_values": [],
+          "normalized_source_key": "extradef",
+          "semantic_family": "protection",
+          "source_key": "extradef",
+          "source_value": "1"
+        },
+        {
+          "native_field": "modifier.elementfire",
+          "nested_values": [],
+          "normalized_source_key": "elementfire",
+          "semantic_family": "modifier",
+          "source_key": "elementfire",
+          "source_value": "11"
+        },
+        {
+          "native_field": "weapon_type",
+          "nested_values": [],
+          "normalized_source_key": "weapontype",
+          "semantic_family": "weapon_use",
+          "source_key": "weaponType",
+          "source_value": "axe"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "4000"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 36,
+        "first_row_identity": "definition:monster:0072:loot:0011",
+        "first_row_sha256": "c436a23461296cc82183e2ab4078b56b680403b4ebaf48d78e410c3a6e8f87ec"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "weapon",
+      "source_label": "hand axe",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3268",
+      "source_node_sha256": "242953c6602a914269736e904dd1822b9537a4cd32f62fafa94eccf930705b94",
+      "field_profile_sha256": "880a3995c315e61a2d0c199d16a8372fed5bc739c39d009227cd13fcf14cb48c",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.weapon.axe.hand",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "attack",
+          "nested_values": [],
+          "normalized_source_key": "attack",
+          "semantic_family": "weapon_use",
+          "source_key": "attack",
+          "source_value": "10"
+        },
+        {
+          "native_field": "defense",
+          "nested_values": [],
+          "normalized_source_key": "defense",
+          "semantic_family": "protection",
+          "source_key": "defense",
+          "source_value": "5"
+        },
+        {
+          "native_field": "weapon_type",
+          "nested_values": [],
+          "normalized_source_key": "weapontype",
+          "semantic_family": "weapon_use",
+          "source_key": "weaponType",
+          "source_value": "axe"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "1800"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 4,
+        "first_row_identity": "definition:monster:0078:loot:0002",
+        "first_row_sha256": "ff41b49ca45e0fe79c92df752aeb2b153daa533efb889cfcc3001cb8f2b3c460"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "weapon",
+      "source_label": "knight axe",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3318",
+      "source_node_sha256": "5579e21fef40b215aeb5438d6bef0d950cb8098e4015afd852f0be647f710b07",
+      "field_profile_sha256": "9ddbf315c0145fa263a931c85d03d708245953795a41731c0d82b191e874b593",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.weapon.axe.knight",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "attack",
+          "nested_values": [],
+          "normalized_source_key": "attack",
+          "semantic_family": "weapon_use",
+          "source_key": "attack",
+          "source_value": "33"
+        },
+        {
+          "native_field": "defense",
+          "nested_values": [],
+          "normalized_source_key": "defense",
+          "semantic_family": "protection",
+          "source_key": "defense",
+          "source_value": "21"
+        },
+        {
+          "native_field": "extra_defense",
+          "nested_values": [],
+          "normalized_source_key": "extradef",
+          "semantic_family": "protection",
+          "source_key": "extradef",
+          "source_value": "1"
+        },
+        {
+          "native_field": "slot_and_allowed_family_tier",
+          "nested_values": [
+            {
+              "key": "critical hit",
+              "value": "3"
+            },
+            {
+              "key": "elemental damage",
+              "value": "3"
+            },
+            {
+              "key": "life leech",
+              "value": "3"
+            },
+            {
+              "key": "mana leech",
+              "value": "3"
+            },
+            {
+              "key": "skillboost axe",
+              "value": "3"
+            }
+          ],
+          "normalized_source_key": "imbuementslot",
+          "semantic_family": "imbuement",
+          "source_key": "imbuementslot",
+          "source_value": "2"
+        },
+        {
+          "native_field": "weapon_type",
+          "nested_values": [],
+          "normalized_source_key": "weapontype",
+          "semantic_family": "weapon_use",
+          "source_key": "weaponType",
+          "source_value": "axe"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "5900"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 26,
+        "first_row_identity": "definition:monster:0079:loot:0011",
+        "first_row_sha256": "1334d2328d3044a2846a4aedd3e347881145ac419bd5a080830493604fb5ffda"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "weapon",
+      "source_label": "dagger",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3267",
+      "source_node_sha256": "755ce623d930a572152886a8393df358995b608d6e51c9cb75ef5e9a93702710",
+      "field_profile_sha256": "880a3995c315e61a2d0c199d16a8372fed5bc739c39d009227cd13fcf14cb48c",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.weapon.blade.dagger",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "attack",
+          "nested_values": [],
+          "normalized_source_key": "attack",
+          "semantic_family": "weapon_use",
+          "source_key": "attack",
+          "source_value": "8"
+        },
+        {
+          "native_field": "defense",
+          "nested_values": [],
+          "normalized_source_key": "defense",
+          "semantic_family": "protection",
+          "source_key": "defense",
+          "source_value": "6"
+        },
+        {
+          "native_field": "weapon_type",
+          "nested_values": [],
+          "normalized_source_key": "weapontype",
+          "semantic_family": "weapon_use",
+          "source_key": "weaponType",
+          "source_value": "sword"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "950"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 17,
+        "first_row_identity": "definition:monster:0204:loot:0002",
+        "first_row_sha256": "3e2eb848b6d00a952d73984f1df967d22933366e29459d85f532d258d03c9a52"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "weapon",
+      "source_label": "battle hammer",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3305",
+      "source_node_sha256": "d587b5b105cdc67bcfe9d40e92f8423893e68ca5aad52089bf3d78f5921fe65f",
+      "field_profile_sha256": "880a3995c315e61a2d0c199d16a8372fed5bc739c39d009227cd13fcf14cb48c",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.weapon.club.battle_hammer",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "attack",
+          "nested_values": [],
+          "normalized_source_key": "attack",
+          "semantic_family": "weapon_use",
+          "source_key": "attack",
+          "source_value": "24"
+        },
+        {
+          "native_field": "defense",
+          "nested_values": [],
+          "normalized_source_key": "defense",
+          "semantic_family": "protection",
+          "source_key": "defense",
+          "source_value": "14"
+        },
+        {
+          "native_field": "weapon_type",
+          "nested_values": [],
+          "normalized_source_key": "weapontype",
+          "semantic_family": "weapon_use",
+          "source_key": "weaponType",
+          "source_value": "club"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "6800"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 11,
+        "first_row_identity": "definition:monster:0079:loot:0009",
+        "first_row_sha256": "326a5879791aa21855ead457ea4872edcd7816a7d4e574f705f96fdb672bec1c"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "weapon",
+      "source_label": "mace",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3286",
+      "source_node_sha256": "3819ae74118f58055cf925ff0a5616ae4e971c1fccfff96093a18c4ed0514eb8",
+      "field_profile_sha256": "880a3995c315e61a2d0c199d16a8372fed5bc739c39d009227cd13fcf14cb48c",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.weapon.club.mace",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "attack",
+          "nested_values": [],
+          "normalized_source_key": "attack",
+          "semantic_family": "weapon_use",
+          "source_key": "attack",
+          "source_value": "16"
+        },
+        {
+          "native_field": "defense",
+          "nested_values": [],
+          "normalized_source_key": "defense",
+          "semantic_family": "protection",
+          "source_key": "defense",
+          "source_value": "11"
+        },
+        {
+          "native_field": "weapon_type",
+          "nested_values": [],
+          "normalized_source_key": "weapontype",
+          "semantic_family": "weapon_use",
+          "source_key": "weaponType",
+          "source_value": "club"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "3800"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 32,
+        "first_row_identity": "definition:monster:0005:loot:0003",
+        "first_row_sha256": "7eb540e4bf16c6b1e41650ba0587746847d029312115c5292cc996736f433a48"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "weapon",
+      "source_label": "skull staff",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3324",
+      "source_node_sha256": "14e4fa7532a9afbc2b8ef04a7176c5f740cd14c4ed4143baa4cc2140a0120b5c",
+      "field_profile_sha256": "73f000129a1cc9400b4947bb8fb4e74f9ab5d1b98654122b99b013e11680a5a4",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.weapon.club.skull_staff",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "attack",
+          "nested_values": [],
+          "normalized_source_key": "attack",
+          "semantic_family": "weapon_use",
+          "source_key": "attack",
+          "source_value": "36"
+        },
+        {
+          "native_field": "defense",
+          "nested_values": [],
+          "normalized_source_key": "defense",
+          "semantic_family": "protection",
+          "source_key": "defense",
+          "source_value": "12"
+        },
+        {
+          "native_field": "extra_defense",
+          "nested_values": [],
+          "normalized_source_key": "extradef",
+          "semantic_family": "protection",
+          "source_key": "extradef",
+          "source_value": "1"
+        },
+        {
+          "native_field": "slot_and_allowed_family_tier",
+          "nested_values": [
+            {
+              "key": "critical hit",
+              "value": "3"
+            },
+            {
+              "key": "elemental damage",
+              "value": "3"
+            },
+            {
+              "key": "life leech",
+              "value": "3"
+            },
+            {
+              "key": "mana leech",
+              "value": "3"
+            },
+            {
+              "key": "skillboost club",
+              "value": "3"
+            }
+          ],
+          "normalized_source_key": "imbuementslot",
+          "semantic_family": "imbuement",
+          "source_key": "imbuementslot",
+          "source_value": "2"
+        },
+        {
+          "native_field": "weapon_type",
+          "nested_values": [],
+          "normalized_source_key": "weapontype",
+          "semantic_family": "weapon_use",
+          "source_key": "weaponType",
+          "source_value": "club"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "1700"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 55,
+        "first_row_identity": "definition:monster:0045:loot:0003",
+        "first_row_sha256": "247e433914a383def85c34f258edd524d9a341058cd5abef4e0bd7fc32086efb"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "weapon",
+      "source_label": "bow",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3350",
+      "source_node_sha256": "04cf9514fa182b56f2240f557444b46b9ec71028283174caec102f333b18e076",
+      "field_profile_sha256": "3f213c9d451c38cdd984ae9e3f3790cafd835a7ab7e3aad0fa7b9d1f3e99ba12",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.weapon.ranged.bow",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "ammo_type",
+          "nested_values": [],
+          "normalized_source_key": "ammotype",
+          "semantic_family": "weapon_use",
+          "source_key": "ammotype",
+          "source_value": "arrow"
+        },
+        {
+          "native_field": "range",
+          "nested_values": [],
+          "normalized_source_key": "range",
+          "semantic_family": "weapon_use",
+          "source_key": "range",
+          "source_value": "6"
+        },
+        {
+          "native_field": "slot_claim",
+          "nested_values": [],
+          "normalized_source_key": "slottype",
+          "semantic_family": "equipment",
+          "source_key": "slotType",
+          "source_value": "two-handed"
+        },
+        {
+          "native_field": "weapon_type",
+          "nested_values": [],
+          "normalized_source_key": "weapontype",
+          "semantic_family": "weapon_use",
+          "source_key": "weaponType",
+          "source_value": "distance"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "3100"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 12,
+        "first_row_identity": "definition:monster:0010:loot:0007",
+        "first_row_sha256": "cb07f8823ddf112e696b901433860e694ca108f12b7ae595beac4a44d5b32082"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "weapon",
+      "source_label": "crossbow",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3349",
+      "source_node_sha256": "f2415dbc73fdb717f07636e0806686bf7ce7f3aba82de720b917742993a8f760",
+      "field_profile_sha256": "225f761f198c6bdfd74a6cf483861e276dec4e4d3bd8feebdf017160318250cf",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.weapon.ranged.crossbow",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "ammo_type",
+          "nested_values": [],
+          "normalized_source_key": "ammotype",
+          "semantic_family": "weapon_use",
+          "source_key": "ammotype",
+          "source_value": "bolt"
+        },
+        {
+          "native_field": "range",
+          "nested_values": [],
+          "normalized_source_key": "range",
+          "semantic_family": "weapon_use",
+          "source_key": "range",
+          "source_value": "5"
+        },
+        {
+          "native_field": "slot_and_allowed_family_tier",
+          "nested_values": [
+            {
+              "key": "critical hit",
+              "value": "3"
+            },
+            {
+              "key": "elemental damage",
+              "value": "3"
+            },
+            {
+              "key": "life leech",
+              "value": "3"
+            },
+            {
+              "key": "mana leech",
+              "value": "3"
+            },
+            {
+              "key": "skillboost distance",
+              "value": "3"
+            }
+          ],
+          "normalized_source_key": "imbuementslot",
+          "semantic_family": "imbuement",
+          "source_key": "imbuementslot",
+          "source_value": "3"
+        },
+        {
+          "native_field": "slot_claim",
+          "nested_values": [],
+          "normalized_source_key": "slottype",
+          "semantic_family": "equipment",
+          "source_key": "slotType",
+          "source_value": "two-handed"
+        },
+        {
+          "native_field": "weapon_type",
+          "nested_values": [],
+          "normalized_source_key": "weapontype",
+          "semantic_family": "weapon_use",
+          "source_key": "weaponType",
+          "source_value": "distance"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "4000"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 16,
+        "first_row_identity": "definition:monster:0085:loot:0008",
+        "first_row_sha256": "5dffe7771a8501ca7f43a6d7ced9532cae6b56865a104cd137416fa67231dc82"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "weapon",
+      "source_label": "bright sword",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3295",
+      "source_node_sha256": "8e7bfd90afcc484cdd01f54ea36440308b428bd258ba0eb166143c663068f5a3",
+      "field_profile_sha256": "73f000129a1cc9400b4947bb8fb4e74f9ab5d1b98654122b99b013e11680a5a4",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.weapon.sword.bright",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "attack",
+          "nested_values": [],
+          "normalized_source_key": "attack",
+          "semantic_family": "weapon_use",
+          "source_key": "attack",
+          "source_value": "36"
+        },
+        {
+          "native_field": "defense",
+          "nested_values": [],
+          "normalized_source_key": "defense",
+          "semantic_family": "protection",
+          "source_key": "defense",
+          "source_value": "30"
+        },
+        {
+          "native_field": "extra_defense",
+          "nested_values": [],
+          "normalized_source_key": "extradef",
+          "semantic_family": "protection",
+          "source_key": "extradef",
+          "source_value": "1"
+        },
+        {
+          "native_field": "slot_and_allowed_family_tier",
+          "nested_values": [
+            {
+              "key": "critical hit",
+              "value": "3"
+            },
+            {
+              "key": "elemental damage",
+              "value": "3"
+            },
+            {
+              "key": "life leech",
+              "value": "3"
+            },
+            {
+              "key": "mana leech",
+              "value": "3"
+            },
+            {
+              "key": "skillboost sword",
+              "value": "3"
+            }
+          ],
+          "normalized_source_key": "imbuementslot",
+          "semantic_family": "imbuement",
+          "source_key": "imbuementslot",
+          "source_value": "2"
+        },
+        {
+          "native_field": "weapon_type",
+          "nested_values": [],
+          "normalized_source_key": "weapontype",
+          "semantic_family": "weapon_use",
+          "source_key": "weaponType",
+          "source_value": "sword"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "2900"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 3,
+        "first_row_identity": "definition:monster:0162:loot:0005",
+        "first_row_sha256": "e5df488942646741a190cc53c95dffa2411162d34252529397e65d1cc57c3395"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "weapon",
+      "source_label": "fire sword",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3280",
+      "source_node_sha256": "9a0c6c7b8b82d0c1ddb02d70da8a63db9aa25f5bf1063a157b3a491ce72e55fa",
+      "field_profile_sha256": "00c9f780f6e879239cf4c0639d3f9cd768a5b3255a857e78a1e9a688ab22abf9",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.weapon.sword.fire",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "attack",
+          "nested_values": [],
+          "normalized_source_key": "attack",
+          "semantic_family": "weapon_use",
+          "source_key": "attack",
+          "source_value": "24"
+        },
+        {
+          "native_field": "defense",
+          "nested_values": [],
+          "normalized_source_key": "defense",
+          "semantic_family": "protection",
+          "source_key": "defense",
+          "source_value": "20"
+        },
+        {
+          "native_field": "extra_defense",
+          "nested_values": [],
+          "normalized_source_key": "extradef",
+          "semantic_family": "protection",
+          "source_key": "extradef",
+          "source_value": "1"
+        },
+        {
+          "native_field": "modifier.elementfire",
+          "nested_values": [],
+          "normalized_source_key": "elementfire",
+          "semantic_family": "modifier",
+          "source_key": "elementfire",
+          "source_value": "11"
+        },
+        {
+          "native_field": "weapon_type",
+          "nested_values": [],
+          "normalized_source_key": "weapontype",
+          "semantic_family": "weapon_use",
+          "source_key": "weaponType",
+          "source_value": "sword"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "2300"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 33,
+        "first_row_identity": "definition:monster:0182:loot:0005",
+        "first_row_sha256": "d09e4a9626663e866112e053997b1a93375f810c2bca18d90e09d402f45fc777"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    },
+    {
+      "representative_class": "weapon",
+      "source_label": "snakebite rod",
+      "authored_stack_class": "NonStackable",
+      "source_identity": "crystal:item:3066",
+      "source_node_sha256": "9345fbf7ad0a54f912e097136375a957e9291365355836eb2952bf8d600078e1",
+      "field_profile_sha256": "f4fc7ac67bb34b3b6c222cb738286258efb6113cf49da3d412ff1ab211617452",
+      "exact_source_provenance": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "byte_length": 3819874
+      },
+      "native_identity": {
+        "family": "Item",
+        "key": "oteryn:item.weapon.wand.snakebite_rod",
+        "revision": "definition-r1",
+        "disposition": "LOCAL_NON_PRODUCTION_BINDING_CANDIDATE",
+        "authorship": "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED"
+      },
+      "authored_minimum_shape": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "source_truth": false
+      },
+      "source_observations": [
+        {
+          "native_field": "range",
+          "nested_values": [],
+          "normalized_source_key": "range",
+          "semantic_family": "weapon_use",
+          "source_key": "range",
+          "source_value": "3"
+        },
+        {
+          "native_field": "weapon_type",
+          "nested_values": [],
+          "normalized_source_key": "weapontype",
+          "semantic_family": "weapon_use",
+          "source_key": "weaponType",
+          "source_value": "wand"
+        },
+        {
+          "native_field": "weight",
+          "nested_values": [],
+          "normalized_source_key": "weight",
+          "semantic_family": "physical",
+          "source_key": "weight",
+          "source_value": "1900"
+        }
+      ],
+      "b3_exact_crosswalk": {
+        "resolution_reason": "EXACT_CANONICAL_SOURCE_NODE_CROSSWALK",
+        "row_count": 16,
+        "first_row_identity": "definition:monster:0076:loot:0024",
+        "first_row_sha256": "a9c6048568fd56081676a8ce2e7fdc27366907d895c101c7f719a6a54737bd6b"
+      },
+      "disposition": {
+        "unresolved": false,
+        "ambiguous": false,
+        "conflict": false,
+        "unsupported_source_semantics": "PRESERVED_AS_PROVENANCE_AND_CW3_HANDOFF"
+      }
+    }
+  ],
+  "overlay_projection": {
+    "b1_native_resolved": 64,
+    "b1_native_unresolved": 38093,
+    "b3_selected_exact_crosswalk_rows": 1930,
+    "b3_rows_ready_for_native_resolution": 1930,
+    "b3_rows_remaining_unresolved": 15156,
+    "note": "CW2 product projection only; B3 and runtime content are not mutated."
+  },
+  "unresolved_ambiguous_conflict_report": {
+    "selected_batch": {
+      "unresolved": 0,
+      "ambiguous": 0,
+      "conflict": 0
+    },
+    "explicit_exclusion": [
+      {
+        "source_identity": "crystal:item:3031",
+        "source_label": "gold coin",
+        "reason": "EXACT_SOURCE_NODE_MISMATCH",
+        "disposition": "EXCLUDED_FAIL_CLOSED"
+      }
+    ],
+    "unsupported": "All source observations outside the current minimal ReferenceItemDefinition remain provenance-only and are listed per binding."
+  },
+  "reference_item_definition_gaps": [
+    "presentation_or_appearance_binding",
+    "semantic_item_category_beyond_Physical",
+    "stack_maximum",
+    "charges_and_charge_bounds",
+    "durability",
+    "decay_or_timing_mode",
+    "container_capacity_containment_policy_and_nesting_bounds",
+    "equipment_patterns_complete_slot_claims_and_requirements",
+    "weapon_and_use_semantics",
+    "protection_modifiers_and_resistances",
+    "binding_and_transfer_restrictions",
+    "upgrade_imbuement_and_proficiency_semantics",
+    "typed_weight_and_unit",
+    "light_readable_fluid_field_attachment_wrap_rotate_interaction_semantics",
+    "independent_materialization_pickup_and_destination_policy"
+  ],
+  "deterministic_reimport": {
+    "evidence_gate": "exact byte length plus SHA-256 of protected B1 catalogue",
+    "mapping": "compile-time reviewed source identity to native identity table",
+    "ordering": [
+      "native records by ItemTypeKey",
+      "candidates by source identity",
+      "reimport states by native identity and field path"
+    ],
+    "conflict_policy": "UNKNOWN_AMBIGUOUS_CONFLICT_UNSUPPORTED_FAIL_CLOSED",
+    "identity_generation_from_source_values": "FORBIDDEN"
+  },
+  "cw3_handoff": {
+    "shared_model_changed_in_cw2": false,
+    "minimum_semantic_deltas": [
+      "successor bounded multi-item Reference content/artifact profile",
+      "typed presentation reference",
+      "stack capability with explicit maximum where evidenced and authored",
+      "charge capability",
+      "container capability",
+      "equipment and equip-pattern capability",
+      "typed weight with explicit unit",
+      "separate materialization pickup and destination policies"
+    ],
+    "proposed_writable_paths": [
+      "apps/game-server/src/content/reference_playable.rs",
+      "apps/game-server/src/content/project.rs",
+      "apps/game-server/src/content/reference_artifact.rs"
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "DAILYREWARD0-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_DAILY_REWARD0_DAILY_REWARD_SYSTEM_DECISION_2026-10-03.md",
+  "resource": "Daily reward streak",
+  "unit": "streak",
+  "hard_maximum": 100000,
+  "configurable_range": {
+    "minimum": 100000,
+    "maximum": 100000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked before allocation or value writes; the native Inbox owner independently enforces its twenty-output bound.",
+  "client_visible": true,
+  "boundary_tests": [
+    "daily_reward_postgres_schema_constraints_privileges_and_dst",
+    "daily_reward_wall_and_result_follow_the_reserved_proto_and_bounds"
+  ],
+  "consumers": [
+    "crates/gameplay/progression/src/daily_reward.rs",
+    "crates/protocol-oteryn/src/daily_reward.rs"
+  ],
+  "notes": "DAILY-1 basic server path; Free lane until PREM-3."
+}

@@ -1,0 +1,10 @@
+{
+  "id": 445,
+  "name": "TEAM_FINDER_MEMBER_ACTION",
+  "owner_decision": "S14b",
+  "capability": 232,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/team-finder-members-v1.md#member-action",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/team-finder-members-v1.md#action-reply",
+  "max_payload_bytes": 48,
+  "max_result_payload_bytes": 0
+}

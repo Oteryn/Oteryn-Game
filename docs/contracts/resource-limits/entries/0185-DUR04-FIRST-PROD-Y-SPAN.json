@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-FIRST-PROD-Y-SPAN",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+  "resource": "Inclusive y-axis span of explicit first-profile cells",
+  "unit": "cell positions",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Validate min/max coordinates using checked span arithmetic; do not allocate a dense grid from coordinates.",
+  "client_visible": false,
+  "boundary_tests": [
+    "span 32 accepted",
+    "span 33 rejected",
+    "coordinate span arithmetic overflow rejected"
+  ]
+}

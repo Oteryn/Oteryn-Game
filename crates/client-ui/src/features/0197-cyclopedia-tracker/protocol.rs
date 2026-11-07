@@ -1,0 +1,72 @@
+use super::CyclopediaTrackerPanel;
+use oteryn_client_runtime::{
+    CommandStatus,
+    cyclopedia_tracker::{self, TrackerAction, TrackerRequest},
+    raw_feature::{FeatureCommand, GatedCommandResult},
+};
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Intent {
+    Read,
+    Add,
+    Remove,
+}
+pub fn request(panel: &mut CyclopediaTrackerPanel, intent: Intent) -> Option<FeatureCommand> {
+    if !panel.selected {
+        panel.feedback = Some("Feature unavailable in this session");
+        return None;
+    }
+    if panel.pending {
+        panel.feedback = Some("Waiting for the server");
+        return None;
+    }
+    let typed = match intent {
+        Intent::Read => TrackerRequest::Read,
+        Intent::Add => TrackerRequest::Change {
+            action: TrackerAction::Add,
+            creature_key: panel.creature_key.clone(),
+        },
+        Intent::Remove => TrackerRequest::Change {
+            action: TrackerAction::Remove,
+            creature_key: panel.creature_key.clone(),
+        },
+    };
+    let Some(payload) = cyclopedia_tracker::encode_request(&typed) else {
+        panel.feedback = Some("Enter a valid creature id");
+        return None;
+    };
+    panel.pending = true;
+    panel.feedback = None;
+    Some(FeatureCommand {
+        capability: 197,
+        kind: if panel.boss { 384 } else { 383 },
+        payload,
+    })
+}
+pub fn apply_result(panel: &mut CyclopediaTrackerPanel, result: &GatedCommandResult) -> bool {
+    panel.pending = false;
+    if !matches!(
+        result.status,
+        CommandStatus::Accepted | CommandStatus::DuplicateReplay
+    ) {
+        panel.feedback = Some("The server refused the tracker action");
+        return false;
+    }
+    apply_snapshot(panel, &result.payload)
+}
+pub fn apply_snapshot(panel: &mut CyclopediaTrackerPanel, payload: &[u8]) -> bool {
+    let snapshot = cyclopedia_tracker::decode_snapshot(payload).or_else(|| {
+        cyclopedia_tracker::decode_domain_snapshot(payload)
+            .map(|(bestiary, bosstiary)| if panel.boss { bosstiary } else { bestiary })
+    });
+    match snapshot {
+        Some(value) => {
+            panel.snapshot = Some(value);
+            panel.feedback = None;
+            true
+        }
+        None => {
+            panel.feedback = Some("The server returned an invalid tracker snapshot");
+            false
+        }
+    }
+}

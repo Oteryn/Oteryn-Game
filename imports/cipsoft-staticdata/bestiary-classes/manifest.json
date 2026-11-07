@@ -1,0 +1,22 @@
+{
+  "authority": "SOURCE_OBSERVATIONS_ONLY; no Oteryn ProductionKeys or gameplay promotion",
+  "client_version": "15.30",
+  "family": "BestiaryClass",
+  "files": [
+    {
+      "path": "bestiary-classes-00000-00020.json",
+      "records": 21,
+      "sha256": "134599f8b4f2cbd18038040cf275de0397410b825d285bbde35dbb3394b9346a"
+    }
+  ],
+  "identity_namespace": "cipsoft/staticdata/bestiary_class_id",
+  "inputs": {
+    "staticdata": {
+      "file": "content/assets/files/staticdata-62d3f5f761a4c8cab02c89bd1a351770aca3504a74f1b34f457f0a0451dcd128.dat",
+      "sha256": "62d3f5f761a4c8cab02c89bd1a351770aca3504a74f1b34f457f0a0451dcd128"
+    }
+  },
+  "record_count": 21,
+  "schema": "OTERYN_CIPSOFT_STATICDATA_BESTIARYCLASS_SOURCE_MANIFEST/v1",
+  "source": "CIPSOFT_CLIENT_STATICDATA"
+}

@@ -1,0 +1,22 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.quest-item",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Quest Item",
+  "family_profile": "quest_item",
+  "delivery_task_eligible": false,
+  "taxonomy": {
+    "item_class": "quest_item",
+    "primary": "quest-item",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  }
+}

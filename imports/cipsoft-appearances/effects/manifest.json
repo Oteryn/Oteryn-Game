@@ -1,0 +1,36 @@
+{
+  "authority": "SOURCE_OBSERVATIONS_ONLY; no Oteryn ProductionKeys or gameplay promotion",
+  "client_version": "15.30",
+  "excluded_top_level": {
+    "field_1_objects": 43516,
+    "field_5": {
+      "count": 1,
+      "note": "top-level field 5, not staged",
+      "sha256": "481b1193cc4d97da27c24de67f63cb9fd191e5faa0eb047efe757c878cf79576"
+    }
+  },
+  "family": "Effect",
+  "files": [
+    {
+      "path": "effects-00000-00149.json",
+      "records": 150,
+      "sha256": "8fd0ce544965d3c322d0717e06229aff57772c583f249798dcaf1809b61a8ada"
+    },
+    {
+      "path": "effects-00150-00242.json",
+      "records": 93,
+      "sha256": "a321d87413733653101a0851353f60c116caa635867b9becb1cf4c2d40566e1e"
+    }
+  ],
+  "identity_namespace": "cipsoft/appearance-effects",
+  "inputs": {
+    "appearances": {
+      "file": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+      "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+    }
+  },
+  "record_count": 243,
+  "schema": "OTERYN_CIPSOFT_APPEARANCE_EFFECT_SOURCE_MANIFEST/v1",
+  "source": "CIPSOFT_CLIENT_ASSETS",
+  "top_level_field": 3
+}

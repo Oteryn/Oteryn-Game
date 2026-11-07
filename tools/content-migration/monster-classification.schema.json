@@ -1,0 +1,546 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "OTERYN_MONSTER_CLASSIFICATION/v1"
+    },
+    "authoring_only": {
+      "const": true
+    },
+    "population_index_sha256": {
+      "$ref": "#/$defs/sha"
+    },
+    "classification_evidence_sha256": {
+      "$ref": "#/$defs/sha"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entry"
+      },
+      "minItems": 1
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "population": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "roles": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "contexts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "mitigation": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "required": [
+        "population",
+        "roles",
+        "contexts",
+        "mitigation"
+      ]
+    },
+    "encounter_input_sha256": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/sha"
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "authoring_only",
+    "population_index_sha256",
+    "classification_evidence_sha256",
+    "entries",
+    "counts",
+    "encounter_input_sha256"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:monster-classification:authoring:1",
+  "$defs": {
+    "sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "key",
+        "revision"
+      ]
+    },
+    "creatureRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Creature"
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "sourceFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "blob_sha1": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      },
+      "required": [
+        "path",
+        "repository",
+        "revision"
+      ]
+    },
+    "gitSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "git"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "blob_sha1": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "verified_blob_sha1": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      },
+      "required": [
+        "kind",
+        "path",
+        "repository",
+        "revision"
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pointer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {},
+        "qualification": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minItems": 0
+        },
+        "owner_identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "matching_definitions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/gitSource"
+          },
+          "minItems": 0
+        },
+        "spawn_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "blob_sha1": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      },
+      "required": [
+        "kind",
+        "source"
+      ]
+    },
+    "role": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "creature",
+            "boss",
+            "summon",
+            "familiar",
+            "trainer",
+            "mechanic_actor",
+            "unknown"
+          ]
+        },
+        "confidence": {
+          "enum": [
+            "confirmed",
+            "inferred",
+            "unknown"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "role",
+        "confidence",
+        "evidence"
+      ]
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "context": {
+          "enum": [
+            "world",
+            "quest",
+            "raid",
+            "event",
+            "dawnport",
+            "historical",
+            "encounter",
+            "unknown"
+          ]
+        },
+        "confidence": {
+          "enum": [
+            "confirmed",
+            "inferred",
+            "unknown"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "context",
+        "confidence",
+        "evidence"
+      ]
+    },
+    "relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "relation": {
+          "enum": [
+            "transforms_into",
+            "transforms_from",
+            "phase_of",
+            "directional_variant_of",
+            "historical_variant_of"
+          ]
+        },
+        "related_identity": {
+          "$ref": "#/$defs/creatureRef"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "relation",
+        "related_identity",
+        "evidence"
+      ]
+    },
+    "membership": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "encounter": {
+          "$ref": "#/$defs/identity"
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "encounter",
+        "role",
+        "evidence"
+      ]
+    },
+    "mitigation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "present",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          },
+          "minItems": 1
+        },
+        "value": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "numerator": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "denominator": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "numerator",
+            "denominator"
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "reason",
+        "evidence"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "present"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "value"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "value"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "monster": {
+          "type": "string",
+          "minLength": 1
+        },
+        "identity": {
+          "$ref": "#/$defs/creatureRef"
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bundle_sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/role"
+          },
+          "minItems": 1
+        },
+        "contexts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/context"
+          },
+          "minItems": 0
+        },
+        "source_files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sourceFile"
+          },
+          "minItems": 0
+        },
+        "encounter_memberships": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/membership"
+          },
+          "minItems": 0
+        },
+        "variant_relations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/relation"
+          },
+          "minItems": 0
+        },
+        "encyclopedia": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "bestiary": {
+              "type": "boolean"
+            },
+            "bosstiary": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "bestiary",
+            "bosstiary"
+          ]
+        },
+        "mitigation": {
+          "$ref": "#/$defs/mitigation"
+        }
+      },
+      "required": [
+        "monster",
+        "identity",
+        "display_name",
+        "bundle_sha256",
+        "roles",
+        "contexts",
+        "source_files",
+        "encounter_memberships",
+        "variant_relations",
+        "encyclopedia",
+        "mitigation"
+      ]
+    }
+  },
+  "description": "Source-bound authoring catalogue. Nonexclusive roles and contexts do not select combat values or imply mitigation absence; runtime promotion is a separate contract decision."
+}

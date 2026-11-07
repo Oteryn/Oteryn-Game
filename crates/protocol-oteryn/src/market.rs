@@ -1,0 +1,316 @@
+//! MARKET_V1: bounded queries and settlement intents share command 80.
+use crate::charm_wire::{push_message_field, push_varint_field, read_bytes, read_varint, set_once};
+use crate::world_interaction::WorldInteractionWireError as Error;
+
+pub const CAPABILITY_MARKET_V1: u32 = 63;
+pub const COMMAND_TYPE_MARKET: u32 = 80;
+pub const STATE_DOMAIN_MARKET: u32 = 28;
+
+/// Actions: 1 wares, 2 book, 3 own offers, 4 history, 5 buy,
+/// 6 sell, 7 cancel, 8 accept. Authority, Account and World are never wire fields.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MarketRequest {
+    pub action: u8,
+    pub definition: u32,
+    pub offer: [u8; 16],
+    pub amount: u32,
+    pub price: u64,
+    pub anonymous: bool,
+    pub page: u32,
+}
+
+pub fn encode_request(r: MarketRequest) -> Result<Vec<u8>, Error> {
+    let zero = [0; 16];
+    let valid = match r.action {
+        1 | 3 | 4 => {
+            r.definition == 0 && r.offer == zero && r.amount == 0 && r.price == 0 && !r.anonymous
+        }
+        2 => r.definition > 0 && r.offer == zero && r.amount == 0 && r.price == 0 && !r.anonymous,
+        5 | 6 => {
+            r.definition > 0
+                && r.offer == zero
+                && (1..=64_000).contains(&r.amount)
+                && r.price > 0
+                && u128::from(r.price) * u128::from(r.amount) <= 999_999_999_999
+                && r.page == 0
+        }
+        7 | 8 => {
+            r.definition == 0
+                && r.offer[6] >> 4 == 7
+                && r.offer[8] >> 6 == 2
+                && r.price == 0
+                && !r.anonymous
+                && r.page == 0
+                && if r.action == 7 {
+                    r.amount == 0
+                } else {
+                    (1..=64_000).contains(&r.amount)
+                }
+        }
+        _ => false,
+    };
+    // Crystal iomarket.hpp:34 allows 1,000 own offers per side: 2,000 rows / 32 per page.
+    if !valid
+        || r.page > 100_000
+        || (r.action == 3 && r.page > 62)
+        || (r.action == 4 && r.page > 18)
+    {
+        return Err(Error::Malformed);
+    }
+    let mut out = Vec::new();
+    for (field, n) in [
+        (1, u64::from(r.action)),
+        (2, u64::from(r.definition)),
+        (4, u64::from(r.amount)),
+        (5, r.price),
+        (6, u64::from(r.anonymous)),
+        (7, u64::from(r.page)),
+    ] {
+        push_varint_field(&mut out, field, n);
+    }
+    if r.offer != zero {
+        push_message_field(&mut out, 3, &r.offer);
+    }
+    Ok(out)
+}
+
+pub fn decode_request(bytes: &[u8]) -> Result<MarketRequest, Error> {
+    if bytes.len() > 96 {
+        return Err(Error::LimitExceeded);
+    }
+    let mut fields = [None; 7];
+    let mut offer = None;
+    let mut at = 0;
+    while at < bytes.len() {
+        let tag = read_varint(bytes, &mut at)?;
+        let field = tag >> 3;
+        if field == 3 && tag & 7 == 2 {
+            let value: [u8; 16] = read_bytes(bytes, &mut at)?
+                .try_into()
+                .map_err(|_| Error::Malformed)?;
+            set_once(&mut offer, value)?;
+        } else if (1..=7).contains(&field) && field != 3 && tag & 7 == 0 {
+            set_once(
+                &mut fields[field as usize - 1],
+                read_varint(bytes, &mut at)?,
+            )?;
+        } else {
+            return Err(Error::Malformed);
+        }
+    }
+    let r = MarketRequest {
+        action: u8::try_from(fields[0].ok_or(Error::Malformed)?).map_err(|_| Error::Malformed)?,
+        definition: u32::try_from(fields[1].unwrap_or(0)).map_err(|_| Error::Malformed)?,
+        offer: offer.unwrap_or([0; 16]),
+        amount: u32::try_from(fields[3].unwrap_or(0)).map_err(|_| Error::Malformed)?,
+        price: fields[4].unwrap_or(0),
+        anonymous: match fields[5].unwrap_or(0) {
+            0 => false,
+            1 => true,
+            _ => return Err(Error::Malformed),
+        },
+        page: u32::try_from(fields[6].unwrap_or(0)).map_err(|_| Error::Malformed)?,
+    };
+    encode_request(r)?;
+    Ok(r)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MarketRow {
+    pub offer: [u8; 16],
+    pub definition: u32,
+    pub side: u8,
+    pub amount: u32,
+    pub price: u64,
+    pub state: u8,
+    pub anonymous: bool,
+}
+
+/// Codes: 1 OK, 2 funds, 3 items, 4 Inbox full, 5 offer limit, 6 gone,
+/// 7 same Account, 8 touched-item limit, 9 rejected, 10 balance limit,
+/// 11 no locker, 12 not Premium, 13 junior, 14 not marketable, 15 book busy.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MarketReply {
+    pub action: u8,
+    pub code: u8,
+    pub offer: [u8; 16],
+    pub rows: Vec<MarketRow>,
+}
+pub fn encode_reply(r: &MarketReply) -> Result<Vec<u8>, Error> {
+    if !(1..=15).contains(&r.code) || r.action > 8 || r.rows.len() > 32 {
+        return Err(Error::LimitExceeded);
+    }
+    let mut out = Vec::new();
+    push_varint_field(&mut out, 1, u64::from(r.code));
+    if r.offer != [0; 16] {
+        push_message_field(&mut out, 2, &r.offer);
+    }
+    push_varint_field(&mut out, 4, u64::from(r.action));
+    for row in &r.rows {
+        let mut bytes = Vec::new();
+        push_message_field(&mut bytes, 1, &row.offer);
+        for (field, n) in [
+            (2, u64::from(row.definition)),
+            (3, u64::from(row.side)),
+            (4, u64::from(row.amount)),
+            (5, row.price),
+            (6, u64::from(row.state)),
+            (7, u64::from(row.anonymous)),
+        ] {
+            push_varint_field(&mut bytes, field, n);
+        }
+        push_message_field(&mut out, 3, &bytes);
+    }
+    Ok(out)
+}
+
+pub fn decode_reply(bytes: &[u8]) -> Result<MarketReply, Error> {
+    if bytes.len() > 4096 {
+        return Err(Error::LimitExceeded);
+    }
+    let mut code = None;
+    let mut offer = None;
+    let mut action = None;
+    let mut rows = Vec::new();
+    let mut at = 0;
+    while at < bytes.len() {
+        let tag = read_varint(bytes, &mut at)?;
+        match (tag >> 3, tag & 7) {
+            (1, 0) => set_once(&mut code, read_varint(bytes, &mut at)?)?,
+            (2, 2) => set_once(
+                &mut offer,
+                read_bytes(bytes, &mut at)?
+                    .try_into()
+                    .map_err(|_| Error::Malformed)?,
+            )?,
+            (3, 2) => {
+                if rows.len() == 32 {
+                    return Err(Error::LimitExceeded);
+                }
+                rows.push(decode_row(read_bytes(bytes, &mut at)?)?);
+            }
+            (4, 0) => set_once(&mut action, read_varint(bytes, &mut at)?)?,
+            _ => return Err(Error::Malformed),
+        }
+    }
+    let reply = MarketReply {
+        action: u8::try_from(action.ok_or(Error::Malformed)?).map_err(|_| Error::Malformed)?,
+        code: u8::try_from(code.ok_or(Error::Malformed)?).map_err(|_| Error::Malformed)?,
+        offer: offer.unwrap_or([0; 16]),
+        rows,
+    };
+    encode_reply(&reply)?;
+    Ok(reply)
+}
+
+fn decode_row(bytes: &[u8]) -> Result<MarketRow, Error> {
+    let mut values = [None; 6];
+    let mut offer = None;
+    let mut at = 0;
+    while at < bytes.len() {
+        let tag = read_varint(bytes, &mut at)?;
+        let field = tag >> 3;
+        if field == 1 && tag & 7 == 2 {
+            set_once(
+                &mut offer,
+                read_bytes(bytes, &mut at)?
+                    .try_into()
+                    .map_err(|_| Error::Malformed)?,
+            )?;
+        } else if (2..=7).contains(&field) && tag & 7 == 0 {
+            set_once(
+                &mut values[field as usize - 2],
+                read_varint(bytes, &mut at)?,
+            )?;
+        } else {
+            return Err(Error::Malformed);
+        }
+    }
+    let boolean = match values[5].unwrap_or(0) {
+        0 => false,
+        1 => true,
+        _ => return Err(Error::Malformed),
+    };
+    Ok(MarketRow {
+        offer: offer.ok_or(Error::Malformed)?,
+        definition: u32::try_from(values[0].unwrap_or(0)).map_err(|_| Error::Malformed)?,
+        side: u8::try_from(values[1].unwrap_or(0)).map_err(|_| Error::Malformed)?,
+        amount: u32::try_from(values[2].unwrap_or(0)).map_err(|_| Error::Malformed)?,
+        price: values[3].unwrap_or(0),
+        state: u8::try_from(values[4].unwrap_or(0)).map_err(|_| Error::Malformed)?,
+        anonymous: boolean,
+    })
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn market_reply_round_trips_through_client_decoder() -> Result<(), Error> {
+        let reply = MarketReply {
+            action: 2,
+            code: 1,
+            offer: [7; 16],
+            rows: vec![MarketRow {
+                offer: [8; 16],
+                definition: 42,
+                side: 1,
+                amount: 3,
+                price: 99,
+                state: 2,
+                anonymous: true,
+            }],
+        };
+        assert_eq!(decode_reply(&encode_reply(&reply)?)?, reply);
+        Ok(())
+    }
+    #[test]
+    fn market_wire_own_projection_reaches_one_thousand_offers_per_side() -> Result<(), Error> {
+        let request = MarketRequest {
+            action: 3,
+            definition: 0,
+            offer: [0; 16],
+            amount: 0,
+            price: 0,
+            anonymous: false,
+            page: 62,
+        };
+        assert_eq!(decode_request(&encode_request(request)?)?, request);
+        assert!(
+            encode_request(MarketRequest {
+                page: 63,
+                ..request
+            })
+            .is_err()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn market_wire_rejects_ambiguous_or_unbounded_requests() -> Result<(), Error> {
+        let r = MarketRequest {
+            action: 6,
+            definition: 1,
+            offer: [0; 16],
+            amount: 100,
+            price: 25,
+            anonymous: true,
+            page: 0,
+        };
+        assert_eq!(decode_request(&encode_request(r)?)?, r);
+        let mut bytes = encode_request(r)?;
+        bytes.extend([8, 6]);
+        assert!(decode_request(&bytes).is_err());
+        for invalid in [
+            MarketRequest { action: 0, ..r },
+            MarketRequest { amount: 0, ..r },
+            MarketRequest {
+                price: u64::MAX,
+                ..r
+            },
+            MarketRequest { page: 1, ..r },
+        ] {
+            assert!(encode_request(invalid).is_err());
+        }
+        Ok(())
+    }
+}

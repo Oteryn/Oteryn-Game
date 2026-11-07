@@ -1,0 +1,1083 @@
+{
+  "identity": {
+    "key": "canary:encounter/lloyd",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Forgotten Knowledge: Lloyd",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "lloyd",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/lloyd",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "cosmic_energy_prism_a_invu",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/cosmic_energy_prism_a_invu",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "cosmic_energy_prism_a",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/cosmic_energy_prism_a",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "cosmic_energy_prism_b_invu",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/cosmic_energy_prism_b_invu",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "cosmic_energy_prism_b",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/cosmic_energy_prism_b",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "cosmic_energy_prism_c_invu",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/cosmic_energy_prism_c_invu",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "cosmic_energy_prism_c",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/cosmic_energy_prism_c",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "cosmic_energy_prism_d_invu",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/cosmic_energy_prism_d_invu",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "cosmic_energy_prism_d",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/cosmic_energy_prism_d",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "lloyd_center",
+      "kind": "point",
+      "description": "Canary (32799, 32826, 14), between the four prisms.",
+      "location": {
+        "x": 32799,
+        "y": 32826,
+        "floor": 14
+      }
+    },
+    {
+      "key": "lloyd_center_tile",
+      "kind": "area",
+      "description": "Exactly the one tile Canary (32799, 32826, 14).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              32799,
+              32799
+            ],
+            "y": [
+              32826,
+              32826
+            ],
+            "floor": 14
+          }
+        ]
+      }
+    },
+    {
+      "key": "lloyd_return",
+      "kind": "point",
+      "description": "Canary (32799, 32829, 14).",
+      "location": {
+        "x": 32799,
+        "y": 32829,
+        "floor": 14
+      }
+    },
+    {
+      "key": "prism_spot_a",
+      "kind": "point",
+      "description": "Canary (32801, 32827, 14).",
+      "location": {
+        "x": 32801,
+        "y": 32827,
+        "floor": 14
+      }
+    },
+    {
+      "key": "prism_spot_b",
+      "kind": "point",
+      "description": "Canary (32798, 32827, 14).",
+      "location": {
+        "x": 32798,
+        "y": 32827,
+        "floor": 14
+      }
+    },
+    {
+      "key": "prism_spot_c",
+      "kind": "point",
+      "description": "Canary (32803, 32826, 14).",
+      "location": {
+        "x": 32803,
+        "y": 32826,
+        "floor": 14
+      }
+    },
+    {
+      "key": "prism_spot_d",
+      "kind": "point",
+      "description": "Canary (32796, 32826, 14).",
+      "location": {
+        "x": 32796,
+        "y": 32826,
+        "floor": 14
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "prisms_destroyed",
+        "initial": 0
+      }
+    ],
+    "flags": [],
+    "timers": [
+      {
+        "name": "lloyd_refocus",
+        "duration_ms": 10000,
+        "repeat": false
+      }
+    ]
+  },
+  "rules": [
+    {
+      "key": "lloyd_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "lloyd"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "lloyd_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    },
+    {
+      "key": "lloyd_refocuses_on_prism_a",
+      "trigger": {
+        "kind": "lethal_damage",
+        "role": "lloyd"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "prisms_destroyed",
+          "op": "==",
+          "value": 0
+        }
+      ],
+      "actions": [
+        {
+          "kind": "prevent_death",
+          "role": "lloyd"
+        },
+        {
+          "kind": "remove",
+          "role": "cosmic_energy_prism_a_invu"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/cosmic_energy_prism_a",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "cosmic_energy_prism_a",
+          "count": 1,
+          "at": {
+            "anchor": "prism_spot_a"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "teleport",
+          "who": {
+            "role": "lloyd"
+          },
+          "to": "lloyd_center"
+        },
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "lloyd"
+          },
+          "amount": "full"
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "lloyd"
+          },
+          "text": "The cosmic energies in the chamber refocus on Lloyd.",
+          "mode": "say"
+        },
+        {
+          "kind": "timer",
+          "timer": "lloyd_refocus",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "lloyd_returns_from_prism_a",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "lloyd_refocus"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "prisms_destroyed",
+          "op": "==",
+          "value": 0
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "role": "lloyd"
+          },
+          "to": "lloyd_return"
+        },
+        {
+          "kind": "remove",
+          "role": "cosmic_energy_prism_a"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/cosmic_energy_prism_a_invu",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "cosmic_energy_prism_a_invu",
+          "count": 1,
+          "at": {
+            "anchor": "prism_spot_a"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "prism_a_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "cosmic_energy_prism_a"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "lloyd_refocus",
+          "operation": "stop"
+        },
+        {
+          "kind": "counter",
+          "counter": "prisms_destroyed",
+          "operation": "add",
+          "value": 1
+        },
+        {
+          "kind": "teleport",
+          "who": {
+            "role": "lloyd"
+          },
+          "to": "lloyd_return"
+        }
+      ]
+    },
+    {
+      "key": "prism_a_recharges_on_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "cosmic_energy_prism_a",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "lloyd",
+          "anchor": "lloyd_center_tile",
+          "present": false
+        },
+        {
+          "kind": "health_percent",
+          "role": "cosmic_energy_prism_a",
+          "op": "<",
+          "value": 100
+        }
+      ],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "cosmic_energy_prism_a"
+          },
+          "text": "*zap!*",
+          "mode": "say"
+        },
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "cosmic_energy_prism_a"
+          },
+          "amount": 10000
+        }
+      ]
+    },
+    {
+      "key": "prism_a_recharges_on_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "cosmic_energy_prism_a",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "lloyd",
+          "anchor": "lloyd_center_tile",
+          "present": false
+        },
+        {
+          "kind": "health_percent",
+          "role": "cosmic_energy_prism_a",
+          "op": "<",
+          "value": 100
+        }
+      ],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "cosmic_energy_prism_a"
+          },
+          "text": "*zap!*",
+          "mode": "say"
+        },
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "cosmic_energy_prism_a"
+          },
+          "amount": 10000
+        }
+      ]
+    },
+    {
+      "key": "lloyd_refocuses_on_prism_b",
+      "trigger": {
+        "kind": "lethal_damage",
+        "role": "lloyd"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "prisms_destroyed",
+          "op": "==",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "prevent_death",
+          "role": "lloyd"
+        },
+        {
+          "kind": "remove",
+          "role": "cosmic_energy_prism_b_invu"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/cosmic_energy_prism_b",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "cosmic_energy_prism_b",
+          "count": 1,
+          "at": {
+            "anchor": "prism_spot_b"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "teleport",
+          "who": {
+            "role": "lloyd"
+          },
+          "to": "lloyd_center"
+        },
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "lloyd"
+          },
+          "amount": "full"
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "lloyd"
+          },
+          "text": "The cosmic energies in the chamber refocus on Lloyd.",
+          "mode": "say"
+        },
+        {
+          "kind": "timer",
+          "timer": "lloyd_refocus",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "lloyd_returns_from_prism_b",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "lloyd_refocus"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "prisms_destroyed",
+          "op": "==",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "role": "lloyd"
+          },
+          "to": "lloyd_return"
+        },
+        {
+          "kind": "remove",
+          "role": "cosmic_energy_prism_b"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/cosmic_energy_prism_b_invu",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "cosmic_energy_prism_b_invu",
+          "count": 1,
+          "at": {
+            "anchor": "prism_spot_b"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "prism_b_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "cosmic_energy_prism_b"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "lloyd_refocus",
+          "operation": "stop"
+        },
+        {
+          "kind": "counter",
+          "counter": "prisms_destroyed",
+          "operation": "add",
+          "value": 1
+        },
+        {
+          "kind": "teleport",
+          "who": {
+            "role": "lloyd"
+          },
+          "to": "lloyd_return"
+        }
+      ]
+    },
+    {
+      "key": "prism_b_recharges_on_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "cosmic_energy_prism_b",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "lloyd",
+          "anchor": "lloyd_center_tile",
+          "present": false
+        },
+        {
+          "kind": "health_percent",
+          "role": "cosmic_energy_prism_b",
+          "op": "<",
+          "value": 100
+        }
+      ],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "cosmic_energy_prism_b"
+          },
+          "text": "*zap!*",
+          "mode": "say"
+        },
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "cosmic_energy_prism_b"
+          },
+          "amount": 10000
+        }
+      ]
+    },
+    {
+      "key": "prism_b_recharges_on_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "cosmic_energy_prism_b",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "lloyd",
+          "anchor": "lloyd_center_tile",
+          "present": false
+        },
+        {
+          "kind": "health_percent",
+          "role": "cosmic_energy_prism_b",
+          "op": "<",
+          "value": 100
+        }
+      ],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "cosmic_energy_prism_b"
+          },
+          "text": "*zap!*",
+          "mode": "say"
+        },
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "cosmic_energy_prism_b"
+          },
+          "amount": 10000
+        }
+      ]
+    },
+    {
+      "key": "lloyd_refocuses_on_prism_c",
+      "trigger": {
+        "kind": "lethal_damage",
+        "role": "lloyd"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "prisms_destroyed",
+          "op": "==",
+          "value": 2
+        }
+      ],
+      "actions": [
+        {
+          "kind": "prevent_death",
+          "role": "lloyd"
+        },
+        {
+          "kind": "remove",
+          "role": "cosmic_energy_prism_c_invu"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/cosmic_energy_prism_c",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "cosmic_energy_prism_c",
+          "count": 1,
+          "at": {
+            "anchor": "prism_spot_c"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "teleport",
+          "who": {
+            "role": "lloyd"
+          },
+          "to": "lloyd_center"
+        },
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "lloyd"
+          },
+          "amount": "full"
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "lloyd"
+          },
+          "text": "The cosmic energies in the chamber refocus on Lloyd.",
+          "mode": "say"
+        },
+        {
+          "kind": "timer",
+          "timer": "lloyd_refocus",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "lloyd_returns_from_prism_c",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "lloyd_refocus"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "prisms_destroyed",
+          "op": "==",
+          "value": 2
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "role": "lloyd"
+          },
+          "to": "lloyd_return"
+        },
+        {
+          "kind": "remove",
+          "role": "cosmic_energy_prism_c"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/cosmic_energy_prism_c_invu",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "cosmic_energy_prism_c_invu",
+          "count": 1,
+          "at": {
+            "anchor": "prism_spot_c"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "prism_c_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "cosmic_energy_prism_c"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "lloyd_refocus",
+          "operation": "stop"
+        },
+        {
+          "kind": "counter",
+          "counter": "prisms_destroyed",
+          "operation": "add",
+          "value": 1
+        },
+        {
+          "kind": "teleport",
+          "who": {
+            "role": "lloyd"
+          },
+          "to": "lloyd_return"
+        }
+      ]
+    },
+    {
+      "key": "prism_c_recharges_on_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "cosmic_energy_prism_c",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "lloyd",
+          "anchor": "lloyd_center_tile",
+          "present": false
+        },
+        {
+          "kind": "health_percent",
+          "role": "cosmic_energy_prism_c",
+          "op": "<",
+          "value": 100
+        }
+      ],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "cosmic_energy_prism_c"
+          },
+          "text": "*zap!*",
+          "mode": "say"
+        },
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "cosmic_energy_prism_c"
+          },
+          "amount": 10000
+        }
+      ]
+    },
+    {
+      "key": "prism_c_recharges_on_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "cosmic_energy_prism_c",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "lloyd",
+          "anchor": "lloyd_center_tile",
+          "present": false
+        },
+        {
+          "kind": "health_percent",
+          "role": "cosmic_energy_prism_c",
+          "op": "<",
+          "value": 100
+        }
+      ],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "cosmic_energy_prism_c"
+          },
+          "text": "*zap!*",
+          "mode": "say"
+        },
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "cosmic_energy_prism_c"
+          },
+          "amount": 10000
+        }
+      ]
+    },
+    {
+      "key": "lloyd_refocuses_on_prism_d",
+      "trigger": {
+        "kind": "lethal_damage",
+        "role": "lloyd"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "prisms_destroyed",
+          "op": "==",
+          "value": 3
+        }
+      ],
+      "actions": [
+        {
+          "kind": "prevent_death",
+          "role": "lloyd"
+        },
+        {
+          "kind": "remove",
+          "role": "cosmic_energy_prism_d_invu"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/cosmic_energy_prism_d",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "cosmic_energy_prism_d",
+          "count": 1,
+          "at": {
+            "anchor": "prism_spot_d"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "teleport",
+          "who": {
+            "role": "lloyd"
+          },
+          "to": "lloyd_center"
+        },
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "lloyd"
+          },
+          "amount": "full"
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "lloyd"
+          },
+          "text": "The cosmic energies in the chamber refocus on Lloyd.",
+          "mode": "say"
+        },
+        {
+          "kind": "timer",
+          "timer": "lloyd_refocus",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "lloyd_returns_from_prism_d",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "lloyd_refocus"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "prisms_destroyed",
+          "op": "==",
+          "value": 3
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "role": "lloyd"
+          },
+          "to": "lloyd_return"
+        },
+        {
+          "kind": "remove",
+          "role": "cosmic_energy_prism_d"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/cosmic_energy_prism_d_invu",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "cosmic_energy_prism_d_invu",
+          "count": 1,
+          "at": {
+            "anchor": "prism_spot_d"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "prism_d_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "cosmic_energy_prism_d"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "lloyd_refocus",
+          "operation": "stop"
+        },
+        {
+          "kind": "counter",
+          "counter": "prisms_destroyed",
+          "operation": "add",
+          "value": 1
+        },
+        {
+          "kind": "teleport",
+          "who": {
+            "role": "lloyd"
+          },
+          "to": "lloyd_return"
+        }
+      ]
+    },
+    {
+      "key": "prism_d_recharges_on_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "cosmic_energy_prism_d",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "lloyd",
+          "anchor": "lloyd_center_tile",
+          "present": false
+        },
+        {
+          "kind": "health_percent",
+          "role": "cosmic_energy_prism_d",
+          "op": "<",
+          "value": 100
+        }
+      ],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "cosmic_energy_prism_d"
+          },
+          "text": "*zap!*",
+          "mode": "say"
+        },
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "cosmic_energy_prism_d"
+          },
+          "amount": 10000
+        }
+      ]
+    },
+    {
+      "key": "prism_d_recharges_on_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "cosmic_energy_prism_d",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "lloyd",
+          "anchor": "lloyd_center_tile",
+          "present": false
+        },
+        {
+          "kind": "health_percent",
+          "role": "cosmic_energy_prism_d",
+          "op": "<",
+          "value": 100
+        }
+      ],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "cosmic_energy_prism_d"
+          },
+          "text": "*zap!*",
+          "mode": "say"
+        },
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "cosmic_energy_prism_d"
+          },
+          "amount": 10000
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "lloyd_defeated"
+  ]
+}

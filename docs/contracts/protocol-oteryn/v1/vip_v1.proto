@@ -1,0 +1,22 @@
+syntax = "proto3";
+package oteryn.game.v1;
+
+// Capability 43. Command 48 admits operations 1-6, 49 admits 7-11,
+// and 50 admits 12. Presence and client UI are outside VIP-1.
+message VipRequestV1 {
+  uint32 operation = 1;
+  uint64 number = 2; // local entry/group number, session handle, setting, or query cursor
+  optional string text = 3;
+  uint32 icon = 4;
+  bool notify = 5;
+  repeated uint32 groups = 6 [packed = false];
+}
+message VipResultV1 {
+  uint32 code = 1;
+  uint64 revision = 2;
+  uint64 number = 3;
+  uint32 wait_seconds = 4;
+  // Bounded paged metadata only. Its closed shape is specified in vip_v1.md.
+  // No CharacterId, AccountId, invitation_id, ChannelId, or presence is included.
+  string view_json = 5;
+}

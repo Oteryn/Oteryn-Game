@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema",
+    "records",
+    "original_core_unchanged",
+    "runtime_enabled",
+    "native_admission",
+    "summary"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_SOURCE_CONFIG_MISSION_PROGRESS_SUPPLEMENT/v1"
+    },
+    "records": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "source_component_id",
+          "quest_keys",
+          "source_target",
+          "canonical_mission_refs",
+          "provenance",
+          "status",
+          "runtime_enabled",
+          "native_admission",
+          "canonical_gap_replaced",
+          "case",
+          "source_storage_expression",
+          "config_fields",
+          "write_ast_pointer",
+          "write_witness",
+          "operation"
+        ],
+        "properties": {
+          "provenance": {
+            "type": "object"
+          },
+          "case": {
+            "type": "object",
+            "required": [
+              "key",
+              "no_monster_entity_id_inferred"
+            ],
+            "properties": {
+              "key": {
+                "const": "the unarmored voidborn"
+              },
+              "no_monster_entity_id_inferred": {
+                "const": true
+              }
+            }
+          },
+          "config_fields": {
+            "type": "object"
+          },
+          "write_witness": {
+            "type": "object"
+          },
+          "operation": {
+            "type": "object",
+            "required": [
+              "kind",
+              "evaluation_order",
+              "source_storage_key",
+              "source_value_expression",
+              "declared_case_value",
+              "native_storage_slot",
+              "branch_source_context",
+              "helper_call_witness",
+              "player_iteration",
+              "execution_uncertainties"
+            ],
+            "properties": {
+              "kind": {
+                "const": "source_config_selected_storage_write"
+              },
+              "evaluation_order": {
+                "const": [
+                  "READ_RECEIVER_ONCE",
+                  "LOOKUP_METHOD",
+                  "EVALUATE_STORAGE_KEY",
+                  "EVALUATE_VALUE",
+                  "CALL_WITH_RECEIVER_SELF"
+                ]
+              },
+              "declared_case_value": {
+                "const": 2
+              },
+              "native_storage_slot": {
+                "const": null
+              },
+              "player_iteration": {
+                "type": "object",
+                "required": [
+                  "steps",
+                  "helper_witness",
+                  "runtime_activation"
+                ],
+                "properties": {
+                  "steps": {
+                    "const": [
+                      "GET_CREATURE_DAMAGE_MAP",
+                      "PAIRS_ITERATION_ORDER_UNSPECIFIED",
+                      "PLAYER_CONSTRUCTOR_FOR_EACH_DAMAGE_MAP_KEY",
+                      "CALL_CALLBACK_ONLY_FOR_TRUTHY_PLAYER"
+                    ]
+                  },
+                  "runtime_activation": {
+                    "const": false
+                  }
+                }
+              }
+            }
+          },
+          "source_component_id": {
+            "type": "string"
+          },
+          "source_target": {
+            "const": "canary:quest-progress/quest/u11_40/cults_of_tibia/orcs/mission"
+          },
+          "status": {
+            "const": "SOURCE_CONFIG_MISSION_WRITE_SPEC_EXECUTION_UNPROVEN"
+          },
+          "source_storage_expression": {
+            "const": "Storage.Quest.U11_40.CultsOfTibia.Orcs.Mission"
+          },
+          "write_ast_pointer": {
+            "type": "string"
+          },
+          "quest_keys": {
+            "const": [
+              "oteryn:quest.cults_of_tibia_quest"
+            ]
+          },
+          "canonical_mission_refs": {
+            "type": "array",
+            "minItems": 1
+          },
+          "runtime_enabled": {
+            "const": false
+          },
+          "native_admission": {
+            "const": false
+          },
+          "canonical_gap_replaced": {
+            "const": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object"
+    },
+    "original_core_unchanged": {
+      "const": true
+    },
+    "runtime_enabled": {
+      "const": false
+    },
+    "native_admission": {
+      "const": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,19 @@
+{
+  "id": 37,
+  "name": "DEPOT_V1",
+  "constant": "depot::CAPABILITY_DEPOT_V1",
+  "requires": [
+    4
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    36
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

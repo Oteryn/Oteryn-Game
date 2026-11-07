@@ -1,0 +1,25 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+// Capability 66 REFUSAL_DETAIL_V1 (PARITY-REFUSAL-DETAIL-1). No command type or domain of its own.
+// When the session selected capability 66, the server may append field 15 to these results:
+//   ItemMoveResultV1 (command 9, item_view_v1.proto), UseResultV1 (command 2,
+//   world_object_v1.proto) and StepResultV1 (command 1, world_spatial_v1.proto).
+// Field 15 is the last field, at most once, and never present on a success. Without capability 66
+// the result bytes are unchanged and field 15 is never sent. Each result's byte bound grows by 2
+// (REFUSAL-DETAIL-RL-01). The client renders its own text for the code; the reference strings are
+// Canary getReturnMessage (src/utils/tools.cpp) and its door scripts.
+enum RefusalDetailV1 {
+  REFUSAL_DETAIL_UNSPECIFIED = 0; // never sent
+  NOT_POSSIBLE = 1; // RETURNVALUE_NOTPOSSIBLE "Sorry, not possible."
+  TOO_FAR_AWAY = 2; // RETURNVALUE_TOOFARAWAY "Too far away."
+  NOT_ENOUGH_ROOM = 3; // RETURNVALUE_NOTENOUGHROOM "There is not enough room."
+  NOT_ENOUGH_CAPACITY = 4; // RETURNVALUE_NOTENOUGHCAPACITY "This object is too heavy for you to carry."
+  CANNOT_PICKUP = 5; // RETURNVALUE_CANNOTPICKUP "You cannot take this object."
+  FIRST_GO_UPSTAIRS = 6; // RETURNVALUE_FIRSTGOUPSTAIRS "First go upstairs."
+  FIRST_GO_DOWNSTAIRS = 7; // RETURNVALUE_FIRSTGODOWNSTAIRS "First go downstairs."
+  DOOR_LOCKED = 8; // key_door.lua "It is locked."
+}
+// Appended to a refused result: tag 0x78, one value byte.
+message RefusalDetailFieldV1 {
+  RefusalDetailV1 refusal_detail = 15;
+}

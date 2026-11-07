@@ -1,0 +1,121 @@
+{
+  "identity": {
+    "key": "canary:encounter/the_baron_from_below",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Dangerous Depth: The Baron from Below",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "the_baron_from_below",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_baron_from_below",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "organic_matter",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/organic_matter",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "exit_teleporter",
+      "kind": "point",
+      "description": "Boss-room teleporter; Canary (33650, 32312, 15).",
+      "location": {
+        "x": 33650,
+        "y": 32312,
+        "floor": 15
+      }
+    },
+    {
+      "key": "reward_destination",
+      "kind": "point",
+      "description": "Destination while open; Canary (33668, 32301, 15).",
+      "location": {
+        "x": 33668,
+        "y": 32301,
+        "floor": 15
+      }
+    },
+    {
+      "key": "warzone_exit",
+      "kind": "point",
+      "description": "Destination after the revert; Canary (33462, 32267, 15).",
+      "location": {
+        "x": 33462,
+        "y": 32267,
+        "floor": 15
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "the_baron_from_below_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_baron_from_below"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/1949",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/22761",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_teleporter",
+          "destination": "reward_destination",
+          "revert_after_ms": 1200000,
+          "revert_destination": "warzone_exit"
+        }
+      ]
+    },
+    {
+      "key": "organic_matter_bursts",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "organic_matter"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/aggressive_matter",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 4,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

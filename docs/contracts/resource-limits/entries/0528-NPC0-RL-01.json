@@ -1,0 +1,22 @@
+{
+  "id": "NPC0-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+  "resource": "Talk text of one NPC_TALK_INTENT (command type 7)",
+  "unit": "bytes",
+  "hard_maximum": 255,
+  "configurable_range": {
+    "minimum": 255,
+    "maximum": 255
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounds the keyword scan and the command payload at 289 bytes; the text is never broadcast, persisted or logged verbatim. One byte more fails the decode before any matching.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=255: a text of exactly 255 bytes encodes and decodes",
+    "max+1=256: one more byte is refused by the encoder and the decoder"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/npc_service.rs MAX_TALK_TEXT_BYTES"
+  ],
+  "notes": "NPC-0 \u00a74. Worker-set: keywords are whole tokens of a short phrase, and CHAT0 bounds a chat line at 1,020 bytes. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+}

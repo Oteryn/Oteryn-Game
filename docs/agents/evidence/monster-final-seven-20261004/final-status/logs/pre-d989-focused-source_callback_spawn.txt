@@ -1,0 +1,6 @@
+Original log SHA256: bd1a035c2b6baa8c9be7a80d2ecb62579d4335d996ca7dd14f4a2ac92b7b0dbe
+
+running 2 tests
+test source_callback_spawn::tests::all_sixteen_sources_missing_map_stale_fence_and_provenance_never_spawn ... ok
+test source_callback_spawn::tests::sixteen_exact_source_spawns_actual_policy_health_origin_delay_replay_and_cleanup ... ok
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2365 filtered out; finished in 1.63s

@@ -1,0 +1,3012 @@
+{
+  "schema": "OTERYN_QUESTS3_IMPLEMENTATION_STATUS/v1",
+  "quest": "the_shattered_isles_quest",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "inventory_origin": {
+    "document": "docs/agents/evidence/OTV2-20261102-quests-3-20261102.md",
+    "commit": "f2b37d4c6b313952750189d75e6d19d99fde8641",
+    "identity_fields": [
+      "quest",
+      "step",
+      "donor"
+    ]
+  },
+  "normalization_provenance": {
+    "worker_status": "group-b/implementation-status.json",
+    "sha256": "98cc334442a4a9fea839a26080688aac4e308fee5a41e2eeeba4d92d7ee9ae92"
+  },
+  "classification": "DERIVED",
+  "authority": "PR comments govern scope; this file records evidence and does not authorize a runtime adapter.",
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+  ],
+  "row_count": 74,
+  "import_counts": {
+    "RĘCZNIE": 61,
+    "AUTO": 13
+  },
+  "content_counts": {
+    "npc_rules_source_only": 115,
+    "world_callbacks_enabled": 0,
+    "world_callbacks_held": 14,
+    "death_rules_source_only": 0
+  },
+  "content_inputs": [
+    {
+      "path": "content/dialogues/quest-rules/quest-batch3-b-the_shattered_isles_quest.json",
+      "sha256": "e429b37732effbe3cecff3bd64fe38d6fdab82d8943a0626bba9d7ad7c2684b7",
+      "count": 115,
+      "category": "npc_rules_source_only"
+    },
+    {
+      "path": "content/quests/world-callbacks/batch3-b-the_shattered_isles_quest.json",
+      "sha256": "ab21834cd19b94b8cb19947520ebafb8e2480290d738803a72bcc90dd35fdd8c",
+      "count": 0,
+      "category": "world_callbacks_enabled"
+    },
+    {
+      "path": "content/quests/world-callbacks-held/batch3-b-the_shattered_isles_quest.json",
+      "sha256": "bd9a2a807850cf6aa1a054a6ddeb60aaa77119e639865f9112927020e55a9fc3",
+      "count": 14,
+      "category": "world_callbacks_held"
+    }
+  ],
+  "final_head_validation": {
+    "status": "EXTERNAL_PR_EVIDENCE",
+    "tested_sha": null,
+    "evidence_url": "https://github.com/Oteryn/Oteryn-Game/pull/2843",
+    "note": "Exact frozen publication SHA and its gate results are recorded in PR Validation; this source document does not attest a final-head PASS."
+  },
+  "rows": [
+    {
+      "id": "c4889d37a6ae4ea89e610ca5e183854353104247e7090ef18980fd3ddde549eb",
+      "quest_row": 1,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Eleonore: ring/mission",
+        "pattern": "P09",
+        "trigger": "NPC Eleonore: ring lub mission",
+        "guard": "GovernorDaughter<1",
+        "effect": "DefaultStart=1; GovernorDaughter=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:61"
+        ],
+        "oteryn": "CZĘŚCIOWO — katalog dialogu nie zawiera tych gałęzi; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/dialogues/definitions/dialogues-00000-00499.json:1",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:61",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "18de5e062e5ba3f24775a745b43fc3aba8b624778b98f20cadfb6c80f60dc623",
+      "quest_row": 2,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Rake: znalezienie pierścionka",
+        "pattern": "P02",
+        "trigger": "Use3452 on6094",
+        "guard": "GovernorDaughter=1",
+        "effect": "create6093@(32422,32770,1); Daughter=2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/rake.lua:9",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/rake.lua:47"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymaga utworzenia6093 na dokładnym polu i atomowego zapisu GovernorDaughter. Decyzja B-Q16: Brakuje operacji create item on tile wraz z atomowym zapisem progresu: Rake tworzy pierścionek 6093 na (32422,32770,1) i zmienia GovernorDaughter 1->2.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589876957"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/rake.lua:9",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/rake.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "c03c766eca86b12f71a72ac17544d00f54d56470f8a15a2f02deb8a561ad3ac0",
+      "quest_row": 3,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Eleonore: oddanie/pominięcie pierścionka",
+        "pattern": "P10, P11, P09",
+        "trigger": "ring/mission →yes; topic1",
+        "guard": "Daughter=2 przy wejściu w topic",
+        "effect": "jeśli ma6093 usuń1; również przy braku daje150gold; Daughter=3; topic2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:100"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:100",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "0201cac1c831a02aa140bf0a1500cf9ccf3fd06fdb2a6dabe8d141940f228ee2",
+      "quest_row": 4,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Eleonore: rozpoczęcie errand",
+        "pattern": "P09, P11",
+        "trigger": "mission/yes/yes; topic2→3",
+        "guard": "Daughter=3,Errand<1 albo dalszy topic po pierścionku",
+        "effect": "200gold,Errand=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:61",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:115"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:61",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:115",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "1684aed424005beb4aea05dfe596baddf5913f38bd542f37030ddf1b21eb532f",
+      "quest_row": 5,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Charlotta: kupno sukni",
+        "pattern": "P10, P09",
+        "trigger": "errand/gold →yes; topic1",
+        "guard": "Errand=1; removeMoneyBank200 sukces",
+        "effect": "Errand=2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/charlotta.lua:61"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/charlotta.lua:61",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "4f4262c37ad0fe89f626c38ae88acbf08a4d10a7b2301ca9d1fc209d6e5e03cb",
+      "quest_row": 6,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Eleonore: rozliczenie errand",
+        "pattern": "P11, P09",
+        "trigger": "errand",
+        "guard": "Errand=2",
+        "effect": "5gold;Errand=3",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:77"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:77",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "fe72f34b07e9601a76045f53faf0b800d7465a181de4fde395bab420bc47c322",
+      "quest_row": 7,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Eleonore: peg leg i Meriana",
+        "pattern": "P09, P13",
+        "trigger": "peg leg →yes;topic4",
+        "guard": "Errand=3",
+        "effect": "Errand=4;AccessToMeriana=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:84",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:123"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:84",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eleonore.lua:123",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "87fa128fe588cbe97813b12b05f51436a43d0bf8d4af546a4f273e96485390e8",
+      "quest_row": 8,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Captain Waverider: Meriana",
+        "pattern": "P09, P10, P03",
+        "trigger": "peg leg →yes;topic1",
+        "guard": "AccessToMeriana=1; removeMoneyBank50",
+        "effect": "teleport(32346,32625,7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_waverider.lua:57"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_waverider.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "d14de14d850b3e767bae7ab9bff2b312f32d93ca409cb1744a41dda3b57c4292",
+      "quest_row": 9,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Raymond Striker: mermaid",
+        "pattern": "P09",
+        "trigger": "eleonore/mission →mermaid;topic1",
+        "guard": "RaymondStrikerPoem<1",
+        "effect": "RaymondStrikerPoem=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:61",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:133"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:61",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:133",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "333bf70f838ccd0cd71b6c9cc80d76484dcdd6ffbe612ee9a9dbf974c680771d",
+      "quest_row": 10,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Marina: Raymond",
+        "pattern": "P09",
+        "trigger": "raymond striker",
+        "guard": "Poem=1",
+        "effect": "Poem=2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:69"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:69",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "0de1e51359284df7167b9562c387cd71bce67d734389870f8fa8bd36bb6ae57b",
+      "quest_row": 11,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Ocelus: eleonore/mermaid/date",
+        "pattern": "P09",
+        "trigger": "eleonore→mermaid/marina→date→yes;topic1→2→3",
+        "guard": "Poem=2;Djinn<1",
+        "effect": "DjinnLove=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:61"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:61",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "8ea2dd313683477fc0eebc5bf0aee9cdaa34fb802342fd8aefeafcc101f97660",
+      "quest_row": 12,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Marina: propozycja randki",
+        "pattern": "P09",
+        "trigger": "date",
+        "guard": "DjinnLove=1",
+        "effect": "DjinnLove=2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:75"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:75",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "82bbbaa43a019f9c28af0bd791f51d87de87aae5383bb53ba056d688db052773",
+      "quest_row": 13,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Ocelus: poem request",
+        "pattern": "P09",
+        "trigger": "mermaid/marina",
+        "guard": "DjinnLove=2",
+        "effect": "DjinnLove=3",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:78"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:78",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "54e30e733444360a300c474cc6299db27515fe4621c6d2d2aff8ac8327606275",
+      "quest_row": 14,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Elvith: poem scroll",
+        "pattern": "P10, P11",
+        "trigger": "love poem→yes;topic1",
+        "guard": "removeMoneyBank200 sukces",
+        "effect": "item6119×1; brak quest gate w donorze",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elvith.lua:81"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elvith.lua:81",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "1430b1d74f3f074e96dea0d20b12c60d6f549b86eaaa55cd66e0be93e5dab347",
+      "quest_row": 15,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Ocelus: oddanie poem",
+        "pattern": "P10, P09",
+        "trigger": "love poem→yes;topic4",
+        "guard": "DjinnLove=3;remove6119×1",
+        "effect": "DjinnLove=4;Poem=3",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:83"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ocelus.lua:83",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "0fd75e45aecb695465c808e8e5f4e521ca6b882df66dc38e93c14b837dd8c1f9",
+      "quest_row": 16,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Marina: ukończenie randki",
+        "pattern": "P09, P13",
+        "trigger": "date",
+        "guard": "DjinnLove=4",
+        "effect": "DjinnLove=5;AccessToLagunaIsland=1;achievementMatchmaker",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:78"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/marina.lua:78",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "4aab33f9cb38ede49acf3dd248d49944b6446e34a83d5e76841e9c3bc99b78c5",
+      "quest_row": 17,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Żółw: wejście do Laguna",
+        "pattern": "P03",
+        "trigger": "StepIn uid3206",
+        "guard": "AccessToLagunaIsland=1",
+        "effect": "success(32359,32901,7); failure(32340,32540,7), nie fromPosition",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held. Wymagane storage.read_only i failure_teleport: turtles.lua:20 tylko czyta AccessToLagunaIsland, a:21–22 kieruje na32340,32540,z7. SET zastępowałby odczyt zapisem, return_on_failure kierowałby na poprzednie pole. Dodatkowo brak UID3206 i force teleport na zajęty cel. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "a4a4a8d5f8d78c4aeecea3227d19f818229de578f35aff772e424694d0eaa50c",
+      "quest_row": 18,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Żółw: trasa uid3207",
+        "pattern": "P03",
+        "trigger": "StepIn uid3207",
+        "guard": "player",
+        "effect": "teleport(32340,32538,7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held: dokładny source UID i cel zachowane, lecz pełny scan1208 regionów nie znajduje UID3207–3213. Fizyczne uruchomienie Left out; bez przypisywania UID do zgadywanych pól. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:2-15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:2-3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25-35",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:2-14",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:2-11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:36",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:75",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:16"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "d8b974ac5123784563940530f77d7c0e41ed40f4b82838c56f919b078e3a4a98",
+      "quest_row": 19,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Żółw: trasa uid3208",
+        "pattern": "P03",
+        "trigger": "StepIn uid3208",
+        "guard": "player",
+        "effect": "teleport(32472,32869,7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held: dokładny source UID i cel zachowane, lecz pełny scan1208 regionów nie znajduje UID3207–3213. Fizyczne uruchomienie Left out; bez przypisywania UID do zgadywanych pól. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:2-15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:2-3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25-35",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:2-14",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:2-11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:36",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:75",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:16"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "a9ba7227d4efd757ba33b96108656965bbcd94e26c8849183dad7c30b9ef59b3",
+      "quest_row": 20,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Żółw: trasa uid3209",
+        "pattern": "P03",
+        "trigger": "StepIn uid3209",
+        "guard": "player",
+        "effect": "teleport(32415,32916,7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held: dokładny source UID i cel zachowane, lecz pełny scan1208 regionów nie znajduje UID3207–3213. Fizyczne uruchomienie Left out; bez przypisywania UID do zgadywanych pól. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:2-15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:2-3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25-35",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:2-14",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:2-11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:36",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:75",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:16"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "033954303f38628bc05e8c5a7b9f4b47d43804ff12caa7b025f1d8f0dd0031f7",
+      "quest_row": 21,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Żółw: trasa uid3210",
+        "pattern": "P03",
+        "trigger": "StepIn uid3210",
+        "guard": "player",
+        "effect": "teleport(32490,32979,7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held: dokładny source UID i cel zachowane, lecz pełny scan1208 regionów nie znajduje UID3207–3213. Fizyczne uruchomienie Left out; bez przypisywania UID do zgadywanych pól. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:2-15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:2-3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25-35",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:2-14",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:2-11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:36",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:75",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:16"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "e28cd2e9f3e5309b6254d71f9162287e2bf3f648330c751b1ad7d46e28afd911",
+      "quest_row": 22,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Żółw: trasa uid3211",
+        "pattern": "P03",
+        "trigger": "StepIn uid3211",
+        "guard": "player",
+        "effect": "teleport(32440,32971,7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held: dokładny source UID i cel zachowane, lecz pełny scan1208 regionów nie znajduje UID3207–3213. Fizyczne uruchomienie Left out; bez przypisywania UID do zgadywanych pól. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:2-15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:2-3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25-35",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:2-14",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:2-11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:36",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:75",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:16"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "59e4dac8b069709db96d5c0fac90cbd5a464af2bbc9827c92c1324b073dfb98d",
+      "quest_row": 23,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Żółw: trasa uid3212",
+        "pattern": "P03",
+        "trigger": "StepIn uid3212",
+        "guard": "player",
+        "effect": "teleport(32527,32951,7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held: dokładny source UID i cel zachowane, lecz pełny scan1208 regionów nie znajduje UID3207–3213. Fizyczne uruchomienie Left out; bez przypisywania UID do zgadywanych pól. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:2-15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:2-3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25-35",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:2-14",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:2-11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:36",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:75",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:16"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "01a7f5574bbad8c8029313bf76ee47a6c96062429806326914c1eca3e023a10b",
+      "quest_row": 24,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Żółw: trasa uid3213",
+        "pattern": "P03",
+        "trigger": "StepIn uid3213",
+        "guard": "player",
+        "effect": "teleport(32523,32923,7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held: dokładny source UID i cel zachowane, lecz pełny scan1208 regionów nie znajduje UID3207–3213. Fizyczne uruchomienie Left out; bez przypisywania UID do zgadywanych pól. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:2-15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:2-3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25-35",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:2-14",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:2-11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:36",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:75",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:16"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "a2b105c3c4fe937235e7dd5b36e9fe2ba19b077dd5275022874794a609c31ef9",
+      "quest_row": 25,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Jack Fate: losowy shipwreck",
+        "pattern": "P03, P09, P10",
+        "trigger": "thais→yes→yes; drzewo KeywordHandler, bez storage topic3/4",
+        "guard": "removeMoneyBank180 sukces",
+        "effect": "1/8 Goroma(32161,32558,6),7/8 Thais(32310,32210,6)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate.lua:87",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate.lua:95"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Losowa trasa KeywordHandler1/8 wymaga istniejącego właściciela travel i atomowej opłaty180; nie zmyślono topic3/4. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate.lua:74",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate.lua:87",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate.lua:95",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "inventory_correction": {
+        "original": {
+          "quest": "the_shattered_isles_quest",
+          "step": "Jack Fate: losowy shipwreck",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate.lua:74"
+          ]
+        },
+        "reason": "Cytat dotyczy właściwej gałęzi podróży i losowania na liniach87/95, nie wcześniejszego dialogu74."
+      },
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "e37bbd484206e7a28954f59e16795cfa6e922ef43741c0037eaf56eb7f0ebed9",
+      "quest_row": 26,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Jack Fate Goroma: rozpoczęcie naprawy",
+        "pattern": "P09",
+        "trigger": "sail/passage/wreck/liberty bay/ship→yes→yes",
+        "guard": "AccessToGoroma≠1;Shipwrecked<1",
+        "effect": "DefaultStart=1;Shipwrecked=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:65"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:65",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "c595e49e350297b1d9d88c58d0b340ce24e5efead7cabb2b1699251e388d0caf",
+      "quest_row": 27,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Jack Fate Goroma: deski",
+        "pattern": "P10, P13",
+        "trigger": "sail/...→yes;topic3",
+        "guard": "Shipwrecked=1;remove5901×30",
+        "effect": "Shipwrecked=2;AccessToGoroma=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:92"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:92",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "456f887a43abfd6422dd47f0f94151306f2d2dc110f1a08816a5d558c57e2e2a",
+      "quest_row": 28,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Jack Fate: Goroma/powrót",
+        "pattern": "P03, P09",
+        "trigger": "goroma oraz sail/...→yes w Goroma",
+        "guard": "AccessToGoroma=1",
+        "effect": "Goroma(32161,32558,6); powrót(32285,32892,6); koszt0 w trasie Goroma",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate.lua:65",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:103"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate.lua:65",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate_goroma.lua:103",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "c043c4da784b12019fc3f7b0cfbe32deb629d02993ac2b22af5984d99b4357a4",
+      "quest_row": 29,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Dragah: spellbook chest",
+        "pattern": "P05",
+        "trigger": "uid6194;item4240@(32093,32574,8)",
+        "guard": "Storage.DragahsSpellbook, jednokrotny odbiór",
+        "effect": "item6120×1;donor weight58",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2108"
+        ],
+        "oteryn": "CZĘŚCIOWO — ogólna skrzynia ma wykonawcę, potrzebna kwalifikacja mapowego record; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_CHEST_OR_DOOR_DATA",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejące dane zachowano bez drugiego wykonawcy.",
+      "left_out": "Istniejąca tożsamość skrzyni/bramki zachowana; nie tworzymy duplikatu, wejście wymaga własnego progresu i fizycznego bindingu. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2108",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "88e50d02f05b63373ac7d0e44c04ee9530045330f515e2a75c8d9b9f8ca75e43",
+      "quest_row": 30,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Chondur: oddanie spellbook",
+        "pattern": "P10, P09",
+        "trigger": "spellbook",
+        "guard": "remove6120×1",
+        "effect": "DragahsSpellbook=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:282"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:282",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "8412ce539ac4118a823acae6d92809f95b457bee09a6d0b690cac68ffca50295",
+      "quest_row": 31,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Chondur: counterspell start",
+        "pattern": "P09",
+        "trigger": "counterspell→yes→yes;topic9→10",
+        "guard": "DragahsSpellbook≠−1;Counterspell=−1 inicjuje0",
+        "effect": "Counterspell=1 po potwierdzeniach",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:261",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:194"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:261",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:194",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "0b76ebb2fcd89df61157ecbcf17efea0df73cb514c1c4e5ccf255efa93fd3a7d",
+      "quest_row": 32,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Chondur: fresh dead chicken",
+        "pattern": "P10, P09",
+        "trigger": "counterspell→yes;topic11",
+        "guard": "Counterspell=1;remove4330×1",
+        "effect": "Counterspell=2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:204"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:204",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "22041bfd76c17dec80c433f824ff855c428822be952560822c3c037541eab4d4",
+      "quest_row": 33,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Chondur: fresh dead rat",
+        "pattern": "P10, P09",
+        "trigger": "counterspell→yes;topic12",
+        "guard": "Counterspell=2;remove3994×1",
+        "effect": "Counterspell=3",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:213"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:213",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "3e5ed2e6d775d45db21557f3004102c253c3b5913ba6abc458e21d5d86c429e9",
+      "quest_row": 34,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Chondur: fresh dead black sheep",
+        "pattern": "P10, P09",
+        "trigger": "counterspell→yes;topic13",
+        "guard": "Counterspell=3;remove4095×1",
+        "effect": "Counterspell=4",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:222"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:222",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "b3a8134b044b9bf036c3028f0e030241353c613278515448bef7a58c9a53226c",
+      "quest_row": 35,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Energy barrier 32575",
+        "pattern": "P03",
+        "trigger": "StepIn(32091,32575,8)",
+        "guard": "Counterspell≠4",
+        "effect": "odrzuć na current.x+2; przy=4 zostaw na polu",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/movement_energy_barrier.lua:3"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held. Wymagane storage.read_only i failure_teleport: donor movement_energy_barrier.lua:13 tylko czyta Counterspell, a:15–16 teleportuje current.x+2. SET zastępowałby odczyt zapisem; origin nie jest tym samym celem. Dodatkowo zajęty cel pozwala ominąć barierę bez force teleport lub odmowy całego wejścia. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/movement_energy_barrier.lua:3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "69be1f41a9b9fc56b263ceb0fdf0343b00c30cc220439715d71d67e3f5c8c2f1",
+      "quest_row": 36,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Energy barrier 32576",
+        "pattern": "P03",
+        "trigger": "StepIn(32091,32576,8)",
+        "guard": "Counterspell≠4",
+        "effect": "odrzuć na current.x+2; przy=4 zostaw na polu",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/movement_energy_barrier.lua:3"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held. Wymagane storage.read_only i failure_teleport: donor movement_energy_barrier.lua:13 tylko czyta Counterspell, a:15–16 teleportuje current.x+2. SET zastępowałby odczyt zapisem; origin nie jest tym samym celem. Dodatkowo zajęty cel pozwala ominąć barierę bez force teleport lub odmowy całego wejścia. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/movement_energy_barrier.lua:3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "3f35ae9fe04230a9bac7c35d60b73abf5bcac3f808e79e7e97d4504ab093d709",
+      "quest_row": 37,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Energy barrier 32577",
+        "pattern": "P03",
+        "trigger": "StepIn(32091,32577,8)",
+        "guard": "Counterspell≠4",
+        "effect": "odrzuć na current.x+2; przy=4 zostaw na polu",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/movement_energy_barrier.lua:3"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held. Wymagane storage.read_only i failure_teleport: donor movement_energy_barrier.lua:13 tylko czyta Counterspell, a:15–16 teleportuje current.x+2. SET zastępowałby odczyt zapisem; origin nie jest tym samym celem. Dodatkowo zajęty cel pozwala ominąć barierę bez force teleport lub odmowy całego wejścia. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/movement_energy_barrier.lua:3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "78c2be7c5cf01c80a40731d91b98d69b722a12bb42c93cd5c464b1c76a363865",
+      "quest_row": 38,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Sacrifice teleport: semantyka uszkodzona",
+        "pattern": "P19, P03",
+        "trigger": "StepIn aid12585",
+        "guard": "tabela3723/3725/3732/3728 na4polach; obliczony completedSacrifice nieużyty",
+        "effect": "if not sacrifices zawsze false; donor próbuje usuwać2114,success(31916,32607,10); B-Q02",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/movement_teleport.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/movement_teleport.lua:25"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Naprawa jawnego błędu dozwolona; jednak cztery ground offerings bez storage nie mieszczą się w obecnym kontrakcie. Brak sztucznego tracka.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589105205"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/movement_teleport.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/movement_teleport.lua:25"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "37490fedfc4e94e04665a0d5ef538cd7cf0a6de050eede2a23b77ac1861d2e96",
+      "quest_row": 39,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Raymond: start Sabrehaven reputation",
+        "pattern": "P09",
+        "trigger": "mission",
+        "guard": "Poem=3;Reputation<1",
+        "effect": "Reputation=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:67"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:67",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "a3eb978412a1b145e2780a08c9396b1409e8ed39e6122e466cf0e0eac1fb5215",
+      "quest_row": 40,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Ariella: pierwsze zadanie",
+        "pattern": "P09",
+        "trigger": "mission",
+        "guard": "Reputation=1",
+        "effect": "Reputation=2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:140"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:140",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "f3e87529f427b8cf3f037303403f285d2df19002cff31c47a808a9233be9d5e3",
+      "quest_row": 41,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Ariella: 100 chlebów (item3600)",
+        "pattern": "P10, P09",
+        "trigger": "mission→yes;topic6",
+        "guard": "Reputation=2;remove3600×100",
+        "effect": "Reputation=3",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:159",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:11458"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:159",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:11458",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "inventory_correction": {
+        "original": {
+          "quest": "the_shattered_isles_quest",
+          "step": "Ariella: 100 exotic fruit",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:159"
+          ]
+        },
+        "reason": "Poprawiono etykietę: removeItem(3600,100) i items.xml11458 określają100 chlebów; ilość i ID nie zmieniły się."
+      },
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "02202f55d3ac060551f27b094bed809f50b1a1c649166d1b2d5fe05f0bb412f3",
+      "quest_row": 42,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Ariella: drugie zadanie",
+        "pattern": "P09",
+        "trigger": "mission",
+        "guard": "Reputation=3",
+        "effect": "Reputation=4",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:149"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:149",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "9ec833486c240f5c9757dc5c50555c3276e3a291418a4aa12eb31582ea317361",
+      "quest_row": 43,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Ariella: item6106",
+        "pattern": "P10, P09",
+        "trigger": "mission→yes;topic7",
+        "guard": "Reputation=4;remove6106×1",
+        "effect": "Reputation=5",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:171"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ariella.lua:171",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "156d04795cac0668c2dfdbfcddcaa879d0fcaa0313b7e668105ab31ef52acc0f",
+      "quest_row": 44,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Morgan: list do Eremo",
+        "pattern": "P09, P11",
+        "trigger": "mission→yes;topic2",
+        "guard": "Reputation=5",
+        "effect": "item6113×1;Reputation=6",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/morgan.lua:72",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/morgan.lua:148"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/morgan.lua:72",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/morgan.lua:148",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "1dad27af346ca113e773270c7143e311ea41f87c2dd1f19880368428f69b7d17",
+      "quest_row": 45,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Eremo: doręczenie listu",
+        "pattern": "P10, P09",
+        "trigger": "letter",
+        "guard": "Reputation=6;remove6113×1",
+        "effect": "Reputation=7",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eremo.lua:61"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eremo.lua:61",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "a75dd5bd328b0a86555b69acff98aa19da55166949494faff925e236c47d99ec",
+      "quest_row": 46,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Morgan: raport listu",
+        "pattern": "P09",
+        "trigger": "mission",
+        "guard": "Reputation=7",
+        "effect": "Reputation=8",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/morgan.lua:79"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/morgan.lua:79",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "7791815d25f47568b192d7cdac0c52e21f9e9e541174087119871da7e0ff8c64",
+      "quest_row": 47,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Duncan: zadanie atlas",
+        "pattern": "P09",
+        "trigger": "mission",
+        "guard": "Reputation=8",
+        "effect": "Reputation=9",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:65"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:65",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "c29e75385a759f62e1edf2798662d8d6afc0030232025761c301aacfc5b3c658",
+      "quest_row": 48,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Duncan: oddanie atlasu",
+        "pattern": "P10, P09",
+        "trigger": "mission→yes;topic6",
+        "guard": "Reputation=9;remove6108×1",
+        "effect": "Reputation=10",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:137"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:137",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "2fcfcb0ac2d4d0ad2e80aad285fbeefae6c2c628a1782e569de1b742ac6ca255",
+      "quest_row": 49,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Chondur: zadanie voodoo",
+        "pattern": "P09",
+        "trigger": "mission",
+        "guard": "Reputation=10",
+        "effect": "Reputation=11",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:159"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:159",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "e86b3e4575f2c25c0d7f34b419a247ca7a185e8ba1ed44386c32717039656daa",
+      "quest_row": 50,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Chondur: 5 voodoo dolls",
+        "pattern": "P10, P09",
+        "trigger": "mission→yes;topic8",
+        "guard": "Reputation=11;remove5810×5",
+        "effect": "Reputation=12",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:184"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chondur.lua:184",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "13bbd6cc388a084e54b1e7180c0a1825440b54cea52b1e27bd4a19113b1f2fd9",
+      "quest_row": 51,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Raymond: Fafnar mission",
+        "pattern": "P09",
+        "trigger": "mission",
+        "guard": "Reputation=12;RaysMission1<1",
+        "effect": "RaysMission1=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:73"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:73",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "dd80eb6adc9f9f377623cc7591b2ca31099300d2dc171e9cb145a5f09b55c5d2",
+      "quest_row": 52,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Sandra: Fafnar pomyślne negocjacje",
+        "pattern": "P09",
+        "trigger": "fafnar→yes→your continued existence is payment enough",
+        "guard": "RaysMission1=1;topic5→6",
+        "effect": "RaysMission1=2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:79",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:127"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:79",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:127",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "8e544cd280e5f641e99ca105cef95d8a0eaf1f57b0ac92bad8599a4036bd8c1a",
+      "quest_row": 53,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Raymond: raport Fafnar",
+        "pattern": "P09",
+        "trigger": "mission",
+        "guard": "RaysMission1=2",
+        "effect": "Reputation=13;RaysMission1=3",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:80"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:80",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "940b6d858cb587019679a855e7f0eb399be60da326d0088f1d620e1966a976d7",
+      "quest_row": 54,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Raymond: Nargor i druga misja",
+        "pattern": "P09, P13",
+        "trigger": "mission",
+        "guard": "RaysMission1=3;RaysMission2<1",
+        "effect": "AccessToNargor=1;RaysMission2=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:84"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:84",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "ce6878e507451b41cd4bfdf89e311c32d2265f2b356a8620f5be2114c7b8b264",
+      "quest_row": 55,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Sebastian: Nargor",
+        "pattern": "P09, P10, P03",
+        "trigger": "nargor→yes;topic1",
+        "guard": "AccessToNargor=1;removeMoneyBank50",
+        "effect": "teleport(32024,32813,7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sebastian.lua:57"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sebastian.lua:57",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "14e5f25ca981883b324864297a44a30d8b443e6aa5a712367f4a9fe0ce7964e7",
+      "quest_row": 56,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Duncan: ratowanie tortoise egg",
+        "pattern": "P09, P13",
+        "trigger": "mission→yes;topic7",
+        "guard": "RaysMission2>0;TortoiseEggNargorDoor<0",
+        "effect": "TortoiseEggNargorDoor=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:148"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:73",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:148",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "9755c67ebbf9a260d1bd6d67d1a05065e9274469f5b0d848ff91b2c92c202ee4",
+      "quest_row": 57,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Drzwi egg",
+        "pattern": "P04",
+        "trigger": "door(31934,32838,7)",
+        "guard": "TortoiseEggNargorDoor",
+        "effect": "otwieranie wspólnej bramki",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:622"
+        ],
+        "oteryn": "CZĘŚCIOWO — ogólny wykonawca; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs:127",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_CHEST_OR_DOOR_DATA",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejące dane zachowano bez drugiego wykonawcy.",
+      "left_out": "Istniejąca tożsamość skrzyni/bramki zachowana; nie tworzymy duplikatu, wejście wymaga własnego progresu i fizycznego bindingu. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:622",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "195b84a1d3a53a687f302a765efd1e63ffb7b6543844c7121556fb62acd61e6c",
+      "quest_row": 58,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Tortoise egg: odbiór co24h",
+        "pattern": "P05, P17",
+        "trigger": "Use uid14024",
+        "guard": "EggTime<os.time; brak mission gate",
+        "effect": "item6125×1;EggTime=now+24h",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_tortoise_egg_nargor.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Powtarzalny grant6125 wymaga atomowego MINT/cooldownu i odmowy capacity bez zapisu. Decyzja B-Q17: Brakuje jednej atomowej operacji capacity, mint 6125 x1 i timestamp EggTime+24h z bezpiecznym retry; odmowa capacity nie może zapisać terminu ani oddać przedmiotu na ziemię.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589877321"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_tortoise_egg_nargor.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "cfc7f959a81d0acebf5946f98099483fc8109c0a84ef37eee4308ceeb2c16d8d",
+      "quest_row": 59,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Duncan: oddanie jajka",
+        "pattern": "P10, P09",
+        "trigger": "mission→yes;topic8",
+        "guard": "EggDoor=1;remove6125×1",
+        "effect": "EggDoor=2;Reputation=14;Animal Activist jeśli IceIslands.Questline≥9",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:159"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Ice Islands i achievement są częścią jednej źródłowej wymiany; brak przejęcia cudzej własności. Decyzja B-Q18: Duncan wymaga odczytu cudzego tracka IceIslands.Questline>=9 oraz Animal Activist w tej samej wymianie jaja/progresu. Brakuje tej operacji w niezmienionym wspólnym ownerze rozliczenia.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589877720"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/duncan.lua:159"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "d993a78548482682f83939ca8048d67d714cb3a9b1b5a260fc43e5ab7cac6068",
+      "quest_row": 60,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Firebug: sabotaż Nargor",
+        "pattern": "P02",
+        "trigger": "Use5467 on target uid2273",
+        "guard": "RaysMission2=1; wcześniejsza gałąź BloodBrothers.Mission07=1 pochłania użycie",
+        "effect": "RaysMission2=2;fire effect; nie usuwa5467 w tej gałęzi; zależność cudzej gałęzi pozostaje strzeżona i Left out zgodnie ANSWER pkt6",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_fire_bug.lua:32",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_fire_bug.lua:80",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_fire_bug.lua:110"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Obcy guard Blood Brothers ma priorytet przed własną gałęzią w others; nie zarejestrowano drugiego handlera5467. Decyzja B-Q19: Firebug zachowuje jedną źródłową kolejność wspólnego handlera: Blood Brothers z early return przed Nargor. Brakuje kwalifikacji tej całej operacji w istniejącym ownerze; nie zarejestrowano drugiego use5467 ani nie pominięto obcego guardu.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589878136"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_fire_bug.lua:110",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_fire_bug.lua:32",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_fire_bug.lua:80"
+      ],
+      "inventory_correction": {
+        "original": {
+          "quest": "the_shattered_isles_quest",
+          "step": "Firebug: sabotaż Nargor",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_fire_bug.lua:110"
+          ]
+        },
+        "reason": "Uzupełniono wcześniejszą gałąź Blood Brothers i kolejność wspólnego handlera; własna gałąź pozostaje strzeżona."
+      },
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "d455012b1c5a36a282a50d8fa002e06f3ce23005bd5977e15ca65e9ef0c304b4",
+      "quest_row": 61,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Raymond: raport sabotażu",
+        "pattern": "P09",
+        "trigger": "mission",
+        "guard": "RaysMission2=2",
+        "effect": "Reputation=15;RaysMission2=3",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:96"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:96",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "ac77fa72348e08d39bf2ffc6f2428cecf7b9bb43938ede048dd3cda00100987e",
+      "quest_row": 62,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Raymond: plany tawerny",
+        "pattern": "P09",
+        "trigger": "mission",
+        "guard": "RaysMission2=3;RaysMission3<1",
+        "effect": "RaysMission3=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:100"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:100",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "7dd4eb33640309dbfc63ae986c114f1bdbc904d4b3fdb81d6e9f82de723ce0ac",
+      "quest_row": 63,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Vulturenose: przebranie i drzwi",
+        "pattern": "P09, P13",
+        "trigger": "enter",
+        "guard": "RaysMission3=1;YavernDoor<0;equipped head6096,armor6095,legs5918,feet5461",
+        "effect": "YavernDoor=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/vulturenose.lua:56"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/vulturenose.lua:56",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "bb8450b84f4542534f989a0923bdeeb6ad53e850379443987bd7ead8a039ff59",
+      "quest_row": 64,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Drzwi tawerny",
+        "pattern": "P04",
+        "trigger": "door(31978,32856,3)",
+        "guard": "YavernDoor (pisownia donora)",
+        "effect": "otwieranie wspólnej bramki",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:626"
+        ],
+        "oteryn": "CZĘŚCIOWO — ogólny wykonawca; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs:127",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_CHEST_OR_DOOR_DATA",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejące dane zachowano bez drugiego wykonawcy.",
+      "left_out": "Istniejąca tożsamość skrzyni/bramki zachowana; nie tworzymy duplikatu, wejście wymaga własnego progresu i fizycznego bindingu. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:626",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "63289356e134ed1fa35a087b5bf8e67da7a447e53eb089d1b587388a656f2fa7",
+      "quest_row": 65,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Nargor: odczyt planu 1",
+        "pattern": "P14",
+        "trigger": "Use uid40001",
+        "guard": "RaysMission3=1;TavernMap1<0",
+        "effect": "TavernMap1=1; tekst świadectwa w osobnym elemencie",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:18"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held: wymagane storage.read_only dla RaysMission3. action_nargor_maps.lua:24 czyta ten track, a:28–29 zapisuje wyłącznie TavernMap. SET1 zastępowałby odczyt zapisem; usunięcie guardu dopuściłoby odczyt planu przed misją3. Dodatkowo brak UID40001–40003; źródłowa mowa osobno held. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "dd95db772701878dd12091851fa236de98b0b48c119a3fe7dafcb73be7ff89b9",
+      "quest_row": 66,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Nargor: odczyt planu 2",
+        "pattern": "P14",
+        "trigger": "Use uid40002",
+        "guard": "RaysMission3=1;TavernMap2<0",
+        "effect": "TavernMap2=1; tekst świadectwa w osobnym elemencie",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:18"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held: wymagane storage.read_only dla RaysMission3. action_nargor_maps.lua:24 czyta ten track, a:28–29 zapisuje wyłącznie TavernMap. SET1 zastępowałby odczyt zapisem; usunięcie guardu dopuściłoby odczyt planu przed misją3. Dodatkowo brak UID40001–40003; źródłowa mowa osobno held. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "324ac08aae718118c3dee0a724313b0c437dc9bab402ef69d2f8122030aba5f4",
+      "quest_row": 67,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Nargor: odczyt planu 3",
+        "pattern": "P14",
+        "trigger": "Use uid40003",
+        "guard": "RaysMission3=1;TavernMap3<0",
+        "effect": "TavernMap3=1; tekst świadectwa w osobnym elemencie",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:18"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held: wymagane storage.read_only dla RaysMission3. action_nargor_maps.lua:24 czyta ten track, a:28–29 zapisuje wyłącznie TavernMap. SET1 zastępowałby odczyt zapisem; usunięcie guardu dopuściłoby odczyt planu przed misją3. Dodatkowo brak UID40001–40003; źródłowa mowa osobno held. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "0ae133c4ed142a9818b898d6e636b4174fee91bd9caa86b881c4765932b83bd7",
+      "quest_row": 68,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Nargor: komunikaty odczytu",
+        "pattern": "P14",
+        "trigger": "pomyślny odczyt planu A/B/C",
+        "guard": "jak odczyt planów",
+        "effect": "player:say dokładnego tekstu z tabeli, brak pola success w bieżącym callback",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:30"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Brak projekcji TALKTYPE_MONSTER_SAY w SpeechMode. Pełne teksty A/B/C zachowane w held presentation JSON; bez zamiany na zwykły Say. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:30",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "cabfd455931fb67a63c3349259847f1929868ed6c8f1a9658d4b1306f1305971",
+      "quest_row": 69,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Raymond: komplet map i Klaus",
+        "pattern": "P09",
+        "trigger": "mission",
+        "guard": "RaysMission3=1;TavernMap1/2/3=1",
+        "effect": "Reputation=16;RaysMission3=3;RaysMission4=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:109"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:109",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "87c4ea2c1bdb6aa4ab8a175f5ea47ffdd13cf265abaf0caf24df6221bdf43102",
+      "quest_row": 70,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Klaus: przyjęcie przygotowań",
+        "pattern": "P09",
+        "trigger": "mission",
+        "guard": "RaysMission4=1",
+        "effect": "RaysMission4=2",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klaus.lua:60"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klaus.lua:60",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "a68d7a13e9ef4d5939b4855c2dadcdb1483d02a538bc8bf97691619f45e85080",
+      "quest_row": 71,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Raymond: list",
+        "pattern": "P09, P11",
+        "trigger": "mission",
+        "guard": "RaysMission4=2",
+        "effect": "item6105×1;RaysMission4=3",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:119"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:119",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "dbca406d98f1448689f50b1ebdbaeee58c8cd6f9e0585220cdcaf12b6afe0d27",
+      "quest_row": 72,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Klaus: oddanie listu",
+        "pattern": "P10, P09",
+        "trigger": "mission→yes;topic1",
+        "guard": "RaysMission4=3;remove6105×1",
+        "effect": "RaysMission4=4",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klaus.lua:69"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klaus.lua:69",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "f209495936414a63d04e2be6af4da1272bd97953063f7365a4d6f8fc90846f0b",
+      "quest_row": 73,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Raymond: finał",
+        "pattern": "P09, P11",
+        "trigger": "mission",
+        "guard": "RaysMission4=4",
+        "effect": "item2994×1;Reputation=17;RaysMission4=5",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:123"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Pełne donorowe reguły, teksty i guardy w deklaratywnym JSON; brak autoryzowanego trwałego NPC exchange/callera. Temporal corpse i writable letter pozostają held. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:123",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "10e0f9dceb4a17c5b138cb4bcb3905121370b1bcdff18523428d9224049fd556",
+      "quest_row": 74,
+      "inventory": {
+        "quest": "the_shattered_isles_quest",
+        "step": "Raymond: Pirate outfit",
+        "pattern": "P12",
+        "trigger": "pirate outfit",
+        "guard": "AccessToLagunaIsland=1;Outfit.PirateBase<1;RaysMission4=5",
+        "effect": "outfits151/155;PirateBase=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:144"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "PirateBase/Pirate Outfit to cudza własność według ANSWER pkt6.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589222770"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/raymond_striker.lua:144"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    }
+  ]
+}

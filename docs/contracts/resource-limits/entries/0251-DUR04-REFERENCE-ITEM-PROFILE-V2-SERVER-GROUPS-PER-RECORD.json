@@ -1,0 +1,20 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-SERVER-GROUPS-PER-RECORD",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+  "resource": "Present typed capability groups in one artifact v5 server-authoritative Item body",
+  "unit": "groups",
+  "hard_maximum": 17,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 17
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject group count before group-vector allocation; reject duplicates, noncanonical order and unknown critical groups (ids 1-17).",
+  "client_visible": false,
+  "boundary_tests": [
+    "17 known ordered unique groups accepted",
+    "18 groups rejected before allocation",
+    "group id 18, duplicate or unsorted group rejected"
+  ],
+  "notes": "v4 keeps 16 under the V1 row (ITEM-SEM-2b-3, D448)."
+}

@@ -1,0 +1,18 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-PRESENTATION-TAGS",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Item presentation tags in profile v1",
+  "unit": "entries",
+  "hard_maximum": 0,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 0
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Profile v1 admits no collection allocation; any entry retains explicit unsupported provenance and fails encoding.",
+  "client_visible": true,
+  "boundary_tests": [
+    "empty collection accepted as EXPLICIT_UNSUPPORTED_IN_V1",
+    "first entry rejected without silent loss"
+  ]
+}

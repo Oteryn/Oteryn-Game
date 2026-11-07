@@ -1,0 +1,33 @@
+[
+  {
+    "mechanic": "0053-world-event",
+    "kind": "keybindings",
+    "id": "0053-world-event-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+N",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0053-world-event",
+    "kind": "panels",
+    "id": "0053-world-event-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0053-world-event",
+    "kind": "handlers",
+    "id": "0053-world-event-query",
+    "status": "supported",
+    "commands": [
+      64
+    ],
+    "direction": "client_to_server",
+    "capability": 53,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "No persistent settings for the world-event query."
+    }
+  }
+]

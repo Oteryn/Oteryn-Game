@@ -1,0 +1,43 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 40
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Energy Beam",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_energy_beam"
+    },
+    "reference_spell_id": 22,
+    "requirements": {
+      "level": 23,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "needs_direction": true
+    },
+    "words": "exevo vis lux"
+  }
+}

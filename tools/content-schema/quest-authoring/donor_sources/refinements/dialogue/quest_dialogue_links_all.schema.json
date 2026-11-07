@@ -1,0 +1,492 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "scope",
+    "quest_inputs",
+    "inputs",
+    "native_admission",
+    "quests_complete",
+    "source_records",
+    "quest_dialogue_links",
+    "helper_context_links",
+    "summary",
+    "holds",
+    "callback_contexts"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_QUEST_DIALOGUE_SOURCE_LINKS/v1"
+    },
+    "scope": {
+      "const": "ALL_SOURCE_QUEST_EXACT_PROGRESS_COMPACT_CALLBACK_CONTEXT_SOURCE_ONLY"
+    },
+    "quest_inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "quest",
+          "source_data_sha256"
+        ],
+        "properties": {
+          "quest": {
+            "type": "object"
+          },
+          "source_data_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "corpus_manifest_sha256",
+        "ast_index_sha256",
+        "dialogue_library_sha256",
+        "helper_semantic_links_sha256"
+      ],
+      "properties": {
+        "corpus_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "ast_index_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "dialogue_library_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "helper_semantic_links_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "native_admission": {
+      "const": false
+    },
+    "quests_complete": {
+      "const": false
+    },
+    "source_records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source",
+          "revision",
+          "path",
+          "source_sha256",
+          "git_blob_sha1",
+          "function_scopes",
+          "storage_alias_map",
+          "storage_alias_witnesses",
+          "events",
+          "branches"
+        ],
+        "properties": {
+          "source_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "storage_alias_map": {
+            "type": "object"
+          },
+          "storage_alias_witnesses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "symbol",
+                "exact_storage_expression",
+                "witness",
+                "scope"
+              ],
+              "properties": {
+                "witness": {
+                  "type": "object",
+                  "required": [
+                    "source",
+                    "revision",
+                    "path",
+                    "source_sha256",
+                    "git_blob_sha1",
+                    "ast_path",
+                    "node_sha256",
+                    "span"
+                  ],
+                  "properties": {
+                    "source": {
+                      "enum": [
+                        "canary",
+                        "crystalserver"
+                      ]
+                    },
+                    "source_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "node_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  }
+                },
+                "scope": {
+                  "enum": [
+                    "SOLE_TOP_LEVEL_LOCAL_BINDING_NO_LOCAL_REASSIGNMENT_OR_PARAMETER_SHADOW",
+                    "SOLE_DIRECT_FUNCTION_BODY_LOCAL_NO_COMPETING_BINDING_OR_SHADOW"
+                  ]
+                }
+              }
+            }
+          },
+          "function_scopes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "witness",
+                "name",
+                "kind",
+                "parameters"
+              ],
+              "properties": {
+                "witness": {
+                  "type": "object",
+                  "required": [
+                    "source",
+                    "revision",
+                    "path",
+                    "source_sha256",
+                    "git_blob_sha1",
+                    "ast_path",
+                    "node_sha256",
+                    "span"
+                  ],
+                  "properties": {
+                    "source": {
+                      "enum": [
+                        "canary",
+                        "crystalserver"
+                      ]
+                    },
+                    "source_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "node_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "witness",
+                "guards",
+                "execution_order"
+              ],
+              "properties": {
+                "witness": {
+                  "type": "object",
+                  "required": [
+                    "source",
+                    "revision",
+                    "path",
+                    "source_sha256",
+                    "git_blob_sha1",
+                    "ast_path",
+                    "node_sha256",
+                    "span"
+                  ],
+                  "properties": {
+                    "source": {
+                      "enum": [
+                        "canary",
+                        "crystalserver"
+                      ]
+                    },
+                    "source_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "node_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  }
+                },
+                "execution_order": {
+                  "const": "SOURCE_OFFSET_ORDER_WITH_BRANCH_GUARDS_NOT_FLATTENED_RUNTIME_SEQUENCE"
+                }
+              }
+            }
+          },
+          "branches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "witness",
+                "test",
+                "outer_guards"
+              ],
+              "properties": {
+                "witness": {
+                  "type": "object",
+                  "required": [
+                    "source",
+                    "revision",
+                    "path",
+                    "source_sha256",
+                    "git_blob_sha1",
+                    "ast_path",
+                    "node_sha256",
+                    "span"
+                  ],
+                  "properties": {
+                    "source": {
+                      "enum": [
+                        "canary",
+                        "crystalserver"
+                      ]
+                    },
+                    "source_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "node_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "quest_dialogue_links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "quest",
+          "progress_key",
+          "transition_key",
+          "source_occurrence_index",
+          "occurrence",
+          "join_status",
+          "write_event_ref",
+          "guard_refs",
+          "runtime_readiness",
+          "quest_complete",
+          "link_semantics",
+          "callback_context_ref"
+        ],
+        "properties": {
+          "quest": {
+            "type": "object",
+            "required": [
+              "key",
+              "revision"
+            ]
+          },
+          "join_status": {
+            "enum": [
+              "EXACT_AST_STORAGE_WRITE",
+              "AMBIGUOUS_OR_NONLITERAL_AST_WRITE"
+            ]
+          },
+          "write_event_ref": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "source",
+                  "revision",
+                  "path",
+                  "source_sha256",
+                  "git_blob_sha1",
+                  "ast_path",
+                  "node_sha256",
+                  "span"
+                ],
+                "properties": {
+                  "source": {
+                    "enum": [
+                      "canary",
+                      "crystalserver"
+                    ]
+                  },
+                  "source_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "node_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dialogue_event_refs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "source",
+                "revision",
+                "path",
+                "source_sha256",
+                "git_blob_sha1",
+                "ast_path",
+                "node_sha256",
+                "span"
+              ],
+              "properties": {
+                "source": {
+                  "enum": [
+                    "canary",
+                    "crystalserver"
+                  ]
+                },
+                "source_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "node_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
+          },
+          "effect_event_refs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "source",
+                "revision",
+                "path",
+                "source_sha256",
+                "git_blob_sha1",
+                "ast_path",
+                "node_sha256",
+                "span"
+              ],
+              "properties": {
+                "source": {
+                  "enum": [
+                    "canary",
+                    "crystalserver"
+                  ]
+                },
+                "source_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "node_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
+          },
+          "runtime_readiness": {
+            "const": "NOT_ASSESSED"
+          },
+          "quest_complete": {
+            "const": false
+          },
+          "link_semantics": {
+            "enum": [
+              "EXACT_PROGRESS_WRITE_AND_ENCLOSING_SOURCE_FUNCTION_CONTEXT_NOT_EXECUTION_PATH",
+              "SOURCE_FILE_PRESENT_TARGET_WRITE_NOT_UNIQUELY_JOINED"
+            ]
+          },
+          "callback_context_ref": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "helper_context_links": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "summary": {
+      "type": "object"
+    },
+    "holds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "callback_contexts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_record_index",
+          "function_scope",
+          "dialogue_event_indices",
+          "effect_event_indices"
+        ],
+        "properties": {
+          "source_record_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "function_scope": {
+            "type": "object"
+          },
+          "dialogue_event_indices": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "effect_event_indices": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  }
+}

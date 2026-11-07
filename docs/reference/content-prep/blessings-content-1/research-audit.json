@@ -1,0 +1,77 @@
+{
+  "task": "BLESSINGS-CONTENT-1",
+  "review_date": "2026-10-19",
+  "scope": "POPULATED_OTERYN_REFERENCE_DATA_WITH_ARCHIVED_GLOBAL_SOURCE_LIMITATIONS",
+  "research_status": "ALL_TARGET_PARAMETER_FIELDS_POPULATED",
+  "runtime_admission": "BLOCKED",
+  "coverage": "The seven ordinary blessings, Twist of Fate, Inquisition bundle and Adventurer protection are covered with NPCs/locations and available price rules. Reduction tables are derived from the live official manual. Conflicting above-120 regular prices, Retro Hardcore community wording and unsupported promotion-specific purchase discounts remain explicit.",
+  "source_registry": "sources.json",
+  "record_counts": {
+    "docs/reference/content-prep/blessings-content-1/admission-evidence/reference-evidence.json": 10,
+    "docs/reference/content-prep/blessings-content-1/admission-evidence/evidence-00000-00009.json": 10
+  },
+  "evidence_field_counts": {
+    "DERIVED": 28,
+    "PROVEN": 65
+  },
+  "unresolved_fields": [],
+  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete.",
+  "filled_parameter_fields": 4,
+  "remaining_unfilled_parameter_fields": 0,
+  "normalized_companion_fields": 0,
+  "global_source_archive": "docs/reference/content-prep/blessings-content-1/tibia-source-archive.json",
+  "global_source_archive_counts": {
+    "CONFLICT": 3,
+    "UNKNOWN": 1
+  },
+  "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
+  "pending_index_metadata": [
+    {
+      "target_path": "docs/reference/content-prep/blessings-content-1/admission-evidence/character-blessings-index.json",
+      "held_by_prs": [
+        2194
+      ],
+      "replacement": {
+        "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+        "path": "rulesets/character/blessings/",
+        "kind": "ruleset",
+        "owner": "Character/Death",
+        "repository": "Oteryn/Oteryn-Game",
+        "population_state": "POPULATED",
+        "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+        "notes": "Blessing definitions/effects; current ownership durable.",
+        "runtime_admission": "BLOCKED",
+        "runtime_switch_authorized": false,
+        "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED",
+        "source_snapshot_target": "current-at-fetch-2026-10-18",
+        "payloads": [
+          {
+            "path": "docs/reference/content-prep/blessings-content-1/admission-evidence/reference-evidence.json",
+            "sha256": "614a9e7bb219f3d2bb77b14322e39cbf7cc82b97d55f87202a99d8cbe2264b91"
+          }
+        ]
+      },
+      "reason": "Do not edit overlapping open PR files; coordinator applies metadata only with native qualification."
+    },
+    {
+      "target_path": "docs/reference/content-prep/blessings-content-1/admission-evidence/services-blessings-index.json",
+      "held_by_prs": [
+        2194
+      ],
+      "replacement": {
+        "schema": "OTERYN_FAMILY_INDEX/v1",
+        "family": "Service.BlessingEvidence",
+        "record_count": 10,
+        "shard_size": 500,
+        "shards": [
+          "docs/reference/content-prep/blessings-content-1/admission-evidence/evidence-00000-00009.json"
+        ],
+        "population_state": "POPULATED",
+        "runtime_admission": "BLOCKED",
+        "runtime_switch_authorized": false,
+        "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED"
+      },
+      "reason": "Do not edit overlapping open PR files; coordinator applies metadata only with native qualification."
+    }
+  ]
+}

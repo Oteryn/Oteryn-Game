@@ -1,0 +1,576 @@
+{
+  "schema": "OTERYN_SPELL_R22_EVIDENCE_PUBLICATION/v1",
+  "raw_upstream_assets_included": false,
+  "entries": [
+    {
+      "original_name": "README.md",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/README.md",
+      "original_sha256": "3b3495d8cde8bd919d73b1fc0d33fa7872efb1c1f7ac56e7cebccb3889803600",
+      "published_sha256": "3b3495d8cde8bd919d73b1fc0d33fa7872efb1c1f7ac56e7cebccb3889803600"
+    },
+    {
+      "original_name": "audit.log",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/audit.log",
+      "original_sha256": "92b851d110b7e0a369890b626530e955dcb50520a7c645f6373025ffcc76e484",
+      "published_sha256": "92b851d110b7e0a369890b626530e955dcb50520a7c645f6373025ffcc76e484"
+    },
+    {
+      "original_name": "audit_source_completeness.py",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/audit_source_completeness.py",
+      "original_sha256": "6c5bf42ce214fc5c958144171733cd59b378c9254c5450da0373dba2134dafbc",
+      "published_sha256": "6c5bf42ce214fc5c958144171733cd59b378c9254c5450da0373dba2134dafbc"
+    },
+    {
+      "original_name": "canary-compatibility-recovered-registration-files.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/canary-compatibility-recovered-registration-files.json",
+      "original_sha256": "c26a1fae6cd14182506fbb34a77b525bb939744b6be141daf94c37c372c51928",
+      "published_sha256": "c26a1fae6cd14182506fbb34a77b525bb939744b6be141daf94c37c372c51928"
+    },
+    {
+      "original_name": "canary-duplicate-logical-registrations.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/canary-duplicate-logical-registrations.json",
+      "original_sha256": "2390d882f4a347b062cd382455e2e30e50cb375c0d7af47bbac9fe986781e50d",
+      "published_sha256": "2390d882f4a347b062cd382455e2e30e50cb375c0d7af47bbac9fe986781e50d"
+    },
+    {
+      "original_name": "canary-engine-key-conflicts.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/canary-engine-key-conflicts.json",
+      "original_sha256": "c42d2f3d1ee00c2a2bfb264b7a97bb150ed68bd13e254bbf92d7059a97b68e51",
+      "published_sha256": "c42d2f3d1ee00c2a2bfb264b7a97bb150ed68bd13e254bbf92d7059a97b68e51"
+    },
+    {
+      "original_name": "canary-file-classification.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/canary-file-classification.json.gz",
+      "original_sha256": "994c2a9df34abf96d069ffedbf6b73c654e74f3748ea8cd4689218651d0b18d8",
+      "published_sha256": "a62e60383497ee4c1c3693e8507902926f66389924483a714fe7ca7e27495900"
+    },
+    {
+      "original_name": "canary-lexical-spell-constructor-files.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/canary-lexical-spell-constructor-files.json",
+      "original_sha256": "c1df6005cd3bb7c06800c0622c3309fb8d06e263e29207634a234097b548bd53",
+      "published_sha256": "c1df6005cd3bb7c06800c0622c3309fb8d06e263e29207634a234097b548bd53"
+    },
+    {
+      "original_name": "canary-main-current-compatibility-recovered-registration-files.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/canary-main-current-compatibility-recovered-registration-files.json",
+      "original_sha256": "c26a1fae6cd14182506fbb34a77b525bb939744b6be141daf94c37c372c51928",
+      "published_sha256": "c26a1fae6cd14182506fbb34a77b525bb939744b6be141daf94c37c372c51928"
+    },
+    {
+      "original_name": "canary-main-current-delta-from-approved-pin.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/canary-main-current-delta-from-approved-pin.json",
+      "original_sha256": "5194051a9e15b4d2586bd479a4175a16475ad86c9bb9c9edc7d27d24f431a378",
+      "published_sha256": "5194051a9e15b4d2586bd479a4175a16475ad86c9bb9c9edc7d27d24f431a378"
+    },
+    {
+      "original_name": "canary-main-current-duplicate-logical-registrations.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/canary-main-current-duplicate-logical-registrations.json",
+      "original_sha256": "8ddbb9b612d8b393dde510ffe2e0b22883fca4b0637da587e2a902bd04289f64",
+      "published_sha256": "8ddbb9b612d8b393dde510ffe2e0b22883fca4b0637da587e2a902bd04289f64"
+    },
+    {
+      "original_name": "canary-main-current-engine-key-conflicts.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/canary-main-current-engine-key-conflicts.json",
+      "original_sha256": "9b7cade896ece317222eaf26ae8dab77e51e4a473a3817528739b26f6224c9d6",
+      "published_sha256": "9b7cade896ece317222eaf26ae8dab77e51e4a473a3817528739b26f6224c9d6"
+    },
+    {
+      "original_name": "canary-main-current-file-classification.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/canary-main-current-file-classification.json.gz",
+      "original_sha256": "9dd31d3ec09a7eda64b485f903ee8a24b9f61ba45c58fbe4e9305f59cf886265",
+      "published_sha256": "68765e1a56ab2654e4b683278ddb2018507f8bbbd7b51f6e35d8efd13d708325"
+    },
+    {
+      "original_name": "canary-main-current-lexical-spell-constructor-files.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/canary-main-current-lexical-spell-constructor-files.json",
+      "original_sha256": "51bb4ddd1c1e48dc61a71b14793e9d98cab5df1749d6f04ce9a644c0fc5d905c",
+      "published_sha256": "51bb4ddd1c1e48dc61a71b14793e9d98cab5df1749d6f04ce9a644c0fc5d905c"
+    },
+    {
+      "original_name": "canary-main-current-monster-load-findings.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/canary-main-current-monster-load-findings.json",
+      "original_sha256": "cca6ce43818d7e45435a7ce3e2bc3050bd17b5e1b36417bd2b6d58dc24283449",
+      "published_sha256": "cca6ce43818d7e45435a7ce3e2bc3050bd17b5e1b36417bd2b6d58dc24283449"
+    },
+    {
+      "original_name": "canary-main-current-registration-inventory.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/canary-main-current-registration-inventory.json",
+      "original_sha256": "34e3bdfcc6feedf7e711e1bf0707581165ca551e594738745ea34d4beb8134a1",
+      "published_sha256": "34e3bdfcc6feedf7e711e1bf0707581165ca551e594738745ea34d4beb8134a1"
+    },
+    {
+      "original_name": "canary-main-current-unreadable-registration-files.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/canary-main-current-unreadable-registration-files.json",
+      "original_sha256": "774bf53b7c3df44cca1b33dfbc22d8074c5b21d0ba111a7c30076e55d57036a9",
+      "published_sha256": "774bf53b7c3df44cca1b33dfbc22d8074c5b21d0ba111a7c30076e55d57036a9"
+    },
+    {
+      "original_name": "canary-monster-load-findings.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/canary-monster-load-findings.json",
+      "original_sha256": "5316704991627d95d3361d1ccdd2900f91048dfd056d5dc1bfecedde0526a693",
+      "published_sha256": "5316704991627d95d3361d1ccdd2900f91048dfd056d5dc1bfecedde0526a693"
+    },
+    {
+      "original_name": "canary-registration-inventory.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/canary-registration-inventory.json",
+      "original_sha256": "81e4f071d50b20eca9a6ff25f6df5fd47aff8c662f01599e0cd27fa3d1a535ea",
+      "published_sha256": "81e4f071d50b20eca9a6ff25f6df5fd47aff8c662f01599e0cd27fa3d1a535ea"
+    },
+    {
+      "original_name": "canary-unreadable-registration-files.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/canary-unreadable-registration-files.json",
+      "original_sha256": "774bf53b7c3df44cca1b33dfbc22d8074c5b21d0ba111a7c30076e55d57036a9",
+      "published_sha256": "774bf53b7c3df44cca1b33dfbc22d8074c5b21d0ba111a7c30076e55d57036a9"
+    },
+    {
+      "original_name": "classify_source_inventory.py",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/classify_source_inventory.py",
+      "original_sha256": "dfd274389f317c5db01300fe10bba9d81c85533f5ff0b4bdb0736dc54bcbad31",
+      "published_sha256": "dfd274389f317c5db01300fe10bba9d81c85533f5ff0b4bdb0736dc54bcbad31"
+    },
+    {
+      "original_name": "crystal-compatibility-recovered-registration-files.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/crystal-compatibility-recovered-registration-files.json",
+      "original_sha256": "b4f2b53d2c62422d53bd4df8dffa5dc5ca0799e7d15fd5aac542821c5a8c4709",
+      "published_sha256": "b4f2b53d2c62422d53bd4df8dffa5dc5ca0799e7d15fd5aac542821c5a8c4709"
+    },
+    {
+      "original_name": "crystal-duplicate-logical-registrations.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/crystal-duplicate-logical-registrations.json",
+      "original_sha256": "cdb42895e223d73e42d438edd99d97768da7a7579b09550b015b7db1dad88fd2",
+      "published_sha256": "cdb42895e223d73e42d438edd99d97768da7a7579b09550b015b7db1dad88fd2"
+    },
+    {
+      "original_name": "crystal-engine-key-conflicts.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/crystal-engine-key-conflicts.json",
+      "original_sha256": "6f9f256d0e07b5ef4d410fb8fcc5c1804bafafacb836e33b577af25110b7cd5d",
+      "published_sha256": "6f9f256d0e07b5ef4d410fb8fcc5c1804bafafacb836e33b577af25110b7cd5d"
+    },
+    {
+      "original_name": "crystal-file-classification.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/crystal-file-classification.json.gz",
+      "original_sha256": "f93fde0fc04a86912327dc23ed3810fef3e7511202325763ec5e2f9f63c42cbc",
+      "published_sha256": "96dc7f0170cdbd908f8f7bacd39c38cd120cf77b43fc49a113ad30370c5059fc"
+    },
+    {
+      "original_name": "crystal-lexical-spell-constructor-files.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/crystal-lexical-spell-constructor-files.json",
+      "original_sha256": "93b6c4cedd703fd6ee5272324e1fd84c4fa4080fbeaf7bc1c037998ebfc25fde",
+      "published_sha256": "93b6c4cedd703fd6ee5272324e1fd84c4fa4080fbeaf7bc1c037998ebfc25fde"
+    },
+    {
+      "original_name": "crystal-monster-load-findings.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/crystal-monster-load-findings.json",
+      "original_sha256": "56a302867410e2bff2f21f52f6c507eac075f3dc8cbed93febe9636eef7517ac",
+      "published_sha256": "56a302867410e2bff2f21f52f6c507eac075f3dc8cbed93febe9636eef7517ac"
+    },
+    {
+      "original_name": "crystal-registration-inventory.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/crystal-registration-inventory.json",
+      "original_sha256": "5974d2fde20eaac4fce994341771f788b798ad8a02957512aa0ce474d6f32b24",
+      "published_sha256": "5974d2fde20eaac4fce994341771f788b798ad8a02957512aa0ce474d6f32b24"
+    },
+    {
+      "original_name": "crystal-summer-current-compatibility-recovered-registration-files.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/crystal-summer-current-compatibility-recovered-registration-files.json",
+      "original_sha256": "b4f2b53d2c62422d53bd4df8dffa5dc5ca0799e7d15fd5aac542821c5a8c4709",
+      "published_sha256": "b4f2b53d2c62422d53bd4df8dffa5dc5ca0799e7d15fd5aac542821c5a8c4709"
+    },
+    {
+      "original_name": "crystal-summer-current-delta-from-approved-pin.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/crystal-summer-current-delta-from-approved-pin.json",
+      "original_sha256": "21e3ef01dfeca2bc4e64b53535ddb0781877c693c549fb07b6d7bbe721c5b623",
+      "published_sha256": "21e3ef01dfeca2bc4e64b53535ddb0781877c693c549fb07b6d7bbe721c5b623"
+    },
+    {
+      "original_name": "crystal-summer-current-duplicate-logical-registrations.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/crystal-summer-current-duplicate-logical-registrations.json",
+      "original_sha256": "0376464a29969d425b755caea0683ba5001f8caaf04ea033b76c38b887e76e3e",
+      "published_sha256": "0376464a29969d425b755caea0683ba5001f8caaf04ea033b76c38b887e76e3e"
+    },
+    {
+      "original_name": "crystal-summer-current-engine-key-conflicts.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/crystal-summer-current-engine-key-conflicts.json",
+      "original_sha256": "5bf7a801c0250c8397527338e877293ca68ee9db706207983c5df6c060e1adf5",
+      "published_sha256": "5bf7a801c0250c8397527338e877293ca68ee9db706207983c5df6c060e1adf5"
+    },
+    {
+      "original_name": "crystal-summer-current-file-classification.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/crystal-summer-current-file-classification.json.gz",
+      "original_sha256": "d61727dd6672e8c9922e46c49063c6c61c76b12604ad65ed1858ac24247c4be9",
+      "published_sha256": "9d7b39537be6ecffd41d4b3d298e51aea80ead5835e0d9487402b59e324bea19"
+    },
+    {
+      "original_name": "crystal-summer-current-lexical-spell-constructor-files.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/crystal-summer-current-lexical-spell-constructor-files.json",
+      "original_sha256": "a53ee00913d851f4479b589103f2e61777f3c91edfa6247556049dc937b32c22",
+      "published_sha256": "a53ee00913d851f4479b589103f2e61777f3c91edfa6247556049dc937b32c22"
+    },
+    {
+      "original_name": "crystal-summer-current-monster-load-findings.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/crystal-summer-current-monster-load-findings.json",
+      "original_sha256": "56a302867410e2bff2f21f52f6c507eac075f3dc8cbed93febe9636eef7517ac",
+      "published_sha256": "56a302867410e2bff2f21f52f6c507eac075f3dc8cbed93febe9636eef7517ac"
+    },
+    {
+      "original_name": "crystal-summer-current-registration-inventory.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/crystal-summer-current-registration-inventory.json",
+      "original_sha256": "0e4316487e2b62e2fcf35e706226e19c98a6ea0cbd91b16694833081d6eababc",
+      "published_sha256": "0e4316487e2b62e2fcf35e706226e19c98a6ea0cbd91b16694833081d6eababc"
+    },
+    {
+      "original_name": "crystal-summer-current-unreadable-registration-files.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/crystal-summer-current-unreadable-registration-files.json",
+      "original_sha256": "295e85dd3e9394309e50400863377ece43e54b8f9bff136a89bf88d1fe457d3c",
+      "published_sha256": "295e85dd3e9394309e50400863377ece43e54b8f9bff136a89bf88d1fe457d3c"
+    },
+    {
+      "original_name": "crystal-unreadable-registration-files.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/crystal-unreadable-registration-files.json",
+      "original_sha256": "295e85dd3e9394309e50400863377ece43e54b8f9bff136a89bf88d1fe457d3c",
+      "published_sha256": "295e85dd3e9394309e50400863377ece43e54b8f9bff136a89bf88d1fe457d3c"
+    },
+    {
+      "original_name": "existing-catalog-provenance-index.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/existing-catalog-provenance-index.json",
+      "original_sha256": "7ec905898931ecd01776b7d9a96e440534f7af9fb811eb59dabdbeb467258d21",
+      "published_sha256": "7ec905898931ecd01776b7d9a96e440534f7af9fb811eb59dabdbeb467258d21"
+    },
+    {
+      "original_name": "inventory-verification.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/inventory-verification.json",
+      "original_sha256": "7311bc2435a5e7d0b137364ce2cba0cf70588b84a0fbb84ade667fa8a6870a95",
+      "published_sha256": "7311bc2435a5e7d0b137364ce2cba0cf70588b84a0fbb84ade667fa8a6870a95"
+    },
+    {
+      "original_name": "source-classification-summary.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/source-classification-summary.json",
+      "original_sha256": "d3e9e85027fd43f11f8a6f215a6500aacba2d879ba01cbf9f0d72020c8a7e637",
+      "published_sha256": "d3e9e85027fd43f11f8a6f215a6500aacba2d879ba01cbf9f0d72020c8a7e637"
+    },
+    {
+      "original_name": "source-completeness-summary.json",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/source-completeness-summary.json",
+      "original_sha256": "3a1135146af33926374e47b226e9964c3073020b75765151c22a80f88a214919",
+      "published_sha256": "3a1135146af33926374e47b226e9964c3073020b75765151c22a80f88a214919"
+    },
+    {
+      "original_name": "verify_source_audit.py",
+      "published_path": "docs/reference/spells/r22-audit/source-completeness/verify_source_audit.py",
+      "original_sha256": "36d962130724364be86f37bc0be689f7e95e14eec308eb7bb855686105bdbea2",
+      "published_sha256": "36d962130724364be86f37bc0be689f7e95e14eec308eb7bb855686105bdbea2"
+    },
+    {
+      "original_name": "current-three-source-verification.json",
+      "published_path": "docs/reference/spells/r22-audit/player-references/current-three-source-verification.json",
+      "original_sha256": "3f46544b959fe1f652be9d88dcc99dc7ca1741ab51c8681ac7f8699aa601b589",
+      "published_sha256": "3f46544b959fe1f652be9d88dcc99dc7ca1741ab51c8681ac7f8699aa601b589"
+    },
+    {
+      "original_name": "player-reference-coverage.json",
+      "published_path": "docs/reference/spells/r22-audit/player-references/player-reference-coverage.json.gz",
+      "original_sha256": "2c401625bfe79bf133f1a3c503c9e366deb1eb67aa0f266cf27f407a286f8c49",
+      "published_sha256": "2e787edb447ea786cbadfba5a21c787bb8e5913ce314d879845552d580327561"
+    },
+    {
+      "original_name": "ci-verify-pinned.json",
+      "published_path": "docs/reference/spells/r22-audit/player-references/ci-verify-pinned.json",
+      "original_sha256": "3f46544b959fe1f652be9d88dcc99dc7ca1741ab51c8681ac7f8699aa601b589",
+      "published_sha256": "3f46544b959fe1f652be9d88dcc99dc7ca1741ab51c8681ac7f8699aa601b589"
+    },
+    {
+      "original_name": "active-three-source-verification.json",
+      "published_path": "docs/reference/spells/r22-audit/player-references/active-three-source-verification.json",
+      "original_sha256": "adeeb4cb4914bf43d5dde75143a2ff8a1c622b23f80e2078ed0c15941e0aa983",
+      "published_sha256": "adeeb4cb4914bf43d5dde75143a2ff8a1c622b23f80e2078ed0c15941e0aa983"
+    },
+    {
+      "original_name": "audit-checks.json",
+      "published_path": "docs/reference/spells/r22-audit/player-references/audit-checks.json",
+      "original_sha256": "596b11ea738942a005df66b4adfec8649d8557857fdbd02e45dd297ba14297f9",
+      "published_sha256": "596b11ea738942a005df66b4adfec8649d8557857fdbd02e45dd297ba14297f9"
+    },
+    {
+      "original_name": "ci-readiness-pinned.json",
+      "published_path": "docs/reference/spells/r22-audit/player-references/ci-readiness-pinned.json",
+      "original_sha256": "3be31f618bc53bc5e48246a7db2f752babbbb0ffcda7e72ecb6e3428714af73b",
+      "published_sha256": "3be31f618bc53bc5e48246a7db2f752babbbb0ffcda7e72ecb6e3428714af73b"
+    },
+    {
+      "original_name": "player-reference-coverage-fresh-tibiopedia-final.json",
+      "published_path": "docs/reference/spells/r22-audit/player-references/player-reference-coverage-fresh-tibiopedia-final.json.gz",
+      "original_sha256": "aa4541db699e7cde1beafe295f50bc282cba4933220fca8e1516d346cbaf399d",
+      "published_sha256": "76d1023068907908f20bfb688f1b9fd7752eca5956f6dbc9f408e4c14a08a54f"
+    },
+    {
+      "original_name": "ci-verify-final.json",
+      "published_path": "docs/reference/spells/r22-audit/player-references/ci-verify-final.json",
+      "original_sha256": "3f46544b959fe1f652be9d88dcc99dc7ca1741ab51c8681ac7f8699aa601b589",
+      "published_sha256": "3f46544b959fe1f652be9d88dcc99dc7ca1741ab51c8681ac7f8699aa601b589"
+    },
+    {
+      "original_name": "ci-census-final.json",
+      "published_path": "docs/reference/spells/r22-audit/player-references/ci-census-final.json",
+      "original_sha256": "a6b6c648fc308f3755e46f743475879da1ab7e2f2474eaa5cbaed8f667264d10",
+      "published_sha256": "a6b6c648fc308f3755e46f743475879da1ab7e2f2474eaa5cbaed8f667264d10"
+    },
+    {
+      "original_name": "player-reference-coverage-fresh-tibiopedia.json",
+      "published_path": "docs/reference/spells/r22-audit/player-references/player-reference-coverage-fresh-tibiopedia.json.gz",
+      "original_sha256": "5d8b35d99ed367d5d76e405a38d0bbf68095d3a2920676850a003c7196ee2f5f",
+      "published_sha256": "3c8d35dbbf646162d0e1cf1ec5dfdb133c0ac3f1e3fc61e3809f242380fbb27e"
+    },
+    {
+      "original_name": "ci-readiness-final.json",
+      "published_path": "docs/reference/spells/r22-audit/player-references/ci-readiness-final.json",
+      "original_sha256": "3be31f618bc53bc5e48246a7db2f752babbbb0ffcda7e72ecb6e3428714af73b",
+      "published_sha256": "3be31f618bc53bc5e48246a7db2f752babbbb0ffcda7e72ecb6e3428714af73b"
+    },
+    {
+      "original_name": "ci-readiness.json",
+      "published_path": "docs/reference/spells/r22-audit/player-references/ci-readiness.json",
+      "original_sha256": "5417ef1d4f0990aafe30f4c3c3a855c800d879ea4975b1c62a6e8a2dfc2e2efe",
+      "published_sha256": "5417ef1d4f0990aafe30f4c3c3a855c800d879ea4975b1c62a6e8a2dfc2e2efe"
+    },
+    {
+      "original_name": "player-reference-coverage-with-applicability.json",
+      "published_path": "docs/reference/spells/r22-audit/player-references/player-reference-coverage-with-applicability.json.gz",
+      "original_sha256": "550aae4dcaff698cc7d85a9db81483f136d7ed29d57c1c7e5c7a9e7c83bb28d4",
+      "published_sha256": "edf57e5219cc3c0049a64cef431c2db7103e55f45d80fd90fc7c104fd00341b1"
+    },
+    {
+      "original_name": "ci-repair-qualification.json",
+      "published_path": "docs/reference/spells/r22-audit/player-references/ci-repair-qualification.json",
+      "original_sha256": "2ca8789621d54313e5c5dcd8684719a5771b6766c0ed8919938b2b18c2babea5",
+      "published_sha256": "2ca8789621d54313e5c5dcd8684719a5771b6766c0ed8919938b2b18c2babea5"
+    },
+    {
+      "original_name": "audit-summary.json",
+      "published_path": "docs/reference/spells/r22-audit/player-references/audit-summary.json",
+      "original_sha256": "47566c46c670aff98749f7b369f260d1649335693e104a78fab50712299ccdae",
+      "published_sha256": "47566c46c670aff98749f7b369f260d1649335693e104a78fab50712299ccdae"
+    },
+    {
+      "original_name": "ci-verify.json",
+      "published_path": "docs/reference/spells/r22-audit/player-references/ci-verify.json",
+      "original_sha256": "3f46544b959fe1f652be9d88dcc99dc7ca1741ab51c8681ac7f8699aa601b589",
+      "published_sha256": "3f46544b959fe1f652be9d88dcc99dc7ca1741ab51c8681ac7f8699aa601b589"
+    },
+    {
+      "original_name": "ci-starter-diff.json",
+      "published_path": "docs/reference/spells/r22-audit/player-references/ci-starter-diff.json",
+      "original_sha256": "b3caccb59c73b67123452c30253f2ce795b54448630174a9311d8f2f630049af",
+      "published_sha256": "b3caccb59c73b67123452c30253f2ce795b54448630174a9311d8f2f630049af"
+    },
+    {
+      "original_name": "healing-rune-vocation-observations.json",
+      "published_path": "docs/reference/spells/r22-audit/tibiopedia/healing-rune-vocation-observations.json",
+      "original_sha256": "3ff905b5304f889d2d66d006e971dc01d44a04e42985c187bff96bec71b61022",
+      "published_sha256": "3ff905b5304f889d2d66d006e971dc01d44a04e42985c187bff96bec71b61022"
+    },
+    {
+      "original_name": "tibiopedia-spell-facts-2026-10-02.json",
+      "published_path": "docs/reference/spells/r22-audit/tibiopedia/tibiopedia-spell-facts-2026-10-02.json",
+      "original_sha256": "fc0788fffee95d2d591091e5698bf0c3dab99d546c54221a649f6e138e604dc1",
+      "published_sha256": "fc0788fffee95d2d591091e5698bf0c3dab99d546c54221a649f6e138e604dc1"
+    },
+    {
+      "original_name": "prior-current-diff.json",
+      "published_path": "docs/reference/spells/r22-audit/tibiopedia/prior-current-diff.json",
+      "original_sha256": "9da96fe5d61a45be21f564fbbff019d4d4a3b10b96052600224ecdcd9c17f46a",
+      "published_sha256": "9da96fe5d61a45be21f564fbbff019d4d4a3b10b96052600224ecdcd9c17f46a"
+    },
+    {
+      "original_name": "mechanics-single-facts.json",
+      "published_path": "docs/reference/spells/r22-audit/tibiopedia/mechanics-single-facts.json",
+      "original_sha256": "f77654c01a36a0f4013b6fe5e2cae34129b588aad8d7459cb8dc2acf0e27aacc",
+      "published_sha256": "f77654c01a36a0f4013b6fe5e2cae34129b588aad8d7459cb8dc2acf0e27aacc"
+    },
+    {
+      "original_name": "current-active-catalog-comparison.json",
+      "published_path": "docs/reference/spells/r22-audit/tibiopedia/current-active-catalog-comparison.json",
+      "original_sha256": "781347c7571022a2aeb4e1afa2cf17bf013c1b9aafd88713713617ca1edef121",
+      "published_sha256": "781347c7571022a2aeb4e1afa2cf17bf013c1b9aafd88713713617ca1edef121"
+    },
+    {
+      "original_name": "monk-page-discovery.json",
+      "published_path": "docs/reference/spells/r22-audit/tibiopedia/monk-page-discovery.json",
+      "original_sha256": "bef0611d926e1be66237a7581033eb56279d4eff08041321c032d5f89698310f",
+      "published_sha256": "bef0611d926e1be66237a7581033eb56279d4eff08041321c032d5f89698310f"
+    },
+    {
+      "original_name": "capture-manifest.json",
+      "published_path": "docs/reference/spells/r22-audit/tibiopedia/capture-manifest.json",
+      "original_sha256": "e464b92fb833f1617b1c055bf099bac3b05ca39105a727384fb9d97bb0c20a6d",
+      "published_sha256": "e464b92fb833f1617b1c055bf099bac3b05ca39105a727384fb9d97bb0c20a6d"
+    },
+    {
+      "original_name": "unmatched-direct-lookup.json",
+      "published_path": "docs/reference/spells/r22-audit/tibiopedia/unmatched-direct-lookup.json",
+      "original_sha256": "b2897e6d75201c2deafb885670eb7017be8d1316216bc47d804b63d730a1a32f",
+      "published_sha256": "b2897e6d75201c2deafb885670eb7017be8d1316216bc47d804b63d730a1a32f"
+    },
+    {
+      "original_name": "per-spell-formula-coverage.json",
+      "published_path": "docs/reference/spells/r22-audit/formula-verification/per-spell-formula-coverage.json",
+      "original_sha256": "246f03f831271e8ba599d486ea3a59ae43a9b672ec8504fb62c8f1702aff557d",
+      "published_sha256": "246f03f831271e8ba599d486ea3a59ae43a9b672ec8504fb62c8f1702aff557d"
+    },
+    {
+      "original_name": "concrete-formula-findings.json",
+      "published_path": "docs/reference/spells/r22-audit/formula-verification/concrete-formula-findings.json",
+      "original_sha256": "2fe872fdaa2441af03c6d540f7b8c44f31f0124c461de38debdae79205e6ebe8",
+      "published_sha256": "2fe872fdaa2441af03c6d540f7b8c44f31f0124c461de38debdae79205e6ebe8"
+    },
+    {
+      "original_name": "live-probe-receipts.json",
+      "published_path": "docs/reference/spells/r22-audit/formula-verification/live-probe-receipts.json",
+      "original_sha256": "cf6e1ac3bff74b29954a5f52fb1f453a3cf93afd7a91b4e4d50cae6c9d904acd",
+      "published_sha256": "cf6e1ac3bff74b29954a5f52fb1f453a3cf93afd7a91b4e4d50cae6c9d904acd"
+    },
+    {
+      "original_name": "audit-verification.json",
+      "published_path": "docs/reference/spells/r22-audit/formula-verification/audit-verification.json",
+      "original_sha256": "b31f4723a6e46dc1ad0d8b0101711bf3f0f306fea3412a32843440e3daede721",
+      "published_sha256": "b31f4723a6e46dc1ad0d8b0101711bf3f0f306fea3412a32843440e3daede721"
+    },
+    {
+      "original_name": "build_coverage.py",
+      "published_path": "docs/reference/spells/r22-audit/formula-verification/build_coverage.py",
+      "original_sha256": "b7dd58f9e37699380a5f2c42446848869a3b20154e7bc6cff016f03e101b4b1d",
+      "published_sha256": "b7dd58f9e37699380a5f2c42446848869a3b20154e7bc6cff016f03e101b4b1d"
+    },
+    {
+      "original_name": "compare_current.py",
+      "published_path": "docs/reference/spells/r22-audit/formula-verification/compare_current.py",
+      "original_sha256": "9121dc43e15708125000a0814e17495c79a4b90e20c5d7061704b8710490cd6d",
+      "published_sha256": "9121dc43e15708125000a0814e17495c79a4b90e20c5d7061704b8710490cd6d"
+    },
+    {
+      "original_name": "live_probe.py",
+      "published_path": "docs/reference/spells/r22-audit/formula-verification/live_probe.py",
+      "original_sha256": "50c0f5de819fe94723eb8edbe9a33920705e6c6bfa9c733d63ffc1157033c9b9",
+      "published_sha256": "50c0f5de819fe94723eb8edbe9a33920705e6c6bfa9c733d63ffc1157033c9b9"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-import-current/summary.json",
+      "published_path": "docs/reference/spells/r22-audit/monster-import-current/summary.json",
+      "original_sha256": "a2967ae8327a8b527d86227ea4801d41eba4b503b7ec04eafa5c116e9e62c353",
+      "published_sha256": "a2967ae8327a8b527d86227ea4801d41eba4b503b7ec04eafa5c116e9e62c353"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-import-current/partial_monster_loader.py",
+      "published_path": "docs/reference/spells/r22-audit/monster-import-current/partial_monster_loader.py",
+      "original_sha256": "b6fce945c1b1de346e8ce2908def9cf28a5c9138970ff7b5220fcf72b18f4641",
+      "published_sha256": "b6fce945c1b1de346e8ce2908def9cf28a5c9138970ff7b5220fcf72b18f4641"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-import-current/registration-capture-closure.json",
+      "published_path": "docs/reference/spells/r22-audit/monster-import-current/registration-capture-closure.json",
+      "original_sha256": "26a8f211ad7014845c5e87a380bc5991841126ea422a13321ec327d5e086a77f",
+      "published_sha256": "26a8f211ad7014845c5e87a380bc5991841126ea422a13321ec327d5e086a77f"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-import-current/verification-proof.json",
+      "published_path": "docs/reference/spells/r22-audit/monster-import-current/verification-proof.json",
+      "original_sha256": "83650593afb52b27918b63b2104d5c91d34260d9235d4960ff40db0bf9405061",
+      "published_sha256": "83650593afb52b27918b63b2104d5c91d34260d9235d4960ff40db0bf9405061"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-import-current/archive-verification-proof.json",
+      "published_path": "docs/reference/spells/r22-audit/monster-import-current/archive-verification-proof.json",
+      "original_sha256": "54e765010898df5a1041b1ce483daefab7568f7267643883dc007626423ca1bd",
+      "published_sha256": "54e765010898df5a1041b1ce483daefab7568f7267643883dc007626423ca1bd"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-import-current/remaining-blockers.json",
+      "published_path": "docs/reference/spells/r22-audit/monster-import-current/remaining-blockers.json",
+      "original_sha256": "82e531db868f6e99520581d55d33917044c499cc27ce5f205bf231a98a9b4efb",
+      "published_sha256": "82e531db868f6e99520581d55d33917044c499cc27ce5f205bf231a98a9b4efb"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-import-current/import_all_monster_spells.py",
+      "published_path": "docs/reference/spells/r22-audit/monster-import-current/import_all_monster_spells.py",
+      "original_sha256": "1356f8bf32869c222f656925bd477471adcdf3c6150bea0c34fd0f6243dd4bfc",
+      "published_sha256": "1356f8bf32869c222f656925bd477471adcdf3c6150bea0c34fd0f6243dd4bfc"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-authoring-import-current.tar.gz",
+      "published_path": "docs/reference/spells/r22-audit/monster-import-current/spells-r22-monster-authoring-import-current.tar.gz",
+      "original_sha256": "db30c4a289cc404d1c8e36921c788529d2893c2850aee65137ddf7d55ebab481",
+      "published_sha256": "db30c4a289cc404d1c8e36921c788529d2893c2850aee65137ddf7d55ebab481"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-import-current/README.md",
+      "published_path": "docs/reference/spells/r22-audit/monster-import-current/README.md",
+      "original_sha256": "ac590cdbab33a146ad61c7c31e0814672d211fab088c9e902c415e6701435be8",
+      "published_sha256": "ac590cdbab33a146ad61c7c31e0814672d211fab088c9e902c415e6701435be8"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-import-current/publication-manifest.json",
+      "published_path": "docs/reference/spells/r22-audit/monster-import-current/publication-manifest.json",
+      "original_sha256": "e184d0055f7331aae205022c84c4750e09b798f9731b8a9077b773cfae896e9b",
+      "published_sha256": "e184d0055f7331aae205022c84c4750e09b798f9731b8a9077b773cfae896e9b"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-import-current/verify_import.py",
+      "published_path": "docs/reference/spells/r22-audit/monster-import-current/verify_import.py",
+      "original_sha256": "0e56c84b0b9cffc98c5dbb130d8cb58ebf98e22c4d91bf0efb474f61214b7ebe",
+      "published_sha256": "0e56c84b0b9cffc98c5dbb130d8cb58ebf98e22c4d91bf0efb474f61214b7ebe"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-reference-current/tibiopedia-monster-facts.jsonl",
+      "published_path": "docs/reference/spells/r22-audit/monster-references-current/tibiopedia-monster-facts.jsonl",
+      "original_sha256": "6dffde442d9cafa9bb87b7246661c687edd67c212ec6a523c6a7b70fbcdb28e7",
+      "published_sha256": "6dffde442d9cafa9bb87b7246661c687edd67c212ec6a523c6a7b70fbcdb28e7"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-reference-current/validate_evidence.py",
+      "published_path": "docs/reference/spells/r22-audit/monster-references-current/validate_evidence.py",
+      "original_sha256": "47f15a1fe96a2c8e54fc6f99488c957fa2228c86ee028767bbc23f84e6b52bb7",
+      "published_sha256": "47f15a1fe96a2c8e54fc6f99488c957fa2228c86ee028767bbc23f84e6b52bb7"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-reference-current/summary.json",
+      "published_path": "docs/reference/spells/r22-audit/monster-references-current/summary.json",
+      "original_sha256": "1195aa3a918ef87c30fd16093e4fef56e2ecea2042fbb34f8126d4fc8329fe84",
+      "published_sha256": "1195aa3a918ef87c30fd16093e4fef56e2ecea2042fbb34f8126d4fc8329fe84"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-reference-current/evidence-validation.json",
+      "published_path": "docs/reference/spells/r22-audit/monster-references-current/evidence-validation.json",
+      "original_sha256": "3a2d11ea890a28f95d5cee16ec5368d27b996998fbfd0b6627c90afd44f5b815",
+      "published_sha256": "3a2d11ea890a28f95d5cee16ec5368d27b996998fbfd0b6627c90afd44f5b815"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-reference-current/README.md",
+      "published_path": "docs/reference/spells/r22-audit/monster-references-current/README.md",
+      "original_sha256": "ee01863ddf99c1e2cc35e6da70885d1c2c6741292aa80dfa9ff45c0e762fbd62",
+      "published_sha256": "ee01863ddf99c1e2cc35e6da70885d1c2c6741292aa80dfa9ff45c0e762fbd62"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-reference-current/numeric-discrepancies.json.gz",
+      "published_path": "docs/reference/spells/r22-audit/monster-references-current/numeric-discrepancies.json.gz",
+      "original_sha256": "395f2d2f455f15ca149d9b23e59dce10519b8a21e5b83d8edc37be8d5daec3dd",
+      "published_sha256": "395f2d2f455f15ca149d9b23e59dce10519b8a21e5b83d8edc37be8d5daec3dd"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-reference-current/monster-slot-field-comparisons.json.gz",
+      "published_path": "docs/reference/spells/r22-audit/monster-references-current/monster-slot-field-comparisons.json.gz",
+      "original_sha256": "651156f93b052e7ce67ca2c310361522db32ff1ed51779c957c644a5ebd89370",
+      "published_sha256": "651156f93b052e7ce67ca2c310361522db32ff1ed51779c957c644a5ebd89370"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-reference-current/artifact-manifest.json",
+      "published_path": "docs/reference/spells/r22-audit/monster-references-current/artifact-manifest.json",
+      "original_sha256": "efe55f8ce010f1c73566820b098176525f6b51fc94b99782f3abae8bbb338a31",
+      "published_sha256": "efe55f8ce010f1c73566820b098176525f6b51fc94b99782f3abae8bbb338a31"
+    },
+    {
+      "original_name": "/workspace/spells-r22-monster-reference-current/verify_monster_references.py",
+      "published_path": "docs/reference/spells/r22-audit/monster-references-current/verify_monster_references.py",
+      "original_sha256": "dffeb1a218f623aac4363089d14d06c3e0a34d89ac4ef17db3df39be2cec3277",
+      "published_sha256": "dffeb1a218f623aac4363089d14d06c3e0a34d89ac4ef17db3df39be2cec3277"
+    }
+  ]
+}

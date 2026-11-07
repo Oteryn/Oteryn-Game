@@ -1,0 +1,21 @@
+{
+  "id": "PREY0-RL-04",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PREY0_PREY_AND_HUNTING_TASKS_DECISION_2026-09-30.md",
+  "resource": "Free list reroll interval per slot",
+  "unit": "seconds",
+  "hard_maximum": 72000,
+  "configurable_range": {
+    "minimum": 72000,
+    "maximum": 72000
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "A free reroll advances the deadline by 20 hours; a paid quote preserves it. Pricing is pure; runtime payment remains closed.",
+  "client_visible": true,
+  "boundary_tests": [
+    "prey_reference_reroll_timing_and_gold"
+  ],
+  "consumers": [
+    "crates/gameplay/progression/src/prey.rs"
+  ],
+  "notes": "HUNT-1 bounded rules/storage checkpoint; PREY0 section 12. A free reroll advances the deadline by 20 hours; a paid quote preserves it. Pricing is pure; runtime payment remains closed."
+}

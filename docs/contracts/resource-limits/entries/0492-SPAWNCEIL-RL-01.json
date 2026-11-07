@@ -1,0 +1,22 @@
+{
+  "id": "SPAWNCEIL-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md",
+  "resource": "Respawn steps run by one Channel owner window",
+  "unit": "steps per window",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A per-window counter in ChannelRuntimeV1::drive_spawn_respawns; occurrences past it stay pending in the CREATUREAI0-RL-12 schedule and run first in the next 50 ms window. A refused admission also costs its step, so the drives of one window retry it at most 32 times. It reserves nothing.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=32: 32 simultaneous due respawns run in one owner window",
+    "max+1=33: the 33rd stays pending and runs first in the next window"
+  ],
+  "consumers": [
+    "apps/game-server/src/foundation/runtime_actor_carrier.rs SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX: ChannelRuntimeV1::drive_spawn_respawns"
+  ],
+  "notes": "CREATURE-AI-0 \u00a76.3 (implementation work budget under RL-12 and RL-17). Registered by SPAWN-CEILINGS-1 (Codex 4242270322; owner decision 2026-10-11). Test: apps/game-server/src/foundation/runtime_actor_carrier.rs simultaneous_respawns_run_a_bounded_number_of_steps_per_owner_window. Codex 4243397472: the steps are taken from a (due time, spawn point) deadline index, so a window with a 131,072-occurrence backlog reads at most 32 index records for its steps; test: apps/game-server/src/foundation/runtime_actor_carrier.rs a_131_072_death_backlog_reads_bounded_spawn_records_per_owner_window."
+}

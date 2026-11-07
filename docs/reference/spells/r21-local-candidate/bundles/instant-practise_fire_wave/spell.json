@@ -1,0 +1,52 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/practise_fire_wave",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Practise Fire Wave",
+    "carrier": "instant",
+    "words": "exevo dis flam hur",
+    "reference_spell_id": 167,
+    "requirements": {
+      "level": 1,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 5,
+      "soul": 0
+    },
+    "cooldown_ms": 4000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": true,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_practise_fire_wave"
+    },
+    "base_power": 30,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/practise_fire_wave",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

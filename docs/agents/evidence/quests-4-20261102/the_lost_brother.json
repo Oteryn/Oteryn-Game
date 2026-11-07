@@ -1,0 +1,458 @@
+{
+  "schema": "OTERYN_QUESTS4_FINAL_DISPOSITION/v1",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "stage1_report_commit": "a80c080878034db477b6868eac5d49da4dd3ba13",
+  "decision_urls": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+  ],
+  "npc_adapter_scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+  "summary": {
+    "quest": "the_lost_brother",
+    "frozen_stage1": {
+      "total": 7,
+      "auto": 1,
+      "manual": 6
+    },
+    "authored_callback_definitions": 1,
+    "runtime_catalogue_callback_definitions": 1,
+    "runtime_exclusions": [],
+    "npc_source_files": 1,
+    "complete_runtime_quest_claim": false,
+    "implemented_summary": "Remains 1→2 z pełnym komunikatem i pełne źródło Taruna.",
+    "left_out_summary": "Start, nagroda i sklep Taruna odłączone zgodnie z granicą nowych adapterów. Item3039 i pozycja NPC są znane; to nie brak danych."
+  },
+  "steps": [
+    {
+      "cluster": "root",
+      "cluster_row": 78,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A078",
+        "original_index": 78,
+        "quest": "the_lost_brother",
+        "step": "Tarun: prośba",
+        "original_row": {
+          "quest": "the_lost_brother",
+          "step": "Tarun: prośba",
+          "pattern": "P09",
+          "trigger": "mission",
+          "condition": "LostBrother45183<1",
+          "effect": "topic1;pełny dwuczęściowy dialog",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:65"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "reason": "Tarun ma kompletne źródła rozmowy, stanów0/1/2/3, współdzielonego AdventurersGuild ownera, Item3039,3000XP,24 source ofert i source placement. Wszystkie nowe NPC/reward/trade callery zostały odłączone zgodnie z późniejszym ANSWER i domyślną opcją A; nie jest to brak danych ani pending realizacji.",
+        "missing_function": "Zamknięty stateful NPC caller: mission/yes z Guild1+Lost1; exact earned reward3039+3000XP→Lost3 przez istniejący MINT/Quest/XP; durable trade gate==3; retained reconciliation aż do terminalizacji ingress. Bez nowych kontraktów ani fake chest.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:65",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:65-98",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:109-121",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world-npc.xml:2253-2255"
+        ],
+        "evidence": [
+          "deferred-npc-runtime-final",
+          "../worker-cults/tarun-review.md",
+          "../worker-explorer/tarun-placement-qualification.json",
+          "item-admissions.json",
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {
+          "runtime_detached": true,
+          "reward_item_native_admitted": true,
+          "npc_source_placement_known": true,
+          "full_quest_playability_proved": false
+        },
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 79,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A079",
+        "original_index": 79,
+        "quest": "the_lost_brother",
+        "step": "Tarun: przyjęcie",
+        "original_row": {
+          "quest": "the_lost_brother",
+          "step": "Tarun: przyjęcie",
+          "pattern": "P09",
+          "trigger": "yes",
+          "condition": "topic1;LostBrother<1 ustawia takżeAdventurersGuildQuestLine",
+          "effect": "LostBrother=1;AdventurersGuildQuestLine=1 w tej gałęzi;topic0",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:86"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "reason": "Tarun ma kompletne źródła rozmowy, stanów0/1/2/3, współdzielonego AdventurersGuild ownera, Item3039,3000XP,24 source ofert i source placement. Wszystkie nowe NPC/reward/trade callery zostały odłączone zgodnie z późniejszym ANSWER i domyślną opcją A; nie jest to brak danych ani pending realizacji.",
+        "missing_function": "Zamknięty stateful NPC caller: mission/yes z Guild1+Lost1; exact earned reward3039+3000XP→Lost3 przez istniejący MINT/Quest/XP; durable trade gate==3; retained reconciliation aż do terminalizacji ingress. Bez nowych kontraktów ani fake chest.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:86",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:65-98",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:109-121",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world-npc.xml:2253-2255"
+        ],
+        "evidence": [
+          "deferred-npc-runtime-final",
+          "../worker-cults/tarun-review.md",
+          "../worker-explorer/tarun-placement-qualification.json",
+          "item-admissions.json",
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {
+          "runtime_detached": true,
+          "reward_item_native_admitted": true,
+          "npc_source_placement_known": true,
+          "full_quest_playability_proved": false
+        },
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 80,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A080",
+        "original_index": 80,
+        "quest": "the_lost_brother",
+        "step": "Znalezienie szczątków",
+        "original_row": {
+          "quest": "the_lost_brother",
+          "step": "Znalezienie szczątków",
+          "pattern": "P03",
+          "trigger": "StepIn32959,32674,4",
+          "condition": "LostBrother=1",
+          "effect": "LostBrother=2",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_lost_brother/movement-find-remains.lua:9"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_B3_PRESENT_RUNTIME_SEPARATE",
+        "reason": "Source LostBrother1→2, dokładna pozycja i top-level ground410 są zachowane w callback input oraz native B3. Producent stanu1/Tarun został odłączony, więc sam Remains callback nie dowodzi całego questa.",
+        "missing_function": "Osobna kwalifikacja zwykłego compiled ingress. Cały świeży przebieg wymaga odłożonego source Tarun start i nagrody, bez administracyjnego SET jako substytutu grywalności.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_lost_brother/movement-find-remains.lua:9"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_lost_brother.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/the-lost-brother-remains",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": true,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 81,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "row_id": "R8A081",
+        "original_index": 81,
+        "quest": "the_lost_brother",
+        "step": "Prezentacja szczątków",
+        "original_row": {
+          "quest": "the_lost_brother",
+          "step": "Prezentacja szczątków",
+          "pattern": "P03",
+          "trigger": "Ten samStepIn",
+          "condition": "LostBrother=1",
+          "effect": "Tekst wiadomości wyrytej przez brata;MAGIC_GREEN",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_lost_brother/movement-find-remains.lua:10"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "CALLBACK_TEXT_RETAINED_PRESENTATION_LEFT_OUT",
+        "reason": "Pełny wyryty tekst zachowany jako success_message tego samego Remains callback. MAGIC_GREEN pozostaje jawnie Left out zgodnie z decyzją o presentation ownerze.",
+        "missing_function": "Źródłowa emisja MAGIC_GREEN po zakwalifikowanym source StepIn przez istniejący presentation owner; bez nowego protocol/capability.",
+        "question_ids": [
+          "batch4-feedback-presentation"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_lost_brother/movement-find-remains.lua:10"
+        ],
+        "evidence": [
+          "callbacks-the_lost_brother.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback_text_for": "oteryn:quest-callback/the-lost-brother-remains"
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 82,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A082",
+        "original_index": 82,
+        "quest": "the_lost_brother",
+        "step": "Tarun: nagroda",
+        "original_row": {
+          "quest": "the_lost_brother",
+          "step": "Tarun: nagroda",
+          "pattern": "P11",
+          "trigger": "mission",
+          "condition": "LostBrother=2",
+          "effect": "3039×1+3000XP;LostBrother=3;topic0",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:76"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "reason": "Tarun ma kompletne źródła rozmowy, stanów0/1/2/3, współdzielonego AdventurersGuild ownera, Item3039,3000XP,24 source ofert i source placement. Wszystkie nowe NPC/reward/trade callery zostały odłączone zgodnie z późniejszym ANSWER i domyślną opcją A; nie jest to brak danych ani pending realizacji.",
+        "missing_function": "Zamknięty stateful NPC caller: mission/yes z Guild1+Lost1; exact earned reward3039+3000XP→Lost3 przez istniejący MINT/Quest/XP; durable trade gate==3; retained reconciliation aż do terminalizacji ingress. Bez nowych kontraktów ani fake chest.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:76",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:65-98",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:109-121",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world-npc.xml:2253-2255"
+        ],
+        "evidence": [
+          "deferred-npc-runtime-final",
+          "../worker-cults/tarun-review.md",
+          "../worker-explorer/tarun-placement-qualification.json",
+          "item-admissions.json",
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {
+          "runtime_detached": true,
+          "reward_item_native_admitted": true,
+          "npc_source_placement_known": true,
+          "full_quest_playability_proved": false
+        },
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 83,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A083",
+        "original_index": 83,
+        "quest": "the_lost_brother",
+        "step": "Tarun: handel",
+        "original_row": {
+          "quest": "the_lost_brother",
+          "step": "Tarun: handel",
+          "pattern": "P13",
+          "trigger": "Trade request",
+          "condition": "LostBrother==3",
+          "effect": "Zezwolenie trade; brak tej wartości odmawia",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:102"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "reason": "Tarun ma kompletne źródła rozmowy, stanów0/1/2/3, współdzielonego AdventurersGuild ownera, Item3039,3000XP,24 source ofert i source placement. Wszystkie nowe NPC/reward/trade callery zostały odłączone zgodnie z późniejszym ANSWER i domyślną opcją A; nie jest to brak danych ani pending realizacji.",
+        "missing_function": "Zamknięty stateful NPC caller: mission/yes z Guild1+Lost1; exact earned reward3039+3000XP→Lost3 przez istniejący MINT/Quest/XP; durable trade gate==3; retained reconciliation aż do terminalizacji ingress. Bez nowych kontraktów ani fake chest.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:102",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:65-98",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:109-121",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world-npc.xml:2253-2255"
+        ],
+        "evidence": [
+          "deferred-npc-runtime-final",
+          "../worker-cults/tarun-review.md",
+          "../worker-explorer/tarun-placement-qualification.json",
+          "item-admissions.json",
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {
+          "runtime_detached": true,
+          "reward_item_native_admitted": true,
+          "npc_source_placement_known": true,
+          "full_quest_playability_proved": false
+        },
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 84,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A084",
+        "original_index": 84,
+        "quest": "the_lost_brother",
+        "step": "Tarun: odmowa/oczekiwanie",
+        "original_row": {
+          "quest": "the_lost_brother",
+          "step": "Tarun: odmowa/oczekiwanie",
+          "pattern": "P09",
+          "trigger": "mission/no",
+          "condition": "LostBrother1 lubtopic1",
+          "effect": "Tylko odpowiedni tekst;no nie przyznaje nagrody",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:73"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "reason": "Tarun ma kompletne źródła rozmowy, stanów0/1/2/3, współdzielonego AdventurersGuild ownera, Item3039,3000XP,24 source ofert i source placement. Wszystkie nowe NPC/reward/trade callery zostały odłączone zgodnie z późniejszym ANSWER i domyślną opcją A; nie jest to brak danych ani pending realizacji.",
+        "missing_function": "Zamknięty stateful NPC caller: mission/yes z Guild1+Lost1; exact earned reward3039+3000XP→Lost3 przez istniejący MINT/Quest/XP; durable trade gate==3; retained reconciliation aż do terminalizacji ingress. Bez nowych kontraktów ani fake chest.",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          4,
+          5,
+          9
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:65-98",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tarun.lua:109-121",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world-npc.xml:2253-2255"
+        ],
+        "evidence": [
+          "deferred-npc-runtime-final",
+          "../worker-cults/tarun-review.md",
+          "../worker-explorer/tarun-placement-qualification.json",
+          "item-admissions.json",
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {
+          "runtime_detached": true,
+          "reward_item_native_admitted": true,
+          "npc_source_placement_known": true,
+          "full_quest_playability_proved": false
+        },
+        "complete_runtime_step_claim": false
+      }
+    }
+  ]
+}

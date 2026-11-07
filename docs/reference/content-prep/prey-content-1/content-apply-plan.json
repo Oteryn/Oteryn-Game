@@ -1,0 +1,31 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_APPLY_PLAN/v1",
+  "task": "PREY-CONTENT-1",
+  "status": "STAGED_FOR_COORDINATOR",
+  "reason": "Tracked content/ files participate in content-tree validation and World Bundle inputs. This packet is staged as docs-only reference evidence; the coordinator applies it to the target paths together with any separately qualified pin or seal regeneration.",
+  "target_files": [
+    {
+      "target_path": "rulesets/progression/prey/creature-eligibility.json",
+      "staged_path": "docs/reference/content-prep/prey-content-1/admission-evidence/creature-eligibility.json",
+      "sha256": "9ef6058b2ca578d15168266f82b8f5b129b725b7d7de51944afc8ed5489d2136"
+    },
+    {
+      "target_path": "rulesets/progression/prey/index.json",
+      "staged_path": "docs/reference/content-prep/prey-content-1/admission-evidence/prey-index.json",
+      "sha256": "9aa7e929033fd69d1281e4e6f6ccacbdb651485351ac9d10cdf0655009b0f736"
+    },
+    {
+      "target_path": "rulesets/progression/prey/reference-evidence.json",
+      "staged_path": "docs/reference/content-prep/prey-content-1/admission-evidence/reference-evidence.json",
+      "sha256": "bc1d595a7747780894789ad78a56e17ba5eb367dd36d79affd1773c076352699"
+    }
+  ],
+  "runtime_switch_authorized": false,
+  "coordinator_must_verify": [
+    "current task target ownership",
+    "target-source conflicts and UNKNOWN fields",
+    "approved native/runtime schema wiring",
+    "World Bundle pins and deterministic bundle",
+    "required exact-head validators"
+  ]
+}

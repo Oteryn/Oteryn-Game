@@ -1,0 +1,9 @@
+{
+  "mechanic": "0013-paced-movement",
+  "kind": "keybindings",
+  "id": "0013-paced-movement-move-east",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "ARROWRIGHT",
+  "entry": "input.rs::default_arrow_binding"
+}

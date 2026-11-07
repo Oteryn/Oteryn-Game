@@ -1,0 +1,1916 @@
+//! Ordered phases of the Channel owner's auto-attack pass.
+
+use super::player_block::PlayerBiteVitals;
+use super::shared_experience::aggressive_monster;
+use super::skill_training::{TrainingDue, swing_block, swing_family, train_hit};
+use super::*;
+use super::{charm_combat, equipped_offence};
+use crate::ability::creature_bite::CreatureBiteVitals;
+use crate::ability::exact_actor_resolution::{ExactActorProposal, resolve_exact_actor};
+use crate::combat_attack::{SwingPoll, player_fist_formula, player_melee_formula};
+use crate::durability::spell_owner_commit::SpellLanePermit;
+use crate::foundation::CharacterId;
+use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
+use crate::gameplay_transport::actor_spell::ChannelSpellStates;
+use crate::gameplay_transport::kill_reward::KillSettlementQueue;
+use crate::gameplay_transport::task_board::bounty_talisman;
+use crate::spell::cast::{CharacterCastFacts, SwingSkills};
+use crate::spell::combat_execution::actor_atom;
+use crate::spell::formula::FormulaInputs;
+use crate::world_runtime::LocalObjectRuntime;
+use oteryn_gameplay_combat_rules::attack::formulas::player_monk_formula;
+use oteryn_gameplay_combat_rules::attack::target::Swing;
+use oteryn_gameplay_combat_rules::resolution::{
+    creature_physical_response, creature_physically_immune, swing_mitigated,
+};
+use oteryn_gameplay_items::equipment_effects::apply_protection;
+use oteryn_gameplay_progression::charm_effects::{
+    CharmAttackerFacts, CharmEffectOutcome, CharmHitSource, CharmHookEvent,
+};
+use sha2::Digest;
+
+#[derive(Debug, Clone)]
+pub(super) struct SelectedSwing {
+    pub(super) target: ExactActorRef,
+    pub(super) character_facts: CharacterCastFacts,
+    pub(super) skills: SwingSkills,
+    pub(super) weapon: WeaponFacts,
+    pub(super) swing: Swing<ExactActorRef, CommandRef>,
+    pub(super) ordinal: u16,
+}
+
+/// A PvP swing the attacker's pass drew, halved, for a player target; its defence is met after
+/// the pass (PVP-DEFENCE-1).
+pub(super) struct PvpSwing {
+    pub(super) actor: ExactActorRef,
+    pub(super) session: GameSessionId,
+    pub(super) modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
+    pub(super) extension: bool,
+    pub(super) target: ExactActorRef,
+    pub(super) lineage: CommandRef,
+    pub(super) ordinal: u16,
+    pub(super) magnitude: i64,
+    pub(super) black: bool,
+    pub(super) revision: &'static str,
+    pub(super) weapon: WeaponFacts,
+    pub(super) attacker: CharacterId,
+    pub(super) generation: u64,
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// One owner pass over every held target: at most one swing per attacker (`DEADLINE_STATE`
+    /// catch-up), never a backlog.
+    pub(in crate::gameplay_transport) async fn drain_auto_attacks(&self) {
+        let Some(room) = self.rooms.gate_auto_attack() else {
+            return;
+        };
+        let Some(content) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return;
+        };
+        let Some(constants) = AttackConstants::checked_in() else {
+            return;
+        };
+        let Some(mut pvp_permit) = self.spell_lane_permit().await else {
+            return;
+        };
+        let sessions = self
+            .states
+            .attack
+            .lock()
+            .await
+            .entries
+            .iter()
+            .map(|entry| entry.session)
+            .collect::<std::collections::BTreeSet<_>>();
+        let mut talismans = std::collections::BTreeMap::new();
+        for session in sessions {
+            let Ok(snapshot) = self.bounty_talisman_for_session(session).await else {
+                return;
+            };
+            talismans.insert(session, snapshot);
+        }
+        let now = self.owner_now();
+        let mut runtime = self.runtime.lock().await;
+        let digest = runtime.content_pin().server_artifact_digest();
+        if runtime.owner_fence().is_err()
+            || content.source_digest() != digest
+            || room.compiled().server_digest() != digest
+        {
+            return;
+        }
+        let mut states = self.states.spell_states.lock().await;
+        let objects = self.door.lock().await;
+        let mut attack = self.states.attack.lock().await;
+        attack.prune(&runtime);
+        let ChannelAttackStates {
+            entries,
+            blocks,
+            kills,
+            ..
+        } = &mut *attack;
+        let mut activity_cells: Vec<_> = entries
+            .iter()
+            .filter_map(|e| e.shared_experience_activity)
+            .collect();
+        let root = GameplayDecisionRoot::from_bytes(digest);
+        let mut trained = TrainingDue::new();
+        for (target, lethal, at) in std::mem::take(&mut states.equipment_reflection_kills) {
+            crate::gameplay_transport::kill_reward::record_creature_kill(
+                &mut runtime,
+                crate::gameplay_transport::kill_reward::KillSink {
+                    prey: Some(&states),
+                    queue: kills,
+                    rewards: self.reward_table(),
+                    activity: &activity_cells,
+                    charms: Some(self.imported_charms),
+                },
+                target,
+                lethal,
+                at / 1_000,
+                Some(SemanticTimeMicros::from_micros(at)),
+            );
+        }
+        let mut pvp_hits = Vec::new();
+        for entry in entries.iter_mut() {
+            let state_before = entry.state.clone();
+            let ordinal_before = entry.next_ordinal;
+            let Some(mut selected) =
+                select_swing(entry, &runtime, &states, room, digest, now, constants)
+            else {
+                continue;
+            };
+            // The selected swing already owns the current weapon. Read its current
+            // selections as for spell casts; no reward survives a weapon change.
+            if let Some(catalogue) = &self.proficiency_catalogue
+                && let Some(key) = selected.weapon.item_key.as_deref()
+                && let Ok(sessions) = self.states.proficiencies.lock()
+                && let Some(track) = sessions.get(&entry.session).and_then(|p| p.track(key))
+                && let Some(perks) = catalogue.cast_perks(key, track, None)
+            {
+                let index = if selected.weapon.ranged.is_some() {
+                    4
+                } else {
+                    match selected.weapon.weapon {
+                        SwingWeapon::Fists => 0,
+                        SwingWeapon::Melee { skill, .. } => skill.index(),
+                    }
+                };
+                selected.skills.attack = selected.skills.attack.saturating_add(perks.skills[index]);
+                selected.skills.shielding =
+                    selected.skills.shielding.saturating_add(perks.skills[5]);
+                selected.character_facts.magic_level = selected
+                    .character_facts
+                    .magic_level
+                    .saturating_add(perks.skills[7]);
+            }
+            if selected.weapon.ranged.is_none()
+                && matches!(selected.weapon.weapon, SwingWeapon::Melee { skill, .. } if (1..=3).contains(&skill.index()))
+                && states
+                    .get(&runtime, entry.actor, entry.session)
+                    .and_then(|state| state.wheel_effects_at(now.get()))
+                    .is_some_and(|effects| effects.active_unique_perks.contains("battle_instinct"))
+                && let Some(bonuses) = battle_instinct_for_actor(&runtime, entry.actor)
+            {
+                selected.skills.attack = selected.skills.attack.saturating_add(bonuses.melee);
+                selected.skills.shielding =
+                    selected.skills.shielding.saturating_add(bonuses.shielding);
+            }
+            let pvp_black = if !runtime.contains_live_creature(selected.target) {
+                let Some(black) = self
+                    .pvp_target_legal(
+                        &pvp_permit,
+                        &runtime,
+                        &states,
+                        room,
+                        &objects,
+                        entry.actor,
+                        selected.target,
+                        selected.swing.lineage,
+                        oteryn_protocol_oteryn::pvp_expert::ExpertFightModes {
+                            modes: entry.modes,
+                            expert: entry.expert_mode,
+                        },
+                    )
+                    .await
+                else {
+                    entry.clear_target();
+                    continue;
+                };
+                Some(black)
+            } else {
+                None
+            };
+            if selected.weapon.ranged.is_some()
+                && !self
+                    .pay_ranged_shot(
+                        &mut pvp_permit,
+                        &mut runtime,
+                        &mut states,
+                        &objects,
+                        room,
+                        content,
+                        entry,
+                        &selected,
+                    )
+                    .await
+            {
+                if pvp_permit.has_unresolved() {
+                    return;
+                }
+                entry.state = state_before;
+                entry.next_ordinal = ordinal_before;
+                continue;
+            }
+            if selected.weapon.ranged.is_some()
+                && content.training_formula().is_some_and(|formula| {
+                    states
+                        .get(&runtime, entry.actor, entry.session)
+                        .is_some_and(|state| state.training_successor_due(formula, false))
+                })
+                && !trained.contains(&(entry.actor, entry.session))
+            {
+                trained.push((entry.actor, entry.session));
+            }
+            let mut offence =
+                equipped_offence::attacker_offence(&states, &runtime, entry.actor, entry.session);
+            // Conviction leech is part of the same primary-hit projection as equipment leech.
+            // Recompute it for every due swing from the session's latest committed allocation;
+            // the live spell-state Premium deadline prevents expired Premium from retaining it.
+            if let Some(state) = states.get(&runtime, entry.actor, entry.session)
+                && let Some(effects) = state.wheel_effects_at(now.get())
+            {
+                apply_wheel_leech(&mut offence, effects);
+                let global_critical =
+                    effects.gem_value_milli("critical_extra_damage", "Critical Extra Damage") / 10;
+                let Ok(global_critical) = u16::try_from(global_critical) else {
+                    continue;
+                };
+                offence.critical_damage = offence.critical_damage.saturating_add(global_critical);
+                if effects.active_unique_perks.contains("ballistic_mastery")
+                    && state.wheel_equipment().and_then(|hands| hands.ammunition())
+                        == Some(crate::content::ReferenceAmmoType::Bolt)
+                {
+                    offence.critical_damage = offence.critical_damage.saturating_add(1_000);
+                }
+            }
+            let cleaves = if offence.cleave > 0 {
+                equipped_offence::cleave_targets(entry, &selected, &runtime, room, now)
+            } else {
+                Vec::new()
+            };
+            let primary = selected.target;
+            for (target, extension) in cleaves
+                .into_iter()
+                .map(|target| (target, true))
+                .chain(std::iter::once((primary, false)))
+            {
+                selected.target = target;
+                // Independent tagged draws for each cleave target; the primary draw is unchanged.
+                let root = if extension {
+                    GameplayDecisionRoot::from_bytes(
+                        sha2::Sha256::new()
+                            .chain_update(digest)
+                            .chain_update(selected.target.placement_identity())
+                            .finalize()
+                            .into(),
+                    )
+                } else {
+                    GameplayDecisionRoot::from_bytes(digest)
+                };
+                let SelectedSwing {
+                    target,
+                    character_facts,
+                    swing,
+                    ordinal,
+                    ..
+                } = selected;
+                let Ok(lease) = runtime
+                    .borrow_exact_actor_commit()
+                    .bound_attacker_lease(entry.actor, swing.lineage)
+                else {
+                    if !extension {
+                        entry.clear_target();
+                    }
+                    continue;
+                };
+                let mut offence = offence.clone();
+                if let Ok(snapshot) = runtime.companion_snapshot(target) {
+                    let source = if extension {
+                        CharmHitSource::CharacterAutoAttackOffTarget
+                    } else {
+                        CharmHitSource::CharacterAttack
+                    };
+                    let outcomes = charm_combat::evaluate(
+                        &states,
+                        &runtime,
+                        self.imported_charms,
+                        entry.actor,
+                        entry.session,
+                        &snapshot.state.policy.definition_key,
+                        &root,
+                        swing_occurrence(
+                            entry.actor,
+                            swing.lineage,
+                            ordinal,
+                            b"damage-calculation",
+                        ),
+                        CharmHookEvent::AttackDamageCalculation { source },
+                    );
+                    charm_combat::bonuses(&mut offence, &outcomes);
+                }
+                let Some((mut damage, revision)) =
+                    draw_swing_damage(entry, &runtime, &selected, constants, &root, &offence)
+                else {
+                    continue;
+                };
+                // The drawn primary auto-attack receives one additive shrine multiplier
+                // before any target defence or armor. Ranged attacks are not Monk melee.
+                if selected.weapon.ranged.is_none()
+                    && damage >= 0
+                    && super::monk_shrines::is_monk(selected.character_facts.vocation)
+                {
+                    let serene = states
+                        .get(&runtime, entry.actor, entry.session)
+                        .and_then(|state| state.monk.as_ref())
+                        .is_some_and(|monk| monk.serene());
+                    let Some(boosted) =
+                        oteryn_gameplay_combat_rules::monk_shrines::MonkShrineBonuses::checked_in()
+                            .and_then(|tuning| {
+                                tuning.attack(
+                                    damage,
+                                    super::monk_shrines::counts(
+                                        &self.states.quest_sessions,
+                                        entry.session,
+                                    )
+                                    .1,
+                                    super::monk_shrines::is_monk(selected.character_facts.vocation),
+                                    serene,
+                                )
+                            })
+                    else {
+                        continue;
+                    };
+                    damage = boosted;
+                }
+                if damage >= 0
+                    && let Some(state) = states.get(&runtime, entry.actor, entry.session)
+                {
+                    damage = damage.saturating_mul(i64::from(
+                        100 + state.virtue_party_bonuses(now.get()).auto_attack,
+                    )) / 100;
+                }
+                if let Some(item_key) = selected.weapon.item_key.as_deref()
+                    && let Ok(sessions) = self.states.proficiencies.lock()
+                    && let Some(proficiency) = sessions.get(&entry.session)
+                    && let Ok(target) = runtime.companion_snapshot(selected.target)
+                {
+                    damage = proficiency.dispatch_attack(
+                        item_key,
+                        damage,
+                        u64::try_from(target.health).unwrap_or(0),
+                        u64::try_from(target.maximum_health).unwrap_or(0),
+                    );
+                }
+                if damage < 0 {
+                    ranged::train_distance(
+                        &mut states,
+                        &runtime,
+                        content,
+                        entry,
+                        None,
+                        now,
+                        &mut trained,
+                    );
+                    continue;
+                }
+                let Some(damage) = (if extension {
+                    Some(
+                        i64::try_from(i128::from(damage) * i128::from(offence.cleave) / 10_000)
+                            .unwrap_or(i64::MAX),
+                    )
+                } else {
+                    equipped_offence::critical_swing(
+                        &offence,
+                        &root,
+                        entry.actor,
+                        swing.lineage,
+                        ordinal,
+                        damage,
+                    )
+                }) else {
+                    continue;
+                };
+                let damage = super::super::hazard::outgoing_damage(
+                    &runtime,
+                    entry.actor,
+                    entry.session,
+                    target,
+                    damage,
+                    (swing.lineage.command_id().get(), ordinal),
+                );
+                // Soulpit Intense Hex reads the actual canonical condition slot. The raw
+                // melee/distance/wand request is reduced before armor and PvP splitting.
+                let Ok(conditions) =
+                    runtime.actor_conditions_at(entry.actor, Some(entry.session), now.get())
+                else {
+                    continue;
+                };
+                let Some(player) = states.get(&runtime, entry.actor, entry.session) else {
+                    continue;
+                };
+                let Some(retained) = player.conditions.damage_dealt_percent_with_hex_at(
+                    now.get(),
+                    conditions.intense_hex_delta_at(now.get()),
+                ) else {
+                    continue;
+                };
+                let Some(damage) = damage
+                    .checked_mul(i64::from(retained))
+                    .map(|value| value / 100)
+                else {
+                    continue;
+                };
+                if damage < 0 {
+                    continue;
+                }
+                if !runtime.contains_live_creature(target) {
+                    let black = if extension {
+                        self.pvp_target_legal(
+                            &pvp_permit,
+                            &runtime,
+                            &states,
+                            room,
+                            &objects,
+                            entry.actor,
+                            target,
+                            swing.lineage,
+                            oteryn_protocol_oteryn::pvp_expert::ExpertFightModes {
+                                modes: entry.modes,
+                                expert: entry.expert_mode,
+                            },
+                        )
+                        .await
+                    } else {
+                        pvp_black
+                    };
+                    let Some(black) = black else {
+                        continue;
+                    };
+                    let Ok(raw) = u32::try_from(damage) else {
+                        entry.clear_target();
+                        continue;
+                    };
+                    // `Combat::CombatHealthFunc` halves a PvP hit before the target's block meets it;
+                    // PVP-DEFENCE-1 resolves the defence after this pass, where the target's block
+                    // budget is reachable.
+                    pvp_hits.push(PvpSwing {
+                        actor: entry.actor,
+                        session: entry.session,
+                        modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes {
+                            modes: entry.modes,
+                            expert: entry.expert_mode,
+                        },
+                        extension,
+                        target,
+                        lineage: swing.lineage,
+                        ordinal,
+                        magnitude: i64::from(oteryn_gameplay_combat_rules::pvp::pvp_damage(
+                            raw, black,
+                        )),
+                        black,
+                        revision,
+                        weapon: selected.weapon.clone(),
+                        attacker: lease.character_id(),
+                        generation: lease.generation(),
+                    });
+                    continue;
+                }
+                let Ok(snapshot) = runtime.companion_snapshot(target) else {
+                    if !extension {
+                        entry.clear_target();
+                    }
+                    continue;
+                };
+                let race_key = snapshot.state.policy.definition_key.clone();
+                let Some(talisman) = talismans.get(&entry.session) else {
+                    continue;
+                };
+                let Some([talisman_damage, talisman_life]) = bounty_talisman::hit_bonuses(
+                    talisman,
+                    &race_key,
+                    &root,
+                    swing_occurrence(entry.actor, swing.lineage, ordinal, b"bounty-talisman"),
+                    0,
+                ) else {
+                    continue;
+                };
+                // The creature's content defence and armor (ATTACK-0 §5, `monster.cpp:242-251`);
+                // a creature without them takes no hit (fail closed).
+                let (Some(defense), Some(armor)) =
+                    (snapshot.state.policy.defense, snapshot.state.policy.armor)
+                else {
+                    continue;
+                };
+                // CREATURE-RESIST-MELEE-1: a creature immune to physical damage meets the swing
+                // before its block (`Creature::blockHit` `isImmune`): no block, no training, no hit.
+                if selected.weapon.ranged.is_none()
+                    && creature_physically_immune(&snapshot.state.policy)
+                {
+                    continue;
+                }
+                if let Some(ranged) = &selected.weapon.ranged
+                    && ranged::immune(ranged, &snapshot.state.policy)
+                {
+                    if matches!(ranged.damage, ranged::RangedDamage::Distance { .. }) {
+                        ranged::train_distance(
+                            &mut states,
+                            &runtime,
+                            content,
+                            entry,
+                            Some(oteryn_gameplay_progression::hit_training::HitBlock::Immunity),
+                            now,
+                            &mut trained,
+                        );
+                    }
+                    continue;
+                }
+                let creature_max_health = u64::try_from(snapshot.maximum_health).unwrap_or(0);
+                let ranged_magnitude = if let Some(ranged) = &selected.weapon.ranged {
+                    ranged::creature_damage(
+                        ranged,
+                        &snapshot.state.policy,
+                        damage,
+                        (&root, constants, entry.actor, swing.lineage, ordinal),
+                        states
+                            .get(&runtime, entry.actor, entry.session)
+                            .and_then(|state| {
+                                Some((
+                                    state,
+                                    now.get(),
+                                    u64::try_from(snapshot.health).ok()?,
+                                    u64::try_from(snapshot.maximum_health).ok()?,
+                                    crate::spell::cast::wheel_adjacent_target(
+                                        &runtime,
+                                        entry.actor,
+                                        target,
+                                    )?,
+                                ))
+                            }),
+                    )
+                } else {
+                    None
+                };
+                let index = match blocks.iter().position(|(creature, _)| *creature == target) {
+                    Some(index) => index,
+                    None => {
+                        if blocks.len() >= runtime.actor_slot_capacity() {
+                            continue;
+                        }
+                        // A creature's budget refills from spawn, not from the first hit on it.
+                        blocks.push((target, BlockBudget::settled(&constants.block, swing.at)));
+                        blocks.len() - 1
+                    }
+                };
+                let blocked = selected.weapon.ranged.is_none()
+                    && blocks[index].1.try_block(&constants.block, swing.at);
+                let Some(magnitude) = (if selected.weapon.ranged.is_some() {
+                    ranged_magnitude.and_then(|parts| parts[0].checked_add(parts[1]))
+                } else {
+                    creature_mitigated(
+                        &root,
+                        constants,
+                        entry.actor,
+                        swing.lineage,
+                        ordinal,
+                        damage,
+                        blocked,
+                        defense,
+                        armor,
+                    )
+                }) else {
+                    continue;
+                };
+                // CREATURE-RESIST-MELEE-1: the creature's mitigation and physical response shape
+                // what passed its defence and armor (`Creature::mitigateDamage`, `Monster::blockHit`).
+                // Training already counted the swing by its block, so it trains by `magnitude`.
+                let landed = if selected.weapon.ranged.is_some() {
+                    magnitude
+                } else if magnitude > 0 {
+                    let Some(landed) =
+                        creature_physical_response(&snapshot.state.policy, magnitude)
+                    else {
+                        continue;
+                    };
+                    landed
+                } else {
+                    magnitude
+                };
+                let landed = if selected.weapon.ranged.is_none() {
+                    if let Some(state) = states.get(&runtime, entry.actor, entry.session) {
+                        let Some((primary, _)) = state.finish_wheel_attack_components(
+                            landed,
+                            0,
+                            u64::try_from(snapshot.health).unwrap_or(0),
+                            u64::try_from(snapshot.maximum_health).unwrap_or(0),
+                            now.get(),
+                            match crate::spell::cast::wheel_adjacent_target(
+                                &runtime,
+                                entry.actor,
+                                target,
+                            ) {
+                                Some(adjacent) => adjacent,
+                                None => continue,
+                            },
+                        ) else {
+                            continue;
+                        };
+                        primary
+                    } else {
+                        landed
+                    }
+                } else {
+                    landed
+                };
+                let landed =
+                    if !extension
+                        && selected.weapon.ranged.as_ref().is_some_and(|r| {
+                            matches!(r.damage, ranged::RangedDamage::Distance { .. })
+                        })
+                    {
+                        let bonus = runtime
+                            .read_actor_position(entry.actor)
+                            .ok()
+                            .zip(runtime.read_actor_position(target).ok())
+                            .map_or(0, |(from, to)| {
+                                let (from, to) = (from.position(), to.position());
+                                offence.perfect_damage(from.x.abs_diff(to.x), from.y.abs_diff(to.y))
+                            });
+                        landed.saturating_add(bonus).max(0)
+                    } else {
+                        landed
+                    };
+                let analyser_before_prey = landed;
+                let prey = states.prey_percent(
+                    &runtime,
+                    entry.actor,
+                    entry.session,
+                    &race_key,
+                    1,
+                    now.get(),
+                );
+                let landed = if let Some(parts) = ranged_magnitude.filter(|_| talisman_damage > 0) {
+                    // Talisman scales primary and secondary separately, after Prey.
+                    // Perfect Shot is the flat addition to the primary component.
+                    let primary = parts[0]
+                        .saturating_add(landed.saturating_sub(magnitude))
+                        .max(0);
+                    bounty_talisman::damage(
+                        super::super::prey::damage(primary, prey),
+                        talisman_damage,
+                    )
+                    .saturating_add(bounty_talisman::damage(
+                        super::super::prey::damage(parts[1], prey),
+                        talisman_damage,
+                    ))
+                } else {
+                    bounty_talisman::damage(
+                        super::super::prey::damage(landed, prey),
+                        talisman_damage,
+                    )
+                };
+                if landed <= 0 {
+                    train_swing(
+                        &mut states,
+                        &runtime,
+                        content,
+                        entry,
+                        &selected.weapon,
+                        magnitude,
+                        now,
+                        &mut trained,
+                    );
+                    continue;
+                }
+                let Some(plan) = swing_plan(
+                    entry.actor,
+                    swing.lineage,
+                    ordinal,
+                    landed,
+                    &digest,
+                    &race_key,
+                    revision,
+                ) else {
+                    continue;
+                };
+                let Ok(resolved) = resolve_exact_actor(
+                    &runtime.borrow_exact_actor_lookup(),
+                    plan.occurrence(),
+                    ExactActorProposal::client(target),
+                ) else {
+                    if !extension {
+                        entry.clear_target();
+                    }
+                    continue;
+                };
+                // The owner clock of this turn, in ms, stamps the hit's contributor and, for a lethal
+                // hit, the death time the kill reward reads (§1.2).
+                let committed = crate::ability::commit::commit_exact_owner_swing_damage(
+                    &mut runtime.borrow_exact_actor_commit_at(now.get() / 1_000),
+                    &resolved,
+                    &plan,
+                    entry.actor,
+                    swing.lineage,
+                    ordinal,
+                );
+                let Ok(result) = committed else {
+                    if !extension {
+                        entry.clear_target();
+                    }
+                    continue;
+                };
+                if !extension && result.applied {
+                    publish_hit_sound(
+                        &mut states,
+                        &runtime,
+                        content,
+                        entry.actor,
+                        &selected.weapon,
+                    );
+                }
+                if result.applied {
+                    let value = u32::try_from(
+                        result
+                            .health_before
+                            .saturating_sub(result.health_after)
+                            .max(0),
+                    )
+                    .unwrap_or(0);
+                    let (primary, element) = match selected.weapon.ranged.as_ref() {
+                        Some(ranged) => {
+                            let primary = ranged_magnitude.map_or(0, |parts| {
+                                bounty_talisman::damage(
+                                    super::super::prey::damage(
+                                        parts[0]
+                                            .saturating_add(
+                                                analyser_before_prey.saturating_sub(magnitude),
+                                            )
+                                            .max(0),
+                                        prey,
+                                    ),
+                                    talisman_damage,
+                                )
+                            });
+                            let element = match ranged.damage {
+                                ranged::RangedDamage::Magic { element, .. }
+                                | ranged::RangedDamage::Distance { element, .. } => element,
+                            };
+                            (
+                                u32::try_from(primary).unwrap_or(0).min(value),
+                                ranged::analyser_element(element),
+                            )
+                        }
+                        None => (
+                            value,
+                            oteryn_protocol_oteryn::damage_element::DamageElement::Physical,
+                        ),
+                    };
+                    states.analyser.impact(
+                        entry.actor,
+                        entry.session,
+                        primary,
+                        Some(oteryn_protocol_oteryn::damage_element::DamageElement::Physical),
+                    );
+                    states.analyser.impact(
+                        entry.actor,
+                        entry.session,
+                        value.saturating_sub(primary),
+                        Some(element),
+                    );
+                }
+                train_swing(
+                    &mut states,
+                    &runtime,
+                    content,
+                    entry,
+                    &selected.weapon,
+                    magnitude,
+                    now,
+                    &mut trained,
+                );
+                // Equipment leech remains a primary-target effect in this owner. Secondary
+                // auto-attack targets only receive the explicit D186 charm exceptions.
+                if extension {
+                    offence.life_leech = 0;
+                    offence.mana_leech = 0;
+                }
+                let outcomes = {
+                    let source = if extension {
+                        CharmHitSource::CharacterAutoAttackOffTarget
+                    } else {
+                        CharmHitSource::CharacterAttack
+                    };
+                    charm_combat::evaluate(
+                        &states,
+                        &runtime,
+                        self.imported_charms,
+                        entry.actor,
+                        entry.session,
+                        &race_key,
+                        &root,
+                        swing_occurrence(entry.actor, swing.lineage, ordinal, b"committed-hit"),
+                        CharmHookEvent::committed_hit(
+                            &result,
+                            source,
+                            CharmAttackerFacts {
+                                level: character_facts.level,
+                                max_health: u64::from(character_facts.max_health),
+                                max_mana: u64::from(character_facts.max_mana),
+                            },
+                            creature_max_health,
+                        ),
+                    )
+                };
+                charm_combat::bonuses(&mut offence, &outcomes);
+                if !extension {
+                    // Canary on_combat_taskboard.lua:24-27 adds the proc to the ordinary
+                    // life skill. The existing owner heals from committed real damage.
+                    offence.life_leech = offence.life_leech.saturating_add(talisman_life);
+                }
+                equipped_offence::leech_hit(
+                    &mut states,
+                    &runtime,
+                    entry.actor,
+                    entry.session,
+                    &offence,
+                    &result,
+                );
+                if result.applied
+                    && result.health_after < result.health_before
+                    && snapshot.state.master.is_none()
+                    && !snapshot.state.policy.is_familiar
+                {
+                    states.prey_activity(&runtime, entry.actor, entry.session, super::super::prey::PreyActivity {
+                        creature: &race_key,
+                        kind: oteryn_gameplay_progression::prey::difficulty::PreyActivityKind::DealtDamage,
+                        now: now.get(),
+                    });
+                }
+                record_hit_activity(
+                    entry,
+                    &runtime,
+                    content,
+                    target,
+                    now,
+                    &result,
+                    &mut activity_cells,
+                );
+                if result.applied && result.health_after < result.health_before {
+                    kills.boss_damage_dealt(&runtime, target, entry.actor, entry.session);
+                }
+                // Source-qualified leaf damage uses the existing independent replay stream.
+                // It neither consumes another player command nor re-enters Charm evaluation.
+                let mut lethal_result = result;
+                if result.applied
+                    && result.health_after > 0
+                    && result.health_before > result.health_after
+                {
+                    for outcome in &outcomes {
+                        let Some(CharmEffectOutcome::ProcDamage { damage, amount }) =
+                            charm_combat::effect(outcome)
+                        else {
+                            continue;
+                        };
+                        let Some(draw) = swing_draw(
+                            &root,
+                            entry.actor,
+                            swing.lineage,
+                            ordinal,
+                            b"charm-armor",
+                            "attack.charm-armor",
+                            0,
+                            i64::MAX,
+                        ) else {
+                            continue;
+                        };
+                        let Some(amount) = charm_combat::damage_amount(
+                            &runtime,
+                            target,
+                            damage,
+                            amount,
+                            draw as u64,
+                        )
+                        .filter(|n| *n > 0) else {
+                            continue;
+                        };
+                        let stream = format!(
+                            "charm-attack:{}:{}",
+                            swing.lineage.command_id().get(),
+                            outcome.charm_key
+                        );
+                        if let Ok(child) = runtime.commit_source_damage(
+                            target,
+                            entry.actor,
+                            entry.session,
+                            stream.as_bytes(),
+                            u64::from(ordinal),
+                            amount,
+                            now.get() / 1_000,
+                        ) {
+                            if child.applied {
+                                states.analyser.impact_amount(
+                                    entry.actor,
+                                    entry.session,
+                                    u64::try_from(
+                                        child.health_before.saturating_sub(child.health_after),
+                                    )
+                                    .unwrap_or(0),
+                                    Some(super::super::analyser::charm_element(damage.element)),
+                                );
+                            }
+                            record_hit_activity(
+                                entry,
+                                &runtime,
+                                content,
+                                target,
+                                now,
+                                &child,
+                                &mut activity_cells,
+                            );
+                            lethal_result = child;
+                        }
+                    }
+                }
+                if lethal_result.health_after <= 0 {
+                    let lethal = crate::combat::CapturedRewardPrincipal {
+                        character: lease.character_id(),
+                        lease_generation: lease.generation(),
+                        session: entry.session,
+                        actor: entry.actor,
+                    };
+                    settle_kill(
+                        entry,
+                        &mut runtime,
+                        kills,
+                        self.reward_table(),
+                        self.imported_charms,
+                        &activity_cells,
+                        &states,
+                        target,
+                        lethal,
+                        now,
+                        !extension,
+                    );
+                }
+            }
+        }
+        for hit in pvp_hits {
+            self.land_pvp_swing(
+                &mut pvp_permit,
+                &mut runtime,
+                &mut states,
+                &mut attack,
+                room,
+                &objects,
+                content,
+                (&root, &digest, constants, now),
+                hit,
+                &mut trained,
+            )
+            .await;
+        }
+        drop(attack);
+        drop(objects);
+        drop(states);
+        drop(runtime);
+        drop(pvp_permit);
+        self.save_trained_levels(trained).await;
+    }
+}
+
+fn apply_wheel_leech(
+    offence: &mut oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
+    wheel: &oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects,
+) {
+    offence.life_leech = offence
+        .life_leech
+        .saturating_add(u16::try_from(wheel.life_leech_hundredths_percent).unwrap_or(u16::MAX));
+    offence.mana_leech = offence
+        .mana_leech
+        .saturating_add(u16::try_from(wheel.mana_leech_hundredths_percent).unwrap_or(u16::MAX));
+}
+
+#[cfg(test)]
+mod wheel_leech_tests {
+    use super::*;
+
+    #[test]
+    fn conviction_leech_joins_equipment_without_wrapping() {
+        let mut offence =
+            oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence {
+                life_leech: 1_000,
+                mana_leech: u16::MAX - 5,
+                ..Default::default()
+            };
+        let wheel = oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects {
+            life_leech_hundredths_percent: 250,
+            mana_leech_hundredths_percent: 10,
+            ..Default::default()
+        };
+
+        apply_wheel_leech(&mut offence, &wheel);
+
+        assert_eq!(offence.life_leech, 1_250);
+        assert_eq!(offence.mana_leech, u16::MAX);
+    }
+}
+
+fn battle_instinct_for_actor(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+) -> Option<oteryn_gameplay_progression::wheel_effects::BattleInstinctBonuses> {
+    let adjacent = crate::spell::cast::wheel_adjacent_monsters(runtime, actor)?;
+    let data = oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded().ok()?;
+    oteryn_gameplay_progression::wheel_effects::battle_instinct_bonuses(data.wheel(), adjacent)
+}
+
+/// SKILL-TRAIN-1: the swing at a creature trains the swing's skill by how its block met it.
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// PVP-DEFENCE-1 (`Creature::blockHit`, `Player::getDefense`): a PvP swing spends one of the
+    /// target's blocks and meets the defence of what the target's hands hold, then the target's
+    /// worn armor. A block trains the target's shielding (SKILL-TRAIN-1), and the attacker trains
+    /// by what is left: a swing they stop commits nothing and trains as blocked.
+    #[allow(clippy::too_many_arguments)]
+    async fn land_pvp_swing(
+        &self,
+        permit: &mut SpellLanePermit,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        attack: &mut ChannelAttackStates,
+        room: &QualifiedNativeEntryRoom,
+        objects: &LocalObjectRuntime,
+        content: &NativeGameplayState,
+        (root, digest, constants, now): (
+            &GameplayDecisionRoot,
+            &[u8; 32],
+            &AttackConstants,
+            SemanticTimeMicros,
+        ),
+        hit: PvpSwing,
+        trained: &mut TrainingDue,
+    ) {
+        let Some(target_session) = states
+            .actors
+            .iter()
+            .find(|(actor, _, _)| *actor == hit.target)
+            .map(|(_, session, _)| *session)
+        else {
+            if !hit.extension {
+                attack.clear_target_of(hit.actor, hit.session);
+            }
+            return;
+        };
+        let ranged_damage = if let Some(ranged) = &hit.weapon.ranged {
+            self.ranged_player_damage(
+                permit,
+                runtime,
+                content,
+                target_session,
+                ranged,
+                &hit,
+                constants,
+                root,
+                states.target_armor(runtime, hit.target, target_session),
+            )
+            .await
+        } else {
+            None
+        };
+        let mut vitals = PlayerBiteVitals {
+            quest_sessions: Some(&self.states.quest_sessions),
+            charm: None,
+            conditions: None,
+            states: &mut *states,
+            attack: &mut *attack,
+            formula: content.training_formula(),
+            trained: &mut *trained,
+        };
+        let defence = if hit.weapon.ranged.is_some() {
+            None
+        } else {
+            vitals.target_defence(
+                runtime,
+                hit.target,
+                target_session,
+                OwnerTime::from_micros(now.get()),
+            )
+        };
+        let armor = vitals.target_armor(runtime, hit.target, target_session);
+        let protection = vitals.target_physical_protection(runtime, hit.target, target_session);
+        let Some(mitigated) = (if hit.weapon.ranged.is_some() {
+            ranged_damage
+                .as_ref()
+                .and_then(|read| {
+                    read.components
+                        .primary
+                        .0
+                        .checked_add(read.components.secondary.0)
+                })
+                .map(i64::from)
+        } else {
+            swing_mitigated(
+                root,
+                constants,
+                hit.actor.placement_identity(),
+                (
+                    *hit.lineage.game_session_id().as_bytes(),
+                    hit.lineage.command_id().get(),
+                ),
+                hit.ordinal,
+                hit.magnitude,
+                defence,
+                armor,
+            )
+        }) else {
+            return;
+        };
+        let perfect_damage = if !hit.extension
+            && hit
+                .weapon
+                .ranged
+                .as_ref()
+                .is_some_and(|r| matches!(r.damage, ranged::RangedDamage::Distance { .. }))
+        {
+            let offence =
+                equipped_offence::attacker_offence(states, runtime, hit.actor, hit.session);
+            let Some((from, to)) = runtime
+                .read_actor_position(hit.actor)
+                .ok()
+                .zip(runtime.read_actor_position(hit.target).ok())
+            else {
+                return;
+            };
+            let (from, to) = (from.position(), to.position());
+            offence.perfect_damage(from.x.abs_diff(to.x), from.y.abs_diff(to.y))
+        } else {
+            0
+        };
+        let parts = if hit.weapon.ranged.is_some() {
+            let Some(read) = &ranged_damage else {
+                return;
+            };
+            read.components
+        } else {
+            let Ok(primary) = u32::try_from(mitigated) else {
+                return;
+            };
+            crate::spell::cast::WheelAttackComponents {
+                primary: (primary, crate::player_lethal::PlayerHitKind::Physical),
+                secondary: (0, crate::player_lethal::PlayerHitKind::Physical),
+            }
+        };
+        let Some(attacker) = states.get(runtime, hit.actor, hit.session) else {
+            return;
+        };
+        let Some(target) = states.get(runtime, hit.target, target_session) else {
+            return;
+        };
+        let mut after_equipment = |magnitude: u32, kind: crate::player_lethal::PlayerHitKind| {
+            use crate::content::ReferenceResistanceKind as Kind;
+            use crate::player_lethal::PlayerHitKind;
+            let kind = match kind {
+                PlayerHitKind::Physical => Kind::Physical,
+                PlayerHitKind::Death => Kind::Death,
+                PlayerHitKind::Earth => Kind::Earth,
+                PlayerHitKind::Energy => Kind::Energy,
+                PlayerHitKind::Fire => Kind::Fire,
+                PlayerHitKind::Ice => Kind::Ice,
+                _ => return None,
+            };
+            let sum = ranged_damage
+                .as_ref()
+                .and_then(|read| read.protections.get(&kind).copied())
+                .or_else(|| hit.weapon.ranged.is_none().then_some(protection).flatten());
+            let magnitude = match sum {
+                Some(sum) => apply_protection(i64::from(magnitude), sum)?,
+                None => i64::from(magnitude),
+            };
+            let magnitude = if hit.weapon.ranged.is_none() {
+                super::monk_shrines::taken(
+                    &self.states.quest_sessions,
+                    target_session,
+                    target.character_facts().vocation,
+                    magnitude,
+                )?
+            } else {
+                magnitude
+            };
+            u32::try_from(magnitude).ok()
+        };
+        let Some(damage) = crate::spell::cast::PreparedWheelAttackHit::prepare(
+            runtime,
+            crate::spell::cast::WheelAttackActor {
+                actor: hit.actor,
+                session: hit.session,
+                state: attacker,
+            },
+            crate::spell::cast::WheelAttackActor {
+                actor: hit.target,
+                session: target_session,
+                state: target,
+            },
+            parts,
+            perfect_damage,
+            now.get(),
+            &mut after_equipment,
+        ) else {
+            return;
+        };
+        let magnitude = i64::from(damage.magnitude());
+        if magnitude <= 0 {
+            if !hit.extension {
+                publish_hit_sound(states, runtime, content, hit.actor, &hit.weapon);
+            }
+            train_pvp_swing(states, runtime, content, &hit, magnitude, now, trained);
+            return;
+        }
+        let atom = actor_atom(hit.target);
+        let Some(plan) = swing_plan(
+            hit.actor,
+            hit.lineage,
+            hit.ordinal,
+            magnitude,
+            digest,
+            &atom,
+            hit.revision,
+        ) else {
+            return;
+        };
+        let batch = crate::spell::combat_batch::OwnerCombatBatch {
+            caster: hit.actor,
+            attacker: hit.attacker,
+            current_lease_generation: hit.generation,
+            command: hit.lineage,
+            occurrence: plan.occurrence().clone().into(),
+            binding: b"oteryn:pvp-melee:v1".to_vec(),
+            anchor: None,
+            now_us: Some(now),
+            now_ms: now.get() / 1000,
+            effects: vec![crate::spell::combat_batch::OwnerCombatEffect {
+                target: hit.target,
+                sub_ordinal: hit.ordinal,
+                change: crate::spell::combat_batch::OwnerCombatChange::Damage {
+                    target_atom: atom,
+                    magnitude,
+                },
+            }],
+            deferred: None,
+        };
+        if self
+            .pvp_swing(
+                permit,
+                runtime,
+                states,
+                room,
+                objects,
+                batch,
+                hit.ordinal,
+                hit.modes,
+                hit.black,
+                damage,
+            )
+            .await
+        {
+            if !hit.extension {
+                publish_hit_sound(states, runtime, content, hit.actor, &hit.weapon);
+            }
+            train_pvp_swing(states, runtime, content, &hit, magnitude, now, trained);
+        } else if !hit.extension {
+            attack.clear_target_of(hit.actor, hit.session);
+        }
+    }
+}
+
+/// The attacker of `hit` trains its weapon skill by what the target's defence and armor left.
+fn train_pvp_swing(
+    states: &mut ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    content: &NativeGameplayState,
+    hit: &PvpSwing,
+    magnitude: i64,
+    now: SemanticTimeMicros,
+    trained: &mut TrainingDue,
+) {
+    let block = swing_block(magnitude);
+    if let Some(ranged) = &hit.weapon.ranged {
+        if matches!(ranged.damage, ranged::RangedDamage::Distance { .. }) {
+            train_hit(
+                states,
+                runtime,
+                content.training_formula(),
+                hit.actor,
+                hit.session,
+                oteryn_gameplay_progression::hit_training::SkillFamily::Distance,
+                now.get(),
+                |hits| hits.distance_shot(Some(block)),
+                trained,
+            );
+        }
+        return;
+    }
+    train_hit(
+        states,
+        runtime,
+        content.training_formula(),
+        hit.actor,
+        hit.session,
+        swing_family(hit.weapon.weapon),
+        now.get(),
+        |hits| hits.melee_hit(block),
+        trained,
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+fn train_swing(
+    states: &mut ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    content: &NativeGameplayState,
+    entry: &ActorAttack,
+    weapon: &WeaponFacts,
+    magnitude: i64,
+    now: SemanticTimeMicros,
+    trained: &mut TrainingDue,
+) {
+    if let Some(ranged) = &weapon.ranged {
+        if matches!(ranged.damage, ranged::RangedDamage::Distance { .. }) {
+            ranged::train_distance(
+                states,
+                runtime,
+                content,
+                entry,
+                Some(swing_block(magnitude)),
+                now,
+                trained,
+            );
+        }
+        return;
+    }
+    let block = swing_block(magnitude);
+    train_hit(
+        states,
+        runtime,
+        content.training_formula(),
+        entry.actor,
+        entry.session,
+        swing_family(weapon.weapon),
+        now.get(),
+        |hits| hits.melee_hit(block),
+        trained,
+    );
+}
+
+pub(super) fn select_swing(
+    entry: &mut ActorAttack,
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    room: &QualifiedNativeEntryRoom,
+    digest: [u8; 32],
+    now: SemanticTimeMicros,
+    constants: &AttackConstants,
+) -> Option<SelectedSwing> {
+    let target = entry.state.target()?;
+    let player = states.get(runtime, entry.actor, entry.session)?;
+    if states.is_dead(entry.actor) {
+        entry.clear_target();
+        return None;
+    }
+    // CONDITIONS-0 §3.5: applying `pacified` clears a running target.
+    if pacified_applied_since(
+        runtime,
+        states,
+        entry.actor,
+        entry.session,
+        entry.target_set_at,
+    ) {
+        entry.clear_target();
+        return None;
+    }
+    // Canary Player::doAttacking pauses swings without dropping the held target or timer.
+    if player
+        .cooldowns
+        .group_ready_at(oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY)
+        .is_some_and(|until| now < until)
+    {
+        return None;
+    }
+    // SPELL-LOCK-2 §1.3: while the attacker's own slot is reserved by a pending spell
+    // batch, its swing defers to a later turn; the held target and swing clock stay.
+    if states.has_pending_spell_commit(entry.actor, entry.session)
+        || runtime.assert_actor_spell_unreserved(entry.actor).is_err()
+    {
+        return None;
+    }
+    // ATTACK-2: a swing waits for a swing weapon read under this pin within one attack
+    // interval; the attacker's own connection refreshes it (`refresh_attack_weapon`).
+    let weapon = entry
+        .weapon
+        .as_ref()
+        .filter(|facts| {
+            facts.content_digest == digest
+                && now
+                    .elapsed_since(facts.read_at)
+                    .is_ok_and(|age| age <= constants.attack_interval_micros())
+        })
+        .cloned()?;
+    let mut character_facts = player.character_facts();
+    character_facts.magic_level = player.owned_effective_magic_level(now.get()).ok()?;
+    // MELEE-SKILL-1: the swing reads the attacker's live skill of the swung weapon (fist for
+    // fists) and live shielding, before the swing is taken, so an unresolved skill takes none.
+    let attack_index = if weapon.ranged.is_some() {
+        4
+    } else {
+        match weapon.weapon {
+            SwingWeapon::Fists => 0,
+            SwingWeapon::Melee { skill, .. } => skill.index(),
+        }
+    };
+    let mut skills = player
+        .swing_skills(attack_index, now.get())?
+        .unwrap_or(SwingSkills {
+            attack: constants.starting_skill,
+            shielding: constants.starting_skill,
+        });
+    if attack_index == 4
+        && player
+            .wheel_effects_at(now.get())
+            .is_some_and(|effects| effects.active_unique_perks.contains("positional_tactics"))
+        && crate::spell::cast::wheel_adjacent_monsters(runtime, entry.actor)? == 0
+    {
+        // Crystal player_wheel.cpp:3009-3017: the no-adjacent-monster branch adds 3 distance.
+        skills.attack = skills.attack.checked_add(3)?;
+    }
+    let mut facts = target_facts(runtime, room, entry.actor, entry.session, target, now)?;
+    // Vanished/dead/nonattackable targets still reach the original clearing rules, even
+    // when ammunition is missing. Cost/range gates may only stall a valid held target.
+    if let Some(ranged) = &weapon.ranged
+        && facts.present_and_visible
+        && facts.attackable_kind
+        && facts.alive
+    {
+        ranged
+            .ready(
+                facts.distance,
+                facts.present_and_visible,
+                player.vitals().mana,
+            )
+            .ok()?;
+        // Range was checked with the qualified launcher range. All other target gates and
+        // the timer remain the existing attack owner's rules.
+        facts.distance = facts.distance.min(1);
+    }
+    let swing = match entry
+        .state
+        .poll_swing(now, constants.attack_interval_micros(), &facts)
+    {
+        SwingPoll::Swing(swing) => swing,
+        SwingPoll::Cleared(_) => {
+            entry.target_ref = None;
+            return None;
+        }
+        SwingPoll::NoTarget | SwingPoll::Waiting(_) | SwingPoll::NotDue { .. } => {
+            return None;
+        }
+    };
+    // The ordinal advances on every swing, a zero draw included, so every swing has its
+    // own RNG occurrence; the lineage ends at the last ordinal.
+    let ordinal = entry.next_ordinal;
+    match ordinal.checked_add(1) {
+        Some(next) => entry.next_ordinal = next,
+        None => entry.clear_target(),
+    }
+    Some(SelectedSwing {
+        target,
+        character_facts,
+        skills,
+        weapon,
+        swing,
+        ordinal,
+    })
+}
+
+fn melee_swing_formula(
+    constants: &AttackConstants,
+    vocation: crate::spell::Vocation,
+    weapon: SwingWeapon,
+) -> (crate::spell::formula::Formula, u32, &'static str) {
+    if matches!(
+        vocation,
+        crate::spell::Vocation::Monk | crate::spell::Vocation::ExaltedMonk
+    ) {
+        let attack = match weapon {
+            SwingWeapon::Fists => constants.fist.attack,
+            SwingWeapon::Melee { attack, .. } => attack,
+        };
+        return (
+            player_monk_formula(constants),
+            attack,
+            "formula:player-monk",
+        );
+    }
+    match weapon {
+        SwingWeapon::Fists => (
+            player_fist_formula(constants),
+            constants.fist.attack,
+            "formula:player-fist",
+        ),
+        SwingWeapon::Melee { attack, .. } => (
+            player_melee_formula(constants),
+            attack,
+            "formula:player-melee",
+        ),
+    }
+}
+
+fn draw_swing_damage(
+    entry: &mut ActorAttack,
+    runtime: &ChannelRuntimeV1,
+    selected: &SelectedSwing,
+    constants: &AttackConstants,
+    root: &GameplayDecisionRoot,
+    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
+) -> Option<(i64, &'static str)> {
+    let SelectedSwing {
+        target,
+        character_facts,
+        skills,
+        swing,
+        ordinal,
+        ..
+    } = *selected;
+    if selected.weapon.ranged.is_some() && runtime.contains_live_creature(target) {
+        entry
+            .state
+            .record_hit(swing.at, constants.in_fight_micros());
+    }
+    let mode = constants.fight_mode(fight_mode(entry.modes.fight_mode));
+    let (formula, attack_value, revision) = if let Some(ranged) = &selected.weapon.ranged {
+        let from = runtime.read_actor_position(entry.actor).ok()?.position();
+        let to = runtime.read_actor_position(target).ok()?.position();
+        let distance = from.x.abs_diff(to.x).max(from.y.abs_diff(to.y));
+        let roll = swing_draw(
+            root,
+            entry.actor,
+            swing.lineage,
+            ordinal,
+            b"hit-chance",
+            "attack.hit-chance",
+            0,
+            99,
+        )?;
+        let perfect = matches!(ranged.damage, ranged::RangedDamage::Distance { .. })
+            && (offence.perfect_damage(from.x.abs_diff(to.x), from.x.abs_diff(to.x)) != 0
+                || offence.perfect_damage(from.y.abs_diff(to.y), from.y.abs_diff(to.y)) != 0);
+        if !perfect && !ranged.hit(distance, skills.attack, u64::try_from(roll).ok()?)? {
+            return Some((-1, "formula:player-distance"));
+        }
+        ranged.formula()?
+    } else {
+        melee_swing_formula(constants, character_facts.vocation, selected.weapon.weapon)
+    };
+    let inputs = FormulaInputs {
+        level: character_facts.level,
+        magic_level: character_facts.magic_level,
+        base_power: None,
+        attack_skill: skills.attack,
+        attack_value,
+        attack_factor: mode.attack_factor,
+        shielding_skill: skills.shielding,
+        shield_defense: None,
+    };
+    let Ok((minimum, maximum)) = formula.bounds(&inputs) else {
+        return None;
+    };
+    let damage = swing_draw(
+        root,
+        entry.actor,
+        swing.lineage,
+        ordinal,
+        b"damage-draw",
+        "attack.damage",
+        minimum,
+        maximum,
+    )?;
+    let creature = runtime.contains_live_creature(target);
+    if creature {
+        entry
+            .state
+            .record_hit(swing.at, constants.in_fight_micros());
+    }
+    swing_lands(damage).then_some((damage, revision))
+}
+
+/// `Game::combatBlockHit`: a 0 swing still meets the target's defence and armor (it spends a
+/// block and trains as a blocked hit), at a creature and, since PVP-DEFENCE-1, at a player.
+const fn swing_lands(damage: i64) -> bool {
+    damage >= 0
+}
+
+fn record_hit_activity(
+    entry: &mut ActorAttack,
+    runtime: &ChannelRuntimeV1,
+    content: &NativeGameplayState,
+    target: ExactActorRef,
+    now: SemanticTimeMicros,
+    result: &crate::foundation::OwnerDamageResult,
+    activity_cells: &mut Vec<SharedExperienceActivity>,
+) {
+    if result.applied
+        && result.health_after < result.health_before
+        && aggressive_monster(runtime, content, target)
+    {
+        entry.record_shared_experience_activity(runtime, now);
+        if let Some(cell) = entry.shared_experience_activity {
+            if let Some(old) = activity_cells
+                .iter_mut()
+                .find(|old| old.character == cell.character)
+            {
+                *old = cell;
+            } else {
+                activity_cells.push(cell);
+            }
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn settle_kill(
+    entry: &mut ActorAttack,
+    runtime: &mut ChannelRuntimeV1,
+    queue: &mut KillSettlementQueue,
+    rewards: &crate::content::creature_reward::CreatureRewardTable,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
+    activity: &[SharedExperienceActivity],
+    states: &super::super::actor_spell::ChannelSpellStates,
+    target: ExactActorRef,
+    lethal: crate::combat::CapturedRewardPrincipal,
+    now: SemanticTimeMicros,
+    clear: bool,
+) {
+    crate::gameplay_transport::kill_reward::record_creature_kill(
+        runtime,
+        crate::gameplay_transport::kill_reward::KillSink {
+            prey: Some(states),
+            queue,
+            rewards,
+            activity,
+            charms: Some(charms),
+        },
+        target,
+        lethal,
+        now.get() / 1_000,
+        Some(now),
+    );
+    if clear {
+        entry.clear_target();
+    }
+}
+
+struct RangedPlayerDamage {
+    components: crate::spell::cast::WheelAttackComponents,
+    protections: std::collections::BTreeMap<
+        crate::content::ReferenceResistanceKind,
+        crate::content::ReferenceRationalPercent,
+    >,
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    #[allow(clippy::too_many_arguments)]
+    async fn ranged_player_damage(
+        &self,
+        permit: &SpellLanePermit,
+        runtime: &ChannelRuntimeV1,
+        content: &NativeGameplayState,
+        session: GameSessionId,
+        ranged: &ranged::RangedLoadout,
+        hit: &PvpSwing,
+        constants: &AttackConstants,
+        root: &GameplayDecisionRoot,
+        armor: u32,
+    ) -> Option<RangedPlayerDamage> {
+        use crate::content::ProjectV2RangedElement as Element;
+        use crate::durability::character_equipment as equipment;
+        let current =
+            crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
+                .current_session_at(session)
+                .await
+                .ok()?
+                .0;
+        let fence = crate::gameplay_transport::item_fence_of(current)?;
+        let pass = self.root.try_issue_semantic_pass().ok()?;
+        let mut context = (self, permit, content);
+        let command = CommandRef::new(session, hit.lineage.command_id());
+        let effects = pass.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
+            let (owner, _permit, content) = context;
+            let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(holder, deadline).await?;
+            let authority = equipment::assert_equipment_authority_in_transaction(&mut tx, owner.root, owner.character, owner.holder, &fence, command, content.source_digest()).await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+            let equipment = equipment::read_equipment_in_transaction(&mut tx, &authority).await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+            crate::gameplay_transport::equipment_move::equipment_effects_owner::equipment_effects(&equipment, content).ok_or(crate::durability::DurabilityError::Unavailable)
+        })).await.ok()?;
+        let (physical, elemental, element) = ranged.split(hit.magnitude)?;
+        let physical = if physical > 0 {
+            oteryn_gameplay_combat_rules::resolution::swing_mitigated(
+                root,
+                constants,
+                hit.actor.placement_identity(),
+                (
+                    *hit.lineage.game_session_id().as_bytes(),
+                    hit.lineage.command_id().get(),
+                ),
+                hit.ordinal,
+                physical,
+                None,
+                armor,
+            )?
+        } else {
+            0
+        };
+        runtime.player_control_facts(hit.target, session).ok()?;
+        let element = match element {
+            Element::Physical => crate::player_lethal::PlayerHitKind::Physical,
+            Element::Death => crate::player_lethal::PlayerHitKind::Death,
+            Element::Earth => crate::player_lethal::PlayerHitKind::Earth,
+            Element::Energy => crate::player_lethal::PlayerHitKind::Energy,
+            Element::Fire => crate::player_lethal::PlayerHitKind::Fire,
+            Element::Ice => crate::player_lethal::PlayerHitKind::Ice,
+        };
+        let physical = u32::try_from(physical).ok()?;
+        let elemental = u32::try_from(elemental).ok()?;
+        let components = if matches!(ranged.damage, ranged::RangedDamage::Magic { .. }) {
+            crate::spell::cast::WheelAttackComponents {
+                primary: (elemental, element),
+                secondary: (0, element),
+            }
+        } else {
+            crate::spell::cast::WheelAttackComponents {
+                primary: (physical, crate::player_lethal::PlayerHitKind::Physical),
+                secondary: (elemental, element),
+            }
+        };
+        Some(RangedPlayerDamage {
+            components,
+            protections: effects.protections,
+        })
+    }
+}
+
+/// Canary weapons.cpp:23-33, player.cpp:11959-12053 (99902524): weapon
+/// sounds originate at the wielder; the hit cue precedes the attack cue.
+fn publish_hit_sound(
+    states: &mut ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    content: &NativeGameplayState,
+    actor: ExactActorRef,
+    weapon: &WeaponFacts,
+) {
+    let Ok(position) = runtime.read_actor_position(actor) else {
+        return;
+    };
+    let (cue, secondary) = if let Some(ranged) = &weapon.ranged {
+        use crate::content::{ProjectV2RangedWeapon, ReferenceAmmoType};
+        let Some(profile) = content
+            .item_policy(
+                &ranged.weapon.definition.production_key,
+                &ranged.weapon.definition.revision_ref,
+            )
+            .and_then(|policy| policy.record().authoring.ranged.as_ref())
+        else {
+            return;
+        };
+        match profile {
+            ProjectV2RangedWeapon::Distance {
+                ammunition: ReferenceAmmoType::Arrow,
+                ..
+            } => (13, 6),
+            ProjectV2RangedWeapon::Distance {
+                ammunition: ReferenceAmmoType::Bolt,
+                ..
+            } => (14, 7),
+            ProjectV2RangedWeapon::Wand(_) | ProjectV2RangedWeapon::Rod(_) => (17, 9),
+            _ => (15, 8),
+        }
+    } else {
+        let skill = match weapon.weapon {
+            SwingWeapon::Fists => 0,
+            SwingWeapon::Melee { skill, .. } => skill.index(),
+        };
+        (
+            match skill {
+                1 => 4,
+                2 => 3,
+                3 => 5,
+                _ => 1,
+            },
+            0,
+        )
+    };
+    if let Some(owner) = states.presentations.as_mut() {
+        let _ = states.sounds.capture(owner, runtime);
+    }
+    states
+        .sounds
+        .record(runtime, actor, position.position(), cue, secondary);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{melee_swing_formula, swing_lands};
+
+    #[test]
+    fn autoatk_monk_and_knight_select_their_own_formula() -> Result<(), Box<dyn std::error::Error>>
+    {
+        use crate::combat_attack::AttackConstants;
+        use crate::gameplay_transport::attack::SwingWeapon;
+        use crate::spell::Vocation;
+        use crate::spell::formula::FormulaInputs;
+
+        let constants = AttackConstants::checked_in().ok_or("checked-in constants parse")?;
+        for (vocation, expected, unarmed, revision) in [
+            (
+                Vocation::Monk,
+                (293, 872),
+                (129, 218),
+                "formula:player-monk",
+            ),
+            (
+                Vocation::ExaltedMonk,
+                (293, 872),
+                (129, 218),
+                "formula:player-monk",
+            ),
+            (
+                Vocation::Knight,
+                (196, 486),
+                (114, 159),
+                "formula:player-melee",
+            ),
+            (
+                Vocation::EliteKnight,
+                (196, 486),
+                (114, 159),
+                "formula:player-melee",
+            ),
+        ] {
+            let (formula, attack_value, actual_revision) = melee_swing_formula(
+                constants,
+                vocation,
+                SwingWeapon::Melee {
+                    attack: 44,
+                    skill: oteryn_gameplay_combat_rules::resolution::MeleeSkill::Fist,
+                },
+            );
+            let inputs = FormulaInputs {
+                level: 500,
+                magic_level: 0,
+                base_power: None,
+                attack_skill: 100,
+                attack_value,
+                attack_factor: 1.0,
+                shielding_skill: 0,
+                shield_defense: None,
+            };
+            assert_eq!(formula.bounds(&inputs), Ok(expected), "{vocation:?}");
+            assert_eq!(actual_revision, revision);
+            let (formula, attack_value, actual_revision) =
+                melee_swing_formula(constants, vocation, SwingWeapon::Fists);
+            assert_eq!(
+                formula.bounds(&FormulaInputs {
+                    attack_value,
+                    ..inputs
+                }),
+                Ok(unarmed)
+            );
+            assert_eq!(
+                actual_revision,
+                if revision == "formula:player-monk" {
+                    revision
+                } else {
+                    "formula:player-fist"
+                }
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn a_zero_swing_meets_the_targets_defence() {
+        assert!(
+            swing_lands(0),
+            "a 0 swing at a creature or a player is blocked"
+        );
+        assert!(swing_lands(5));
+        assert!(!swing_lands(-1));
+    }
+}

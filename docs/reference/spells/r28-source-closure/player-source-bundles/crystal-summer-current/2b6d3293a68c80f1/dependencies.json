@@ -1,0 +1,883 @@
+{
+  "abilities": [
+    {
+      "area": {
+        "matrix": {
+          "north": [
+            "xxx",
+            "xCx",
+            "xxx"
+          ]
+        }
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/crystal-summer-current/2b6d3293a68c80f1/ability/effect",
+          "revision": "source-player-r28"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/2b6d3293a68c80f1/ability",
+        "revision": "source-player-r28"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": false,
+      "range_tiles": 0
+    }
+  ],
+  "effects": [
+    {
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:spell/source/crystal-summer-current/2b6d3293a68c80f1/ability/formula-player",
+        "revision": "source-player-r28"
+      },
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/2b6d3293a68c80f1/ability/effect",
+        "revision": "source-player-r28"
+      },
+      "mitigated_by": [
+        "armor"
+      ],
+      "operation": "damage",
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/hitarea"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/2b6d3293a68c80f1/ability/formula-player",
+        "revision": "source-player-r28"
+      },
+      "inputs": "skill",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "args": [
+                                                      {
+                                                        "var": "level"
+                                                      },
+                                                      {
+                                                        "const": "1000"
+                                                      }
+                                                    ],
+                                                    "op": "add"
+                                                  },
+                                                  {
+                                                    "args": [
+                                                      {
+                                                        "args": [
+                                                          {
+                                                            "args": [
+                                                              {
+                                                                "args": [
+                                                                  {
+                                                                    "args": [
+                                                                      {
+                                                                        "args": [
+                                                                          {
+                                                                            "const": "2"
+                                                                          },
+                                                                          {
+                                                                            "var": "level"
+                                                                          }
+                                                                        ],
+                                                                        "op": "mul"
+                                                                      },
+                                                                      {
+                                                                        "const": "2025"
+                                                                      }
+                                                                    ],
+                                                                    "op": "add"
+                                                                  }
+                                                                ],
+                                                                "op": "sqrt"
+                                                              },
+                                                              {
+                                                                "const": "5"
+                                                              }
+                                                            ],
+                                                            "op": "add"
+                                                          },
+                                                          {
+                                                            "const": "10"
+                                                          }
+                                                        ],
+                                                        "op": "div"
+                                                      }
+                                                    ],
+                                                    "op": "floor"
+                                                  }
+                                                ],
+                                                "op": "div"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "50"
+                                              },
+                                              {
+                                                "args": [
+                                                  {
+                                                    "args": [
+                                                      {
+                                                        "args": [
+                                                          {
+                                                            "args": [
+                                                              {
+                                                                "args": [
+                                                                  {
+                                                                    "args": [
+                                                                      {
+                                                                        "const": "2"
+                                                                      },
+                                                                      {
+                                                                        "var": "level"
+                                                                      }
+                                                                    ],
+                                                                    "op": "mul"
+                                                                  },
+                                                                  {
+                                                                    "const": "2025"
+                                                                  }
+                                                                ],
+                                                                "op": "add"
+                                                              }
+                                                            ],
+                                                            "op": "sqrt"
+                                                          },
+                                                          {
+                                                            "const": "5"
+                                                          }
+                                                        ],
+                                                        "op": "add"
+                                                      },
+                                                      {
+                                                        "const": "10"
+                                                      }
+                                                    ],
+                                                    "op": "div"
+                                                  }
+                                                ],
+                                                "op": "floor"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "add"
+                                      },
+                                      {
+                                        "const": "450"
+                                      }
+                                    ],
+                                    "op": "sub"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "base_power"
+                                              },
+                                              {
+                                                "const": "1000"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          },
+                                          {
+                                            "var": "attack_skill"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      },
+                                      {
+                                        "var": "attack_value"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "const": "6"
+                                  }
+                                ],
+                                "op": "div"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "const": "0.9"
+                          }
+                        ],
+                        "op": "mul"
+                      }
+                    ],
+                    "op": "floor"
+                  }
+                ],
+                "op": "neg"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "args": [
+                                                      {
+                                                        "var": "level"
+                                                      },
+                                                      {
+                                                        "const": "1000"
+                                                      }
+                                                    ],
+                                                    "op": "add"
+                                                  },
+                                                  {
+                                                    "args": [
+                                                      {
+                                                        "args": [
+                                                          {
+                                                            "args": [
+                                                              {
+                                                                "args": [
+                                                                  {
+                                                                    "args": [
+                                                                      {
+                                                                        "args": [
+                                                                          {
+                                                                            "const": "2"
+                                                                          },
+                                                                          {
+                                                                            "var": "level"
+                                                                          }
+                                                                        ],
+                                                                        "op": "mul"
+                                                                      },
+                                                                      {
+                                                                        "const": "2025"
+                                                                      }
+                                                                    ],
+                                                                    "op": "add"
+                                                                  }
+                                                                ],
+                                                                "op": "sqrt"
+                                                              },
+                                                              {
+                                                                "const": "5"
+                                                              }
+                                                            ],
+                                                            "op": "add"
+                                                          },
+                                                          {
+                                                            "const": "10"
+                                                          }
+                                                        ],
+                                                        "op": "div"
+                                                      }
+                                                    ],
+                                                    "op": "floor"
+                                                  }
+                                                ],
+                                                "op": "div"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "50"
+                                              },
+                                              {
+                                                "args": [
+                                                  {
+                                                    "args": [
+                                                      {
+                                                        "args": [
+                                                          {
+                                                            "args": [
+                                                              {
+                                                                "args": [
+                                                                  {
+                                                                    "args": [
+                                                                      {
+                                                                        "const": "2"
+                                                                      },
+                                                                      {
+                                                                        "var": "level"
+                                                                      }
+                                                                    ],
+                                                                    "op": "mul"
+                                                                  },
+                                                                  {
+                                                                    "const": "2025"
+                                                                  }
+                                                                ],
+                                                                "op": "add"
+                                                              }
+                                                            ],
+                                                            "op": "sqrt"
+                                                          },
+                                                          {
+                                                            "const": "5"
+                                                          }
+                                                        ],
+                                                        "op": "add"
+                                                      },
+                                                      {
+                                                        "const": "10"
+                                                      }
+                                                    ],
+                                                    "op": "div"
+                                                  }
+                                                ],
+                                                "op": "floor"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "add"
+                                      },
+                                      {
+                                        "const": "450"
+                                      }
+                                    ],
+                                    "op": "sub"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "base_power"
+                                              },
+                                              {
+                                                "const": "1000"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          },
+                                          {
+                                            "var": "attack_skill"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      },
+                                      {
+                                        "var": "attack_value"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "const": "6"
+                                  }
+                                ],
+                                "op": "div"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "const": "1.1"
+                          }
+                        ],
+                        "op": "mul"
+                      }
+                    ],
+                    "op": "ceil"
+                  }
+                ],
+                "op": "neg"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "max"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "args": [
+                                                      {
+                                                        "var": "level"
+                                                      },
+                                                      {
+                                                        "const": "1000"
+                                                      }
+                                                    ],
+                                                    "op": "add"
+                                                  },
+                                                  {
+                                                    "args": [
+                                                      {
+                                                        "args": [
+                                                          {
+                                                            "args": [
+                                                              {
+                                                                "args": [
+                                                                  {
+                                                                    "args": [
+                                                                      {
+                                                                        "args": [
+                                                                          {
+                                                                            "const": "2"
+                                                                          },
+                                                                          {
+                                                                            "var": "level"
+                                                                          }
+                                                                        ],
+                                                                        "op": "mul"
+                                                                      },
+                                                                      {
+                                                                        "const": "2025"
+                                                                      }
+                                                                    ],
+                                                                    "op": "add"
+                                                                  }
+                                                                ],
+                                                                "op": "sqrt"
+                                                              },
+                                                              {
+                                                                "const": "5"
+                                                              }
+                                                            ],
+                                                            "op": "add"
+                                                          },
+                                                          {
+                                                            "const": "10"
+                                                          }
+                                                        ],
+                                                        "op": "div"
+                                                      }
+                                                    ],
+                                                    "op": "floor"
+                                                  }
+                                                ],
+                                                "op": "div"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "50"
+                                              },
+                                              {
+                                                "args": [
+                                                  {
+                                                    "args": [
+                                                      {
+                                                        "args": [
+                                                          {
+                                                            "args": [
+                                                              {
+                                                                "args": [
+                                                                  {
+                                                                    "args": [
+                                                                      {
+                                                                        "const": "2"
+                                                                      },
+                                                                      {
+                                                                        "var": "level"
+                                                                      }
+                                                                    ],
+                                                                    "op": "mul"
+                                                                  },
+                                                                  {
+                                                                    "const": "2025"
+                                                                  }
+                                                                ],
+                                                                "op": "add"
+                                                              }
+                                                            ],
+                                                            "op": "sqrt"
+                                                          },
+                                                          {
+                                                            "const": "5"
+                                                          }
+                                                        ],
+                                                        "op": "add"
+                                                      },
+                                                      {
+                                                        "const": "10"
+                                                      }
+                                                    ],
+                                                    "op": "div"
+                                                  }
+                                                ],
+                                                "op": "floor"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "add"
+                                      },
+                                      {
+                                        "const": "450"
+                                      }
+                                    ],
+                                    "op": "sub"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "base_power"
+                                              },
+                                              {
+                                                "const": "1000"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          },
+                                          {
+                                            "var": "attack_skill"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      },
+                                      {
+                                        "var": "attack_value"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "const": "6"
+                                  }
+                                ],
+                                "op": "div"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "const": "0.9"
+                          }
+                        ],
+                        "op": "mul"
+                      }
+                    ],
+                    "op": "floor"
+                  }
+                ],
+                "op": "neg"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "args": [
+                                                      {
+                                                        "var": "level"
+                                                      },
+                                                      {
+                                                        "const": "1000"
+                                                      }
+                                                    ],
+                                                    "op": "add"
+                                                  },
+                                                  {
+                                                    "args": [
+                                                      {
+                                                        "args": [
+                                                          {
+                                                            "args": [
+                                                              {
+                                                                "args": [
+                                                                  {
+                                                                    "args": [
+                                                                      {
+                                                                        "args": [
+                                                                          {
+                                                                            "const": "2"
+                                                                          },
+                                                                          {
+                                                                            "var": "level"
+                                                                          }
+                                                                        ],
+                                                                        "op": "mul"
+                                                                      },
+                                                                      {
+                                                                        "const": "2025"
+                                                                      }
+                                                                    ],
+                                                                    "op": "add"
+                                                                  }
+                                                                ],
+                                                                "op": "sqrt"
+                                                              },
+                                                              {
+                                                                "const": "5"
+                                                              }
+                                                            ],
+                                                            "op": "add"
+                                                          },
+                                                          {
+                                                            "const": "10"
+                                                          }
+                                                        ],
+                                                        "op": "div"
+                                                      }
+                                                    ],
+                                                    "op": "floor"
+                                                  }
+                                                ],
+                                                "op": "div"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "50"
+                                              },
+                                              {
+                                                "args": [
+                                                  {
+                                                    "args": [
+                                                      {
+                                                        "args": [
+                                                          {
+                                                            "args": [
+                                                              {
+                                                                "args": [
+                                                                  {
+                                                                    "args": [
+                                                                      {
+                                                                        "const": "2"
+                                                                      },
+                                                                      {
+                                                                        "var": "level"
+                                                                      }
+                                                                    ],
+                                                                    "op": "mul"
+                                                                  },
+                                                                  {
+                                                                    "const": "2025"
+                                                                  }
+                                                                ],
+                                                                "op": "add"
+                                                              }
+                                                            ],
+                                                            "op": "sqrt"
+                                                          },
+                                                          {
+                                                            "const": "5"
+                                                          }
+                                                        ],
+                                                        "op": "add"
+                                                      },
+                                                      {
+                                                        "const": "10"
+                                                      }
+                                                    ],
+                                                    "op": "div"
+                                                  }
+                                                ],
+                                                "op": "floor"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "add"
+                                      },
+                                      {
+                                        "const": "450"
+                                      }
+                                    ],
+                                    "op": "sub"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "base_power"
+                                              },
+                                              {
+                                                "const": "1000"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          },
+                                          {
+                                            "var": "attack_skill"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      },
+                                      {
+                                        "var": "attack_value"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "const": "6"
+                                  }
+                                ],
+                                "op": "div"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "const": "1.1"
+                          }
+                        ],
+                        "op": "mul"
+                      }
+                    ],
+                    "op": "ceil"
+                  }
+                ],
+                "op": "neg"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "min"
+      }
+    }
+  ]
+}

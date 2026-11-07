@@ -1,0 +1,50 @@
+{
+  "schema": "NPC_R12_EVIDENCE_MANIFEST/v1",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 2986,
+      "sha256": "5e5c66478e9826e34c75492936ed462686852777dffab678f4e3187b460afd3c"
+    },
+    {
+      "path": "alaistar-remaining-eligibility-scope.json",
+      "bytes": 18866,
+      "sha256": "c56a1bfa01f9973a2a64eb8b1782bfde4eff4fe740964e0eb8cea7b3f2bf4eac"
+    },
+    {
+      "path": "commoner-eligibility-qualification.json",
+      "bytes": 18364,
+      "sha256": "480fdc38d93f0171bc0708f4250e2e00bbec97ea59158dcec3ab1db7d5ec9d74"
+    },
+    {
+      "path": "commoner-scope-reproducer.json",
+      "bytes": 23107,
+      "sha256": "891c12f32bb60fb7dfddb3f6e42b6568ecb0b0f14667f0ddccd5ab805a25b1ee"
+    },
+    {
+      "path": "native-materialization.json",
+      "bytes": 709,
+      "sha256": "07fc363a2a8524d6e17d7e11f4e185ed238a6f3207b49f11c5359a16660a0891"
+    },
+    {
+      "path": "native-repairs.json",
+      "bytes": 28164,
+      "sha256": "46845cf6d978c622a8bd4af7c2b0dc01242742bd2eaea9f3f8820d03c19715b4"
+    },
+    {
+      "path": "qualification.json",
+      "bytes": 137856,
+      "sha256": "389ca6d5663ac108f701b8f758816adb23d02c9fc2fc822954b78b567097fa83"
+    },
+    {
+      "path": "source-preview-validation.json",
+      "bytes": 2799,
+      "sha256": "fbf45e3941aa439bc6c52e9c1811d050f591437128f9690801fd12a938bfbb20"
+    },
+    {
+      "path": "validation.json",
+      "bytes": 2662,
+      "sha256": "e3ce7b8462191092a49d56161f5342b34126c6e56f116f7d756df893590f85b8"
+    }
+  ]
+}

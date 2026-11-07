@@ -1,0 +1,53 @@
+{
+  "content/world/definitions/reference.json": {
+    "records": {
+      "base": 61186,
+      "ours": 62457,
+      "main": 61530,
+      "merged": 62801
+    }
+  },
+  "content/world/definitions/declarations.json": {
+    "records": {
+      "base": 4282,
+      "ours": 4286,
+      "main": 4596,
+      "merged": 4600
+    },
+    "item_authoring": {
+      "base": 700,
+      "ours": 700,
+      "main": 700,
+      "merged": 700
+    },
+    "authoring_profiles": {
+      "base": 26043,
+      "ours": 27272,
+      "main": 26387,
+      "merged": 27616
+    }
+  },
+  "content/world/provenance/sources.json": {
+    "sources": {
+      "base": 12,
+      "ours": 16,
+      "main": 25,
+      "merged": 29
+    },
+    "source_identity_bindings": {
+      "base": 5082,
+      "ours": 5208,
+      "main": 5453,
+      "merged": 5579
+    }
+  },
+  "content/world/provenance/imports.json": {
+    "batches": {
+      "base": 14,
+      "ours": 18,
+      "main": 27,
+      "merged": 31,
+      "states": 404
+    }
+  }
+}

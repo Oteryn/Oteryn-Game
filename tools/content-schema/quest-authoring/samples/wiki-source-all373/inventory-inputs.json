@@ -1,0 +1,10 @@
+{
+  "schema": "OTERYN_ALL_WIKI_SOURCE_INPUT_MANIFEST/v1",
+  "inputs": {
+    "access-checks.json": "1adf89efb73dd1c1a9a426b76a27109ea5fe4f7b6f155684a044a06c6b5f93ca",
+    "catalogue-source-schema.json": "b24b129ef5a6e615fb72966d3cf21dd48bb1f40bb94fb71e50a9fd4e0de96031",
+    "legacy-source-schema.json": "18164799a6d79827c218f85e6710f6c58404af4912c280333330ccce6009c606",
+    "previous105.json": "d8e8fcb6281124377be2ecb3372cf860e043c5f16b53d8f15c1b148a9874e14a",
+    "selection373.json": "85a3c8a18e055e9653068584bcafbe6c15edb78f9c64e9712e2eb2e18e5993b5"
+  }
+}

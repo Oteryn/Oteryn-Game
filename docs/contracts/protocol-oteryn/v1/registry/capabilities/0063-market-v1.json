@@ -1,0 +1,17 @@
+{
+  "id": 63,
+  "name": "MARKET_V1",
+  "owner_decision": "MARKET-1 coordinator decision (b), 2026-10-25",
+  "owner": "World Market and native settlement owner",
+  "requires": [
+    37
+  ],
+  "command_types": [
+    80
+  ],
+  "state_domains": [
+    28
+  ],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES; current session and reachable authored depot required for every request."
+}

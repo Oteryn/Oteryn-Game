@@ -1,0 +1,22 @@
+{
+  "id": 132,
+  "name": "INSPECTION_V1",
+  "constant": "inspection::CAPABILITY_INSPECTION_V1",
+  "requires": [
+    4,
+    6
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    153
+  ],
+  "domains": [
+    97
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

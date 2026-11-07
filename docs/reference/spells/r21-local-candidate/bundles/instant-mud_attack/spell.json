@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/mud_attack",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Mud Attack",
+    "carrier": "instant",
+    "words": "exori infir tera",
+    "reference_spell_id": 172,
+    "library_text": "In preparation of the Terra Strike that are to come, young druids-in-training can already test the powers of the earth with this spell. It summons the power of the upper mud strata, to wallow up and attack a foe. For the victim, it feels as if the mossy maws of the earth closed around him, snapping and biting, crushing and inflicting instant damage.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ],
+      "level": 1,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 6,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": true,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 3,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_mud_attack"
+    },
+    "base_power": 15,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/mud_attack",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

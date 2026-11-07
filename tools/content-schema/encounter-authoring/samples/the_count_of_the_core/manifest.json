@@ -1,0 +1,225 @@
+{
+  "encounter": "canary:encounter/the_count_of_the_core",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "DepthWarzoneBossDeath": [
+      "canary:creature/the_count_of_the_core"
+    ],
+    "SnailSlimeDeath": [
+      "canary:creature/snail_slime"
+    ],
+    "SnailSlimeThink": [
+      "canary:creature/snail_slime"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/dangerous_depth/bosses/the_count_of_the_core.lua",
+      "blob_sha1": "60769958a14e8100d7d3fd747d1f26637c8c38ae"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_bosses_mission_depths.lua",
+      "blob_sha1": "9880d96626e7bdba1fcbb7747c440339f5a756b5"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/dangerous_depth/snail_slime.lua",
+      "blob_sha1": "2bfa943c47a2efa4ebf967b553ddd77d8796ac41"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_snail_slime_kill.lua",
+      "blob_sha1": "488480896a8b239bf3b9dbae8ddcc8d3a71d5e2b"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "The Count of the Core is the the_count_of_the_core participant; its file registers DepthWarzoneBossDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        2
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the configured boss \"the count of the core\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        22,
+        23,
+        24,
+        25,
+        26,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        2
+      ],
+      "status": "mapped",
+      "resolution": "Teleporter 1949 on (33681, 32340, 15) becomes 22761 leading to (33682, 32315, 15); after 20 minutes revert turns it back into 1949 leading to (33324, 32111, 15).",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        2
+      ],
+      "status": "mapped",
+      "resolution": "teleportPosition, toPosition and toPositionBack become the three point anchors.",
+      "destination": "/encounter/anchors"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Snail Slime is the snail_slime participant; its file registers SnailSlimeDeath.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        18
+      ],
+      "status": "mapped",
+      "resolution": "Snail Slime is the snail_slime participant; its file registers SnailSlimeThink.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        60,
+        61,
+        65,
+        66,
+        68
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of a snail slime.",
+      "destination": "/encounter/rules/1/trigger"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        62
+      ],
+      "status": "mapped",
+      "resolution": "creature:say(\"!!\", TALKTYPE_MONSTER_YELL).",
+      "destination": "/encounter/rules/1/actions/0"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        5,
+        6,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        22,
+        23,
+        24,
+        25,
+        27,
+        63,
+        64
+      ],
+      "status": "mapped",
+      "resolution": "AREA_CIRCLE2X2 around the slime (every tile with dx^2 + dy^2 <= 5); onTargetTile acts on The Count of the Core standing there.",
+      "destination": "/encounter/rules/2/conditions/0"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        8,
+        9,
+        10,
+        20,
+        21
+      ],
+      "status": "mapped",
+      "resolution": "The Count gains math.random(0, 2000) health.",
+      "destination": "/encounter/rules/2/actions/0"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        1,
+        2,
+        3
+      ],
+      "status": "approved_omission",
+      "resolution": "The fire combat has no damage formula, so it deals nothing; its effect is cosmetic."
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        58
+      ],
+      "status": "approved_omission",
+      "resolution": "SnailSlimeThink is registered only by the snail slime, but acts only on a creature named \"the count of the core\", so it never does anything."
+    }
+  ],
+  "outcome_evidence": []
+}

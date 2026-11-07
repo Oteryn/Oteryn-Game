@@ -1,0 +1,239 @@
+{
+  "canonical_parent_definitions": 352,
+  "changed_core_keys": [
+    "oteryn:quest.cults_of_tibia_quest",
+    "oteryn:quest.dangerous_depths_quest",
+    "oteryn:quest.grave_danger_quest",
+    "oteryn:quest.heart_of_destruction_quest",
+    "oteryn:quest.kilmaresh_quest",
+    "oteryn:quest.roshamuul_quest",
+    "oteryn:quest.secret_service_quest",
+    "oteryn:quest.serpentine_tower_quest",
+    "oteryn:quest.spike_task"
+  ],
+  "changed_graphs": [
+    {
+      "delta": {
+        "known_conditions": 5,
+        "quest_children": 0,
+        "typed_children": 0,
+        "unresolved_conditions": -1,
+        "unresolved_statements": 0
+      },
+      "from_digest": "1d2ffc5e1aaee3c4bbd5f02e9b7e6fde3803e5631270a8c394dfc62e24439a8a",
+      "key": "canary:interaction/cults_of_tibia/actions_magnifier",
+      "to_digest": "2e40739da79490555db11971e0022595b1937c3fc10204d375fa651186748d61"
+    },
+    {
+      "delta": {
+        "known_conditions": 4,
+        "quest_children": 0,
+        "typed_children": 0,
+        "unresolved_conditions": -2,
+        "unresolved_statements": 0
+      },
+      "from_digest": "37ac90e6aee3b496dbb19423dbaf3d970020de663c1f735f345dd55e24807029",
+      "key": "canary:interaction/dangerous_depth/actions_gnomish_pesticide",
+      "to_digest": "92bf863c05a4681d4d928d25efb9bde9990b5138a71268926697ca1e3c26e55c"
+    },
+    {
+      "delta": {
+        "known_conditions": 0,
+        "quest_children": 0,
+        "typed_children": 12,
+        "unresolved_conditions": 0,
+        "unresolved_statements": -6
+      },
+      "from_digest": "8c631d117091cb3f6f7cf44428ab729fdb62e7ad09fb9a7767b2e4158f37cd42",
+      "key": "canary:interaction/heart_of_destruction/movements_teleport_heart",
+      "to_digest": "15f5333727ddbff500a4523be5efacaf582da8ed2c9707f991bcf11250fb96da"
+    },
+    {
+      "delta": {
+        "known_conditions": 3,
+        "quest_children": 0,
+        "typed_children": 3,
+        "unresolved_conditions": 0,
+        "unresolved_statements": 0
+      },
+      "from_digest": "33edcb07c0ac59be9cc5aaa384386c04548967e55c254d24c474f048b68ba483",
+      "key": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/7_four_masks",
+      "to_digest": "62375c1d029ee5d3349931e2bf7a18a330c820807629bac8d980fae5049f9a42"
+    },
+    {
+      "delta": {
+        "known_conditions": 1,
+        "quest_children": 0,
+        "typed_children": 0,
+        "unresolved_conditions": -1,
+        "unresolved_statements": 0
+      },
+      "from_digest": "bc92a162bdaa636f8cab1188e4b430a74c7660290e53825f469f821ffe89cc62",
+      "key": "canary:interaction/roshamuul_quest/actions_trough",
+      "to_digest": "27d55caa498f2244235fa937ab5f3be2ce8648b85de3ae36d3319d62398b2b99"
+    },
+    {
+      "delta": {
+        "known_conditions": 3,
+        "quest_children": 0,
+        "typed_children": 3,
+        "unresolved_conditions": 0,
+        "unresolved_statements": 0
+      },
+      "from_digest": "bdd9840771f89f1c85d4e0815baa8abdfa5554cc14beee506f530f955f786bd6",
+      "key": "canary:interaction/secret_service/actions_tools",
+      "to_digest": "a7cbd4e6ab77d29734f8fb7d108eb48ad39ffbd8dde529133f5eb3fff87aff1f"
+    },
+    {
+      "delta": {
+        "known_conditions": 1,
+        "quest_children": 0,
+        "typed_children": 0,
+        "unresolved_conditions": -1,
+        "unresolved_statements": 0
+      },
+      "from_digest": "f05f97f396ce375823d31d956f278e544b0252b2f2b10a6b03d354f9acec6722",
+      "key": "canary:interaction/spike_tasks/actions_lode_stone",
+      "to_digest": "6d454053f95d33a57042a039c6d3e5bd07e0a54f4f4fde985b64d687feeb472a"
+    },
+    {
+      "delta": {
+        "known_conditions": 3,
+        "quest_children": 0,
+        "typed_children": 3,
+        "unresolved_conditions": 0,
+        "unresolved_statements": 0
+      },
+      "from_digest": "078417064a9f9d4362ea8e2d72062352cd7a6fc98522b3b475dea7c3e5f9b9dd",
+      "key": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/7_four_masks",
+      "to_digest": "05a2e1a101a4ed0a9bbc056380b8e998e8ed37dac0929de7e84c438b34d0cb9d"
+    }
+  ],
+  "classification": "SOURCE_TRANSCRIPTION_ONLY_NOT_NATIVE_ADMISSION",
+  "delta": {
+    "known_conditions": 20,
+    "quest_children": 0,
+    "typed_children": 21,
+    "unresolved_conditions": -5,
+    "unresolved_statements": -6
+  },
+  "inputs": [
+    {
+      "path": "tools/content-schema/quest-authoring/ots_interactions.py",
+      "sha256": "c2c4b5c1206fbdfff6c9922d64815a6244850eafcd18e454145b01a9d8326618"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/reward_aliases.py",
+      "sha256": "0e844abbc713ebbfb14ffc9000ddee7ef1f121d35878486c97dd6dcdc71c47bc"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/catalogue/catalogue.json",
+      "sha256": "ff8afae7d6d7ae3a917fd43c43c630868ca8baf114dcbbe26f4ff02808b913df"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
+      "sha256": "7b4419d13391eaff5112230c2bafa1cd11af231b73fa8f5a9c8685dba960b718"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/source-proofs/serpentine-white-pearl-cores.json",
+      "sha256": "35410b6998e7aa95148d708621de564521348e8148f90e448af23000757775fd"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/source-proofs/serpentine-white-pearl.json",
+      "sha256": "f457d939ef58e342e7e8a5ad20befa2d668de1faef86bc98b31c8e985030ce42"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/source-repair-r13/item-target-predicates.json",
+      "sha256": "c6a98919884bbd7b364d0d68990d87c3058495011f4feb2bdf58c824b061634b"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/source-repair-r13/kilmaresh-qualification.json",
+      "sha256": "12cedb2e4116ffbc62fe388f759ed5bfa20c23454be30f0b0009a51bb4b9e3ec"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/source-repair-r13/relocation-helpers.json",
+      "sha256": "9002c0697b73769bc39ea0f78b74eb9e68757e9540803080e4c92fafd4a8a17e"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/source-repair-r13/reward-alias-qualification.json",
+      "sha256": "3a15282fba915294081ac0bd24b1b727f42e5d1d37908e8b1b7393a2f22036d0"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/source-repair-r13/reward-aliases.json",
+      "sha256": "c7d8223c8e95f65fbe2273741e8c5aec2af3f7accacb6f3d47fec6ec8fd9fc9b"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/source_migration/bundle.json",
+      "sha256": "ae712972ab19e7a84a32469d80f77e861e88938e080e896db16daa8f8b962323"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/source_texts/source_texts.json",
+      "sha256": "7ad40ae57a61ab85cfda9dc2306f57c492e4fd4a691d6e12945acdf518544d98"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/script_quests.json",
+      "sha256": "c83d7ed6892a91abeca72d29c40ab5137852bd7f60e8f483b890897caa848555"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/source_fix_guard.py",
+      "sha256": "c4eb0b5007200cd56abe343441c8ad32d67c8254f5d23746d65ae2999f7c0394"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_guarded_target_predicates.py",
+      "sha256": "5555ac990f6715c34d975db6a92f1d6d29d18f1a0a9946f7dde3fb191314ef99"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_local_relocation_helper.py",
+      "sha256": "591bdd971093754a831da90535dbd5f91eb0cd24054d433531077cc3f3c39985"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_reward_aliases.py",
+      "sha256": "2a8843b92220202522eaf3180624c9e873fb257195531380449ad406d7043976"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_white_pearl_curation.py",
+      "sha256": "7f7d4e3a6d9a34c2b9e4141befb904aeea9455935e89b90a162fccadc3b5727c"
+    }
+  ],
+  "original_source_values_effects_and_holds_preserved": true,
+  "parent_frozen_head": "1caddc0d9e65ff502c8137264391cd43d06911b6",
+  "reviewed_plan": {
+    "anchor_additions": {},
+    "changed_core_keys": [
+      "oteryn:quest.cults_of_tibia_quest",
+      "oteryn:quest.dangerous_depths_quest",
+      "oteryn:quest.grave_danger_quest",
+      "oteryn:quest.heart_of_destruction_quest",
+      "oteryn:quest.kilmaresh_quest",
+      "oteryn:quest.roshamuul_quest",
+      "oteryn:quest.secret_service_quest",
+      "oteryn:quest.serpentine_tower_quest",
+      "oteryn:quest.spike_task"
+    ],
+    "changed_graph_keys": [
+      "canary:interaction/cults_of_tibia/actions_magnifier",
+      "canary:interaction/dangerous_depth/actions_gnomish_pesticide",
+      "canary:interaction/heart_of_destruction/movements_teleport_heart",
+      "canary:interaction/kilmaresh_quest/1_fafnars_wrath/7_four_masks",
+      "canary:interaction/roshamuul_quest/actions_trough",
+      "canary:interaction/secret_service/actions_tools",
+      "canary:interaction/spike_tasks/actions_lode_stone",
+      "crystalserver:interaction/kilmaresh/1_fafnars_wrath/7_four_masks"
+    ],
+    "delta": {
+      "known_conditions": 20,
+      "quest_children": 0,
+      "typed_children": 21,
+      "unresolved_conditions": -5,
+      "unresolved_statements": -6
+    },
+    "new_graph_keys": []
+  },
+  "runtime_enabled": false,
+  "schema": "OTERYN_R13_SOURCE_DELTA_QUALIFICATION/v1",
+  "server_smokes": "NOT_RUN",
+  "source_definitions": 284,
+  "source_progress_tracks": 1491,
+  "source_write_occurrences": 6636,
+  "status": "PASS"
+}

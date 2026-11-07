@@ -1,0 +1,9 @@
+{
+  "mechanic": "0043-vip",
+  "kind": "keybindings",
+  "id": "0043-vip-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+V",
+  "entry": "input.rs::open_key"
+}

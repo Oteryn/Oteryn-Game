@@ -1,0 +1,18 @@
+{
+  "id": "GAMECAT-V1-ENTITY-COUNT",
+  "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+  "resource": "Entity records in one native catalog snapshot",
+  "unit": "entries",
+  "hard_maximum": 200000,
+  "configurable_range": {
+    "minimum": 200000,
+    "maximum": 200000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject entity count before uniqueness sorting or projection work exceeds the fixed v1 ceiling.",
+  "client_visible": false,
+  "boundary_tests": [
+    "200,000 entities accepted when otherwise valid",
+    "200,001 rejected before unbounded entity processing"
+  ]
+}

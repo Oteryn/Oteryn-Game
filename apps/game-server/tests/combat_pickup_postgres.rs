@@ -1,0 +1,54 @@
+#![allow(clippy::expect_used)]
+// Dedicated PostgreSQL 18 qualification for B3-2 (Combat ground pickup; definition facts bound
+// to the current Content generation instead of caller-supplied `ItemDefinitionFacts`). Ordinary
+// workspace runs report PRE-ROUTING/NONCANONICAL when the routed database is absent.
+//
+// B3-1's own PG suite (`item_transfer_postgres.rs`) already proves the D80-D83 admission/merge
+// matrix inside `durability::item_transfer`; these cases exist to prove the new content-binding
+// layer (`combat_pickup`) end to end, not to re-prove that matrix.
+extern crate oteryn_game_server as production_server;
+extern crate self as oteryn_game_server;
+
+pub use production_server::admission_evidence;
+#[allow(dead_code, unused_imports)]
+#[path = "../../../crates/gameplay/durability/src/character_bootstrap_intent.rs"]
+pub mod character_bootstrap_intent;
+#[allow(dead_code, unused_imports)]
+pub use oteryn_gameplay_character_recovery_fence as character_recovery_fence;
+#[allow(dead_code, unused_imports)]
+#[path = "../../../crates/gameplay/combat/src/combat/mod.rs"]
+pub mod combat;
+// A top-level module, not `combat::pickup`: see `src/combat/pickup.rs`'s own header comment for
+// why (`combat.rs` is recompiled standalone in other, Content-free contexts).
+#[allow(dead_code, unused_imports)]
+#[path = "../../../crates/gameplay/combat/src/combat/pickup.rs"]
+pub mod combat_pickup;
+// `support/content_shim.rs` mirrors `src/content/mod.rs`'s own wiring (see its header comment
+// for why it is not a plain `#[path = "../../../crates/gameplay/content/src/content/mod.rs"]` inclusion).
+#[allow(dead_code, unused_imports)]
+#[path = "support/content_shim.rs"]
+pub mod content;
+#[path = "support/domain_shim.rs"]
+pub mod domain;
+use oteryn_gameplay_durability::durability;
+#[allow(dead_code, unused_imports)]
+pub use oteryn_gameplay_entities as foundation;
+#[allow(dead_code, unused_imports)]
+pub use oteryn_gameplay_native_admission_source as native_admission_source;
+
+// Reuses the B3-1 harness (Database/register/scope/seed_character/Harness) instead of
+// duplicating PostgreSQL/admission bootstrap; see that file's own header comment.
+#[path = "support/item_transfer_postgres_cases.rs"]
+mod item_transfer_postgres_cases;
+
+// D3-5 reuses D3-4's corpse MINT and loot-entry forgery; its own cases run here too.
+#[path = "support/corpse_transfer_postgres_cases.rs"]
+mod corpse_transfer_postgres_cases;
+
+#[path = "support/combat_pickup_postgres_cases.rs"]
+mod combat_pickup_postgres_cases;
+
+// Shared PostgreSQL harness for this target's integration cases.
+#[allow(dead_code)] // Each standalone target uses only part of the shared fixture API.
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;

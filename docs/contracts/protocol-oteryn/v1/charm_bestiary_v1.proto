@@ -1,0 +1,103 @@
+// CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1 §3 (Sol protocol acceptance, #162 comment 5907282001;
+// CharmViewV1 bound 490 bytes acknowledged and the per-charm effect_active ruled in #162 comment
+// 5913269950, owner decision D235): typed payloads of capability 1 BESTIARY_CHARMS_V1, command
+// types 4 CHARM_UNLOCK_STAGE_INTENT and 5 CHARM_ASSIGN_INTENT, and state domains 4
+// CHARACTER_BESTIARY and 5 CHARACTER_CHARMS (delta type 1, snapshot type 1 each).
+// The client proposes an intent only; CHARM-3 decides in one fenced Character transaction.
+// FND-02 envelopes own CommandRef, server sequence, domain ID and revisions; these payloads never
+// duplicate them. Race and charm indices are 1-based into the lists of the content generation
+// bound at admission, never Canary IDs. Unknown fields, repeated singular fields, zero and unknown
+// enum values, and values outside the declared bounds all fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.charm_bestiary;
+
+// One race of the character's Bestiary. Only races with at least one credited kill appear.
+message BestiaryRaceProgressV1 {
+  uint32 race = 1;            // race index, 1..=1024 (CHARM5-RL-01)
+  uint32 kill_count = 2;      // 1..=final_threshold: counters saturate there (CHARM-0 §4.1)
+  uint32 first_threshold = 3; // 1 <= first < second < final <= 100000 (CHARM5-RL-02)
+  uint32 second_threshold = 4;
+  uint32 final_threshold = 5;
+}
+
+// StateDelta.payload of domain 4 delta type 1 and StateDomainSnapshot.payload of snapshot type 1.
+// A snapshot is the full set of counted races; a delta upserts the listed races only.
+// At most 21504 bytes: 1024 entries of at most 21 bytes each.
+message BestiaryViewV1 {
+  repeated BestiaryRaceProgressV1 races = 1; // strictly ascending by race, at most 1024
+}
+
+enum CharmKind {
+  CHARM_KIND_UNSPECIFIED = 0;
+  CHARM_KIND_MAJOR = 1; // stages cost Charm Points
+  CHARM_KIND_MINOR = 2; // stages cost Minor Charm Echoes
+}
+
+message CharmStateV1 {
+  uint32 charm = 1;           // charm index, 1..=32 (CHARM5-RL-03)
+  CharmKind kind = 2;
+  uint32 unlocked_stage = 3;  // 0 (locked) to 3
+  uint32 assigned_race = 4;   // race index; 0 = unassigned; only when unlocked_stage >= 1
+  uint32 next_stage_cost = 5; // in the kind's currency, at most 100000; 0 exactly when unlocked_stage == 3
+  // Whether the server applies this charm's effect today: false while the runtime system the
+  // effect needs does not exist (CHARM-4 CharmMissingSystem), so the client shows it as not yet
+  // active. Derived on the server from the charm's definition, never stored.
+  bool effect_active = 6;
+}
+
+// StateDelta.payload of domain 5 delta type 1 and StateDomainSnapshot.payload of snapshot type 1.
+// Every delta replaces the whole view.
+// At most 554 bytes: 32 entries of at most 17 bytes, two balances of at most 4 bytes, and the
+// slot limit of at most 2 bytes.
+message CharmViewV1 {
+  repeated CharmStateV1 charms = 1;        // strictly ascending by charm, at most 32
+  uint32 charm_points_available = 2;       // derived, never stored; at most 1000000 (CHARM5-RL-05)
+  uint32 minor_charm_echoes_available = 3; // derived, never stored; at most 1000000
+  uint32 assignment_slot_limit = 4;        // D169: 2 free, 6 Premium; 0 = no limit (Charm Expansion); at most 32
+}
+
+// ClientCommand.payload of command type 4. At most 8 bytes (canonical worst case 4).
+message CharmUnlockStageIntentV1 {
+  uint32 charm = 1;          // charm index, 1..=32
+  uint32 expected_stage = 2; // the stage the client saw, 0..=2; the command unlocks expected_stage + 1
+}
+
+enum CharmUnlockDisposition {
+  CHARM_UNLOCK_DISPOSITION_UNSPECIFIED = 0;
+  CHARM_UNLOCK_DISPOSITION_UNLOCKED = 1;
+  CHARM_UNLOCK_DISPOSITION_NOT_ENOUGH_CHARM_POINTS = 2;
+  CHARM_UNLOCK_DISPOSITION_NOT_ENOUGH_MINOR_CHARM_ECHOES = 3;
+  CHARM_UNLOCK_DISPOSITION_STAGE_MISMATCH = 4; // not at expected_stage: stale view, or already at stage 3
+  CHARM_UNLOCK_DISPOSITION_UNKNOWN_CHARM = 5;  // no charm has this index in the loaded content generation
+  CHARM_UNLOCK_DISPOSITION_REJECTED = 6;       // malformed intent, ineligible actor, lost fence, unavailable
+}
+
+// CommandResult.payload of command type 4: outcome only. At most 4 bytes.
+message CharmUnlockStageResultV1 {
+  CharmUnlockDisposition disposition = 1;
+}
+
+// ClientCommand.payload of command type 5. At most 8 bytes (canonical worst case 5).
+message CharmAssignIntentV1 {
+  uint32 charm = 1; // charm index, 1..=32
+  uint32 race = 2;  // race index, 1..=1024
+}
+
+enum CharmAssignDisposition {
+  CHARM_ASSIGN_DISPOSITION_UNSPECIFIED = 0;
+  CHARM_ASSIGN_DISPOSITION_ASSIGNED = 1;
+  CHARM_ASSIGN_DISPOSITION_CHARM_LOCKED = 2;          // unlocked_stage == 0
+  CHARM_ASSIGN_DISPOSITION_ALREADY_ASSIGNED = 3;      // the charm holds a race; no unassign in this version
+  CHARM_ASSIGN_DISPOSITION_RACE_STAGE_TOO_LOW = 4;    // major: complete entry; minor: stage 2 (CHARM-0 §4.2)
+  CHARM_ASSIGN_DISPOSITION_RACE_CHARM_LIMIT = 5;      // the race holds as many charms as the rule allows
+  CHARM_ASSIGN_DISPOSITION_UNKNOWN_CHARM = 6;
+  CHARM_ASSIGN_DISPOSITION_UNKNOWN_RACE = 7;
+  CHARM_ASSIGN_DISPOSITION_REJECTED = 8;              // malformed intent, ineligible actor, lost fence, unavailable
+  CHARM_ASSIGN_DISPOSITION_ASSIGNMENT_SLOTS_FULL = 9; // every assignment slot is in use (D169)
+}
+
+// CommandResult.payload of command type 5: outcome only. At most 4 bytes.
+message CharmAssignResultV1 {
+  CharmAssignDisposition disposition = 1;
+}

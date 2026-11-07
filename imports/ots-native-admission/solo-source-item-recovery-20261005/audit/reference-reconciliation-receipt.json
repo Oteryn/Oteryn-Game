@@ -1,0 +1,28 @@
+{
+  "record_count": 61530,
+  "before": [
+    1446343,
+    18623718,
+    13
+  ],
+  "after": [
+    3980393,
+    64445640,
+    13
+  ],
+  "main": "98ca4aeaf7d579af64d43269e9b3b9bd65d49915",
+  "families": {
+    "Ability": 7060,
+    "Behavior": 3045,
+    "Creature": 1763,
+    "Effect": 5507,
+    "Formula": 5823,
+    "Item": 34033,
+    "Loot": 1254,
+    "Presentation": 3045
+  },
+  "reference_sha256": "b6d498653a3a0567b3efafc87124f49e1281adf1d80582ccff8f02be9f068abd",
+  "reference_bytes": 86767665,
+  "NonItem_records_exact_main": true,
+  "all_new_Item_rows_match_identity_reconciled_shards": true
+}

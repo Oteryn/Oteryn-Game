@@ -1,0 +1,116 @@
+{
+  "identity": {
+    "key": "canary:encounter/the_lily_of_night",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "The Secret Library: The Lily of Night",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "the_lily_of_night",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_lily_of_night",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "the_lily_of_night_ignores_damage_taken_from_unprepared_players",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "the_lily_of_night",
+        "source": "player"
+      },
+      "conditions": [
+        {
+          "kind": "killer_progress",
+          "progress": "canary:quest-progress/secret_library_asura_fragrance",
+          "op": "==",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_lily_of_night",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "the_lily_of_night_ignores_damage_taken_from_creatures",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "the_lily_of_night",
+        "source": "non_player"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_lily_of_night",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "the_lily_of_night_ignores_heal_received_from_unprepared_players",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "the_lily_of_night",
+        "source": "player"
+      },
+      "conditions": [
+        {
+          "kind": "killer_progress",
+          "progress": "canary:quest-progress/secret_library_asura_fragrance",
+          "op": "==",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_lily_of_night",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "the_lily_of_night_ignores_heal_received_from_creatures",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "the_lily_of_night",
+        "source": "non_player"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_lily_of_night",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

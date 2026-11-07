@@ -1,0 +1,19 @@
+{
+  "id": "ANL01-EVENT-ENVELOPE-BYTES",
+  "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+  "resource": "One encoded game EventEnvelope including payload",
+  "unit": "bytes",
+  "hard_maximum": 262144,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 262144
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check encoded record length before retaining, decoding, batching or publishing; family-specific maxima may be lower.",
+  "client_visible": false,
+  "boundary_tests": [
+    "262,144-byte envelope accepted only when every nested limit passes",
+    "262,145 rejected before retained allocation",
+    "integer-overflow accounting rejected"
+  ]
+}

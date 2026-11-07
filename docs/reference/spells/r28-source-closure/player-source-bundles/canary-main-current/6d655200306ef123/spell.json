@@ -1,0 +1,63 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 30,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/canary-main-current/6d655200306ef123/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/6d655200306ef123",
+      "revision": "source-player-r28"
+    },
+    "name": "Cure Burning",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_cure_burning"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 145,
+    "requirements": {
+      "learning_required": false,
+      "level": 30,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "exana flam"
+  }
+}

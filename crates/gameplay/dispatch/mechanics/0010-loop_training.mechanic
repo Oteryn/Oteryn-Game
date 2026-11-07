@@ -1,0 +1,20 @@
+name=loop_training
+commands=66,67
+[route]
+let Some(result) = crate::gameplay_transport::loop_training::wire::dispatch(
+    authority,
+    session.admitted,
+    UseCommand {
+        game_session_id: session.admitted.game_session_id,
+        command_id: command.command_id,
+        item_fence: session.admitted.item_fence,
+    },
+    command.command_type,
+    command.payload,
+    session.item_view.as_ref(),
+)
+.await
+else {
+    return Err(ServeEnd::ControlLost);
+};
+Dispatch::Training(result)

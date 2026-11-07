@@ -1,0 +1,187 @@
+{
+  "quest": "koshei_the_deathless_quest",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "runtime_admission": false,
+  "entries": [
+    {
+      "npc_source_name": "a_sweaty_cyclops",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_sweaty_cyclops.lua:1-376",
+      "source_blob_sha256": "bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
+      "full_source_lua": "local internalNpcName = \"A Sweaty Cyclops\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 22,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {\n\tinterval = 15000,\n\tchance = 50,\n\t{ text = \"Hum hum, huhum\" },\n\t{ text = \"Silly lil' human\" },\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tlocal msg = string.lower(message)\n\tlocal isYes = (msg == \"yes\")\n\n\t-- uth'lokr\n\tif MsgContains(msg, \"uth'lokr\") then\n\t\tlocal stor = player:getStorageValue(Storage.Quest.U7_8.FriendsAndTraders.TheSweatyCyclops)\n\n\t\t-- Step 1 - Deal with A Sweaty Cyclops\n\t\tif stor < 1 then\n\t\t\tnpcHandler:say(\"Firy steel it is. Need green ones' breath to melt. Or red even better. Me can make from shield. Lil' one want to trade?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\treturn true\n\t\tend\n\n\t\t-- Bast skirt delivery (storage == 1)\n\t\tif stor == 1 then\n\t\t\tnpcHandler:say(\"Lil' one bring three bast skirts.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\t\treturn true\n\t\tend\n\n\t\t-- Dragon shield Trade (storage == 2)\n\t\tif stor == 2 then\n\t\t\tnpcHandler:say(\"Firy steel it is. Need green ones' breath to melt. Or red even better. Me can make from shield. Lil' one want to trade?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 6)\n\t\t\treturn true\n\t\tend\n\tend\n\n\t-- Yes Handlers (uth'lokr (bast skirts))\n\t-- uth'lokr - Step 1\n\tif isYes and npcHandler:getTopic(playerId) == 1 then\n\t\tnpcHandler:say(\"Wait. Me work no cheap is. Do favour for me first, yes?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 2)\n\t\treturn true\n\tend\n\n\t-- uth'lokr - Step 2\n\tif isYes and npcHandler:getTopic(playerId) == 2 then\n\t\tnpcHandler:say(\"Me need gift for woman. We dance, so me want to give her bast skirt. But she big is. So I need many to make big one. Bring three okay? Me wait.\", npc, creature)\n\t\tplayer:setStorageValue(Storage.Quest.U7_8.FriendsAndTraders.DefaultStart, 1)\n\t\tplayer:setStorageValue(Storage.Quest.U7_8.FriendsAndTraders.TheSweatyCyclops, 1)\n\t\tnpcHandler:setTopic(playerId, 3)\n\t\treturn true\n\tend\n\n\t-- bast skirts delivery\n\tif isYes and npcHandler:getTopic(playerId) == 4 then\n\t\tif player:removeItem(3560, 3) then\n\t\t\tnpcHandler:say(\"Good good! Woman happy will be. Now me happy too and help you.\", npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U7_8.FriendsAndTraders.TheSweatyCyclops, 2)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telse\n\t\t\tnpcHandler:say(\"Lil' one bring three bast skirts.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\tend\n\t\treturn true\n\tend\n\n\t----------------------------------------------------------------------------\n\t-- uth'kean (crown armor -> piece of royal stell)\n\tif MsgContains(msg, \"uth'kean\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_8.FriendsAndTraders.TheSweatyCyclops) == 2 then\n\t\t\tnpcHandler:say(\"Very noble. Shiny. Me like. But breaks so fast. Me can make from shiny armour. Lil' one want to trade?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\t\treturn true\n\t\tend\n\tend\n\n\tif isYes and npcHandler:getTopic(playerId) == 5 then\n\t\tif player:removeItem(3381, 1) then\n\t\t\tnpcHandler:say(\"Cling clang!\", npc, creature)\n\t\t\tplayer:addItem(5887, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\t\treturn true\n\tend\n\n\t-- uth'lokr (dragon shield -> piece of draconian steel)\n\tif isYes and npcHandler:getTopic(playerId) == 6 then\n\t\tif player:removeItem(3416, 1) then\n\t\t\tnpcHandler:say(\"Cling clang!\", npc, creature)\n\t\t\tplayer:addItem(5889, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\t\treturn true\n\tend\n\n\t-- za'ralator (devil helmet -> piece of hell steal)\n\tif MsgContains(msg, \"za'ralator\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_8.FriendsAndTraders.TheSweatyCyclops) == 2 then\n\t\t\tnpcHandler:say(\"Hellsteel is. Cursed and evil. Dangerous to work with. Me can make from evil helmet. Lil' one want to trade?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 7)\n\t\t\treturn true\n\t\tend\n\tend\n\n\tif isYes and npcHandler:getTopic(playerId) == 7 then\n\t\tif player:removeItem(3356, 1) then\n\t\t\tnpcHandler:say(\"Cling clang!\", npc, creature)\n\t\t\tplayer:addItem(5888, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\t\treturn true\n\tend\n\n\t-- uth'prta (giant sword -> huge chunk of crude iron)\n\tif MsgContains(msg, \"uth'prta\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_8.FriendsAndTraders.TheSweatyCyclops) == 2 then\n\t\t\tnpcHandler:say(\"Good iron is. Me friends use it much for fight. Me can make from weapon. Lil' one want to trade?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 8)\n\t\t\treturn true\n\t\tend\n\tend\n\n\tif isYes and npcHandler:getTopic(playerId) == 8 then\n\t\tif player:removeItem(3281, 1) then\n\t\t\tnpcHandler:say(\"Cling clang!\", npc, creature)\n\t\t\tplayer:addItem(5892, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\t\treturn true\n\tend\n\n\t-- soul orb\n\tif MsgContains(msg, \"soul orb\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_8.FriendsAndTraders.TheSweatyCyclops) == 2 then\n\t\t\tnpcHandler:say(\"Me can make nasty bolt from soul orbs. Trade all?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 9)\n\t\t\treturn true\n\t\tend\n\tend\n\n\tif isYes and npcHandler:getTopic(playerId) == 9 then\n\t\tlocal count = player:getItemCount(5944)\n\t\tif count > 0 then\n\t\t\tplayer:removeItem(5944, count)\n\n\t\t\tlocal total = 0\n\t\t\tfor i = 1, count do\n\t\t\t\tif math.random(100) <= 1 then\n\t\t\t\t\ttotal = total + 200\n\t\t\t\telse\n\t\t\t\t\ttotal = total + 100\n\t\t\t\tend\n\t\t\tend\n\n\t\t\tplayer:addItem(6528, total)\n\t\t\tnpcHandler:say(\"Cling clang!\", npc, creature)\n\t\tend\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\n\n\t-- melt gold ingot\n\tif MsgContains(msg, \"melt\") then\n\t\tnpcHandler:say(\"Can melt gold ingot for li'l one. You want?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 10)\n\t\treturn true\n\tend\n\n\tif isYes and npcHandler:getTopic(playerId) == 10 then\n\t\tif player:removeItem(9058, 1) then\n\t\t\tplayer:addItem(12804, 1)\n\t\t\tnpcHandler:say(\"Whoooosh There!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\n\n\t-- gear whell\n\tif MsgContains(msg, \"gear whell\") then\n\t\tnpcHandler:say(\"Want to make gear wheel from iron ore?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 11)\n\t\treturn true\n\tend\n\n\tif isYes and npcHandler:getTopic(playerId) == 11 then\n\t\tif player:removeItem(5880, 1) then\n\t\t\tplayer:addItem(8775, 1)\n\t\t\tnpcHandler:say(\"Cling clang!\", npc, creature)\n\t\tend\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\n\n\t----------------------------------------------------------------------------\n\t-- Koshei Amulet Quest\n\n\tif MsgContains(msg, \"amulet\") then\n\t\t-- quest already done\n\t\tif player:kv():get(\"koshei-amulet-done\") then\n\t\t\tnpcHandler:say(\"Lil' one already has mighty amulet. Big Ben no make another!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\n\t\t-- check timer\n\t\tif player:kv():get(\"koshei-amulet-timer\") then\n\t\t\tlocal finishTime = player:kv():get(\"koshei-amulet-timer\")\n\n\t\t\t-- amulet still not done\n\t\t\tif finishTime > os.time() then\n\t\t\t\tlocal remaining = finishTime - os.time()\n\n\t\t\t\t-- time conversion\n\t\t\t\tlocal hours = math.floor(remaining / 3600)\n\t\t\t\tlocal minutes = math.floor((remaining % 3600) / 60)\n\t\t\t\tlocal timeStr = \"\"\n\n\t\t\t\tif hours > 0 then\n\t\t\t\t\ttimeStr = hours .. \" hour\" .. (hours > 1 and \"s\" or \"\")\n\t\t\t\tend\n\t\t\t\tif minutes > 0 then\n\t\t\t\t\tif timeStr ~= \"\" then\n\t\t\t\t\t\ttimeStr = timeStr .. \" and \"\n\t\t\t\t\tend\n\t\t\t\t\ttimeStr = timeStr .. minutes .. \" minute\" .. (minutes > 1 and \"s\" or \"\")\n\t\t\t\tend\n\t\t\t\tif timeStr == \"\" then\n\t\t\t\t\ttimeStr = \"less than a minute\"\n\t\t\t\tend\n\n\t\t\t\tnpcHandler:say(\"Big Ben still hammering! Come back in \" .. timeStr .. \"!\", npc, creature)\n\t\t\t\treturn true\n\t\t\tend\n\n\t\t\t-- amulet done\n\t\t\tif finishTime <= os.time() then\n\t\t\t\tplayer:addItem(7532, 1)\n\t\t\t\tnpcHandler:say(\"Ahh, li'l one wants amulet. Here! Have it! Mighty, mighty amulet li'l one has. Don't know what but mighty, mighty it is!!!\", npc, creature)\n\t\t\t\tplayer:kv():set(\"koshei-amulet-done\", true)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\t\treturn true\n\t\t\tend\n\t\tend\n\n\t\t-- step 1\n\t\tnpcHandler:say(\"Me can do unbroken but Big Ben want gold 5000 and all four pieces. Yes?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 12)\n\t\treturn true\n\tend\n\n\t-- yes confirmations\n\tif isYes and npcHandler:getTopic(playerId) == 12 then\n\t\t-- quest already done\n\t\tif player:kv():get(\"koshei-amulet-done\") then\n\t\t\tnpcHandler:say(\"Lil' one already did this! Big Ben no make again!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\t\t-- if not done yet\n\t\tif player:kv():get(\"koshei-amulet-timer\") then\n\t\t\tnpcHandler:say(\"Big Ben already working! Come back later!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\t\t-- remove gold and check itens\n\t\tif player:removeMoneyBank(5000) then\n\t\t\tif player:getItemCount(7528) > 0 and player:getItemCount(7529) > 0 and player:getItemCount(7530) > 0 and player:getItemCount(7531) > 0 then\n\t\t\t\tplayer:removeItem(7528, 1)\n\t\t\t\tplayer:removeItem(7529, 1)\n\t\t\t\tplayer:removeItem(7530, 1)\n\t\t\t\tplayer:removeItem(7531, 1)\n\t\t\t\t-- timer 24h\n\t\t\t\tplayer:kv():set(\"koshei-amulet-timer\", os.time() + 24 * 60 * 60)\n\t\t\t\tnpcHandler:say(\"Well, well. I do that! Big Ben makes li'l amulet unbroken with big hammer in big hands! No worry! Come back after sun hits the horizon 24 times and ask me for amulet.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Lil' one not have all pieces.\", npc, creature)\n\t\t\tend\n\t\telse\n\t\t\tnpcHandler:say(\"Lil' one has not enough money.\", npc, creature)\n\t\tend\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\nend\n\nkeywordHandler:addKeyword({ \"job\" }, StdModule.say, { npcHandler = npcHandler, text = \"I am smith.\" })\nkeywordHandler:addKeyword({ \"smith\" }, StdModule.say, { npcHandler = npcHandler, text = \"Working steel is my profession.\" })\nkeywordHandler:addKeyword({ \"steel\" }, StdModule.say, { npcHandler = npcHandler, text = \"Manny kinds of. Like {Mesh Kaha Rogh'}, {Za'Kalortith}, {Uth'Byth}, {Uth'Morc}, {Uth'Amon}, {Uth'Maer}, {Uth'Doon}, and {Zatragil}.\" })\nkeywordHandler:addKeyword({ \"zatragil\" }, StdModule.say, { npcHandler = npcHandler, text = \"Most ancients use dream silver for different stuff. Now ancients most gone. Most not know about.\" })\nkeywordHandler:addKeyword({ \"uth'doon\" }, StdModule.say, { npcHandler = npcHandler, text = \"It's high steel called. Only lil' lil' ones know how make.\" })\nkeywordHandler:addKeyword({ \"za'kalortith\" }, StdModule.say, { npcHandler = npcHandler, text = \"It's evil. Demon iron is. No good cyclops goes where you can find and need evil flame to melt.\" })\nkeywordHandler:addKeyword({ \"mesh kaha rogh\" }, StdModule.say, { npcHandler = npcHandler, text = \"Steel that is singing when forged. No one knows where find today.\" })\nkeywordHandler:addKeyword({ \"uth'byth\" }, StdModule.say, { npcHandler = npcHandler, text = \"Not good to make stuff off. Bad steel it is. But eating magic, so useful is.\" })\nkeywordHandler:addKeyword({ \"uth'maer\" }, StdModule.say, { npcHandler = npcHandler, text = \"Brightsteel is. Much art made with it. Sorcerers too lazy and afraid to enchant much.\" })\nkeywordHandler:addKeyword({ \"uth'amon\" }, StdModule.say, { npcHandler = npcHandler, text = \"Heartiron from heart of big old mountain, found very deep. Lil' lil ones fiercely defend. Not wanting to have it used for stuff but holy stuff.\" })\nkeywordHandler:addKeyword({ \"ab'dendriel\" }, StdModule.say, { npcHandler = npcHandler, text = \"Me parents live here before town was. Me not care about lil' ones.\" })\nkeywordHandler:addKeyword({ \"lil' lil'\" }, StdModule.say, { npcHandler = npcHandler, text = \"Lil' lil' ones are so fun. We often chat.\" })\nkeywordHandler:addKeyword({ \"tibia\" }, StdModule.say, { npcHandler = npcHandler, text = \"One day I'll go and look.\" })\nkeywordHandler:addKeyword({ \"teshial\" }, StdModule.say, { npcHandler = npcHandler, text = \"Is one of elven family or such thing. Me not understand lil' ones and their business.\" })\nkeywordHandler:addKeyword({ \"cenath\" }, StdModule.say, { npcHandler = npcHandler, text = \"Is one of elven family or such thing. Me not understand lil' ones and their business.\" })\nkeywordHandler:addKeyword({ \"name\" }, StdModule.say, { npcHandler = npcHandler, text = \"I called Bencthyclthrtrprr by me people. Lil' ones me call Big Ben.\" })\nkeywordHandler:addKeyword({ \"god\" }, StdModule.say, { npcHandler = npcHandler, text = \"You shut up. Me not want to hear.\" })\nkeywordHandler:addKeyword({ \"fire sword\" }, StdModule.say, { npcHandler = npcHandler, text = \"Do lil' one want to trade a fire sword?\" })\nkeywordHandler:addKeyword({ \"dragon shield\" }, StdModule.say, { npcHandler = npcHandler, text = \"Do lil' one want to trade a dragon shield?\" })\nkeywordHandler:addKeyword({ \"sword of valor\" }, StdModule.say, { npcHandler = npcHandler, text = \"Do lil' one want to trade a sword of valor?\" })\nkeywordHandler:addKeyword({ \"warlord sword\" }, StdModule.say, { npcHandler = npcHandler, text = \"Do lil' one want to trade a warlord sword?\" })\nkeywordHandler:addKeyword({ \"minotaurs\" }, StdModule.say, { npcHandler = npcHandler, text = \"They were friend with me parents. Long before elves here, they often made visit. No longer come here.\" })\nkeywordHandler:addKeyword({ \"elves\" }, StdModule.say, { npcHandler = npcHandler, text = \"Me not fight them, they not fight me.\" })\nkeywordHandler:addKeyword({ \"excalibug\" }, StdModule.say, { npcHandler = npcHandler, text = \"Me wish I could make weapon like it.\" })\nkeywordHandler:addKeyword({ \"cyclops\" }, StdModule.say, { npcHandler = npcHandler, text = \"Me people not live here much. Most are far away.\" })\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Hum Humm! Welcume lil' |PLAYERNAME|.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Good bye lil' one.\")\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_sweaty_cyclops.lua:55-66",
+          "line_start": 55,
+          "line_end": 66,
+          "source_sha256": "8514a90cfae46e29b812ea4b2ee2dfa3e4e6cb36552662067d580b44ab1bee6e",
+          "guarded_source_lua": "local function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tlocal msg = string.lower(message)\n\tlocal isYes = (msg == \"yes\")\n\n\t-- uth'lokr\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 64,
+              "lua_literal": "\"yes\""
+            }
+          ]
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_sweaty_cyclops.lua:250-340",
+          "line_start": 250,
+          "line_end": 340,
+          "source_sha256": "b4ca2fc6e11d21dd436c975efcc0ea9b9f0153faa8f23b0b13da51f13af82cbd",
+          "guarded_source_lua": "\t----------------------------------------------------------------------------\n\t-- Koshei Amulet Quest\n\n\tif MsgContains(msg, \"amulet\") then\n\t\t-- quest already done\n\t\tif player:kv():get(\"koshei-amulet-done\") then\n\t\t\tnpcHandler:say(\"Lil' one already has mighty amulet. Big Ben no make another!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\n\t\t-- check timer\n\t\tif player:kv():get(\"koshei-amulet-timer\") then\n\t\t\tlocal finishTime = player:kv():get(\"koshei-amulet-timer\")\n\n\t\t\t-- amulet still not done\n\t\t\tif finishTime > os.time() then\n\t\t\t\tlocal remaining = finishTime - os.time()\n\n\t\t\t\t-- time conversion\n\t\t\t\tlocal hours = math.floor(remaining / 3600)\n\t\t\t\tlocal minutes = math.floor((remaining % 3600) / 60)\n\t\t\t\tlocal timeStr = \"\"\n\n\t\t\t\tif hours > 0 then\n\t\t\t\t\ttimeStr = hours .. \" hour\" .. (hours > 1 and \"s\" or \"\")\n\t\t\t\tend\n\t\t\t\tif minutes > 0 then\n\t\t\t\t\tif timeStr ~= \"\" then\n\t\t\t\t\t\ttimeStr = timeStr .. \" and \"\n\t\t\t\t\tend\n\t\t\t\t\ttimeStr = timeStr .. minutes .. \" minute\" .. (minutes > 1 and \"s\" or \"\")\n\t\t\t\tend\n\t\t\t\tif timeStr == \"\" then\n\t\t\t\t\ttimeStr = \"less than a minute\"\n\t\t\t\tend\n\n\t\t\t\tnpcHandler:say(\"Big Ben still hammering! Come back in \" .. timeStr .. \"!\", npc, creature)\n\t\t\t\treturn true\n\t\t\tend\n\n\t\t\t-- amulet done\n\t\t\tif finishTime <= os.time() then\n\t\t\t\tplayer:addItem(7532, 1)\n\t\t\t\tnpcHandler:say(\"Ahh, li'l one wants amulet. Here! Have it! Mighty, mighty amulet li'l one has. Don't know what but mighty, mighty it is!!!\", npc, creature)\n\t\t\t\tplayer:kv():set(\"koshei-amulet-done\", true)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\t\treturn true\n\t\t\tend\n\t\tend\n\n\t\t-- step 1\n\t\tnpcHandler:say(\"Me can do unbroken but Big Ben want gold 5000 and all four pieces. Yes?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 12)\n\t\treturn true\n\tend\n\n\t-- yes confirmations\n\tif isYes and npcHandler:getTopic(playerId) == 12 then\n\t\t-- quest already done\n\t\tif player:kv():get(\"koshei-amulet-done\") then\n\t\t\tnpcHandler:say(\"Lil' one already did this! Big Ben no make again!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\t\t-- if not done yet\n\t\tif player:kv():get(\"koshei-amulet-timer\") then\n\t\t\tnpcHandler:say(\"Big Ben already working! Come back later!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\t\t-- remove gold and check itens\n\t\tif player:removeMoneyBank(5000) then\n\t\t\tif player:getItemCount(7528) > 0 and player:getItemCount(7529) > 0 and player:getItemCount(7530) > 0 and player:getItemCount(7531) > 0 then\n\t\t\t\tplayer:removeItem(7528, 1)\n\t\t\t\tplayer:removeItem(7529, 1)\n\t\t\t\tplayer:removeItem(7530, 1)\n\t\t\t\tplayer:removeItem(7531, 1)\n\t\t\t\t-- timer 24h\n\t\t\t\tplayer:kv():set(\"koshei-amulet-timer\", os.time() + 24 * 60 * 60)\n\t\t\t\tnpcHandler:say(\"Well, well. I do that! Big Ben makes li'l amulet unbroken with big hammer in big hands! No worry! Come back after sun hits the horizon 24 times and ask me for amulet.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Lil' one not have all pieces.\", npc, creature)\n\t\t\tend\n\t\telse\n\t\t\tnpcHandler:say(\"Lil' one has not enough money.\", npc, creature)\n\t\tend\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\nend\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 253,
+              "lua_literal": "\"amulet\""
+            },
+            {
+              "line": 255,
+              "lua_literal": "\"koshei-amulet-done\""
+            },
+            {
+              "line": 256,
+              "lua_literal": "\"Lil' one already has mighty amulet. Big Ben no make another!\""
+            },
+            {
+              "line": 262,
+              "lua_literal": "\"koshei-amulet-timer\""
+            },
+            {
+              "line": 263,
+              "lua_literal": "\"koshei-amulet-timer\""
+            },
+            {
+              "line": 272,
+              "lua_literal": "\"\""
+            },
+            {
+              "line": 275,
+              "lua_literal": "\" hour\""
+            },
+            {
+              "line": 275,
+              "lua_literal": "\"s\""
+            },
+            {
+              "line": 275,
+              "lua_literal": "\"\""
+            },
+            {
+              "line": 278,
+              "lua_literal": "\"\""
+            },
+            {
+              "line": 279,
+              "lua_literal": "\" and \""
+            },
+            {
+              "line": 281,
+              "lua_literal": "\" minute\""
+            },
+            {
+              "line": 281,
+              "lua_literal": "\"s\""
+            },
+            {
+              "line": 281,
+              "lua_literal": "\"\""
+            },
+            {
+              "line": 283,
+              "lua_literal": "\"\""
+            },
+            {
+              "line": 284,
+              "lua_literal": "\"less than a minute\""
+            },
+            {
+              "line": 287,
+              "lua_literal": "\"Big Ben still hammering! Come back in \""
+            },
+            {
+              "line": 287,
+              "lua_literal": "\"!\""
+            },
+            {
+              "line": 294,
+              "lua_literal": "\"Ahh, li'l one wants amulet. Here! Have it! Mighty, mighty amulet li'l one has. Don't know what but mighty, mighty it is!!!\""
+            },
+            {
+              "line": 295,
+              "lua_literal": "\"koshei-amulet-done\""
+            },
+            {
+              "line": 302,
+              "lua_literal": "\"Me can do unbroken but Big Ben want gold 5000 and all four pieces. Yes?\""
+            },
+            {
+              "line": 310,
+              "lua_literal": "\"koshei-amulet-done\""
+            },
+            {
+              "line": 311,
+              "lua_literal": "\"Lil' one already did this! Big Ben no make again!\""
+            },
+            {
+              "line": 316,
+              "lua_literal": "\"koshei-amulet-timer\""
+            },
+            {
+              "line": 317,
+              "lua_literal": "\"Big Ben already working! Come back later!\""
+            },
+            {
+              "line": 329,
+              "lua_literal": "\"koshei-amulet-timer\""
+            },
+            {
+              "line": 330,
+              "lua_literal": "\"Well, well. I do that! Big Ben makes li'l amulet unbroken with big hammer in big hands! No worry! Come back after sun hits the horizon 24 times and ask me for amulet.\""
+            },
+            {
+              "line": 332,
+              "lua_literal": "\"Lil' one not have all pieces.\""
+            },
+            {
+              "line": 335,
+              "lua_literal": "\"Lil' one has not enough money.\""
+            }
+          ]
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_sweaty_cyclops.lua:368-376",
+          "line_start": 368,
+          "line_end": 376,
+          "source_sha256": "5f6d40b527e1b8322524b85227006b846b21102ec1196a8855e72d541a55c3f8",
+          "guarded_source_lua": "npcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Hum Humm! Welcume lil' |PLAYERNAME|.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Good bye lil' one.\")\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 370,
+              "lua_literal": "\"Hum Humm! Welcume lil' |PLAYERNAME|.\""
+            },
+            {
+              "line": 371,
+              "lua_literal": "\"Good bye lil' one.\""
+            }
+          ]
+        }
+      ],
+      "review_elements": [
+        "Koshei:Cyclops przyjęcie materiałów",
+        "Koshei:Cyclops odbiór amuletu"
+      ],
+      "excluded_from_this_quest": [
+        {
+          "lines": [
+            67,
+            249
+          ],
+          "reason": "Friends and Traders and ordinary smith exchanges are outside Koshei."
+        }
+      ],
+      "ownership_constraint": null,
+      "runtime_admission": false,
+      "admission_reason": "Complete text and guards/topics/effects are preserved. No generic mission-NPC runtime is qualified for these branches; no ungated keywords are installed."
+    }
+  ],
+  "policy": "Full source is evidence only. Authoring must preserve each branch guard, topic and effect. Source literals do not authorize dialogue activation; canonical track ownership and native item/world admission remain unchanged."
+}

@@ -1,0 +1,664 @@
+# Oteryn World Bundle format (v6; the file name keeps V1)
+
+- Format ID: `OTERYN_WORLD_BUNDLE/v6` (v1, v2, v3, v4 and v5 are retired and have no reader; see "Format v2", "Format v3" and "Format v4" below)
+- Owner: `Oteryn/Oteryn-Game`, MAP-BUNDLE-1 (ADR-0021 §5)
+- Status: **CANDIDATE.** ADR-0005 §3 requires an accepted schema contract before a runtime
+  treats a serializer as a permanent format. This document is accepted together with
+  MAP-BUNDLE-1: it is reviewed with MAP-BUNDLE-1a (this layout) and becomes the contract
+  when MAP-BUNDLE-1b closes the OPEN items in §10. MAP-BUNDLE-1b lands in two PRs: 1b-1 (the
+  families, the teleport split and the parity report, §10) and 1b-2 (key resolution against
+  the Item, Terrain and WorldObject registries and the end-to-end compile of the real map).
+- Implementation: `tools/world-bundle-compiler` (writer, reader, compiler, key resolver and
+  the `parity` and `compile` commands).
+- Runtime reader: `crates/world-bundle` (`oteryn-world-bundle`, MAP-LOAD-1): the layout, the
+  reader and its caps, shared by the compiler and the game server's `WorldBase` loader.
+- Governing: ADR-0021 §4.2-§4.6 and §4.8 (D188-D196); ADR-0005 §3; DUR-04 §9;
+  `OTERYN_CRYSTALSERVER_LEGACY_SPATIAL_IMPORT_PROFILE_V1`; `OTERYN_WORLD_SPATIAL_COORDINATE_PROFILE_V1`.
+
+## 1. Scope
+
+A server World Bundle is the one file the game server reads for a World's base map
+(ADR-0021 §4.2). The compiler produces it from the World Project: the B3 placements
+(`OTERYN_WORLD_REGION_B3/v1`) and the World, Transition.Teleport and House families and the
+minimap draft areas (§10). Floor changes come from the catalogue's `floor_change` fact of the
+placed object, not from a family of their own (#1170). The bundle is immutable and content-addressed by its digest (§6).
+
+This document fixes the byte layout, the manifest, the checksums and digest, the placement key,
+`build_class`, versioning and the reader limits. It does not decide the in-memory model, the
+loader or the overlay (MAP-LOAD-1, MAP-OVERLAY-1).
+
+## 2. File layout
+
+All integers are little endian unless the payload grammar (§5) says varint.
+
+| Offset | Size | Field | Rule |
+|---|---|---|---|
+| 0 | 4 | magic | `"OTWB"` |
+| 4 | 2 | `format_version` u16 | `6` |
+| 6 | 2 | reserved u16 | `0` |
+| 8 | 4 | `manifest_length` u32 | at most `MAP01-BUNDLE-MANIFEST-BYTES` |
+| 12 | 4 | `sector_count` u32 | at most `MAP01-BUNDLE-SECTOR-COUNT` |
+| 16 | `manifest_length` | manifest | JSON, written canonically (§3) |
+| … | 50 × `sector_count` | sector table | §4 |
+| … | 44 | spawn row | §13 |
+| … | 44 | NPC row | §14 |
+| … | Σ `compressed_length` | sector frames, then the spawn frame, then the NPC frame | back to back, in table order, the NPC frame last |
+| end − 32 | 32 | digest | §6 |
+
+Nothing may follow the digest, and no byte may lie between the NPC row and the first frame or
+between two frames. The whole file is at most `MAP01-BUNDLE-FILE-BYTES`.
+
+## 3. Manifest
+
+The manifest is one UTF-8 JSON object. The writer emits it in the field order below without
+whitespace (a writer-only rule: the reader accepts any valid JSON of this shape, in any field or
+whitespace order, and byte identity is guaranteed by the digest, §6). A
+reader rejects unknown fields at every level (fail closed); a new field needs a new
+`format_version`.
+
+| Field | Meaning |
+|---|---|
+| `subareas` | Typed client-mask admission (§15), covered by the bundle digest. Written first. |
+| `format` | `"OTERYN_WORLD_BUNDLE/v6"` |
+| `min_reader_version` | lowest reader `format_version` able to read the file; `6` |
+| `projection_class` | `"server"` (ADR-0021 §4.2). A client projection is not part of v1. |
+| `compiler_version` | set by the compiler, never by its caller: `oteryn-world-bundle-compiler/<crate version> zstd/<library version>` (§6) |
+| `build_class` | `"production"` or `"non-production"`, §8 |
+| `identity` | the compiler inputs copied unchanged: `project_format_version`, `world_schema_version`, `content_revision`, `content_lock_digest`, `min_runtime_version`, `required_capabilities` (list), `ruleset_compatibility` (list), `provenance_summary` (ADR-0005 §3, DUR-04 §9) |
+| `world` | `min_x`, `min_y`, `max_x`, `max_y` (native, half-open) and `floors`: native floors strictly ascending within `-15..0` (ADR-0021 §4.3) |
+| `palette` | list of `{key, family, id, terrain}` (`terrain`: Format v2); the list index is the bundle palette index used by the payloads |
+| `draft_areas` | keys of the draft areas compiled in, sorted and unique; empty in a production bundle |
+| `skipped_provisional_keys` | provisional keys skipped in this build, sorted and unique; empty in a production bundle |
+| `spawns` | `{sources, points}`: the counts of the spawn family (§13); the spawn frame must hold exactly these |
+| `npcs` | `{npcs, placements, held, routes_held, catalogue_sha256}` (§14): the counts of the NPC table and its placements, which the NPC frame must hold exactly; the record keys of the held placements, sorted and unique; the held travel routes as `[service_key, route_key]` pairs, sorted and unique; and the lowercase hex SHA-256 of the NPC, Dialogue and Service catalogue. `held` and `routes_held` are empty in a production bundle |
+| `dropped_teleports` | placement keys (§7, JSON numbers) of the top-level entries whose zero-destination `teleport` attribute the compiler dropped (§10, OPEN-3), strictly ascending; each must name a top-level entry of the bundle. Such an entry is never materialized (ADR-0021 §4.4). Allowed in a production bundle |
+
+`palette[i].key` is the stable World Project key, `family` is `item` or `terrain` (§10,
+OPEN-1), and `id` is the compact id of that key in `identity.content_revision`: the index of the
+key among all keys of its family in that revision (the Item registry for `item`, the Terrain
+catalogue for `terrain`), in ascending byte order. A reader of the same revision derives the
+same ids; they are not stable across revisions. The palette holds only
+entries that some kept item uses, in ascending order of their World Project palette index, so
+two builds of the same input produce the same palette.
+
+## 4. Sector table
+
+One 50-byte row per non-empty sector (at least one tile), strictly ascending by
+`(floor, sy, sx)`. The row's floor must be one of the manifest's `world.floors`:
+
+| Offset | Size | Field |
+|---|---|---|
+| 0 | 1 | `floor` i8, native |
+| 1 | 1 | reserved, `0` |
+| 2 | 2 | `sx` u16, sector x = `x / 32`, below 2048 |
+| 4 | 2 | `sy` u16, sector y = `y / 32`, below 2048 |
+| 6 | 4 | `offset` u32 of the frame from the start of the file |
+| 10 | 4 | `compressed_length` u32, non-zero |
+| 14 | 4 | `raw_length` u32, the exact payload length |
+| 18 | 32 | SHA-256 of the frame bytes |
+
+Sectors are 32x32 tiles, the B3 sector size (ADR-0021 §4.2). A bundle has no region level: the
+sector coordinate is absolute.
+
+## 5. Sector payload
+
+Each frame is exactly one zstd frame (the writer uses level 3): no skippable or second frame, the content
+checksum flag set, and a declared content size equal to `raw_length`. It decompresses to exactly
+`raw_length` bytes of the B3 sector grammar
+(`world_region_codec.py`, `OTERYN_WORLD_REGION_B3/v1`), unchanged except for two meanings:
+
+- the item palette index points into the bundle `palette` (§3), not the World Project
+  `index.json`;
+- the `teleport` floor byte holds the native floor as an `i8`, not legacy `z`.
+
+The grammar in short (varints are LEB128): `tile_count`, then per tile ascending by `(y, x)` the
+position delta, `control = item_count << 3 | zones << 2 | house << 1 | flags`, the present
+fields, and the items. An item is `palette << 1 | has_mask`, then the attribute mask
+(bit 0 depth, then count, action, unique, door, text, charges, description, teleport, depot)
+and the present values in bit order. Container contents follow their container one depth
+deeper. A present attribute with value 0 or an empty text stays present.
+
+Varints must be canonical: no redundant zero high group and no bits past 64. With the frame
+rules above, the raw payload of a given content has exactly one byte encoding. The frame bytes
+themselves are not unique across zstd versions or levels; `compiler_version` fixes them (§6). The writer decodes every payload it
+produced and writes it only if it reads back to the same tiles within the same limits, so it
+never writes what a reader rejects. The B3 reader applies the same varint rule; the B3 encoder
+already writes canonical varints.
+
+## 6. Checksums and digest
+
+- **Per sector.** The table row holds the SHA-256 of the stored frame. A reader checks it before
+  it decompresses the frame, so a corrupt frame never reaches the decompressor.
+- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v6" || 0x00 || file[0 .. len − 32])`, stored
+  as the last 32 bytes. It covers the header, the manifest (including `build_class` and the
+  content revision), the tables and every frame, the spawn and NPC frames included. It is the bundle identity used for pinning
+  (ADR-0021 §4.2), the Ground `map_revision` (§4.4) and `MapItemMaterialization`.
+- **Byte identity.** The same inputs and the same `compiler_version` produce the same bytes. The
+  compiler derives `compiler_version` from its own crate version and the linked zstd library
+  version, because a different zstd may compress the same payload into different bytes.
+
+## 7. Placement key
+
+A placement key names one top-level base entry of the bundle (ADR-0021 §4.2 and §4.4):
+
+```text
+placement_key = x << 32 | y << 16 | (−floor) << 8 | ordinal        (u64)
+```
+
+`ordinal` is the index of the entry among the top-level entries (depth 0) of its tile in
+payload order, below 64 (`MAP01-TILE-BASE-ENTRIES`). A floor outside `-15..0` or an ordinal of
+64 or more has no key. Contents of a container have no key of
+their own; they belong to their top-level entry.
+
+The key is not stored. The compiler emits it by fixing the tile order and the ordinal, and
+every reader derives the same value. It is bound to the bundle digest: it names an entry only
+together with the digest of the bundle it came from, and `MapItemMaterialization` and the wire
+carry both. It is not a canonical identity and is not stable across bundles (import profile
+§8). A provisional entry skipped in a non-production build takes no ordinal. A dropped
+zero-destination teleport inside a container is listed under its top-level entry's key; one
+inside a skipped provisional entry has no key and is only reported.
+
+## 8. Build class
+
+- `production`: every palette key resolved, no draft area, no skipped provisional key, and
+  `npcs.held` and `npcs.routes_held` both empty (§14). The writer refuses such a manifest
+  otherwise, and the reader rejects it.
+- `non-production`: may carry draft areas and skipped provisional keys, each listed in the
+  manifest.
+- A missing `build_class` and any other string value read as `non-production`. A value that is
+  not a string (for example `null`) makes the manifest malformed, and the bundle is rejected. A World deployed as
+  production refuses every bundle that is not `production` (ADR-0021 §4.2, §4.6). That check
+  belongs to the loader (MAP-LOAD-1).
+
+## 9. Reader rules and limits
+
+A reader rejects the whole bundle on the first failure; there is no partial load. In order:
+file size, header, digest, manifest length and sector count, manifest, then per row the
+reserved byte, contiguity, the raw and ratio limits, the running raw total, the row floor
+against `world.floors`, ascending order, the frame checksum, the single canonical frame,
+decompression into exactly `raw_length` bytes, the sector coordinate range, the payload grammar
+with the per-bundle tile and entry budget, a non-empty sector, palette indices, tile positions
+and teleport destinations inside the World extent, and the top-level entry limit; after the last
+frame, the spawn row and frame (§13), then the NPC row and frame and the manifest member `npcs` (§14), then every `dropped_teleports` key against the decoded entries. Every size is checked before
+memory is reserved for it.
+
+| Limit | Hard maximum |
+|---|---|
+| `MAP01-BUNDLE-FILE-BYTES` | 1 GiB file |
+| `MAP01-BUNDLE-MANIFEST-BYTES` | 16 MiB manifest |
+| `MAP01-BUNDLE-SECTOR-COUNT` | 1,048,576 sectors |
+| `MAP01-BUNDLE-SECTOR-RAW-BYTES` | 16 MiB per sector payload, at most 1,024 times its frame |
+| `MAP01-BUNDLE-TOTAL-RAW-BYTES` | 1 GiB of payloads per bundle |
+| `MAP01-BUNDLE-TILES` | 33,554,432 decoded tiles per bundle |
+| `MAP01-BUNDLE-ENTRIES` | 67,108,864 decoded entries per bundle, container contents included |
+| `MAP01-TILE-BASE-ENTRIES` | 64 top-level entries per tile (ADR-0021 §4.4) |
+| `MAP01-TILE-ENTRIES` | 4,096 entries per tile, container contents included |
+| `MAP01-ITEM-TEXT-BYTES` | 4,096 bytes per `text` or `description` |
+
+The rows are in `RESOURCE_LIMITS_REGISTRY.json`. The per-tile, text and per-bundle tile and entry
+limits were set before the real map was read. The MAP-BUNDLE-1b parity run on the #1170 map
+(head `98ba6938`) confirms them: 19,373,519 tiles, 24,983,331 entries, at most 26 entries and 26
+top-level entries on a tile, and at most 3,859 bytes in one `text` or `description`. All are
+inside the limits, so the values stay.
+
+The compiler fails closed as well (ADR-0021 §4.3, §4.5). It resolves every entry, including the
+contents of a provisional entry it skips, and stops on an unknown key, a position or teleport
+destination outside the declared World, a legacy `z` above 15, a sector given twice, a
+provisional key in a production build, and any limit above. Key resolution fails closed as
+§10 OPEN-1 says: a key that is neither an Item key, a Terrain key without an Item record nor a
+flagged provisional key; a Terrain or WorldObject identity given twice; an `item_pointer` whose
+whole typed reference (key and revision) names no Item record, or that names an Item another
+record already names; and an Item `routed_to` that no `item_pointer` confirms or that names
+another record. It also stops when a placement
+disagrees with a family (§10): a teleport with a real destination and no Transition.Teleport
+record from its tile, or a record to another destination (a (0,0,0) attribute included); a
+Transition.Teleport record whose
+tile carries no teleport attribute; and a tile house id that no House record has as its engine
+house id.
+
+## 10. Open items
+
+OPEN-1 to OPEN-3 were answered by the Sol Supervising Architect on #162 (5910173902, with
+5915258560 for the route); the answers are recorded below. MAP-BUNDLE-1b-1 implements OPEN-3
+and closes OPEN-4; MAP-BUNDLE-1b-2 implements OPEN-1 and OPEN-2 (key resolution).
+
+- **OPEN-1, palette key families. Answered (Q1b) and implemented (1b-2).** A palette entry is
+  the id's canonical A12 key:
+  - An Item key resolves to `family` `item` and its Item compact id. Its route to a Terrain or
+    WorldObject record is the catalogue record whose `item_pointer` names it (ruling 5915258560
+    (b)). The pointers must be one-to-one and name existing Item records by their whole typed
+    reference, revision included. Catalogue identities are unique across shards. When an Item carries
+    `routed_to` (WO-2b), it must name that same record; a disagreement, or a `routed_to` that no
+    pointer confirms, fails compilation. WO-2b can add `routed_to` later without changing the
+    compiled result. An Item that no record points at is a plain Item.
+  - A Terrain key resolves to `family` `terrain` only when its record has no `item_pointer`, the
+    id without an Item record of Q2a. A Terrain or WorldObject key whose record points at an
+    Item is rejected: the Item key is the palette key. A WorldObject is reached only through
+    its Item, so there is no `world-object` family and no ADR amendment.
+  - A key the placements index flags `provisional` is skipped (non-production) or fails
+    (production), §8. A registry key always resolves, even when flagged.
+
+  On `main` (33,567 Item records; 8,548 Terrain and 12,782 WorldObject records, every one with
+  an `item_pointer`), every pointer is one-to-one and no Item carries `routed_to` yet.
+- **OPEN-2, appearance-only terrain keys. Answered (Q2a).** The World Project generator mints
+  `oteryn:terrain.tibia.i<id>` for the 5,949 ids without an Item key; `oteryn:terrain.aNNNNNN` is
+  not used. Only manifest keys change, not the layout. The resolver accepts such a key once
+  its Terrain record, without an `item_pointer`, is in the catalogue (1b-2). Until the #1170
+  palette is regenerated with them, those ids stay provisional donor keys (below).
+- **OPEN-3, orphan teleports. Answered (Q3 split) and implemented (1b-1).** A teleport
+  attribute is compared with the Transition.Teleport record from its tile (project frame):
+  - a record to the same destination: kept, with the destination floor mapped to native;
+  - destination (0,0,0): not a teleport. The attribute is dropped with a diagnostic, and the
+    entry's placement key goes into `dropped_teleports` (§3). The tile keeps its `action` and
+    `unique` bindings. The list is a production release parity report, not a release blocker;
+  - a real destination with no record from its tile, or a record to another destination:
+    compilation fails. So does a record whose tile has no teleport attribute.
+
+  **Counts** (`oteryn-world-bundle-compiler parity`, #1170 head `98ba6938` with the #1160
+  Transition.Teleport family, 872 records, stacked on it; the House catalogue of `main`):
+
+  | Class | Count | Result |
+  |---|---:|---|
+  | teleport attributes on the map | 2,455 | |
+  | matched by a Transition.Teleport record | 872 | kept |
+  | without a record, destination (0,0,0) | 1,577 | dropped with a diagnostic |
+  | without a record, real destination | 6 | compilation fails |
+  | record to another destination | 0 | compilation fails |
+  | record without a teleport attribute | 0 | compilation fails |
+
+  The two orphan classes sum to 1,583. The earlier 1,576 was an estimate before the gap fills
+  of #1170. The six real destinations, as legacy `(x, y, z)` from and to, are
+  `(30880, 32520, 8) → (30910, 32517, 7)`, `(30948, 32592, 8) → (30976, 32633, 7)`,
+  `(33082, 31045, 6) → (195, 61836, 7)`, `(33708, 32375, 15) → (1041, 1008, 7)`,
+  `(33733, 32359, 15) → (1081, 989, 7)` and `(33744, 31065, 8) → (988, 126, 9)`. The two counts
+  use different references. Against the declared World extent, the last four destinations lie
+  outside it and the first two inside. Against the source map, as the #1160 capture counts,
+  one destination (`y` 61836) lies outside the map and the other five land on tiles the map
+  does not have. The real map therefore does not compile until content marks the four
+  outside the World as not teleports and, for the other two, the Transition generator adds
+  records or content marks them too (rulings Q3 and 5915258560). That is content work, not a
+  compiler change. No tile carries a house id missing from the House catalogue.
+- **Real-map compile and equivalence (1b-2).** `oteryn-world-bundle-compiler compile` reads the
+  placements, the World, Transition.Teleport and House families and the content registry of a
+  repository root, compiles, then proves the bundle against its source authorities before it
+  writes it, never against the bundle's own claims. The whole manifest must be the one derived
+  from the compiler input: its identity, World record, build class and draft areas; a palette of
+  exactly the kept source palette indices in ascending order, each with the `(family, id)` the
+  resolver gives its key; and the two key sets below. Tile by tile, every source tile must be at its native position with the same flags, house and zones,
+  every nonzero house id must be in the House family, every source entry must resolve (a key the
+  resolver does not know fails even inside a skipped subtree), and every entry must keep its depth,
+  attributes and palette key. The only exceptions are the rules above: subtrees under keys the
+  resolver calls provisional are skipped, (0,0,0) teleports are dropped, and teleport floors are
+  native. Every teleport is checked again against the Transition.Teleport family, and every
+  record must meet its attribute. The bundle holds no other tile, `skipped_provisional_keys` is
+  exactly the set of provisional keys met, and `dropped_teleports` is exactly the set of
+  placement keys derived from the source. The run on #1170 head `2ffba017` (with #1160 `ee19179e` merged in) stops, as it
+  must, at the first real-destination orphan. In a scratch copy with only those six
+  attributes removed, as the content fix will do, it compiles a non-production bundle in 37 s
+  with a peak RSS of 3.8 GB:
+  - 19,373,519 tiles and 24,168,528 entries proven equivalent;
+  - 814,803 entries skipped under 5,995 donor keys that the #1170 palette flags provisional.
+    None of these ids has an Item record; OPEN-2 counted 5,949 such ids. ADR-0021 §4.5
+    expects five provisional keys, so a production build waits on the OPEN-2 regeneration;
+  - 1,577 teleports dropped;
+  - all 19,989 other palette keys resolved as Item keys;
+  - 23,721,569 bytes, the same bytes on a second run.
+
+  A production build of the same input fails on the first provisional key.
+- **OPEN-4, draft marker. Closed (1b-1).** There is no per-tile draft marker in v1. The drafted
+  tiles are already merged into the B3 regions, and a tile does not record that it was
+  drafted. The compiler reads the draft areas from the placements index
+  (`source.minimap_draft.areas[].name`; 7 on #1170) and lists them in `draft_areas`. A
+  production build fails while the World Project declares any draft area (§8), so a production
+  World never loads drafted tiles, and the drafts stay a release blocker (ADR-0021 §4.6). Tile
+  gating inside a non-production World is not needed: such a World loads the whole bundle.
+
+## 11. Versioning
+
+- `format_version` in the header and `format` in the manifest name the layout. A change of the
+  layout, the manifest fields, the payload grammar or the digest rule is a new version.
+- A reader accepts only versions it knows and a manifest whose `min_reader_version` it meets.
+- Content changes do not change the format: a new content revision or map produces a new bundle
+  with a new digest, activated only at a planned world reset (ADR-0021 §4.7).
+
+## 12. Format v2 (MAP-BUNDLE-2; decision MAP-LOAD-PACKET-1 §1.4)
+
+(Superseded by §13: v2 is retired. The text below is the v2 change that v3 keeps.)
+
+Amended by MAP-KIND-CLASS-0 (R2, `docs/architecture/reviews/OTERYN_GAME_MAP_KIND_CLASS0_TERRAIN_KIND_CLASSIFICATION_PACKET_2026-10-04.md`):
+the closed kind set gains `common`, a tile-layer item that is never the tile's ground (both members
+`null`). No bundle was published, so `format_version`, `min_reader_version` and the digest domain
+stay at 3.
+
+`OTERYN_WORLD_BUNDLE/v2` has `format_version` 2 and `min_reader_version` 2. It changes one thing
+against v1: each `palette` entry gains the required member `terrain`. The layout, the payload
+grammar, the digest rule (its domain string now names v2) and every v1 limit are unchanged. The
+compiler writes only v2 and the reader accepts only v2; a v1 bundle is refused like any unknown
+version. The server reads no Terrain catalogue (ADR-0021 §4.2, D189): the one bundle digest
+authenticates the terrain semantics with every other byte.
+
+The compiler routes each palette entry with the OPEN-1 rules (§10) and writes `terrain`:
+
+- `null` for a WorldObject route and a plain Item. Such an entry is not ground and not walkable,
+  and its record's fields are not read.
+- `{"kind", "walkable", "ground_speed"}` for a Terrain route (a `terrain` key, or an `item` key
+  whose one catalogue record is a Terrain record). `kind` is one of `ground`, `border`, `wall`,
+  `roof`, `field` and `common`. For `ground`, `walkable` is a boolean and `ground_speed` is an integer in
+  `0..=1000`; a walkable ground has a speed of at least 1, and a non-walkable ground may have any
+  speed in `0..=1000`, 0 included. For every other kind both members are `null`. All three
+  members are always present.
+
+The compiler fails closed: it stops on a placed Terrain-routed record whose `kind` is UNKNOWN (or
+not one of the six), on a `ground` record whose `walkable` or `ground_speed` is UNKNOWN, on a
+speed outside `0..=1000`, and on speed 0 with `walkable` true. A WorldObject or plain-Item route
+is never checked for a Terrain kind. The `parity` command adds a `terrain` object: placed entries
+per kind, the Terrain-routed entries with an UNKNOWN kind (`unknown_kind`) and those the compiler
+would refuse (`refused`), and the WorldObject-routed and plain-Item entries (`null`).
+
+The reader fails closed, inside the manifest parse that `MAP01-BUNDLE-MANIFEST-BYTES` already
+bounds: it rejects a missing `terrain`, a shape that does not fit the `kind`, an unknown `kind`,
+an out-of-range or non-integer speed, a walkable ground with speed 0, an unknown member, and a
+`terrain: null` on a `family` `terrain` entry. The writer refuses the same manifests.
+
+A change of a record's kind, walkable flag or ground speed takes a new bundle, activated only at
+a planned World reset (§11; ADR-0021 §4.7). A later Terrain field is a later format version.
+
+## 13. Format v3 (SPAWN-CONTENT-1; decision CREATURE-AI-0 §6.1)
+
+(Superseded by §14: v3 is retired. The text below is the v3 change that v4 keeps.)
+
+`OTERYN_WORLD_BUNDLE/v3` has `format_version` 3 and `min_reader_version` 3. It adds the spawn
+family: every realizable spawn source of the World, in one frame after the sector frames. The
+sector table, the sector payload grammar and every v2 rule are unchanged; the manifest gains the
+required member `spawns`, and the digest domain string names v3. The compiler writes only v3 and
+the reader accepts only v3; a v1 or v2 bundle is refused like any unknown version (no dual
+reading). MAP-LOAD-1's reader targets v3.
+
+**Spawn row.** A 44-byte row follows the sector table: `offset` u32 of the spawn frame from the
+start of the file, `compressed_length` u32 (non-zero), `raw_length` u32, and the SHA-256 of the
+frame (32 bytes). The frame follows the last sector frame, is exactly one canonical zstd frame
+like a sector frame (§5), and is followed by the NPC frame (§14). A bundle without spawns still has the row and a
+frame of the empty table.
+
+**Spawn payload.** Varints are LEB128 and canonical (§5). The payload is the creature table, then
+the sources:
+
+- `creature_count`, then per creature, strictly ascending by key: `key` (varint length and
+  ASCII `0x21..=0x7E` bytes, at most 128) and `period` u8 (`0` All, `1` Night).
+- `source_count`, then per source, strictly ascending by key: `key` (as above), `floor` i8
+  (native), centre `x` and `y` (varints), `point_count` (at least 1), and per point in authored
+  order: `creature` (varint index into the creature table), `dx` and `dy` (zigzag varints, point
+  minus centre), `direction` u8 (`0` north, `1` east, `2` south, `3` west) and `respawn_ms`
+  (varint).
+
+Every point is on the source's floor inside the World extent. Counts are checked against the bytes
+left (one byte per element at least) before anything is reserved for them, and nothing may follow
+the payload. The manifest `spawns` counts must equal the decoded sources and points. The writer
+and the reader apply the same validation, so the writer never writes what the reader rejects.
+
+| Limit | Hard maximum |
+|---|---|
+| `CREATUREAI0-RL-01` | 131,072 points per bundle |
+| `CREATUREAI0-RL-02` | 65,536 sources per bundle |
+| `CREATUREAI0-RL-03` | 64 points per source |
+| `CREATUREAI0-RL-13` | respawn delay 1,000 ms to 86,400,000 ms |
+
+The spawn payload is at most 16 MiB raw (at most 1,024 times its frame) and counts toward the
+running raw total of §9. The rows are in `RESOURCE_LIMITS_REGISTRY.json`; each is tested at its
+maximum and at the maximum plus one.
+
+**Source.** The family is `Spawn.Source` under `content/world/spawns/` (index plus shards, frame
+`global-target-2026-09-27`): per record `declaration.identity.key`, `centre` and `points`
+(`cell`, `creature`, `direction`, `respawn_ms`), positions in the project frame (legacy `z`).
+`tools/world-bundle-compiler/convert_spawns.py` writes it from the pinned Canary
+`otservbr-monster.xml` (rev `47dfd51f`, 51,896 sources, 83,286 points): the creature key is
+`oteryn:creature.<name as lowercase, non-alphanumerics to "_">`, the direction defaults to north,
+and `respawn_ms` is the spawn time times 1,000. The compiler also reads the Creature definitions
+(`content/creatures/definitions`) for each point's creature.
+
+**Realization.** The compiler writes a point when its creature is an admitted definition and its
+cell can admit it; every other point is left out and listed with its reason in the `parity` and
+`compile` output (`spawns.dropped`, `spawns.dropped_by_reason`). In this order:
+
+1. `UnboundCreature`: no admitted creature definition has the key.
+2. `Boss`: a `bosstiary` block or `reward_boss`; BOSS-RAID-0's, never realized by a spawn.
+3. `EncounterBound`: the definition has a non-empty `profile.encounters` (Encounter-bound, E3).
+4. The cell, from compile-time facts: `OutsideWorld`, `NoTile`, `UnclassifiedTerrain` (a ground
+   record not classified yet; `compile` stops on it before), `NoGround` (no Terrain-routed ground
+   on the tile), `NotWalkable`, `ProtectionZone` (tile flag bit 0, OTBM `PROTECTIONZONE`),
+   `FloorChange` (an entry whose catalogue `floor_change` is KNOWN and not `none`; UNKNOWN is not
+   a floor change) and `Teleport` (an entry with a non-zero `teleport` destination, or a
+   Transition.Teleport record from the cell).
+
+A source with no point left is not written. A creature whose `spawn_eligibility.period` is `Night`
+is compiled and outside the activation set (its points are counted as `inactive_points`). The
+`compile` command's equivalence proof derives the spawn table from the same inputs and compares
+it with the bundle.
+
+## 14. Format v4 (NPC-PLACE-1b; decision NPC-PLACE-1 §3)
+
+Decision: `docs/architecture/reviews/OTERYN_GAME_NPC_PLACE1_NPC_PLACEMENTS_DECISION_2026-10-06.md`.
+
+`OTERYN_WORLD_BUNDLE/v4` has `format_version` 4 and `min_reader_version` 4. It adds the NPC
+placement family: every realizable NPC placement of the World, in one frame after the spawn frame.
+The sector table, the sector payload grammar, the spawn row, frame and grammar and every v3 rule
+are unchanged; the manifest gains the required member `npcs`, and the digest domain string names
+v4. The compiler writes only v4 and the reader accepts only v4; a v1, v2 or v3 bundle is refused
+like any unknown version (no dual reading).
+
+**Byte order (the only one).** Header, manifest, sector table, spawn row, NPC row, sector frames,
+spawn frame, NPC frame, digest. Every table row comes before the first frame; no byte lies
+between the NPC row and the first sector frame or between two frames.
+
+**NPC row.** A 44-byte row in the spawn row's shape follows the spawn row: `offset` u32 of the
+NPC frame from the start of the file, `compressed_length` u32 (non-zero), `raw_length` u32, and
+the SHA-256 of the frame (32 bytes). The NPC frame is exactly one canonical zstd frame (§5), the
+last frame, and ends at the digest. A bundle without NPCs still has the row and a frame of the
+empty table.
+
+**Manifest `npcs`.** `{npcs, placements, held, routes_held, catalogue_sha256}`:
+
+- `npcs` and `placements` are the counts of the NPC table and its placements; the frame must hold
+  exactly these.
+- `held` is the record keys of the placements the compiler held, sorted and unique, like
+  `draft_areas`.
+- `routes_held` is the travel routes whose destination the compiler held, each a pair
+  `[service_key, route_key]`: a route key is unique only within its Service record, so only the
+  pair names one route. The pairs are sorted by Service key, then route key, as bytes, and unique.
+- Both lists are empty in a production bundle (§8).
+- `catalogue_sha256` (64 lowercase hex digits) binds the bundle to the catalogue it classified:
+  SHA-256 over every file under `content/npcs/definitions/`, `content/dialogues/definitions/` and
+  `content/services/`, in byte order of the path relative to `content/`, each as the path length
+  (u64 big-endian), the path, the byte length (u64 big-endian) and the bytes. One function in
+  `crates/world-bundle` (`npc::catalogue_sha256`) computes it for the compiler and the game
+  server. `identity.content_revision` is not compared with the catalogue revision.
+
+**NPC payload.** Varints are LEB128 and canonical (§5).
+
+- `npc_count`, then per NPC, strictly ascending by key: `key` (varint length and ASCII
+  `0x21..=0x7E` bytes, at most 128, starting `oteryn:npc.`) and `placement_count` (at least 1).
+- Per placement, strictly ascending by (`floor`, `y`, `x`): `floor` i8 (native, one of
+  `world.floors`), `y` and `x` (varints) and `direction` u8 (`0` north, `1` east, `2` south, `3`
+  west).
+- Every placement is inside the World extent. No two placements of the bundle share a cell; the
+  reader rejects a repeat across NPCs.
+- Counts are checked against the bytes left before anything is reserved; nothing may follow the
+  payload. The writer and the reader apply the same validation, so the writer never writes what
+  the reader rejects.
+- The order is the canonical actor order of NPC-BEHAVIOUR-0 §3.1.
+
+| Limit | Hard maximum |
+|---|---|
+| `NPCPLACE1-RL-01` | 2,048 placements per bundle (= `NPCBEH0-RL-01`); the NPC count is bounded by it |
+| `NPCPLACE1-RL-02` | 16 placements per NPC |
+| `NPCPLACE1-RL-03` | 1 MiB raw NPC payload, at most 1,024 times its frame |
+
+The NPC payload counts toward the running raw total of §9. The rows are in
+`RESOURCE_LIMITS_REGISTRY.json`; each is tested at its maximum and at the maximum plus one.
+
+**Reader check order.** A check order, not a byte order. After the spawn row and frame: the NPC
+row (its contiguity: the NPC frame begins where the spawn frame ends and ends at the digest), the
+raw and ratio limits, the running raw total, the frame checksum, the single canonical frame,
+decompression into exactly `raw_length` bytes, the payload grammar with the limits above, and the
+manifest member `npcs`: its counts equal to the frame, `held` and `routes_held` sorted and
+unique, `catalogue_sha256` 64 lowercase hex digits, and both lists empty when `build_class` is
+`production`. Then `dropped_teleports`, as in v3.
+
+**Source.** The family is `Npc.Placement` under `content/world/npc-placements/` (index plus
+shards, frame `global-target-2026-09-27`, NPC-PLACE-1a): per record `declaration.identity.key`
+(`oteryn:npc_placement.<npc local name>.x<x>_y<y>_z<z>`), `npc`, `cell` (`x`, `y`, `floor` =
+legacy `z`) and `direction`. The compiler also reads the NPC, Dialogue and Service definitions
+(the catalogue above) and `content/services/travel/`.
+
+**Realization.** A placement or travel destination outside the World extent or floors fails
+compilation in every build class. Otherwise the compiler writes a placement when its NPC is
+admitted and its cell can hold it, and holds it with the first reason in this order:
+
+1. The NPC, by the admission rule of the game server's `NpcServiceModel`: `UnboundNpc` (no
+   admitted NPC definition has the key), `UnresolvedDialogue` (its Dialogue reference names no
+   Dialogue definition), `UnresolvedService` (one of its Service references names no Service
+   definition).
+2. The cell: the compile-time facts of spawn realization (§13, item 4) `NoTile`,
+   `UnclassifiedTerrain`, `NoGround`, `NotWalkable`, `FloorChange`, `Teleport`; then the bundle
+   enterability rule of the game server over the cell's top-level entries: `Wall` (a Terrain
+   entry of kind `wall`) and `BlockSolid` (an Item entry whose definition is solid or does not
+   exist). A protection zone is not a reason.
+3. `SpawnPoint`: a realized creature spawn point is on the cell.
+4. `SharedCell`: two placements that pass items 1-3 on one cell; every placement on that cell is
+   held.
+
+Each travel route destination is classified with the cell reasons of item 2, then `SpawnPoint`,
+`NpcPlacement` (a written placement is on the cell; a held placement is not a reason) and
+`HouseTile` (the tile carries a nonzero house id). No route is written to the bundle.
+
+A production build stops on any held placement or route. A non-production build leaves held
+placements out, lists their record keys in `npcs.held` and the held routes' pairs in
+`npcs.routes_held`, and reports each with its reason in the `parity` and `compile` output
+(`npcs.held_by_reason`, `npcs.routes_held_by_reason`; `parity` also reports the family's held list by
+reason, `npcs.source_held`). The `compile` command's equivalence proof
+derives the NPC table, `held` and `routes_held` from the same inputs and compares them with the
+bundle.
+
+The game server reads the NPC table through the shared reader and does nothing with it until
+NPC-ACTOR-1. There is no wire change.
+
+## 15. Format v5 (SUBAREA-ADMIT-1)
+
+Version 5 adds the required `subareas` manifest member; the frame layout stays the same.
+The current reader rejects v1–v4. Runtime compatibility version is 2. Recompile and
+repin bundles together with the reader deployment; never relabel old bundle bytes.
+
+`subareas` is `Table` in `crates/world-bundle/src/subarea.rs`. Its client version is
+`15.30`, and its candidate SHA-256 pins the historical, unchanged source candidate.
+Areas are sorted by positive `cipsoft/map_area` source id, with their native content
+key, name, parent source id and source-record hash. These are source identities;
+they do not settle the separate discovery/donation eligibility decisions.
+The 443 region/subregion records and 22 city records are one catalogue. A parent
+must resolve to a root region. Masks are sorted uniquely by subarea id and preserve
+the asset locator, compressed/BMP/source-record hashes, source and admitted counts.
+Masks with zero native tiles remain in the table with their provenance.
+
+Admission re-decodes the existing framed LZMA/BMP assets, verifies the compressed
+and decoded hashes and raw import dimensions/anchor/provenance, and requires exact
+agreement with the candidate's nonzero 32-bit pixel runs. BMP top-down and bottom-up
+orientation are handled explicitly. The source frame maps x/y unchanged and z to
+native floor `-z`. All 209 existing masks are at source z=7; no vertical projection,
+underground approximation, rectangle replacement or fallback id is admitted.
+
+Source masks must be disjoint. Native admission intersects each mask with served,
+in-bounds, classified walkable ground without a wall or solid item. Within each
+subarea, a cardinal walkable component is admitted only when it reaches an entry:
+a walkable boundary crossing from a served cell outside that mask, a declared
+teleport destination, or a travel destination not held by NPC/travel admission.
+Display/label positions are not entry evidence. Components without an entry are
+dropped at compile time. This is reachability from a subarea entry, not a promise
+that every region is reachable from the World's starting town without quest gates.
+
+Native membership is a list of half-open horizontal runs `{floor,y,begin,end,subarea}`
+sorted by `(floor,y,begin)`, disjoint across all masks. Reader and writer reject
+bad order, overlaps, out-of-world runs, unknown ids, malformed hashes, bad parents,
+and counts that disagree with the runs. Lookup is a binary search over these runs;
+unknown coverage remains unknown. The empty/default table is only for synthetic
+fixtures; the repository compiler always loads and verifies the source catalogue.
+Limits SUBAREA-RL-01 through SUBAREA-RL-10 bound input bytes, LZMA memory/output,
+areas, masks, runs, tiles and the read-only command result.
+
+The runtime loads this table into the shared immutable `WorldBase`; Channel overlays
+cannot change membership. Source inputs also participate in the compiler input
+fingerprint. `pin-refresh` derives the new bundle digest, and `pin-check` retains
+the normal two-build byte equality and full equivalence proof, including membership.
+The client 15.30 source files remain reference evidence and are not newly copied or
+redistributed by this change.
+
+
+## Boss scheduling payload (BOSS-SPAWN-1; runtime compatibility 3)
+
+Runtime compatibility 3 extends the spawn point's previously invalid zero `respawn_ms` value.
+Ordinary points retain the exact existing bytes and positive RL-13 delay. A boss point writes
+zero followed by a policy tag byte: 1 followed by `min_s`, `max_s` canonical varints; or 2
+followed by chance numerator and denominator canonical varints. Seconds must be positive,
+ordered and representable as signed database milliseconds. Chance is an exact ratio in [0,1],
+with denominator at most `i64::MAX`. Unknown tags and invalid ranges fail closed. Bosses do
+not have an ordinary respawn delay. Old readers reject the zero delay rather than realizing a
+boss as an ordinary creature; the bundle identity requires runtime compatibility 3.
+
+In `Spawn.Source` authoring each activated boss point has exactly one `boss_policy`, encoded
+as `{"respawn":{"min_s":... ,"max_s":...}}` or
+`{"at_reset":{"chance":{"numerator":...,"denominator":...}}}`. `respawn_ms` is omitted
+for a boss. A policy on an ordinary or encounter-bound creature is invalid. Legacy boss points
+without policy are retained as held evidence outside active spawn shards; an active boss point
+without policy fails compilation.
+Scheduling provenance lives on the source declaration, outside the runtime payload.
+
+The BOSS-SPAWN-1 owner decision (2026-11-05) qualifies held open-world points with
+one deterministic roll per `(WorldId, reset_epoch, spawn key)`. The existing Channel
+clock still fences realization and death. Migration 0955 retains each World's
+outcomes and serializes live claims by creature key across Channels and fixed
+points. A live boss from an earlier epoch is recovered rather than replaced;
+that epoch's blocked outcome cannot activate later after its death. Encounter and
+quest room points remain held. A quest association alone does not turn an open
+world miniboss into an encounter. Missing pinned chances use the owner's 1/50
+default with `CHOSEN_OTERYN_APPROXIMATION` provenance.
+
+`spawned_bosses_for_epoch` is a read-only Game projection of committed spawn
+claims, including bosses subsequently killed. Occupancy may delay realization of
+a committed claim. It adds no wire payload or Platform authority.
+
+## 16. Format v6 (C20d-W23)
+
+Version 6 carries each area's `town_id` (the source engine town id or null),
+`hometown` flag, and `temple` (native `{x,y,floor}` or null). Hometowns require
+a positive unique town id and a temple; other areas carry neither. The catalogue
+retains the 19 hometowns admitted by the city content and the default starter
+town from the committed OTBM town sample. Runtime compatibility
+version is 4; the reader rejects earlier bundle formats. The frame layout stays
+the same. Regenerate bytes and pins with the compiler; never relabel old bytes.
+
+The table's `default_town` is resolved from the reviewed pin's `entry_start`
+against the original verified source masks, then the named OTBM town, or the
+parent region's unique hometown when the area has no named town.
+This lookup does not change discovery membership admission. The shipped start
+(32534,32513,-7) is in source subregion Newhaven (514), parent Thais (24), whose
+source name matches OTBM town Newhaven (33), temple (32536,32514,-7) in
+`tools/content-schema/area-authoring/samples/crystal-world-towns-00ce02a5.json`.
+The parent region is not substituted for that named town. Missing or ambiguous source
+membership or a missing hometown is a compilation error. The pin's entry start
+is therefore a compiler input as well as a boot check; derived digest fields
+remain excluded from the compiler input fingerprint.
+
+Home town is a per-Character durable choice in `game_character_home_towns`
+(migration 0534). Under DUR-02 section 5, an actual citizenship change advances
+the global CharacterRevision and its existing progression mirror exactly once.
+Its immutable home-town receipt extends the existing Character revision chain;
+deferred database guards require the changed town and receipt to agree in the
+same transaction and preserve the existing progression consistency checks.
+An absent row already denotes the pinned default: materializing it, or repeating
+the same citizenship, does not change logical state or advance the revision.
+Initialization and citizenship changes prove the current gameplay fence in the
+same transaction as the write. The revision sequencer reloads its cursor after
+the operation, including an unknown commit outcome. Fresh admission initializes an absent row
+from the pinned default. Death records the selected temple in its existing
+pending respawn, and consumes it through the existing fenced placement path;
+the placed temple also becomes the saved last position. Citizen ingress uses
+placement unique ids from Crystal/Canary `citizen.lua`, including Svargrond's
+Barbarian Test storage 41174 threshold 8. No wire protocol change is required.

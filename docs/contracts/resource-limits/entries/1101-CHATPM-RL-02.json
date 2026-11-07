@@ -1,0 +1,19 @@
+{
+  "id": "CHATPM-RL-02",
+  "owner_contract": "protocol-oteryn/v1/chat_v1.proto",
+  "resource": "Private chat channels one character is invited to",
+  "unit": "channels",
+  "hard_maximum": 16,
+  "configurable_range": {
+    "minimum": 16,
+    "maximum": 16
+  },
+  "failure_category": "REJECTED",
+  "allocation_impact": "Checked under the Channel chat lock before an invitation is stored, so the ChatChannelListV1 delta stays within 2054 bytes.",
+  "client_visible": true,
+  "boundary_tests": [
+    "private_channel_invitations_are_bounded",
+    "the_channel_list_is_bounded_and_strict"
+  ],
+  "notes": "Canary has no per-invitee bound. An invitation beyond it answers REJECTED to the inviting owner and changes nothing."
+}

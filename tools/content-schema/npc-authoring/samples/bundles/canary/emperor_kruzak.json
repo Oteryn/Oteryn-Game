@@ -1,0 +1,201 @@
+{
+ "definition": {
+  "description": {
+   "length": 14,
+   "links": [],
+   "placeholders": [],
+   "sha256": "d8ab7c38e4485fc5dfb58f0e815642c358a11f784be02e92ab35f65b18868934"
+  },
+  "display_name": "Emperor Kruzak",
+  "movement": {
+   "floor_change": false,
+   "walk_interval_ms": 2000,
+   "walk_radius": 2
+  },
+  "name": "Emperor Kruzak",
+  "presentation": {
+   "light": null,
+   "outfit": {
+    "addons": 0,
+    "body": 0,
+    "feet": 0,
+    "head": 0,
+    "legs": 0,
+    "look_type": 66,
+    "mount": null
+   },
+   "speech_bubble": "BANKER"
+  },
+  "profession": "banker",
+  "respawn": null,
+  "vitals": {
+   "health": 100,
+   "max_health": 100
+  }
+ },
+ "dialogue": {
+  "dialog_option_calls": 0,
+  "keywords": [
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "promote",
+      "text": {
+       "length": 38,
+       "links": [],
+       "placeholders": [],
+       "sha256": "d678ad799ca23539f5a9c1e144cabefc6884997b525db3436c668ead388d1520"
+      }
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "only_focus": true,
+       "reset": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "no"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 43,
+       "links": [],
+       "placeholders": [],
+       "sha256": "83e33bc44dee104f9a56d436dbeddce86d87d906065c30c4b34632cd670d1cf5"
+      }
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "promot"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 70,
+     "links": [],
+     "placeholders": [],
+     "sha256": "1089b1f6c54aed9bf270731a64c72f051a081f5ca6789538388ab9f3a9eabc08"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [],
+    "kind": "script",
+    "text": {
+     "length": 78,
+     "links": [],
+     "placeholders": [],
+     "sha256": "85c050e121fc3bc7ad7717a08fe63e5b8a34cf66ef8392e6cd0846233551617a"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [],
+    "kind": "script",
+    "text": {
+     "length": 78,
+     "links": [],
+     "placeholders": [],
+     "sha256": "85c050e121fc3bc7ad7717a08fe63e5b8a34cf66ef8392e6cd0846233551617a"
+    }
+   }
+  ],
+  "messages": {
+   "walkaway": {
+    "length": 33,
+    "links": [],
+    "placeholders": [
+     "|PLAYERNAME|"
+    ],
+    "sha256": "125938903fea42d923f18bfe9df59436fff28b971097e0097f458fc414b41708"
+   }
+  },
+  "scripted_handlers": [
+   "CALLBACK_GREET",
+   "CALLBACK_MESSAGE_DEFAULT"
+  ]
+ },
+ "evidence": "OTS_HYPOTHESIS_ONLY",
+ "key": "canary:npc/emperor_kruzak",
+ "placements": [
+  {
+   "direction": "NORTH",
+   "engine_spawns": true,
+   "placement_file": "data-otservbr-global/world/otservbr-npc.xml",
+   "position": {
+    "x": 32626,
+    "y": 31923,
+    "z": 3
+   },
+   "spawn_interval_s": 60,
+   "spawn_radius": 1
+  }
+ ],
+ "schema": "OTERYN_NPC_AUTHORING_CANDIDATE/v1",
+ "services": {
+  "blessings": [],
+  "kick": [],
+  "promotion": [
+   {
+    "dialogue_path": "dialogue.keywords[0].children[0]",
+    "gate": "NONE",
+    "keyword": "promot",
+    "min_level": 20,
+    "price": 20000,
+    "promotion": null
+   }
+  ],
+  "spells": [],
+  "trade": null,
+  "travel": []
+ },
+ "source": {
+  "path": "data-otservbr-global/npc/emperor_kruzak.lua",
+  "repository": "opentibiabr/canary",
+  "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "sha256": "e66073a2e23010a6416e921d870370d9fd627da64bad3fea34ee21752ef0f1b2"
+ },
+ "status": "PARTIAL",
+ "unresolved": [
+  {
+   "detail": "",
+   "path": "dialogue.keywords[1]",
+   "reason": "LUA_CALLBACK"
+  },
+  {
+   "detail": "",
+   "path": "dialogue.keywords[2]",
+   "reason": "LUA_CALLBACK"
+  },
+  {
+   "detail": "CALLBACK_GREET",
+   "path": "dialogue.scripted_handlers",
+   "reason": "LUA_CALLBACK"
+  },
+  {
+   "detail": "CALLBACK_MESSAGE_DEFAULT",
+   "path": "dialogue.scripted_handlers",
+   "reason": "LUA_CALLBACK"
+  }
+ ],
+ "voices": null
+}

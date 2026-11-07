@@ -1,0 +1,591 @@
+{
+  "sources": [
+    {
+      "kind": "official_capture",
+      "url": "https://www.tibia.com/library/?subtopic=spells",
+      "title": "Great Death Beam",
+      "captured": "2026-09-28",
+      "content_sha256": "c4800d7d0fac37238a9101afbc2060a3afcf8ddc76b9e71286fd5feb628b70f2"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Great Death Beam",
+      "page_id": 101076,
+      "revision_id": 1194824,
+      "content_sha256": "ef2782586d6eab6cca19ba85ef658c2cf57da05670bc6c58759ef629e74fe536"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://www.tibiawiki.com.br/api.php",
+      "title": "Great Death Beam",
+      "page_id": 60979,
+      "revision_id": 440173,
+      "content_sha256": "1a21afc7e474965d00746ae0450227ca0677d0b6a9eebb8606ce76b993ad2da9"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269"
+    },
+    {
+      "repository": "kik-tibia/tibiatools",
+      "revision": "eeed345c86a76eb00f5ff7b2f0e0b49927799bf1"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "words",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/words",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "spellid",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/reference_spell_id",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "librarytext",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/library_text",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "voc",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "voc",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 115,
+      "source_field": "needLearn",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S16: since patch 15.22 (27 January 2026) spells unlock automatically and free at their level; trainers no longer teach spells (https://tibiopedia.pl/updates/15.22.c93366). learning_required is false; the source needLearn only marks Wheel spells (wheel_unlock)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "wheelspell",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/wheel_unlock",
+      "resolution": "S6/S16: the wiki marks a Wheel of Destiny revelation spell (Fandom wheelspell, BR wheelSpellType Revelação) or not."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "levelrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/level",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "premium",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/premium",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 110,
+      "source_field": "isPremium",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S15: superseded by the official tibia.com value True (source False)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "mana",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/mana",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 113,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S3: superseded by the wiki value 6000 (source 10000)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "subclass",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/group",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "secondarygroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/1/group",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 30,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 111,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 31,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 112,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "spellrange",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/range_tiles",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "aimattarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aim_at_target",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "basepower",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/base_power",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Great Death Beam",
+      "source_line": 1,
+      "source_field": "basepower",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/base_power",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 109,
+      "source_field": "basePower",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S3: superseded by the wiki value 155 (source 170)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "approved_omission",
+      "resolution": "crystal runs custom logic here (custom); the plain combat of the other source is used (S4)."
+    },
+    {
+      "source_index": 5,
+      "source_file": "src/data/spells.json",
+      "source_line": 1,
+      "source_field": "formula_repair/magic",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/dependencies/formulas",
+      "resolution": "Offline neutral reference-model proposal; not accepted Game truth. MAGIC-F1: Great Death Beam: retain captured wiki base power 155; qualify variation buckets 50 against independent TibiaTools eeed345c86a76eb00f5ff7b2f0e0b49927799bf1 numerical metadata."
+    },
+    {
+      "source_index": 5,
+      "source_file": "src/data/spells.json",
+      "source_line": 1,
+      "source_field": "formula_repair/magic",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/dependencies/formulas",
+      "resolution": "Offline neutral reference-model proposal; not accepted Game truth. MAGIC-F1: world level_base_damage_healing is outside variation; floor the magic contribution before adding the world F. Formula identity retained."
+    },
+    {
+      "source_index": 5,
+      "source_file": "src/data/spells.json",
+      "source_line": 1,
+      "source_field": "formula_repair/magic",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/dependencies/formulas",
+      "resolution": "Offline neutral reference-model proposal; not accepted Game truth. MAGIC-F1: Canary 99902524 and Crystal ff7ede5 contain conflicting legacy/estimated coefficients or whole-total variation; this correction does not assert agreement with those OTS formulas or qualify RNG/cast behavior."
+    },
+    {
+      "source_index": 5,
+      "source_file": "src/data/spells.json",
+      "source_line": 1,
+      "source_field": "formula_repair/magic",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/dependencies/formulas",
+      "resolution": "Offline neutral reference-model proposal; not accepted Game truth. MAGIC-F1: only the stage-0 central beam component is qualified; Beam Mastery stages and left/right side beams are not inferred from this Formula."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 14,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/spell/spell/execution/ability",
+      "resolution": "Plain combat converted with the monster combat_ability rules (canary)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "MAGIC-F1: Canary 99902524 and Crystal ff7ede5 contain conflicting legacy/estimated coefficients or whole-total variation; this correction does not assert agreement with those OTS formulas or qualify RNG/cast behavior."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "MAGIC-F1: Great Death Beam: retain captured wiki base power 155; qualify variation buckets 50 against independent TibiaTools eeed345c86a76eb00f5ff7b2f0e0b49927799bf1 numerical metadata."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "MAGIC-F1: only the stage-0 central beam component is qualified; Beam Mastery stages and left/right side beams are not inferred from this Formula."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "MAGIC-F1: world level_base_damage_healing is outside variation; floor the magic contribution before adding the world F. Formula identity retained."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/great_death_beam.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "S5: Canary Player::calculateFlatDamageHealing (defective above level 1100) is replaced by the world curve level_base_damage_healing."
+    }
+  ]
+}

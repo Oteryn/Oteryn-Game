@@ -1,0 +1,2029 @@
+{
+  "schema": "OTERYN_ITEM_SPELL_AUGMENT_SOURCES/v1",
+  "qualification": "Numerical reference values not verified against Global, except Sanguine Blade Fierce Berserk base damage 4% (tibia.com 2024-05-17).",
+  "sources": [
+    {
+      "server": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/items/items.xml",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "records": [
+        {
+          "item_id": 43864,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43865,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43866,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43867,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43868,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43869,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43870,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43871,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43872,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43873,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43874,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43875,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43876,
+          "augments": [
+            {
+              "spell": "avatar of steel",
+              "kind": "cooldown",
+              "value": 900000
+            },
+            {
+              "spell": "fierce beserk",
+              "kind": "critical_extra_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43877,
+          "augments": [
+            {
+              "spell": "divine caldera",
+              "kind": "base_damage",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43878,
+          "augments": [
+            {
+              "spell": "divine caldera",
+              "kind": "base_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43879,
+          "augments": [
+            {
+              "spell": "divine caldera",
+              "kind": "base_damage",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43880,
+          "augments": [
+            {
+              "spell": "divine caldera",
+              "kind": "base_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43881,
+          "augments": [
+            {
+              "spell": "avatar of light",
+              "kind": "cooldown",
+              "value": 900000
+            },
+            {
+              "spell": "divine caldera",
+              "kind": "critical_extra_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43884,
+          "augments": [
+            {
+              "spell": "avatar of storm",
+              "kind": "cooldown",
+              "value": 900000
+            },
+            {
+              "spell": "hell's core",
+              "kind": "critical_extra_damage",
+              "value": 800
+            },
+            {
+              "spell": "energy wave",
+              "kind": "critical_extra_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43887,
+          "augments": [
+            {
+              "spell": "avatar of nature",
+              "kind": "cooldown",
+              "value": 900000
+            },
+            {
+              "spell": "eternal winter",
+              "kind": "critical_extra_damage",
+              "value": 800
+            },
+            {
+              "spell": "terra wave",
+              "kind": "critical_extra_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 44619,
+          "augments": [
+            {
+              "spell": "wrath of nature",
+              "kind": "base_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 44620,
+          "augments": [
+            {
+              "spell": "intense wound cleansing",
+              "kind": "cooldown",
+              "value": 120000
+            }
+          ]
+        },
+        {
+          "item_id": 44621,
+          "augments": [
+            {
+              "spell": "front sweep",
+              "kind": "life_leech",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 44622,
+          "augments": [
+            {
+              "spell": "strong ethereal spear",
+              "kind": "life_leech",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 44623,
+          "augments": [
+            {
+              "spell": "energy wave",
+              "kind": "life_leech",
+              "value": 500
+            }
+          ]
+        },
+        {
+          "item_id": 44624,
+          "augments": [
+            {
+              "spell": "terra wave",
+              "kind": "life_leech",
+              "value": 300
+            }
+          ]
+        },
+        {
+          "item_id": 44636,
+          "augments": [
+            {
+              "spell": "divine missile",
+              "kind": "base_damage",
+              "value": 600
+            }
+          ]
+        },
+        {
+          "item_id": 44637,
+          "augments": [
+            {
+              "spell": "wrath of nature",
+              "kind": "critical_extra_damage",
+              "value": 500
+            }
+          ]
+        },
+        {
+          "item_id": 44642,
+          "augments": [
+            {
+              "spell": "intense wound cleansing",
+              "kind": "base_healing",
+              "value": 5000
+            }
+          ]
+        },
+        {
+          "item_id": 44648,
+          "augments": [
+            {
+              "spell": "divine missile",
+              "kind": "critical_extra_damage",
+              "value": 500
+            }
+          ]
+        },
+        {
+          "item_id": 44649,
+          "augments": [
+            {
+              "spell": "great energy beam",
+              "kind": "critical_extra_damage",
+              "value": 500
+            },
+            {
+              "spell": "great death beam",
+              "kind": "critical_extra_damage",
+              "value": 500
+            }
+          ]
+        },
+        {
+          "item_id": 45639,
+          "augments": [
+            {
+              "spell": "ultimate flame strike",
+              "kind": "base_damage",
+              "value": 3300
+            }
+          ]
+        },
+        {
+          "item_id": 45640,
+          "augments": [
+            {
+              "spell": "ultimate ice strike",
+              "kind": "base_damage",
+              "value": 3300
+            }
+          ]
+        },
+        {
+          "item_id": 45643,
+          "augments": [
+            {
+              "spell": "wound cleansing",
+              "kind": "base_healing",
+              "value": 1700
+            }
+          ]
+        },
+        {
+          "item_id": 47368,
+          "augments": [
+            {
+              "spell": "annihilation",
+              "kind": "cooldown",
+              "value": 8000
+            },
+            {
+              "spell": "annihilation",
+              "kind": "critical_extra_damage",
+              "value": 1400
+            }
+          ]
+        },
+        {
+          "item_id": 47369,
+          "augments": [
+            {
+              "spell": "annihilation",
+              "kind": "cooldown",
+              "value": 8000
+            },
+            {
+              "spell": "annihilation",
+              "kind": "critical_extra_damage",
+              "value": 1400
+            }
+          ]
+        },
+        {
+          "item_id": 47370,
+          "augments": [
+            {
+              "spell": "annihilation",
+              "kind": "cooldown",
+              "value": 8000
+            },
+            {
+              "spell": "annihilation",
+              "kind": "critical_extra_damage",
+              "value": 1400
+            }
+          ]
+        },
+        {
+          "item_id": 47371,
+          "augments": [
+            {
+              "spell": "divine grenade",
+              "kind": "critical_extra_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 47372,
+          "augments": [
+            {
+              "spell": "rage of the skies",
+              "kind": "critical_extra_damage",
+              "value": 1000
+            }
+          ]
+        },
+        {
+          "item_id": 47373,
+          "augments": [
+            {
+              "spell": "strong ice wave",
+              "kind": "critical_extra_damage",
+              "value": 600
+            }
+          ]
+        },
+        {
+          "item_id": 47374,
+          "augments": [
+            {
+              "spell": "annihilation",
+              "kind": "cooldown",
+              "value": 8000
+            },
+            {
+              "spell": "annihilation",
+              "kind": "critical_extra_damage",
+              "value": 1400
+            }
+          ]
+        },
+        {
+          "item_id": 47375,
+          "augments": [
+            {
+              "spell": "annihilation",
+              "kind": "cooldown",
+              "value": 8000
+            },
+            {
+              "spell": "annihilation",
+              "kind": "critical_extra_damage",
+              "value": 1400
+            }
+          ]
+        },
+        {
+          "item_id": 47376,
+          "augments": [
+            {
+              "spell": "annihilation",
+              "kind": "cooldown",
+              "value": 8000
+            },
+            {
+              "spell": "annihilation",
+              "kind": "critical_extra_damage",
+              "value": 1400
+            }
+          ]
+        },
+        {
+          "item_id": 47377,
+          "augments": [
+            {
+              "spell": "divine missile",
+              "kind": "critical_extra_damage",
+              "value": 500
+            }
+          ]
+        },
+        {
+          "item_id": 49531,
+          "augments": [
+            {
+              "spell": "front sweep",
+              "kind": "mana_leech",
+              "value": 300
+            }
+          ]
+        },
+        {
+          "item_id": 49532,
+          "augments": [
+            {
+              "spell": "strong ethereal spear",
+              "kind": "mana_leech",
+              "value": 300
+            }
+          ]
+        },
+        {
+          "item_id": 49533,
+          "augments": [
+            {
+              "spell": "energy wave",
+              "kind": "mana_leech",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 49534,
+          "augments": [
+            {
+              "spell": "terra wave",
+              "kind": "mana_leech",
+              "value": 200
+            }
+          ]
+        },
+        {
+          "item_id": 50146,
+          "augments": [
+            {
+              "spell": "avatar of balance",
+              "kind": "cooldown",
+              "value": 900000
+            },
+            {
+              "spell": "chained penance",
+              "kind": "critical_extra_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 50157,
+          "augments": [
+            {
+              "spell": "sweeping takedown",
+              "kind": "base_damage",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 50158,
+          "augments": [
+            {
+              "spell": "sweeping takedown",
+              "kind": "base_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 50171,
+          "augments": [
+            {
+              "spell": "swift jab",
+              "kind": "critical_extra_damage",
+              "value": 1000
+            }
+          ]
+        },
+        {
+          "item_id": 50176,
+          "augments": [
+            {
+              "spell": "depth claws",
+              "kind": "base_damage",
+              "value": 1400
+            }
+          ]
+        },
+        {
+          "item_id": 50189,
+          "augments": [
+            {
+              "spell": "flurry of blows",
+              "kind": "mana_leech",
+              "value": 300
+            }
+          ]
+        },
+        {
+          "item_id": 50239,
+          "augments": [
+            {
+              "spell": "devastating knockout",
+              "kind": "critical_extra_damage",
+              "value": 1400
+            },
+            {
+              "spell": "devastating knockout",
+              "kind": "cooldown",
+              "value": 12000
+            }
+          ]
+        },
+        {
+          "item_id": 50255,
+          "augments": [
+            {
+              "spell": "spirit mend",
+              "kind": "base_healing",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 50259,
+          "augments": [
+            {
+              "spell": "mystic repulse",
+              "kind": "critical_extra_damage",
+              "value": 1000
+            }
+          ]
+        },
+        {
+          "item_id": 50261,
+          "augments": [
+            {
+              "spell": "greater flurry of blows",
+              "kind": "critical_extra_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 50262,
+          "augments": [
+            {
+              "spell": "flurry of blows",
+              "kind": "life_leech",
+              "value": 300
+            }
+          ]
+        },
+        {
+          "item_id": 50264,
+          "augments": [
+            {
+              "spell": "greater tiger clash",
+              "kind": "life_leech",
+              "value": 500
+            },
+            {
+              "spell": "flurry of blows",
+              "kind": "life_leech",
+              "value": 300
+            }
+          ]
+        },
+        {
+          "item_id": 50268,
+          "augments": [
+            {
+              "spell": "forceful uppercut",
+              "kind": "cooldown",
+              "value": 15000
+            }
+          ]
+        },
+        {
+          "item_id": 50269,
+          "augments": [
+            {
+              "spell": "double jab",
+              "kind": "base_damage",
+              "value": 1200
+            }
+          ]
+        },
+        {
+          "item_id": 50271,
+          "augments": [
+            {
+              "spell": "greater tiger clash",
+              "kind": "base_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 50272,
+          "augments": [
+            {
+              "spell": "greater tiger clash",
+              "kind": "base_damage",
+              "value": 1600
+            }
+          ]
+        },
+        {
+          "item_id": 50273,
+          "augments": [
+            {
+              "spell": "greater tiger clash",
+              "kind": "base_damage",
+              "value": 1200
+            }
+          ]
+        },
+        {
+          "item_id": 50274,
+          "augments": [
+            {
+              "spell": "chained penance",
+              "kind": "base_damage",
+              "value": 600
+            }
+          ]
+        },
+        {
+          "item_id": 50291,
+          "augments": [
+            {
+              "spell": "greater flurry of blows",
+              "kind": "base_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 51266,
+          "augments": [
+            {
+              "spell": "ultimate terra strike",
+              "kind": "base_damage",
+              "value": 3300
+            }
+          ]
+        },
+        {
+          "item_id": 51268,
+          "augments": [
+            {
+              "spell": "brutal strike",
+              "kind": "base_damage",
+              "value": 3300
+            }
+          ]
+        },
+        {
+          "item_id": 51269,
+          "augments": [
+            {
+              "spell": "ultimate energy strike",
+              "kind": "base_damage",
+              "value": 3300
+            }
+          ]
+        },
+        {
+          "item_id": 51299,
+          "augments": [
+            {
+              "spell": "avatar of balance",
+              "kind": "cooldown",
+              "value": 900000
+            },
+            {
+              "spell": "chained penance",
+              "kind": "critical_extra_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 51308,
+          "augments": [
+            {
+              "spell": "sweeping takedown",
+              "kind": "base_damage",
+              "value": 400
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "server": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data/items/items.xml",
+      "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+      "records": [
+        {
+          "item_id": 43864,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 400
+            },
+            {
+              "spell": "fierce berserk",
+              "kind": "base_healing",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43865,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 800
+            },
+            {
+              "spell": "fierce berserk",
+              "kind": "base_healing",
+              "value": 800
+            },
+            {
+              "spell": "intense wound cleansing",
+              "kind": "cooldown",
+              "value": 120000
+            }
+          ]
+        },
+        {
+          "item_id": 43866,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 400
+            },
+            {
+              "spell": "fierce berserk",
+              "kind": "base_healing",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43867,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 800
+            },
+            {
+              "spell": "fierce berserk",
+              "kind": "base_healing",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43868,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 400
+            },
+            {
+              "spell": "fierce berserk",
+              "kind": "base_healing",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43869,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 800
+            },
+            {
+              "spell": "fierce berserk",
+              "kind": "base_healing",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43870,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 400
+            },
+            {
+              "spell": "fierce berserk",
+              "kind": "base_healing",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43871,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 800
+            },
+            {
+              "spell": "fierce berserk",
+              "kind": "base_healing",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43872,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 400
+            },
+            {
+              "spell": "fierce berserk",
+              "kind": "base_healing",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43873,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 800
+            },
+            {
+              "spell": "fierce berserk",
+              "kind": "base_healing",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43874,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 400
+            },
+            {
+              "spell": "fierce berserk",
+              "kind": "base_healing",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43875,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "base_damage",
+              "value": 800
+            },
+            {
+              "spell": "fierce berserk",
+              "kind": "base_healing",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43876,
+          "augments": [
+            {
+              "spell": "avatar of steel",
+              "kind": "cooldown",
+              "value": 900000
+            },
+            {
+              "spell": "fierce beserk",
+              "kind": "critical_extra_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43877,
+          "augments": [
+            {
+              "spell": "divine caldera",
+              "kind": "base_damage",
+              "value": 400
+            },
+            {
+              "spell": "divine caldera",
+              "kind": "base_healing",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43878,
+          "augments": [
+            {
+              "spell": "divine caldera",
+              "kind": "base_damage",
+              "value": 800
+            },
+            {
+              "spell": "divine caldera",
+              "kind": "base_healing",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43879,
+          "augments": [
+            {
+              "spell": "divine caldera",
+              "kind": "base_damage",
+              "value": 400
+            },
+            {
+              "spell": "divine caldera",
+              "kind": "base_healing",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43880,
+          "augments": [
+            {
+              "spell": "divine caldera",
+              "kind": "base_damage",
+              "value": 800
+            },
+            {
+              "spell": "divine caldera",
+              "kind": "base_healing",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43881,
+          "augments": [
+            {
+              "spell": "avatar of light",
+              "kind": "cooldown",
+              "value": 900000
+            },
+            {
+              "spell": "divine caldera",
+              "kind": "critical_extra_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43882,
+          "augments": [
+            {
+              "spell": "hell's core",
+              "kind": "base_damage",
+              "value": 300
+            },
+            {
+              "spell": "hell's core",
+              "kind": "base_healing",
+              "value": 300
+            },
+            {
+              "spell": "energy wave",
+              "kind": "base_damage",
+              "value": 400
+            },
+            {
+              "spell": "energy wave",
+              "kind": "base_healing",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43883,
+          "augments": [
+            {
+              "spell": "hell's core",
+              "kind": "base_damage",
+              "value": 600
+            },
+            {
+              "spell": "hell's core",
+              "kind": "base_healing",
+              "value": 600
+            },
+            {
+              "spell": "energy wave",
+              "kind": "base_damage",
+              "value": 800
+            },
+            {
+              "spell": "energy wave",
+              "kind": "base_healing",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43884,
+          "augments": [
+            {
+              "spell": "avatar of storm",
+              "kind": "cooldown",
+              "value": 900000
+            },
+            {
+              "spell": "hell's core",
+              "kind": "critical_extra_damage",
+              "value": 800
+            },
+            {
+              "spell": "energy wave",
+              "kind": "critical_extra_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43885,
+          "augments": [
+            {
+              "spell": "eternal winter",
+              "kind": "base_damage",
+              "value": 300
+            },
+            {
+              "spell": "eternal winter",
+              "kind": "base_healing",
+              "value": 300
+            },
+            {
+              "spell": "terra wave",
+              "kind": "base_damage",
+              "value": 400
+            },
+            {
+              "spell": "terra wave",
+              "kind": "base_healing",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 43886,
+          "augments": [
+            {
+              "spell": "eternal winter",
+              "kind": "base_damage",
+              "value": 600
+            },
+            {
+              "spell": "eternal winter",
+              "kind": "base_healing",
+              "value": 600
+            },
+            {
+              "spell": "terra wave",
+              "kind": "base_damage",
+              "value": 800
+            },
+            {
+              "spell": "terra wave",
+              "kind": "base_healing",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 43887,
+          "augments": [
+            {
+              "spell": "avatar of nature",
+              "kind": "cooldown",
+              "value": 900000
+            },
+            {
+              "spell": "eternal winter",
+              "kind": "critical_extra_damage",
+              "value": 800
+            },
+            {
+              "spell": "terra wave",
+              "kind": "critical_extra_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 44619,
+          "augments": [
+            {
+              "spell": "wrath of nature",
+              "kind": "base_damage",
+              "value": 8
+            },
+            {
+              "spell": "wrath of nature",
+              "kind": "base_healing",
+              "value": 8
+            }
+          ]
+        },
+        {
+          "item_id": 44620,
+          "augments": [
+            {
+              "spell": "intense wound cleansing",
+              "kind": "cooldown",
+              "value": 120000
+            }
+          ]
+        },
+        {
+          "item_id": 44621,
+          "augments": [
+            {
+              "spell": "front sweep",
+              "kind": "life_leech",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 44622,
+          "augments": [
+            {
+              "spell": "strong ethereal spear",
+              "kind": "life_leech",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 44623,
+          "augments": [
+            {
+              "spell": "energy wave",
+              "kind": "life_leech",
+              "value": 500
+            }
+          ]
+        },
+        {
+          "item_id": 44624,
+          "augments": [
+            {
+              "spell": "terra wave",
+              "kind": "life_leech",
+              "value": 300
+            }
+          ]
+        },
+        {
+          "item_id": 44636,
+          "augments": [
+            {
+              "spell": "divine missile",
+              "kind": "base_damage",
+              "value": 600
+            },
+            {
+              "spell": "divine missile",
+              "kind": "base_healing",
+              "value": 600
+            }
+          ]
+        },
+        {
+          "item_id": 44637,
+          "augments": [
+            {
+              "spell": "wrath of nature",
+              "kind": "critical_extra_damage",
+              "value": 500
+            }
+          ]
+        },
+        {
+          "item_id": 44642,
+          "augments": [
+            {
+              "spell": "intense wound cleansing",
+              "kind": "base_damage",
+              "value": 5000
+            },
+            {
+              "spell": "intense wound cleansing",
+              "kind": "base_healing",
+              "value": 5000
+            }
+          ]
+        },
+        {
+          "item_id": 44643,
+          "augments": [
+            {
+              "spell": "great energy beam",
+              "kind": "base_damage",
+              "value": 700
+            },
+            {
+              "spell": "great energy beam",
+              "kind": "base_healing",
+              "value": 700
+            },
+            {
+              "spell": "great death beam",
+              "kind": "base_damage",
+              "value": 700
+            },
+            {
+              "spell": "great death beam",
+              "kind": "base_healing",
+              "value": 700
+            }
+          ]
+        },
+        {
+          "item_id": 44648,
+          "augments": [
+            {
+              "spell": "divine missile",
+              "kind": "critical_extra_damage",
+              "value": 500
+            }
+          ]
+        },
+        {
+          "item_id": 44649,
+          "augments": [
+            {
+              "spell": "great energy beam",
+              "kind": "critical_extra_damage",
+              "value": 500
+            },
+            {
+              "spell": "great death beam",
+              "kind": "critical_extra_damage",
+              "value": 500
+            }
+          ]
+        },
+        {
+          "item_id": 45639,
+          "augments": [
+            {
+              "spell": "ultimate flame strike",
+              "kind": "base_damage",
+              "value": 3300
+            },
+            {
+              "spell": "ultimate flame strike",
+              "kind": "base_healing",
+              "value": 3300
+            }
+          ]
+        },
+        {
+          "item_id": 45640,
+          "augments": [
+            {
+              "spell": "ultimate ice strike",
+              "kind": "base_damage",
+              "value": 3300
+            },
+            {
+              "spell": "ultimate ice strike",
+              "kind": "base_healing",
+              "value": 3300
+            }
+          ]
+        },
+        {
+          "item_id": 45643,
+          "augments": [
+            {
+              "spell": "wound cleansing",
+              "kind": "base_damage",
+              "value": 1650
+            },
+            {
+              "spell": "wound cleansing",
+              "kind": "base_healing",
+              "value": 1650
+            }
+          ]
+        },
+        {
+          "item_id": 49531,
+          "augments": [
+            {
+              "spell": "front sweep",
+              "kind": "mana_leech",
+              "value": 300
+            }
+          ]
+        },
+        {
+          "item_id": 49532,
+          "augments": [
+            {
+              "spell": "strong ethereal spear",
+              "kind": "mana_leech",
+              "value": 300
+            }
+          ]
+        },
+        {
+          "item_id": 49533,
+          "augments": [
+            {
+              "spell": "energy wave",
+              "kind": "mana_leech",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 49534,
+          "augments": [
+            {
+              "spell": "terra wave",
+              "kind": "mana_leech",
+              "value": 200
+            }
+          ]
+        },
+        {
+          "item_id": 50146,
+          "augments": [
+            {
+              "spell": "avatar of balance",
+              "kind": "cooldown",
+              "value": 900000
+            },
+            {
+              "spell": "chained penance",
+              "kind": "critical_extra_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 50157,
+          "augments": [
+            {
+              "spell": "sweeping takedown",
+              "kind": "base_damage",
+              "value": 400
+            },
+            {
+              "spell": "sweeping takedown",
+              "kind": "base_healing",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 50158,
+          "augments": [
+            {
+              "spell": "sweeping takedown",
+              "kind": "base_damage",
+              "value": 800
+            },
+            {
+              "spell": "sweeping takedown",
+              "kind": "base_healing",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 50171,
+          "augments": [
+            {
+              "spell": "swift jab",
+              "kind": "critical_extra_damage",
+              "value": 1000
+            }
+          ]
+        },
+        {
+          "item_id": 50189,
+          "augments": [
+            {
+              "spell": "flurry of blows",
+              "kind": "mana_leech",
+              "value": 300
+            }
+          ]
+        },
+        {
+          "item_id": 50255,
+          "augments": [
+            {
+              "spell": "spirit mend",
+              "kind": "base_damage",
+              "value": 800
+            },
+            {
+              "spell": "spirit mend",
+              "kind": "base_healing",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 50259,
+          "augments": [
+            {
+              "spell": "mystic repulse",
+              "kind": "critical_extra_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 50261,
+          "augments": [
+            {
+              "spell": "greater flurry of blows",
+              "kind": "critical_extra_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 50262,
+          "augments": [
+            {
+              "spell": "flurry of blows",
+              "kind": "life_leech",
+              "value": 300
+            }
+          ]
+        },
+        {
+          "item_id": 50264,
+          "augments": [
+            {
+              "spell": "flurry of blows",
+              "kind": "life_leech",
+              "value": 300
+            }
+          ]
+        },
+        {
+          "item_id": 50268,
+          "augments": [
+            {
+              "spell": "forceful uppercut",
+              "kind": "cooldown",
+              "value": 15000
+            }
+          ]
+        },
+        {
+          "item_id": 50269,
+          "augments": [
+            {
+              "spell": "double jab",
+              "kind": "base_damage",
+              "value": 1200
+            },
+            {
+              "spell": "double jab",
+              "kind": "base_healing",
+              "value": 1200
+            }
+          ]
+        },
+        {
+          "item_id": 50271,
+          "augments": [
+            {
+              "spell": "greater tiger clash",
+              "kind": "base_damage",
+              "value": 800
+            },
+            {
+              "spell": "greater tiger clash",
+              "kind": "base_healing",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 50273,
+          "augments": [
+            {
+              "spell": "greater tiger clash",
+              "kind": "base_damage",
+              "value": 1200
+            },
+            {
+              "spell": "greater tiger clash",
+              "kind": "base_healing",
+              "value": 1200
+            }
+          ]
+        },
+        {
+          "item_id": 50274,
+          "augments": [
+            {
+              "spell": "chained penance",
+              "kind": "base_damage",
+              "value": 600
+            },
+            {
+              "spell": "chained penance",
+              "kind": "base_healing",
+              "value": 600
+            }
+          ]
+        },
+        {
+          "item_id": 51260,
+          "augments": [
+            {
+              "spell": "ethereal spear",
+              "kind": "base_damage",
+              "value": 4000
+            },
+            {
+              "spell": "ethereal spear",
+              "kind": "base_healing",
+              "value": 4000
+            },
+            {
+              "spell": "ethereal spear",
+              "kind": "critical_hit_chance",
+              "value": 200
+            }
+          ]
+        },
+        {
+          "item_id": 51261,
+          "augments": [
+            {
+              "spell": "greater tiger clash",
+              "kind": "base_damage",
+              "value": 3300
+            },
+            {
+              "spell": "greater tiger clash",
+              "kind": "base_healing",
+              "value": 3300
+            }
+          ]
+        },
+        {
+          "item_id": 51262,
+          "augments": [
+            {
+              "spell": "brutal strike",
+              "kind": "cooldown",
+              "value": 2000
+            },
+            {
+              "spell": "brutal strike",
+              "kind": "critical_extra_damage",
+              "value": 1000
+            }
+          ]
+        },
+        {
+          "item_id": 51263,
+          "augments": [
+            {
+              "spell": "ultimate energy strike",
+              "kind": "critical_extra_damage",
+              "value": 1400
+            },
+            {
+              "spell": "ultimate energy strike",
+              "kind": "critical_hit_chance",
+              "value": 500
+            }
+          ]
+        },
+        {
+          "item_id": 51264,
+          "augments": [
+            {
+              "spell": "ultimate terra strike",
+              "kind": "critical_extra_damage",
+              "value": 1400
+            },
+            {
+              "spell": "ultimate terra strike",
+              "kind": "critical_hit_chance",
+              "value": 500
+            }
+          ]
+        },
+        {
+          "item_id": 51265,
+          "augments": [
+            {
+              "spell": "ethereal spear",
+              "kind": "base_damage",
+              "value": 4000
+            },
+            {
+              "spell": "ethereal spear",
+              "kind": "base_healing",
+              "value": 4000
+            },
+            {
+              "spell": "ethereal spear",
+              "kind": "critical_extra_damage",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 51266,
+          "augments": [
+            {
+              "spell": "ultimate energy strike",
+              "kind": "base_damage",
+              "value": 33
+            },
+            {
+              "spell": "ultimate energy strike",
+              "kind": "base_healing",
+              "value": 33
+            }
+          ]
+        },
+        {
+          "item_id": 51267,
+          "augments": [
+            {
+              "spell": "greater tiger clash",
+              "kind": "critical_hit_chance",
+              "value": 250
+            },
+            {
+              "spell": "reater tiger clash",
+              "kind": "critical_extra_damage",
+              "value": 1000
+            }
+          ]
+        },
+        {
+          "item_id": 51269,
+          "augments": [
+            {
+              "spell": "ultimate energy strike",
+              "kind": "base_damage",
+              "value": 3300
+            },
+            {
+              "spell": "ultimate energy strike",
+              "kind": "base_healing",
+              "value": 3300
+            }
+          ]
+        },
+        {
+          "item_id": 51270,
+          "augments": [
+            {
+              "spell": "knight familiar",
+              "kind": "cooldown",
+              "value": 300000
+            }
+          ]
+        },
+        {
+          "item_id": 51271,
+          "augments": [
+            {
+              "spell": "paladin familiar",
+              "kind": "cooldown",
+              "value": 300000
+            }
+          ]
+        },
+        {
+          "item_id": 51272,
+          "augments": [
+            {
+              "spell": "sorcerer familiar",
+              "kind": "cooldown",
+              "value": 300000
+            }
+          ]
+        },
+        {
+          "item_id": 51273,
+          "augments": [
+            {
+              "spell": "druid familiar",
+              "kind": "cooldown",
+              "value": 300000
+            }
+          ]
+        },
+        {
+          "item_id": 51274,
+          "augments": [
+            {
+              "spell": "monk familiar",
+              "kind": "cooldown",
+              "value": 300000
+            }
+          ]
+        },
+        {
+          "item_id": 52348,
+          "augments": [
+            {
+              "spell": "great fire wave",
+              "kind": "critical_hit_chance",
+              "value": 650
+            }
+          ]
+        },
+        {
+          "item_id": 52349,
+          "augments": [
+            {
+              "spell": "spiritual outburst",
+              "kind": "critical_hit_chance",
+              "value": 100
+            }
+          ]
+        },
+        {
+          "item_id": 52350,
+          "augments": [
+            {
+              "spell": "divine grenade",
+              "kind": "critical_hit_chance",
+              "value": 1000
+            }
+          ]
+        },
+        {
+          "item_id": 52351,
+          "augments": [
+            {
+              "spell": "fierce berserk",
+              "kind": "critical_extra_damage",
+              "value": 1000
+            }
+          ]
+        },
+        {
+          "item_id": 52352,
+          "augments": [
+            {
+              "spell": "divine grenade",
+              "kind": "critical_hit_chance",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 52353,
+          "augments": [
+            {
+              "spell": "terra wave",
+              "kind": "critical_hit_chance",
+              "value": 650
+            }
+          ]
+        },
+        {
+          "item_id": 52354,
+          "augments": [
+            {
+              "spell": "spiritual outburst",
+              "kind": "critical_hit_chance",
+              "value": 800
+            }
+          ]
+        },
+        {
+          "item_id": 52355,
+          "augments": [
+            {
+              "spell": "great fire wave",
+              "kind": "critical_hit_chance",
+              "value": 100
+            }
+          ]
+        },
+        {
+          "item_id": 52356,
+          "augments": [
+            {
+              "spell": "terra wave",
+              "kind": "critical_hit_chance",
+              "value": 100
+            }
+          ]
+        },
+        {
+          "item_id": 52357,
+          "augments": [
+            {
+              "spell": "berserk",
+              "kind": "critical_hit_chance",
+              "value": 100
+            }
+          ]
+        },
+        {
+          "item_id": 52649,
+          "augments": [
+            {
+              "spell": "berserk",
+              "kind": "critical_hit_chance",
+              "value": 100
+            }
+          ]
+        },
+        {
+          "item_id": 53229,
+          "augments": [
+            {
+              "spell": "groundshaker",
+              "kind": "mana_leech",
+              "value": 400
+            }
+          ]
+        },
+        {
+          "item_id": 53230,
+          "augments": [
+            {
+              "spell": "divine barrage",
+              "kind": "mana_leech",
+              "value": 200
+            }
+          ]
+        },
+        {
+          "item_id": 53231,
+          "augments": [
+            {
+              "spell": "death echo",
+              "kind": "mana_leech",
+              "value": 300
+            }
+          ]
+        },
+        {
+          "item_id": 53232,
+          "augments": [
+            {
+              "spell": "forked glacier",
+              "kind": "mana_leech",
+              "value": 300
+            }
+          ]
+        },
+        {
+          "item_id": 53233,
+          "augments": [
+            {
+              "spell": "thousand fist blows",
+              "kind": "mana_leech",
+              "value": 600
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

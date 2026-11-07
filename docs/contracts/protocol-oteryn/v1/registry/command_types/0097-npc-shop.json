@@ -1,0 +1,10 @@
+{
+  "id": 97,
+  "name": "NPC_SHOP",
+  "owner_decision": "NPC-TRADE-SELLALL-1 coordinator decision 2026-10-25 (parity audit gap 21)",
+  "capability": 81,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/npc_shop_v1.proto#NpcShopIntentV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/npc_shop_v1.proto#NpcShopResultV1",
+  "max_payload_bytes": 55,
+  "max_result_payload_bytes": 524
+}

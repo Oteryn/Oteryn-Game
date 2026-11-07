@@ -1,0 +1,9 @@
+{
+  "mechanic": "0060-player-trade",
+  "kind": "keybindings",
+  "id": "0060-player-trade-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+T",
+  "entry": "input.rs::open_key"
+}

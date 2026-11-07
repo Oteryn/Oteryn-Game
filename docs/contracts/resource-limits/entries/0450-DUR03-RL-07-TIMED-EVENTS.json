@@ -1,0 +1,22 @@
+{
+  "allocation_impact": "One timed_expiry event per expiry; a checkpoint has none. Payload and envelope bytes stay DUR03-RL-07-PAYLOAD/ENVELOPE.",
+  "boundary_tests": [
+    "max=1: an expiry carries its one event",
+    "max+1=2: refused"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "maximum": 1,
+    "minimum": 1
+  },
+  "consumers": [
+    "apps/game-server/src/durability/item_timed_state_audit.rs TimedShape::check and encode_timed_expiry_event"
+  ],
+  "failure_category": "CAPACITY_EXCEEDED",
+  "hard_maximum": 1,
+  "id": "DUR03-RL-07-TIMED-EVENTS",
+  "notes": "\u00a78, \u00a712. Registered by OTV2-20261003-timed-rt-1b.",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+  "resource": "Durable audit events of one timed transaction",
+  "unit": "events"
+}

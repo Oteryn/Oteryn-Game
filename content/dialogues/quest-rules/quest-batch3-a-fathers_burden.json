@@ -1,0 +1,2019 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.a_father_s_burden_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/status",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/progress",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/sinew",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/wood",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/cloth",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/silk",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/crystal",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/root",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/iron",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/scale",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_6/afathers_burden/quest_log",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:1703"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-pending",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/status",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/progress",
+          "op": "ne",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "Well, I need the parts of a sorcerer's robe, a paladin's bow, a knight's shield, and a druid's rod. If you cannot find one of them, ask me about it and I might provide you with some minor hints."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:132"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-complete",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/status",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/progress",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "I'm so glad I finally have all the parts for the presents. Your reward is my eternal gratitude. Well, that and some gold of course. ...",
+        "Take this sachet over there, I wrapped the coins into this old cape I had still lying around here from a barter with a stranger, it is of no use for me anyway. Farewell and thank you once again."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/status",
+          "value": 2
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i11701",
+          "count": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 8000
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:139"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-already-complete",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/status",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Thank you for your help!"
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:146"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-offer",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/status",
+          "op": "ne",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/status",
+          "op": "ne",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "I have four sons which are very dear to me. Though they were born on the same day and even in the same hour, they took quite different paths in life. ...",
+        "Each of them chose a different vocation, one will become a knight, one a sorcerer, one a druid, and the other a paladin. In a few weeks they will reach adulthood and I am holding a birthday party for them. ...",
+        "It should become a day to remember and so I want to give them something special as a present. I searched the land for the finest craftsmen so they could create suitable presents for my sons. ...",
+        "But something of fine craftsmanship will just not cut it. So I asked them what they would need to create something special. They all came up with lists of rare and expensive items necessary for the task ahead. ...",
+        "I spent a small fortune to buy most of the materials but in the end the key components are that rare that they cannot be simply bought somewhere. ...",
+        "As far as I understood it, the places where you can get these items are quite dangerous and so it would take some adventurer to get them. ...",
+        "That would be your mission if you are interested. Uhm, so are you interested?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:150"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/strong-sinew-done",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "strong sinew"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/sinew",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Your bravery earned us this excellent sinew."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:163",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:15"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "mission"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/strong-sinew-offer",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "strong sinew"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/sinew",
+          "op": "ne",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Do you have the required sinew?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7201
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:168",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:15"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "mission"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/strong-sinew-deliver",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i11548",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "Ah, not only did you bring some sinew to me, you also made the world a safer place by killing Heoni."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i11548",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/sinew",
+          "value": 2
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/progress",
+          "value": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 2500
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:187",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:15"
+      ],
+      "topics": [
+        7201
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/strong-sinew-missing",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Sorry, you must be wrong. Perhaps Heoni was out to hunt when you were looking for it. Search in the mountains of Edron. I put my trust in your abilities."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:187",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:15"
+      ],
+      "topics": [
+        7201
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/strong-sinew-no",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "Perhaps Heoni was out to hunt when you were looking for it. Search in the mountains of Edron. I put my trust in your abilities."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:197",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:15"
+      ],
+      "topics": [
+        7201
+      ],
+      "exclude_keywords": [
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/strong-sinew-other",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:200",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:15"
+      ],
+      "topics": [
+        7201
+      ],
+      "exclude_keywords": [
+        "yes",
+        "no"
+      ],
+      "any_message": true
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/exquisite-wood-done",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "exquisite wood"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/wood",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "The wood you have found is just what we needed."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:163",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:26"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "mission"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/exquisite-wood-offer",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "exquisite wood"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/wood",
+          "op": "ne",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Could you find the wood we were talking about?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7202
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:168",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:26"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "mission"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/exquisite-wood-deliver",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i11547",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "Thank you. I feel somewhat embarrassed to put you into such a danger for some birthday present but I am sure you can handle it."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i11547",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/wood",
+          "value": 2
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/progress",
+          "value": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 2500
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:187",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:26"
+      ],
+      "topics": [
+        7202
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/exquisite-wood-missing",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Sorry, you must be wrong. The wood that I need should be in one of the barbarian camps. ...",
+        "It seems logical to search the most northern camp first, it is closest to the place where the tree was cut. Please hurry, there is still so much to do before the birthday."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:187",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:26"
+      ],
+      "topics": [
+        7202
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/exquisite-wood-no",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "The wood that I need should be in one of the barbarian camps. It seems logical to search the most northern camp first, it is closest to the place where the tree was cut. Please hurry, there is still so much to do before the birthday."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:197",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:26"
+      ],
+      "topics": [
+        7202
+      ],
+      "exclude_keywords": [
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/exquisite-wood-other",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:200",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:26"
+      ],
+      "topics": [
+        7202
+      ],
+      "exclude_keywords": [
+        "yes",
+        "no"
+      ],
+      "any_message": true
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/spectral-cloth-done",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "spectral cloth"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/cloth",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Thanks to your efforts we have a suitable piece of spectral cloth."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:163",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:37"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "mission"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/spectral-cloth-offer",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "spectral cloth"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/cloth",
+          "op": "ne",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Could you find the cloth I am looking for?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7203
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:168",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:37"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "mission"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/spectral-cloth-deliver",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i11546",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "It looks a bit scary but I guess sorcerers might even find that appealing. Thank you very much."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i11546",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/cloth",
+          "value": 2
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/progress",
+          "value": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 2500
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:187",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:37"
+      ],
+      "topics": [
+        7203
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/spectral-cloth-missing",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Sorry, you must be wrong. You will find it somewhere in the crypts under the Isle of the Kings. You will probably have to look for hidden caves when you don't find it at an obvious place. Perhaps you even need a shovel or a pick."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:187",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:37"
+      ],
+      "topics": [
+        7203
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/spectral-cloth-no",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "Don't forget, you will find it somewhere in the crypts under the Isle of the Kings. You will probably have to look for hidden caves when you don't find it at an obvious place. Perhaps you even need a shovel or a pick."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:197",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:37"
+      ],
+      "topics": [
+        7203
+      ],
+      "exclude_keywords": [
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/spectral-cloth-other",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:200",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:37"
+      ],
+      "topics": [
+        7203
+      ],
+      "exclude_keywords": [
+        "yes",
+        "no"
+      ],
+      "any_message": true
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/exquisite-silk-done",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "exquisite silk"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/silk",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "The silk you have brought me is exquisite indeed."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:163",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:48"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "mission"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/exquisite-silk-offer",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "exquisite silk"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/silk",
+          "op": "ne",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "So you've found the silk that I need?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7204
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:168",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:48"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "mission"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/exquisite-silk-deliver",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i11545",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "Great. I better don't think about how big a spider has to be to produce such strands of silk."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i11545",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/silk",
+          "value": 2
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/progress",
+          "value": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 2500
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:187",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:48"
+      ],
+      "topics": [
+        7204
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/exquisite-silk-missing",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Sorry, you must be wrong. Search the spider caves of the continent Zao for the silk. They have to be somewhere in the east of Zao's southern part. My sources claim there you will find the silk that we need."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:187",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:48"
+      ],
+      "topics": [
+        7204
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/exquisite-silk-no",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "Then search the spider caves of the continent Zao for the silk. They have to be somewhere in the east of Zao's southern part. My sources claim there you will find the silk that we need."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:197",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:48"
+      ],
+      "topics": [
+        7204
+      ],
+      "exclude_keywords": [
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/exquisite-silk-other",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:200",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:48"
+      ],
+      "topics": [
+        7204
+      ],
+      "exclude_keywords": [
+        "yes",
+        "no"
+      ],
+      "any_message": true
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/magic-crystal-done",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "magic crystal"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/crystal",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "The crystal you have found is absolutely flawless. You did a great job indeed."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:163",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:59"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "mission"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/magic-crystal-offer",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "magic crystal"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/crystal",
+          "op": "ne",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Did you find the required crystal?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7205
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:168",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:59"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "mission"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/magic-crystal-deliver",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i11552",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "Oh look at the colours and sparkles. This crystal is truly remarkable, thank you."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i11552",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/crystal",
+          "value": 2
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/progress",
+          "value": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 2500
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:187",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:59"
+      ],
+      "topics": [
+        7205
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/magic-crystal-missing",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Sorry, you must be wrong. It is probably not easy to find the crystal that we need in such a huge desert which may contain several tombs, but please don't give up. ...",
+        "According to my sources the tomb we are looking for is east of Ankrahmun. You probably need a shovel to enter it. We still have some time and I am convinced you will find it."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:187",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:59"
+      ],
+      "topics": [
+        7205
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/magic-crystal-no",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "It is probably not easy to find the crystal that we need in such a huge desert which may contain several tombs, but please don't give up. ...",
+        "According to my sources the tomb we are looking for is east of Ankrahmun. You probably need a shovel to enter it. We still have some time and I am convinced you will find it."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:197",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:59"
+      ],
+      "topics": [
+        7205
+      ],
+      "exclude_keywords": [
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/magic-crystal-other",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:200",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:59"
+      ],
+      "topics": [
+        7205
+      ],
+      "exclude_keywords": [
+        "yes",
+        "no"
+      ],
+      "any_message": true
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mystic-root-done",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "mystic root"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/root",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "It is even recognisable for me that the root you gave me is filled with magic."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:163",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:70"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "mission"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mystic-root-offer",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "mystic root"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/root",
+          "op": "ne",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Could you find the root which we are looking for?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7206
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:168",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:70"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "mission"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mystic-root-deliver",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i11551",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "You are admirably determined in fulfilling your task. I will make sure that my sons appreciate what you did for their presents."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i11551",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/root",
+          "value": 2
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/progress",
+          "value": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 2500
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:187",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:70"
+      ],
+      "topics": [
+        7206
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mystic-root-missing",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Sorry, you must be wrong. The best advice I can give you is to look underground beneath the city for a suitable root."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:187",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:70"
+      ],
+      "topics": [
+        7206
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mystic-root-no",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "The best advice I can give you is to look underground beneath the city for a suitable root."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:197",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:70"
+      ],
+      "topics": [
+        7206
+      ],
+      "exclude_keywords": [
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mystic-root-other",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:200",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:70"
+      ],
+      "topics": [
+        7206
+      ],
+      "exclude_keywords": [
+        "yes",
+        "no"
+      ],
+      "any_message": true
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/old-iron-done",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "old iron"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/iron",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "The iron that you've found will make an ideal base for a shield."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:163",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:81"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "mission"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/old-iron-offer",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "old iron"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/iron",
+          "op": "ne",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Have you found the iron that we need for the present?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7207
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:168",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:81"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "mission"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/old-iron-deliver",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i11549",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "I wish there'd an easier way to get that iron but those dwarfs are so stubborn. However, now we got what we need."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i11549",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/iron",
+          "value": 2
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/progress",
+          "value": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 2500
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:187",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:81"
+      ],
+      "topics": [
+        7207
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/old-iron-missing",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Sorry, you must be wrong. I know it's not easy to find this iron but there has to be some in the deposits beneath the old Kazordoon mines. I doubt that it can be found in the newer mines outside of Kazordoon."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:187",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:81"
+      ],
+      "topics": [
+        7207
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/old-iron-no",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "I know it's not easy to find this iron but there has to be some in the deposits beneath the old Kazordoon mines. I doubt it that it can be found in the newer mines outside of Kazordoon."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:197",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:81"
+      ],
+      "topics": [
+        7207
+      ],
+      "exclude_keywords": [
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/old-iron-other",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:200",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:81"
+      ],
+      "topics": [
+        7207
+      ],
+      "exclude_keywords": [
+        "yes",
+        "no"
+      ],
+      "any_message": true
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/flexible-dragon-scale-done",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "flexible dragon scale"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/scale",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Only someone as daring as you could slay the beast to get the necessary scales."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:163",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:92"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "mission"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/flexible-dragon-scale-offer",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "flexible dragon scale"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/scale",
+          "op": "ne",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Could you get Glitterscale's scales yet?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7208
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:168",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:92"
+      ],
+      "topics": [
+        0
+      ],
+      "exclude_keywords": [
+        "cloak",
+        "mission"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/flexible-dragon-scale-deliver",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i11550",
+          "count": 1
+        }
+      ],
+      "reply": [
+        "These scales must have belonged to a fearsome beast. I envy you for your bravery."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i11550",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/scale",
+          "value": 2
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/progress",
+          "value": 1
+        },
+        {
+          "kind": "experience",
+          "amount": 2500
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:187",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:92"
+      ],
+      "topics": [
+        7208
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/flexible-dragon-scale-missing",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Sorry, you must be wrong. Oh please, search for Glitterscale. It should not be too hard to find it in those caves north of Thais."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:187",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:92"
+      ],
+      "topics": [
+        7208
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/flexible-dragon-scale-no",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "Oh please, search for Glitterscale. It should not be too hard to find it in those caves north of Thais."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:197",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:92"
+      ],
+      "topics": [
+        7208
+      ],
+      "exclude_keywords": [
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/flexible-dragon-scale-other",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:200",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:92"
+      ],
+      "topics": [
+        7208
+      ],
+      "exclude_keywords": [
+        "yes",
+        "no"
+      ],
+      "any_message": true
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-accept",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "I am relieved someone as capable as you will handle the task. Well, I need the parts of a sorcerer's robe, a paladin's bow, a knight's shield, and a druid's wand."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/quest_log",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/progress",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/status",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/sinew",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/wood",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/cloth",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/silk",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/crystal",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/root",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/iron",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_6/afathers_burden/scale",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:173"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-decline",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "Oh my. I really hope you will change your mind."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:182"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "yes"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-other",
+      "quest": "oteryn:quest.a_father_s_burden_quest",
+      "npc": "oteryn:npc.tereban",
+      "trigger": "say",
+      "keywords": [],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:184"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "yes",
+        "no"
+      ],
+      "any_message": true
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/tereban_functions.lua",
+      "sha256": "0269af24eef41644b6b03356d182a79f4b02b768d9500147213d0a17bb5b0b6d",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ]
+}

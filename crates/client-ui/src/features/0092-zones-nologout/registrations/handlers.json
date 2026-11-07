@@ -1,0 +1,15 @@
+{
+  "mechanic": "0092-zones-nologout",
+  "kind": "handlers",
+  "id": "0092-zones-nologout-unsupported",
+  "status": "unsupported",
+  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "commands": [],
+  "not_applicable": {
+    "state": "Unsupported until the owning mechanic migration.",
+    "protocol": "Unsupported until the owning mechanic migration.",
+    "view": "Unsupported until the owning mechanic migration.",
+    "input": "Unsupported until the owning mechanic migration.",
+    "settings": "Unsupported until the owning mechanic migration."
+  }
+}

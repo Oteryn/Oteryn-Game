@@ -1,0 +1,18 @@
+{
+  "id": "DUR04-FIRST-PROD-MANIFEST-FIELDS",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_02",
+  "resource": "Manifest fields per first-production artifact",
+  "unit": "fields",
+  "hard_maximum": 20,
+  "configurable_range": {
+    "minimum": 20,
+    "maximum": 20
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Require exactly the versioned 20-field manifest before retaining metadata.",
+  "client_visible": false,
+  "boundary_tests": [
+    "20 profile-defined fields accepted",
+    "19 or 21 rejected as incompatible profile"
+  ]
+}

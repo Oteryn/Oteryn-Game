@@ -1,0 +1,26 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_APPLY_PLAN/v1",
+  "task": "SKULL-CONTENT-1",
+  "status": "STAGED_FOR_COORDINATOR",
+  "reason": "Tracked content/ files participate in content-tree validation and World Bundle inputs. This packet is staged as docs-only reference evidence; the coordinator applies it to the target paths together with any separately qualified pin or seal regeneration.",
+  "target_files": [
+    {
+      "target_path": "rulesets/pvp/skulls/index.json",
+      "staged_path": "docs/reference/content-prep/skull-content-1/admission-evidence/index.json",
+      "sha256": "a59ba2402ce10d82c767a79af24eed897364c46146b977343460aba524e6ebf5"
+    },
+    {
+      "target_path": "rulesets/pvp/skulls/reference-evidence.json",
+      "staged_path": "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json",
+      "sha256": "9a657f56d6cc53cf378a3146edaf88e43d270435582ed6a24b5bf84b89860fe6"
+    }
+  ],
+  "runtime_switch_authorized": false,
+  "coordinator_must_verify": [
+    "current task target ownership",
+    "target-source conflicts and UNKNOWN fields",
+    "approved native/runtime schema wiring",
+    "World Bundle pins and deterministic bundle",
+    "required exact-head validators"
+  ]
+}

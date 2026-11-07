@@ -1,0 +1,10 @@
+Monster data and source mechanics — final local evidence
+
+Dataset:1863 canonical Creatures,1870 serving native profiles including variants,334 qualified appearances and34043 Items. Accepted Wiki values, SOURCE_ONLY fields, PROJECT approximations and seven protected source-body variants remain distinct.
+
+Implemented library scope:source damage/spawn/speech/remove callbacks,temporary appearances,physical Creature-origin Items,Icicle,Herald Character QuestState handoff,healing-from-damage and existing native condition/death owners. Five absolute map bindings,permanent LordRetro wardrobe,Herald destination,pin-aware Character swings against Bone shared HP and full shipping cadence activation remain in [decisions-162.md](decisions-162.md). No server activation or Global1:1 claim.
+
+Current execution and qualified successor scopes are separated in [status.json](status.json);fresh eight capture filters are in [native-capture-tests.json](native-capture-tests.json). Historical7a/e820 status and README copies are retained under [history/](history/). Earlier PostgreSQL receipts remain historical,not freshly rerun.
+
+
+Final publication qualification (2026-10-05): runtime execution is bound to code head58a8d64f03564407f7501e16037892127c70f677, binary06a1a32ca2199d5ce4c397eb8bf5f85682271e97f8e111ea0d534644aa8287d6:2370 library PASS/0 failed/24 ignored and19 individually executed native captures PASS. Repository integration3 PASS and reward binding11 PASS were freshly rerun at58a. Strict all-target Clippy passed atcaef6ec33b7ed2f502e071bc4e1232511ba79a23. Every Rust source file is identical between those heads; canonical reference/declarations/sources and Quest quests[] payload remain preserved. Successor Python reproduction, typed Unknown normalization and Quest source metadata are separately qualified, not described as a fresh runtime-binary execution. Content-tree gates and Quest510/0/1skip plus four RewardClaim gates PASS. Accepted stats and seven protected source-body variants remain preserved. Historical7a/e820 receipts retain their original scope. No production activation or Global1:1 parity claimed.

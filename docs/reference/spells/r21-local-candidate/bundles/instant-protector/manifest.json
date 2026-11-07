@@ -1,0 +1,473 @@
+{
+  "sources": [
+    {
+      "kind": "official_capture",
+      "url": "https://www.tibia.com/library/?subtopic=spells",
+      "title": "Protector",
+      "captured": "2026-09-28",
+      "content_sha256": "c4800d7d0fac37238a9101afbc2060a3afcf8ddc76b9e71286fd5feb628b70f2"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Protector",
+      "page_id": 30159,
+      "revision_id": 1190569,
+      "content_sha256": "155d37d05016261a01a3430dc4485b9eda89e9790ed4a36b7a983f797ba8e308"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://www.tibiawiki.com.br/api.php",
+      "title": "Protector",
+      "page_id": 10106,
+      "revision_id": 436997,
+      "content_sha256": "b450def88b6b524f0cf2f5f20aee7cf43493eeb63c724f66ba4676892e8b6b53"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "Protector",
+      "source_line": 1,
+      "source_field": "words",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/words",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Protector",
+      "source_line": 1,
+      "source_field": "spellid",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/reference_spell_id",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Protector",
+      "source_line": 1,
+      "source_field": "librarytext",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/library_text",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Protector",
+      "source_line": 1,
+      "source_field": "voc",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Protector",
+      "source_line": 1,
+      "source_field": "voc",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 40,
+      "source_field": "needLearn",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S16: since patch 15.22 (27 January 2026) spells unlock automatically and free at their level; trainers no longer teach spells (https://tibiopedia.pl/updates/15.22.c93366). learning_required is false; the source needLearn only marks Wheel spells (wheel_unlock)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Protector",
+      "source_line": 1,
+      "source_field": "levelrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/level",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 38,
+      "source_field": "level",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S15: superseded by the official tibia.com value 20 (source 55)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Protector",
+      "source_line": 1,
+      "source_field": "premium",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/premium",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Protector",
+      "source_line": 1,
+      "source_field": "mana",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/mana",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 39,
+      "source_field": "mana",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S15: superseded by the official tibia.com value 20 (source 200)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Protector",
+      "source_line": 1,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Protector",
+      "source_line": 1,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Protector",
+      "source_line": 1,
+      "source_field": "subclass",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/group",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Protector",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Protector",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Protector",
+      "source_line": 1,
+      "source_field": "secondarygroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/1/group",
+      "resolution": "S13: BR 'focus' and Fandom 'stance' disagree and no official change is recorded; tibiopedia.pl (https://tibiopedia.pl/spells/Protector) side with fandom over br (votes 2:1)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 26,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 42,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 25,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 41,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 18,
+      "source_field": "castSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/cast_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 34,
+      "source_field": "castSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/cast_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/spell/spell/execution/native_behavior",
+      "resolution": "Complete source-qualified native mechanic: stance_toggle; typed parameters validated by its closed family schema. Runtime/domain-owner admission remains separate."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/spell/spell/execution/native_behavior",
+      "resolution": "Complete source-qualified native mechanic: stance_toggle; typed parameters validated by its closed family schema. Runtime/domain-owner admission remains separate."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/protector.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "Native source qualification: {\"family_module\": \"native_actor_states\", \"observations\": {\"protector\": {\"conflicts\": [\"Crystal timed attribute/base-skill stances and gates differ from Canary persistent final-skill stances.\", \"Canary fixed Harmony8+4/8 differs from official level scaling; no Harmony formula/Ascetic change here.\", \"Official8944 party4/8/8/16 supersedes Canary3/6/6/12; Guiding Presence33% composition remains Wheel-owned and unqualified.\", \"Focus individual reset is spender-only; Canary helper resolves group subId as spellId and clears unresolved groups. Crystal clears all CDs; group scope needs owner qualification.\", \"Focus heal target uses Canary absolute HP selection; official monk-and-ally count and magic-level coefficients remain unqualified.\", \"Sustain passive35/70 follows Fandom/BR; Canary excludes ORIGIN_HARMONY.\", \"Sweeping Canary12inner+10outer differs from wiki areas and the candidate text11; caches endpoints, not a shared RNG draw. Outer has a separate draw.\", \"Canary standard knight/paladin stances require promotion; virtue script permits monk and exalted_monk, unlike wiki promotion-only wording. Admission needs reconciled vocation eligibility.\", \"Shield Canary first hand/player inclusion/one auto-attack differs from Crystal highest defense/no players/timed all-damage buff.\", \"Monk unarmed source0skill/7attack remains hypothesis; live admission requires owned equipment facts and owner-qualified unarmed policy.\"], \"contract\": \"OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1 A.2/C.4/C.5/D.4\", \"helpers\": {\"data/scripts/lib/register_spells.lua\": \"a0a6ff2bdfcd82bc4c36978fc57061eab9f1537e8ca966c51300471e3d3313ae\", \"src/creatures/combat/combat.cpp\": \"3dc306b44b9ea0c04a48cb6dcdca63b3982a4ee74484cb6a9da40265ecc7fc49\", \"src/creatures/players/player.cpp\": \"be92f3b797a5692843b1cce09250287ce52f91afbcfd5edaf9c6fddccfbb9232\", \"src/game/game.cpp\": \"b337fb7d7ce61d9ccde4f315cb696df0add9a0bf933c9b5c634b9ed79d7f01dd\", \"src/lua/functions/creatures/player/player_functions.cpp\": \"c662021b54f61a23e23f3623f1ee6c30133aa31a5b0fe4acf347327f183670ad\"}, \"runtime_ready\": false, \"source_files\": {\"canary\": {\"blob\": \"4823566597af625fd0bd6c46441c64a134e7e0da\", \"file\": \"data/scripts/spells/support/protector.lua\", \"sha256\": \"05d442dc129410586ef1604e31ddec89f37de156d8b0a7d7a3ea662802b157df\"}, \"crystal\": {\"blob\": \"8188e2f19f07b5e390d363f853bacbb013a759cf\", \"file\": \"data/scripts/spells/support/protector.lua\", \"sha256\": \"ffd89e7dec660b5a5289a89a8a4443be7d0ecc8661b0b99b1a5ebaa149be79e5\"}}, \"source_pins\": {\"canary\": \"99902524e052f37574194466c2949c576e4ab269\", \"crystal\": \"ff7ede593c69d4c658b382c97443e8155926924a\"}, \"source_selection\": \"S21 Canary mechanics; S27 authored candidate data\", \"stance_retention\": \"D145: logout and death retained; not reopened\"}}}"
+    }
+  ]
+}

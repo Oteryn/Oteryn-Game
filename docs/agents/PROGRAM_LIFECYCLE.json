@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "repository": "Oteryn/Oteryn-Game",
+  "authority_rule": "Files under docs/agents/programs/archive are historical provenance only. They never allocate work, grant write authority, or outrank live GitHub state, current task packets, accepted architecture/contracts, or current protected main.",
+  "programs": []
+}

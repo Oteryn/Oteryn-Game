@@ -1,0 +1,14 @@
+{
+  "definitions": [
+    {
+      "family": "Item",
+      "key": "oteryn:item.sudden_death_rune",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.blank_rune",
+      "revision": "definition-r1"
+    }
+  ]
+}

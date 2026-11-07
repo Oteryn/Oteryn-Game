@@ -1,0 +1,18 @@
+{
+  "native-price-repairs.json": {
+    "bytes": 1630263,
+    "sha256": "b54cc3542d029a3eeb9e93d7b2e8ecfcaa0bbeff477f23b4c02b2b4d96c65c5b"
+  },
+  "official-price-evidence.json": {
+    "bytes": 272775,
+    "sha256": "380b74673d380c22b10a792edad9af43415d89b2be68319c7e3a68186b67d433"
+  },
+  "price-resolutions.json": {
+    "bytes": 488176,
+    "sha256": "ad9065a8123011dd642d8de557e56a6d28bf8dc8299e30412309055640a3e4ca"
+  },
+  "xml-identity-witnesses.json": {
+    "bytes": 12660,
+    "sha256": "7185215eeb617d5823683c4fa2c3a19a509fb4c899fa5e9ad4badbdf278c8e11"
+  }
+}

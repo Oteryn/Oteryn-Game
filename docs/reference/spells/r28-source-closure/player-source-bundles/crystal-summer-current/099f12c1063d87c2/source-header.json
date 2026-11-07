@@ -1,0 +1,48 @@
+{
+  "spell": {
+    "base_power": 48,
+    "carrier": "instant",
+    "cooldown_ms": 8000,
+    "costs": {
+      "mana": 195
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "harmony_cost": true,
+    "name": "Sweeping Takedown",
+    "presentation": {
+      "source_cast_sound": {
+        "binding_status": "unbound",
+        "constant": "SOUND_EFFECT_TYPE_SPELL_SWEEPING_TAKEDOWN"
+      }
+    },
+    "reference_spell_id": 294,
+    "requirements": {
+      "level": 60,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "needs_direction": true
+    },
+    "words": "exori mas nia"
+  }
+}

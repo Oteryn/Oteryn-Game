@@ -1,0 +1,131 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/magic_shield",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Magic Shield",
+    "carrier": "instant",
+    "words": "utamo vita",
+    "reference_spell_id": 44,
+    "library_text": "The study of magic is a time-consuming activity that requires many years of dedicated research and academic work. For this reason those who have chosen the path of magic usually neglect physical exercise, training their minds rather than their bodies. As a result, spell casters are typically frail and cannot endure injuries the way skilled warriors can. However, sorcerers and druids reacted to this problem in their typical manner, looking for magical means to protect their weak bodies in battle. The Magic Shield spell was the result of this research. By casting this spell it is possible to deflect any physical or magical damage by using sheer will power. Unfortunately, however, the mental strain caused by the spell is tremendous, and any damage that is deflected by the magical shield is directly taken from the caster's mana reserve. For this reason the spell should be used wisely. While there is little point in using it against weak monsters, Magic Shield has saved the life of many a spell caster when battling strong monsters that otherwise would have killed him in a second.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 14,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 50,
+      "soul": 0
+    },
+    "cooldown_ms": 14000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_magic_shield"
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "mana_shield_capacity",
+        "parameters": {
+          "capacity": {
+            "op": "min",
+            "args": [
+              {
+                "var": "maximum_mana"
+              },
+              {
+                "op": "ceil",
+                "args": [
+                  {
+                    "op": "add",
+                    "args": [
+                      {
+                        "op": "add",
+                        "args": [
+                          {
+                            "op": "mul",
+                            "args": [
+                              {
+                                "const": "7"
+                              },
+                              {
+                                "var": "magic_level"
+                              }
+                            ]
+                          },
+                          {
+                            "op": "mul",
+                            "args": [
+                              {
+                                "const": "7.6"
+                              },
+                              {
+                                "var": "level"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "op": "max",
+                        "args": [
+                          {
+                            "const": "300"
+                          },
+                          {
+                            "op": "mul",
+                            "args": [
+                              {
+                                "const": "0.4"
+                              },
+                              {
+                                "var": "level"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "duration_ms": 180000,
+          "target": "caster",
+          "condition": "mana_shield",
+          "application_timing": "before_presentation_combat",
+          "recast": "replace_capacity_and_deadline",
+          "damage_destination": "mana_before_health_until_capacity_depleted",
+          "capacity_snapshot": "cast_start",
+          "effect_asset_binding": "appearance:effect/magic_blue",
+          "wheel_capacity_multiplier": false
+        }
+      }
+    }
+  }
+}

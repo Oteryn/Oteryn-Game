@@ -1,0 +1,516 @@
+{
+  "source_commit": "99902524e052f37574194466c2949c576e4ab269",
+  "rules": [
+    {
+      "source_name": "SLOT_GREEN_200",
+      "minimum_available_points": 375,
+      "neighbors": [
+        "SLOT_GREEN_TOP_150",
+        "SLOT_GREEN_BOTTOM_150"
+      ],
+      "source_line": 376,
+      "state_slot": 1
+    },
+    {
+      "source_name": "SLOT_GREEN_TOP_150",
+      "minimum_available_points": 225,
+      "neighbors": [
+        "SLOT_GREEN_TOP_100",
+        "SLOT_GREEN_MIDDLE_100",
+        "SLOT_GREEN_BOTTOM_150"
+      ],
+      "source_line": 387,
+      "state_slot": 2
+    },
+    {
+      "source_name": "SLOT_GREEN_TOP_100",
+      "minimum_available_points": 125,
+      "neighbors": [
+        "SLOT_RED_TOP_100",
+        "SLOT_GREEN_TOP_75",
+        "SLOT_GREEN_MIDDLE_100"
+      ],
+      "source_line": 415,
+      "state_slot": 3
+    },
+    {
+      "source_name": "SLOT_RED_TOP_100",
+      "minimum_available_points": 125,
+      "neighbors": [
+        "SLOT_RED_TOP_75",
+        "SLOT_GREEN_TOP_100",
+        "SLOT_RED_MIDDLE_100",
+        "SLOT_RED_TOP_150"
+      ],
+      "source_line": 547,
+      "state_slot": 4
+    },
+    {
+      "source_name": "SLOT_RED_TOP_150",
+      "minimum_available_points": 225,
+      "neighbors": [
+        "SLOT_RED_TOP_100",
+        "SLOT_RED_MIDDLE_100",
+        "SLOT_RED_BOTTOM_150"
+      ],
+      "source_line": 521,
+      "state_slot": 5
+    },
+    {
+      "source_name": "SLOT_RED_200",
+      "minimum_available_points": 375,
+      "neighbors": [
+        "SLOT_RED_TOP_150",
+        "SLOT_RED_BOTTOM_150"
+      ],
+      "source_line": 511,
+      "state_slot": 6
+    },
+    {
+      "source_name": "SLOT_GREEN_BOTTOM_150",
+      "minimum_available_points": 225,
+      "neighbors": [
+        "SLOT_GREEN_MIDDLE_100",
+        "SLOT_GREEN_BOTTOM_100",
+        "SLOT_GREEN_TOP_150"
+      ],
+      "source_line": 401,
+      "state_slot": 7
+    },
+    {
+      "source_name": "SLOT_GREEN_MIDDLE_100",
+      "minimum_available_points": 125,
+      "neighbors": [
+        "SLOT_GREEN_TOP_100",
+        "SLOT_GREEN_TOP_75",
+        "SLOT_GREEN_BOTTOM_75",
+        "SLOT_GREEN_BOTTOM_100"
+      ],
+      "source_line": 432,
+      "state_slot": 8
+    },
+    {
+      "source_name": "SLOT_GREEN_TOP_75",
+      "minimum_available_points": 50,
+      "neighbors": [
+        "SLOT_GREEN_50",
+        "SLOT_RED_TOP_75",
+        "SLOT_GREEN_BOTTOM_75",
+        "SLOT_GREEN_MIDDLE_100",
+        "SLOT_GREEN_TOP_100"
+      ],
+      "source_line": 466,
+      "state_slot": 9
+    },
+    {
+      "source_name": "SLOT_RED_TOP_75",
+      "minimum_available_points": 50,
+      "neighbors": [
+        "SLOT_RED_50",
+        "SLOT_GREEN_TOP_75",
+        "SLOT_RED_TOP_100",
+        "SLOT_RED_MIDDLE_100",
+        "SLOT_RED_BOTTOM_75"
+      ],
+      "source_line": 595,
+      "state_slot": 10
+    },
+    {
+      "source_name": "SLOT_RED_MIDDLE_100",
+      "minimum_available_points": 125,
+      "neighbors": [
+        "SLOT_RED_TOP_75",
+        "SLOT_RED_BOTTOM_75",
+        "SLOT_RED_BOTTOM_100",
+        "SLOT_RED_TOP_100"
+      ],
+      "source_line": 563,
+      "state_slot": 11
+    },
+    {
+      "source_name": "SLOT_RED_BOTTOM_150",
+      "minimum_available_points": 225,
+      "neighbors": [
+        "SLOT_RED_MIDDLE_100",
+        "SLOT_RED_BOTTOM_100",
+        "SLOT_RED_TOP_150"
+      ],
+      "source_line": 534,
+      "state_slot": 12
+    },
+    {
+      "source_name": "SLOT_GREEN_BOTTOM_100",
+      "minimum_available_points": 125,
+      "neighbors": [
+        "SLOT_GREEN_MIDDLE_100",
+        "SLOT_GREEN_BOTTOM_75",
+        "SLOT_BLUE_TOP_100",
+        "SLOT_GREEN_BOTTOM_150"
+      ],
+      "source_line": 449,
+      "state_slot": 13
+    },
+    {
+      "source_name": "SLOT_GREEN_BOTTOM_75",
+      "minimum_available_points": 50,
+      "neighbors": [
+        "SLOT_GREEN_50",
+        "SLOT_BLUE_TOP_75",
+        "SLOT_GREEN_MIDDLE_100",
+        "SLOT_GREEN_BOTTOM_100",
+        "SLOT_GREEN_TOP_75"
+      ],
+      "source_line": 486,
+      "state_slot": 14
+    },
+    {
+      "source_name": "SLOT_GREEN_50",
+      "minimum_available_points": 0,
+      "neighbors": [],
+      "source_line": 506,
+      "state_slot": 15
+    },
+    {
+      "source_name": "SLOT_RED_50",
+      "minimum_available_points": 0,
+      "neighbors": [],
+      "source_line": 633,
+      "state_slot": 16
+    },
+    {
+      "source_name": "SLOT_RED_BOTTOM_75",
+      "minimum_available_points": 50,
+      "neighbors": [
+        "SLOT_RED_50",
+        "SLOT_PURPLE_TOP_75",
+        "SLOT_RED_BOTTOM_100",
+        "SLOT_RED_MIDDLE_100",
+        "SLOT_RED_TOP_75"
+      ],
+      "source_line": 614,
+      "state_slot": 17
+    },
+    {
+      "source_name": "SLOT_RED_BOTTOM_100",
+      "minimum_available_points": 125,
+      "neighbors": [
+        "SLOT_RED_BOTTOM_75",
+        "SLOT_PURPLE_TOP_100",
+        "SLOT_RED_MIDDLE_100",
+        "SLOT_RED_BOTTOM_150"
+      ],
+      "source_line": 579,
+      "state_slot": 18
+    },
+    {
+      "source_name": "SLOT_BLUE_TOP_100",
+      "minimum_available_points": 125,
+      "neighbors": [
+        "SLOT_BLUE_TOP_75",
+        "SLOT_GREEN_BOTTOM_100",
+        "SLOT_BLUE_MIDDLE_100",
+        "SLOT_BLUE_TOP_150"
+      ],
+      "source_line": 801,
+      "state_slot": 19
+    },
+    {
+      "source_name": "SLOT_BLUE_TOP_75",
+      "minimum_available_points": 50,
+      "neighbors": [
+        "SLOT_BLUE_50",
+        "SLOT_GREEN_BOTTOM_75",
+        "SLOT_BLUE_BOTTOM_75",
+        "SLOT_BLUE_MIDDLE_100",
+        "SLOT_BLUE_TOP_100"
+      ],
+      "source_line": 849,
+      "state_slot": 20
+    },
+    {
+      "source_name": "SLOT_BLUE_50",
+      "minimum_available_points": 0,
+      "neighbors": [],
+      "source_line": 887,
+      "state_slot": 21
+    },
+    {
+      "source_name": "SLOT_PURPLE_50",
+      "minimum_available_points": 0,
+      "neighbors": [],
+      "source_line": 760,
+      "state_slot": 22
+    },
+    {
+      "source_name": "SLOT_PURPLE_TOP_75",
+      "minimum_available_points": 50,
+      "neighbors": [
+        "SLOT_PURPLE_50",
+        "SLOT_RED_BOTTOM_75",
+        "SLOT_PURPLE_BOTTOM_75",
+        "SLOT_PURPLE_MIDDLE_100",
+        "SLOT_PURPLE_TOP_100"
+      ],
+      "source_line": 722,
+      "state_slot": 23
+    },
+    {
+      "source_name": "SLOT_PURPLE_TOP_100",
+      "minimum_available_points": 125,
+      "neighbors": [
+        "SLOT_PURPLE_TOP_75",
+        "SLOT_RED_BOTTOM_100",
+        "SLOT_PURPLE_MIDDLE_100",
+        "SLOT_PURPLE_TOP_150"
+      ],
+      "source_line": 674,
+      "state_slot": 24
+    },
+    {
+      "source_name": "SLOT_BLUE_TOP_150",
+      "minimum_available_points": 225,
+      "neighbors": [
+        "SLOT_BLUE_MIDDLE_100",
+        "SLOT_BLUE_TOP_100",
+        "SLOT_BLUE_BOTTOM_150"
+      ],
+      "source_line": 775,
+      "state_slot": 25
+    },
+    {
+      "source_name": "SLOT_BLUE_MIDDLE_100",
+      "minimum_available_points": 125,
+      "neighbors": [
+        "SLOT_BLUE_TOP_75",
+        "SLOT_BLUE_BOTTOM_75",
+        "SLOT_BLUE_BOTTOM_100",
+        "SLOT_BLUE_TOP_100"
+      ],
+      "source_line": 817,
+      "state_slot": 26
+    },
+    {
+      "source_name": "SLOT_BLUE_BOTTOM_75",
+      "minimum_available_points": 50,
+      "neighbors": [
+        "SLOT_BLUE_50",
+        "SLOT_PURPLE_BOTTOM_75",
+        "SLOT_BLUE_TOP_75",
+        "SLOT_BLUE_MIDDLE_100",
+        "SLOT_BLUE_BOTTOM_100"
+      ],
+      "source_line": 868,
+      "state_slot": 27
+    },
+    {
+      "source_name": "SLOT_PURPLE_BOTTOM_75",
+      "minimum_available_points": 50,
+      "neighbors": [
+        "SLOT_PURPLE_50",
+        "SLOT_BLUE_BOTTOM_75",
+        "SLOT_PURPLE_TOP_75",
+        "SLOT_PURPLE_MIDDLE_100",
+        "SLOT_PURPLE_BOTTOM_100"
+      ],
+      "source_line": 741,
+      "state_slot": 28
+    },
+    {
+      "source_name": "SLOT_PURPLE_MIDDLE_100",
+      "minimum_available_points": 125,
+      "neighbors": [
+        "SLOT_PURPLE_TOP_75",
+        "SLOT_PURPLE_BOTTOM_75",
+        "SLOT_PURPLE_BOTTOM_100",
+        "SLOT_PURPLE_TOP_100"
+      ],
+      "source_line": 690,
+      "state_slot": 29
+    },
+    {
+      "source_name": "SLOT_PURPLE_TOP_150",
+      "minimum_available_points": 225,
+      "neighbors": [
+        "SLOT_PURPLE_MIDDLE_100",
+        "SLOT_PURPLE_TOP_100",
+        "SLOT_PURPLE_BOTTOM_150"
+      ],
+      "source_line": 648,
+      "state_slot": 30
+    },
+    {
+      "source_name": "SLOT_BLUE_200",
+      "minimum_available_points": 375,
+      "neighbors": [
+        "SLOT_BLUE_TOP_150",
+        "SLOT_BLUE_BOTTOM_150"
+      ],
+      "source_line": 765,
+      "state_slot": 31
+    },
+    {
+      "source_name": "SLOT_BLUE_BOTTOM_150",
+      "minimum_available_points": 225,
+      "neighbors": [
+        "SLOT_BLUE_MIDDLE_100",
+        "SLOT_BLUE_BOTTOM_100",
+        "SLOT_BLUE_TOP_150"
+      ],
+      "source_line": 788,
+      "state_slot": 32
+    },
+    {
+      "source_name": "SLOT_BLUE_BOTTOM_100",
+      "minimum_available_points": 125,
+      "neighbors": [
+        "SLOT_BLUE_BOTTOM_75",
+        "SLOT_PURPLE_BOTTOM_100",
+        "SLOT_BLUE_MIDDLE_100",
+        "SLOT_BLUE_BOTTOM_150"
+      ],
+      "source_line": 833,
+      "state_slot": 33
+    },
+    {
+      "source_name": "SLOT_PURPLE_BOTTOM_100",
+      "minimum_available_points": 125,
+      "neighbors": [
+        "SLOT_PURPLE_BOTTOM_75",
+        "SLOT_BLUE_BOTTOM_100",
+        "SLOT_PURPLE_MIDDLE_100",
+        "SLOT_PURPLE_BOTTOM_150"
+      ],
+      "source_line": 706,
+      "state_slot": 34
+    },
+    {
+      "source_name": "SLOT_PURPLE_BOTTOM_150",
+      "minimum_available_points": 225,
+      "neighbors": [
+        "SLOT_PURPLE_MIDDLE_100",
+        "SLOT_PURPLE_BOTTOM_100",
+        "SLOT_PURPLE_TOP_150"
+      ],
+      "source_line": 661,
+      "state_slot": 35
+    },
+    {
+      "source_name": "SLOT_PURPLE_200",
+      "minimum_available_points": 375,
+      "neighbors": [
+        "SLOT_PURPLE_TOP_150",
+        "SLOT_PURPLE_BOTTOM_150"
+      ],
+      "source_line": 638,
+      "state_slot": 36
+    }
+  ],
+  "directed_asymmetries": [
+    [
+      "SLOT_GREEN_200",
+      "SLOT_GREEN_TOP_150"
+    ],
+    [
+      "SLOT_GREEN_200",
+      "SLOT_GREEN_BOTTOM_150"
+    ],
+    [
+      "SLOT_GREEN_TOP_150",
+      "SLOT_GREEN_TOP_100"
+    ],
+    [
+      "SLOT_GREEN_TOP_150",
+      "SLOT_GREEN_MIDDLE_100"
+    ],
+    [
+      "SLOT_GREEN_BOTTOM_150",
+      "SLOT_GREEN_MIDDLE_100"
+    ],
+    [
+      "SLOT_GREEN_TOP_75",
+      "SLOT_GREEN_50"
+    ],
+    [
+      "SLOT_GREEN_BOTTOM_75",
+      "SLOT_GREEN_50"
+    ],
+    [
+      "SLOT_RED_200",
+      "SLOT_RED_TOP_150"
+    ],
+    [
+      "SLOT_RED_200",
+      "SLOT_RED_BOTTOM_150"
+    ],
+    [
+      "SLOT_RED_TOP_150",
+      "SLOT_RED_MIDDLE_100"
+    ],
+    [
+      "SLOT_RED_BOTTOM_150",
+      "SLOT_RED_MIDDLE_100"
+    ],
+    [
+      "SLOT_RED_TOP_75",
+      "SLOT_RED_50"
+    ],
+    [
+      "SLOT_RED_BOTTOM_75",
+      "SLOT_RED_50"
+    ],
+    [
+      "SLOT_PURPLE_200",
+      "SLOT_PURPLE_TOP_150"
+    ],
+    [
+      "SLOT_PURPLE_200",
+      "SLOT_PURPLE_BOTTOM_150"
+    ],
+    [
+      "SLOT_PURPLE_TOP_150",
+      "SLOT_PURPLE_MIDDLE_100"
+    ],
+    [
+      "SLOT_PURPLE_BOTTOM_150",
+      "SLOT_PURPLE_MIDDLE_100"
+    ],
+    [
+      "SLOT_PURPLE_TOP_75",
+      "SLOT_PURPLE_50"
+    ],
+    [
+      "SLOT_PURPLE_BOTTOM_75",
+      "SLOT_PURPLE_50"
+    ],
+    [
+      "SLOT_BLUE_200",
+      "SLOT_BLUE_TOP_150"
+    ],
+    [
+      "SLOT_BLUE_200",
+      "SLOT_BLUE_BOTTOM_150"
+    ],
+    [
+      "SLOT_BLUE_TOP_150",
+      "SLOT_BLUE_MIDDLE_100"
+    ],
+    [
+      "SLOT_BLUE_BOTTOM_150",
+      "SLOT_BLUE_MIDDLE_100"
+    ],
+    [
+      "SLOT_BLUE_TOP_75",
+      "SLOT_BLUE_50"
+    ],
+    [
+      "SLOT_BLUE_BOTTOM_75",
+      "SLOT_BLUE_50"
+    ]
+  ],
+  "dedication_mitigation": {
+    "percent_per_point": 0.075,
+    "source_file": "src/io/io_wheel.cpp",
+    "source_line": 19,
+    "corroborating_crystal_commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  }
+}

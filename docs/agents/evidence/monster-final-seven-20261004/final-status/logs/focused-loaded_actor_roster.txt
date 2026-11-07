@@ -1,0 +1,5 @@
+Original log SHA256: 177103df72d6c80dd084f60557a647562aae48cde191579532901838c08663ea
+
+running 1 test
+test monster_combat_lane::tests::loaded_actor_roster_drives_real_creature_dot_owner_and_unknown_map_refuses_without_cursor_loss ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2366 filtered out; finished in 9.42s

@@ -1,0 +1,24 @@
+{
+  "id": "VIP1-RL-03",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md",
+  "resource": "Entry description",
+  "unit": "characters",
+  "hard_maximum": 128,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 128
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "UTF-8 at most 512 bytes, trimmed, no controls; icon 0\u201310; up to 8 distinct group numbers.",
+  "client_visible": true,
+  "boundary_tests": [
+    "vip_postgres_real_wire_consent_replay_restart_and_fences",
+    "vip_codec_bounds_and_strict_decoding"
+  ],
+  "consumers": [
+    "apps/game-server/migrations/0163_vip.sql",
+    "crates/gameplay/domain/src/domain/vip.rs",
+    "crates/protocol-oteryn/src/vip.rs"
+  ],
+  "notes": "UTF-8 at most 512 bytes, trimmed, no controls; icon 0\u201310; up to 8 distinct group numbers."
+}

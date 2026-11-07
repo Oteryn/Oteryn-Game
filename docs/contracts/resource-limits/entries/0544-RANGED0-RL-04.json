@@ -1,0 +1,23 @@
+{
+  "id": "RANGED0-RL-04",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md",
+  "resource": "path-search expansions per chase search",
+  "unit": "expansions",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 1024
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Runtime-only and bounded before retention: the 1,025th expansion fails the search, which starts the RANGED0-RL-07 wait.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=1024: apps/game-server/src/movement/path_search.rs a_corridor_route_needing_the_full_work_bound_is_found_and_one_more_fails (a route needing 1,024 expansions is found)",
+    "max+1=1025: the same test fails a route needing 1,025 expansions"
+  ],
+  "consumers": [
+    "apps/game-server/src/movement/path_search.rs PATH_SEARCH_WORK (shared with AI01-PATH-SEARCH-WORK)",
+    "CHASE-1 player chase (combat_attack::chase ChaseState::decide)"
+  ],
+  "notes": "RANGED-0 \u00a78: the same bound as AI01-PATH-SEARCH-WORK (CREATURE-MOVE-1 \u00a75.3); the shared search takes one cap. Registered by LOOP-COMBAT-MODES-1."
+}

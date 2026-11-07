@@ -1,0 +1,16 @@
+{
+  "id": 153,
+  "name": "DEPOT_SEARCH_V1",
+  "owner_decision": "DEPOT-SEARCH-1; Crystal re-audit E08",
+  "owner": "Character depot, Supply Stash and CharacterInbox",
+  "requires": [
+    37,
+    62
+  ],
+  "command_types": [
+    182
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES: current admitted session, native item content and a reachable authored depot are required."
+}

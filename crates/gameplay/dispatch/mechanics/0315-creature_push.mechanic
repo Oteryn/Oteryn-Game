@@ -1,0 +1,7 @@
+name=creature_push
+commands=98
+transport=creature_push
+composed=creature_push
+authority=creature_push
+[route]
+creature_push::route(authority, session, command).await?

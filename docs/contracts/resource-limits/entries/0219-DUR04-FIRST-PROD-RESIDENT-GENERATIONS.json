@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-FIRST-PROD-RESIDENT-GENERATIONS",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+  "resource": "Resident content generations in the content catalog, active plus staged",
+  "unit": "generations",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 2
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "At most one active and one staged generation may retain artifact/runtime state; no third generation is cached.",
+  "client_visible": false,
+  "boundary_tests": [
+    "active+staged=2 accepted",
+    "third resident generation rejected",
+    "failed candidate is discarded without changing active"
+  ]
+}

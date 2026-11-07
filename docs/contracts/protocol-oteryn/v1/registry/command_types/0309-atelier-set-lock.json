@@ -1,0 +1,10 @@
+{
+  "id": 309,
+  "name": "ATELIER_SET_LOCK",
+  "owner_decision": "ATELIER2",
+  "capability": 148,
+  "payload_schema": "crates/protocol-oteryn/src/atelier.rs#SetLockRequest",
+  "result_schema": "crates/protocol-oteryn/src/atelier.rs#AtelierReply",
+  "max_payload_bytes": 64,
+  "max_result_payload_bytes": 16384
+}

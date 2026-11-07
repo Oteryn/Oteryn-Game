@@ -1,0 +1,215 @@
+{
+  "classification": "IMPORT_ONLY_NOT_RUNTIME_ADMITTED",
+  "before": {
+    "candidate_groups": 54680,
+    "candidate_points": 87815,
+    "held_groups": 33,
+    "held_points": 446,
+    "raw_groups": 54713,
+    "raw_points": 88261
+  },
+  "after": {
+    "raw_groups": 54713,
+    "raw_points": 88261,
+    "candidate_groups": 54688,
+    "candidate_points": 87844,
+    "held_groups": 25,
+    "held_points": 417
+  },
+  "unchanged_existing_candidate_groups": 54680,
+  "unchanged_retained_held_groups": 25,
+  "resolved_groups": [
+    "oteryn:spawn.x32611_y32427_z7",
+    "oteryn:spawn.x32670_y32539_z11",
+    "oteryn:spawn.x32670_y32547_z11",
+    "oteryn:spawn.x32848_y31501_z15",
+    "oteryn:spawn.x32909_y31403_z15",
+    "oteryn:spawn.x32916_y31427_z7",
+    "oteryn:spawn.x32928_y31418_z5",
+    "oteryn:spawn.x33492_y32732_z7"
+  ],
+  "resolved_points": 29,
+  "changed": [
+    "spawns/held-groups.json",
+    "graphics/existing-presentation-joins.json",
+    "spawns/candidate/content/world/spawns/spawns-02000-03999.json",
+    "spawns/candidate/content/world/spawns/spawns-04000-05999.json",
+    "spawns/candidate/content/world/spawns/spawns-06000-07999.json",
+    "spawns/candidate/content/world/spawns/spawns-08000-09999.json",
+    "spawns/candidate/content/world/spawns/spawns-10000-11999.json",
+    "spawns/candidate/content/world/spawns/spawns-12000-13999.json",
+    "spawns/candidate/content/world/spawns/spawns-14000-15999.json",
+    "spawns/candidate/content/world/spawns/spawns-16000-17999.json",
+    "spawns/candidate/content/world/spawns/spawns-18000-19999.json",
+    "spawns/candidate/content/world/spawns/spawns-20000-21999.json",
+    "spawns/candidate/content/world/spawns/spawns-22000-23999.json",
+    "spawns/candidate/content/world/spawns/spawns-24000-25999.json",
+    "spawns/candidate/content/world/spawns/spawns-26000-27999.json",
+    "spawns/candidate/content/world/spawns/spawns-28000-29999.json",
+    "spawns/candidate/content/world/spawns/spawns-30000-31999.json",
+    "spawns/candidate/content/world/spawns/spawns-32000-33999.json",
+    "spawns/candidate/content/world/spawns/spawns-34000-35999.json",
+    "spawns/candidate/content/world/spawns/spawns-36000-37999.json",
+    "spawns/candidate/content/world/spawns/spawns-38000-39999.json",
+    "spawns/candidate/content/world/spawns/spawns-40000-41999.json",
+    "spawns/candidate/content/world/spawns/spawns-42000-43999.json",
+    "spawns/candidate/content/world/spawns/spawns-44000-45999.json",
+    "spawns/candidate/content/world/spawns/spawns-46000-47999.json",
+    "spawns/candidate/content/world/spawns/spawns-48000-49999.json",
+    "spawns/candidate/content/world/spawns/spawns-50000-51999.json",
+    "spawns/candidate/content/world/spawns/spawns-52000-53999.json",
+    "spawns/candidate/content/world/spawns/spawns-54000-54687.json",
+    "spawns/candidate/content/world/spawns/index.json",
+    "report.json",
+    "manifest.json",
+    "spawns/candidate/content/world/spawns/spawns-54000-54679.json"
+  ],
+  "source XML and semantics": "unchanged; existing canonical Creature identities resolve eight previously held groups; no runtime admission",
+  "preserved_previous_packet": "/tmp/monster-final-seven/repair-20261005/main-map-candidate-before-successor",
+  "outputs": [
+    {
+      "path": "assets/catalog.json",
+      "sha256": "b9da742683e3b80f9f4f537d5800b9493439c5ce585d0e6f5be368f77d16345d"
+    },
+    {
+      "path": "assets/files.json",
+      "sha256": "e06f80fd5067a9bac5a0d834b9581ad5987e9c563387760495633a1aa2aec3f3"
+    },
+    {
+      "path": "graphics/map-appearance-links.json",
+      "sha256": "c67ad7b3363d84e193fd80bbcc1a1344aeee950acf2b7b1793db468812565036"
+    },
+    {
+      "path": "spawns/held-groups.json",
+      "sha256": "8a666c3d409edda5ac5996d6dec64cce24b30d5f43c75aa9a1175f1d07297c57"
+    },
+    {
+      "path": "graphics/existing-presentation-joins.json",
+      "sha256": "14b82ad7a4227f5783fef4c6002596e6222ffa213086e8fa86425e0ba91703ea"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-00000-01999.json",
+      "sha256": "df45372774ec5214bb9cb85e55f811dd9347786e6f1106222f21b7d5f34064d5"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-02000-03999.json",
+      "sha256": "49fa16b540326c5b698321cf631992498aa9c3322006b28be3df02d18e1493cb"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-04000-05999.json",
+      "sha256": "0bef63291bbdf8b975d1dad7b9bdf291ced4ea49c0bedb37d00af21fcb2c4948"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-06000-07999.json",
+      "sha256": "17e1665ae9eb475e879c89839b7dd9c4b3885ad3d40a9d41c5e10748353bbc94"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-08000-09999.json",
+      "sha256": "bf90bc7f291cbf36fcec532c6f009dd2bbcdca6d995c7422f27214855d811902"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-10000-11999.json",
+      "sha256": "afe0e14a5970e8b7a21a06cf2859520af1fbf72083852cf5cac138b9d2724762"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-12000-13999.json",
+      "sha256": "152d8239e788384ce80a07a61c38f29966ede66764758d3bb79b4f2d62fa5a75"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-14000-15999.json",
+      "sha256": "d8044ed909f734b6e0502da42a74d4cc40c4e4c04cee381a65f825f7a6ce1411"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-16000-17999.json",
+      "sha256": "7a52a578684999725d2f0cb4523a4d299d2501320d9d7ed0562c25c320492ee3"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-18000-19999.json",
+      "sha256": "4667d12bbe95927e3b81bb67c5d0903f33e6866325bdfc24c43c0868cdcf4e42"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-20000-21999.json",
+      "sha256": "86cdd9e77648931d394b48262aba92dc4bbb7fd1ad41cb60b19e25fc426d2225"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-22000-23999.json",
+      "sha256": "00819b8517fc6a3cd2ceba36702d9961288f2d6f3c9a2ed0aeaccf5d925aecd9"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-24000-25999.json",
+      "sha256": "d4308ade48bc559bca7169c61317ec4b51fbfbe6f808d55dce0afa1764090a5b"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-26000-27999.json",
+      "sha256": "7b09f629f4b99067886447e220c54693496e17d51e076fe225691821d2cd7b73"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-28000-29999.json",
+      "sha256": "d2a68105a416cbc6aebae449c161d056506a9f22e7d8377924117906da0a453e"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-30000-31999.json",
+      "sha256": "ff293919d01a4bd641db18589f7f9cc244201b47aa11a4e3ececcbb642fbe54b"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-32000-33999.json",
+      "sha256": "3b8e589ad3cb6840653f9b03c44ea808dc93b052252bdb92f3393e399e943de7"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-34000-35999.json",
+      "sha256": "313d78a4adcd7e2bd03304779d0bd81fb9c581897f3733161067fae675c2d4a2"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-36000-37999.json",
+      "sha256": "193f399b49e22d363ea3776317d5ffde3abb608293bc686dc62239f0b825deb6"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-38000-39999.json",
+      "sha256": "2198f982116d50021006aa9e6e8178c8f73450ab914f86e5c08543cb0091561b"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-40000-41999.json",
+      "sha256": "e30d50b14b9368c81b3009e6347dbfa2248ecd9fe75c0410c3adaf3b0b544db7"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-42000-43999.json",
+      "sha256": "8c62f0280ff59027570d55eb47437f3cfbf6d91eb5d68ca16fe7c682b2bcc149"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-44000-45999.json",
+      "sha256": "d09dfc67ab79edd7c74d4c71aa9546096d24400b9a6431019938920cb4d2817d"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-46000-47999.json",
+      "sha256": "1e4988a0c3a50d60253f1b1662f0f4dfec82033ad9ca8c4f8ff3775c0647ee37"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-48000-49999.json",
+      "sha256": "9ccdee5a96eda37ad47a6e589c690a3c1c1f7c7b6adaa5a057acfcd857f175e3"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-50000-51999.json",
+      "sha256": "bca14cf51ec8b7a38773764337adce75828953b980c02647a78a660094d76c3e"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-52000-53999.json",
+      "sha256": "83da697613f66b9db006cccf06691d1c0ddce53da2c43dc889675855460fbd82"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/spawns-54000-54687.json",
+      "sha256": "6ca268711d6c412b27e73f0235f5ef3c0f793c2cc0e7240140d08a147f67ca59"
+    },
+    {
+      "path": "spawns/candidate/content/world/spawns/index.json",
+      "sha256": "093175a910a63debc5d3194717089b175b1c0481dab8fb7068d6d60c311df7e6"
+    },
+    {
+      "path": "report.json",
+      "sha256": "51ad3d1530634e372e0dc06a37359ce5c95ac261dc8af5ec19f368c2ee3fccec"
+    },
+    {
+      "path": "manifest.json",
+      "sha256": "0597bbad448aaef03b358ff83992e001def83b5158dbe8a37bf7be52770cce23"
+    }
+  ]
+}

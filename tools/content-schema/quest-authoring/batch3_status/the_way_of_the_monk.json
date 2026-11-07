@@ -1,0 +1,1183 @@
+{
+  "schema": "OTERYN_QUESTS3_IMPLEMENTATION_STATUS/v1",
+  "quest": "the_way_of_the_monk",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "inventory_origin": {
+    "document": "docs/agents/evidence/OTV2-20261102-quests-3-20261102.md",
+    "commit": "f2b37d4c6b313952750189d75e6d19d99fde8641",
+    "identity_fields": [
+      "quest",
+      "step",
+      "donor"
+    ]
+  },
+  "normalization_provenance": {
+    "worker_status": "group-a/implementation-status.json",
+    "sha256": "749700c6749aba9456736bde7c52fc9688d72fd91d7efad022d9c2a9725e64bd"
+  },
+  "classification": "DERIVED",
+  "authority": "PR comments govern scope; this file records evidence and does not authorize a runtime adapter.",
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+  ],
+  "row_count": 26,
+  "import_counts": {
+    "AUTO": 15,
+    "RĘCZNIE": 11
+  },
+  "content_counts": {
+    "npc_rules_source_only": 30,
+    "world_callbacks_enabled": 0,
+    "world_callbacks_held": 4,
+    "death_rules_source_only": 0
+  },
+  "content_inputs": [
+    {
+      "path": "content/dialogues/quest-rules/quest-batch3-a-the_way_of_the_monk.json",
+      "sha256": "96fcca86fb9e6c018ec4db0e8c65895d16649b8f024001bebc34c5831c8a0916",
+      "count": 30,
+      "category": "npc_rules_source_only"
+    },
+    {
+      "path": "content/quests/world-callbacks/batch3-a-the_way_of_the_monk.json",
+      "sha256": "ab21834cd19b94b8cb19947520ebafb8e2480290d738803a72bcc90dd35fdd8c",
+      "count": 0,
+      "category": "world_callbacks_enabled"
+    },
+    {
+      "path": "content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json",
+      "sha256": "5bb3f83642b9a96e49642241330fc589abc13c15fdba35ba8c60edd898948892",
+      "count": 4,
+      "category": "world_callbacks_held"
+    }
+  ],
+  "final_head_validation": {
+    "status": "EXTERNAL_PR_EVIDENCE",
+    "tested_sha": null,
+    "evidence_url": "https://github.com/Oteryn/Oteryn-Game/pull/2843",
+    "note": "Exact frozen publication SHA and its gate results are recorded in PR Validation; this source document does not attest a final-head PASS."
+  },
+  "rows": [
+    {
+      "id": "82a16a0b53b2cf85975a8c5f45ab6a38fd065cedefecbad67ba7e0df3c7ac2a7",
+      "quest_row": 1,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Podróż Blue Valley (33605, 31468, 7)",
+        "pattern": "P30",
+        "trigger": "Use pola(33605, 31468, 7)",
+        "guard": "gracz; bez level/vocation/storage guard",
+        "effect": "teleport(32456, 32291, 7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:2"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "SOURCE_CALLBACK_USE_ORDINAL_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełne donorowe parametry, selektor, guardy i teksty zachowano wyłącznie w source oraz world-callbacks-held. Żaden zmieniony kontrakt ani sztuczny binding nie jest aktywowany.",
+      "left_out": "Brak: existing position-only Use selector accepts only ordinal0. The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized. ANSWER R-USE-ORDINAL=A potwierdza pozostawienie źródłowego Use w held; żadnego sztucznego bindingu ani wymogu kliknięcia podłoża. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+      ],
+      "implementation_paths": [
+        "tools/content-schema/quest-authoring/batch3_a/world/the_way_of_the_monk.json",
+        "content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:2",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:110-120",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:134"
+      ],
+      "evidence": {
+        "holds": [
+          {
+            "missing_fields": [
+              "existing position-only Use selector accepts only ordinal0"
+            ],
+            "sources": [
+              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:2",
+              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25"
+            ],
+            "proof": "The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized.",
+            "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434",
+            "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+          }
+        ],
+        "additional_questions": [],
+        "verification_evidence": [
+          "quest3-work/group-a/position-bindings.json"
+        ],
+        "callback_key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-2",
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "59ca9e97a5e227c80b1c2abb064138e55015404885bdb9ac6c66ac864dfe502d",
+      "quest_row": 2,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Podróż Blue Valley (33601, 31468, 7)",
+        "pattern": "P30",
+        "trigger": "Use pola(33601, 31468, 7)",
+        "guard": "gracz; bez level/vocation/storage guard",
+        "effect": "teleport(32456, 32291, 7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:3"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "SOURCE_CALLBACK_USE_ORDINAL_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełne donorowe parametry, selektor, guardy i teksty zachowano wyłącznie w source oraz world-callbacks-held. Żaden zmieniony kontrakt ani sztuczny binding nie jest aktywowany.",
+      "left_out": "Brak: existing position-only Use selector accepts only ordinal0. The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized. ANSWER R-USE-ORDINAL=A potwierdza pozostawienie źródłowego Use w held; żadnego sztucznego bindingu ani wymogu kliknięcia podłoża. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+      ],
+      "implementation_paths": [
+        "tools/content-schema/quest-authoring/batch3_a/world/the_way_of_the_monk.json",
+        "content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:110-120",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:134"
+      ],
+      "evidence": {
+        "holds": [
+          {
+            "missing_fields": [
+              "existing position-only Use selector accepts only ordinal0"
+            ],
+            "sources": [
+              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:3",
+              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25"
+            ],
+            "proof": "The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized.",
+            "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434",
+            "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+          }
+        ],
+        "additional_questions": [],
+        "verification_evidence": [
+          "quest3-work/group-a/position-bindings.json"
+        ],
+        "callback_key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-3",
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "1ae968d56cb049372b3560cb73641a29e4d6e502f276f2d9f3e9598b409fd9f5",
+      "quest_row": 3,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Podróż Blue Valley (32456, 32290, 7)",
+        "pattern": "P30",
+        "trigger": "Use pola(32456, 32290, 7)",
+        "guard": "gracz; bez level/vocation/storage guard",
+        "effect": "teleport(33614, 31494, 7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:4"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "SOURCE_CALLBACK_USE_ORDINAL_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełne donorowe parametry, selektor, guardy i teksty zachowano wyłącznie w source oraz world-callbacks-held. Żaden zmieniony kontrakt ani sztuczny binding nie jest aktywowany.",
+      "left_out": "Brak: existing position-only Use selector accepts only ordinal0. The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized. ANSWER R-USE-ORDINAL=A potwierdza pozostawienie źródłowego Use w held; żadnego sztucznego bindingu ani wymogu kliknięcia podłoża. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+      ],
+      "implementation_paths": [
+        "tools/content-schema/quest-authoring/batch3_a/world/the_way_of_the_monk.json",
+        "content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:4",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:110-120",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:134"
+      ],
+      "evidence": {
+        "holds": [
+          {
+            "missing_fields": [
+              "existing position-only Use selector accepts only ordinal0"
+            ],
+            "sources": [
+              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:4",
+              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25"
+            ],
+            "proof": "The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized.",
+            "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434",
+            "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+          }
+        ],
+        "additional_questions": [],
+        "verification_evidence": [
+          "quest3-work/group-a/position-bindings.json"
+        ],
+        "callback_key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-4",
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "572ac5532dab8ea06eaadc56cc59f3ba79ab8dd654f135cf9044c663be0b2023",
+      "quest_row": 4,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Podróż Blue Valley (32203, 32303, 6)",
+        "pattern": "P30",
+        "trigger": "Use pola(32203, 32303, 6)",
+        "guard": "gracz; bez level/vocation/storage guard",
+        "effect": "teleport(33614, 31494, 7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:5"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "SOURCE_CALLBACK_USE_ORDINAL_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełne donorowe parametry, selektor, guardy i teksty zachowano wyłącznie w source oraz world-callbacks-held. Żaden zmieniony kontrakt ani sztuczny binding nie jest aktywowany.",
+      "left_out": "Brak: existing position-only Use selector accepts only ordinal0. The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized. ANSWER R-USE-ORDINAL=A potwierdza pozostawienie źródłowego Use w held; żadnego sztucznego bindingu ani wymogu kliknięcia podłoża. Decyzja R-USE-ORDINAL: Brakuje dopasowania selektora pozycyjnego do rzeczywiście klikniętego obiektu ponad gruntem; obecny adapter wymaga ordinal==0. Dziewięć callbacków (Blue Valley 4, Cheesy exit 1, Stag 4) pozostaje held; owner użycia bez zmian.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+      ],
+      "implementation_paths": [
+        "tools/content-schema/quest-authoring/batch3_a/world/the_way_of_the_monk.json",
+        "content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:5",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:110-120",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_order_of_the_stag/isle_of_ada.lua:134"
+      ],
+      "evidence": {
+        "holds": [
+          {
+            "missing_fields": [
+              "existing position-only Use selector accepts only ordinal0"
+            ],
+            "sources": [
+              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:5",
+              "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_blue_valley_teleports.lua:15-25"
+            ],
+            "proof": "The clicked source item is above ground (bells49948 ordinal1/3; Rookgaard50310 ordinal2). Baseline matches rejects those items. No artificial itemid/UID or ground-only replacement is authorized.",
+            "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590420434",
+            "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+          }
+        ],
+        "additional_questions": [],
+        "verification_evidence": [
+          "quest3-work/group-a/position-bindings.json"
+        ],
+        "callback_key": "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-5",
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "092a8c94d97b7e17a7a5047802591ea69f17d3ca6bd1658c01cde2b0b1ef20a0",
+      "quest_row": 5,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Podpowiedź Dawnport",
+        "pattern": "P29/P09",
+        "trigger": "Use shrine aid7101..7104",
+        "guard": "questline<1; !gotIntroHint",
+        "effect": "gotIntroHint=true; komunikat; brak warunku profesji",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:25"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Nie dodano drugiego Dawnport shrine owner z grantami profesji/XP/appearance/promotion points ani nowych shared tracks; pełny source flow pozostaje poza kwalifikowanym mainland adapterem.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589101991"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:25"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "d5bba881fedb6776a4a0a48caaba13a58b8c0abe7f84a60040040b507ef1ed7a",
+      "quest_row": 6,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Dawnport firstShrine",
+        "pattern": "P29/P11",
+        "trigger": "Use aid7101",
+        "guard": "!questKV.firstShrine",
+        "effect": "flagaKV=true;legacyStorage=1;shrinesCount=max(0,count)+1;XP50;transform50244",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:11",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:31"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Nie dodano drugiego Dawnport shrine owner z grantami profesji/XP/appearance/promotion points ani nowych shared tracks; pełny source flow pozostaje poza kwalifikowanym mainland adapterem.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589101991"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:31"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "f7324283d4d0da688010db7f58e42e06bf49d63f83ef7f3ea7c8a75709b89466",
+      "quest_row": 7,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Dawnport secondShrine",
+        "pattern": "P29/P11",
+        "trigger": "Use aid7102",
+        "guard": "!questKV.secondShrine",
+        "effect": "flagaKV=true;legacyStorage=1;shrinesCount=max(0,count)+1;XP50;transform50244",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:12",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:31"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Nie dodano drugiego Dawnport shrine owner z grantami profesji/XP/appearance/promotion points ani nowych shared tracks; pełny source flow pozostaje poza kwalifikowanym mainland adapterem.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589101991"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:12",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:31"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "76fa5569bae317c119df4e0e3a6da0a10cf1d7a43472566901edf2a0f279633d",
+      "quest_row": 8,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Dawnport thirdShrine",
+        "pattern": "P29/P11",
+        "trigger": "Use aid7103",
+        "guard": "!questKV.thirdShrine",
+        "effect": "flagaKV=true;legacyStorage=1;shrinesCount=max(0,count)+1;XP50;transform50244",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:13",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:31"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Nie dodano drugiego Dawnport shrine owner z grantami profesji/XP/appearance/promotion points ani nowych shared tracks; pełny source flow pozostaje poza kwalifikowanym mainland adapterem.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589101991"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:13",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:31"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "5be7ceaac5267b9e9439a4567165b39f729203a80fa87c972d50674dffbd7fa8",
+      "quest_row": 9,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Dawnport fourthShrine",
+        "pattern": "P29/P11",
+        "trigger": "Use aid7104",
+        "guard": "!questKV.fourthShrine",
+        "effect": "flagaKV=true;legacyStorage=1;shrinesCount=max(0,count)+1;XP50;transform50244",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:14",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:31"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Nie dodano drugiego Dawnport shrine owner z grantami profesji/XP/appearance/promotion points ani nowych shared tracks; pełny source flow pozostaje poza kwalifikowanym mainland adapterem.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589101991"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:14",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_dawnport_shrines.lua:31"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "59a73d551fcf655b781875046d560c79038917d9f2b1f6029d739a625976425c",
+      "quest_row": 10,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Mainland shrine guidance",
+        "pattern": "P29/P11",
+        "trigger": "Use aid7105",
+        "guard": "questline>=2;level>=6;kolejność;nieodebrane;donor bezvocationguard",
+        "effect": "flagaKV+legacyStorage=1;item50267;XP300;count+1;50244;Eternity/count14→boolPointsWheel",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:9"
+        ],
+        "oteryn": "CZĘŚCIOWO — obecny native mainland caller wymaga questline3 i liczy10flag, przechowuje pending rewards; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/monk_shrines.rs:61",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący kwalifikowany przepływ10 mainland shrines, kolejność flag, threshold3, natywne nagrody i final-report zachowane bez modyfikacji stanów0.",
+      "left_out": "Pełny donorowy alternatywny counter/KV flow nie zastępuje istniejącego kwalifikowanego adaptera; decyzja zachowuje threshold3 i źródło Wheel/final-report.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589102867"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [
+        "content/quests/monk-pilgrimage.json",
+        "content/quests/world-callbacks.json",
+        "crates/gameplay/quests/src/quest/monk_shrines.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:9"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "39fe9a2d098c9e3be57e1d2c8d475501d7e9e0fe4e2b49cabdb0c8b4eadc5131",
+      "quest_row": 11,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Mainland shrine tranquility",
+        "pattern": "P29/P11",
+        "trigger": "Use aid7106",
+        "guard": "questline>=2;level>=20;kolejność;nieodebrane;donor bezvocationguard",
+        "effect": "flagaKV+legacyStorage=1;item50271;XP2500;count+1;50244;Eternity/count14→boolPointsWheel",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:10"
+        ],
+        "oteryn": "CZĘŚCIOWO — obecny native mainland caller wymaga questline3 i liczy10flag, przechowuje pending rewards; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/monk_shrines.rs:61",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący kwalifikowany przepływ10 mainland shrines, kolejność flag, threshold3, natywne nagrody i final-report zachowane bez modyfikacji stanów0.",
+      "left_out": "Pełny donorowy alternatywny counter/KV flow nie zastępuje istniejącego kwalifikowanego adaptera; decyzja zachowuje threshold3 i źródło Wheel/final-report.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589102867"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [
+        "content/quests/monk-pilgrimage.json",
+        "content/quests/world-callbacks.json",
+        "crates/gameplay/quests/src/quest/monk_shrines.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:10"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "3bccbc8abfa4e219a8902112b888503a14957a30d782252809ee5dbe2ef2c0df",
+      "quest_row": 12,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Mainland shrine respect",
+        "pattern": "P29/P11",
+        "trigger": "Use aid7107",
+        "guard": "questline>=2;level>=30;kolejność;nieodebrane;donor bezvocationguard",
+        "effect": "flagaKV+legacyStorage=1;spell Mystic Repulse;XP5000;count+1;50244;Eternity/count14→boolPointsWheel",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:11"
+        ],
+        "oteryn": "CZĘŚCIOWO — obecny native mainland caller wymaga questline3 i liczy10flag, przechowuje pending rewards; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/monk_shrines.rs:61",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący kwalifikowany przepływ10 mainland shrines, kolejność flag, threshold3, natywne nagrody i final-report zachowane bez modyfikacji stanów0.",
+      "left_out": "Pełny donorowy alternatywny counter/KV flow nie zastępuje istniejącego kwalifikowanego adaptera; decyzja zachowuje threshold3 i źródło Wheel/final-report.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589102867"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [
+        "content/quests/monk-pilgrimage.json",
+        "content/quests/world-callbacks.json",
+        "crates/gameplay/quests/src/quest/monk_shrines.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:11"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "9d3777b9a96a058c31e564865c7b6ae02afa7accd767ab29090ce42311d8a6f0",
+      "quest_row": 13,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Mainland shrine legacy",
+        "pattern": "P29/P11",
+        "trigger": "Use aid7108",
+        "guard": "questline>=2;level>=40;kolejność;nieodebrane;donor bezvocationguard",
+        "effect": "flagaKV+legacyStorage=1;item50269;XP10000;count+1;50244;Eternity/count14→boolPointsWheel",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:12"
+        ],
+        "oteryn": "CZĘŚCIOWO — obecny native mainland caller wymaga questline3 i liczy10flag, przechowuje pending rewards; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/monk_shrines.rs:61",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący kwalifikowany przepływ10 mainland shrines, kolejność flag, threshold3, natywne nagrody i final-report zachowane bez modyfikacji stanów0.",
+      "left_out": "Pełny donorowy alternatywny counter/KV flow nie zastępuje istniejącego kwalifikowanego adaptera; decyzja zachowuje threshold3 i źródło Wheel/final-report.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589102867"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [
+        "content/quests/monk-pilgrimage.json",
+        "content/quests/world-callbacks.json",
+        "crates/gameplay/quests/src/quest/monk_shrines.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:12"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "4e87e70e60da0be66ea2950e1c71e1c49a5dd5df2110f82c453026aff806628c",
+      "quest_row": 14,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Mainland shrine empathy",
+        "pattern": "P29/P11",
+        "trigger": "Use aid7109",
+        "guard": "questline>=2;level>=50;kolejność;nieodebrane;donor bezvocationguard",
+        "effect": "flagaKV+legacyStorage=1;item50273;XP15000;count+1;50244;Eternity/count14→boolPointsWheel",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:13"
+        ],
+        "oteryn": "CZĘŚCIOWO — obecny native mainland caller wymaga questline3 i liczy10flag, przechowuje pending rewards; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/monk_shrines.rs:61",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący kwalifikowany przepływ10 mainland shrines, kolejność flag, threshold3, natywne nagrody i final-report zachowane bez modyfikacji stanów0.",
+      "left_out": "Pełny donorowy alternatywny counter/KV flow nie zastępuje istniejącego kwalifikowanego adaptera; decyzja zachowuje threshold3 i źródło Wheel/final-report.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589102867"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [
+        "content/quests/monk-pilgrimage.json",
+        "content/quests/world-callbacks.json",
+        "crates/gameplay/quests/src/quest/monk_shrines.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:13"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "7f9ce3a66b7a59e142ea8f45a69160791bcef54a1ba39050b860f2aa3db19b15",
+      "quest_row": 15,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Mainland shrine harmony",
+        "pattern": "P29/P11",
+        "trigger": "Use aid7110",
+        "guard": "questline>=2;level>=70;kolejność;nieodebrane;donor bezvocationguard",
+        "effect": "flagaKV+legacyStorage=1;item50274;XP30000;count+1;50244;Eternity/count14→boolPointsWheel",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:14"
+        ],
+        "oteryn": "CZĘŚCIOWO — obecny native mainland caller wymaga questline3 i liczy10flag, przechowuje pending rewards; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/monk_shrines.rs:61",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący kwalifikowany przepływ10 mainland shrines, kolejność flag, threshold3, natywne nagrody i final-report zachowane bez modyfikacji stanów0.",
+      "left_out": "Pełny donorowy alternatywny counter/KV flow nie zastępuje istniejącego kwalifikowanego adaptera; decyzja zachowuje threshold3 i źródło Wheel/final-report.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589102867"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [
+        "content/quests/monk-pilgrimage.json",
+        "content/quests/world-callbacks.json",
+        "crates/gameplay/quests/src/quest/monk_shrines.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:14"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "ab8b33ed2faf2dd8006ae7ecd996f4c8d0dcd247c0385cf279177d03374840b9",
+      "quest_row": 16,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Mainland shrine power",
+        "pattern": "P29/P11",
+        "trigger": "Use aid7111",
+        "guard": "questline>=2;level>=100;kolejność;nieodebrane;donor bezvocationguard",
+        "effect": "flagaKV+legacyStorage=1;item50272;XP60000;count+1;50244;Eternity/count14→boolPointsWheel",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:15"
+        ],
+        "oteryn": "CZĘŚCIOWO — obecny native mainland caller wymaga questline3 i liczy10flag, przechowuje pending rewards; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/monk_shrines.rs:61",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący kwalifikowany przepływ10 mainland shrines, kolejność flag, threshold3, natywne nagrody i final-report zachowane bez modyfikacji stanów0.",
+      "left_out": "Pełny donorowy alternatywny counter/KV flow nie zastępuje istniejącego kwalifikowanego adaptera; decyzja zachowuje threshold3 i źródło Wheel/final-report.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589102867"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [
+        "content/quests/monk-pilgrimage.json",
+        "content/quests/world-callbacks.json",
+        "crates/gameplay/quests/src/quest/monk_shrines.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:15"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "021ff39a2d77aef084e6b8f73fa6519573dc361f10ce967b0b7d77f16f731e22",
+      "quest_row": 17,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Mainland shrine knowledge",
+        "pattern": "P29/P11",
+        "trigger": "Use aid7112",
+        "guard": "questline>=2;level>=110;kolejność;nieodebrane;donor bezvocationguard",
+        "effect": "flagaKV+legacyStorage=1;spell Forceful Uppercut;XP75000;count+1;50244;Eternity/count14→boolPointsWheel",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:16"
+        ],
+        "oteryn": "CZĘŚCIOWO — obecny native mainland caller wymaga questline3 i liczy10flag, przechowuje pending rewards; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/monk_shrines.rs:61",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący kwalifikowany przepływ10 mainland shrines, kolejność flag, threshold3, natywne nagrody i final-report zachowane bez modyfikacji stanów0.",
+      "left_out": "Pełny donorowy alternatywny counter/KV flow nie zastępuje istniejącego kwalifikowanego adaptera; decyzja zachowuje threshold3 i źródło Wheel/final-report.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589102867"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [
+        "content/quests/monk-pilgrimage.json",
+        "content/quests/world-callbacks.json",
+        "crates/gameplay/quests/src/quest/monk_shrines.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:16"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "92bc2455685ee1d1f6964a724c8a09191ab6ec0c534aa1e2f79d2fc80fdb3321",
+      "quest_row": 18,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Mainland shrine serenity",
+        "pattern": "P29/P11",
+        "trigger": "Use aid7113",
+        "guard": "questline>=2;level>=150;kolejność;nieodebrane;donor bezvocationguard",
+        "effect": "flagaKV+legacyStorage=1;item50268;XP150000;count+1;50244;Eternity/count14→boolPointsWheel",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:17"
+        ],
+        "oteryn": "CZĘŚCIOWO — obecny native mainland caller wymaga questline3 i liczy10flag, przechowuje pending rewards; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/monk_shrines.rs:61",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący kwalifikowany przepływ10 mainland shrines, kolejność flag, threshold3, natywne nagrody i final-report zachowane bez modyfikacji stanów0.",
+      "left_out": "Pełny donorowy alternatywny counter/KV flow nie zastępuje istniejącego kwalifikowanego adaptera; decyzja zachowuje threshold3 i źródło Wheel/final-report.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589102867"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [
+        "content/quests/monk-pilgrimage.json",
+        "content/quests/world-callbacks.json",
+        "crates/gameplay/quests/src/quest/monk_shrines.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:17"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "f2e1c8b4c0681b5dcee946952c12c2ef2fe9263bd48fbfbffc03e537bf3fca5b",
+      "quest_row": 19,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Mainland shrine eternity",
+        "pattern": "P29/P11",
+        "trigger": "Use aid7114",
+        "guard": "questline>=2;level>=275;kolejność;nieodebrane;donor bezvocationguard",
+        "effect": "flagaKV+legacyStorage=1;spell Focus Harmony;XP500000;count+1;50244;Eternity/count14→boolPointsWheel",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:18"
+        ],
+        "oteryn": "CZĘŚCIOWO — obecny native mainland caller wymaga questline3 i liczy10flag, przechowuje pending rewards; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/monk_shrines.rs:61",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący kwalifikowany przepływ10 mainland shrines, kolejność flag, threshold3, natywne nagrody i final-report zachowane bez modyfikacji stanów0.",
+      "left_out": "Pełny donorowy alternatywny counter/KV flow nie zastępuje istniejącego kwalifikowanego adaptera; decyzja zachowuje threshold3 i źródło Wheel/final-report.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589102867"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [
+        "content/quests/monk-pilgrimage.json",
+        "content/quests/world-callbacks.json",
+        "crates/gameplay/quests/src/quest/monk_shrines.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/actions_mainland_shrines.lua:18"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "6280bf5e2016cc9ecda9c3ae38c8abce6c9646ecb79c30458f6fee331e9c18a1",
+      "quest_row": 20,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Odtworzenie shrine przy usunięciu",
+        "pattern": "P25",
+        "trigger": "onRemoveItem50244",
+        "guard": "item distance(position)>0",
+        "effect": "transform id-2; zachowaj aid",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/monk_shrine_reset.lua:3"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT_APPROVED_OWNER_SCOPE",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełna inwentaryzacja warunku, wyzwalacza i efektu z przypiętego źródła; nie aktywowano skróconej reguły.",
+      "left_out": "Brak zatwierdzonego AddItem/RemoveItem map reconstruction owner do odtwarzania shrine; nie dodano nowej wspólnej mutacji mapy. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_way_of_the_monk/monk_shrine_reset.lua:3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "a61607a21be0ffcc39ab4ae1f3c2734adef2d7f8599340abc5f3ba220d8c4442",
+      "quest_row": 21,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Manop: powitanie i nauka Merudri",
+        "pattern": "P09",
+        "trigger": "hi/hello/invitation/merudri/seeker",
+        "guard": "źródłowe topic1/3/4; cztery flagi Dawnport",
+        "effect": "pełne dialogi; wybór kolejnego tematu",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:123"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-the_way_of_the_monk.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:123",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "3a4e1e8e57a1c930978688cba64d00661cfc2b7ad5b059746e335feee75554ac",
+      "quest_row": 22,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Manop: przyjęcie zaproszenia",
+        "pattern": "P09/P29",
+        "trigger": "yes,topic2",
+        "guard": "zmienna kv nie jest w zakresie tej funkcji dla tej gałęzi",
+        "effect": "zamierzone questline/questlog1 i legacy1, ale literalny donor ma błąd scope; QUESTION",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:165"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący npc_command/monk.rs::prepare/apply realizuje kwalifikowany invitation/start/final-report; nowy kompletny dialog donora zachowano jako nieaktywne dane. Source scope kv naprawiono wyłącznie w nieaktywnym programie przez literal MONK_QUEST i zgodne sąsiednie zapisy; test potwierdza dokładnie dwa logiczne zapisy.",
+      "left_out": "Nowe donorowe topic/keyword gałęzie wymagają zmiany adaptera, zabronionej przez ANSWER R-NPC-STATE; istniejące writer/threshold/Wheel pozostają bez zmian. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589102441"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/monk.rs",
+        "content/dialogues/quest-rules/quest-batch3-a-the_way_of_the_monk.json"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:165",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "additional_questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589102441"
+        ],
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "cf4dc752fd869b1c749c125eb78dd618389ab0fd24d019362d9af92f1085a98c",
+      "quest_row": 23,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Manop: podróż do Blue Valley",
+        "pattern": "P09/P11/P13",
+        "trigger": "yes,topic4",
+        "guard": "level>=8; cztery flagi sprawdzone przyseeker",
+        "effect": "town32;vocation9;teleport(33614,31494,7);items50257/50195/50171;zamierzonequestline2 ma błąd kv",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:197"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Atomowy transfer town32/vocation9/teleport/trzech przedmiotów/dwóch tracks nie jest rozdzielany ani częściowo wykonywany. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-the_way_of_the_monk.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:197",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "1d70e12a82f94d4413a70fcc5cdbfa60f49750ae76b3d31782888a391a5c8ad3",
+      "quest_row": 24,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Pema: początek pilgrimage",
+        "pattern": "P09/P29",
+        "trigger": "pilgrimage",
+        "guard": "questline<3",
+        "effect": "questline3+legacy; pełny dialog",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:66"
+        ],
+        "oteryn": "TAK — native START w NPC monk; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command/monk.rs:168",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący npc_command/monk.rs::prepare/apply realizuje kwalifikowany invitation/start/final-report; nowy kompletny dialog donora zachowano jako nieaktywne dane.",
+      "left_out": "Nowe donorowe topic/keyword gałęzie wymagają zmiany adaptera, zabronionej przez ANSWER R-NPC-STATE; istniejące writer/threshold/Wheel pozostają bez zmian. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/monk.rs",
+        "content/dialogues/quest-rules/quest-batch3-a-the_way_of_the_monk.json"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "39ca905eec0933e77d6c8d831e2511c9cb211a4ee1579b2cc256f3d2bb8ca6df",
+      "quest_row": 25,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Pema: zakończenie",
+        "pattern": "P09/P11/P29",
+        "trigger": "pilgrimage",
+        "guard": "wszystkie10mainlandflag;questline3",
+        "effect": "questline/questlog4;boolPointsWheel;title Pensive Wanderer;achievement Hope of the Merudri",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:66"
+        ],
+        "oteryn": "CZĘŚCIOWO — istnieją final report i wheel points, porównać title/achievement oraz dokładny dialog; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/monk_shrines.rs:98",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "EXISTING_QUALIFIED_DATA_PRESERVED",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejący npc_command/monk.rs::prepare/apply realizuje kwalifikowany invitation/start/final-report; nowy kompletny dialog donora zachowano jako nieaktywne dane.",
+      "left_out": "Nowe donorowe topic/keyword gałęzie wymagają zmiany adaptera, zabronionej przez ANSWER R-NPC-STATE; istniejące writer/threshold/Wheel pozostają bez zmian. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/monk.rs",
+        "content/dialogues/quest-rules/quest-batch3-a-the_way_of_the_monk.json"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    },
+    {
+      "id": "7a0f9d56bda8946a0bd4913f503d89aabac5b584d6f04d46295a836a5a548e39",
+      "quest_row": 26,
+      "inventory": {
+        "quest": "the_way_of_the_monk",
+        "step": "Pema: leczenie",
+        "pattern": "P09",
+        "trigger": "heal/healing",
+        "guard": "HP<max; nie jest krokiem progresu",
+        "effect": "pełne HP i usunięcie10źródłowych condition; bez dopisania warunku questa",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:105"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Zachowano przypisane donorowe gałęzie, pełne wypowiedzi, kolejność, guardy i plany zmian w programie danych questa. Czysty parser/planner nie jest wywoływany przez produkcyjny routing NPC.",
+      "left_out": "Brak zatwierdzonego wywołania NpcRuleCatalog::plan oraz atomowego zastosowania jego wyniku w npc_command.rs::npc_bank_talk. ANSWER R-NPC-STATE zezwala tylko na dane przy niezmienionym adapterze/writerze; nowa rozmowa ani jej sukces nie są aktywowane. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [
+        "content/dialogues/quest-rules/quest-batch3-a-the_way_of_the_monk.json",
+        "crates/gameplay/quests/src/quest/npc_rules.rs"
+      ],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:105",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "runtime_scope": "new additions only; existing qualified paths are described separately"
+      }
+    }
+  ]
+}

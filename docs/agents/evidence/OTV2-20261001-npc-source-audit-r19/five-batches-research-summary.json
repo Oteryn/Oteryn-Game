@@ -1,0 +1,1456 @@
+{
+  "batches": [
+    {
+      "actors": 28,
+      "assignment": {
+        "bytes": 205974,
+        "path": "/workspace/npc-r19-research/large-batches/batch-1.json",
+        "sha256": "477a0b5805ffe80ac269bae810ea98903834a3ca66df4e1ae77a6a7dacd5f37b"
+      },
+      "batch": 1,
+      "broad_current_tp_receipts": {
+        "bytes": 37205,
+        "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+        "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+      },
+      "raw_body_counts_are_not_summed_across_shared_scopes": true,
+      "reported_scope_metrics": {
+        "fresh_current_tibiopedia_200_count": 28,
+        "native_admissions": 0,
+        "new_movement_appearance_ready_actors": 2,
+        "new_rme_appearance_reference_count": 4,
+        "new_shared_unique_bodies_verified": 2840,
+        "new_valeria_actor_leads": 2,
+        "no_metered_calls": true,
+        "no_repository_edits": true,
+        "scope_count": 28,
+        "selected_original_source_corpus_repeated": false,
+        "source_file_only_mentions_not_identity_binding": 128,
+        "source_research_only": true
+      },
+      "research_actor_pointers": [
+        "/records/0",
+        "/records/1",
+        "/records/2",
+        "/records/3",
+        "/records/4",
+        "/records/5",
+        "/records/6",
+        "/records/7",
+        "/records/8",
+        "/records/9",
+        "/records/10",
+        "/records/11",
+        "/records/12",
+        "/records/13",
+        "/records/14",
+        "/records/15",
+        "/records/16",
+        "/records/17",
+        "/records/18",
+        "/records/19",
+        "/records/20",
+        "/records/21",
+        "/records/22",
+        "/records/23",
+        "/records/24",
+        "/records/25",
+        "/records/26",
+        "/records/27"
+      ],
+      "research_report": {
+        "bytes": 63298,
+        "path": "/workspace/npc-r19-research/batch1/batch1-source-coverage.json",
+        "sha256": "303f38631dc45fded1aa3b5505c8ee2fde07427e835401a46bd55cc1985af108"
+      }
+    },
+    {
+      "actors": 28,
+      "assignment": {
+        "bytes": 201573,
+        "path": "/workspace/npc-r19-research/large-batches/batch-2.json",
+        "sha256": "d3639953ab0cc4a2835b5abd44f09372e8c9bab957d4295d6220c96b45bf1cdb"
+      },
+      "batch": 2,
+      "broad_current_tp_receipts": null,
+      "raw_body_counts_are_not_summed_across_shared_scopes": true,
+      "reported_scope_metrics": {
+        "actors": 28,
+        "body_errors": 0,
+        "fresh_structural_candidate": 1,
+        "new_unique_source_bodies_verified": 2840,
+        "old_radius_holds": 2,
+        "other_targets_no_new_definition_in_new_scope": 25
+      },
+      "research_actor_pointers": [
+        "/actors/0",
+        "/actors/1",
+        "/actors/2",
+        "/actors/3",
+        "/actors/4",
+        "/actors/5",
+        "/actors/6",
+        "/actors/7",
+        "/actors/8",
+        "/actors/9",
+        "/actors/10",
+        "/actors/11",
+        "/actors/12",
+        "/actors/13",
+        "/actors/14",
+        "/actors/15",
+        "/actors/16",
+        "/actors/17",
+        "/actors/18",
+        "/actors/19",
+        "/actors/20",
+        "/actors/21",
+        "/actors/22",
+        "/actors/23",
+        "/actors/24",
+        "/actors/25",
+        "/actors/26",
+        "/actors/27"
+      ],
+      "research_report": {
+        "bytes": 51669,
+        "path": "/workspace/npc-r19-research/batch2/findings.json",
+        "sha256": "7d3846b98beaa264e82ddde3925f66737e794b6b8cde3d8dc46af91f4f3c7015"
+      }
+    },
+    {
+      "actors": 28,
+      "assignment": {
+        "bytes": 193653,
+        "path": "/workspace/npc-r19-research/large-batches/batch-3.json",
+        "sha256": "4cabd409d95f31c41255866a178c599915f68c7f5f3b802bd2d8b4a723624142"
+      },
+      "batch": 3,
+      "broad_current_tp_receipts": {
+        "bytes": 37204,
+        "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+        "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+      },
+      "raw_body_counts_are_not_summed_across_shared_scopes": true,
+      "reported_scope_metrics": {
+        "actor_bound_guarded_service_packets": 2,
+        "crossbatch_literal_profile_targets": 5,
+        "current_tp_actual_npc_pages": 28,
+        "empty_transcript_files_no_silence": 7,
+        "literal_target_transcript_speakers": 18,
+        "missing_transcript_filename_candidates": 2,
+        "native_admissions": 0,
+        "newly_downloaded_unique_body_blobs": 1864,
+        "nonempty_transcript_files": 19,
+        "own28_new_literal_definition_targets": 1,
+        "reused_prior_body_captures": 591,
+        "shared141_literal_definition_targets": 6,
+        "targets": 28,
+        "transcript_files": 26,
+        "two_new_repo_npc_body_occurrences": 2808,
+        "two_new_repo_unique_git_blobs": 2455,
+        "unavailable_blobs": 0,
+        "unique_target_keys": 28,
+        "wrong_transcript_filename_actor": 1
+      },
+      "research_actor_pointers": [
+        "/rows/0",
+        "/rows/1",
+        "/rows/2",
+        "/rows/3",
+        "/rows/4",
+        "/rows/5",
+        "/rows/6",
+        "/rows/7",
+        "/rows/8",
+        "/rows/9",
+        "/rows/10",
+        "/rows/11",
+        "/rows/12",
+        "/rows/13",
+        "/rows/14",
+        "/rows/15",
+        "/rows/16",
+        "/rows/17",
+        "/rows/18",
+        "/rows/19",
+        "/rows/20",
+        "/rows/21",
+        "/rows/22",
+        "/rows/23",
+        "/rows/24",
+        "/rows/25",
+        "/rows/26",
+        "/rows/27"
+      ],
+      "research_report": {
+        "bytes": 132947,
+        "path": "/workspace/npc-r19-research/batch3/batch3-source-summary.json",
+        "sha256": "0f108e95f780df1bffb6008861eafbb88d702a1e8cd2b3a80c2d6b559c2a657d"
+      }
+    },
+    {
+      "actors": 28,
+      "assignment": {
+        "bytes": 187334,
+        "path": "/workspace/npc-r19-research/large-batches/batch-4.json",
+        "sha256": "7e97286b05f66e8f9ab31dd3e0a86e8944faf9765c314ae3875c17bbc5f3c11f"
+      },
+      "batch": 4,
+      "broad_current_tp_receipts": null,
+      "raw_body_counts_are_not_summed_across_shared_scopes": true,
+      "reported_scope_metrics": {
+        "definition_hits": 0,
+        "direct_npc_new_blob_gets": 2,
+        "direct_npc_reused_identical_git_blobs": 970,
+        "direct_npc_unique_blobs": 972,
+        "git_blob_errors": 0,
+        "whole_programs_git_blob_verified": 10601
+      },
+      "research_actor_pointers": [
+        "/records/0",
+        "/records/1",
+        "/records/2",
+        "/records/3",
+        "/records/4",
+        "/records/5",
+        "/records/6",
+        "/records/7",
+        "/records/8",
+        "/records/9",
+        "/records/10",
+        "/records/11",
+        "/records/12",
+        "/records/13",
+        "/records/14",
+        "/records/15",
+        "/records/16",
+        "/records/17",
+        "/records/18",
+        "/records/19",
+        "/records/20",
+        "/records/21",
+        "/records/22",
+        "/records/23",
+        "/records/24",
+        "/records/25",
+        "/records/26",
+        "/records/27"
+      ],
+      "research_report": {
+        "bytes": 23174,
+        "path": "/workspace/npc-r19-research/batch4/batch4-new-source-findings.json",
+        "sha256": "cccb0792567aeb1866c42125b9531a5f0de308abc8d337ffd5cff1901c8f845d"
+      }
+    },
+    {
+      "actors": 29,
+      "assignment": {
+        "bytes": 227784,
+        "path": "/workspace/npc-r19-research/large-batches/batch-5.json",
+        "sha256": "e1fda1b3fdd641cf5ab58cc519f0fb4a0aa7a7e3cf0e35723b1fe53d2672f7ab"
+      },
+      "batch": 5,
+      "broad_current_tp_receipts": {
+        "bytes": 38366,
+        "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+        "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+      },
+      "raw_body_counts_are_not_summed_across_shared_scopes": true,
+      "reported_scope_metrics": {
+        "batch_native_completion_claim": false,
+        "code_search_actor_count": 6,
+        "code_search_other_actor_count_not_attempted": 23,
+        "current_br_typographic_actor_variant_source_only_count": 1,
+        "fresh_current_tibiopedia_npc_page_count": 29,
+        "global_absence_or_silence_claim": false,
+        "later_browser_state_not_inferred_from_old_closure_receipt": true,
+        "native_additions": 0,
+        "new_literal_actor_definitions_qualified": 0,
+        "new_pinned_identical_todo_file_occurrences": 4,
+        "new_pinned_npc_path_occurrences": 7516,
+        "new_pinned_tree_count": 9,
+        "point_reward_observation_count": 31,
+        "published": false,
+        "raw_capture_lane_external_only": true,
+        "repo_written": false,
+        "scope_count": 29,
+        "source_author_todo_actors_retained": 2,
+        "source_guard_and_dialogue_actor_count": 4,
+        "strict_current_br_captures_including_queued_other_batches": 9
+      },
+      "research_actor_pointers": [
+        "/records/0",
+        "/records/1",
+        "/records/2",
+        "/records/3",
+        "/records/4",
+        "/records/5",
+        "/records/6",
+        "/records/7",
+        "/records/8",
+        "/records/9",
+        "/records/10",
+        "/records/11",
+        "/records/12",
+        "/records/13",
+        "/records/14",
+        "/records/15",
+        "/records/16",
+        "/records/17",
+        "/records/18",
+        "/records/19",
+        "/records/20",
+        "/records/21",
+        "/records/22",
+        "/records/23",
+        "/records/24",
+        "/records/25",
+        "/records/26",
+        "/records/27",
+        "/records/28"
+      ],
+      "research_report": {
+        "bytes": 81637,
+        "path": "/workspace/npc-r19-research/batch5/batch5-source-research.json",
+        "sha256": "d983427b2b5f969e5489ba365c16ce3ff46203e3d3292d46bebb1f0f99691717"
+      }
+    }
+  ],
+  "candidate_actors": [
+    "Alberto",
+    "Arenamaster",
+    "Ben",
+    "Emilio",
+    "Fabiana",
+    "Gerib",
+    "Lai",
+    "Lorenzo"
+  ],
+  "current_br": {
+    "access_mode": "PUBLIC_REAL_CHROME_CDP_AFTER_ORDINARY_HTTP403",
+    "current_closure_claim": false,
+    "last_successfully_closed_round": {
+      "bytes": 113,
+      "path": "/workspace/npc-r19-research/batch5/browser-queued-endpoint-closure.json",
+      "sha256": "7ea03be118311f1d63d2042f31f4582a1207b9acd1859325fa7efcf061c7456f"
+    },
+    "later_known_endpoint_probe": {
+      "bytes": 469,
+      "path": "/workspace/npc-r19-research/batch5/browser-valeria-read-only-probe.json",
+      "sha256": "8c78904db912cfa775583b5c4150cd2e4135cc3ffaf4a184cf426726df8193e0"
+    },
+    "later_valeria_five_failure": {
+      "bytes": 862,
+      "path": "/workspace/npc-r19-research/batch5/valeria-br-browser-access-unavailable.json",
+      "sha256": "32de72de6d1dea42b15e7de77002924f22b243d8da70cf44a072985f01ba0291"
+    },
+    "latest_browser_state": "UNKNOWN_DEVICE_OFFLINE",
+    "older_closure_receipt_not_projected_to_later_attempt": true,
+    "qualified_queued_three_receipt": {
+      "bytes": 15081,
+      "path": "/workspace/npc-r19-research/batch5/current-br-queued-actor-image-custody.json",
+      "sha256": "0763f25eb5a02508662500571e1e62aed47b4267ad46b63fd10978ba6c5f9c2d"
+    },
+    "qualified_six_receipt": {
+      "bytes": 30646,
+      "path": "/workspace/npc-r19-research/batch5/current-br-actionable-actor-image-custody.json",
+      "sha256": "c69dde83df9d14604890391faabac195421415dbe45a3f5c0219809412bb08e1"
+    },
+    "valeria_five_fresh_br_claim": false
+  },
+  "current_tp": {
+    "broad_batch2_current_tp_not_claimed": true,
+    "broad_batch4_current_tp_not_claimed_without_actor_receipts": true,
+    "broad_receipted_actor_count": 85,
+    "broad_receipted_batches": [
+      1,
+      3,
+      5
+    ],
+    "broad_receipts": [
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 1,
+        "pointer": "/records/0"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 2,
+        "pointer": "/records/1"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 3,
+        "pointer": "/records/2"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 4,
+        "pointer": "/records/3"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 5,
+        "pointer": "/records/4"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 6,
+        "pointer": "/records/5"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 7,
+        "pointer": "/records/6"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 8,
+        "pointer": "/records/7"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 9,
+        "pointer": "/records/8"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 10,
+        "pointer": "/records/9"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 11,
+        "pointer": "/records/10"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 12,
+        "pointer": "/records/11"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 13,
+        "pointer": "/records/12"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 14,
+        "pointer": "/records/13"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 15,
+        "pointer": "/records/14"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 17,
+        "pointer": "/records/15"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 18,
+        "pointer": "/records/16"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 19,
+        "pointer": "/records/17"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 20,
+        "pointer": "/records/18"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 21,
+        "pointer": "/records/19"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 22,
+        "pointer": "/records/20"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 23,
+        "pointer": "/records/21"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 24,
+        "pointer": "/records/22"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 25,
+        "pointer": "/records/23"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 26,
+        "pointer": "/records/24"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 27,
+        "pointer": "/records/25"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 28,
+        "pointer": "/records/26"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37205,
+          "path": "/workspace/npc-r19-research/batch1/current-tibiopedia-access-and-identity.json",
+          "sha256": "cb6dc368ff54c29de5005b2b30b31abd2017882b157fe1f1de0fffc90a6919d7"
+        },
+        "http_status": 200,
+        "original_index": 29,
+        "pointer": "/records/27"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 60,
+        "pointer": "/records/0"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 61,
+        "pointer": "/records/1"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 62,
+        "pointer": "/records/2"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 63,
+        "pointer": "/records/3"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 64,
+        "pointer": "/records/4"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 65,
+        "pointer": "/records/5"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 66,
+        "pointer": "/records/6"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 67,
+        "pointer": "/records/7"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 68,
+        "pointer": "/records/8"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 69,
+        "pointer": "/records/9"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 70,
+        "pointer": "/records/10"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 71,
+        "pointer": "/records/11"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 72,
+        "pointer": "/records/12"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 73,
+        "pointer": "/records/13"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 74,
+        "pointer": "/records/14"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 75,
+        "pointer": "/records/15"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 76,
+        "pointer": "/records/16"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 77,
+        "pointer": "/records/17"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 78,
+        "pointer": "/records/18"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 79,
+        "pointer": "/records/19"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 81,
+        "pointer": "/records/20"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 82,
+        "pointer": "/records/21"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 83,
+        "pointer": "/records/22"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 84,
+        "pointer": "/records/23"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 85,
+        "pointer": "/records/24"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 86,
+        "pointer": "/records/25"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 87,
+        "pointer": "/records/26"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 37204,
+          "path": "/workspace/npc-r19-research/batch3/current-tibiopedia-access-and-identity.json",
+          "sha256": "50fbd74112cbcff21e347cd61b57478d3362d2a989982affe75c312c3cdc93d2"
+        },
+        "http_status": 200,
+        "original_index": 88,
+        "pointer": "/records/27"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 122,
+        "pointer": "/records/0"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 123,
+        "pointer": "/records/1"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 125,
+        "pointer": "/records/2"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 126,
+        "pointer": "/records/3"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 127,
+        "pointer": "/records/4"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 128,
+        "pointer": "/records/5"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 129,
+        "pointer": "/records/6"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 130,
+        "pointer": "/records/7"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 131,
+        "pointer": "/records/8"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 133,
+        "pointer": "/records/9"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 135,
+        "pointer": "/records/10"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 136,
+        "pointer": "/records/11"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 139,
+        "pointer": "/records/12"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 140,
+        "pointer": "/records/13"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 142,
+        "pointer": "/records/14"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 143,
+        "pointer": "/records/15"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 144,
+        "pointer": "/records/16"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 145,
+        "pointer": "/records/17"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 146,
+        "pointer": "/records/18"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 149,
+        "pointer": "/records/19"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 150,
+        "pointer": "/records/20"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 151,
+        "pointer": "/records/21"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 152,
+        "pointer": "/records/22"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 153,
+        "pointer": "/records/23"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 154,
+        "pointer": "/records/24"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 156,
+        "pointer": "/records/25"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 157,
+        "pointer": "/records/26"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 159,
+        "pointer": "/records/27"
+      },
+      {
+        "access_mode": "PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 38366,
+          "path": "/workspace/npc-r19-research/batch5/current-tibiopedia-access-and-identity.json",
+          "sha256": "154d85ca91faf9197576722cedba04567af6f4c9ee18e186a8f0c5a1f1bfbb18"
+        },
+        "http_status": 200,
+        "original_index": 160,
+        "pointer": "/records/28"
+      }
+    ],
+    "ordinary_public_http_success_status": 200,
+    "targeted_receipts": [
+      {
+        "access_mode": "REUSED_CURRENT_R19_PUBLIC_HTTP_CAPTURE",
+        "artifact": {
+          "bytes": 12297,
+          "path": "/workspace/npc-r19-research/batch4/valeria-five/five-current-tibiopedia-actor-image-custody.json",
+          "sha256": "36ea61ac49877ea6735f54961a1b93d4bd6df7b554b4f6599d07b8fc5c38604b"
+        },
+        "http_status": 200,
+        "original_index": 10,
+        "pointer": "/records/0"
+      },
+      {
+        "access_mode": "REUSED_CURRENT_R19_PUBLIC_HTTP_CAPTURE",
+        "artifact": {
+          "bytes": 12297,
+          "path": "/workspace/npc-r19-research/batch4/valeria-five/five-current-tibiopedia-actor-image-custody.json",
+          "sha256": "36ea61ac49877ea6735f54961a1b93d4bd6df7b554b4f6599d07b8fc5c38604b"
+        },
+        "http_status": 200,
+        "original_index": 13,
+        "pointer": "/records/1"
+      },
+      {
+        "access_mode": "CURRENT_PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 12297,
+          "path": "/workspace/npc-r19-research/batch4/valeria-five/five-current-tibiopedia-actor-image-custody.json",
+          "sha256": "36ea61ac49877ea6735f54961a1b93d4bd6df7b554b4f6599d07b8fc5c38604b"
+        },
+        "http_status": 200,
+        "original_index": 49,
+        "pointer": "/records/2"
+      },
+      {
+        "access_mode": "CURRENT_PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 12297,
+          "path": "/workspace/npc-r19-research/batch4/valeria-five/five-current-tibiopedia-actor-image-custody.json",
+          "sha256": "36ea61ac49877ea6735f54961a1b93d4bd6df7b554b4f6599d07b8fc5c38604b"
+        },
+        "http_status": 200,
+        "original_index": 51,
+        "pointer": "/records/3"
+      },
+      {
+        "access_mode": "CURRENT_PUBLIC_HTTP_GET_WITH_PUBLIC_LANGUAGE_LAYOUT_PREFERENCES",
+        "artifact": {
+          "bytes": 12297,
+          "path": "/workspace/npc-r19-research/batch4/valeria-five/five-current-tibiopedia-actor-image-custody.json",
+          "sha256": "36ea61ac49877ea6735f54961a1b93d4bd6df7b554b4f6599d07b8fc5c38604b"
+        },
+        "http_status": 200,
+        "original_index": 95,
+        "pointer": "/records/4"
+      }
+    ],
+    "targeted_valeria_actor_count": 5,
+    "unique_current_tp_actor_count_in_available_receipts": 88
+  },
+  "final_source_packet_binding": {
+    "bytes": 2675318,
+    "path": "/workspace/npc-r19-research/batch1/structural-eight-definition-bridge.json",
+    "sha256": "c1935ff30c2c61cd7ba5ef0a800d31d41d8295295f48a7be93361193f69ea21d"
+  },
+  "guarded_source_observations": {
+    "actors": 4,
+    "artifact": {
+      "bytes": 26386,
+      "path": "/workspace/npc-r19-research/batch5/guarded-service-and-dialogue-sourcefacts.json",
+      "sha256": "39e25576e8a15496e38d7177c4457753c8a86d8ce6765127c860bcee08a7e9d2"
+    },
+    "independent_review": {
+      "bytes": 1549,
+      "path": "/workspace/npc-r19-research/shared-review/guarded-service-sourcefacts-independent-review.json",
+      "sha256": "21df525ba3eaf9d2c4804933d7b07fcce68c48ade7821e1453dd9deb8740b4fd"
+    },
+    "native_quest_currency_effect_bindings": null,
+    "outfit_mount_reward_not_item_offer": true,
+    "point_reward_rows": 31,
+    "quest_points_earning_context_not_exchange_gate": true
+  },
+  "held_valeria_actor": "Agostina",
+  "new_runtime_admissions": 0,
+  "progress": {
+    "definitions_without_admission_after_this_candidate": 133,
+    "new_runtime_admissions": 0,
+    "original160": 160,
+    "published_predecessor_definitions": 19,
+    "qualified_definitions_in_this_candidate": 8,
+    "r19_disjoint_bounded_research_actors": 141,
+    "status_counts": {
+      "AUTHOR_TODO": 2,
+      "DEFINITION_ADMITTED_PREDECESSOR": 19,
+      "HELD_CURRENT_APPEARANCE": 2,
+      "HELD_MISSING_RADIUS": 12,
+      "NO_LITERAL_DEFINITION_IN_CAPTURED_SCOPES": 114,
+      "QUALIFIED_EIGHT_CANDIDATE": 8,
+      "SOURCE_LEAD_ONLY": 3
+    },
+    "structural_definitions_after_candidate_integration": 27
+  },
+  "publication_performed": false,
+  "published_predecessors": [
+    "c2f9cf880a014ca494a32cce97bb0a19ed8b80c9",
+    "61fb530104d42800aecbebbd2feb7f816b450b46"
+  ],
+  "raw_capture_lane_external_only": true,
+  "repo_written": false,
+  "schema": "OTERYN_R19_FIVE_BATCH_BOUNDED_RESEARCH_SUMMARY/v1",
+  "scope": {
+    "batch_sizes": [
+      28,
+      28,
+      28,
+      28,
+      29
+    ],
+    "global_absence_or_silence_claim": false,
+    "source_only_does_not_mean_definition_or_runtime_complete": true,
+    "unique_remaining_original160_actors_researched": 141
+  },
+  "shared_scope_accounting": {
+    "artifact": {
+      "bytes": 4821,
+      "path": "/workspace/npc-r19-research/shared-review/shared-source-summary-current.json",
+      "sha256": "202cf60b5cd90ca79ea08b73b0656a50507c4d96817a484e8375d64c5421e76c"
+    },
+    "same_git_blob_forks_not_independent_global_authority": true,
+    "shared2840_raw_bodies_and_crossbatch_leads_not_summed_as_distinct_discoveries": true
+  },
+  "source_key_repair": {
+    "literal_upstream_repository": "ValeriaOT/Test",
+    "literal_upstream_repository_preserved": true,
+    "mapper": {
+      "bytes": 34370,
+      "path": "/workspace/npc-r19-research/batch1/build_structural_bridge.py",
+      "sha256": "3f98bbdd656be5a4e3ee0a0f9bcfaad050605cfbdf5aaa537d6c66518edc8492"
+    },
+    "native_source_key": "oteryn:source.valeria_ot",
+    "review": {
+      "bytes": 2171,
+      "path": "/workspace/npc-r19-research/shared-review/eight-source-compiler-corrected-independent-review.json",
+      "sha256": "4700fe8e204c215eb6f3963ed0b75aef8acddba37cc1d8dfab457c231a2f8ca4"
+    },
+    "status": "FIXED_INDEPENDENTLY_REVIEWED"
+  }
+}

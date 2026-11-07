@@ -1,0 +1,16 @@
+{
+  "schema": "OTERYN_SPELL_READINESS/v1",
+  "revision": "spell-p2-r20",
+  "sources": {"canary": {"branch": "dudantas/fix-tibia-15-30-regressions", "repository": "opentibiabr/canary", "revision": "99902524e052f37574194466c2949c576e4ab269"}, "crystal": {"repository": "zimbadev/crystalserver", "revision": "ff7ede593c69d4c658b382c97443e8155926924a"}},
+  "wiki_facts": [
+    "wiki-spell-facts-fandom-2026-09-27.json",
+    "wiki-spell-facts-br-2026-09-27.json",
+    "tibiopedia-spell-facts-2026-09-28.json",
+    "tibiacom-spell-list-2026-09-28.json"
+  ],
+  "official_changes": "official-changes.json",
+  "summary": {"spells": 1, "status": {"ready": 1}, "top_blockers": {}},
+  "spells": [
+    {"blockers": [], "bundle_sha256": "c6f770d74964caf595b3cad111819cc2fd2443d80368789752ed521480922de8", "errors": [], "name": "divine empowerment", "sources": ["canary", "crystal"], "spell_type": "instant", "status": "ready"}
+  ]
+}

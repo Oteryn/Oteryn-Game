@@ -1,0 +1,177 @@
+{
+ "definition": {
+  "description": {
+   "length": 17,
+   "links": [],
+   "placeholders": [],
+   "sha256": "6d4aa14ae250cf83854b68d847d04a9d98f2cc2190ee3f5f053fd9a9ec6d3905"
+  },
+  "display_name": "A Fluffy Squirrel",
+  "movement": {
+   "floor_change": false,
+   "walk_interval_ms": 0,
+   "walk_radius": 2
+  },
+  "name": "A Fluffy Squirrel",
+  "presentation": {
+   "light": null,
+   "outfit": {
+    "addons": 0,
+    "body": 0,
+    "feet": 0,
+    "head": 0,
+    "legs": 0,
+    "look_type": 274,
+    "mount": null
+   },
+   "speech_bubble": "TRADE"
+  },
+  "profession": "trader",
+  "respawn": null,
+  "vitals": {
+   "health": 100,
+   "max_health": 100
+  }
+ },
+ "dialogue": {
+  "dialog_option_calls": 0,
+  "keywords": [
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "acorn"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 84,
+     "links": [],
+     "placeholders": [],
+     "sha256": "d2c2d1e44db1d328d6b66abf3646802663095c506e22331b78785ce425af2db6"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "chchch"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 13,
+     "links": [],
+     "placeholders": [],
+     "sha256": "7117f3783b0571c7a754ba9ed19e097f8787a7d85d30c5b65612c98ee81d193e"
+    }
+   }
+  ],
+  "messages": {
+   "farewell": {
+    "length": 6,
+    "links": [],
+    "placeholders": [],
+    "sha256": "d49df4495b2a87bbaa5112c40423528ef76fc50620cce0993ebf6e2dfd58e4f5"
+   },
+   "greet": {
+    "length": 7,
+    "links": [],
+    "placeholders": [],
+    "sha256": "3aee13e626ae96821bc052480ffc3f599df36be5200a9bea06f0412ba3f8cc46"
+   },
+   "send_trade": {
+    "length": 152,
+    "links": [],
+    "placeholders": [],
+    "sha256": "29deb767858e39870150b4cfa3276a7b58b257120a6dbf313ea2055f7d18f239"
+   },
+   "walkaway": {
+    "length": 6,
+    "links": [],
+    "placeholders": [],
+    "sha256": "d49df4495b2a87bbaa5112c40423528ef76fc50620cce0993ebf6e2dfd58e4f5"
+   }
+  },
+  "scripted_handlers": []
+ },
+ "evidence": "OTS_HYPOTHESIS_ONLY",
+ "key": "canary:npc/a_fluffy_squirrel",
+ "placements": [
+  {
+   "direction": "NORTH",
+   "engine_spawns": true,
+   "placement_file": "data-otservbr-global/world/otservbr-npc.xml",
+   "position": {
+    "x": 32412,
+    "y": 31728,
+    "z": 7
+   },
+   "spawn_interval_s": 60,
+   "spawn_radius": 1
+  }
+ ],
+ "schema": "OTERYN_NPC_AUTHORING_CANDIDATE/v1",
+ "services": {
+  "blessings": [],
+  "kick": [],
+  "promotion": [],
+  "spells": [],
+  "trade": {
+   "currency": "GOLD",
+   "engine_trade_events": [
+    "onBuyItem",
+    "onCheckItem",
+    "onSellItem"
+   ],
+   "offers": [
+    {
+     "buy_price": null,
+     "client_id": 10296,
+     "count": null,
+     "item_name": "acorn",
+     "sell_price": 10,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    },
+    {
+     "buy_price": null,
+     "client_id": 836,
+     "count": null,
+     "item_name": "walnut",
+     "sell_price": 80,
+     "server_item_id": null,
+     "stock_gate": null,
+     "sub_type": null
+    }
+   ]
+  },
+  "travel": []
+ },
+ "source": {
+  "path": "data-otservbr-global/npc/a_fluffy_squirrel.lua",
+  "repository": "opentibiabr/canary",
+  "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "sha256": "46a2d12b39cf663ea67f9ebcbf6f100183ae96df47dd03b7bd8ab07e1491fcb2"
+ },
+ "status": "RESOLVED",
+ "unresolved": [],
+ "voices": {
+  "chance_percent": 50,
+  "interval_ms": 15000,
+  "lines": [
+   {
+    "text": {
+     "length": 6,
+     "links": [],
+     "placeholders": [],
+     "sha256": "72d8dc6b9a5f6e479f6d7c8c27ed54e4f9c8c96cbb5c49f42fb3f8770fe0d69c"
+    },
+    "yell": false
+   }
+  ]
+ }
+}

@@ -1,0 +1,1856 @@
+[
+  {
+    "target": "oteryn:creature.weak_spot",
+    "profile": {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "armor": 82,
+          "details": {
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "critical_chance_ppm": 0,
+            "defense": 60,
+            "display_name": "Weak Spot",
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "Weak Spot",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": false
+            }
+          },
+          "encounters": [
+            {
+              "family": "Encounter",
+              "key": "oteryn:encounter.crystal_weak_spot",
+              "revision": "definition-r1"
+            }
+          ],
+          "experience": 0,
+          "health": 100000,
+          "mitigation": {
+            "denominator": 20,
+            "numerator": 47
+          },
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "life_drain",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "physical",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            }
+          ],
+          "speed": 0
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.weak_spot",
+        "revision": "definition-r1"
+      }
+    },
+    "binding": {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/weak_spot.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.weak_spot",
+        "revision": "definition-r1"
+      }
+    },
+    "donor_monster_file_sha256": "255bd044184eb94824d552d5cbe5abb6f3e44fc0d8e51167b60ef2aa5f2c4445",
+    "declared_events": [
+      "WeakSpotDeath"
+    ],
+    "callback_files": [
+      {
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_weak_spot_crashes.lua",
+        "sha256": "c8c0e8c2118c80103d67a4db122cb47b21abbb6f9024f63c25ec88f22990587a"
+      }
+    ],
+    "runtime_kind": "weak_spot"
+  },
+  {
+    "target": "oteryn:creature.lord_retro",
+    "profile": {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.lord_retro.attack-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.lord_retro.attack-2",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.lord_retro.attack-3",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.lord_retro.attack-4",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.lord_retro.attack-5",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.lord_retro.attack-6",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.lord_retro.defense-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.lord_retro.defense-2",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 10,
+          "details": {
+            "bosstiary": {
+              "category": "archfoe",
+              "expertise_kills": 20,
+              "expertise_points": 30,
+              "mastery_kills": 60,
+              "mastery_points": 60,
+              "prowess_kills": 5,
+              "prowess_points": 10
+            },
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "corpse_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i31599",
+              "revision": "definition-r1"
+            },
+            "critical_chance_ppm": 0,
+            "defense": 15,
+            "display_name": "Lord Retro",
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "Lord Retro",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": true
+            }
+          },
+          "encounters": [
+            {
+              "family": "Encounter",
+              "key": "oteryn:encounter.crystal_lord_retro",
+              "revision": "definition-r1"
+            }
+          ],
+          "experience": 0,
+          "health": 2500,
+          "mitigation": {
+            "denominator": 100,
+            "numerator": 181
+          },
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "drowning",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "life_drain",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "physical",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            }
+          ],
+          "speed": 350
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.lord_retro",
+        "revision": "definition-r1"
+      }
+    },
+    "binding": {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/bosses/lord_retro.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.lord_retro",
+        "revision": "definition-r1"
+      }
+    },
+    "donor_monster_file_sha256": "82f6409daf1b48e7f9b751463e301cb29e09e0bb7265f21a74147cd26c2493bc",
+    "declared_events": [
+      "LordRetroMonsterDeath"
+    ],
+    "callback_files": [
+      {
+        "path": "data-global/scripts/quests/25_years_of _tibia_quest/lord_retro_death.lua",
+        "sha256": "019afff6aac0e7ad9bd6e53edfb60ecf79094ab5a8393594238ac37c5ae78545"
+      }
+    ],
+    "runtime_kind": "lord_retro"
+  },
+  {
+    "target": "oteryn:creature.herald_of_fire",
+    "profile": {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.herald_of_fire.attack-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.herald_of_fire.attack-2",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.herald_of_fire.defense-1",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 5,
+          "details": {
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "corpse_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i53108",
+              "revision": "definition-r1"
+            },
+            "critical_chance_ppm": 0,
+            "defense": 20,
+            "display_name": "Herald of Fire",
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "Herald of Fire",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": false
+            }
+          },
+          "encounters": [
+            {
+              "family": "Encounter",
+              "key": "oteryn:encounter.crystal_herald_of_fire",
+              "revision": "definition-r1"
+            }
+          ],
+          "experience": 1350,
+          "health": 900,
+          "mitigation": {
+            "denominator": 5,
+            "numerator": 4
+          },
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "denominator": 1,
+                "numerator": 5
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": 10
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": -5
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": 30
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "denominator": 1,
+                "numerator": -10
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "denominator": 1,
+                "numerator": -10
+              }
+            },
+            {
+              "damage_type": "physical",
+              "percent": {
+                "denominator": 1,
+                "numerator": -10
+              }
+            }
+          ],
+          "speed": 180
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.herald_of_fire",
+        "revision": "definition-r1"
+      }
+    },
+    "binding": {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/targuna/bosses/herald_of_fire.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.herald_of_fire",
+        "revision": "definition-r1"
+      }
+    },
+    "donor_monster_file_sha256": "38bf20dc215b1711707694b2a099120bd0e39ab79fbf073fa17e0cbeded51162",
+    "declared_events": [
+      "TargunaHeraldDeath",
+      "TargunaHeraldImmunity"
+    ],
+    "callback_files": [
+      {
+        "path": "data-global/scripts/quests/targuna/creaturescripts_herald_of_fire.lua",
+        "sha256": "901ad3192582e0a4237d321b774dfbf8bf8fca4892a262a4fb23684a8d43e534"
+      }
+    ],
+    "runtime_kind": "herald_of_fire"
+  },
+  {
+    "target": "oteryn:creature.boreth",
+    "profile": {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.boreth.attack-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.boreth.attack-2",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.boreth.defense-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.boreth.defense-2",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 38,
+          "details": {
+            "bosstiary": {
+              "category": "bane",
+              "expertise_kills": 100,
+              "expertise_points": 15,
+              "mastery_kills": 300,
+              "mastery_points": 30,
+              "prowess_kills": 25,
+              "prowess_points": 5
+            },
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "corpse_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i8109",
+              "revision": "definition-r1"
+            },
+            "critical_chance_ppm": 0,
+            "defense": 35,
+            "display_name": "Boreth",
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "Boreth",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": false
+            }
+          },
+          "experience": 1800,
+          "health": 1400,
+          "mitigation": {
+            "denominator": 25,
+            "numerator": 26
+          },
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": -10
+              }
+            }
+          ],
+          "speed": 135
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.boreth",
+        "revision": "definition-r1"
+      }
+    },
+    "binding": {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/blood_brothers_quest/boreth.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.boreth",
+        "revision": "definition-r1"
+      }
+    },
+    "donor_monster_file_sha256": "7a40093267e02d00182c81a0993cd5ec16e5b7992fe078c5d1b3cf8dc58106f4",
+    "declared_events": [
+      "BorethDeath"
+    ],
+    "callback_files": [
+      {
+        "path": "data-global/scripts/quests/blood_brothers_quest/boreth_death.lua",
+        "sha256": "edf7bb10e4279c6a8f37e01aca0dc5194f24347116258359e3754056cc059d90"
+      }
+    ],
+    "runtime_kind": "boreth"
+  },
+  {
+    "target": "oteryn:creature.rum_barrel",
+    "profile": {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "armor": 82,
+          "details": {
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "critical_chance_ppm": 0,
+            "death_residue": {
+              "fluid_type": "blood",
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2886",
+                "revision": "definition-r1"
+              }
+            },
+            "defense": 60,
+            "display_name": "Rum Barrel",
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "Rum Barrel",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": false
+            }
+          },
+          "experience": 0,
+          "health": 500000,
+          "mitigation": {
+            "denominator": 100,
+            "numerator": 233
+          },
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "life_drain",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "physical",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            }
+          ],
+          "speed": 1
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.rum_barrel",
+        "revision": "definition-r1"
+      }
+    },
+    "binding": {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/rum_barrel.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.rum_barrel",
+        "revision": "definition-r1"
+      }
+    },
+    "donor_monster_file_sha256": "ec3f49f93154e6cb03ea5b1f7a34548aa9faf5e83f4f4e90c88db9e72a8c56ba",
+    "declared_events": [
+      "RumBarrelExplotes"
+    ],
+    "callback_files": [
+      {
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_rum_barrel.lua",
+        "sha256": "fb66ec0509c037070661eb1523b20a865472ca77c473851ef04b958a1a73622a"
+      }
+    ],
+    "runtime_kind": "rum_barrel"
+  },
+  {
+    "target": "oteryn:creature.tentacle",
+    "profile": {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.tentacle.attack-1",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 82,
+          "details": {
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "critical_chance_ppm": 0,
+            "defense": 60,
+            "display_name": "Tentacle",
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "Tentacle",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": true
+            }
+          },
+          "experience": 0,
+          "health": 2500,
+          "mitigation": {
+            "denominator": 25,
+            "numerator": 48
+          },
+          "resistances": [
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": -30
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 30
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": -20
+              }
+            }
+          ],
+          "speed": 0
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle",
+        "revision": "definition-r1"
+      }
+    },
+    "binding": {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_1.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle",
+        "revision": "definition-r1"
+      }
+    },
+    "donor_monster_file_sha256": "b38fd455f7c271e43525cb8b233ff1277fce20f31e799d0ae8deb17d28e64c48",
+    "declared_events": [
+      "tentacle_death"
+    ],
+    "callback_files": [
+      {
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle1.lua",
+        "sha256": "9863004d92a6b8702a3b8270081d0c98ca57cf5d997844e10a6833650d87c68e"
+      }
+    ],
+    "runtime_kind": "tentacle"
+  },
+  {
+    "target": "oteryn:creature.tentacle2",
+    "profile": {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.tentacle2.attack-1",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 82,
+          "details": {
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "critical_chance_ppm": 0,
+            "defense": 60,
+            "display_name": "Tentacle",
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "Tentacle",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": true
+            }
+          },
+          "experience": 0,
+          "health": 2500,
+          "mitigation": {
+            "denominator": 25,
+            "numerator": 48
+          },
+          "resistances": [
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": -30
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 30
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": -20
+              }
+            }
+          ],
+          "speed": 0
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle2",
+        "revision": "definition-r1"
+      }
+    },
+    "binding": {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_2.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle2",
+        "revision": "definition-r1"
+      }
+    },
+    "donor_monster_file_sha256": "750029f290dedb6fa4246f740638b969f680711cfa0cea5974750136de953634",
+    "declared_events": [
+      "tentacle2_death"
+    ],
+    "callback_files": [
+      {
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle2.lua",
+        "sha256": "183bae95c5dfa9a6feeb0c2bcb56ad1d380f0e88587dd577027cb38bf2e08aff"
+      }
+    ],
+    "runtime_kind": "tentacle2"
+  },
+  {
+    "target": "oteryn:creature.tentacle3",
+    "profile": {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.tentacle3.attack-1",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 82,
+          "details": {
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "critical_chance_ppm": 0,
+            "defense": 60,
+            "display_name": "Tentacle",
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "Tentacle",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": true
+            }
+          },
+          "experience": 0,
+          "health": 2500,
+          "mitigation": {
+            "denominator": 25,
+            "numerator": 48
+          },
+          "resistances": [
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": -30
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 30
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": -20
+              }
+            }
+          ],
+          "speed": 0
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle3",
+        "revision": "definition-r1"
+      }
+    },
+    "binding": {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_3.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle3",
+        "revision": "definition-r1"
+      }
+    },
+    "donor_monster_file_sha256": "cc13465408306511334ce688d43c780a0940b08c8132f4191dbb46c09c187dea",
+    "declared_events": [
+      "tentacle3_death"
+    ],
+    "callback_files": [
+      {
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle3.lua",
+        "sha256": "8759a66f3f4d8deef6824c60b0946506e17c386ddbe302e13a0aa24748e07d6e"
+      }
+    ],
+    "runtime_kind": "tentacle3"
+  },
+  {
+    "target": "oteryn:creature.tentacle4",
+    "profile": {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.tentacle4.attack-1",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 82,
+          "details": {
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "critical_chance_ppm": 0,
+            "defense": 60,
+            "display_name": "Tentacle",
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "Tentacle",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": true
+            }
+          },
+          "experience": 0,
+          "health": 2500,
+          "mitigation": {
+            "denominator": 25,
+            "numerator": 48
+          },
+          "resistances": [
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": -30
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 30
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": -20
+              }
+            }
+          ],
+          "speed": 0
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle4",
+        "revision": "definition-r1"
+      }
+    },
+    "binding": {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_4.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle4",
+        "revision": "definition-r1"
+      }
+    },
+    "donor_monster_file_sha256": "87c76ae6e139416523af5797cbb65a90d8556b4e3ea06bbc860388ae3a0a6b45",
+    "declared_events": [
+      "tentacle4_death"
+    ],
+    "callback_files": [
+      {
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle4.lua",
+        "sha256": "e4a79a97ee11f70d091e130271d211c4c76caada73bd7720dd863e7de8eea2e9"
+      }
+    ],
+    "runtime_kind": "tentacle4"
+  },
+  {
+    "target": "oteryn:creature.tentacle5",
+    "profile": {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.tentacle5.attack-1",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 82,
+          "details": {
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "critical_chance_ppm": 0,
+            "defense": 60,
+            "display_name": "Tentacle",
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "Tentacle",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": true
+            }
+          },
+          "experience": 0,
+          "health": 2500,
+          "mitigation": {
+            "denominator": 25,
+            "numerator": 48
+          },
+          "resistances": [
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": -30
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 30
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": -20
+              }
+            }
+          ],
+          "speed": 0
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle5",
+        "revision": "definition-r1"
+      }
+    },
+    "binding": {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_5.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle5",
+        "revision": "definition-r1"
+      }
+    },
+    "donor_monster_file_sha256": "b9d03576a1c145c10ee33c90af61454f977872aecc44df36228c6f3695f42db2",
+    "declared_events": [
+      "tentacle5_death"
+    ],
+    "callback_files": [
+      {
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle5.lua",
+        "sha256": "419f585ea098563960138c8aed44ace125f5ce4e028b7343f35c7b3c43aa2adc"
+      }
+    ],
+    "runtime_kind": "tentacle5"
+  },
+  {
+    "target": "oteryn:creature.tentacle6",
+    "profile": {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.tentacle6.attack-1",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 82,
+          "details": {
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "critical_chance_ppm": 0,
+            "defense": 60,
+            "display_name": "Tentacle",
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "Tentacle",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": true
+            }
+          },
+          "experience": 0,
+          "health": 2500,
+          "mitigation": {
+            "denominator": 25,
+            "numerator": 48
+          },
+          "resistances": [
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": -30
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 30
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": -20
+              }
+            }
+          ],
+          "speed": 0
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle6",
+        "revision": "definition-r1"
+      }
+    },
+    "binding": {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_6.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle6",
+        "revision": "definition-r1"
+      }
+    },
+    "donor_monster_file_sha256": "8d063961e442b6ca587b3b421c528ccd973eb7cbe5c6dd0184b204153f696aa2",
+    "declared_events": [
+      "tentacle6_death"
+    ],
+    "callback_files": [
+      {
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle6.lua",
+        "sha256": "994fa9fbbacac1c20a85323d2363adb016f26eca2a7e83b81861390cd2873e1e"
+      }
+    ],
+    "runtime_kind": "tentacle6"
+  },
+  {
+    "target": "oteryn:creature.tentacle7",
+    "profile": {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.tentacle7.attack-1",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 82,
+          "details": {
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "critical_chance_ppm": 0,
+            "defense": 60,
+            "display_name": "Tentacle",
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "Tentacle",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": true
+            }
+          },
+          "experience": 0,
+          "health": 2500,
+          "mitigation": {
+            "denominator": 25,
+            "numerator": 48
+          },
+          "resistances": [
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": -30
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 30
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": -20
+              }
+            }
+          ],
+          "speed": 0
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle7",
+        "revision": "definition-r1"
+      }
+    },
+    "binding": {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_7.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle7",
+        "revision": "definition-r1"
+      }
+    },
+    "donor_monster_file_sha256": "d8a20b3ef48e4daf170669778b9a0838beff3eb6cd9c2f4b37677c8983411e67",
+    "declared_events": [
+      "tentacle7_death"
+    ],
+    "callback_files": [
+      {
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle7.lua",
+        "sha256": "0a70f7e60854b5c7e1409aa777ed7b1bd3125f9e60cc41469197ea9c7a4699aa"
+      }
+    ],
+    "runtime_kind": "tentacle7"
+  },
+  {
+    "target": "oteryn:creature.tentacle8",
+    "profile": {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.tentacle8.attack-1",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 82,
+          "details": {
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "critical_chance_ppm": 0,
+            "defense": 60,
+            "display_name": "Tentacle",
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "Tentacle",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": true
+            }
+          },
+          "experience": 0,
+          "health": 2500,
+          "mitigation": {
+            "denominator": 25,
+            "numerator": 48
+          },
+          "resistances": [
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": -30
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 30
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": -20
+              }
+            }
+          ],
+          "speed": 0
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle8",
+        "revision": "definition-r1"
+      }
+    },
+    "binding": {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_8.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle8",
+        "revision": "definition-r1"
+      }
+    },
+    "donor_monster_file_sha256": "1a153391cb0b37a2f970d4806dce0e4653c948b1646d93789ae5200930c73638",
+    "declared_events": [
+      "tentacle8_death"
+    ],
+    "callback_files": [
+      {
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle8.lua",
+        "sha256": "2afa9e0e001082b31307b2505e77379967f6d460d52cadbb0af5e562e32ea8a8"
+      }
+    ],
+    "runtime_kind": "tentacle8"
+  },
+  {
+    "target": "oteryn:creature.tentacle9",
+    "profile": {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.tentacle9.attack-1",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 82,
+          "details": {
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "critical_chance_ppm": 0,
+            "defense": 60,
+            "display_name": "Tentacle",
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "Tentacle",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": true
+            }
+          },
+          "experience": 0,
+          "health": 2500,
+          "mitigation": {
+            "denominator": 25,
+            "numerator": 48
+          },
+          "resistances": [
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": -30
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 30
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": -20
+              }
+            }
+          ],
+          "speed": 0
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle9",
+        "revision": "definition-r1"
+      }
+    },
+    "binding": {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_9.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle9",
+        "revision": "definition-r1"
+      }
+    },
+    "donor_monster_file_sha256": "f23cb339eb2d687fcb169c2a36032c00e7939506d116230e2d8c73b86f7b0841",
+    "declared_events": [
+      "tentacle9_death"
+    ],
+    "callback_files": [
+      {
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle9.lua",
+        "sha256": "0a21f1068049c0a89f229bb2bdb0a172fe994feeabe5558657af432117d24f53"
+      }
+    ],
+    "runtime_kind": "tentacle9"
+  },
+  {
+    "target": "oteryn:creature.tentacle10",
+    "profile": {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.tentacle10.attack-1",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 82,
+          "details": {
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "critical_chance_ppm": 0,
+            "defense": 60,
+            "display_name": "Tentacle",
+            "flags": {
+              "attackable": true,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "Tentacle",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": true
+            }
+          },
+          "experience": 0,
+          "health": 2500,
+          "mitigation": {
+            "denominator": 25,
+            "numerator": 48
+          },
+          "resistances": [
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": -30
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 30
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": -20
+              }
+            }
+          ],
+          "speed": 0
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle10",
+        "revision": "definition-r1"
+      }
+    },
+    "binding": {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_10.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle10",
+        "revision": "definition-r1"
+      }
+    },
+    "donor_monster_file_sha256": "1f5a511ea1cafef1972b67c8b4f6c673462bda48da4e5be54a87d727b4748f74",
+    "declared_events": [
+      "tentacle10_death"
+    ],
+    "callback_files": [
+      {
+        "path": "data-global/scripts/quests/a_pirates_tail_quest/creaturescripts_tentacle10.lua",
+        "sha256": "acf8f90afcd84add74591c8779f416bf9e62d908304db18305d7d572d9683fb6"
+      }
+    ],
+    "runtime_kind": "tentacle10"
+  }
+]

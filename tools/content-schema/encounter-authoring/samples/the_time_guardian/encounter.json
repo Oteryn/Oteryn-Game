@@ -1,0 +1,99 @@
+{
+  "identity": {
+    "key": "canary:encounter/the_time_guardian",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Forgotten Knowledge: The Time Guardian",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "the_time_guardian",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_time_guardian",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "the_blazing_time_guardian",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_blazing_time_guardian",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "the_freezing_time_guardian",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_freezing_time_guardian",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "the_time_guardian_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_time_guardian"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "the_time_guardian_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    },
+    {
+      "key": "the_blazing_time_guardian_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_blazing_time_guardian"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "the_blazing_time_guardian_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    },
+    {
+      "key": "the_freezing_time_guardian_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_freezing_time_guardian"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "the_freezing_time_guardian_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "the_time_guardian_defeated",
+    "the_blazing_time_guardian_defeated",
+    "the_freezing_time_guardian_defeated"
+  ]
+}

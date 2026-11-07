@@ -1,0 +1,9 @@
+{
+  "mechanic": "0148-wheel-allocation",
+  "kind": "keybindings",
+  "id": "0148-wheel-allocation-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+W",
+  "entry": "input.rs::open_key"
+}

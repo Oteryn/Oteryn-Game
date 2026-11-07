@@ -1,0 +1,3168 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "SHARED-VITALS-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "oteryn:item.tibia.i10219",
+      "source_title": "Crocodile Steak",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:42255:1114925",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i10329",
+      "source_title": "Rice Ball",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 180,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:42049:1114917",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i10453",
+      "source_title": "Terramite Eggs",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 60,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:42128:1016907",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i11459",
+      "source_title": "Pineapple",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 240,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:46414:1014598",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i11460",
+      "source_title": "Aubergine",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:46408:1007908",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i11461",
+      "source_title": "Broccoli",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 96,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:46409:1008668",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i11462",
+      "source_title": "Cauliflower",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 108,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:46410:1009427",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i11681",
+      "source_title": "Ectoplasmic Sushi",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 660,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:46716:1010316",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i11682",
+      "source_title": "Dragonfruit",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 216,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:46411:1010165",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i11683",
+      "source_title": "Peas",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 24,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:46413:1014472",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i11685",
+      "source_title": "Cheese Cookie",
+      "measurement_status": "OWNER_SELECTED_DEFAULT_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 24,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "OWNER_SELECTED_REFERENCE_DEFAULT_NOT_EXACT_ITEM_MEASUREMENT",
+          "sources": [
+            {
+              "source": "wiki:57849:1136738",
+              "selector": "Infobox Object / missing regenseconds; rendered Food table ?"
+            },
+            {
+              "source": "owner:food-defaults:20261018",
+              "selector": "Owner instruction: 3 ustal czas dla tego itemu do najblizej zblizonego itemu pasujacego do 3"
+            },
+            {
+              "source": "wiki:2884:1113907",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Owner requested the closest matching item as duration analogue. Selected ordinary Cookie (native3598), another small stackable biscuit weighing0.10oz, with Wiki nutrition24seconds. Copying its duration is an owner-authorized approximation, not an observation of Cheese Cookie."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i12310",
+      "source_title": "Haunch of Boar",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 240,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:50765:1043822",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i13992",
+      "source_title": "Sandfish",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 660,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:57155:1015169",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i14084",
+      "source_title": "Larvae",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 168,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:57153:1012810",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i14085",
+      "source_title": "Deepling Filet",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 180,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:57151:1009973",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i14681",
+      "source_title": "Anniversary Cake",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 720,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:57691:1007828",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i16103",
+      "source_title": "Mushroom Pie",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 396,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:59791:1115133",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i169",
+      "source_title": "Scarab Cheese",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 12,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:20462:1114497",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i17457",
+      "source_title": "Insectoid Eggs",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:62006:1039832",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i17820",
+      "source_title": "Soft Cheese",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 180,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:62008:1016295",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i17821",
+      "source_title": "Rat Cheese",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 144,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:62007:1014860",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i20310",
+      "source_title": "Christmas Cookie Tray",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 240,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:66290:1162739",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i21143",
+      "source_title": "Glooth Sandwich",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 180,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:67877:1115365",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i21144",
+      "source_title": "Bowl of Glooth Soup",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 84,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:67881:1115366",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i21145",
+      "source_title": "Bottle of Glooth Wine",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 72,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:67879:1008589",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i21146",
+      "source_title": "Glooth Steak",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 300,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:67883:1115367",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i22185",
+      "source_title": "Prickly Pear",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:76965:1014758",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i22187",
+      "source_title": "Roasted Meat",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 600,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:76964:1115557",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i229",
+      "source_title": "Ice Cream Cone (Venorean Dream)",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 24,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:20683:1114510",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i23535",
+      "source_title": "Energy Bar",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 300,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:78125:1011115",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i23545",
+      "source_title": "Energy Drink",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 180,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:78112:1011129",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i24382",
+      "source_title": "Bug Meat",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 240,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:79542:1115661",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i24383",
+      "source_title": "Cave Turnip",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:79543:1009431",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i24396",
+      "source_title": "Birthday Cake",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 720,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:80136:1008156",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i24439",
+      "source_title": "Shell (Item)",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 48,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:80281:1015354",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i24948",
+      "source_title": "Bottle of Tibian Wine",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:80137:1008593",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i25692",
+      "source_title": "Fresh Fruit",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 180,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:81399:1011642",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i29995",
+      "source_title": "Sun Fruit",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 168,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:86895:1115926",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i30198",
+      "source_title": "Meringue Cake",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 480,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:87453:1013842",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i30202",
+      "source_title": "Winterberry Liquor",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 180,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:87452:1017657",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i31560",
+      "source_title": "Goanna Meat",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 480,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:88807:1202977",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i32009",
+      "source_title": "Veal",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 360,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:89631:1136238",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i32043",
+      "source_title": "Bass",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 840,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:90767:1138046",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i32044",
+      "source_title": "Small Bass",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 600,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:90769:1016157",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i32045",
+      "source_title": "Tiny Bass",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 300,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:90768:1164178",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i32068",
+      "source_title": "Leberkassemmel",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 300,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:89637:1079840",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i32069",
+      "source_title": "Candy Floss",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 180,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:92574:1079834",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i32070",
+      "source_title": "Stockfish",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 420,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:92576:1079841",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i32198",
+      "source_title": "Filled Milk Churn",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 240,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:89633:1011374",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3250",
+      "source_title": "The Carrot of Doom",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 96,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:14277:1016926",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3577",
+      "source_title": "Meat",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 180,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:1208:1113663",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3578",
+      "source_title": "Fish",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 144,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:1192:1113662",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3579",
+      "source_title": "Salmon",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2943:1113915",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3580",
+      "source_title": "Northern Pike",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 204,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:16985:1114421",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3581",
+      "source_title": "Shrimp",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 48,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2991:1113925",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3582",
+      "source_title": "Ham",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 360,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:1207:1113656",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3583",
+      "source_title": "Dragon Ham",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 720,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2889:1181747",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3584",
+      "source_title": "Pear",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 60,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2988:1200942",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3585",
+      "source_title": "Red Apple",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 72,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:1250:1200917",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3586",
+      "source_title": "Orange",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 156,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:1334:1113686",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3587",
+      "source_title": "Banana",
+      "measurement_status": "CONTROLLED_UI_SPOT_CHECK",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 96,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CONTROLLED_OFFICIAL_UI_SPOT_CHECK_MATCHES_CURRENT_OWN_ITEM_WIKI",
+          "sources": [
+            {
+              "source": "wiki:1333:1113685",
+              "selector": "Infobox Object / regenseconds, itemid"
+            },
+            {
+              "source": "official-ui:food:20261018:i3587",
+              "selector": "Explicit hungry baseline -> single Use -> initial Food tooltip"
+            },
+            {
+              "source": "official-client:15.33.9d148f:food-native-bindings",
+              "selector": "All exact-name object matches / native 3587"
+            }
+          ],
+          "note": "Exact initial Food tooltip after one Look/Inspect-identified item from an explicit hungry baseline agrees with the own-item Wiki value. DERIVED classification retains the documented native-ID binding step, including positive Market-canonical purchase binding for banana3587; the quest-state banana31994 is not qualified. This validates the observed nutrition duration, not HP/MP regeneration rates or every food."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3588",
+      "source_title": "Blueberry",
+      "measurement_status": "CONTROLLED_UI_SPOT_CHECK",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 12,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CONTROLLED_OFFICIAL_UI_SPOT_CHECK_MATCHES_CURRENT_OWN_ITEM_WIKI",
+          "sources": [
+            {
+              "source": "wiki:1190:1113660",
+              "selector": "Infobox Object / regenseconds, itemid"
+            },
+            {
+              "source": "official-ui:food:20261018:i3588",
+              "selector": "Explicit hungry baseline -> single Use -> initial Food tooltip"
+            },
+            {
+              "source": "official-client:15.33.9d148f:food-native-bindings",
+              "selector": "All exact-name object matches / native 3588"
+            }
+          ],
+          "note": "Exact initial Food tooltip after one Look/Inspect-identified item from an explicit hungry baseline agrees with the own-item Wiki value. DERIVED classification retains the documented native-ID binding step, including positive Market-canonical purchase binding for banana3587; the quest-state banana31994 is not qualified. This validates the observed nutrition duration, not HP/MP regeneration rates or every food."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3589",
+      "source_title": "Coconut",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 216,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:1303:1113683",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3590",
+      "source_title": "Cherry",
+      "measurement_status": "CONTROLLED_UI_SPOT_CHECK",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 12,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CONTROLLED_OFFICIAL_UI_SPOT_CHECK_MATCHES_CURRENT_OWN_ITEM_WIKI",
+          "sources": [
+            {
+              "source": "wiki:1773:1113807",
+              "selector": "Infobox Object / regenseconds, itemid"
+            },
+            {
+              "source": "official-ui:food:20261018:i3590",
+              "selector": "Explicit hungry baseline -> single Use -> initial Food tooltip"
+            },
+            {
+              "source": "official-client:15.33.9d148f:food-native-bindings",
+              "selector": "All exact-name object matches / native 3590"
+            }
+          ],
+          "note": "Exact initial Food tooltip after one Look/Inspect-identified item from an explicit hungry baseline agrees with the own-item Wiki value. DERIVED classification retains the documented native-ID binding step, including positive Market-canonical purchase binding for banana3587; the quest-state banana31994 is not qualified. This validates the observed nutrition duration, not HP/MP regeneration rates or every food."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3591",
+      "source_title": "Strawberry",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 24,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2997:1016682",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3592",
+      "source_title": "Grapes",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 108,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2891:1113911",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3593",
+      "source_title": "Melon",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 240,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2983:1113923",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3594",
+      "source_title": "Pumpkin",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 204,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:3003:1113929",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3595",
+      "source_title": "Carrot",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 96,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:1263:1113681",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3596",
+      "source_title": "Tomato",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 72,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2999:1113928",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3597",
+      "source_title": "Corncob",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 108,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2885:1113908",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3598",
+      "source_title": "Cookie",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 24,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2884:1113907",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3599",
+      "source_title": "Candy Cane",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 24,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2879:1113906",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3600",
+      "source_title": "Bread",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:1741:1090735",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3601",
+      "source_title": "Roll",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 36,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2995:1113927",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3602",
+      "source_title": "Brown Bread",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 96,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2869:1113903",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3606",
+      "source_title": "Egg",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 72,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:1669:1113787",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3607",
+      "source_title": "Cheese",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 108,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:1191:1113661",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3723",
+      "source_title": "White Mushroom",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 108,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:1335:1113687",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3724",
+      "source_title": "Red Mushroom",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 48,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2993:1113926",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3725",
+      "source_title": "Brown Mushroom",
+      "measurement_status": "CONTROLLED_UI_SPOT_CHECK",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 264,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CONTROLLED_OFFICIAL_UI_SPOT_CHECK_MATCHES_CURRENT_OWN_ITEM_WIKI",
+          "sources": [
+            {
+              "source": "wiki:2877:1113905",
+              "selector": "Infobox Object / regenseconds, itemid"
+            },
+            {
+              "source": "official-ui:food:20261018:i3725",
+              "selector": "Explicit hungry baseline -> single Use -> initial Food tooltip"
+            },
+            {
+              "source": "official-client:15.33.9d148f:food-native-bindings",
+              "selector": "All exact-name object matches / native 3725"
+            }
+          ],
+          "note": "Exact initial Food tooltip after one Look/Inspect-identified item from an explicit hungry baseline agrees with the own-item Wiki value. DERIVED classification retains the documented native-ID binding step, including positive Market-canonical purchase binding for banana3587; the quest-state banana31994 is not qualified. This validates the observed nutrition duration, not HP/MP regeneration rates or every food."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3726",
+      "source_title": "Orange Mushroom",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 360,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2986:1113924",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3727",
+      "source_title": "Wood Mushroom",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 108,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:3001:1110487",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3728",
+      "source_title": "Dark Mushroom",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 72,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2887:1113909",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3729",
+      "source_title": "Some Mushrooms (Brown)",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 144,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:11428:1110488",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3730",
+      "source_title": "Some Mushrooms",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 36,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:11114:1114330",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3731",
+      "source_title": "Fire Mushroom",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 432,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2890:1110485",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3732",
+      "source_title": "Green Mushroom",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 60,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:2893:1113912",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i37530",
+      "source_title": "Bottle of Champagne",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:95966:1008587",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i37531",
+      "source_title": "Candy Floss (Large)",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 60,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:96212:1008864",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i37532",
+      "source_title": "Ice Cream Cone (Sprinkles)",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 180,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:96214:1012441",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i37533",
+      "source_title": "Birthday Layer Cake",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 720,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:95967:1008160",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48116",
+      "source_title": "Gummy Rotworm",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 35,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:106503:1071262",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48251",
+      "source_title": "Wafer Paper Flower",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 25,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:106521:1071267",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48252",
+      "source_title": "Brigadeiro",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 45,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:106522:1202849",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48253",
+      "source_title": "Beijinho",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 45,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:106523:1071260",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48254",
+      "source_title": "Churro Heart",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 65,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:106524:1066282",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48255",
+      "source_title": "Lime Tart",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 125,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:106525:1203029",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48256",
+      "source_title": "Pastry Dragon",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 605,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:106527:1066756",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48508",
+      "source_title": "Amber Souvenir",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 125,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:106565:1202810",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48509",
+      "source_title": "Resinous Fish Fin",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:106567:1203101",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48511",
+      "source_title": "Resin Parasite",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:106571:1203099",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48544",
+      "source_title": "Wad of Fairy Floss",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 124,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:106585:1071266",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i5096",
+      "source_title": "Mango",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 48,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:9136:1114286",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i5678",
+      "source_title": "Tortoise Egg",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 96,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:8738:1114231",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i6125",
+      "source_title": "Tortoise Egg from Nargor",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 96,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:29594:1114657",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i6277",
+      "source_title": "Cake",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:12330:1114349",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i6278",
+      "source_title": "Cake (Decorated)",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 180,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:12521:1114358",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i6392",
+      "source_title": "Valentine's Cake",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 144,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:12515:1017277",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i6393",
+      "source_title": "Cream Cake",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 180,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:12514:1114357",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i6500",
+      "source_title": "Gingerbreadman",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 240,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:12294:1162743",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i6541",
+      "source_title": "Coloured Egg (Yellow)",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 72,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:15149:1114387",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i6542",
+      "source_title": "Coloured Egg (Red)",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 72,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:15146:1114384",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i6543",
+      "source_title": "Coloured Egg (Blue)",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 72,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:15147:1114385",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i6544",
+      "source_title": "Coloured Egg (Green)",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 72,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:15148:1114386",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i6545",
+      "source_title": "Coloured Egg (Purple)",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 72,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:15150:1114388",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i6569",
+      "source_title": "Candy",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 12,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:13177:1114367",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i6574",
+      "source_title": "Bar of Chocolate",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 60,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:13151:1114363",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i7158",
+      "source_title": "Rainbow Trout",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 300,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:16905:1114409",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i7159",
+      "source_title": "Green Perch",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 180,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:17082:1114425",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i7372",
+      "source_title": "Ice Cream Cone (Crispy Chocolate Chips)",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 24,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:23997:1114561",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i7373",
+      "source_title": "Ice Cream Cone (Velvet Vanilla)",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 24,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:57224:1059542",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i7374",
+      "source_title": "Ice Cream Cone (Sweet Strawberry)",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 24,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:57222:1059541",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i7375",
+      "source_title": "Ice Cream Cone (Chilly Cherry)",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 24,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:23996:1114560",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i7376",
+      "source_title": "Ice Cream Cone (Mellow Melon)",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 24,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:30862:1059540",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i7377",
+      "source_title": "Ice Cream Cone (Blue-Barian)",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 24,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:23995:1114559",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8010",
+      "source_title": "Potato",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:37588:1180188",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8011",
+      "source_title": "Plum",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 60,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:25525:1114591",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8012",
+      "source_title": "Raspberry",
+      "measurement_status": "CONTROLLED_UI_SPOT_CHECK",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 12,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CONTROLLED_OFFICIAL_UI_SPOT_CHECK_MATCHES_CURRENT_OWN_ITEM_WIKI",
+          "sources": [
+            {
+              "source": "wiki:25522:1014861",
+              "selector": "Infobox Object / regenseconds, itemid"
+            },
+            {
+              "source": "official-ui:food:20261018:i8012",
+              "selector": "Explicit hungry baseline -> single Use -> initial Food tooltip"
+            },
+            {
+              "source": "official-client:15.33.9d148f:food-native-bindings",
+              "selector": "All exact-name object matches / native 8012"
+            }
+          ],
+          "note": "Exact initial Food tooltip after one Look/Inspect-identified item from an explicit hungry baseline agrees with the own-item Wiki value. DERIVED classification retains the documented native-ID binding step, including positive Market-canonical purchase binding for banana3587; the quest-state banana31994 is not qualified. This validates the observed nutrition duration, not HP/MP regeneration rates or every food."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8013",
+      "source_title": "Lemon",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 12,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:25524:1114590",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8014",
+      "source_title": "Cucumber",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 84,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:25552:1114596",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8015",
+      "source_title": "Onion",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 60,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:25638:1114605",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8016",
+      "source_title": "Jalapeno Pepper",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 12,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:25639:1114606",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8017",
+      "source_title": "Beetroot",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 60,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:25553:1114597",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8019",
+      "source_title": "Chocolate Cake",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 132,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:25731:1114612",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8177",
+      "source_title": "Yummy Gummy Worm",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 12,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:29913:1017827",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8197",
+      "source_title": "Bulb of Garlic",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 60,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:30974:1114695",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i836",
+      "source_title": "Walnut",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 48,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:20499:1017462",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i841",
+      "source_title": "Peanut",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 48,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:20500:1114500",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i901",
+      "source_title": "Marlin",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 720,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:21668:1114520",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        }
+      }
+    },
+    {
+      "key": "wiki:food.page.103019",
+      "source_title": "Dewberries",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:103019:1019826",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        },
+        "wiki_item_id_candidates": {
+          "value": [
+            43892
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:103019:1019826",
+              "selector": "Infobox Object / itemid"
+            }
+          ],
+          "note": "Literal IDs listed by this current Wiki article. These are source candidates, not new native definitions or interchangeable quest/state variants. No runtime item identity is invented."
+        }
+      },
+      "identity_binding_status": "SOURCE_ONLY_NOT_AN_ADMITTED_RUNTIME_ITEM_ID"
+    },
+    {
+      "key": "wiki:food.page.106502",
+      "source_title": "Taiyaki",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 185,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:106502:1066957",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        },
+        "wiki_item_id_candidates": {
+          "value": [
+            48115
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:106502:1066957",
+              "selector": "Infobox Object / itemid"
+            }
+          ],
+          "note": "Literal IDs listed by this current Wiki article. These are source candidates, not new native definitions or interchangeable quest/state variants. No runtime item identity is invented."
+        }
+      },
+      "identity_binding_status": "SOURCE_ONLY_NOT_AN_ADMITTED_RUNTIME_ITEM_ID"
+    },
+    {
+      "key": "wiki:food.page.106506",
+      "source_title": "Moon Melon Slice",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 65,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:106506:1066693",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        },
+        "wiki_item_id_candidates": {
+          "value": [
+            48179
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:106506:1066693",
+              "selector": "Infobox Object / itemid"
+            }
+          ],
+          "note": "Literal IDs listed by this current Wiki article. These are source candidates, not new native definitions or interchangeable quest/state variants. No runtime item identity is invented."
+        }
+      },
+      "identity_binding_status": "SOURCE_ONLY_NOT_AN_ADMITTED_RUNTIME_ITEM_ID"
+    },
+    {
+      "key": "wiki:food.page.106512",
+      "source_title": "Moon Melon",
+      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 305,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_OWN_ITEM_WIKI_WITH_SAMPLED_OFFICIAL_UI_CORROBORATION",
+          "sources": [
+            {
+              "source": "wiki:106512:1171907",
+              "selector": "Infobox Object / regenseconds, itemid"
+            }
+          ],
+          "note": "Current own-item Wiki nutrition duration, structurally matched to the rendered Food table. The five-item official-client spot check agrees with the source values; this row is not claimed individually measured unless its measurement_status says CONTROLLED_UI_SPOT_CHECK. This is reference data, not an executable HP/MP regeneration formula."
+        },
+        "wiki_item_id_candidates": {
+          "value": [
+            48197
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:106512:1171907",
+              "selector": "Infobox Object / itemid"
+            }
+          ],
+          "note": "Literal IDs listed by this current Wiki article. These are source candidates, not new native definitions or interchangeable quest/state variants. No runtime item identity is invented."
+        }
+      },
+      "identity_binding_status": "SOURCE_ONLY_NOT_AN_ADMITTED_RUNTIME_ITEM_ID"
+    },
+    {
+      "key": "wiki:food.page.84437",
+      "source_title": "Cake (Item)",
+      "measurement_status": "OWNER_SELECTED_DEFAULT_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 240,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "OWNER_SELECTED_REFERENCE_DEFAULT_NOT_EXACT_ITEM_MEASUREMENT",
+          "sources": [
+            {
+              "source": "wiki:84437:1008829",
+              "selector": "Infobox Object / missing regenseconds; rendered Food table ?"
+            },
+            {
+              "source": "owner:food-defaults:20261018",
+              "selector": "Owner instruction: dla item 1 i 2 ustal 240 sekund"
+            }
+          ],
+          "note": "Owner explicitly selected this 240-second reference default. The exact-item Wiki duration remains unspecified; Cake (Wall) has a reported 240-second duration, but equivalence of movable item states is not independently established."
+        },
+        "wiki_item_id_candidates": {
+          "value": [
+            12147,
+            12150,
+            12151,
+            12152,
+            12153,
+            12154,
+            12155
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84437:1008829",
+              "selector": "Infobox Object / itemid"
+            }
+          ],
+          "note": "Literal IDs listed by this current Wiki article. These are source candidates, not new native definitions or interchangeable quest/state variants. No runtime item identity is invented."
+        }
+      },
+      "identity_binding_status": "SOURCE_ONLY_NOT_AN_ADMITTED_RUNTIME_ITEM_ID"
+    },
+    {
+      "key": "wiki:food.page.84438",
+      "source_title": "Cake with a Cherry",
+      "measurement_status": "OWNER_SELECTED_DEFAULT_NOT_INDIVIDUALLY_MEASURED",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 240,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "OWNER_SELECTED_REFERENCE_DEFAULT_NOT_EXACT_ITEM_MEASUREMENT",
+          "sources": [
+            {
+              "source": "wiki:84438:1008840",
+              "selector": "Infobox Object / missing regenseconds; rendered Food table ?"
+            },
+            {
+              "source": "owner:food-defaults:20261018",
+              "selector": "Owner instruction: dla item 1 i 2 ustal 240 sekund"
+            }
+          ],
+          "note": "Owner explicitly selected this 240-second reference default. The exact-item Wiki duration remains unspecified; Cake (Wall) has a reported 240-second duration, but equivalence of movable item states is not independently established."
+        },
+        "wiki_item_id_candidates": {
+          "value": [
+            12148,
+            12149
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84438:1008840",
+              "selector": "Infobox Object / itemid"
+            }
+          ],
+          "note": "Literal IDs listed by this current Wiki article. These are source candidates, not new native definitions or interchangeable quest/state variants. No runtime item identity is invented."
+        }
+      },
+      "identity_binding_status": "SOURCE_ONLY_NOT_AN_ADMITTED_RUNTIME_ITEM_ID"
+    }
+  ],
+  "coverage": {
+    "regenerative_source_rows": 146,
+    "existing_native_item_records": 140,
+    "source_only_unbound_records": 6,
+    "unbound_record_keys": [
+      "wiki:food.page.84437",
+      "wiki:food.page.84438",
+      "wiki:food.page.103019",
+      "wiki:food.page.106506",
+      "wiki:food.page.106512",
+      "wiki:food.page.106502"
+    ],
+    "controlled_ui_spot_checked_native_ids": [
+      3587,
+      3588,
+      3590,
+      3725,
+      8012
+    ],
+    "all_rows_individually_measured": false,
+    "method": "143 own-item Wiki nutrition durations with five official-client UI spot checks, plus three explicitly owner-selected reference defaults: two cakes240s and Cheese Cookie24s by Cookie analogy.",
+    "owner_selected_default_rows": 3
+  },
+  "non_regenerative_food_reference": {
+    "value": [
+      "Baking Tray (Cookie)",
+      "Baking Tray (Reed)",
+      "Blessed Steak",
+      "Blue Gingerbread Heart",
+      "Blueberry Cupcake",
+      "Cake (Wall)",
+      "Carrion Casserole",
+      "Carrot Cake",
+      "Carrot Pie",
+      "Chilli Con Carniphila",
+      "Coconut Shrimp Bake",
+      "Consecrated Beef",
+      "Delicatessen Salad",
+      "Demon Root",
+      "Demonic Candy Ball",
+      "Filled Jalapeno Peppers",
+      "Flour",
+      "Forbidden Fruit",
+      "Green Gingerbread Heart",
+      "Hydra Tongue Salad",
+      "Lemon Cupcake",
+      "Lump of Cake Dough",
+      "Lump of Chocolate Dough",
+      "Lump of Dough",
+      "Lump of Reed Flour Dough",
+      "Moon-Touched Dewberries",
+      "Northern Fishburger",
+      "Overcooked Noodles",
+      "Pot of Blackjack",
+      "Raw Meat",
+      "Red Gingerbread Heart",
+      "Roasted Dragon Wings",
+      "Roasted Wyvern Wings",
+      "Rotworm Stew",
+      "Salt",
+      "Strawberry Cupcake",
+      "Svargrond Salmon Filet",
+      "Tropical Fried Terrorbird",
+      "Tropical Marinated Tiger",
+      "Unicorn Weisswurst",
+      "Veggie Casserole",
+      "Zaoan Sauce"
+    ],
+    "classification": "PROVEN",
+    "target_cut": "2026-10-18",
+    "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+    "sources": [
+      {
+        "source": "wiki:Food:888949:rendered:20261018",
+        "selector": "Food / Non-Regenerative Food table / Name"
+      }
+    ],
+    "note": "The current rendered Wiki table separately lists these 42 items as non-regenerative food. This does not imply a zero-second nutrition value, a specific instant effect, or a native-ID binding for every listed item."
+  }
+}

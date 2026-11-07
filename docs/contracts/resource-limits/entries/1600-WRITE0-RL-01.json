@@ -1,0 +1,20 @@
+{
+  "id": "WRITE0-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WRITE0_BOOKS_SCROLLS_AND_BLACKBOARDS_DECISION_2026-10-01.md",
+  "resource": "Writable Item definition text length",
+  "unit": "Unicode scalar values",
+  "hard_maximum": 4000,
+  "configurable_range": { "minimum": 1, "maximum": 4000 },
+  "failure_category": "CONTENT_INVALID",
+  "allocation_impact": "At most 16000 UTF-8 bytes per writable text; nonstackable items only.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=4000: writable content admitted",
+    "max+1=4001: content rejected"
+  ],
+  "consumers": [
+    "tools/content-migration/writable_item_profiles.py",
+    "crates/gameplay/content/src/content/native_gameplay.rs"
+  ],
+  "notes": "WRITE-CONTENT-1 qualifies text semantics only. Item mint permission and live writing remain separately fenced. Values from the pinned references are not verified against Global."
+}

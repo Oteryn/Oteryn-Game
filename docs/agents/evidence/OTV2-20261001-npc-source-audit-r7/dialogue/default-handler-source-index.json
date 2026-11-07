@@ -1,0 +1,100 @@
+{
+  "captures": [
+    {
+      "npc_dir": "data-otservbr-global/npc",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "source": "canary",
+      "path": "data/npclib/npc_system/npc_handler.lua",
+      "git_blob_sha1": "47820294029e7dbae522a7210cf1274a33105910",
+      "sha256": "632be3d5b445ec233d80ed2e60c3cd6bc43fec0691330d35aea10f5a21551f55",
+      "bytes": 25106,
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/npclib/npc_system/npc_handler.lua",
+      "capture": "raw/canary/data/npclib/npc_system/npc_handler.lua"
+    },
+    {
+      "npc_dir": "data-otservbr-global/npc",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "source": "canary",
+      "path": "data/npclib/npc_system/modules.lua",
+      "git_blob_sha1": "40a58c2ca7c74e28c51565604390ad80dcdb30af",
+      "sha256": "a1b4e1e97a72efedc1a427cddbf6fa7e352c9d8dd3d49f7298167a4550aa29f1",
+      "bytes": 19734,
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/npclib/npc_system/modules.lua",
+      "capture": "raw/canary/data/npclib/npc_system/modules.lua"
+    },
+    {
+      "npc_dir": "data-global/npc",
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "source": "crystal",
+      "path": "data/npclib/npc_system/npc_handler.lua",
+      "git_blob_sha1": "5ac57f68c335e7aa5e2d03ab032ef5f42a5e266d",
+      "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+      "bytes": 24162,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/data/npclib/npc_system/npc_handler.lua",
+      "capture": "raw/crystal/data/npclib/npc_system/npc_handler.lua"
+    },
+    {
+      "npc_dir": "data-global/npc",
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "source": "crystal",
+      "path": "data/npclib/npc_system/modules.lua",
+      "git_blob_sha1": "ac0fa8d5d9abff50458f6344a66ba828914a8dbe",
+      "sha256": "13b3fa5e827d592bc8ce6c81e64b41ac2ae528fceac305e7a8e08d566a4cb024",
+      "bytes": 19835,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/data/npclib/npc_system/modules.lua",
+      "capture": "raw/crystal/data/npclib/npc_system/modules.lua"
+    },
+    {
+      "npc_dir": "data-global/npc",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source": "crystal-summer",
+      "path": "data/npclib/npc_system/npc_handler.lua",
+      "git_blob_sha1": "5ac57f68c335e7aa5e2d03ab032ef5f42a5e266d",
+      "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+      "bytes": 24162,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/npclib/npc_system/npc_handler.lua",
+      "capture": "raw/crystal-summer/data/npclib/npc_system/npc_handler.lua"
+    },
+    {
+      "npc_dir": "data-global/npc",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source": "crystal-summer",
+      "path": "data/npclib/npc_system/modules.lua",
+      "git_blob_sha1": "ac0fa8d5d9abff50458f6344a66ba828914a8dbe",
+      "sha256": "13b3fa5e827d592bc8ce6c81e64b41ac2ae528fceac305e7a8e08d566a4cb024",
+      "bytes": 19835,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/npclib/npc_system/modules.lua",
+      "capture": "raw/crystal-summer/data/npclib/npc_system/modules.lua"
+    },
+    {
+      "npc_dir": "data-otservbr-global/npc",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source": "canary-current",
+      "path": "data/npclib/npc_system/npc_handler.lua",
+      "git_blob_sha1": "47820294029e7dbae522a7210cf1274a33105910",
+      "sha256": "632be3d5b445ec233d80ed2e60c3cd6bc43fec0691330d35aea10f5a21551f55",
+      "bytes": 25106,
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/npclib/npc_system/npc_handler.lua",
+      "capture": "raw/canary-current/data/npclib/npc_system/npc_handler.lua"
+    },
+    {
+      "npc_dir": "data-otservbr-global/npc",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source": "canary-current",
+      "path": "data/npclib/npc_system/modules.lua",
+      "git_blob_sha1": "40a58c2ca7c74e28c51565604390ad80dcdb30af",
+      "sha256": "a1b4e1e97a72efedc1a427cddbf6fa7e352c9d8dd3d49f7298167a4550aa29f1",
+      "bytes": 19734,
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/npclib/npc_system/modules.lua",
+      "capture": "raw/canary-current/data/npclib/npc_system/modules.lua"
+    }
+  ]
+}

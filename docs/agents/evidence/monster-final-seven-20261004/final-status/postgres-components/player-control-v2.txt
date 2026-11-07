@@ -1,0 +1,22 @@
+SET
+SET
+INSERT 0 1
+SET
+CREATE FUNCTION
+CREATE FUNCTION
+ pg_sleep
+----------
+
+(1 row)
+
+ fixture_spell_expire
+----------------------
+
+(1 row)
+
+DO
+DO
+         result
+------------------------
+ SPELL_ITEM_GUARDS_PASS
+(1 row)

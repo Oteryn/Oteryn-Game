@@ -1,0 +1,818 @@
+{
+  "identity": {
+    "key": "canary:encounter/world_devourer",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Heart of Destruction: World Devourer",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "frenzy",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/frenzy",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "disruption",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/disruption",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "charged_disruption",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/charged_disruption",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "overcharged_disruption",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/overcharged_disruption",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "the_hunger",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_hunger",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "the_destruction",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_destruction",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "the_rage",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_rage",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "world_devourer",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/world_devourer",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "greed",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/greed",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "arena",
+      "kind": "area",
+      "description": "Every tile from Canary (32260, 31336, 14) to (32283, 31360, 14).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              32260,
+              32283
+            ],
+            "y": [
+              31336,
+              31360
+            ],
+            "floor": 14
+          }
+        ]
+      }
+    },
+    {
+      "key": "exit_vortex",
+      "kind": "point",
+      "description": "Canary (32281, 31348, 14), the vortex of the room.",
+      "location": {
+        "x": 32281,
+        "y": 31348,
+        "floor": 14
+      }
+    },
+    {
+      "key": "hunger_vortex",
+      "kind": "point",
+      "description": "Canary (32244, 31371, 14).",
+      "location": {
+        "x": 32244,
+        "y": 31371,
+        "floor": 14
+      }
+    },
+    {
+      "key": "devourer_vortex",
+      "kind": "point",
+      "description": "Canary (32271, 31346, 14).",
+      "location": {
+        "x": 32271,
+        "y": 31346,
+        "floor": 14
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "rage_summons",
+        "initial": 0
+      },
+      {
+        "name": "destruction_summons",
+        "initial": 0
+      },
+      {
+        "name": "devourer_summons",
+        "initial": 0
+      },
+      {
+        "name": "bosses_killed",
+        "initial": 0
+      },
+      {
+        "name": "hunger_summons",
+        "initial": 0
+      }
+    ],
+    "flags": [
+      {
+        "name": "the_hunger_killed",
+        "initial": false
+      },
+      {
+        "name": "the_destruction_killed",
+        "initial": false
+      },
+      {
+        "name": "the_rage_killed",
+        "initial": false
+      },
+      {
+        "name": "destruction_summon_delay",
+        "initial": false
+      },
+      {
+        "name": "hunger_summon_delay",
+        "initial": false
+      }
+    ],
+    "timers": [
+      {
+        "name": "destruction_summon_delay",
+        "duration_ms": 15000,
+        "repeat": false
+      },
+      {
+        "name": "hunger_summon_delay",
+        "duration_ms": 15000,
+        "repeat": false
+      }
+    ]
+  },
+  "rules": [
+    {
+      "key": "frenzy_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "frenzy"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "rage_summons",
+          "operation": "add",
+          "value": -1
+        },
+        {
+          "kind": "counter",
+          "counter": "devourer_summons",
+          "operation": "add",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "key": "disruption_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "disruption"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "destruction_summons",
+          "operation": "add",
+          "value": -1
+        },
+        {
+          "kind": "counter",
+          "counter": "devourer_summons",
+          "operation": "add",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "key": "charged_disruption_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "charged_disruption"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "destruction_summons",
+          "operation": "add",
+          "value": -1
+        },
+        {
+          "kind": "counter",
+          "counter": "devourer_summons",
+          "operation": "add",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "key": "overcharged_disruption_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "overcharged_disruption"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "destruction_summons",
+          "operation": "add",
+          "value": -1
+        },
+        {
+          "kind": "counter",
+          "counter": "devourer_summons",
+          "operation": "add",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "key": "the_hunger_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_hunger"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "bosses_killed",
+          "operation": "add",
+          "value": 1
+        },
+        {
+          "kind": "flag",
+          "flag": "the_hunger_killed",
+          "value": true
+        }
+      ]
+    },
+    {
+      "key": "the_destruction_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_destruction"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "bosses_killed",
+          "operation": "add",
+          "value": 1
+        },
+        {
+          "kind": "flag",
+          "flag": "the_destruction_killed",
+          "value": true
+        }
+      ]
+    },
+    {
+      "key": "the_rage_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_rage"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "bosses_killed",
+          "operation": "add",
+          "value": 1
+        },
+        {
+          "kind": "flag",
+          "flag": "the_rage_killed",
+          "value": true
+        }
+      ]
+    },
+    {
+      "key": "world_devourer_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "world_devourer"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/23483",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/23482",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_vortex",
+          "interaction": "canary:interaction/14354"
+        },
+        {
+          "kind": "emit_outcome",
+          "outcome": "world_devourer_defeated",
+          "credited": "players_in_anchor",
+          "anchor": "arena"
+        },
+        {
+          "kind": "remove",
+          "all_in": "arena"
+        }
+      ]
+    },
+    {
+      "key": "disruption_charges",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "disruption"
+      },
+      "delay_ms": {
+        "min": 12000,
+        "max": 13000
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "disruption",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/charged_disruption",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "charged_disruption_charges",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "charged_disruption"
+      },
+      "delay_ms": {
+        "min": 18000,
+        "max": 19000
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "charged_disruption",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/overcharged_disruption",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "the_rage_summons_frenzy",
+      "trigger": {
+        "kind": "ability_cast",
+        "role": "the_rage",
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/rage_summon",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "rage_summons",
+          "op": "<",
+          "value": 3
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/frenzy",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "offset_tiles": 1
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "rage_summons",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "the_destruction_summons_disruption",
+      "trigger": {
+        "kind": "ability_cast",
+        "role": "the_destruction",
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/destruction_summon",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "destruction_summon_delay",
+          "value": false
+        },
+        {
+          "kind": "counter_compare",
+          "counter": "destruction_summons",
+          "op": "<",
+          "value": 3
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/disruption",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "offset_tiles": 1
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "destruction_summons",
+          "operation": "add",
+          "value": 1
+        },
+        {
+          "kind": "flag",
+          "flag": "destruction_summon_delay",
+          "value": true
+        },
+        {
+          "kind": "timer",
+          "timer": "destruction_summon_delay",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "destruction_summon_delay_ends",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "destruction_summon_delay"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "destruction_summon_delay",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "world_devourer_summons_a_minion",
+      "trigger": {
+        "kind": "ability_cast",
+        "role": "world_devourer",
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/devourer_summon",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "devourer_summons",
+          "op": "<",
+          "value": 3
+        }
+      ],
+      "actions": [
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/greed",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": {
+                    "offset_tiles": 1
+                  },
+                  "owner": "none",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/frenzy",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": {
+                    "offset_tiles": 1
+                  },
+                  "owner": "none",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/disruption",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": {
+                    "offset_tiles": 1
+                  },
+                  "owner": "none",
+                  "health": "full"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "counter",
+          "counter": "devourer_summons",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "the_hunger_summons_greed",
+      "trigger": {
+        "kind": "ability_cast",
+        "role": "the_hunger",
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/hunger_summon",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "hunger_summon_delay",
+          "value": false
+        },
+        {
+          "kind": "counter_compare",
+          "counter": "hunger_summons",
+          "op": "<",
+          "value": 3
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/greed",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "offset_tiles": 1
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "hunger_summons",
+          "operation": "add",
+          "value": 1
+        },
+        {
+          "kind": "flag",
+          "flag": "hunger_summon_delay",
+          "value": true
+        },
+        {
+          "kind": "timer",
+          "timer": "hunger_summon_delay",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "hunger_summon_delay_ends",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "hunger_summon_delay"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "hunger_summon_delay",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "the_hunger_opens_its_vortex",
+      "trigger": {
+        "kind": "stepped_on",
+        "role": "the_hunger",
+        "item": {
+          "family": "Item",
+          "key": "canary:item/23469",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/23469",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/23470",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "hunger_vortex"
+        }
+      ]
+    },
+    {
+      "key": "world_devourer_opens_its_vortex",
+      "trigger": {
+        "kind": "stepped_on",
+        "role": "world_devourer",
+        "item": {
+          "family": "Item",
+          "key": "canary:item/23469",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/23469",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/23470",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "devourer_vortex"
+        }
+      ]
+    },
+    {
+      "key": "greed_leaves_through_the_open_vortex",
+      "trigger": {
+        "kind": "stepped_on",
+        "role": "greed",
+        "item": {
+          "family": "Item",
+          "key": "canary:item/23470",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "remove",
+          "triggering": true
+        },
+        {
+          "kind": "counter",
+          "counter": "hunger_summons",
+          "operation": "add",
+          "value": -1
+        },
+        {
+          "kind": "counter",
+          "counter": "devourer_summons",
+          "operation": "add",
+          "value": -1
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "world_devourer_defeated"
+  ]
+}

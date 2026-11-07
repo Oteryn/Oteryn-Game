@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-FIRST-PROD-REFERENCES",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_04",
+  "resource": "Semantic references in one first-production graph/artifact",
+  "unit": "references",
+  "hard_maximum": 3090,
+  "configurable_range": {
+    "minimum": 24,
+    "maximum": 3090
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Count with checked arithmetic before reference-vector/set materialization.",
+  "client_visible": false,
+  "boundary_tests": [
+    "3,090 accepted when semantically valid",
+    "3,091 rejected before resolution growth",
+    "reference-count overflow rejected"
+  ]
+}

@@ -1,0 +1,529 @@
+{
+  "quests": [
+    {
+      "title": "20 Years a Cook Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "A Pirate's Death to Me",
+      "canary": "PARTIAL",
+      "crystalserver": "PARTIAL"
+    },
+    {
+      "title": "Afflicted Outfits Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Ancient Aucar Outfits Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Annual Autumn Vintage",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Asura Palace Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Awash World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Bank Robbery Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Bewitched",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Bored Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Braindeath Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Cartography 101 Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Chakoya Iceberg Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Child of Destiny Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Chyllfroest Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Citizen of Issavi Outfits Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Demon Wars World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Demon's Lullaby",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Devovorga's Essence Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Down the Drain Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Draccoon Herald Outfits Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Dragon Slayer Outfits Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Elvenbane Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Exchange Quests",
+      "canary": "PARTIAL",
+      "crystalserver": "PARTIAL"
+    },
+    {
+      "title": "Feral Trappers Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Fire from the Earth Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Goblin Merchant Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Hive Born World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Hive Outpost Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Horse Station World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Hunting for Tokens Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Hydra Egg Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Illuminated Warrior Outfits Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Illuminator Outfits Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Insectoid Invasion World Change",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Insectoid Outfits Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Jungle Camp Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Kingdom of Kormarak Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Kingsday Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Kissing a Pig Quest",
+      "canary": "PARTIAL",
+      "crystalserver": "PARTIAL"
+    },
+    {
+      "title": "Last Creep Standing",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Loose Ends Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Lumberjack Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Machinery of War Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Magic Sword Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Make Believe Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Mastermind Potion Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Measuring Tibia Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Mystery of the Valley Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Nimmersatt's Lair",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Nomads Land Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Nomads Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Noodles is Gone Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Opticording Sphere Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Orcsoberfest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Overhunting World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Pilgrimage of Ashes Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Poacher Caves Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Podzilla Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Rathleton Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Ravenous Madness Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Research and Development Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Rise of Devovorga",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "River Runs Deep Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Rootwalker Outfits Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Royal Bounacean Advisor Outfits Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Sanctuary of the Lizard God Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Shards of a Broken Moon Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Skull of Ratha Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Small Health Potion Quest",
+      "canary": "PARTIAL",
+      "crystalserver": "PARTIAL"
+    },
+    {
+      "title": "Small Ruby Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Small Sapphire Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Spider Nest Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Spirit Grounds Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Spring into Life",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Stampede Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Steamship World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Swamp Fever World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Thawing Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "The Colours of Magic",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "The Fire-Feathered Serpent World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "The Great Expedition",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "The Lightbearer",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "The Mage's Tower World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "The Order of the Stag Quest",
+      "canary": "ABSENT",
+      "crystalserver": "PARTIAL"
+    },
+    {
+      "title": "The Repenters Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "The Roost of the Graveborn Quest",
+      "canary": "ABSENT",
+      "crystalserver": "PARTIAL"
+    },
+    {
+      "title": "The Scatterbrained Sorcerer Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "The Spirit Will Get You Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Thornfire World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Tibia Anniversary",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Top of the City Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Torch Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Treasure Hunt Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Treasure Island Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    },
+    {
+      "title": "Tutorial",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Twenty Miles Beneath the Sea Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Twisted Waters World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Venore Daily Tasks Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Voodoo Doll Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "War Against the Hive Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Warpath Mini World Change",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Waterskin of Mead Quest",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Winterlight Solstice",
+      "canary": "IMPLEMENTED",
+      "crystalserver": "IMPLEMENTED"
+    },
+    {
+      "title": "Within the Tides Quest",
+      "canary": "ABSENT",
+      "crystalserver": "ABSENT"
+    }
+  ]
+}

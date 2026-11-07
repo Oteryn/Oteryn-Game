@@ -1,0 +1,45 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.distance",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Distance Weapon",
+  "family_profile": "weapon_distance",
+  "delivery_task_eligible": false,
+  "taxonomy": {
+    "item_class": "weapon",
+    "primary": "distance",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "equipment": {
+    "slot": "right_hand",
+    "hands": 2,
+    "reserved_slots": [
+      "left_hand"
+    ],
+    "groups": []
+  },
+  "weapon": {
+    "weapon_type": "distance_launcher",
+    "ammunition_kind": "arrow",
+    "attack_modifier": 1,
+    "hit_chance_modifier_percent": {
+      "numerator": 0,
+      "denominator": 1
+    },
+    "range_cells": 5,
+    "consumption_mode": "consume_ammunition"
+  },
+  "trade": {
+    "tradeable": true,
+    "marketable": true
+  }
+}

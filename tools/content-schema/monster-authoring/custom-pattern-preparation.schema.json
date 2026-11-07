@@ -1,0 +1,605 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pinned custom-pattern review evidence, never executable admission",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "OTERYN_CUSTOM_PATTERN_PREPARATION/v1"
+    },
+    "source_revision": {
+      "const": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+    },
+    "scope": {
+      "type": "string"
+    },
+    "grouping_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "counts": {
+      "type": "object",
+      "properties": {
+        "accepted_group_names": {
+          "const": 19
+        },
+        "historical_source_spells": {
+          "const": 93
+        },
+        "source_scripts_prepared": {
+          "type": "integer",
+          "minimum": 93
+        },
+        "current_open_registered_spells": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "accepted_group_names",
+        "historical_source_spells",
+        "source_scripts_prepared",
+        "current_open_registered_spells"
+      ],
+      "additionalProperties": false
+    },
+    "input_manifest_sha256": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      }
+    },
+    "patterns": {
+      "type": "array",
+      "minItems": 19,
+      "maxItems": 19,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "source_spell_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "accepted_contract": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "current_open_reference_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "admission_authorized": {
+            "const": false
+          }
+        },
+        "required": [
+          "id",
+          "source_spell_count",
+          "accepted_contract",
+          "current_open_reference_count",
+          "admission_authorized"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "spells": {
+      "type": "array",
+      "minItems": 93,
+      "items": {
+        "type": "object",
+        "properties": {
+          "spell": {
+            "type": "string"
+          },
+          "pattern": {
+            "type": "string"
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "repository": {
+                "const": "opentibiabr/canary"
+              },
+              "revision": {
+                "const": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+              },
+              "file": {
+                "type": "string"
+              },
+              "blob_sha1": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "repository",
+              "revision",
+              "file",
+              "blob_sha1",
+              "sha256"
+            ],
+            "additionalProperties": false
+          },
+          "source_facts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "source_line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "kind": {
+                  "enum": [
+                    "assignment",
+                    "parameter_call",
+                    "constructor_or_world_call"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "source_expression": {
+                  "type": "string"
+                },
+                "value_state": {
+                  "enum": [
+                    "SOURCE_LITERAL",
+                    "UNKNOWN_NOT_EVALUATED"
+                  ]
+                }
+              },
+              "required": [
+                "source_line",
+                "kind",
+                "source_expression",
+                "value_state"
+              ],
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "const": "assignment"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "name"
+                    ]
+                  },
+                  "else": {
+                    "not": {
+                      "required": [
+                        "name"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "value_state": {
+                        "const": "SOURCE_LITERAL"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "kind": {
+                        "const": "assignment"
+                      },
+                      "source_expression": {
+                        "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$|^(?:true|false)$|^\"(?:[^\"\\\\]|\\\\.)*\"$"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "lexical_api_methods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "current_monster_dispositions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "monster": {
+                  "type": "string"
+                },
+                "status": {
+                  "enum": [
+                    "mapped",
+                    "metadata_only",
+                    "resolved_native_behavior",
+                    "approved_omission",
+                    "unsupported_source_field",
+                    "unresolved_semantics",
+                    "unresolved_dependency",
+                    "partial_text"
+                  ]
+                },
+                "source_field": {
+                  "type": "string"
+                },
+                "source_file": {
+                  "type": "string"
+                },
+                "source_line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "script": {
+                  "type": "string"
+                },
+                "resolution": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "monster",
+                "status",
+                "source_field",
+                "source_file",
+                "source_line",
+                "script",
+                "resolution"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "current_open_references": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source_translation_status": {
+            "enum": [
+              "HAS_OPEN_AUTHORING_REFERENCES",
+              "HAS_RESOLVED_AUTHORING_REFERENCES",
+              "NO_CURRENT_REFERENCE_OBSERVED"
+            ]
+          },
+          "accepted_contract": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "remaining_boundary": {
+            "type": "string"
+          },
+          "parameter_values_from_model_assisted_grouping_adopted": {
+            "const": false
+          },
+          "admission_authorized": {
+            "const": false
+          },
+          "runtime_qualified": {
+            "const": false
+          }
+        },
+        "required": [
+          "spell",
+          "pattern",
+          "source",
+          "source_facts",
+          "lexical_api_methods",
+          "current_monster_dispositions",
+          "current_open_references",
+          "source_translation_status",
+          "accepted_contract",
+          "remaining_boundary",
+          "parameter_values_from_model_assisted_grouping_adopted",
+          "admission_authorized",
+          "runtime_qualified"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "admission_authorized": {
+      "const": false
+    },
+    "runtime_qualified": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema",
+    "source_revision",
+    "scope",
+    "grouping_sha256",
+    "counts",
+    "input_manifest_sha256",
+    "patterns",
+    "spells",
+    "admission_authorized",
+    "runtime_qualified"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "poolSourcePreparation": {
+      "type": "object",
+      "properties": {
+        "classification": {
+          "const": "OTS_HYPOTHESIS_ONLY"
+        },
+        "source_repository": {
+          "type": "string"
+        },
+        "source_revision": {
+          "const": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+        },
+        "admission_authorized": {
+          "const": false
+        },
+        "runtime_qualified": {
+          "const": false
+        },
+        "interaction_key": {
+          "type": "string"
+        },
+        "source_items": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "object",
+            "properties": {
+              "item": {
+                "type": "object",
+                "properties": {
+                  "family": {
+                    "type": "string"
+                  },
+                  "key": {
+                    "type": "string"
+                  },
+                  "revision": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "family",
+                  "key",
+                  "revision"
+                ],
+                "additionalProperties": false
+              },
+              "name": {
+                "type": "string"
+              },
+              "source_attributes": {
+                "type": "object",
+                "properties": {
+                  "duration": {
+                    "type": "string"
+                  },
+                  "decayto": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "duration",
+                  "decayto"
+                ],
+                "additionalProperties": false
+              },
+              "duration_ms": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "decay_target_source_id": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "player_max_health_share": {
+                "type": "object",
+                "properties": {
+                  "numerator": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "denominator": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "numerator",
+                  "denominator"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "item",
+              "name",
+              "source_attributes",
+              "duration_ms",
+              "decay_target_source_id",
+              "player_max_health_share"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 3
+        },
+        "player_step_in": {
+          "type": "object",
+          "properties": {
+            "source_damage_type": {
+              "type": "string"
+            },
+            "basis": {
+              "type": "string"
+            },
+            "source_expression": {
+              "type": "string"
+            },
+            "source_numeric_conversion": {
+              "type": "string"
+            },
+            "native_numeric_parity": {
+              "const": "UNKNOWN_NOT_QUALIFIED"
+            }
+          },
+          "required": [
+            "source_damage_type",
+            "basis",
+            "source_expression",
+            "source_numeric_conversion",
+            "native_numeric_parity"
+          ],
+          "additionalProperties": false
+        },
+        "cloak_step_in": {
+          "type": "object",
+          "properties": {
+            "source_exact_name": {
+              "type": "string"
+            },
+            "heal_minimum": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "heal_maximum": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "source_exact_name",
+            "heal_minimum",
+            "heal_maximum"
+          ],
+          "additionalProperties": false
+        },
+        "every_creature_step_in": {
+          "type": "object",
+          "properties": {
+            "remove_item": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "remove_item"
+          ],
+          "additionalProperties": false
+        },
+        "creation_policy": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "UNKNOWN"
+            },
+            "stack_or_enlarge": {
+              "const": "UNKNOWN"
+            },
+            "unless_present": {
+              "const": "UNDECIDED"
+            }
+          },
+          "required": [
+            "status",
+            "stack_or_enlarge",
+            "unless_present"
+          ],
+          "additionalProperties": false
+        },
+        "source_create_behavior": {
+          "type": "string"
+        },
+        "accepted_deviation": {
+          "type": "string"
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "lines": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  },
+                  "blob_sha1": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path",
+                  "lines",
+                  "blob_sha1"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "blob_sha1": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path",
+                  "blob_sha1"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "dependency_blockers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "classification",
+        "source_repository",
+        "source_revision",
+        "admission_authorized",
+        "runtime_qualified",
+        "interaction_key",
+        "source_items",
+        "player_step_in",
+        "cloak_step_in",
+        "every_creature_step_in",
+        "creation_policy",
+        "source_create_behavior",
+        "accepted_deviation",
+        "sources",
+        "dependency_blockers"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

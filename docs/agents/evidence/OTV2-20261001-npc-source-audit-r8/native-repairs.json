@@ -1,0 +1,340 @@
+{
+  "dialogues": [
+    {
+      "farewell": [
+        "Good bye. Recommend us if you were satisfied with our service."
+      ],
+      "fields": [],
+      "greet": [
+        "Psht! Not that loud! Evil lurks everywhere."
+      ],
+      "identity": {
+        "key": "oteryn:dialogue.npc.rapanaio_boat",
+        "revision": "definition-r1"
+      },
+      "keywords": [
+        {
+          "key": "name",
+          "reply": [
+            "My name is Rapanaio from the Royal Tibia Line."
+          ],
+          "triggers": [
+            "name"
+          ]
+        },
+        {
+          "key": "job",
+          "reply": [
+            "I am the captain of this sailing-ship."
+          ],
+          "triggers": [
+            "job"
+          ]
+        }
+      ],
+      "kind": "Dialogue",
+      "voices": {
+        "chance_ppm": 500000,
+        "entries": [
+          {
+            "mode": "Say",
+            "text": "Passage to {Evil Isle}."
+          }
+        ],
+        "interval_ms": 15000
+      },
+      "walkaway": [
+        "Good bye then."
+      ]
+    },
+    {
+      "farewell": [
+        "Good bye. Recommend us if you were satisfied with our service."
+      ],
+      "fields": [],
+      "greet": [
+        "Psht! Not that loud! Evil lurks everywhere."
+      ],
+      "identity": {
+        "key": "oteryn:dialogue.npc.rapanaio_isle_of_evil",
+        "revision": "definition-r1"
+      },
+      "keywords": [
+        {
+          "children": [
+            {
+              "key": "no",
+              "reply": [
+                "We would like to serve you some time."
+              ],
+              "reset": true,
+              "triggers": [
+                "no"
+              ]
+            }
+          ],
+          "key": "kazordoon",
+          "reply": [
+            "Do you seek a passage to Kazordoon for |TRAVELCOST|?"
+          ],
+          "triggers": [
+            "kazordoon"
+          ]
+        },
+        {
+          "key": "name",
+          "reply": [
+            "My name is Rapanaio from the Royal Tibia Line."
+          ],
+          "triggers": [
+            "name"
+          ]
+        },
+        {
+          "key": "job",
+          "reply": [
+            "I am the captain of this sailing-ship."
+          ],
+          "triggers": [
+            "job"
+          ]
+        }
+      ],
+      "kind": "Dialogue",
+      "voices": {
+        "chance_ppm": 500000,
+        "entries": [
+          {
+            "mode": "Say",
+            "text": "Passage to {Kazordoon}."
+          }
+        ],
+        "interval_ms": 15000
+      },
+      "walkaway": [
+        "Good bye then."
+      ]
+    }
+  ],
+  "from_project_revision": "g4-npc-qualified-source-r11",
+  "npc_updates": [
+    {
+      "after": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.rapanaio_boat",
+          "revision": "definition-r1"
+        },
+        "dialogue": {
+          "family": "Dialogue",
+          "key": "oteryn:dialogue.npc.rapanaio_boat",
+          "revision": "definition-r1"
+        },
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "sailor"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.quest_bindings",
+            "value": {
+              "type": "Text",
+              "value": "{\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/quest-stage.json\",\"record_pointer\":\"/records/205\",\"runtime_eligible\":false,\"sha256\":\"0902986f4aaed21cb56c5f8ffebd7f08edd1672787249dd42b9b7c09b82d17c1\"}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "sailor"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.travel.unadmitted_routes",
+            "value": {
+              "type": "Text",
+              "value": "{\"custody\":{\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/transport-repaired.json\",\"sha256\":\"2f3b24522db072c248b62ca85f9c9f4f14aa00b5de69624a40cd98879833820d\"},\"held_routes\":[{\"admission_eligible\":false,\"native_gate\":null,\"npc\":\"oteryn:npc.rapanaio_boat\",\"promotion_pointer\":\"/candidates/827/left_out/0\",\"reason\":\"ROUTE_UNCONFIRMED\",\"runtime_qualified\":false,\"source_constraints\":{\"canary\":{\"calls\":[{\"source_call\":\"addTravelKeyword(\\\"evil isle\\\", 0, Position(32668, 31457, 6))\",\"source_call_sha256\":\"1583b4ff933957bb6a952d80a9e5cf2e019ce0c492c927982fe753cd9f429cca\",\"source_end_line\":67,\"source_kind\":\"OPAQUE_LUA_CALL_NOT_NATIVE_GATE\",\"source_line\":67,\"source_previous_call\":null,\"storage_symbols\":[]}],\"native_gate\":null,\"runtime_qualified\":false,\"shared_helper_definitions\":[{\"scope\":\"OPAQUE_SHARED_HELPER_NOT_NATIVE_GATE\",\"source_code\":\"local function addTravelKeyword(keyword, cost, destination, action)\\n\\tlocal travelKeyword = keywordHandler:addKeyword({ keyword }, StdModule.say, { npcHandler = npcHandler, text = \\\"Do you seek a passage to \\\" .. keyword:titleCase() .. \\\" for |TRAVELCOST|?\\\", cost = cost, discount = \\\"postman\\\" })\\n\\ttravelKeyword:addChildKeyword({ \\\"yes\\\" }, StdModule.travel, { npcHandler = npcHandler, premium = false, cost = cost, discount = \\\"postman\\\", destination = destination }, nil, action)\\n\\ttravelKeyword:addChildKeyword({ \\\"no\\\" }, StdModule.say, { npcHandler = npcHandler, text = \\\"We would like to serve you some time.\\\", reset = true })\\nend\",\"source_code_sha256\":\"761faa547392b808e2f6df948ee4d73d1f4dee74b4d1b66949cb32bfbb7d05d9\",\"source_line\":61}],\"source\":{\"path\":\"data-otservbr-global/npc/rapanaio_boat.lua\",\"repository\":\"opentibiabr/canary\",\"revision\":\"47dfd51f45280a59a1d3e50ba7edd573d7234446\",\"sha256\":\"216284b89037442ebe4ef7650caf0ad6abf9cd840cc6174c93936c0918915ef7\"},\"state\":\"SOURCE_CALLS_RETAINED\"},\"crystal\":{\"calls\":[],\"native_gate\":null,\"runtime_qualified\":false,\"shared_helper_definitions\":[],\"source\":{\"path\":\"data-global/npc/rapanaio_boat.lua\",\"repository\":\"zimbadev/crystalserver\",\"revision\":\"ff7ede593c69d4c658b382c97443e8155926924a\",\"sha256\":\"00fb234a23a56d91cae7417bd81db23291c544421880f5266670c95539146632\"},\"state\":\"ROUTE_CALL_NOT_RESOLVED\"}},\"source_keyword\":\"evil isle\"}],\"native_gate\":null,\"runtime_qualified\":false}"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.rapanaio_boat",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.rapanaio_boat",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      "before": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.rapanaio_boat",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "sailor"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.quest_bindings",
+            "value": {
+              "type": "Text",
+              "value": "{\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/quest-stage.json\",\"record_pointer\":\"/records/205\",\"runtime_eligible\":false,\"sha256\":\"0902986f4aaed21cb56c5f8ffebd7f08edd1672787249dd42b9b7c09b82d17c1\"}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "sailor"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.travel.unadmitted_routes",
+            "value": {
+              "type": "Text",
+              "value": "{\"custody\":{\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/transport-repaired.json\",\"sha256\":\"2f3b24522db072c248b62ca85f9c9f4f14aa00b5de69624a40cd98879833820d\"},\"held_routes\":[{\"admission_eligible\":false,\"native_gate\":null,\"npc\":\"oteryn:npc.rapanaio_boat\",\"promotion_pointer\":\"/candidates/827/left_out/0\",\"reason\":\"ROUTE_UNCONFIRMED\",\"runtime_qualified\":false,\"source_constraints\":{\"canary\":{\"calls\":[{\"source_call\":\"addTravelKeyword(\\\"evil isle\\\", 0, Position(32668, 31457, 6))\",\"source_call_sha256\":\"1583b4ff933957bb6a952d80a9e5cf2e019ce0c492c927982fe753cd9f429cca\",\"source_end_line\":67,\"source_kind\":\"OPAQUE_LUA_CALL_NOT_NATIVE_GATE\",\"source_line\":67,\"source_previous_call\":null,\"storage_symbols\":[]}],\"native_gate\":null,\"runtime_qualified\":false,\"shared_helper_definitions\":[{\"scope\":\"OPAQUE_SHARED_HELPER_NOT_NATIVE_GATE\",\"source_code\":\"local function addTravelKeyword(keyword, cost, destination, action)\\n\\tlocal travelKeyword = keywordHandler:addKeyword({ keyword }, StdModule.say, { npcHandler = npcHandler, text = \\\"Do you seek a passage to \\\" .. keyword:titleCase() .. \\\" for |TRAVELCOST|?\\\", cost = cost, discount = \\\"postman\\\" })\\n\\ttravelKeyword:addChildKeyword({ \\\"yes\\\" }, StdModule.travel, { npcHandler = npcHandler, premium = false, cost = cost, discount = \\\"postman\\\", destination = destination }, nil, action)\\n\\ttravelKeyword:addChildKeyword({ \\\"no\\\" }, StdModule.say, { npcHandler = npcHandler, text = \\\"We would like to serve you some time.\\\", reset = true })\\nend\",\"source_code_sha256\":\"761faa547392b808e2f6df948ee4d73d1f4dee74b4d1b66949cb32bfbb7d05d9\",\"source_line\":61}],\"source\":{\"path\":\"data-otservbr-global/npc/rapanaio_boat.lua\",\"repository\":\"opentibiabr/canary\",\"revision\":\"47dfd51f45280a59a1d3e50ba7edd573d7234446\",\"sha256\":\"216284b89037442ebe4ef7650caf0ad6abf9cd840cc6174c93936c0918915ef7\"},\"state\":\"SOURCE_CALLS_RETAINED\"},\"crystal\":{\"calls\":[],\"native_gate\":null,\"runtime_qualified\":false,\"shared_helper_definitions\":[],\"source\":{\"path\":\"data-global/npc/rapanaio_boat.lua\",\"repository\":\"zimbadev/crystalserver\",\"revision\":\"ff7ede593c69d4c658b382c97443e8155926924a\",\"sha256\":\"00fb234a23a56d91cae7417bd81db23291c544421880f5266670c95539146632\"},\"state\":\"ROUTE_CALL_NOT_RESOLVED\"}},\"source_keyword\":\"evil isle\"}],\"native_gate\":null,\"runtime_qualified\":false}"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.rapanaio_boat",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.rapanaio_boat",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      "identity": {
+        "key": "oteryn:npc.rapanaio_boat",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "after": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.rapanaio_isle_of_evil",
+          "revision": "definition-r1"
+        },
+        "dialogue": {
+          "family": "Dialogue",
+          "key": "oteryn:dialogue.npc.rapanaio_isle_of_evil",
+          "revision": "definition-r1"
+        },
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "sailor"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.quest_bindings",
+            "value": {
+              "type": "Text",
+              "value": "{\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/quest-stage.json\",\"record_pointer\":\"/records/206\",\"runtime_eligible\":false,\"sha256\":\"0902986f4aaed21cb56c5f8ffebd7f08edd1672787249dd42b9b7c09b82d17c1\"}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "sailor"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.travel.unadmitted_routes",
+            "value": {
+              "type": "Text",
+              "value": "{\"custody\":{\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/transport-repaired.json\",\"sha256\":\"2f3b24522db072c248b62ca85f9c9f4f14aa00b5de69624a40cd98879833820d\"},\"held_routes\":[{\"admission_eligible\":false,\"native_gate\":null,\"npc\":\"oteryn:npc.rapanaio_isle_of_evil\",\"promotion_pointer\":\"/candidates/828/left_out/0\",\"reason\":\"ROUTE_CONFLICT_WIKI_UNDECIDED\",\"runtime_qualified\":false,\"source_constraints\":{\"canary\":{\"calls\":[{\"source_call\":\"addTravelKeyword(\\\"kazordoon\\\", 0, Position(32699, 31993, 14))\",\"source_call_sha256\":\"cd66c2e7bad4cb303ae6e9f6b137688adbcb1d727a4fcdf2b223d75ef5034fa7\",\"source_end_line\":67,\"source_kind\":\"OPAQUE_LUA_CALL_NOT_NATIVE_GATE\",\"source_line\":67,\"source_previous_call\":null,\"storage_symbols\":[]}],\"native_gate\":null,\"runtime_qualified\":false,\"shared_helper_definitions\":[{\"scope\":\"OPAQUE_SHARED_HELPER_NOT_NATIVE_GATE\",\"source_code\":\"local function addTravelKeyword(keyword, cost, destination, action)\\n\\tlocal travelKeyword = keywordHandler:addKeyword({ keyword }, StdModule.say, { npcHandler = npcHandler, text = \\\"Do you seek a passage to \\\" .. keyword:titleCase() .. \\\" for |TRAVELCOST|?\\\", cost = cost, discount = \\\"postman\\\" })\\n\\ttravelKeyword:addChildKeyword({ \\\"yes\\\" }, StdModule.travel, { npcHandler = npcHandler, premium = false, cost = cost, discount = \\\"postman\\\", destination = destination }, nil, action)\\n\\ttravelKeyword:addChildKeyword({ \\\"no\\\" }, StdModule.say, { npcHandler = npcHandler, text = \\\"We would like to serve you some time.\\\", reset = true })\\nend\",\"source_code_sha256\":\"761faa547392b808e2f6df948ee4d73d1f4dee74b4d1b66949cb32bfbb7d05d9\",\"source_line\":61}],\"source\":{\"path\":\"data-otservbr-global/npc/rapanaio_isle_of_evil.lua\",\"repository\":\"opentibiabr/canary\",\"revision\":\"47dfd51f45280a59a1d3e50ba7edd573d7234446\",\"sha256\":\"bca792a65b5afab6cca50978fb465b9350bc43749877470bf979ee3b0144e67a\"},\"state\":\"SOURCE_CALLS_RETAINED\"},\"crystal\":{\"calls\":[{\"source_call\":\"addTravelKeyword(\\\"kazordoon\\\", 0, Position(32700, 31990, 15))\",\"source_call_sha256\":\"a2be676ed7a610a795800e54d8eef287296d0522863b536bdf7e877694270d39\",\"source_end_line\":65,\"source_kind\":\"OPAQUE_LUA_CALL_NOT_NATIVE_GATE\",\"source_line\":65,\"source_previous_call\":null,\"storage_symbols\":[]}],\"native_gate\":null,\"runtime_qualified\":false,\"shared_helper_definitions\":[{\"scope\":\"OPAQUE_SHARED_HELPER_NOT_NATIVE_GATE\",\"source_code\":\"local function addTravelKeyword(keyword, cost, destination, action)\\n\\tlocal travelKeyword = keywordHandler:addKeyword({ keyword }, StdModule.say, { npcHandler = npcHandler, text = \\\"Do you seek a passage to \\\" .. keyword:titleCase() .. \\\" for |TRAVELCOST|?\\\", cost = cost, discount = \\\"postman\\\" })\\n\\ttravelKeyword:addChildKeyword({ \\\"yes\\\" }, StdModule.travel, { npcHandler = npcHandler, premium = false, cost = cost, discount = \\\"postman\\\", destination = destination }, nil, action)\\n\\ttravelKeyword:addChildKeyword({ \\\"no\\\" }, StdModule.say, { npcHandler = npcHandler, text = \\\"We would like to serve you some time.\\\", reset = true })\\nend\",\"source_code_sha256\":\"761faa547392b808e2f6df948ee4d73d1f4dee74b4d1b66949cb32bfbb7d05d9\",\"source_line\":59}],\"source\":{\"path\":\"data-global/npc/rapanaio_isle_of_evil.lua\",\"repository\":\"zimbadev/crystalserver\",\"revision\":\"ff7ede593c69d4c658b382c97443e8155926924a\",\"sha256\":\"b019e365ea9eebea4de89bda67d24b3778f75be58c884b02fc5a0a0ea1a0c257\"},\"state\":\"SOURCE_CALLS_RETAINED\"}},\"source_keyword\":\"kazordoon\"}],\"native_gate\":null,\"runtime_qualified\":false}"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.rapanaio_isle_of_evil",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.rapanaio_isle_of_evil",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      "before": {
+        "behavior": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.npc.rapanaio_isle_of_evil",
+          "revision": "definition-r1"
+        },
+        "dialogue": null,
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.profession",
+            "value": {
+              "type": "Text",
+              "value": "sailor"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.quest_bindings",
+            "value": {
+              "type": "Text",
+              "value": "{\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/quest-stage.json\",\"record_pointer\":\"/records/206\",\"runtime_eligible\":false,\"sha256\":\"0902986f4aaed21cb56c5f8ffebd7f08edd1672787249dd42b9b7c09b82d17c1\"}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.speech_bubble",
+            "value": {
+              "type": "Text",
+              "value": "sailor"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.travel.unadmitted_routes",
+            "value": {
+              "type": "Text",
+              "value": "{\"custody\":{\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/transport-repaired.json\",\"sha256\":\"2f3b24522db072c248b62ca85f9c9f4f14aa00b5de69624a40cd98879833820d\"},\"held_routes\":[{\"admission_eligible\":false,\"native_gate\":null,\"npc\":\"oteryn:npc.rapanaio_isle_of_evil\",\"promotion_pointer\":\"/candidates/828/left_out/0\",\"reason\":\"ROUTE_CONFLICT_WIKI_UNDECIDED\",\"runtime_qualified\":false,\"source_constraints\":{\"canary\":{\"calls\":[{\"source_call\":\"addTravelKeyword(\\\"kazordoon\\\", 0, Position(32699, 31993, 14))\",\"source_call_sha256\":\"cd66c2e7bad4cb303ae6e9f6b137688adbcb1d727a4fcdf2b223d75ef5034fa7\",\"source_end_line\":67,\"source_kind\":\"OPAQUE_LUA_CALL_NOT_NATIVE_GATE\",\"source_line\":67,\"source_previous_call\":null,\"storage_symbols\":[]}],\"native_gate\":null,\"runtime_qualified\":false,\"shared_helper_definitions\":[{\"scope\":\"OPAQUE_SHARED_HELPER_NOT_NATIVE_GATE\",\"source_code\":\"local function addTravelKeyword(keyword, cost, destination, action)\\n\\tlocal travelKeyword = keywordHandler:addKeyword({ keyword }, StdModule.say, { npcHandler = npcHandler, text = \\\"Do you seek a passage to \\\" .. keyword:titleCase() .. \\\" for |TRAVELCOST|?\\\", cost = cost, discount = \\\"postman\\\" })\\n\\ttravelKeyword:addChildKeyword({ \\\"yes\\\" }, StdModule.travel, { npcHandler = npcHandler, premium = false, cost = cost, discount = \\\"postman\\\", destination = destination }, nil, action)\\n\\ttravelKeyword:addChildKeyword({ \\\"no\\\" }, StdModule.say, { npcHandler = npcHandler, text = \\\"We would like to serve you some time.\\\", reset = true })\\nend\",\"source_code_sha256\":\"761faa547392b808e2f6df948ee4d73d1f4dee74b4d1b66949cb32bfbb7d05d9\",\"source_line\":61}],\"source\":{\"path\":\"data-otservbr-global/npc/rapanaio_isle_of_evil.lua\",\"repository\":\"opentibiabr/canary\",\"revision\":\"47dfd51f45280a59a1d3e50ba7edd573d7234446\",\"sha256\":\"bca792a65b5afab6cca50978fb465b9350bc43749877470bf979ee3b0144e67a\"},\"state\":\"SOURCE_CALLS_RETAINED\"},\"crystal\":{\"calls\":[{\"source_call\":\"addTravelKeyword(\\\"kazordoon\\\", 0, Position(32700, 31990, 15))\",\"source_call_sha256\":\"a2be676ed7a610a795800e54d8eef287296d0522863b536bdf7e877694270d39\",\"source_end_line\":65,\"source_kind\":\"OPAQUE_LUA_CALL_NOT_NATIVE_GATE\",\"source_line\":65,\"source_previous_call\":null,\"storage_symbols\":[]}],\"native_gate\":null,\"runtime_qualified\":false,\"shared_helper_definitions\":[{\"scope\":\"OPAQUE_SHARED_HELPER_NOT_NATIVE_GATE\",\"source_code\":\"local function addTravelKeyword(keyword, cost, destination, action)\\n\\tlocal travelKeyword = keywordHandler:addKeyword({ keyword }, StdModule.say, { npcHandler = npcHandler, text = \\\"Do you seek a passage to \\\" .. keyword:titleCase() .. \\\" for |TRAVELCOST|?\\\", cost = cost, discount = \\\"postman\\\" })\\n\\ttravelKeyword:addChildKeyword({ \\\"yes\\\" }, StdModule.travel, { npcHandler = npcHandler, premium = false, cost = cost, discount = \\\"postman\\\", destination = destination }, nil, action)\\n\\ttravelKeyword:addChildKeyword({ \\\"no\\\" }, StdModule.say, { npcHandler = npcHandler, text = \\\"We would like to serve you some time.\\\", reset = true })\\nend\",\"source_code_sha256\":\"761faa547392b808e2f6df948ee4d73d1f4dee74b4d1b66949cb32bfbb7d05d9\",\"source_line\":59}],\"source\":{\"path\":\"data-global/npc/rapanaio_isle_of_evil.lua\",\"repository\":\"zimbadev/crystalserver\",\"revision\":\"ff7ede593c69d4c658b382c97443e8155926924a\",\"sha256\":\"b019e365ea9eebea4de89bda67d24b3778f75be58c884b02fc5a0a0ea1a0c257\"},\"state\":\"SOURCE_CALLS_RETAINED\"}},\"source_keyword\":\"kazordoon\"}],\"native_gate\":null,\"runtime_qualified\":false}"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:npc.rapanaio_isle_of_evil",
+          "revision": "definition-r1"
+        },
+        "kind": "NPC",
+        "presentation": {
+          "family": "Presentation",
+          "key": "oteryn:presentation.npc.rapanaio_isle_of_evil",
+          "revision": "definition-r1"
+        },
+        "services": []
+      },
+      "identity": {
+        "key": "oteryn:npc.rapanaio_isle_of_evil",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "project_revision": "g4-npc-d10-fandom-variants-r12",
+  "schema": "OTERYN_NPC_D10_VARIANT_ADMISSION/v1"
+}

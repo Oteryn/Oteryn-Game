@@ -1,0 +1,215 @@
+{
+  "schema": 1,
+  "runtime_enabled": false,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-29",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31973,
+          "y": 32905,
+          "floor": -11
+        },
+        "unique": null,
+        "action": 25018,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31971,
+        "y": 32904,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:29",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-31",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31973,
+          "y": 32905,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 25018,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31975,
+        "y": 32911,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:31",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-33",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32009,
+          "y": 32928,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 25018,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32009,
+        "y": 32929,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:33",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-35",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32009,
+          "y": 32928,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 25018,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32009,
+        "y": 32929,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:35",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+      ]
+    }
+  ],
+  "reason": "Complete source parameters retained; no unapproved shared-contract change or invented map binding is published.",
+  "holds": [
+    {
+      "callback": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-29",
+      "reasons": [
+        {
+          "missing_fields": [
+            "map.attrs.action=25018"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:29",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-31",
+      "reasons": [
+        {
+          "missing_fields": [
+            "map.attrs.action=25018"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:31",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-33",
+      "reasons": [
+        {
+          "missing_fields": [
+            "map.attrs.action=25018"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:33",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    },
+    {
+      "callback": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-35",
+      "reasons": [
+        {
+          "missing_fields": [
+            "map.attrs.action=25018"
+          ],
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:35",
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+          ],
+          "proof": "All1208 native map regions have no matching attribute. BundleFacts::push clones the sector attrs and quest_callback_matches requires the original unique/action. A position or appearance is not substituted.",
+          "map_index": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:content/world/placements/index.json:1",
+          "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+          "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+          "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+        }
+      ]
+    }
+  ],
+  "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+  "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+}

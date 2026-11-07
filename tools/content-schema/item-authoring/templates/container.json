@@ -1,0 +1,31 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.container",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Container",
+  "family_profile": "container",
+  "delivery_task_eligible": false,
+  "taxonomy": {
+    "item_class": "container",
+    "primary": "container",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "container": {
+    "capacity": 20,
+    "content_kind": "items",
+    "accepts": []
+  },
+  "trade": {
+    "tradeable": true,
+    "marketable": true
+  }
+}

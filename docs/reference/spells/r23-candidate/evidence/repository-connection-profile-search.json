@@ -1,0 +1,124 @@
+{
+  "schema": "OTERYN_EXISTING_NODE_PROFILE_REPO_DISCOVERY/v1",
+  "observed_utc": "2026-10-02T11:24:19.480664+00:00",
+  "result": "No actual long-lived test-instance connection profile located in the searched repository checkouts or bounded current GitHub searches",
+  "read_only": true,
+  "repository_sources": [
+    {
+      "root": "/workspace/Oteryn-Game",
+      "filename_scan": "rg --files --hidden --no-ignore, includes target; excludes vendor/node_modules/Git blob/log internals",
+      "local_connection_or_cert_profile_matches": []
+    },
+    {
+      "root": "/workspace/spell-pr-publication/worktree",
+      "filename_scan": "rg --files --hidden --no-ignore, includes target; excludes vendor/node_modules/Git blob/log internals",
+      "local_connection_or_cert_profile_matches": []
+    }
+  ],
+  "method": [
+    "Filename-first hidden/no-ignore scans for config/env/bootstrap/profile/node/server/runtime/test plus targeted cert/profile filenames including target",
+    "Explicit Git ignored and untracked inventory; only task-generated source/validation reports outside build caches",
+    "Task-related CLI/docs/node_boot/wp5_s3b configurations inspected with credential/URL userinfo redaction",
+    "Bounded GitHub Oteryn/Oteryn-Game default-branch code searches: OTERYN_LIVE_ADDR, OTERYN_LIVE_CA, connection profile, test server endpoint; only CLI, synthetic tests and ownership contracts found",
+    "Bounded GitHub branch name searches ops-node and test returned no branches or next cursor"
+  ],
+  "known_cli_profile_keys": [
+    "OTERYN_LIVE_ADDR",
+    "OTERYN_LIVE_CA",
+    "OTERYN_LIVE_CHARACTER_ID",
+    "OTERYN_LIVE_SERVER_NAME",
+    "OTERYN_LIVE_GRANT_FILE",
+    "OTERYN_LIVE_GRANT"
+  ],
+  "process_key_presence_only": {
+    "OTERYN_LIVE_ADDR": false,
+    "OTERYN_LIVE_CA": false,
+    "OTERYN_LIVE_CHARACTER_ID": false,
+    "OTERYN_LIVE_SERVER_NAME": false,
+    "OTERYN_LIVE_GRANT_FILE": false,
+    "OTERYN_LIVE_GRANT": false
+  },
+  "profile_interface": {
+    "repo_relative_path": "tools/synthetic-client-harness/src/live/cli.rs",
+    "line_refs": [
+      37,
+      38,
+      39,
+      40,
+      103,
+      107,
+      109,
+      115,
+      120
+    ],
+    "transport": "TLS TCP with ALPN oteryn-game/1",
+    "inputs": "Address, trusted CA path, TLS server name, actual Character identity, operator-issued grant file/environment; interface is not itself a deployed target"
+  },
+  "examples_and_disposable_candidates": [
+    {
+      "path": "tools/qualification/spells/README.md",
+      "line_refs": [
+        30,
+        31,
+        35,
+        37
+      ],
+      "classification": "Loopback address and /path/to paths are placeholders; explicit existing-node inputs must come from private operator profile"
+    },
+    {
+      "path": "tools/qualification/wp5_s3b/run.sh",
+      "line_refs": [
+        78,
+        96,
+        100,
+        106,
+        110,
+        114,
+        142
+      ],
+      "classification": "mktemp scratch, ephemeral one-day CA/keys and trap cleanup of containers/volumes; not a persistent deployed-node profile"
+    },
+    {
+      "path": "tools/qualification/node_boot/run.sh",
+      "line_refs": [
+        58,
+        85,
+        89,
+        98,
+        125,
+        143
+      ],
+      "classification": "Disposable node_boot qualification with temporary PKI and loopback containers"
+    },
+    {
+      "path": "docs/reference/spells/r22-audit/test-environment/live-owner-qualification.json",
+      "classification": "Explicit retained scope says disposable local real owners; no existing long-lived server deployed"
+    },
+    {
+      "path": "tools/synthetic-client-harness/src/live/tests.rs",
+      "classification": "Synthetic argument fixtures such as127.0.0.1:7000 and ca.pem; not actual target"
+    }
+  ],
+  "github_evidence": {
+    "indexed_commit": "e225b3f76e152d195f75cb757b3d639a3ff5577a",
+    "matching_live_interface_urls": [
+      "https://github.com/Oteryn/Oteryn-Game/blob/e225b3f76e152d195f75cb757b3d639a3ff5577a/tools/synthetic-client-harness/src/live/cli.rs",
+      "https://github.com/Oteryn/Oteryn-Game/blob/e225b3f76e152d195f75cb757b3d639a3ff5577a/tools/synthetic-client-harness/src/live/tests.rs"
+    ],
+    "profile_found": false,
+    "remote_code_search_scope": "Default branch index only, not all historical/private branches"
+  },
+  "missing_actual_target_fields": [
+    "Deployed long-lived address",
+    "Actual trusted CA file",
+    "TLS verified server name",
+    "Actual admitted Character identity",
+    "Current operator-issued grant source"
+  ],
+  "not_claimed": [
+    "No inferred long-lived endpoint from documentation placeholder or disposable fixture",
+    "No production/profile activation",
+    "No secrets emitted",
+    "No original/worktree/r23 mutation"
+  ]
+}

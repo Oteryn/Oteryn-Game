@@ -1,0 +1,50 @@
+{
+  "tibiopedia-monster-facts.jsonl": {
+    "bytes": 1538199,
+    "sha256": "6dffde442d9cafa9bb87b7246661c687edd67c212ec6a523c6a7b70fbcdb28e7"
+  },
+  "tibiopedia-monster-link-index.json": {
+    "bytes": 48308,
+    "sha256": "685000c4eb598a40277f2ef5485ec3e02315755c8c161e674e801294c729259e"
+  },
+  "validate_evidence.py": {
+    "bytes": 3038,
+    "sha256": "47f15a1fe96a2c8e54fc6f99488c957fa2228c86ee028767bbc23f84e6b52bb7"
+  },
+  "summary.json": {
+    "bytes": 1435,
+    "sha256": "1195aa3a918ef87c30fd16093e4fef56e2ecea2042fbb34f8126d4fc8329fe84"
+  },
+  "evidence-validation.json": {
+    "bytes": 1303,
+    "sha256": "3a2d11ea890a28f95d5cee16ec5368d27b996998fbfd0b6627c90afd44f5b815"
+  },
+  "monster-slot-field-comparisons.json": {
+    "bytes": 35454428,
+    "sha256": "84db3274db61f6f54978a4b1a1e7edaf5ac4277f0ebfd64896059e22d5690e7d"
+  },
+  "README.md": {
+    "bytes": 2258,
+    "sha256": "ee01863ddf99c1e2cc35e6da70885d1c2c6741292aa80dfa9ff45c0e762fbd62"
+  },
+  "numeric-discrepancies.json.gz": {
+    "bytes": 139908,
+    "sha256": "395f2d2f455f15ca149d9b23e59dce10519b8a21e5b83d8edc37be8d5daec3dd"
+  },
+  "monster-slot-field-comparisons.json.gz": {
+    "bytes": 1482002,
+    "sha256": "651156f93b052e7ce67ca2c310361522db32ff1ed51779c957c644a5ebd89370"
+  },
+  "current-extra-monster-facts.json": {
+    "bytes": 39389,
+    "sha256": "e30072814508e869ac75d87943c6538398efa397bebce922d5774fdc6260bcbd"
+  },
+  "verify_monster_references.py": {
+    "bytes": 7476,
+    "sha256": "dffeb1a218f623aac4363089d14d06c3e0a34d89ac4ef17db3df39be2cec3277"
+  },
+  "numeric-discrepancies.json": {
+    "bytes": 2078525,
+    "sha256": "72a6863ceb825e11c9a6e5ce0ea11438e4afac14351b5d37cbe750c57220d5ac"
+  }
+}

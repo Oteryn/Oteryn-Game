@@ -1,0 +1,19 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/izcandar_the_banished",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/izcandar_champion_of_winter",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/izcandar_champion_of_summer",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

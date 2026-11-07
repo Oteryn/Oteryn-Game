@@ -1,0 +1,18 @@
+{
+  "id": "SPECTATE1-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_SPECTATE1_DECISION_2026-10-15.md",
+  "resource": "observers per consenting target",
+  "unit": "observer sessions",
+  "hard_maximum": 50,
+  "configurable_range": {
+    "minimum": 50,
+    "maximum": 50
+  },
+  "failure_category": "FULL",
+  "allocation_impact": "Refuse FULL only after consent/code validation; never affect the target.",
+  "client_visible": true,
+  "boundary_tests": [
+    "spectate_caps_and_overload_never_mutate_the_target"
+  ],
+  "notes": "Dormant; NET03-OUTBOUND-QUEUE-ENTRIES=64 and -BYTES=1048576 apply unchanged. RL-03 node capacity, rate-account capacity and audit-fact capacity require measured composition inputs, no activation defaults."
+}

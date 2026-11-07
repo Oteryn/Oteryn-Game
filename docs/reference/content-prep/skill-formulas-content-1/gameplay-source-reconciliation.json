@@ -1,0 +1,2960 @@
+{
+  "task": "SKILL-FORMULAS-CONTENT-1",
+  "checked_at": "2026-10-19T10:46:56.838295+00:00",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "source_files": [
+    {
+      "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/game/game.cpp",
+      "blob_sha": "40a667ac7c28cff9a04324cca18575cebc92f13f",
+      "sha256": "f98a2d73d53fb4368d0b05b25d9b41ae79f427d15666f6b67a2100abf4c8cf03",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/game/game.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    {
+      "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/creatures/combat/combat.cpp",
+      "blob_sha": "ec7a7ceebea67280ab8b2c77ab9a527e3a9f9aea",
+      "sha256": "c57a9cdf3d68f7d82c5cb3220a4a603e76c3992d5517a654bb01814c68f80889",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/creatures/combat/combat.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    {
+      "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/creatures/players/vocations/vocation.cpp",
+      "blob_sha": "70411c647329194528b11985e9be5674804cc5bc",
+      "sha256": "a3930265d68ccf188a0aeddebfd4bd19fcc257bfb3865e5ee8e429f043be83b3",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/creatures/players/vocations/vocation.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    {
+      "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "data/XML/vocations.xml",
+      "blob_sha": "57c014e720bbe8d7f83501970c2b89976598cc3d",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/data/XML/vocations.xml",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    {
+      "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/game/game.cpp",
+      "blob_sha": "5f421b1b2361280abeb8b392bca0e0344fc04648",
+      "sha256": "5f7ba67a158af607bacb9d75451ca490817f189ca7d3dcf9e774d55dc1ccaab6",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/game/game.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    {
+      "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/combat/combat.cpp",
+      "blob_sha": "499a6aec29f7fd85da4953aea599ab1cba181fe3",
+      "sha256": "2ce001eb6820b43b3ea0a094f5e67bedd5cb5cafbb31038d14e49786be109bad",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/combat/combat.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    {
+      "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/vocations/vocation.cpp",
+      "blob_sha": "3bf13d00a5d177b9ac010404687b6b719544555d",
+      "sha256": "20f555f13d6320c50ef824cc3cd9e9e73eb9c716f7f7b0a63143a120a478be9d",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/vocations/vocation.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    {
+      "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "blob_sha": "eed5290955fd7a988acab73672dc5356ed0e0ba8",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    }
+  ],
+  "source_findings": {
+    "damage_prey": "Community exclusion versus donor adjusted-damage call path; Global test unresolved.",
+    "monk": "Wiki/calculator magic1.25,melee1.4,shield1.15versusdonor1.3/1.2/1.1.",
+    "none": "Wiki mana multiplier3.0versusdonor4.0.",
+    "offset": "Current skill exponent s-10 equals target level exponent L-11 when L=s+1; not an off-by-one conflict.",
+    "cumulative": "Sum individually truncated donor level costs; do not substitute an unrounded geometric sum.",
+    "leech": "Shared helper does not include every additional charm/wheel/talisman effect; realDamage is health-capped in consumer path."
+  },
+  "changes": [
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/life_formula",
+      "before": {
+        "value": {
+          "expression": "clamp(lround(realDamage*(skillAmount/10000.0)*(0.1*N+0.9)/N),0,realDamage)",
+          "domain": "N>=1, actual nonnegative damage; skillAmount in hundredths of percent"
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/life_formula"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:leech.amount",
+            "selector": "leech.amount"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Life Leech"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/life_formula",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "expression": "clamp(lround(realDamage*(skillAmount/10000.0)*(0.1*N+0.9)/N),0,realDamage)",
+            "domain": "N>=1, actual nonnegative damage; skillAmount in hundredths of percent"
+          },
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          }
+        ],
+        "note": "Known pinned source candidate, not missing source code. Exact current Global behavior still requires official or controlled qualification under the original request; donor values are not silently adopted.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/life_formula",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/mana_formula",
+      "before": {
+        "value": {
+          "expression": "clamp(lround(realDamage*(skillAmount/10000.0)*(0.1*N+0.9)/N),0,realDamage)",
+          "domain": "N>=1, actual nonnegative damage; skillAmount in hundredths of percent"
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/mana_formula"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:leech.amount",
+            "selector": "leech.amount"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Mana Leech"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/mana_formula",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "expression": "clamp(lround(realDamage*(skillAmount/10000.0)*(0.1*N+0.9)/N),0,realDamage)",
+            "domain": "N>=1, actual nonnegative damage; skillAmount in hundredths of percent"
+          },
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          }
+        ],
+        "note": "Known pinned source candidate, not missing source code. Exact current Global behavior still requires official or controlled qualification under the original request; donor values are not silently adopted.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/mana_formula",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/damage_prey",
+      "before": {
+        "value": false,
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/damage_prey"
+          },
+          {
+            "source": "wiki:78085:1101811",
+            "selector": "Damage Preys do not affect leech"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Exclude Prey bonus damage from leech damage basis as an explicit project choice."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/damage_prey",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "COMMUNITY_VS_DONOR_DAMAGE_BASE_CONFLICT",
+          "community_damage_prey_increases_leech": false,
+          "donor_path": "Crystal combat.cpp applies damage Prey before combatChangeHealth; game.cpp derives realDamage from adjusted damage and passes it to life/mana leech without a Prey-specific subtraction in this path",
+          "selected_for_native_runtime": false
+        },
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:78085:1101811",
+            "selector": "Damage Prey exclusion"
+          },
+          {
+            "source": "wiki:78087:1101810",
+            "selector": "Damage Prey exclusion"
+          }
+        ],
+        "note": "The false value is sourced community prose, not proven Global behavior. Pinned donor call ordering differs; keep the disagreement explicit instead of selecting either rule.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/damage_prey",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/2/facts/skill_advance",
+      "before": {
+        "value": {
+          "target_level_L": "0 for L<=10; uint64(base[skill]*pow(vocation_multiplier,L-11)) otherwise",
+          "base_by_skill_id": [
+            50,
+            50,
+            50,
+            50,
+            30,
+            100,
+            20
+          ],
+          "cumulative": "sum individual target-level costs from 10 through L",
+          "rounding": "floating pow followed by integer truncation",
+          "vocation_parameters": {
+            "attributes": {
+              "id": "4",
+              "clientid": "1",
+              "baseid": "4",
+              "name": "Knight",
+              "description": "a knight",
+              "magicshield": "0",
+              "gaincap": "25",
+              "gainhp": "15",
+              "gainmana": "5",
+              "gainhpticks": "6000",
+              "gainhpamount": "1",
+              "gainmanaticks": "6000",
+              "gainmanaamount": "2",
+              "manamultiplier": "3.0",
+              "attackspeed": "2000",
+              "basespeed": "110",
+              "soulmax": "100",
+              "gainsoulticks": "120000",
+              "fromvoc": "4",
+              "avatarlooktype": "1593"
+            },
+            "skill_multipliers": {
+              "0": "1.1",
+              "1": "1.1",
+              "2": "1.1",
+              "3": "1.1",
+              "4": "1.4",
+              "5": "1.1",
+              "6": "1.1"
+            }
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/2/facts/skill_advance"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:skill.progression",
+            "selector": "skill.progression"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Knight",
+            "selector": "vocation.Knight"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills / vocation multipliers"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/2/facts/skill_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "target_level_L": "0 for L<=10; uint64(base[skill]*pow(vocation_multiplier,L-11)) otherwise",
+            "base_by_skill_id": [
+              50,
+              50,
+              50,
+              50,
+              30,
+              100,
+              20
+            ],
+            "cumulative": "sum individual target-level costs from 10 through L",
+            "rounding": "floating pow followed by integer truncation",
+            "vocation_parameters": {
+              "attributes": {
+                "id": "4",
+                "clientid": "1",
+                "baseid": "4",
+                "name": "Knight",
+                "description": "a knight",
+                "magicshield": "0",
+                "gaincap": "25",
+                "gainhp": "15",
+                "gainmana": "5",
+                "gainhpticks": "6000",
+                "gainhpamount": "1",
+                "gainmanaticks": "6000",
+                "gainmanaamount": "2",
+                "manamultiplier": "3.0",
+                "attackspeed": "2000",
+                "basespeed": "110",
+                "soulmax": "100",
+                "gainsoulticks": "120000",
+                "fromvoc": "4",
+                "avatarlooktype": "1593"
+              },
+              "skill_multipliers": {
+                "0": "1.1",
+                "1": "1.1",
+                "2": "1.1",
+                "3": "1.1",
+                "4": "1.4",
+                "5": "1.1",
+                "6": "1.1"
+              }
+            }
+          },
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          }
+        ],
+        "note": "Known pinned source candidate, not missing source code. Exact current Global behavior still requires official or controlled qualification under the original request; donor values are not silently adopted.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/2/facts/skill_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/2/facts/magic_advance",
+      "before": {
+        "value": {
+          "target_magic_level_L": "0 for L=0; floor(1600*pow(manaMultiplier,L-1)) otherwise",
+          "cumulative": "sum getReqMana(i) for i=1..L",
+          "vocation_parameters": {
+            "attributes": {
+              "id": "4",
+              "clientid": "1",
+              "baseid": "4",
+              "name": "Knight",
+              "description": "a knight",
+              "magicshield": "0",
+              "gaincap": "25",
+              "gainhp": "15",
+              "gainmana": "5",
+              "gainhpticks": "6000",
+              "gainhpamount": "1",
+              "gainmanaticks": "6000",
+              "gainmanaamount": "2",
+              "manamultiplier": "3.0",
+              "attackspeed": "2000",
+              "basespeed": "110",
+              "soulmax": "100",
+              "gainsoulticks": "120000",
+              "fromvoc": "4",
+              "avatarlooktype": "1593"
+            },
+            "skill_multipliers": {
+              "0": "1.1",
+              "1": "1.1",
+              "2": "1.1",
+              "3": "1.1",
+              "4": "1.4",
+              "5": "1.1",
+              "6": "1.1"
+            }
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/2/facts/magic_advance"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:magic.progression",
+            "selector": "magic.progression"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Knight",
+            "selector": "vocation.Knight"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Magic Level"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/2/facts/magic_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "target_magic_level_L": "0 for L=0; floor(1600*pow(manaMultiplier,L-1)) otherwise",
+            "cumulative": "sum getReqMana(i) for i=1..L",
+            "vocation_parameters": {
+              "attributes": {
+                "id": "4",
+                "clientid": "1",
+                "baseid": "4",
+                "name": "Knight",
+                "description": "a knight",
+                "magicshield": "0",
+                "gaincap": "25",
+                "gainhp": "15",
+                "gainmana": "5",
+                "gainhpticks": "6000",
+                "gainhpamount": "1",
+                "gainmanaticks": "6000",
+                "gainmanaamount": "2",
+                "manamultiplier": "3.0",
+                "attackspeed": "2000",
+                "basespeed": "110",
+                "soulmax": "100",
+                "gainsoulticks": "120000",
+                "fromvoc": "4",
+                "avatarlooktype": "1593"
+              },
+              "skill_multipliers": {
+                "0": "1.1",
+                "1": "1.1",
+                "2": "1.1",
+                "3": "1.1",
+                "4": "1.4",
+                "5": "1.1",
+                "6": "1.1"
+              }
+            }
+          },
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          }
+        ],
+        "note": "Known pinned source candidate, not missing source code. Exact current Global behavior still requires official or controlled qualification under the original request; donor values are not silently adopted.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/2/facts/magic_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/3/facts/skill_advance",
+      "before": {
+        "value": {
+          "target_level_L": "0 for L<=10; uint64(base[skill]*pow(vocation_multiplier,L-11)) otherwise",
+          "base_by_skill_id": [
+            50,
+            50,
+            50,
+            50,
+            30,
+            100,
+            20
+          ],
+          "cumulative": "sum individual target-level costs from 10 through L",
+          "rounding": "floating pow followed by integer truncation",
+          "vocation_parameters": {
+            "attributes": {
+              "id": "3",
+              "clientid": "2",
+              "baseid": "3",
+              "name": "Paladin",
+              "description": "a paladin",
+              "magicshield": "0",
+              "gaincap": "20",
+              "gainhp": "10",
+              "gainmana": "15",
+              "gainhpticks": "8000",
+              "gainhpamount": "1",
+              "gainmanaticks": "4000",
+              "gainmanaamount": "2",
+              "manamultiplier": "1.4",
+              "attackspeed": "2000",
+              "basespeed": "110",
+              "soulmax": "100",
+              "gainsoulticks": "120000",
+              "fromvoc": "3",
+              "avatarlooktype": "1594"
+            },
+            "skill_multipliers": {
+              "0": "1.2",
+              "1": "1.2",
+              "2": "1.2",
+              "3": "1.2",
+              "4": "1.1",
+              "5": "1.1",
+              "6": "1.1"
+            }
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/3/facts/skill_advance"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:skill.progression",
+            "selector": "skill.progression"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Paladin",
+            "selector": "vocation.Paladin"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills / vocation multipliers"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/3/facts/skill_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "target_level_L": "0 for L<=10; uint64(base[skill]*pow(vocation_multiplier,L-11)) otherwise",
+            "base_by_skill_id": [
+              50,
+              50,
+              50,
+              50,
+              30,
+              100,
+              20
+            ],
+            "cumulative": "sum individual target-level costs from 10 through L",
+            "rounding": "floating pow followed by integer truncation",
+            "vocation_parameters": {
+              "attributes": {
+                "id": "3",
+                "clientid": "2",
+                "baseid": "3",
+                "name": "Paladin",
+                "description": "a paladin",
+                "magicshield": "0",
+                "gaincap": "20",
+                "gainhp": "10",
+                "gainmana": "15",
+                "gainhpticks": "8000",
+                "gainhpamount": "1",
+                "gainmanaticks": "4000",
+                "gainmanaamount": "2",
+                "manamultiplier": "1.4",
+                "attackspeed": "2000",
+                "basespeed": "110",
+                "soulmax": "100",
+                "gainsoulticks": "120000",
+                "fromvoc": "3",
+                "avatarlooktype": "1594"
+              },
+              "skill_multipliers": {
+                "0": "1.2",
+                "1": "1.2",
+                "2": "1.2",
+                "3": "1.2",
+                "4": "1.1",
+                "5": "1.1",
+                "6": "1.1"
+              }
+            }
+          },
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          }
+        ],
+        "note": "Known pinned source candidate, not missing source code. Exact current Global behavior still requires official or controlled qualification under the original request; donor values are not silently adopted.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/3/facts/skill_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/3/facts/magic_advance",
+      "before": {
+        "value": {
+          "target_magic_level_L": "0 for L=0; floor(1600*pow(manaMultiplier,L-1)) otherwise",
+          "cumulative": "sum getReqMana(i) for i=1..L",
+          "vocation_parameters": {
+            "attributes": {
+              "id": "3",
+              "clientid": "2",
+              "baseid": "3",
+              "name": "Paladin",
+              "description": "a paladin",
+              "magicshield": "0",
+              "gaincap": "20",
+              "gainhp": "10",
+              "gainmana": "15",
+              "gainhpticks": "8000",
+              "gainhpamount": "1",
+              "gainmanaticks": "4000",
+              "gainmanaamount": "2",
+              "manamultiplier": "1.4",
+              "attackspeed": "2000",
+              "basespeed": "110",
+              "soulmax": "100",
+              "gainsoulticks": "120000",
+              "fromvoc": "3",
+              "avatarlooktype": "1594"
+            },
+            "skill_multipliers": {
+              "0": "1.2",
+              "1": "1.2",
+              "2": "1.2",
+              "3": "1.2",
+              "4": "1.1",
+              "5": "1.1",
+              "6": "1.1"
+            }
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/3/facts/magic_advance"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:magic.progression",
+            "selector": "magic.progression"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Paladin",
+            "selector": "vocation.Paladin"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Magic Level"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/3/facts/magic_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "target_magic_level_L": "0 for L=0; floor(1600*pow(manaMultiplier,L-1)) otherwise",
+            "cumulative": "sum getReqMana(i) for i=1..L",
+            "vocation_parameters": {
+              "attributes": {
+                "id": "3",
+                "clientid": "2",
+                "baseid": "3",
+                "name": "Paladin",
+                "description": "a paladin",
+                "magicshield": "0",
+                "gaincap": "20",
+                "gainhp": "10",
+                "gainmana": "15",
+                "gainhpticks": "8000",
+                "gainhpamount": "1",
+                "gainmanaticks": "4000",
+                "gainmanaamount": "2",
+                "manamultiplier": "1.4",
+                "attackspeed": "2000",
+                "basespeed": "110",
+                "soulmax": "100",
+                "gainsoulticks": "120000",
+                "fromvoc": "3",
+                "avatarlooktype": "1594"
+              },
+              "skill_multipliers": {
+                "0": "1.2",
+                "1": "1.2",
+                "2": "1.2",
+                "3": "1.2",
+                "4": "1.1",
+                "5": "1.1",
+                "6": "1.1"
+              }
+            }
+          },
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          }
+        ],
+        "note": "Known pinned source candidate, not missing source code. Exact current Global behavior still requires official or controlled qualification under the original request; donor values are not silently adopted.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/3/facts/magic_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/4/facts/skill_advance",
+      "before": {
+        "value": {
+          "target_level_L": "0 for L<=10; uint64(base[skill]*pow(vocation_multiplier,L-11)) otherwise",
+          "base_by_skill_id": [
+            50,
+            50,
+            50,
+            50,
+            30,
+            100,
+            20
+          ],
+          "cumulative": "sum individual target-level costs from 10 through L",
+          "rounding": "floating pow followed by integer truncation",
+          "vocation_parameters": {
+            "attributes": {
+              "id": "2",
+              "clientid": "4",
+              "baseid": "2",
+              "name": "Druid",
+              "description": "a druid",
+              "magicshield": "1",
+              "gaincap": "10",
+              "gainhp": "5",
+              "gainmana": "30",
+              "gainhpticks": "12000",
+              "gainhpamount": "1",
+              "gainmanaticks": "3000",
+              "gainmanaamount": "2",
+              "manamultiplier": "1.1",
+              "attackspeed": "2000",
+              "basespeed": "110",
+              "soulmax": "100",
+              "gainsoulticks": "120000",
+              "fromvoc": "2",
+              "avatarlooktype": "1596"
+            },
+            "skill_multipliers": {
+              "0": "1.5",
+              "1": "1.8",
+              "2": "1.8",
+              "3": "1.8",
+              "4": "1.8",
+              "5": "1.5",
+              "6": "1.1"
+            }
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/4/facts/skill_advance"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:skill.progression",
+            "selector": "skill.progression"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Druid",
+            "selector": "vocation.Druid"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills / vocation multipliers"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/4/facts/skill_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "target_level_L": "0 for L<=10; uint64(base[skill]*pow(vocation_multiplier,L-11)) otherwise",
+            "base_by_skill_id": [
+              50,
+              50,
+              50,
+              50,
+              30,
+              100,
+              20
+            ],
+            "cumulative": "sum individual target-level costs from 10 through L",
+            "rounding": "floating pow followed by integer truncation",
+            "vocation_parameters": {
+              "attributes": {
+                "id": "2",
+                "clientid": "4",
+                "baseid": "2",
+                "name": "Druid",
+                "description": "a druid",
+                "magicshield": "1",
+                "gaincap": "10",
+                "gainhp": "5",
+                "gainmana": "30",
+                "gainhpticks": "12000",
+                "gainhpamount": "1",
+                "gainmanaticks": "3000",
+                "gainmanaamount": "2",
+                "manamultiplier": "1.1",
+                "attackspeed": "2000",
+                "basespeed": "110",
+                "soulmax": "100",
+                "gainsoulticks": "120000",
+                "fromvoc": "2",
+                "avatarlooktype": "1596"
+              },
+              "skill_multipliers": {
+                "0": "1.5",
+                "1": "1.8",
+                "2": "1.8",
+                "3": "1.8",
+                "4": "1.8",
+                "5": "1.5",
+                "6": "1.1"
+              }
+            }
+          },
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          }
+        ],
+        "note": "Known pinned source candidate, not missing source code. Exact current Global behavior still requires official or controlled qualification under the original request; donor values are not silently adopted.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/4/facts/skill_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/4/facts/magic_advance",
+      "before": {
+        "value": {
+          "target_magic_level_L": "0 for L=0; floor(1600*pow(manaMultiplier,L-1)) otherwise",
+          "cumulative": "sum getReqMana(i) for i=1..L",
+          "vocation_parameters": {
+            "attributes": {
+              "id": "2",
+              "clientid": "4",
+              "baseid": "2",
+              "name": "Druid",
+              "description": "a druid",
+              "magicshield": "1",
+              "gaincap": "10",
+              "gainhp": "5",
+              "gainmana": "30",
+              "gainhpticks": "12000",
+              "gainhpamount": "1",
+              "gainmanaticks": "3000",
+              "gainmanaamount": "2",
+              "manamultiplier": "1.1",
+              "attackspeed": "2000",
+              "basespeed": "110",
+              "soulmax": "100",
+              "gainsoulticks": "120000",
+              "fromvoc": "2",
+              "avatarlooktype": "1596"
+            },
+            "skill_multipliers": {
+              "0": "1.5",
+              "1": "1.8",
+              "2": "1.8",
+              "3": "1.8",
+              "4": "1.8",
+              "5": "1.5",
+              "6": "1.1"
+            }
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/4/facts/magic_advance"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:magic.progression",
+            "selector": "magic.progression"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Druid",
+            "selector": "vocation.Druid"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Magic Level"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/4/facts/magic_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "target_magic_level_L": "0 for L=0; floor(1600*pow(manaMultiplier,L-1)) otherwise",
+            "cumulative": "sum getReqMana(i) for i=1..L",
+            "vocation_parameters": {
+              "attributes": {
+                "id": "2",
+                "clientid": "4",
+                "baseid": "2",
+                "name": "Druid",
+                "description": "a druid",
+                "magicshield": "1",
+                "gaincap": "10",
+                "gainhp": "5",
+                "gainmana": "30",
+                "gainhpticks": "12000",
+                "gainhpamount": "1",
+                "gainmanaticks": "3000",
+                "gainmanaamount": "2",
+                "manamultiplier": "1.1",
+                "attackspeed": "2000",
+                "basespeed": "110",
+                "soulmax": "100",
+                "gainsoulticks": "120000",
+                "fromvoc": "2",
+                "avatarlooktype": "1596"
+              },
+              "skill_multipliers": {
+                "0": "1.5",
+                "1": "1.8",
+                "2": "1.8",
+                "3": "1.8",
+                "4": "1.8",
+                "5": "1.5",
+                "6": "1.1"
+              }
+            }
+          },
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          }
+        ],
+        "note": "Known pinned source candidate, not missing source code. Exact current Global behavior still requires official or controlled qualification under the original request; donor values are not silently adopted.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/4/facts/magic_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/5/facts/skill_advance",
+      "before": {
+        "value": {
+          "target_level_L": "0 for L<=10; uint64(base[skill]*pow(vocation_multiplier,L-11)) otherwise",
+          "base_by_skill_id": [
+            50,
+            50,
+            50,
+            50,
+            30,
+            100,
+            20
+          ],
+          "cumulative": "sum individual target-level costs from 10 through L",
+          "rounding": "floating pow followed by integer truncation",
+          "vocation_parameters": {
+            "attributes": {
+              "id": "1",
+              "clientid": "3",
+              "baseid": "1",
+              "name": "Sorcerer",
+              "description": "a sorcerer",
+              "magicshield": "1",
+              "gaincap": "10",
+              "gainhp": "5",
+              "gainmana": "30",
+              "gainhpticks": "12000",
+              "gainhpamount": "1",
+              "gainmanaticks": "3000",
+              "gainmanaamount": "2",
+              "manamultiplier": "1.1",
+              "attackspeed": "2000",
+              "basespeed": "110",
+              "soulmax": "100",
+              "gainsoulticks": "120000",
+              "fromvoc": "1",
+              "avatarlooktype": "1595"
+            },
+            "skill_multipliers": {
+              "0": "1.5",
+              "1": "2.0",
+              "2": "2.0",
+              "3": "2.0",
+              "4": "2.0",
+              "5": "1.5",
+              "6": "1.1"
+            }
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/5/facts/skill_advance"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:skill.progression",
+            "selector": "skill.progression"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Sorcerer",
+            "selector": "vocation.Sorcerer"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills / vocation multipliers"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/5/facts/skill_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "target_level_L": "0 for L<=10; uint64(base[skill]*pow(vocation_multiplier,L-11)) otherwise",
+            "base_by_skill_id": [
+              50,
+              50,
+              50,
+              50,
+              30,
+              100,
+              20
+            ],
+            "cumulative": "sum individual target-level costs from 10 through L",
+            "rounding": "floating pow followed by integer truncation",
+            "vocation_parameters": {
+              "attributes": {
+                "id": "1",
+                "clientid": "3",
+                "baseid": "1",
+                "name": "Sorcerer",
+                "description": "a sorcerer",
+                "magicshield": "1",
+                "gaincap": "10",
+                "gainhp": "5",
+                "gainmana": "30",
+                "gainhpticks": "12000",
+                "gainhpamount": "1",
+                "gainmanaticks": "3000",
+                "gainmanaamount": "2",
+                "manamultiplier": "1.1",
+                "attackspeed": "2000",
+                "basespeed": "110",
+                "soulmax": "100",
+                "gainsoulticks": "120000",
+                "fromvoc": "1",
+                "avatarlooktype": "1595"
+              },
+              "skill_multipliers": {
+                "0": "1.5",
+                "1": "2.0",
+                "2": "2.0",
+                "3": "2.0",
+                "4": "2.0",
+                "5": "1.5",
+                "6": "1.1"
+              }
+            }
+          },
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          }
+        ],
+        "note": "Known pinned source candidate, not missing source code. Exact current Global behavior still requires official or controlled qualification under the original request; donor values are not silently adopted.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/5/facts/skill_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/5/facts/magic_advance",
+      "before": {
+        "value": {
+          "target_magic_level_L": "0 for L=0; floor(1600*pow(manaMultiplier,L-1)) otherwise",
+          "cumulative": "sum getReqMana(i) for i=1..L",
+          "vocation_parameters": {
+            "attributes": {
+              "id": "1",
+              "clientid": "3",
+              "baseid": "1",
+              "name": "Sorcerer",
+              "description": "a sorcerer",
+              "magicshield": "1",
+              "gaincap": "10",
+              "gainhp": "5",
+              "gainmana": "30",
+              "gainhpticks": "12000",
+              "gainhpamount": "1",
+              "gainmanaticks": "3000",
+              "gainmanaamount": "2",
+              "manamultiplier": "1.1",
+              "attackspeed": "2000",
+              "basespeed": "110",
+              "soulmax": "100",
+              "gainsoulticks": "120000",
+              "fromvoc": "1",
+              "avatarlooktype": "1595"
+            },
+            "skill_multipliers": {
+              "0": "1.5",
+              "1": "2.0",
+              "2": "2.0",
+              "3": "2.0",
+              "4": "2.0",
+              "5": "1.5",
+              "6": "1.1"
+            }
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/5/facts/magic_advance"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:magic.progression",
+            "selector": "magic.progression"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Sorcerer",
+            "selector": "vocation.Sorcerer"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Magic Level"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/5/facts/magic_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "target_magic_level_L": "0 for L=0; floor(1600*pow(manaMultiplier,L-1)) otherwise",
+            "cumulative": "sum getReqMana(i) for i=1..L",
+            "vocation_parameters": {
+              "attributes": {
+                "id": "1",
+                "clientid": "3",
+                "baseid": "1",
+                "name": "Sorcerer",
+                "description": "a sorcerer",
+                "magicshield": "1",
+                "gaincap": "10",
+                "gainhp": "5",
+                "gainmana": "30",
+                "gainhpticks": "12000",
+                "gainhpamount": "1",
+                "gainmanaticks": "3000",
+                "gainmanaamount": "2",
+                "manamultiplier": "1.1",
+                "attackspeed": "2000",
+                "basespeed": "110",
+                "soulmax": "100",
+                "gainsoulticks": "120000",
+                "fromvoc": "1",
+                "avatarlooktype": "1595"
+              },
+              "skill_multipliers": {
+                "0": "1.5",
+                "1": "2.0",
+                "2": "2.0",
+                "3": "2.0",
+                "4": "2.0",
+                "5": "1.5",
+                "6": "1.1"
+              }
+            }
+          },
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          }
+        ],
+        "note": "Known pinned source candidate, not missing source code. Exact current Global behavior still requires official or controlled qualification under the original request; donor values are not silently adopted.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/5/facts/magic_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/6/facts/skill_advance",
+      "before": {
+        "value": {
+          "target_level_L": "0 for L<=10; uint64(base[skill]*pow(vocation_multiplier,L-11)) otherwise",
+          "base_by_skill_id": [
+            50,
+            50,
+            50,
+            50,
+            30,
+            100,
+            20
+          ],
+          "cumulative": "sum individual target-level costs from 10 through L",
+          "rounding": "floating pow followed by integer truncation",
+          "vocation_parameters": {
+            "attributes": {
+              "id": "9",
+              "clientid": "5",
+              "baseid": "5",
+              "name": "Monk",
+              "description": "an monk",
+              "magicshield": "0",
+              "gaincap": "25",
+              "gainhp": "10",
+              "gainmana": "10",
+              "gainhpticks": "7000",
+              "gainhpamount": "1",
+              "gainmanaticks": "4000",
+              "gainmanaamount": "2",
+              "manamultiplier": "1.3",
+              "attackspeed": "2000",
+              "basespeed": "110",
+              "soulmax": "200",
+              "gainsoulticks": "15000",
+              "fromvoc": "9",
+              "avatarlooktype": "1823"
+            },
+            "skill_multipliers": {
+              "0": "1.1",
+              "1": "1.2",
+              "2": "1.2",
+              "3": "1.2",
+              "4": "1.5",
+              "5": "1.1",
+              "6": "1.1"
+            }
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/6/facts/skill_advance"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:skill.progression",
+            "selector": "skill.progression"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Monk",
+            "selector": "vocation.Monk"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills / vocation multipliers"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/6/facts/skill_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "target_level_L": "0 for L<=10; uint64(base[skill]*pow(vocation_multiplier,L-11)) otherwise",
+            "base_by_skill_id": [
+              50,
+              50,
+              50,
+              50,
+              30,
+              100,
+              20
+            ],
+            "cumulative": "sum individual target-level costs from 10 through L",
+            "rounding": "floating pow followed by integer truncation",
+            "vocation_parameters": {
+              "attributes": {
+                "id": "9",
+                "clientid": "5",
+                "baseid": "5",
+                "name": "Monk",
+                "description": "an monk",
+                "magicshield": "0",
+                "gaincap": "25",
+                "gainhp": "10",
+                "gainmana": "10",
+                "gainhpticks": "7000",
+                "gainhpamount": "1",
+                "gainmanaticks": "4000",
+                "gainmanaamount": "2",
+                "manamultiplier": "1.3",
+                "attackspeed": "2000",
+                "basespeed": "110",
+                "soulmax": "200",
+                "gainsoulticks": "15000",
+                "fromvoc": "9",
+                "avatarlooktype": "1823"
+              },
+              "skill_multipliers": {
+                "0": "1.1",
+                "1": "1.2",
+                "2": "1.2",
+                "3": "1.2",
+                "4": "1.5",
+                "5": "1.1",
+                "6": "1.1"
+              }
+            }
+          },
+          "selected_for_native_runtime": false,
+          "community_monk_constants": {
+            "magic": 1.25,
+            "axe_club_sword": 1.4,
+            "fist": 1.1,
+            "distance": 1.5,
+            "shielding": 1.15,
+            "fishing": 1.1
+          },
+          "donor_monk_constants": {
+            "magic": 1.3,
+            "axe_club_sword": 1.2,
+            "fist": 1.1,
+            "distance": 1.5,
+            "shielding": 1.1,
+            "fishing": 1.1
+          }
+        },
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          },
+          {
+            "source": "wiki-br:skill-calculator:indexed:20261019",
+            "selector": "Monk magic1.25andshielding1.15"
+          }
+        ],
+        "note": "Monk parameter tables differ in both wikis/calculator versus pinned donor XML. No constant set is admitted as the Global formula.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/6/facts/skill_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/6/facts/magic_advance",
+      "before": {
+        "value": {
+          "target_magic_level_L": "0 for L=0; floor(1600*pow(manaMultiplier,L-1)) otherwise",
+          "cumulative": "sum getReqMana(i) for i=1..L",
+          "vocation_parameters": {
+            "attributes": {
+              "id": "9",
+              "clientid": "5",
+              "baseid": "5",
+              "name": "Monk",
+              "description": "an monk",
+              "magicshield": "0",
+              "gaincap": "25",
+              "gainhp": "10",
+              "gainmana": "10",
+              "gainhpticks": "7000",
+              "gainhpamount": "1",
+              "gainmanaticks": "4000",
+              "gainmanaamount": "2",
+              "manamultiplier": "1.3",
+              "attackspeed": "2000",
+              "basespeed": "110",
+              "soulmax": "200",
+              "gainsoulticks": "15000",
+              "fromvoc": "9",
+              "avatarlooktype": "1823"
+            },
+            "skill_multipliers": {
+              "0": "1.1",
+              "1": "1.2",
+              "2": "1.2",
+              "3": "1.2",
+              "4": "1.5",
+              "5": "1.1",
+              "6": "1.1"
+            }
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/6/facts/magic_advance"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:magic.progression",
+            "selector": "magic.progression"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Monk",
+            "selector": "vocation.Monk"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Magic Level"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/6/facts/magic_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "target_magic_level_L": "0 for L=0; floor(1600*pow(manaMultiplier,L-1)) otherwise",
+            "cumulative": "sum getReqMana(i) for i=1..L",
+            "vocation_parameters": {
+              "attributes": {
+                "id": "9",
+                "clientid": "5",
+                "baseid": "5",
+                "name": "Monk",
+                "description": "an monk",
+                "magicshield": "0",
+                "gaincap": "25",
+                "gainhp": "10",
+                "gainmana": "10",
+                "gainhpticks": "7000",
+                "gainhpamount": "1",
+                "gainmanaticks": "4000",
+                "gainmanaamount": "2",
+                "manamultiplier": "1.3",
+                "attackspeed": "2000",
+                "basespeed": "110",
+                "soulmax": "200",
+                "gainsoulticks": "15000",
+                "fromvoc": "9",
+                "avatarlooktype": "1823"
+              },
+              "skill_multipliers": {
+                "0": "1.1",
+                "1": "1.2",
+                "2": "1.2",
+                "3": "1.2",
+                "4": "1.5",
+                "5": "1.1",
+                "6": "1.1"
+              }
+            }
+          },
+          "selected_for_native_runtime": false,
+          "community_monk_constants": {
+            "magic": 1.25,
+            "axe_club_sword": 1.4,
+            "fist": 1.1,
+            "distance": 1.5,
+            "shielding": 1.15,
+            "fishing": 1.1
+          },
+          "donor_monk_constants": {
+            "magic": 1.3,
+            "axe_club_sword": 1.2,
+            "fist": 1.1,
+            "distance": 1.5,
+            "shielding": 1.1,
+            "fishing": 1.1
+          }
+        },
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          },
+          {
+            "source": "wiki-br:skill-calculator:indexed:20261019",
+            "selector": "Monk magic1.25andshielding1.15"
+          }
+        ],
+        "note": "Monk parameter tables differ in both wikis/calculator versus pinned donor XML. No constant set is admitted as the Global formula.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/6/facts/magic_advance",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/next_level_points",
+      "before": {
+        "value": {
+          "target_level_L": "0 for L<=10; uint64(base[skill]*pow(vocation_multiplier,L-11)) otherwise",
+          "base_by_skill_id": [
+            50,
+            50,
+            50,
+            50,
+            30,
+            100,
+            20
+          ],
+          "cumulative": "sum individual target-level costs from 10 through L",
+          "rounding": "floating pow followed by integer truncation"
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/next_level_points"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:skill.progression",
+            "selector": "skill.progression"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/next_level_points",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "target_level_L": "0 for L<=10; uint64(base[skill]*pow(vocation_multiplier,L-11)) otherwise",
+            "base_by_skill_id": [
+              50,
+              50,
+              50,
+              50,
+              30,
+              100,
+              20
+            ],
+            "cumulative": "sum individual target-level costs from 10 through L",
+            "rounding": "floating pow followed by integer truncation"
+          },
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          }
+        ],
+        "note": "Known pinned source candidate, not missing source code. Exact current Global behavior still requires official or controlled qualification under the original request; donor values are not silently adopted.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/next_level_points",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/cumulative_points",
+      "before": {
+        "value": {
+          "expression": "sum(trunc(A*b^(j-11)),j=11..target_level)",
+          "target_level_minimum": 10
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/cumulative_points"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Sum individually rounded level costs; do not use rounded geometric shortcut."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/cumulative_points",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "expression": "sum(trunc(A*b^(j-11)),j=11..target_level)",
+            "target_level_minimum": 10
+          },
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          }
+        ],
+        "note": "Known pinned source candidate, not missing source code. Exact current Global behavior still requires official or controlled qualification under the original request; donor values are not silently adopted.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/cumulative_points",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/skill_constants",
+      "before": {
+        "value": {
+          "skill_ids_0_through_6": [
+            50,
+            50,
+            50,
+            50,
+            30,
+            100,
+            20
+          ],
+          "magic": 1600
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/skill_constants"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills / Skill Constants"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/skill_constants",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "skill_ids_0_through_6": [
+              50,
+              50,
+              50,
+              50,
+              30,
+              100,
+              20
+            ],
+            "magic": 1600
+          },
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          }
+        ],
+        "note": "Known pinned source candidate, not missing source code. Exact current Global behavior still requires official or controlled qualification under the original request; donor values are not silently adopted.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/skill_constants",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/vocation_constants",
+      "before": {
+        "value": {
+          "None": {
+            "mana_multiplier": "4.0",
+            "skills": {
+              "0": "1.5",
+              "1": "2.0",
+              "2": "2.0",
+              "3": "2.0",
+              "4": "2.0",
+              "5": "1.5",
+              "6": "1.1"
+            }
+          },
+          "Knight": {
+            "mana_multiplier": "3.0",
+            "skills": {
+              "0": "1.1",
+              "1": "1.1",
+              "2": "1.1",
+              "3": "1.1",
+              "4": "1.4",
+              "5": "1.1",
+              "6": "1.1"
+            }
+          },
+          "Paladin": {
+            "mana_multiplier": "1.4",
+            "skills": {
+              "0": "1.2",
+              "1": "1.2",
+              "2": "1.2",
+              "3": "1.2",
+              "4": "1.1",
+              "5": "1.1",
+              "6": "1.1"
+            }
+          },
+          "Druid": {
+            "mana_multiplier": "1.1",
+            "skills": {
+              "0": "1.5",
+              "1": "1.8",
+              "2": "1.8",
+              "3": "1.8",
+              "4": "1.8",
+              "5": "1.5",
+              "6": "1.1"
+            }
+          },
+          "Sorcerer": {
+            "mana_multiplier": "1.1",
+            "skills": {
+              "0": "1.5",
+              "1": "2.0",
+              "2": "2.0",
+              "3": "2.0",
+              "4": "2.0",
+              "5": "1.5",
+              "6": "1.1"
+            }
+          },
+          "Monk": {
+            "mana_multiplier": "1.3",
+            "skills": {
+              "0": "1.1",
+              "1": "1.2",
+              "2": "1.2",
+              "3": "1.2",
+              "4": "1.5",
+              "5": "1.1",
+              "6": "1.1"
+            }
+          }
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/vocation_constants"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.None",
+            "selector": "vocation.None"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Knight",
+            "selector": "vocation.Knight"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Paladin",
+            "selector": "vocation.Paladin"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Druid",
+            "selector": "vocation.Druid"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Sorcerer",
+            "selector": "vocation.Sorcerer"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Monk",
+            "selector": "vocation.Monk"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills / Vocation Constants"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/vocation_constants",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "None": {
+              "mana_multiplier": "4.0",
+              "skills": {
+                "0": "1.5",
+                "1": "2.0",
+                "2": "2.0",
+                "3": "2.0",
+                "4": "2.0",
+                "5": "1.5",
+                "6": "1.1"
+              }
+            },
+            "Knight": {
+              "mana_multiplier": "3.0",
+              "skills": {
+                "0": "1.1",
+                "1": "1.1",
+                "2": "1.1",
+                "3": "1.1",
+                "4": "1.4",
+                "5": "1.1",
+                "6": "1.1"
+              }
+            },
+            "Paladin": {
+              "mana_multiplier": "1.4",
+              "skills": {
+                "0": "1.2",
+                "1": "1.2",
+                "2": "1.2",
+                "3": "1.2",
+                "4": "1.1",
+                "5": "1.1",
+                "6": "1.1"
+              }
+            },
+            "Druid": {
+              "mana_multiplier": "1.1",
+              "skills": {
+                "0": "1.5",
+                "1": "1.8",
+                "2": "1.8",
+                "3": "1.8",
+                "4": "1.8",
+                "5": "1.5",
+                "6": "1.1"
+              }
+            },
+            "Sorcerer": {
+              "mana_multiplier": "1.1",
+              "skills": {
+                "0": "1.5",
+                "1": "2.0",
+                "2": "2.0",
+                "3": "2.0",
+                "4": "2.0",
+                "5": "1.5",
+                "6": "1.1"
+              }
+            },
+            "Monk": {
+              "mana_multiplier": "1.3",
+              "skills": {
+                "0": "1.1",
+                "1": "1.2",
+                "2": "1.2",
+                "3": "1.2",
+                "4": "1.5",
+                "5": "1.1",
+                "6": "1.1"
+              }
+            }
+          },
+          "selected_for_native_runtime": false,
+          "community_differences": {
+            "None_magic": 3.0,
+            "Monk_magic": 1.25,
+            "Monk_melee": 1.4,
+            "Monk_shielding": 1.15
+          },
+          "donor_differences": {
+            "None_magic": 4.0,
+            "Monk_magic": 1.3,
+            "Monk_melee": 1.2,
+            "Monk_shielding": 1.1
+          }
+        },
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          },
+          {
+            "source": "wiki-br:skill-calculator:indexed:20261019",
+            "selector": "Monk magic1.25andshielding1.15"
+          }
+        ],
+        "note": "Preserve explicit None and Monk parameter disagreements; existing donor table is a candidate, not a resolved Global constant set.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/vocation_constants",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/offset",
+      "before": {
+        "value": {
+          "current_skill_s_for_next_level_exponent": "s-10",
+          "target_skill_L_exponent": "L-11",
+          "target_magic_L_exponent": "L-1"
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/offset"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/offset",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "current_skill_s_for_next_level_exponent": "s-10",
+            "target_skill_L_exponent": "L-11",
+            "target_magic_L_exponent": "L-1"
+          },
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          }
+        ],
+        "note": "Known pinned source candidate, not missing source code. Exact current Global behavior still requires official or controlled qualification under the original request; donor values are not silently adopted.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/offset",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/8/facts/mana_per_target",
+      "before": {
+        "value": {
+          "expression": "clamp(lround(realDamage*(skillAmount/10000.0)*(0.1*N+0.9)/N),0,realDamage)",
+          "domain": "N>=1, actual nonnegative damage; skillAmount in hundredths of percent"
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skill-formulas-content-1/oteryn-parameters.json / field docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/8/facts/mana_per_target"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:leech.amount",
+            "selector": "leech.amount"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Imbuing / Mana Leech"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/8/facts/mana_per_target",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "PINNED_FORMULA_CANDIDATE_CURRENT_GLOBAL_UNQUALIFIED",
+          "candidate": {
+            "expression": "clamp(lround(realDamage*(skillAmount/10000.0)*(0.1*N+0.9)/N),0,realDamage)",
+            "domain": "N>=1, actual nonnegative damage; skillAmount in hundredths of percent"
+          },
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:1092:1205374",
+            "selector": "Skills and leech formulae"
+          }
+        ],
+        "note": "Known pinned source candidate, not missing source code. Exact current Global behavior still requires official or controlled qualification under the original request; donor values are not silently adopted.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skill-formulas-content-1/tibia-source-archive.json#docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/8/facts/mana_per_target",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    }
+  ],
+  "extracted_donor_functions": [
+    {
+      "source": "canary",
+      "path": "src/game/game.cpp",
+      "line": 9058,
+      "text": "int32_t Game::calculateLeechAmount(const int32_t &realDamage, const uint16_t &skillAmount, int targetsAffected) const {\n\tauto intermediateResult = realDamage * (skillAmount / 10000.0) * (0.1 * targetsAffected + 0.9) / targetsAffected;\n\treturn std::clamp<int32_t>(static_cast<int32_t>(std::lround(intermediateResult)), 0, realDamage);\n}"
+    },
+    {
+      "source": "canary",
+      "path": "src/creatures/players/vocations/vocation.cpp",
+      "line": 265,
+      "text": "uint64_t Vocation::getReqSkillTries(uint8_t skill, uint16_t level) {\n\tif (skill > SKILL_LAST || level <= minSkillLevel) {\n\t\treturn 0;\n\t}\n\n\tauto it = cacheSkill[skill].find(level);\n\tif (it != cacheSkill[skill].end()) {\n\t\treturn it->second;\n\t}\n\n\tconst auto tries = static_cast<uint64_t>(skillBase[skill] * std::pow(static_cast<double>(skillMultipliers[skill]), level - (minSkillLevel + 1)));\n\tcacheSkill[skill][level] = tries;\n\treturn tries;\n}"
+    },
+    {
+      "source": "canary",
+      "path": "src/creatures/players/vocations/vocation.cpp",
+      "line": 295,
+      "text": "uint64_t Vocation::getReqMana(uint32_t magLevel) {\n\tif (magLevel == 0) {\n\t\treturn 0;\n\t}\n\tauto it = cacheMana.find(magLevel);\n\tif (it != cacheMana.end()) {\n\t\treturn it->second;\n\t}\n\n\tconst uint64_t reqMana = std::floor<uint64_t>(1600 * std::pow<double>(manaMultiplier, static_cast<int32_t>(magLevel) - 1));\n\tcacheMana[magLevel] = reqMana;\n\treturn reqMana;\n}"
+    },
+    {
+      "source": "crystalserver-summer",
+      "path": "src/game/game.cpp",
+      "line": 8664,
+      "text": "int32_t Game::calculateLeechAmount(const int32_t &realDamage, const uint16_t &skillAmount, int targetsAffected) const {\n\tauto intermediateResult = realDamage * (skillAmount / 10000.0) * (0.1 * targetsAffected + 0.9) / targetsAffected;\n\treturn std::clamp<int32_t>(static_cast<int32_t>(std::lround(intermediateResult)), 0, realDamage);\n}"
+    },
+    {
+      "source": "crystalserver-summer",
+      "path": "src/creatures/players/vocations/vocation.cpp",
+      "line": 376,
+      "text": "uint64_t Vocation::getReqSkillTries(uint8_t skill, uint16_t level) {\n\tif (skill > SKILL_LAST || level <= minSkillLevel) {\n\t\treturn 0;\n\t}\n\n\tauto it = cacheSkill[skill].find(level);\n\tif (it != cacheSkill[skill].end()) {\n\t\treturn it->second;\n\t}\n\n\tconst auto tries = static_cast<uint64_t>(skillBase[skill] * std::pow(static_cast<double>(skillMultipliers[skill]), level - (minSkillLevel + 1)));\n\tcacheSkill[skill][level] = tries;\n\treturn tries;\n}"
+    },
+    {
+      "source": "crystalserver-summer",
+      "path": "src/creatures/players/vocations/vocation.cpp",
+      "line": 406,
+      "text": "uint64_t Vocation::getReqMana(uint32_t magLevel) {\n\tif (magLevel == 0) {\n\t\treturn 0;\n\t}\n\tauto it = cacheMana.find(magLevel);\n\tif (it != cacheMana.end()) {\n\t\treturn it->second;\n\t}\n\n\tconst uint64_t reqMana = std::floor<uint64_t>(1600 * std::pow<double>(manaMultiplier, static_cast<int32_t>(magLevel) - 1));\n\tcacheMana[magLevel] = reqMana;\n\treturn reqMana;\n}"
+    }
+  ],
+  "active_evidence_counts": {
+    "PROVEN": 4,
+    "UNKNOWN": 15,
+    "CONFLICT": 4
+  },
+  "remaining": [
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/life_formula",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/mana_formula",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/1/facts/damage_prey",
+      "classification": "CONFLICT"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/2/facts/skill_advance",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/2/facts/magic_advance",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/3/facts/skill_advance",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/3/facts/magic_advance",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/4/facts/skill_advance",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/4/facts/magic_advance",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/5/facts/skill_advance",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/5/facts/magic_advance",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/6/facts/skill_advance",
+      "classification": "CONFLICT"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/6/facts/magic_advance",
+      "classification": "CONFLICT"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/next_level_points",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/cumulative_points",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/skill_constants",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/vocation_constants",
+      "classification": "CONFLICT"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/7/facts/offset",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/skill-formulas-content-1/admission-evidence/reference-evidence.json/records/8/facts/mana_per_target",
+      "classification": "UNKNOWN"
+    }
+  ],
+  "retrieval_limits": [
+    "Pinned donor files verified against exact Git blobs; donor code is OTS_HYPOTHESIS_ONLY.",
+    "Fresh web checks used indexed primary/community text where direct pages were blocked. Retained Fandom revision hashes remain explicit.",
+    "No current Global gameplay measurement or native runtime admission is claimed."
+  ]
+}

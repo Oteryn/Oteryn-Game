@@ -1,0 +1,51 @@
+{
+  "spell": {
+    "base_power": 62,
+    "carrier": "instant",
+    "cooldown_ms": 12000,
+    "costs": {
+      "mana": 145
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Thousand Fist Blows",
+    "needs_weapon": false,
+    "presentation": {
+      "source_cast_sound": {
+        "binding_status": "unbound",
+        "constant": "SOUND_EFFECT_TYPE_SPELL_FLURRY_OF_BLOWS"
+      }
+    },
+    "reference_spell_id": 301,
+    "requirements": {
+      "learning_required": false,
+      "level": 120,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "cast_at_position": true,
+      "range_tiles": 7
+    },
+    "words": "exori mas amp pug"
+  }
+}

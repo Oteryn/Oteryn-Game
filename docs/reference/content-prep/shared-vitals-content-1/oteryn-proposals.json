@@ -1,0 +1,2804 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_PROPOSALS/v1",
+  "task": "SHARED-VITALS-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "MEASURED_NORMAL_REFERENCES_AND_OWNER_DERIVED_SORCERER",
+  "global_evidence_policy": "Original historical facts and withdrawn defaults remain archived. Eight fields are measured; two Sorcerer fields are owner-derived from measured Druid. Sorcerer is not presented as a direct measurement. No runtime activation.",
+  "owner_authorization": {
+    "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+    "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
+  },
+  "predecessor_sha": "f09ca7b68911104f7c6a174b18d2b3158d377d3d",
+  "original_field_list_sha256": "037790cac57425b9ceb2d7c0c9e1db6735623a02bbc3b1968e2426a8a449cb76",
+  "coverage": {
+    "held_fields": 25,
+    "proposals": 25,
+    "uncovered": 0,
+    "original_classifications": {
+      "UNKNOWN": 23,
+      "CONFLICT": 2
+    }
+  },
+  "shared_policies": {},
+  "source_observations": [
+    {
+      "source_id": "crystalserver-summer",
+      "key": "party.activity_timeout",
+      "value": 120,
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "src/creatures/players/grouping/party.cpp",
+        "line": 621,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/grouping/party.cpp#L621",
+        "file_sha256": "ef20ad81d4da214ab47e1dd77c208a42dda1c9a726d69ea1812c1f4d80c502c5"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "120 seconds is the distributed default; execution reads configurable milliseconds. Official source only says recently active."
+    },
+    {
+      "source_id": "crystalserver-summer",
+      "key": "vocation.Druid",
+      "value": {
+        "attributes": {
+          "id": "2",
+          "clientid": "4",
+          "baseid": "2",
+          "name": "Druid",
+          "description": "a druid",
+          "magicshield": "1",
+          "gaincap": "10",
+          "gainhp": "5",
+          "gainmana": "30",
+          "gainhpticks": "12000",
+          "gainhpamount": "1",
+          "gainmanaticks": "3000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.1",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "100",
+          "gainsoulticks": "120000",
+          "fromvoc": "2",
+          "avatarlooktype": "1596"
+        },
+        "skill_multipliers": {
+          "0": "1.5",
+          "1": "1.8",
+          "2": "1.8",
+          "3": "1.8",
+          "4": "1.8",
+          "5": "1.5",
+          "6": "1.1"
+        }
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "data/XML/vocations.xml",
+        "line": 36,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L36",
+        "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "Source XML parameters. Regeneration still uses historical vocation-specific intervals; current Global differs. Runtime rate modifiers can apply."
+    },
+    {
+      "source_id": "crystalserver-summer",
+      "key": "vocation.Elder Druid",
+      "value": {
+        "attributes": {
+          "id": "6",
+          "clientid": "14",
+          "baseid": "2",
+          "name": "Elder Druid",
+          "description": "an elder druid",
+          "magicshield": "1",
+          "gaincap": "10",
+          "gainhp": "5",
+          "gainmana": "30",
+          "gainhpticks": "12000",
+          "gainhpamount": "1",
+          "gainmanaticks": "2000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.1",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "200",
+          "gainsoulticks": "15000",
+          "fromvoc": "2",
+          "avatarlooktype": "1596"
+        },
+        "skill_multipliers": {
+          "0": "1.5",
+          "1": "1.8",
+          "2": "1.8",
+          "3": "1.8",
+          "4": "1.8",
+          "5": "1.5",
+          "6": "1.1"
+        }
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "data/XML/vocations.xml",
+        "line": 91,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L91",
+        "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "Source XML parameters. Regeneration still uses historical vocation-specific intervals; current Global differs. Runtime rate modifiers can apply."
+    },
+    {
+      "source_id": "crystalserver-summer",
+      "key": "vocation.Elite Knight",
+      "value": {
+        "attributes": {
+          "id": "8",
+          "clientid": "11",
+          "baseid": "4",
+          "name": "Elite Knight",
+          "description": "an elite knight",
+          "magicshield": "0",
+          "gaincap": "25",
+          "gainhp": "15",
+          "gainmana": "5",
+          "gainhpticks": "4000",
+          "gainhpamount": "1",
+          "gainmanaticks": "6000",
+          "gainmanaamount": "2",
+          "manamultiplier": "3.0",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "200",
+          "gainsoulticks": "15000",
+          "fromvoc": "4",
+          "avatarlooktype": "1593"
+        },
+        "skill_multipliers": {
+          "0": "1.1",
+          "1": "1.1",
+          "2": "1.1",
+          "3": "1.1",
+          "4": "1.4",
+          "5": "1.1",
+          "6": "1.1"
+        }
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "data/XML/vocations.xml",
+        "line": 123,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L123",
+        "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "Source XML parameters. Regeneration still uses historical vocation-specific intervals; current Global differs. Runtime rate modifiers can apply."
+    },
+    {
+      "source_id": "crystalserver-summer",
+      "key": "vocation.Exalted Monk",
+      "value": {
+        "attributes": {
+          "id": "10",
+          "clientid": "15",
+          "baseid": "5",
+          "name": "Exalted Monk",
+          "description": "an exalted monk",
+          "magicshield": "0",
+          "gaincap": "25",
+          "gainhp": "10",
+          "gainmana": "10",
+          "gainhpticks": "5000",
+          "gainhpamount": "1",
+          "gainmanaticks": "3000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.3",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "200",
+          "gainsoulticks": "15000",
+          "fromvoc": "9",
+          "avatarlooktype": "1823"
+        },
+        "skill_multipliers": {
+          "0": "1.1",
+          "1": "1.2",
+          "2": "1.2",
+          "3": "1.2",
+          "4": "1.5",
+          "5": "1.1",
+          "6": "1.1"
+        }
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "data/XML/vocations.xml",
+        "line": 151,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L151",
+        "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "Source XML parameters. Regeneration still uses historical vocation-specific intervals; current Global differs. Runtime rate modifiers can apply."
+    },
+    {
+      "source_id": "crystalserver-summer",
+      "key": "vocation.Knight",
+      "value": {
+        "attributes": {
+          "id": "4",
+          "clientid": "1",
+          "baseid": "4",
+          "name": "Knight",
+          "description": "a knight",
+          "magicshield": "0",
+          "gaincap": "25",
+          "gainhp": "15",
+          "gainmana": "5",
+          "gainhpticks": "6000",
+          "gainhpamount": "1",
+          "gainmanaticks": "6000",
+          "gainmanaamount": "2",
+          "manamultiplier": "3.0",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "100",
+          "gainsoulticks": "120000",
+          "fromvoc": "4",
+          "avatarlooktype": "1593"
+        },
+        "skill_multipliers": {
+          "0": "1.1",
+          "1": "1.1",
+          "2": "1.1",
+          "3": "1.1",
+          "4": "1.4",
+          "5": "1.1",
+          "6": "1.1"
+        }
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "data/XML/vocations.xml",
+        "line": 62,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L62",
+        "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "Source XML parameters. Regeneration still uses historical vocation-specific intervals; current Global differs. Runtime rate modifiers can apply."
+    },
+    {
+      "source_id": "crystalserver-summer",
+      "key": "vocation.Master Sorcerer",
+      "value": {
+        "attributes": {
+          "id": "5",
+          "clientid": "13",
+          "baseid": "1",
+          "name": "Master Sorcerer",
+          "description": "a master sorcerer",
+          "magicshield": "1",
+          "gaincap": "10",
+          "gainhp": "5",
+          "gainmana": "30",
+          "gainhpticks": "12000",
+          "gainhpamount": "1",
+          "gainmanaticks": "2000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.1",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "200",
+          "gainsoulticks": "15000",
+          "fromvoc": "1",
+          "avatarlooktype": "1595"
+        },
+        "skill_multipliers": {
+          "0": "1.5",
+          "1": "2.0",
+          "2": "2.0",
+          "3": "2.0",
+          "4": "2.0",
+          "5": "1.5",
+          "6": "1.1"
+        }
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "data/XML/vocations.xml",
+        "line": 75,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L75",
+        "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "Source XML parameters. Regeneration still uses historical vocation-specific intervals; current Global differs. Runtime rate modifiers can apply."
+    },
+    {
+      "source_id": "crystalserver-summer",
+      "key": "vocation.Monk",
+      "value": {
+        "attributes": {
+          "id": "9",
+          "clientid": "5",
+          "baseid": "5",
+          "name": "Monk",
+          "description": "an monk",
+          "magicshield": "0",
+          "gaincap": "25",
+          "gainhp": "10",
+          "gainmana": "10",
+          "gainhpticks": "7000",
+          "gainhpamount": "1",
+          "gainmanaticks": "4000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.3",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "200",
+          "gainsoulticks": "15000",
+          "fromvoc": "9",
+          "avatarlooktype": "1823"
+        },
+        "skill_multipliers": {
+          "0": "1.1",
+          "1": "1.2",
+          "2": "1.2",
+          "3": "1.2",
+          "4": "1.5",
+          "5": "1.1",
+          "6": "1.1"
+        }
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "data/XML/vocations.xml",
+        "line": 139,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L139",
+        "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "Source XML parameters. Regeneration still uses historical vocation-specific intervals; current Global differs. Runtime rate modifiers can apply."
+    },
+    {
+      "source_id": "crystalserver-summer",
+      "key": "vocation.Paladin",
+      "value": {
+        "attributes": {
+          "id": "3",
+          "clientid": "2",
+          "baseid": "3",
+          "name": "Paladin",
+          "description": "a paladin",
+          "magicshield": "0",
+          "gaincap": "20",
+          "gainhp": "10",
+          "gainmana": "15",
+          "gainhpticks": "8000",
+          "gainhpamount": "1",
+          "gainmanaticks": "4000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.4",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "100",
+          "gainsoulticks": "120000",
+          "fromvoc": "3",
+          "avatarlooktype": "1594"
+        },
+        "skill_multipliers": {
+          "0": "1.2",
+          "1": "1.2",
+          "2": "1.2",
+          "3": "1.2",
+          "4": "1.1",
+          "5": "1.1",
+          "6": "1.1"
+        }
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "data/XML/vocations.xml",
+        "line": 49,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L49",
+        "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "Source XML parameters. Regeneration still uses historical vocation-specific intervals; current Global differs. Runtime rate modifiers can apply."
+    },
+    {
+      "source_id": "crystalserver-summer",
+      "key": "vocation.Royal Paladin",
+      "value": {
+        "attributes": {
+          "id": "7",
+          "clientid": "12",
+          "baseid": "3",
+          "name": "Royal Paladin",
+          "description": "a royal paladin",
+          "magicshield": "0",
+          "gaincap": "20",
+          "gainhp": "10",
+          "gainmana": "15",
+          "gainhpticks": "6000",
+          "gainhpamount": "1",
+          "gainmanaticks": "3000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.4",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "200",
+          "gainsoulticks": "15000",
+          "fromvoc": "3",
+          "avatarlooktype": "1594"
+        },
+        "skill_multipliers": {
+          "0": "1.2",
+          "1": "1.2",
+          "2": "1.2",
+          "3": "1.2",
+          "4": "1.1",
+          "5": "1.1",
+          "6": "1.1"
+        }
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "data/XML/vocations.xml",
+        "line": 107,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L107",
+        "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "Source XML parameters. Regeneration still uses historical vocation-specific intervals; current Global differs. Runtime rate modifiers can apply."
+    },
+    {
+      "source_id": "crystalserver-summer",
+      "key": "vocation.Sorcerer",
+      "value": {
+        "attributes": {
+          "id": "1",
+          "clientid": "3",
+          "baseid": "1",
+          "name": "Sorcerer",
+          "description": "a sorcerer",
+          "magicshield": "1",
+          "gaincap": "10",
+          "gainhp": "5",
+          "gainmana": "30",
+          "gainhpticks": "12000",
+          "gainhpamount": "1",
+          "gainmanaticks": "3000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.1",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "100",
+          "gainsoulticks": "120000",
+          "fromvoc": "1",
+          "avatarlooktype": "1595"
+        },
+        "skill_multipliers": {
+          "0": "1.5",
+          "1": "2.0",
+          "2": "2.0",
+          "3": "2.0",
+          "4": "2.0",
+          "5": "1.5",
+          "6": "1.1"
+        }
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "data/XML/vocations.xml",
+        "line": 23,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L23",
+        "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "Source XML parameters. Regeneration still uses historical vocation-specific intervals; current Global differs. Runtime rate modifiers can apply."
+    }
+  ],
+  "proposals": [
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/shared-experience-reference-evidence.json/records/0/facts/activity_timeout",
+      "subject": "shared_experience.eligibility",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "EXACT_GLOBAL_TIMEOUT_UNQUALIFIED",
+        "donor_distributed_default_seconds": 120,
+        "donor_runtime_parameter": "IN_FIGHT_DURATION configurable milliseconds",
+        "official_requirement": "recent participation",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "official:party-recheck:91:20261019",
+            "selector": "SharedXPbonuses20/30/60/100%; base monsterXP>=20"
+          }
+        ],
+        "rationale": "120seconds is a known donor configuration default. Official text says recent activity without establishing this exact numeric timeout; withdraw the selected project timeout."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/shared-experience-reference-evidence.json/records/0/facts/activity_timeout",
+        "subject": "shared_experience.eligibility",
+        "original_classification": "UNKNOWN",
+        "proposed_value": 120,
+        "basis": {
+          "kind": "UPSTREAM_ADAPTATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1189634"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "party.activity_timeout"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/shared-experience-reference-evidence.json/records/0/facts/bonus_source_disagreement",
+      "subject": "shared_experience.eligibility",
+      "original_classification": "CONFLICT",
+      "proposed_value": {
+        "distinct_professions_1": 20,
+        "distinct_professions_2": 30,
+        "distinct_professions_3": 60,
+        "distinct_professions_4_plus": 100,
+        "minimum_creature_base_xp": 20
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "official:party-recheck:91:20261019",
+            "selector": "SharedXPbonuses20/30/60/100%; base monsterXP>=20"
+          }
+        ],
+        "rationale": "Resolved by primary official support; not an invented Oteryn bonus table. Exact activity timeout remains separately unqualified."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/shared-experience-reference-evidence.json/records/0/facts/bonus_source_disagreement",
+        "subject": "shared_experience.eligibility",
+        "original_classification": "CONFLICT",
+        "proposed_value": {
+          "distinct_professions_1": 20,
+          "distinct_professions_2": 30,
+          "distinct_professions_3": 60,
+          "distinct_professions_4_plus": 100
+        },
+        "basis": {
+          "kind": "PRIMARY_SOURCE_PRECEDENCE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1189634",
+            "https://www.tibia.com/gameguides/?subtopic=manual&section=combat"
+          ],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/stamina-reference-evidence.json/records/0/facts/initial_combat_drain_minutes",
+      "subject": "stamina.pool",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "COMMUNITY_OBSERVATION_GLOBAL_MEASUREMENT_UNQUALIFIED",
+        "reported_minimum_initial_minutes": 2,
+        "trigger": "first XP-yielding monster kill after inactive combat period",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "wiki:8516:1071529",
+            "selector": "Stamina initial two-minute drain"
+          }
+        ],
+        "rationale": "The2minute value exists on wiki and is retained as a reported candidate. This review found no primary numeric confirmation; do not treat an assistant-selected default as controlled gameplay evidence."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/stamina-reference-evidence.json/records/0/facts/initial_combat_drain_minutes",
+        "subject": "stamina.pool",
+        "original_classification": "UNKNOWN",
+        "proposed_value": 2,
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1071529"
+          ],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Use retained community opening drain as project rule; once per transition from inactive to active hunting."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/soul-reference-evidence.json/records/0/facts/cap_source_disagreement",
+      "subject": "soul.regeneration",
+      "original_classification": "CONFLICT",
+      "proposed_value": {
+        "normal": 100,
+        "promoted": 200,
+        "eligibility_basis": "promotion; current primary source takes precedence over community Free/Premium shorthand"
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "official:soul-recheck:76:20261019",
+            "selector": "Normal100/promoted200; normal120s/promoted15s"
+          }
+        ],
+        "rationale": "Promotion-based caps are explicit official policy; do not invent a Premium-only cap rule from wiki shorthand. Other vocation-specific exceptions require separate evidence."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/admission-evidence/soul-reference-evidence.json/records/0/facts/cap_source_disagreement",
+        "subject": "soul.regeneration",
+        "original_classification": "CONFLICT",
+        "proposed_value": {
+          "normal": 100,
+          "promoted": 200,
+          "premium_affects_cap": false
+        },
+        "basis": {
+          "kind": "PRIMARY_SOURCE_PRECEDENCE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1204055",
+            "https://www.tibia.com/gameguides/?subtopic=manual&section=characters"
+          ],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_hp",
+      "subject": "regeneration.knight",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
+        "interval_seconds": 4,
+        "saturated_interval_seconds": 3,
+        "points_per_tick": 4,
+        "saturated_points_per_tick": 4,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "active_promotion": false,
+        "observed_character": "Quattro Formaggi",
+        "selected_for_native_runtime": false,
+        "fed_measurement_qualification": "SHORT_SERIES_TWO_FULL_GAINS_ONE_INTERVAL_BEFORE_CAP"
+      },
+      "basis": {
+        "kind": "CONTROLLED_GLOBAL_REFERENCE_OBSERVATION",
+        "source_refs": [
+          {
+            "source": "controlled-global:regeneration:knight:20261019",
+            "selector": "Knight / hp / hungry and fed reviewed series"
+          },
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Observed on Quattro Formaggi, Knight without active promotion, outside PZ, no combat or movement during captures; leather boots Arm1 with empty imbuement slot, other regenerative equipment slots empty. Hungry/fed values measured independently; no promoted-vocation extrapolation or runtime selection. Fed HP:174→178→182 are two full +4 gains separated by3s;182→185 is capped and excluded. Timing agrees with official fed interval, but replication is weaker than longer trials."
+      },
+      "assumptions": [],
+      "acceptance_status": "CONTROLLED_MEASURED_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_hp",
+        "subject": "regeneration.knight",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 6
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 6
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1192367",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Knight"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_mana",
+      "subject": "regeneration.knight",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
+        "interval_seconds": 6,
+        "saturated_interval_seconds": 5,
+        "points_per_tick": 2,
+        "saturated_points_per_tick": 2,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "active_promotion": false,
+        "observed_character": "Quattro Formaggi",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "CONTROLLED_GLOBAL_REFERENCE_OBSERVATION",
+        "source_refs": [
+          {
+            "source": "controlled-global:regeneration:knight:20261019",
+            "selector": "Knight / mana / hungry and fed reviewed series"
+          },
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Observed on Quattro Formaggi, Knight without active promotion, outside PZ, no combat or movement during captures; leather boots Arm1 with empty imbuement slot, other regenerative equipment slots empty. Hungry/fed values measured independently; no promoted-vocation extrapolation or runtime selection."
+      },
+      "assumptions": [],
+      "acceptance_status": "CONTROLLED_MEASURED_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_mana",
+        "subject": "regeneration.knight",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 6
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 6
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1192367",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Knight"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_hp",
+      "subject": "regeneration.knight",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "interval_seconds": 4,
+        "saturated_interval_seconds": 3,
+        "points_per_tick": "NOT_ESTABLISHED",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_hp",
+        "subject": "regeneration.knight",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 4
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 4
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1192367",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Elite Knight"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_mana",
+      "subject": "regeneration.knight",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "interval_seconds": 6,
+        "saturated_interval_seconds": 5,
+        "points_per_tick": "NOT_ESTABLISHED",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_mana",
+        "subject": "regeneration.knight",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 6
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 6
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1192367",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Elite Knight"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_hp",
+      "subject": "regeneration.paladin",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
+        "interval_seconds": 4,
+        "saturated_interval_seconds": 3,
+        "points_per_tick": 3,
+        "saturated_points_per_tick": 3,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "active_promotion": false,
+        "observed_character": "Anzaa",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "CONTROLLED_GLOBAL_REFERENCE_OBSERVATION",
+        "source_refs": [
+          {
+            "source": "controlled-global:regeneration:paladin:20261019",
+            "selector": "Paladin / hp / hungry and fed reviewed series"
+          },
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Observed on Anzaa, level29, with self-Look reporting Paladin without active promotion. Hungry and fed amounts measured independently outside PZ, no combat or movement during recordings, regenerative equipment slots empty. Measurements remain below HP/MP caps. Capture/network jitter is retained; no promoted-vocation extrapolation or runtime selection."
+      },
+      "assumptions": [],
+      "acceptance_status": "CONTROLLED_MEASURED_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_hp",
+        "subject": "regeneration.paladin",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 8
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 8
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1121343",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Paladin"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_mana",
+      "subject": "regeneration.paladin",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
+        "interval_seconds": 6,
+        "saturated_interval_seconds": 5,
+        "points_per_tick": 3,
+        "saturated_points_per_tick": 3,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "active_promotion": false,
+        "observed_character": "Anzaa",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "CONTROLLED_GLOBAL_REFERENCE_OBSERVATION",
+        "source_refs": [
+          {
+            "source": "controlled-global:regeneration:paladin:20261019",
+            "selector": "Paladin / mana / hungry and fed reviewed series"
+          },
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Observed on Anzaa, level29, with self-Look reporting Paladin without active promotion. Hungry and fed amounts measured independently outside PZ, no combat or movement during recordings, regenerative equipment slots empty. Measurements remain below HP/MP caps. Capture/network jitter is retained; no promoted-vocation extrapolation or runtime selection."
+      },
+      "assumptions": [],
+      "acceptance_status": "CONTROLLED_MEASURED_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_mana",
+        "subject": "regeneration.paladin",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 4
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 4
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1121343",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Paladin"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_hp",
+      "subject": "regeneration.paladin",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "interval_seconds": 4,
+        "saturated_interval_seconds": 3,
+        "points_per_tick": "NOT_ESTABLISHED",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_hp",
+        "subject": "regeneration.paladin",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 6
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 6
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1121343",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Royal Paladin"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_mana",
+      "subject": "regeneration.paladin",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "interval_seconds": 6,
+        "saturated_interval_seconds": 5,
+        "points_per_tick": "NOT_ESTABLISHED",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_mana",
+        "subject": "regeneration.paladin",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 3
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 3
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1121343",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Royal Paladin"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp",
+      "subject": "regeneration.druid",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
+        "interval_seconds": 4,
+        "saturated_interval_seconds": 3,
+        "points_per_tick": 2,
+        "saturated_points_per_tick": 2,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "active_promotion": false,
+        "observed_character": "Osvier",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "CONTROLLED_GLOBAL_REFERENCE_OBSERVATION",
+        "source_refs": [
+          {
+            "source": "controlled-global:regeneration:druid:20261019",
+            "selector": "Druid / hp / hungry and fed reviewed series"
+          },
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Measured on Osvier with self-Look identifying Druid without active promotion, outside PZ, no combat or agent movement during recordings, regenerative equipment slots empty. Hungry and fed amounts are independently observed. Approximately timed display updates include capture/network jitter. Pinned OTS XML remains comparison evidence only; no promoted-vocation extrapolation or runtime selection."
+      },
+      "assumptions": [],
+      "acceptance_status": "CONTROLLED_MEASURED_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp",
+        "subject": "regeneration.druid",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 12
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 12
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1179121",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Druid"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_mana",
+      "subject": "regeneration.druid",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
+        "interval_seconds": 6,
+        "saturated_interval_seconds": 5,
+        "points_per_tick": 4,
+        "saturated_points_per_tick": 4,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "active_promotion": false,
+        "observed_character": "Osvier",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "CONTROLLED_GLOBAL_REFERENCE_OBSERVATION",
+        "source_refs": [
+          {
+            "source": "controlled-global:regeneration:druid:20261019",
+            "selector": "Druid / mana / hungry and fed reviewed series"
+          },
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Measured on Osvier with self-Look identifying Druid without active promotion, outside PZ, no combat or agent movement during recordings, regenerative equipment slots empty. Hungry and fed amounts are independently observed. Approximately timed display updates include capture/network jitter. Pinned OTS XML remains comparison evidence only; no promoted-vocation extrapolation or runtime selection."
+      },
+      "assumptions": [],
+      "acceptance_status": "CONTROLLED_MEASURED_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_mana",
+        "subject": "regeneration.druid",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 3
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 3
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1179121",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Druid"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_hp",
+      "subject": "regeneration.druid",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "interval_seconds": 4,
+        "saturated_interval_seconds": 3,
+        "points_per_tick": "NOT_ESTABLISHED",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_hp",
+        "subject": "regeneration.druid",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 12
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 12
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1179121",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Elder Druid"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_mana",
+      "subject": "regeneration.druid",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "interval_seconds": 6,
+        "saturated_interval_seconds": 5,
+        "points_per_tick": "NOT_ESTABLISHED",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_mana",
+        "subject": "regeneration.druid",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 2
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 2
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1179121",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Elder Druid"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_hp",
+      "subject": "regeneration.sorcerer",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "OWNER_AUTHORIZED_DRUID_EQUIVALENCE",
+        "interval_seconds": 4,
+        "saturated_interval_seconds": 3,
+        "points_per_tick": 2,
+        "saturated_points_per_tick": 2,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "active_promotion": false,
+        "selected_for_native_runtime": false,
+        "reference_vocation": "Sorcerer",
+        "equivalent_measured_vocation": "Druid",
+        "direct_sorcerer_measurement": false,
+        "derivation": "Copy measured unpromoted Druid values under explicit owner1:1instruction"
+      },
+      "basis": {
+        "kind": "OWNER_AUTHORIZED_EQUIVALENCE_FROM_CONTROLLED_REFERENCE",
+        "source_refs": [
+          {
+            "source": "owner:sorcerer-druid-equivalence:20261019",
+            "selector": "Explicit1:1instruction"
+          },
+          {
+            "source": "controlled-global:regeneration:druid:20261019",
+            "selector": "Druid / hp / hungry and fed reviewed series"
+          },
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Owner explicitly instructs Sorcerer reference values to equal Druid1:1. Amounts and hungry/fed periods are copied from the controlled Druid reference. No Sorcerer character was measured. Promoted branches remain unresolved, and no native runtime formula is selected."
+      },
+      "assumptions": [
+        "Owner-adopted equivalence: current unpromoted Sorcerer uses the measured unpromoted Druid amounts and intervals."
+      ],
+      "acceptance_status": "OWNER_SELECTED_DERIVED_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_hp",
+        "subject": "regeneration.sorcerer",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 12
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 12
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1121345",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Sorcerer"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_mana",
+      "subject": "regeneration.sorcerer",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "OWNER_AUTHORIZED_DRUID_EQUIVALENCE",
+        "interval_seconds": 6,
+        "saturated_interval_seconds": 5,
+        "points_per_tick": 4,
+        "saturated_points_per_tick": 4,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "active_promotion": false,
+        "selected_for_native_runtime": false,
+        "reference_vocation": "Sorcerer",
+        "equivalent_measured_vocation": "Druid",
+        "direct_sorcerer_measurement": false,
+        "derivation": "Copy measured unpromoted Druid values under explicit owner1:1instruction"
+      },
+      "basis": {
+        "kind": "OWNER_AUTHORIZED_EQUIVALENCE_FROM_CONTROLLED_REFERENCE",
+        "source_refs": [
+          {
+            "source": "owner:sorcerer-druid-equivalence:20261019",
+            "selector": "Explicit1:1instruction"
+          },
+          {
+            "source": "controlled-global:regeneration:druid:20261019",
+            "selector": "Druid / mana / hungry and fed reviewed series"
+          },
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Owner explicitly instructs Sorcerer reference values to equal Druid1:1. Amounts and hungry/fed periods are copied from the controlled Druid reference. No Sorcerer character was measured. Promoted branches remain unresolved, and no native runtime formula is selected."
+      },
+      "assumptions": [
+        "Owner-adopted equivalence: current unpromoted Sorcerer uses the measured unpromoted Druid amounts and intervals."
+      ],
+      "acceptance_status": "OWNER_SELECTED_DERIVED_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_mana",
+        "subject": "regeneration.sorcerer",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 3
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 3
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1121345",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Sorcerer"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_hp",
+      "subject": "regeneration.sorcerer",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "interval_seconds": 4,
+        "saturated_interval_seconds": 3,
+        "points_per_tick": "NOT_ESTABLISHED",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_hp",
+        "subject": "regeneration.sorcerer",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 12
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 12
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1121345",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Master Sorcerer"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_mana",
+      "subject": "regeneration.sorcerer",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "interval_seconds": 6,
+        "saturated_interval_seconds": 5,
+        "points_per_tick": "NOT_ESTABLISHED",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_mana",
+        "subject": "regeneration.sorcerer",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 2
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 2
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1121345",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Master Sorcerer"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_hp",
+      "subject": "regeneration.monk",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
+        "interval_seconds": 4,
+        "saturated_interval_seconds": 3,
+        "points_per_tick": 3,
+        "saturated_points_per_tick": 3,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "active_promotion": false,
+        "observed_character": "Czarci Ananas",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "CONTROLLED_GLOBAL_REFERENCE_OBSERVATION",
+        "source_refs": [
+          {
+            "source": "controlled-global:regeneration:monk:20261019",
+            "selector": "Monk / hp / hungry and fed reviewed series"
+          },
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Measured on Czarci Ananas with self-Look identifying Monk without active promotion, outside PZ, no combat or agent movement during recordings, regenerative equipment slots empty. Hungry and fed amounts are independently observed. Approximately timed display updates include capture/network jitter. Pinned OTS XML remains comparison evidence only; no promoted-vocation extrapolation or runtime selection."
+      },
+      "assumptions": [],
+      "acceptance_status": "CONTROLLED_MEASURED_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_hp",
+        "subject": "regeneration.monk",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 7
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 7
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1207320",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Monk"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_mana",
+      "subject": "regeneration.monk",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
+        "interval_seconds": 6,
+        "saturated_interval_seconds": 5,
+        "points_per_tick": 3,
+        "saturated_points_per_tick": 3,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "active_promotion": false,
+        "observed_character": "Czarci Ananas",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "CONTROLLED_GLOBAL_REFERENCE_OBSERVATION",
+        "source_refs": [
+          {
+            "source": "controlled-global:regeneration:monk:20261019",
+            "selector": "Monk / mana / hungry and fed reviewed series"
+          },
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Measured on Czarci Ananas with self-Look identifying Monk without active promotion, outside PZ, no combat or agent movement during recordings, regenerative equipment slots empty. Hungry and fed amounts are independently observed. Approximately timed display updates include capture/network jitter. Pinned OTS XML remains comparison evidence only; no promoted-vocation extrapolation or runtime selection."
+      },
+      "assumptions": [],
+      "acceptance_status": "CONTROLLED_MEASURED_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_mana",
+        "subject": "regeneration.monk",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 4
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 4
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1207320",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Monk"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_hp",
+      "subject": "regeneration.monk",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "interval_seconds": 4,
+        "saturated_interval_seconds": 3,
+        "points_per_tick": "NOT_ESTABLISHED",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_hp",
+        "subject": "regeneration.monk",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": {
+            "numerator": 4,
+            "denominator": 5
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 1,
+            "denominator": 5
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1207320",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Exalted Monk"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_mana",
+      "subject": "regeneration.monk",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "interval_seconds": 6,
+        "saturated_interval_seconds": 5,
+        "points_per_tick": "NOT_ESTABLISHED",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_mana",
+        "subject": "regeneration.monk",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": {
+            "numerator": 12,
+            "denominator": 3
+          },
+          "fractional_accumulator": true,
+          "historical_rate_points_per_second": {
+            "numerator": 2,
+            "denominator": 3
+          }
+        },
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1207320",
+            "https://www.tibia.com/news/?id=8543&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "vocation.Exalted Monk"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/5/facts/cap_seconds",
+      "subject": "regeneration.food",
+      "original_classification": "UNKNOWN",
+      "proposed_value": 1200,
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "wiki:5494:1141317",
+            "selector": "Food maximum portion20minutes"
+          }
+        ],
+        "rationale": "Community food cap retained as source-backed reference, not an owner-invented limit or a new controlled measurement. Existing owner-selected event-food values remain unchanged."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/5/facts/cap_seconds",
+        "subject": "regeneration.food",
+        "original_classification": "UNKNOWN",
+        "proposed_value": 1200,
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1141317"
+          ],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Food queue20minute project cap; do not derive from hunger saturation threshold."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    }
+  ],
+  "materialization": {
+    "parameter_document": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json",
+    "source_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json",
+    "filled_field_count": 5,
+    "not_runtime_activation": true,
+    "remaining_unresolved_source_fields": 12
+  },
+  "source_repair": {
+    "source_check": "docs/reference/content-prep/shared-vitals-content-1/gameplay-source-reconciliation.json",
+    "remaining_unresolved_source_fields": 12,
+    "selected_for_native_runtime": false,
+    "summary": "Four unpromoted vocations have controlled regeneration observations. Sorcerer is copied1:1from measured Druid by explicit owner instruction and classified DERIVED, not measured. Ten promoted regeneration fields, party activity timeout and initial stamina debit remain unresolved. Knight fed HP has only two full gains and one3s interval; capped gain excluded. Food observations and prior owner choices unchanged; no runtime selection."
+  },
+  "live_client_measurements": {
+    "probe_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
+    "active_fields_resolved": 8,
+    "hungry_fed_observations": 16,
+    "qualified_recordings": 12,
+    "vocations": [
+      "Druid",
+      "Monk",
+      "Paladin",
+      "Knight"
+    ],
+    "active_promotion": false,
+    "selected_for_native_runtime": false,
+    "short_series": "Knight fed HP: two uncapped gains and one3s interval"
+  },
+  "remaining_unresolved_source_fields": 12,
+  "owner_derived_sorcerer_equivalence": {
+    "source": "owner:sorcerer-druid-equivalence:20261019",
+    "field_count": 2,
+    "derived_from": "measured normal Druid",
+    "direct_sorcerer_measurement": false,
+    "runtime_selected": false
+  }
+}

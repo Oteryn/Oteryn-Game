@@ -1,0 +1,57 @@
+{
+  "schema": "OTERYN_WORKING_REFERENCE_PARAMETERS/v1",
+  "task": "FORGE-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "SOURCE_QUALIFIED_WITH_EXPLICIT_GLOBAL_DISTRIBUTION_GAP",
+  "owner_instruction_source": "owner:oteryn-data-completion:2026-10-19",
+  "filled_fields": 3,
+  "normalized_companion_fields": 0,
+  "remaining_unfilled_fields": 0,
+  "originating_proposals": "docs/reference/content-prep/forge-content-1/oteryn-proposals.json",
+  "source_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json",
+  "shared_policies": {},
+  "selection_policy": "Source-backed observations where available; explicit Oteryn working choices otherwise. Native activation and accepted architecture remain outside this data task.",
+  "source_correction": {
+    "source": "community:tibiopedia:exaltation-forge:20261019",
+    "supported_fields": [
+      "maximum_dust_limit",
+      "dust_limit_increment_cost",
+      "total_upgrade_cost"
+    ],
+    "unchanged_values": true,
+    "remaining_unconfirmed_field": "bonus_distribution",
+    "qualification": "Secondary source corroborates these dust values. It does not provide exact fusion-bonus probabilities and is not an official or controlled-client measurement."
+  },
+  "remaining_fields_without_current_global_confirmation": [
+    "bonus_distribution"
+  ],
+  "transfer_source_correction": {
+    "fields": [
+      "docs/reference/content-prep/forge-content-1/admission-evidence/reference-evidence.json/records/31/facts/cores",
+      "docs/reference/content-prep/forge-content-1/admission-evidence/reference-evidence.json/records/49/facts/cores"
+    ],
+    "unchanged_numeric_values": true,
+    "reference_value": 60,
+    "source": "community:tibiawatch:forge-transfer:20261019",
+    "conflicting_secondary_value": 65,
+    "conflicting_url": "https://tibiopedia.pl/articles/22,Exaltation-Forge-Kuznia-Wzniesienia",
+    "qualification": "Secondary calculator corroborates60 cores for both transfer steps; Tibiopedia65 remains an explicitly retained source discrepancy. Fusion resources needed to create the donor are separate."
+  },
+  "remaining_unresolved_source_fields": 1,
+  "live_client_probe": {
+    "client_version": "15.33.9d148f",
+    "source": "official-client:forge-ui:15.33.9d148f:20261019",
+    "probe_document": "docs/reference/content-prep/forge-content-1/live-client-forge-probe.json",
+    "ui_evidence": "docs/reference/content-prep/forge-content-1/live-client-forge-evidence.json",
+    "configuration_observations": 7,
+    "executed_transactions": 0,
+    "remaining_global_distribution_field": "docs/reference/content-prep/forge-content-1/admission-evidence/reference-evidence.json/records/52/facts/bonus_distribution",
+    "not_observed": [
+      "ordinaryT10→T9corecount",
+      "convergenceT9corecount",
+      "general dust upgrade cost/cap",
+      "stochastic lucky bonus distribution"
+    ]
+  }
+}

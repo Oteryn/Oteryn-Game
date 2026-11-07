@@ -1,0 +1,43 @@
+{
+  "canary:interaction/the_queen_of_the_banshees/action_1_first_seal_lever": {
+    "5": {
+      "condition": {
+        "all": [
+          {"object": {"role": "source", "field": "unique_id", "op": "~=", "value": 30010}, "negate": false},
+          {"object": {"role": "source", "field": "unique_id", "op": "~=", "value": 30011}, "negate": false},
+          {"object": {"role": "source", "field": "unique_id", "op": "~=", "value": 30012}, "negate": false}
+        ]
+      },
+      "basis": "canary data-otservbr-global/lib/quests/the_queen_of_the_banshees.lua:2-15 (identical in crystalserver data-global/lib/quests/the_queen_of_the_banshees.lua) declares firstSealTable's only keys as the unique ids 30010, 30011, 30012; action-1-first_seal_lever.lua:41-43 registers the lever's onUse for exactly those uids ('for index, value in pairs(firstSealTable) do leverFirstSeal:uid(index) end'). So 'local wall = firstSealTable[item.uid]' (line 4) is nil, and 'if not wall then' (line 5) true, exactly when item.uid is none of the three."
+    }
+  },
+  "canary:interaction/the_queen_of_the_banshees/action_3_third_seal_lever": {
+    "14": {
+      "condition": {
+        "all": [
+          {"world_state": {"key": "canary:world-state/switch_num", "op": "~=", "value": 1}, "negate": false},
+          {"world_state": {"key": "canary:world-state/switch_num", "op": "~=", "value": 2}, "negate": false},
+          {"world_state": {"key": "canary:world-state/switch_num", "op": "~=", "value": 3}, "negate": false},
+          {"world_state": {"key": "canary:world-state/switch_num", "op": "~=", "value": 4}, "negate": false},
+          {"world_state": {"key": "canary:world-state/switch_num", "op": "~=", "value": 5}, "negate": false}
+        ]
+      },
+      "basis": "canary data-otservbr-global/lib/quests/the_queen_of_the_banshees.lua:26-31 (identical in crystalserver data-global/lib/quests/the_queen_of_the_banshees.lua) declares thirdSealTable's only numeric keys as 1, 2, 3, 4, 5 (mapped to unique ids 30013-30017); the other entries (effectPosition, coalBasinPosition, switchPosition) are string keys, never reached by the integer index used here. So 'local table = thirdSealTable[switchNum]' (line 13) is nil, and 'if not table then' (line 14) true, exactly when the world state canary:world-state/switch_num (read via the local alias resolved at line 8) is none of 1..5."
+    }
+  },
+  "canary:interaction/the_queen_of_the_banshees/action_6_sixth_seal_lever": {
+    "5": {
+      "condition": {
+        "all": [
+          {"object": {"role": "source", "field": "unique_id", "op": "~=", "value": 30018}, "negate": false},
+          {"object": {"role": "source", "field": "unique_id", "op": "~=", "value": 30019}, "negate": false},
+          {"object": {"role": "source", "field": "unique_id", "op": "~=", "value": 30020}, "negate": false},
+          {"object": {"role": "source", "field": "unique_id", "op": "~=", "value": 30021}, "negate": false},
+          {"object": {"role": "source", "field": "unique_id", "op": "~=", "value": 30022}, "negate": false},
+          {"object": {"role": "source", "field": "unique_id", "op": "~=", "value": 30023}, "negate": false}
+        ]
+      },
+      "basis": "canary data-otservbr-global/lib/quests/the_queen_of_the_banshees.lua:109-116 (identical in crystalserver data-global/lib/quests/the_queen_of_the_banshees.lua) declares sixthSealTable.uniqueTable's only keys as the unique ids 30018-30023; action-6-sixth_seal_lever.lua:30-32 registers the lever's onUse for exactly those uids ('for index, value in pairs(sixthSealTable.uniqueTable) do sixthSeal:uid(index) end'). So 'local lever = sixthSealTable.uniqueTable[item.uid]' (line 4) is nil, and 'if not lever then' (line 5) true, exactly when item.uid is none of the six."
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "id": "STORE1-RL-REQUEST",
+  "owner_contract": "protocol-oteryn/v1/store-v1.md",
+  "resource": "Store command payload bytes",
+  "unit": "bytes",
+  "hard_maximum": 512,
+  "configurable_range": {
+    "minimum": 512,
+    "maximum": 512
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject before allocating variable-length decoded values; no durable mutation.",
+  "client_visible": true,
+  "boundary_tests": [
+    "store_decoders_reject_bounds_before_allocating"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/store/"
+  ],
+  "notes": "STORE-WIRE-1 next-free resource ordinal 1634."
+}

@@ -1,0 +1,23 @@
+{
+  "allocation_impact": "The NPC count and each NPC's placement count are checked against the running total and against the bytes left before any list is reserved; the compiler applies the same check before it writes.",
+  "boundary_tests": [
+    "a table of exactly 2,048 placements validates and round-trips",
+    "2,049 placements are a Limit in the writer's check and in the reader"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "maximum": 2048,
+    "minimum": 2048
+  },
+  "consumers": [
+    "world bundle compiler",
+    "game server World runtime (MAP-LOAD-1)"
+  ],
+  "failure_category": "INVALID_INPUT",
+  "hard_maximum": 2048,
+  "id": "NPCPLACE1-RL-01",
+  "notes": "NPC-PLACE-1b; decision NPC-PLACE-1 \u00a73.4; format document \u00a79 and \u00a714. Equal to NPCBEH0-RL-01.",
+  "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+  "resource": "NPC placements of one bundle, over all NPCs; the NPC count is bounded by it",
+  "unit": "placements"
+}

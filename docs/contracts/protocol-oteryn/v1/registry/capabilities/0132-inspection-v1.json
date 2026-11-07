@@ -1,0 +1,18 @@
+{
+  "id": 132,
+  "name": "INSPECTION_V1",
+  "owner_decision": "INSPECT-1",
+  "owner": "Game inspection owner",
+  "requires": [
+    4,
+    6
+  ],
+  "command_types": [
+    153
+  ],
+  "state_domains": [
+    97
+  ],
+  "offered": true,
+  "offer_gate": "Item-view Worlds; requests require current active pinned item content."
+}

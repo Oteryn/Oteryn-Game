@@ -1,0 +1,47 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 290
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      },
+      {
+        "cooldown_ms": 2000,
+        "group": "focus"
+      }
+    ],
+    "name": "Blood Rage",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_blood_rage"
+    },
+    "reference_spell_id": 133,
+    "requirements": {
+      "level": 60,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "utito tempo"
+  }
+}

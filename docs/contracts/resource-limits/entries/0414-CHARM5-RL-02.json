@@ -1,0 +1,22 @@
+{
+  "id": "CHARM5-RL-02",
+  "owner_contract": "protocol-oteryn/CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1.md",
+  "resource": "Largest Bestiary kill threshold in BestiaryRaceProgressV1",
+  "unit": "kills",
+  "hard_maximum": 100000,
+  "configurable_range": {
+    "minimum": 100000,
+    "maximum": 100000
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "A threshold or kill count above 100000 is refused in both directions; it bounds each varint to 3 bytes.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=100000: a final threshold of 100000 round-trips",
+    "max+1=100001: refused by the encoder and the decoder"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/bestiary.rs MAX_BESTIARY_KILL_THRESHOLD"
+  ],
+  "notes": "The captured definitions top out at 5000. CHARM-5 proposal section 2; accepted by the Sol protocol ruling #162 5907282001. Registered by OTV2-20260930-charm-5-reg."
+}

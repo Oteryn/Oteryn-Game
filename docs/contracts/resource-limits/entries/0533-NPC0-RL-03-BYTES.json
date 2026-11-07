@@ -1,0 +1,22 @@
+{
+  "id": "NPC0-RL-03-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+  "resource": "One encoded NpcTradeWindowV1 (domain 8 snapshot and delta)",
+  "unit": "bytes",
+  "hard_maximum": 22570,
+  "configurable_range": {
+    "minimum": 22570,
+    "maximum": 22570
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The NPC 31, the catalogue revision 11 and 1,024 offer elements of 22 bytes: 22,570, within the FND-02 snapshot chunk bound.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=22570: a window of 1,024 worst-case offers encodes within the bound and decodes",
+    "max+1: a 1,025th offer is refused"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/npc_service.rs MAX_NPC_TRADE_WINDOW_BYTES"
+  ],
+  "notes": "NPC-0 \u00a74. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+}

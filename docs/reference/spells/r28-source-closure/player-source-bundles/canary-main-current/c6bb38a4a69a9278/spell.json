@@ -1,0 +1,64 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 1000,
+      "soul": 0
+    },
+    "execution": {
+      "conjure": {
+        "count": 30,
+        "effect_asset_binding": "canary.appearance:effect/magic_blue",
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/source/canary-main-current/25759",
+          "revision": "source-player-r28"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/c6bb38a4a69a9278",
+      "revision": "source-player-r28"
+    },
+    "name": "Conjure Royal Star",
+    "needs_weapon": false,
+    "pz_locks_caster": false,
+    "reference_spell_id": 191,
+    "requirements": {
+      "learning_required": false,
+      "level": 150,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "exevo gran con grav"
+  }
+}

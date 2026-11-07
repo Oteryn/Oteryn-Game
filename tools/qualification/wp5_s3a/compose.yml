@@ -1,0 +1,87 @@
+services:
+  db:
+    image: mariadb:11.8.8-noble@sha256:e564bcaefb87c3d2b8b09b539ea791d34f4b62c05e2e7cb03f5d6388bdc54f2c
+    platform: linux/amd64
+    environment:
+      MARIADB_DATABASE: oteryn_s3a
+      MARIADB_USER: oteryn_s3a
+      MARIADB_PASSWORD: ${WP5_DB_PASSWORD:?set WP5_DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${WP5_DB_ROOT_PASSWORD:?set WP5_DB_ROOT_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -uroot -p$$MARIADB_ROOT_PASSWORD --silent"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+    volumes:
+      - db-state:/var/lib/mysql
+    networks: [qualification]
+
+  platform:
+    image: ${WP5_PROJECT:?set WP5_PROJECT}-platform:${WP5_TOPOLOGY_REVISION:?set WP5_TOPOLOGY_REVISION}
+    platform: linux/amd64
+    build:
+      context: ${GAME_SOURCE:?set GAME_SOURCE}
+      dockerfile: tools/qualification/wp5_s3a/platform-fpm.Dockerfile
+      additional_contexts:
+        platform: ${PLATFORM_SOURCE:?set PLATFORM_SOURCE}
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "false"
+      APP_KEY: ${WP5_APP_KEY:?set WP5_APP_KEY}
+      APP_URL: https://source.test:${WP5_PORT:?set WP5_PORT}
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: warning
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: oteryn_s3a
+      DB_USERNAME: oteryn_s3a
+      DB_PASSWORD: ${WP5_DB_PASSWORD}
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      GAME_AUTH_NATIVE_EVIDENCE_SOURCE_AUTHORITY: platform
+      GAME_AUTH_NATIVE_EVIDENCE_ACTIVATED: "true"
+      GAME_AUTH_NATIVE_EVIDENCE_MTLS_CLIENT_IDENTITY: CN=oteryn-game-native-evidence
+      GAME_AUTH_NATIVE_EVIDENCE_HIGH_WATER_DIRECTORY: /var/lib/oteryn-witness
+      GAME_AUTH_NATIVE_EVIDENCE_FRESH_ACCOUNT_PURPOSE: platform_security
+      GAME_AUTH_NATIVE_EVIDENCE_FRESH_ACCOUNT_SCOPE: fresh_admission
+      GAME_AUTH_NATIVE_EVIDENCE_FRESH_KEY_PURPOSE: fresh_admission
+      GAME_AUTH_NATIVE_EVIDENCE_CLOCK_UNCERTAINTY_SECONDS: "0"
+      GAME_AUTH_NATIVE_EVIDENCE_REQUESTS_PER_MINUTE: "600"
+      LD_PRELOAD: /opt/wp5-libfsync-fault.so
+      WP5_FSYNC_FAULT: ${WP5_FSYNC_FAULT:-none}
+    command: ["sh", "-euc", "chown -R www-data:www-data /var/lib/oteryn-witness && php artisan migrate --force --no-interaction && exec php-fpm -F"]
+    healthcheck:
+      test: ["CMD", "php", "-r", "$$s=@fsockopen('127.0.0.1',9000); exit(is_resource($$s)?0:1);"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+    volumes:
+      - witness-state:/var/lib/oteryn-witness
+      - ${WP5_SCRATCH:?set WP5_SCRATCH}:/run/wp5
+    networks: [qualification]
+
+  nginx:
+    image: nginx:1.29-bookworm@sha256:17ae566734b63632e543c907ba74757e0c1a25d812ab9f10a07a6bed98dd199c
+    platform: linux/amd64
+    depends_on:
+      platform:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${WP5_PORT}:8443"
+    volumes:
+      - ${GAME_SOURCE}/tools/qualification/wp5_s3a/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${WP5_PKI:?set WP5_PKI}:/run/pki:ro
+    networks: [qualification]
+
+networks:
+  qualification:
+    internal: false
+
+volumes:
+  db-state:
+  witness-state:

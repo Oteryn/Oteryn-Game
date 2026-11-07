@@ -1,0 +1,7 @@
+name=cyclopedia_tracker
+commands=383,384
+transport=cyclopedia_tracker
+composed=cyclopedia_tracker
+authority=cyclopedia_tracker
+[route]
+match routing::cyclopedia_tracker::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::Disconnected) }

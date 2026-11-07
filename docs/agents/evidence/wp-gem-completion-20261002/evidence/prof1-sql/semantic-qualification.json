@@ -1,0 +1,21 @@
+{
+  "classification": "PROVEN_LOCAL_PREPARATORY_SQL_BOUNDARIES_ONLY",
+  "candidate_sha256": "9bde3bfcc946e18600913e295a983998321f4fdfd9dd244bf5b28a28e04142b5",
+  "server": "PostgreSQL 17.6",
+  "baseline_migrations": 30,
+  "behavioral_database": "oteryn_prof1_semantics_20261001_125108",
+  "behavioral_cases": 161,
+  "behavioral_passed": 161,
+  "positive_cases": 34,
+  "negative_cases": 127,
+  "concurrent_absolute_successor_replay": "PASS_23514",
+  "scratch_sqlx_authority_wrapper": "PASS_161_CASES",
+  "scratch_sqlx_progression_wrapper": "PASS_161_CASES",
+  "rust_support_sha256": "60ec1b8cbc308ccf66612cc2d7e430c61c4a19c8b63263dd06ee10fba48e6f12",
+  "rust_support_classification": "TEST_SOURCE_GENERATED_BY_HANDWRITTEN_SCENARIO_HELPER_NO_GENERATED_DATA_BATCH_WAIVER",
+  "repository_migration_admitted": false,
+  "repository_files_changed_by_this_lane": false,
+  "remote_or_production_mutated": false,
+  "sql_defects_established": [],
+  "limitation": "No writer/live gameplay authority/content admission/active N/PZ or integrity-verifier qualification; canonical BOTH repository wrappers remain unwired until complete D283b gate. SQL678 batch CP exception pending."
+}

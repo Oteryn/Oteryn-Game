@@ -1,0 +1,152 @@
+{
+  "schema": "OTERYN_SPELL_RUNTIME_PRESENTATION_AUDIT/v1",
+  "scope": "source inspection of current authoring tree, not deployed runtime or visual/audio E2E",
+  "can_activate_without_contract_change": false,
+  "existing_components": {
+    "source_qualified_cue_registry": {
+      "effect": 51,
+      "projectile": 14,
+      "sound": 148
+    },
+    "actual_owner_outbox": "produces source-qualified effects/projectiles/sounds with committed occurrence provenance; replay does not emit twice",
+    "candidate_codec": "closed bounded Effect/Missile/Words/Value/Sound shapes; does not register protocol transport",
+    "candidate_publisher": "VIS-2 observer qualification and candidate event encoding; only unit/qualification callers, no node egress caller"
+  },
+  "asset_manifest": {
+    "version": "15.30",
+    "file_count": 6249,
+    "audio_extension_files": 0,
+    "sound_named_files": 0,
+    "scope": "only the tracked pinned manifest; does not claim sound assets absent from owner computer"
+  },
+  "blockers": [
+    {
+      "code": "PRESENTATION_WIRE_UNALLOCATED",
+      "boundary": "protocol registry",
+      "detail": "PRESENTATION_V1, WORLD_PRESENTATION and ACTOR_COOLDOWNS absent from accepted registry. Local candidate framing explicitly grants no envelope route."
+    },
+    {
+      "code": "NODE_EGRESS_UNCOMPOSED",
+      "boundary": "Game node transport",
+      "detail": "CandidatePresentationTurn/CandidateSessionPublisher are called by tests only; no serving-node presentation send route."
+    },
+    {
+      "code": "CLIENT_PRESENTATION_CONSUMER_ABSENT",
+      "boundary": "Session and native client",
+      "detail": "No consumer for spell_presentation_candidate in session/dev-client/client; native spell UI displays feedback and vitals only."
+    },
+    {
+      "code": "CLIENT_AUDIO_PLAYBACK_ABSENT",
+      "boundary": "native client/audio assets",
+      "detail": "No audio playback dependency/path in native client; sound cues are numeric data, not audio asset closure. Tracked15.30 manifest has no sound payloads."
+    },
+    {
+      "code": "NATIVE_FLOOR_PROJECTION_UNQUALIFIED",
+      "boundary": "observer interest/frame",
+      "detail": "Publisher uses existing VIS-2 floors0..15; negative Thalom floors refused until an owning frame projection is qualified."
+    },
+    {
+      "code": "WORDS_VALUES_PRODUCER_NOT_IMPLEMENTED",
+      "boundary": "presentation owner outcomes",
+      "detail": "Candidate wire supports Words and Value, but actual committed cue owner only produces Effect/Projectile/Sound."
+    }
+  ],
+  "data_ready_flags": {
+    "source_visual_aliases_preserved": true,
+    "source_sound_aliases_preserved": true,
+    "transport_enabled": false,
+    "client_visual_rendering_verified": false,
+    "client_audio_playback_verified": false,
+    "all_spell_presentation_complete": false
+  },
+  "source_hashes": [
+    {
+      "path": "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json",
+      "sha256": "095fb0907fa1549e272938911d47cecf3629f23e86141c380f25ea5c5acc9369"
+    },
+    {
+      "path": "docs/contracts/protocol-oteryn/candidates/spell_presentation_candidate_v1.md",
+      "sha256": "9d2d4c2160fdf07e3c309b5bd4dc1366648fc694cad44794beb6ad6f9c6c90d5"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/lib.rs",
+      "sha256": "f7e9dda5f31df1a50d77488f5d4d5a538f5c5a3a10214052a3950a735774c0c1"
+    },
+    {
+      "path": "crates/protocol-oteryn/src/spell_presentation_candidate.rs",
+      "sha256": "287864742866149bd2eed4c8d3994b04b1abc16f9c5e0e5fd4a10d320e680625"
+    },
+    {
+      "path": "apps/game-server/src/gameplay_transport/spell_presentations.rs",
+      "sha256": "4e084dc89a06484dab344130faeaafa42c0b1ca775df745c80cb07fdbd69a416"
+    },
+    {
+      "path": "apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs",
+      "sha256": "1fc75e571e2a2cff44a121f5aaa1204f3069fdf12b9ef8c0113427cd5b7bbdaa"
+    },
+    {
+      "path": "apps/game-server/src/gameplay_transport/ordinary_combat.rs",
+      "sha256": "6388789ee8ac785bb5165b14a20007282390cc3b979a651cac47e388bce7d764"
+    },
+    {
+      "path": "apps/game-server/src/gameplay_transport/native_combat_cast.rs",
+      "sha256": "8b2dc48b6c77efb9d04e24bdacf49c04426d8331fcf4e04b66e6ce39c8b8e29f"
+    },
+    {
+      "path": "crates/session/src/lib.rs",
+      "sha256": "87f2e3b0097ad2f65be6043d451e4041736f3674f24326ebd2da0bfc12d6b218"
+    },
+    {
+      "path": "tools/dev-client/src/lib.rs",
+      "sha256": "c39f76b12ee8f440561752b7684518fb57989050d0d39c57621067c9a09b506f"
+    },
+    {
+      "path": "apps/client/src/spell.rs",
+      "sha256": "14a81b471ac0e6c10e285faedc12703d7de65ac89bbf7158af028139e609d756"
+    },
+    {
+      "path": "apps/client/Cargo.toml",
+      "sha256": "db187bd636c9c3a9ae5434b711a4151795f8908e35c0b67cece56823984a7242"
+    },
+    {
+      "path": "imports/official/client-assets/15.30/manifest.json",
+      "sha256": "febaff9f4bd7e0f8a029736e446a81f1626805e895e7c2268018e0a9a8493fe4"
+    },
+    {
+      "path": "tools/content-schema/native-gameplay/spell-cues.json",
+      "sha256": "3f3ca7f837e0865e04e75e42bff9317953dac0f09300439596847cdae4503362"
+    }
+  ],
+  "source_engine_sound_semantics": {
+    "source_revision": "99902524e052f37574194466c2949c576e4ab269",
+    "SILENCE": 0,
+    "SPELL_OR_RUNE": 10,
+    "statement": "Source sound handling skips silent cues; spell default cast is SPELL_OR_RUNE and default impact is SILENCE. Numeric 0 must not become an audible cue.",
+    "paths": [
+      "src/creatures/combat/spells.hpp",
+      "src/creatures/combat/spells.cpp",
+      "src/creatures/combat/combat.cpp",
+      "src/creatures/creatures_definitions.hpp"
+    ]
+  },
+  "independent_registry_check": {
+    "result": "PASS",
+    "records_checked": 213,
+    "scope": "all record source_enum values match exact pinned enum files and both file sha256 pins match git-show bytes; no gameplay/playback claim"
+  },
+  "cue_registry_repair": {
+    "result": "PASS",
+    "records_preserved": 213,
+    "catalog_sha256": "4473bff08e8d7754b253eae1294d3736bc6a28719288f2758e0c1807eb5ea4d6",
+    "regression": "original builder wrongly admitted effect/sound names from unrelated enums; repaired builder requires owning enum and actual Lua registration",
+    "focused_tests": {
+      "passed": 4,
+      "failed": 0
+    },
+    "old_registry_records_equal_new": true,
+    "lua_registration_source": {
+      "path": "src/lua/functions/core/game/lua_enums.cpp",
+      "sha256": "d1bda8dd89dab75f41dfa68d33c6221868382e10e3efdce046f84e56789b6aa1"
+    }
+  }
+}

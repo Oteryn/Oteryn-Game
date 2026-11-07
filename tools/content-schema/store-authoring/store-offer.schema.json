@@ -1,0 +1,566 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:store-authoring:candidate:1",
+  "title": "Store offer authoring schema candidate v1 \u2014 structural validation",
+  "description": "CANDIDATE authoring schema (docs/architecture/OTERYN_STORE_CATALOG_OWNER_DECISION_2026-09-28.md). Not a WorldProject/v2 contract or runtime activation; semantic rules live in validate_store.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "categories": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Category"
+      },
+      "minItems": 1
+    },
+    "offers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Offer"
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "categories",
+    "offers"
+  ],
+  "$defs": {
+    "key": {
+      "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/key"
+    },
+    "revision": {
+      "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/revision"
+    },
+    "identity": {
+      "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/identity"
+    },
+    "bool": {
+      "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/bool"
+    },
+    "ItemRef": {
+      "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/ItemRef"
+    },
+    "icons": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[^/\\\\]+\\.png$"
+      },
+      "minItems": 1,
+      "description": "Client icon asset *names* only (no path separators), never asset bytes."
+    },
+    "state": {
+      "enum": [
+        "none",
+        "new",
+        "sale",
+        "timed"
+      ],
+      "description": "GameStore.States; both engines agree on the four values and their ids."
+    },
+    "coin_type": {
+      "enum": [
+        "coin",
+        "transferable"
+      ],
+      "description": "GameStore.CoinType. Canary always defaults an offer with no explicit coinType to transferable; Crystal defaults to coin unless the offer description contains the literal marker `{transferableprice}`, in which case transferable. Neither engine's catalog data sets coinType explicitly; the converter always derives it."
+    },
+    "offer_type": {
+      "enum": [
+        "none",
+        "item",
+        "stackable",
+        "charges",
+        "outfit",
+        "outfit_addon",
+        "mount",
+        "namechange",
+        "sexchange",
+        "house",
+        "expboost",
+        "preyslot",
+        "preybonus",
+        "temple",
+        "blessings",
+        "premium",
+        "allblessings",
+        "instant_reward_access",
+        "charms",
+        "hireling",
+        "hireling_namechange",
+        "hireling_sexchange",
+        "hireling_skill",
+        "hireling_outfit",
+        "weekly_task_expansion",
+        "item_bed",
+        "item_unique",
+        "hunting_slot"
+      ],
+      "description": "Canonical union of Canary `GameStore.OfferTypes` (27 values, version 2.0) and Crystal's (28 values, version 1.1); `store_constants.OFFER_TYPES` documents each member's per-engine numeric id and product-payload kind."
+    },
+    "CategoryRef": {
+      "$ref": "#/$defs/key"
+    },
+    "ItemQuantity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "item_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ItemRef"
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "1 element for every offer_type except item_bed (2: the item's two unwrap boxes)."
+        },
+        "count": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "charges": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "item_refs",
+        "count",
+        "charges"
+      ],
+      "description": "Exactly one of count/charges is non-null (validate_store.py); count is stack/delivered quantity, charges is the item's use count (offer_type charges only)."
+    },
+    "OutfitPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "female_look_type": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "male_look_type": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "addon": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        }
+      },
+      "required": [
+        "female_look_type",
+        "male_look_type",
+        "addon"
+      ]
+    },
+    "HirelingPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "female_look_type": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "male_look_type": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "female_look_type",
+        "male_look_type"
+      ]
+    },
+    "MountPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mount_id": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "mount_id"
+      ]
+    },
+    "BlessingPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bless_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "bless_id",
+        "count"
+      ]
+    },
+    "BlessingBundlePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "count"
+      ]
+    },
+    "PremiumTimePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "days": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "days"
+      ]
+    },
+    "HirelingTypedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "typed_id": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "typed_id"
+      ],
+      "description": "typed_id is null when the source `id` is an engine lookup-table reference this reader cannot statically resolve (HIRELING_SKILLS.*/HIRELING_OUTFITS.*); never guessed."
+    },
+    "Product": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "service"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "item"
+            },
+            "item": {
+              "$ref": "#/$defs/ItemQuantity"
+            }
+          },
+          "required": [
+            "kind",
+            "item"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "outfit"
+            },
+            "outfit": {
+              "$ref": "#/$defs/OutfitPayload"
+            }
+          },
+          "required": [
+            "kind",
+            "outfit"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "mount"
+            },
+            "mount": {
+              "$ref": "#/$defs/MountPayload"
+            }
+          },
+          "required": [
+            "kind",
+            "mount"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "hireling"
+            },
+            "hireling": {
+              "$ref": "#/$defs/HirelingPayload"
+            }
+          },
+          "required": [
+            "kind",
+            "hireling"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "hireling_typed"
+            },
+            "hireling_typed": {
+              "$ref": "#/$defs/HirelingTypedPayload"
+            }
+          },
+          "required": [
+            "kind",
+            "hireling_typed"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "blessing"
+            },
+            "blessing": {
+              "$ref": "#/$defs/BlessingPayload"
+            }
+          },
+          "required": [
+            "kind",
+            "blessing"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "blessing_bundle"
+            },
+            "blessing_bundle": {
+              "$ref": "#/$defs/BlessingBundlePayload"
+            }
+          },
+          "required": [
+            "kind",
+            "blessing_bundle"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "premium_time"
+            },
+            "premium_time": {
+              "$ref": "#/$defs/PremiumTimePayload"
+            }
+          },
+          "required": [
+            "kind",
+            "premium_time"
+          ]
+        }
+      ]
+    },
+    "Category": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CategoryRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "icons": {
+          "$ref": "#/$defs/icons"
+        },
+        "rookgaard": {
+          "$ref": "#/$defs/bool"
+        },
+        "state": {
+          "$ref": "#/$defs/state"
+        },
+        "shape": {
+          "enum": [
+            "leaf",
+            "group"
+          ],
+          "description": "leaf carries offers (via Offer.category); group carries subclass_names only."
+        },
+        "subclass_names": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "identity",
+        "display_name",
+        "parent",
+        "icons",
+        "rookgaard",
+        "state",
+        "shape",
+        "subclass_names"
+      ]
+    },
+    "Offer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "category": {
+          "$ref": "#/$defs/CategoryRef"
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "icons": {
+          "$ref": "#/$defs/icons"
+        },
+        "price_coins": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coin_type": {
+          "$ref": "#/$defs/coin_type"
+        },
+        "offer_type": {
+          "$ref": "#/$defs/offer_type"
+        },
+        "state": {
+          "$ref": "#/$defs/state"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "home": {
+          "$ref": "#/$defs/bool"
+        },
+        "hireling_slot_number": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "engine_offer_id": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Engine `id`; a legacy/incidental store action id for most offer types, never used for identity. Null when absent or non-literal in source."
+        },
+        "product": {
+          "$ref": "#/$defs/Product"
+        }
+      },
+      "required": [
+        "identity",
+        "category",
+        "display_name",
+        "icons",
+        "price_coins",
+        "coin_type",
+        "offer_type",
+        "state",
+        "description",
+        "home",
+        "hireling_slot_number",
+        "engine_offer_id",
+        "product"
+      ]
+    }
+  }
+}

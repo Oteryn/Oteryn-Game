@@ -1,0 +1,19 @@
+{
+  "id": 43,
+  "name": "VIP_V1",
+  "constant": "vip::CAPABILITY_VIP_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    48,
+    49,
+    50
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

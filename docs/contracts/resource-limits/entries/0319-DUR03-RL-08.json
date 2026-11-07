@@ -1,0 +1,25 @@
+{
+  "id": "DUR03-RL-08",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+  "resource": "Retry and reconciliation work for one DUR-03 native one-item logical transaction",
+  "unit": "work units per logical transaction",
+  "hard_maximum": 3,
+  "configurable_range": {
+    "minimum": 3,
+    "maximum": 3
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "All attempts reuse the same TransactionId and frozen candidate; an unknown outcome is held and never gets a new TransactionId; each pass stays within DFR-DB-PASS-MS (2,000 ms).",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=3: three retry/reconciliation work units accepted",
+    "max+1=4: a fourth work unit is rejected"
+  ],
+  "consumers": [
+    "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+    "apps/game-server/src/durability/item_mint.rs (stage C runtime MINT: the logical transaction is a durable reservation keyed by the full cause tuple; each commit attempt or reconciliation pass first charges one unit to it with a committed conditional UPDATE, across re-freezes, restarts and concurrent holders; the fourth is rejected before the pass's work)",
+    "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)",
+    "apps/game-server/src/durability/house_interior_audit.rs and house_interior.rs (HOUSE-RUNTIME-1a: closed one-item House place/take/tile-move, same-transaction custody/receipt/event)"
+  ],
+  "notes": "D51, decision \u00a73.3: a policy value, not a measurement. Stage C must re-decide it once real PostgreSQL reconciliation exists and prove max/max+1 across a restart. Registered by OTV2-20260928-dur03-b4-binding-513."
+}

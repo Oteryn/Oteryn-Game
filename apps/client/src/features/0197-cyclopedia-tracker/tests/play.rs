@@ -1,0 +1,39 @@
+use oteryn_client_runtime::{
+    cyclopedia_tracker::{TrackerEntry, TrackerSnapshot, encode_snapshot},
+    raw_feature::{CommandStatus, GatedCommandResult},
+};
+use oteryn_client_ui::cyclopedia_tracker::{CyclopediaTrackerPanel, Intent, apply_result, request};
+#[test]
+fn controls_encode_exact_request_and_reply_and_refusal_are_visible() {
+    let mut p = CyclopediaTrackerPanel {
+        selected: true,
+        creature_key: "oteryn:dragon".into(),
+        ..Default::default()
+    };
+    let c = request(&mut p, Intent::Add).unwrap_or_else(|| unreachable!());
+    assert_eq!(c.payload, b"\x01oteryn:dragon");
+    let payload = encode_snapshot(&TrackerSnapshot {
+        boss: false,
+        entries: vec![TrackerEntry {
+            creature_key: "oteryn:dragon".into(),
+            kill_count: 4,
+            thresholds: [5, 20, 60],
+            completed: false,
+        }],
+    })
+    .unwrap_or_default();
+    let ok = GatedCommandResult {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        server_sequence: 1,
+        payload,
+    };
+    assert!(apply_result(&mut p, &ok));
+    assert_eq!(p.snapshot.as_ref().map(|v| v.entries.len()), Some(1));
+    let refused = GatedCommandResult {
+        status: CommandStatus::Rejected,
+        ..ok
+    };
+    assert!(!apply_result(&mut p, &refused));
+    assert!(p.feedback.is_some());
+}

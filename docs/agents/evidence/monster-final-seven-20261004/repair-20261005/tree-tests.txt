@@ -1,0 +1,69 @@
+........
+----------------------------------------------------------------------
+Ran 8 tests in 12.655s
+
+OK
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.002s
+
+OK
+............................
+----------------------------------------------------------------------
+Ran 28 tests in 0.008s
+
+OK
+{"admissions": 525, "changed_shards": []}
+ok test_banshee_one_charge_is_a_source_definition_conflict
+ok test_changed_definition_charge_fact_never_uses_reward_as_its_replacement
+ok test_committed_content_is_valid
+ok test_definition_default_normalizes_one_instance_and_preserves_raw_source
+ok test_duplicate_key_and_shared_chest_fail
+ok test_exact_charged_source_without_a_definition_charge_fact_stays_held
+ok test_explicit_empty_original_source_cannot_fall_back_to_evidence
+ok test_forged_quantity_or_source_diagnostics_are_rejected
+ok test_known_stack_payload_is_closed_and_class_consistent
+ok test_legacy_uid_collision_is_server_scoped_and_must_be_reported
+ok test_malformed_stack_fields_never_default_or_crash
+ok test_moved_original_reward_cannot_keep_the_old_binding
+ok test_nonstack_charge_subtype_is_held_in_build_and_validate
+ok test_only_a_false_ready_is_an_error
+ok test_out_of_scope_claims_are_skipped
+ok test_plain_once_claims_become_records
+ok test_readiness_and_source_checks
+ok test_removed_original_reward_cannot_keep_a_stale_normalization
+ok test_same_item_and_number_without_exact_source_proof_are_not_normalized
+ok test_source_edits_cannot_reuse_the_old_normalization_proof
+ok test_stack_count_at_proven_maximum_and_above
+ok test_stack_default_maximum_and_invalid_proven_maximum
+ok test_stackable_charge_definition_does_not_turn_quantity_into_subtype
+ok test_stackable_rune_charge_definition_keeps_piece_quantity
+ok test_validation_fails_closed
+.............
+----------------------------------------------------------------------
+Ran 13 tests in 12.853s
+
+OK
+starter kit seal history: no base revision resolves; pass --seal-base
+ok test_record_shape
+ok test_admission_fails_closed
+ok test_labels_are_immutable
+starter kit content check: ok
+starter kit seal history: no base revision, skipped (smoke check)
+starter kit content check: ok
+ok test_committed_family
+PASS imbuement static import: 24 families, 72 tiers; runtime admission blocked
+...........
+----------------------------------------------------------------------
+Ran 11 tests in 40.320s
+
+OK
+......
+----------------------------------------------------------------------
+Ran 6 tests in 1.982s
+
+OK
+ok test_closed_weapon_metadata_admission
+PASS items=34043 mounts=252 item_editors=165 mount_editors=252 item_bindings=476 mount_bindings=252 item_authoring=700 taxonomy=12252 relations=1093 provenance_facts=1022 creature_records=28758 creature_profiles=27508 creature_bindings=1863 npc_records=1282 npc_bindings=2747 service_records=380 dialogue_records=836 encounter_records=108 charm_records=25 proficiency_records=443 proficiency_bindings=665 reward_claim_records=336 starter_kit_records=1
+ok test_relation_rows_route_by_owner
+PASS managed_files=222 item_shards=69

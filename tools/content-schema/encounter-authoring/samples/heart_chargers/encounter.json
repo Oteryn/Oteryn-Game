@@ -1,0 +1,176 @@
+{
+  "identity": {
+    "key": "canary:encounter/heart_chargers",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Heart of Destruction: charger room",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "charger",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/charger",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "charger_spots",
+      "kind": "area",
+      "description": "Exactly ten tiles, Canary (32151, 31356, 14), (32154, 31353, 14), (32153, 31361, 14), (32158, 31362, 14), (32161, 31360, 14), (32156, 31357, 14), (32159, 31354, 14), (32163, 31356, 14), (32162, 31352, 14), (32158, 31350, 14).",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              32151,
+              32151
+            ],
+            "y": [
+              31356,
+              31356
+            ],
+            "floor": 14
+          },
+          {
+            "x": [
+              32154,
+              32154
+            ],
+            "y": [
+              31353,
+              31353
+            ],
+            "floor": 14
+          },
+          {
+            "x": [
+              32153,
+              32153
+            ],
+            "y": [
+              31361,
+              31361
+            ],
+            "floor": 14
+          },
+          {
+            "x": [
+              32158,
+              32158
+            ],
+            "y": [
+              31362,
+              31362
+            ],
+            "floor": 14
+          },
+          {
+            "x": [
+              32161,
+              32161
+            ],
+            "y": [
+              31360,
+              31360
+            ],
+            "floor": 14
+          },
+          {
+            "x": [
+              32156,
+              32156
+            ],
+            "y": [
+              31357,
+              31357
+            ],
+            "floor": 14
+          },
+          {
+            "x": [
+              32159,
+              32159
+            ],
+            "y": [
+              31354,
+              31354
+            ],
+            "floor": 14
+          },
+          {
+            "x": [
+              32163,
+              32163
+            ],
+            "y": [
+              31356,
+              31356
+            ],
+            "floor": 14
+          },
+          {
+            "x": [
+              32162,
+              32162
+            ],
+            "y": [
+              31352,
+              31352
+            ],
+            "floor": 14
+          },
+          {
+            "x": [
+              32158,
+              32158
+            ],
+            "y": [
+              31350,
+              31350
+            ],
+            "floor": 14
+          }
+        ]
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "charger_respawn",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "charger"
+      },
+      "delay_ms": 6000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/charger",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "charger",
+          "count": 1,
+          "at": {
+            "random_in": "charger_spots"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

@@ -1,0 +1,22 @@
+{
+  "id": "NPC0-RL-02-LINE-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+  "resource": "One reply line of domain 7",
+  "unit": "bytes",
+  "hard_maximum": 2048,
+  "configurable_range": {
+    "minimum": 2048,
+    "maximum": 2048
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Measured longest dialogue reply line 1,919 bytes. The server splits a line that contains a newline and refuses a line over the bound before any byte is emitted.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=2048: a line of exactly 2,048 bytes encodes and decodes",
+    "max+1=2049: one more byte is refused by the encoder and the decoder"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/npc_service.rs MAX_REPLY_LINE_BYTES"
+  ],
+  "notes": "NPC-0 \u00a74. Four content reply lines contain a newline, and a control character is refused on the wire. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+}

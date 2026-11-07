@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-IMBUEMENT-ALLOWED-ENTRIES",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Allowed imbuement family/tier entries per Item",
+  "unit": "entries",
+  "hard_maximum": 20,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 20
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check count before allocation; require canonical unique family keys and accepted typed tiers.",
+  "client_visible": true,
+  "boundary_tests": [
+    "20 unique family/tier entries accepted",
+    "21st entry rejected before allocation",
+    "duplicate family or unknown tier rejected"
+  ]
+}

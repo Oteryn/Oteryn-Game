@@ -1,0 +1,39 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 300000,
+    "costs": {
+      "mana": 75
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "support"
+      }
+    ],
+    "name": "Enlighten Party",
+    "reference_spell_id": 278,
+    "requirements": {
+      "level": 32,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "self_target": true
+    },
+    "words": "utevo mas sio"
+  }
+}

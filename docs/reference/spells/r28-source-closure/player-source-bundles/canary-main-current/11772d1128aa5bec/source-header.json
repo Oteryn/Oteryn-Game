@@ -1,0 +1,48 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Summon Creature",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_summon_creature"
+    },
+    "reference_spell_id": 9,
+    "requirements": {
+      "level": 25,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "parameter": "text"
+    },
+    "words": "utevo res"
+  }
+}

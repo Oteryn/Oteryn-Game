@@ -1,0 +1,9 @@
+{
+  "mechanic": "0117-boss-encounter",
+  "kind": "keybindings",
+  "id": "0117-boss-encounter-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+SHIFT+J",
+  "entry": "input.rs::open_key"
+}

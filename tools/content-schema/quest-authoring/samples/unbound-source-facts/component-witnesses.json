@@ -1,0 +1,197 @@
+{
+  "donor_executable_witnesses": [
+    {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/scripts/actions/items/usable_outfit_items.lua",
+      "blob_sha256": "69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37",
+      "line": 47,
+      "line_sha256": "909cc1c9950af41e80fdc32c1be7b333ef439621db6ff9a3f5b3c1d4a59973ed",
+      "role": "executable",
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/scripts/actions/items/usable_outfit_items.lua",
+      "blob_sha256": "69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37",
+      "line": 48,
+      "line_sha256": "ff87ec11bf5cd9e2d6088ddd911538ed5d4d005d78f3384162ef1a48e7e09660",
+      "role": "executable",
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/scripts/actions/items/usable_outfit_items.lua",
+      "blob_sha256": "69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37",
+      "line": 57,
+      "line_sha256": "85bd2cfb53947c57bbfd973793a89bda64f3f8677c1e1663293c498b6c39c6a3",
+      "role": "executable",
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/scripts/actions/items/usable_outfit_items.lua",
+      "blob_sha256": "69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37",
+      "line": 65,
+      "line_sha256": "e751b56a115d71b8f8b9a7dddf22828223b2c3bfc56744ad43c5856c42322f93",
+      "role": "executable",
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/scripts/actions/items/usable_outfit_items.lua",
+      "blob_sha256": "69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37",
+      "line": 83,
+      "line_sha256": "94fec0fde0907a78e0e9b04de68058cd6e514956e01b35e2ced83b9de745f34b",
+      "role": "executable",
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/scripts/actions/items/usable_outfit_items.lua",
+      "blob_sha256": "69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37",
+      "line": 88,
+      "line_sha256": "8e1bafa9f10dd05b9527c612a2a536093990897a691f1fc2f3619a3d27a7f167",
+      "role": "executable",
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/scripts/actions/items/usable_outfit_items.lua",
+      "blob_sha256": "69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37",
+      "line": 89,
+      "line_sha256": "24dee5851248c02eccd0f074cf6d30b6a013c710f83a88a3b9a3f818957c45d6",
+      "role": "executable",
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/scripts/actions/items/usable_outfit_items.lua",
+      "blob_sha256": "69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37",
+      "line": 97,
+      "line_sha256": "41f01fe6ab142db4bcaa05241cb7cd23841e71f4267004a56cccc2dce0c310d8",
+      "role": "executable",
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/scripts/actions/items/usable_outfit_items.lua",
+      "blob_sha256": "69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37",
+      "line": 98,
+      "line_sha256": "328cc71f65dd1eeddaed39e3d68d622f64ca0afd06e3d0854c716586b5b8d178",
+      "role": "executable",
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/scripts/actions/items/usable_outfit_items.lua",
+      "blob_sha256": "69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37",
+      "line": 101,
+      "line_sha256": "a408fc76f50a17c59fbfbf753600fd168c2c39cb6018b61388be684760aa5e51",
+      "role": "executable",
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/scripts/actions/items/usable_outfit_items.lua",
+      "blob_sha256": "69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37",
+      "line": 105,
+      "line_sha256": "c1be2f59df878c6baa1580dc995a806a53a3cdddef526c24fb9512a8064bdb41",
+      "role": "executable",
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/scripts/actions/items/usable_outfit_items.lua",
+      "blob_sha256": "69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37",
+      "line": 106,
+      "line_sha256": "ee14a5a8e5fdd00b6a5550e113bd94e25e4a0d3d25ffedee648aaddc2ff81631",
+      "role": "executable",
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/scripts/actions/items/usable_outfit_items.lua",
+      "blob_sha256": "69b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37",
+      "line": 109,
+      "line_sha256": "74ebcbef7d3b371b96d80b6954086129ae5b72476646572f1df7a68ff9a830c9",
+      "role": "executable",
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    }
+  ],
+  "item_definition_witnesses": [
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/items/items.xml",
+      "blob_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+      "line": 86484,
+      "line_sha256": "e4d0a1f4108995d5c5ee97c6ac346bdf89f1d9c7e4936cc11b266e6911f951b1",
+      "source_item_id": 51656,
+      "source_item_name": "scallop shell",
+      "role": "definition",
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/items/items.xml",
+      "blob_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+      "line": 86488,
+      "line_sha256": "ded3692fd1f88f1cbb1536d354244880404a08db89dd939fecfdf01dc3ad025d",
+      "source_item_id": 51657,
+      "source_item_name": "sand-filled horn",
+      "role": "definition",
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    }
+  ],
+  "wiki_component_witnesses": [
+    {
+      "provider": "tibiawiki_br",
+      "relation": "crosscheck",
+      "pageid": 65007,
+      "revid": 427849,
+      "content_sha256": "96408ae8cb647d817dd6fcae7b4a92ebf3f1ff826c68bd58cc98855b2df761ea",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=65007&oldid=427849",
+      "line": 32,
+      "line_sha256": "52717009fb5823542c7a210e71773a80ef52505e6720d87559fa5cb0437f4656"
+    },
+    {
+      "provider": "tibiawiki_br",
+      "relation": "crosscheck",
+      "pageid": 65007,
+      "revid": 427849,
+      "content_sha256": "96408ae8cb647d817dd6fcae7b4a92ebf3f1ff826c68bd58cc98855b2df761ea",
+      "url": "https://www.tibiawiki.com.br/index.php?curid=65007&oldid=427849",
+      "line": 42,
+      "line_sha256": "c3e407abb98008ab6de27366a1fa3d57b758fb48008f60b5b5030579923d9e07"
+    }
+  ],
+  "runtime_readiness": "NOT_ASSESSED",
+  "definition_complete": false
+}

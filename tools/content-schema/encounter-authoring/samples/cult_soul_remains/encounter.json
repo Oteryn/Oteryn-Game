@@ -1,0 +1,89 @@
+{
+  "identity": {
+    "key": "canary:encounter/cult_soul_remains",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Cults of Tibia: soul remains of the cultists",
+  "scope": "channel_shared",
+  "participants": [
+    {
+      "role": "cultist",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/cult_believer",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/cult_enforcer",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/cult_scholar",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "cultist_leaves_soul_remains",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "cultist"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "map_item",
+                  "operation": "create",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/32414",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "death_position",
+                  "revert_after_ms": 60000,
+                  "interaction": "canary:interaction/5580"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "map_item",
+                  "operation": "create",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/32415",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "at": "death_position",
+                  "revert_after_ms": 60000,
+                  "interaction": "canary:interaction/5580"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-FIRST-PROD-SOURCE-MANIFEST-DIGEST-BYTES",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_02",
+  "resource": "Source-manifest digest token in one first-production package binding",
+  "unit": "lowercase hex ASCII bytes",
+  "hard_maximum": 64,
+  "configurable_range": {
+    "minimum": 64,
+    "maximum": 64
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Require exact 64-byte lowercase hex syntax before retaining/copying and before provenance hashing.",
+  "client_visible": false,
+  "boundary_tests": [
+    "64-byte lowercase hex SHA-256 token accepted",
+    "63/65-byte token rejected",
+    "non-hex or uppercase token rejected"
+  ]
+}

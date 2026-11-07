@@ -1,0 +1,22 @@
+{
+  "allocation_impact": "Qualification budget per World per node, measured after load and before any channel is admitted; not a runtime cutoff.",
+  "boundary_tests": [
+    "base RSS at or under 1 GiB passes",
+    "base RSS over 1 GiB fails qualification and reopens the mmap option"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "maximum": 1073741824,
+    "minimum": 1073741824
+  },
+  "consumers": [
+    "game server World runtime"
+  ],
+  "failure_category": "CAPACITY_EXCEEDED",
+  "hard_maximum": 1073741824,
+  "id": "MAP01-BASE-RSS-BYTES",
+  "notes": "Owner answer 8a; ADR-0021 \u00a74.1 and \u00a74.8. MAP-LOAD-1 (2026-10-04): confirmed; real-map base delta about 375 MB (358 MiB), peak 431 MB; docs/agents/evidence/MAP-LOAD-1-base-budgets.md.",
+  "owner_contract": "ADR-0021-world-map-runtime-loading.md",
+  "resource": "Resident memory of one World's shared read-only base model",
+  "unit": "bytes"
+}

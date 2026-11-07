@@ -1,0 +1,36 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_APPLY_PLAN/v1",
+  "task": "ARENA-RULES-CONTENT-1",
+  "status": "STAGED_FOR_COORDINATOR",
+  "reason": "Tracked content/ files participate in content-tree validation and World Bundle inputs. This packet is staged as docs-only reference evidence; the coordinator applies it to the target paths together with any separately qualified pin or seal regeneration.",
+  "target_files": [
+    {
+      "target_path": "rulesets/encounters/tibiadrome/index.json",
+      "staged_path": "docs/reference/content-prep/arena-rules-content-1/admission-evidence/tibiadrome-index.json",
+      "sha256": "a66cfe1098d941e0200c438a5b95631068d9bd8e7b3c7ce046b2797d6994ca4f"
+    },
+    {
+      "target_path": "rulesets/encounters/tibiadrome/reference-evidence.json",
+      "staged_path": "docs/reference/content-prep/arena-rules-content-1/admission-evidence/tibiadrome-reference-evidence.json",
+      "sha256": "5a5d59a6c41db688f96bf6034c11bc0ca5f3ccc4657816e3d3dc3318ca1d68e9"
+    },
+    {
+      "target_path": "rulesets/pvp/arena/index.json",
+      "staged_path": "docs/reference/content-prep/arena-rules-content-1/admission-evidence/arena-index.json",
+      "sha256": "ec4637cd9a7501fc368aeb9665a0c7e8c51ba620f0a2b6d7ec1648a83a4be9ab"
+    },
+    {
+      "target_path": "rulesets/pvp/arena/reference-evidence.json",
+      "staged_path": "docs/reference/content-prep/arena-rules-content-1/admission-evidence/arena-reference-evidence.json",
+      "sha256": "78810b8c01efc2b68fff6fbedd1e0d029997e7987902c60226a07f04dba8de5f"
+    }
+  ],
+  "runtime_switch_authorized": false,
+  "coordinator_must_verify": [
+    "current task target ownership",
+    "target-source conflicts and UNKNOWN fields",
+    "approved native/runtime schema wiring",
+    "World Bundle pins and deterministic bundle",
+    "required exact-head validators"
+  ]
+}

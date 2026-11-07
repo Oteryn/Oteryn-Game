@@ -1,0 +1,41 @@
+{
+  "spell": {
+    "base_power": 44,
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 125
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Berserk",
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_berserk"
+    },
+    "reference_spell_id": 80,
+    "requirements": {
+      "level": 35,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "words": "exori"
+  }
+}

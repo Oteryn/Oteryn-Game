@@ -1,0 +1,88 @@
+{
+  "encounter": "canary:encounter/the_souldespoiler",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "CultsOfTibiaBossDeath": [
+      "canary:creature/the_souldespoiler"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/the_souldespoiler.lua",
+      "blob_sha1": "b6d08409ec8da42c7077e858b27f5cfd42073fdc"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
+      "blob_sha1": "5ce125af212e79be3d3ea5f7d2b209fe8a133ace"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "The Souldespoiler is the the_souldespoiler participant; its file registers CultsOfTibiaBossDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        12,
+        13,
+        19,
+        20,
+        21,
+        22,
+        23,
+        3
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the configured boss \"the souldespoiler\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        14,
+        15,
+        16,
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Returns without effect for a creature with a master (a player never triggers a monster death event).",
+      "destination": "/encounter/rules/0/conditions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        46,
+        47,
+        48,
+        49,
+        50,
+        3
+      ],
+      "status": "mapped",
+      "resolution": "onDeathForDamagingPlayers credits every damaging player (D27): the quest domain raises Storage CultsOfTibia.Misguided.Mission to 4 when it is lower.",
+      "destination": "/encounter/rules/0/actions/0"
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "the_souldespoiler_defeated",
+      "credited": "damage_contributors",
+      "quest_domain": {
+        "canary_storage": "Storage.Quest.U11_40.CultsOfTibia.Misguided.Mission",
+        "raise_to_at_least": 4
+      }
+    }
+  ]
+}

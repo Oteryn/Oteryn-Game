@@ -1,0 +1,117 @@
+{
+  "identity": {
+    "key": "canary:encounter/izcandar",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Dream Courts: Izcandar",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "izcandar_the_banished",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/izcandar_the_banished",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "izcandar_champion_of_winter",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/izcandar_champion_of_winter",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "izcandar_champion_of_summer",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/izcandar_champion_of_summer",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "izcandar_the_banished_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "izcandar_the_banished"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "izcandar_the_banished",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "izcandar_the_banished_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    },
+    {
+      "key": "izcandar_champion_of_winter_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "izcandar_champion_of_winter"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "izcandar_champion_of_winter",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "izcandar_champion_of_winter_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    },
+    {
+      "key": "izcandar_champion_of_summer_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "izcandar_champion_of_summer"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "izcandar_champion_of_summer",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "izcandar_champion_of_summer_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "izcandar_the_banished_defeated",
+    "izcandar_champion_of_winter_defeated",
+    "izcandar_champion_of_summer_defeated"
+  ]
+}

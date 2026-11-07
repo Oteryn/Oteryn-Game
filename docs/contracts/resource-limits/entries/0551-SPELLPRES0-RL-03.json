@@ -1,0 +1,22 @@
+{
+  "id": "SPELLPRES0-RL-03",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md",
+  "resource": "bytes of one WORLD_PRESENTATION batch (delta type 1)",
+  "unit": "bytes",
+  "hard_maximum": 131136,
+  "configurable_range": {
+    "minimum": 131136,
+    "maximum": 131136
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "1,024 events of at most 128 bytes are 131,072 bytes, within the 131,136-byte bound and FND-02's 262,144-byte delta bound. The decoder refuses a longer payload on length before reading any field.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=131136: crates/protocol-oteryn/src/presentation_tests.rs a_full_batch_round_trips_within_its_bound (1,024 worst-case events fit)",
+    "max+1=131137: crates/protocol-oteryn/src/presentation_tests.rs a_full_batch_round_trips_within_its_bound (131,137 bytes are refused LimitExceeded)"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/presentation.rs MAX_PRESENTATION_BATCH_BYTES"
+  ],
+  "notes": "SPELL-PRESENT-0 \u00a79 and \u00a713. Mirrors max_payload_bytes of the domain 19 delta type. Registered by PRESENT-WIRE-1 (MAGIC-CAST-1, #1622)."
+}

@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "npcs": [
+    {
+      "npc": "oteryn:npc.santiago",
+      "greet": "Welcome to Rookgaard, |PLAYERNAME|. Can you help me?",
+      "farewell": "Take care, |PLAYERNAME|.",
+      "walkaway": "Enjoy your stay on Rookgaard."
+    },
+    {
+      "npc": "oteryn:npc.zirella",
+      "greet": "Hello, |PLAYERNAME|. Can you help me with a quest?",
+      "farewell": "Thank you, dear. Take care.",
+      "walkaway": "Come back if you need help with the firewood."
+    },
+    {
+      "npc": "oteryn:npc.edala",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.eremo",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.guide_alexena",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.guide_behil",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.guide_davina",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.guide_edna",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.guide_elena",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.guide_jonathan",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.guide_kunibert",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.guide_luke",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.guide_meruka",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.guide_rahlkora",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.guide_thelandil",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.guide_tiko",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.humphrey",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.kawill",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.norf",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.pydar",
+      "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    }
+  ]
+}

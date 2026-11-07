@@ -1,0 +1,60 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/light_stone_shower_rune",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Light Stone Shower Rune",
+    "carrier": "instant",
+    "words": "adori infir mas tera",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "exalted_monk",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 1,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "execution": {
+      "conjure": {
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/0",
+          "revision": "spell-p2-r21"
+        },
+        "count": 1
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "TRADE0-RL-02",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PLAYER_TRADE0_DIRECT_PLAYER_TRADE_DECISION_2026-09-30.md",
+  "resource": "Idle timeout before TRANSFERRING",
+  "unit": "milliseconds",
+  "hard_maximum": 120000,
+  "configurable_range": {
+    "minimum": 120000,
+    "maximum": 120000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "TRADE-PLAYER-1 leaf-only slice; checked before exchange writes, never truncated. No runtime activation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "player_trade_idle_clock_stale_accept_and_transfer_retention"
+  ],
+  "notes": "PLAYER-TRADE0 §§4–6; exactly two whole leaves, four custody lines, two participants, six effect work units, one type-2 event and zero value/transform/expansion lines. Native byte ceilings remain unchanged. Wire rate and Channel book limits wait for SESSION-INGRESS-1."
+}

@@ -1,0 +1,52 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 1400
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "paralyze rune",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_paralyse_rune"
+    },
+    "pz_locks_caster": true,
+    "reference_rune_item_id": 3165,
+    "reference_spell_id": 54,
+    "requirements": {
+      "level": 54,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": true
+      },
+      "charges": 1,
+      "magic_level": 18
+    },
+    "targeting": {
+      "needs_target": true
+    }
+  }
+}

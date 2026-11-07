@@ -1,0 +1,1473 @@
+[
+  {
+    "definition": {
+      "identity": {
+        "key": "oteryn:quest.sea_of_light_quest",
+        "revision": "quest-r1"
+      },
+      "requirements": {
+        "min_level": 0,
+        "premium": true
+      },
+      "requirements_from_wiki": {
+        "lvl": "0",
+        "premium": "yes"
+      },
+      "requirements_unparsed": {},
+      "missing_data": [
+        {
+          "code": "reported_source_gap",
+          "count": 1,
+          "field": "interactions_with_gaps"
+        },
+        {
+          "code": "reported_source_gap",
+          "count": 1,
+          "field": "unresolved_items"
+        },
+        {
+          "code": "quest_native_lowering_missing"
+        }
+      ],
+      "oteryn_recipe": {
+        "chosen_data_complete": true,
+        "donor_source_data": {
+          "native_admission": false,
+          "original_holds_preserved": true,
+          "profile": "qualified_donor_source_refs_v1",
+          "quest_key": "oteryn:quest.sea_of_light_quest",
+          "refs": [
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1927",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "ad7c9b6863f415c9089fee9d2c52a8cd37af0fc76283d7e7de7c0ccbaf4634fb",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/mission1"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1928",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "befe8f9195f964e80424be0887282f5340ef93bbbb8e3f778c4ec6678d36732e",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/mission1"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1929",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "9f0b66761e8858c9f4a2bbe5c7b22f117ca67e1086768c2daed316ec00241a09",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/mission1"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1930",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "983be114856b91d9e6378d47466b8b067eb3c0c889928fdbfba504ad266650e6",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/mission1"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1931",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "08bc0dfebd34940233a024eefc47a253483281edeaa5173cf0505c294dddcd09",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/mission1"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1932",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "a91dde510cfa722354abc88bb72c65c8b4ca4d74247af290e68f99c421a8ab2a",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/mission1"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1933",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "b6b3c1d045707e694c6380d2340f844e0a0ffe26254c787be0f6608f8f16f0e0",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/mission1"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1934",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "95e52e305caa16fbeb5aa9217a06eb357326ed06424fc419b1cdb33af2339314",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/mission1"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1935",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "129a6903c69368227fb41b0fd0298a13fbb91205ea8f00568ce9e9b00f46d7e9",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/mission2"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1936",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "c3b2d2e65b4fb2c844cbeaf52aba6792d428ec6a71df9408d137a8e76425e62a",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/mission2"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1937",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "07ca3721f5534515ca0face3c4c8ae4d0b416d0d591d28fda4bb6b45e231be48",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/mission2"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1938",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "aa5b31b8e0e65599a9b069a1dd597393d8bdbc77329e466ab453f4a67d0af44b",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/mission2"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1939",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "0cbcfb775e3e2fb4d613c558680d3dd816a793bd7717310bb55c96ff47e98db1",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/mission3"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1940",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "af4f5a95fb56ad587f9fc45219e2411f7d59e71292415b156d8098beeccd2bfa",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/mission3"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1941",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "0728a44491148056ed8eea6c3cef690b2f57066a2d3e64d66712cf8ddca4e58e",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/mission3"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1942",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "32a916666bd9830c517728ed7fd8ff9fcfc31938fa18b62fdc19fbec73380233",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/mission3"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1943",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "076f505020eb879b0822379977ba807537443ebfee0e6b49f89b05f8d2b68890",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1944",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "a55a539cc48a311c2bcda0768aa0980272522857dcc87a10602630655356fc1f",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1945",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "752b75b501a6dab08040d970165a47a32f479c874a412292bb7912ec91e8ad7f",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1946",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "7b89d29627531ac59c2c4eb696131e8282334f1dc9384df5041b08d75a37b410",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1947",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "e75e22546b4f448624b1ac3acd09607aa725aea48045f288203c88d25a8c8798",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1948",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "1bd341acd6488d554159f5f975332f98265b522777bce7056aae0d8433763f40",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1949",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "ac9edefd5ef23fec857ba897c5a7cb76f1db02fbe434ac60f8f0e47c604b4542",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1950",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "9b6a3775e4a3d9d21b701a5a6400495a498da22d0c34b0234ef67936b10a663d",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1951",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "4708dbca183233f8ef65e8afcbf19b0cef57c8dfdf35356eaaaec3f1812b5189",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1952",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "78cb0567cdece74205450296b9bb2d9c5b09f3dd579ae961ad8ea0f9630748e2",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1953",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "f7b2afd5db3bf583c63eb8d1629a8881a51b7be22b39cc030d4e4a421a71907c",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1954",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "89de62bbabf8863cadb4dad3bf9582bbdb5798d68a82d49af2c4b154af0b8beb",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1955",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "e8898f5a9359298dee978f635ecae6f8f6c6d6dc2ae93e10393da3ee33b8175f",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1956",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "66411cd402e696ecebc434aeb62eb8ea6daef054388deaf96cffab0cd2385cba",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1957",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "d32b7e4e74c60a11fcc481096c42dfde2bb8c8306fe405e94acc6b29c76f1d17",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1958",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "22224e28f2071ea2aadede02ba34aa6e6508387b4c2d6ebd166a10c31f91f411",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1959",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "7b03b5ae0d41305c7a981a386cecc0cf2c99c378488a91ce9b165bb76ebeaea4",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/study_timer"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/1960",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "a716fddfd344cfb0968d14c191ed4e34c0b52487bee3d24b7a039cfda23f4996",
+              "source_target": "canary:quest-progress/quest/u8_54/sea_of_light/study_timer"
+            }
+          ],
+          "whole_quest_complete": false
+        },
+        "payload": {
+          "covered_wiki_titles": [
+            "Sea of Light Quest"
+          ],
+          "donor_source_refs": [
+            {
+              "blob_sha1": "aa5ab351b2a389743b1c6a4911d2023ea0ef5b04",
+              "kind": "git",
+              "path": "data-otservbr-global/lib/core/quests/catalog/014_sea_of_light.lua",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+            },
+            {
+              "blob_sha1": "1b3e292826d90e9b92b75f091566d2fe57e682b3",
+              "kind": "git",
+              "path": "data-global/lib/core/quests.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+            }
+          ],
+          "identity": {
+            "key": "oteryn:quest.sea_of_light_quest",
+            "revision": "quest-r1"
+          },
+          "recipe": {
+            "adaptations": [
+              "Wybrano skończoną kolejność i liczby działań tego przepisu; to uzupełnienie istniejących danych SOURCE, bez usuwania ich konfliktów lub blokad.",
+              "Reward intents opisują jedno wydanie wybranej nagrody; istniejące Source/Reward Claim nie są drugim równoległym nadaniem. Ilości niewymienione liczbowo w źródle przyjęto jako wybór Oteryn, zwykle 1."
+            ],
+            "repeat": {
+              "basis": "CHOSEN_OTERYN_APPROXIMATION",
+              "kind": "once"
+            },
+            "requirements": {
+              "basis": "CHOSEN_OTERYN_APPROXIMATION",
+              "min_level": 0,
+              "premium": true,
+              "prerequisites": []
+            },
+            "reward_intents": [
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "kind": "item",
+                "name": "Yellow Gem"
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 10,
+                "kind": "item",
+                "name": "Small Diamond"
+              }
+            ],
+            "source_notes": [
+              "Source questlog ma The Plans/The Collector/The Mirror Crystal oraz interakcje corpse/rarecrystal.",
+              "Study Timer nie został przepisany jako gotowy prywatny scheduler.",
+              "Przepis jest CHOSEN_OTERYN_APPROXIMATION; oryginalny Quest, progres, misje, interakcje, claimy i source holds pozostają w tej samej definicji. Native bindings oraz wykonanie rozgrywki nie są dowiedzione."
+            ],
+            "source_refs": [
+              {
+                "content_sha256": "18c0af7fd440590a7dd8cf73ab09187548e3f7c61c8dde39791b56d25ca1aa20",
+                "pageid": 41820,
+                "provider": "tibia_fandom",
+                "relation": "base",
+                "revid": 791161,
+                "url": "https://tibia.fandom.com/index.php?curid=41820&oldid=791161"
+              },
+              {
+                "content_sha256": "22adece520f7da64f2e0e7e93e51ad7e4a5158678eaf4a368b76b3c850858633",
+                "pageid": 41840,
+                "provider": "tibia_fandom",
+                "relation": "spoiler",
+                "revid": 855981,
+                "url": "https://tibia.fandom.com/index.php?curid=41840&oldid=855981"
+              },
+              {
+                "content_sha256": "649841f969428bf17e2e6c029f7ba25aa94850bff84a3a80cc315865b72251b9",
+                "pageid": 4504,
+                "provider": "tibiawiki_br",
+                "relation": "crosscheck",
+                "revid": 433487,
+                "url": "https://www.tibiawiki.com.br/index.php?curid=4504&oldid=433487"
+              }
+            ],
+            "stages": [
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s1",
+                "kind": "talk",
+                "next": [
+                  "s2"
+                ],
+                "objective": "Przyjmij od Spectulusa The Plans.",
+                "targets": [
+                  "Spectulus"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s2",
+                "kind": "talk",
+                "next": [
+                  "s3"
+                ],
+                "objective": "Wydobądź od Shoddy Beggar informacje o planach.",
+                "targets": [
+                  "Shoddy Beggar"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s3",
+                "kind": "collect",
+                "next": [
+                  "s4"
+                ],
+                "objective": "Odzyskaj plany dla Spectulusa.",
+                "targets": [
+                  "Sea of Light Plans"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s4",
+                "kind": "talk",
+                "next": [
+                  "s5"
+                ],
+                "objective": "Oddaj plany i przyjmij The Collector.",
+                "targets": [
+                  "Spectulus"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s5",
+                "kind": "use",
+                "next": [
+                  "s6"
+                ],
+                "objective": "Zbadaj ciało kolekcjonera przy źródłowej collectorcorpse akcji.",
+                "targets": [
+                  "Sea of Light collector corpse"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s6",
+                "kind": "collect",
+                "next": [
+                  "s7"
+                ],
+                "objective": "Zdobądź Rare Crystal potrzebny do końcowych badań.",
+                "targets": [
+                  "Rare Crystal"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s7",
+                "kind": "complete",
+                "next": [],
+                "objective": "Dostarcz Mirror Crystal i zakończ badania Spectulusa.",
+                "targets": [
+                  "Spectulus",
+                  "Mirror Crystal"
+                ]
+              }
+            ],
+            "summary": "Zdobądź plany dla Spectulusa, odnajdź kolekcjonera i dostarcz Mirror Crystal.",
+            "wiki_title": "Sea of Light Quest"
+          },
+          "source_identity": {
+            "family": "Quest",
+            "key": "canary:quest/sea_of_light_quest",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "title_stage_keys": {
+            "Sea of Light Quest": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6",
+              "s7"
+            ]
+          }
+        },
+        "profile": "chosen_source_completion_v1",
+        "provenance": {
+          "path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
+          "sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321"
+        },
+        "readiness": "waiting_native_bindings",
+        "recipe_refinement_provenance": {
+          "original_recipe_packet_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+          "path": "tools/content-schema/quest-authoring/samples/refinements242/refinements.json",
+          "qualification_sha256": "11a3afbc8f17df330ee1be94e68ee80b3b0a582e92234181459fecf3f63ac1a5",
+          "reviewed_input_sha256": "b725ee573b26a38bd9bf2ee1b9f66eb215fa7a6eaad2d1f7c9af76e53f544b62",
+          "sha256": "b69dbe6d580221b089d03e8952329c54a7e117abc02f11d476f56f18818254cf"
+        },
+        "runtime_enabled": false,
+        "source_definition_sha256": "23e232a10a8edb2a3d7360ff8875f94214e499853794afd9cd622bd952c1d7a0",
+        "source_evidence_provenance": {
+          "candidate_count": 11,
+          "classification": "SCOPED_EVIDENCE_ONLY_NOT_SOURCE_CLOSURE",
+          "confirmation_count": 11,
+          "facts_count": 22,
+          "line_spans_rechecked": false,
+          "packet_sha256": "f48af6e10e8ba9a311442bd1f359aff091956e634743b7db08cdb31594faf58f",
+          "path": "tools/content-schema/quest-authoring/samples/enrichment242/enrichment.json",
+          "profile": "scoped_source_enrichment_v1",
+          "raw_body_rechecked": false,
+          "receipt_sha256": "970cc0744e9abf31b9c4d1bd93d5723ae6c89bbb5f8bd9a5100d49015cc2b017",
+          "record_sha256": "61545e8385be8fa872a84f0ae87efc8c1fc66ea3cc5caabf9f8ddffb46781eda",
+          "reduced_text_count": 14,
+          "runtime_enabled": false,
+          "source_hold_resolved": false,
+          "source_holds_preserved": true,
+          "source_revision_verified": false
+        },
+        "source_fidelity": "ORIGINAL_HOLDS_PRESERVED"
+      }
+    }
+  },
+  {
+    "definition": {
+      "identity": {
+        "key": "oteryn:quest.the_new_frontier_quest",
+        "revision": "quest-r1"
+      },
+      "requirements": {
+        "min_level": null,
+        "premium": true
+      },
+      "requirements_from_wiki": {
+        "lvl": "77*(for the last mission only)",
+        "premium": "yes"
+      },
+      "requirements_unparsed": {
+        "min_level": "note"
+      },
+      "missing_data": [
+        {
+          "code": "reported_source_gap",
+          "count": 11,
+          "field": "interactions_with_gaps"
+        },
+        {
+          "code": "reported_source_gap",
+          "count": 35,
+          "field": "unresolved_items"
+        },
+        {
+          "code": "claim_native_lowering_missing",
+          "source_key": "canary:reward-claim/quest/u8_54/the_new_frontier/reward/potions"
+        },
+        {
+          "code": "requirement_unknown",
+          "field": "min_level"
+        },
+        {
+          "code": "quest_native_lowering_missing"
+        }
+      ],
+      "oteryn_recipe": {
+        "chosen_data_complete": true,
+        "donor_source_data": {
+          "native_admission": false,
+          "original_holds_preserved": true,
+          "profile": "qualified_donor_source_refs_v1",
+          "quest_key": "oteryn:quest.the_new_frontier_quest",
+          "refs": [
+            {
+              "category": "condition",
+              "json_pointer": "/records/543",
+              "packet_sha256": "2b9aee1bcf82ccd33b3109e75a6409b41d4f801d2f0c904c14d864eea98541ff",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/conditions.json",
+              "projection_scope": "FULL_SOURCE_GUARD",
+              "record_sha256": "998fb77f3869655592969e7ba4fa2c3560b2e841f14fcd5955b71eedc6ec0ae5",
+              "source_target": "canary:interaction/the_new_frontier/action_vine"
+            },
+            {
+              "category": "condition",
+              "json_pointer": "/records/544",
+              "packet_sha256": "2b9aee1bcf82ccd33b3109e75a6409b41d4f801d2f0c904c14d864eea98541ff",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/conditions.json",
+              "projection_scope": "FULL_SOURCE_GUARD",
+              "record_sha256": "cbc7880e00a4b11f6e0ea27ada14cddad81b5b672e9364674e2fff924620ca97",
+              "source_target": "canary:interaction/the_new_frontier/movement_corruption_hole"
+            },
+            {
+              "category": "condition",
+              "json_pointer": "/records/545",
+              "packet_sha256": "2b9aee1bcf82ccd33b3109e75a6409b41d4f801d2f0c904c14d864eea98541ff",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/conditions.json",
+              "projection_scope": "FULL_SOURCE_GUARD",
+              "record_sha256": "7c04ba485f17380f09fbad94973d1eb60b82469abeebbf924b4fca551863f250",
+              "source_target": "canary:interaction/the_new_frontier/movements_snake_head_teleport"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3236",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "eaa8f55887b8e21c760a4ef0c51094b55b6093e076ab53ce31c8f7cd21656bd4",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/angus"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3237",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "fafbd3a457b24bf20c8424c46d7cf396ef86b558c617911b507b71432e2abef3",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/angus"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3238",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "c30c3db9a20fe34331c46d30e8658bebdfaf694277370b7aaa183e85f20014f1",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/angus"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3239",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "87a873388a540a2def58eec5d527737c9db58e71a5d152117641674d1be2f922",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/angus"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3240",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "da4202fc1cec3ea52fb1bc538bb3600b76d99206ddff624fdec9ac9d85f24e5a",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/angus"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3241",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "d5800bcb78d1eea20edaa859bb57676d7840f6ed13288893902f7fa7b68bd4f4",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/humgolf"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3242",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "4989bf1d527b321fbd2d252d508f1fc49aab7a73bbb5c0b303de9c900b6e7d47",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/humgolf"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3243",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "ba3f328bf086c17f98ae7b3f6acc53aead25470ddd6a38be88b4c3affb66d998",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/humgolf"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3244",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "585b4e59b6983ba707de4465b9bdfa11b9b4ed002ea8f34eac20bbd1d29a2be0",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/humgolf"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3245",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "4d355ba50f3a232f49b9ec4f9b8b1f5d09ccfec4153f11543badc2f5323c84ad",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/humgolf"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3246",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "2b0d40bf03293849c400101ecf06e7b1d00b8905c498dab6a96eba63fec0e7d5",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/humgolf"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3247",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "a94d11d5af2f67974e610ae269decc87f4ba94430f28d7d626f3716dcb72a413",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/humgolf"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3248",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "4a2a29b65ebf9c87071dbcc7025e8459096efa76caf5403405896ed08c31ce21",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/humgolf"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3249",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "105a75a222ae3e784fe4234e84ed7de0dbffa75ae25e5d50aa4bfd3305c3e20c",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/humgolf"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3250",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "4ce07b9db072562992133dee218c53a1afd5a8d817170c1180c19595165cbc28",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3251",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "218bd49413f4bf556c4d94e34588a2c6fb9dfc10b0169dc7a940b62c29c3c10a",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3252",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "ee33ec24b0b3beaef58efe6ff50f3e90f8b82287be76aa474146575ca781a304",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3253",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "63e75f9f80f433218e1682f235abac9b3c2a1191c7e13eb6910558a16910a870",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3254",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "334d5c6e2f97ea2a4204ce74eb9f99773c25f9563691f95e01023b57899eab3f",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3255",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "914baf1d2e0aa62a054b725b99867a893074b93093e9277f712832948e8db9fa",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3256",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "e7a5ca19d320fc7c9681129cb1bb60c219921a392466c686641266d5b896c51e",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3257",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "327cf8ae71526eab9f4c71895effd7c2d4da7c24b004fa4c87769f921c721897",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3258",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "b9ce66f625d40765cc92df4a55c8ff8dd0e7b4c7e8710df42d77fe9b63139312",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/leeland"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3259",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "d3b098f559331b0354959aa5ecb65aba0ac89eb8adc1fbc1cdccd7d73363c777",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/leeland"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3260",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "9fbb803dc4ed64951d13ebd157815510187a6530bc0337c4bb5990db40b917fa",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/leeland"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3261",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "9adbdfaf405b80bae2e3a0dac8217f283d02abdd374cd0b4c82ad1b9baf4fcc8",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/leeland"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3262",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "1415542d6041501dcec2f8bbbae7d33bd2ddcc3942ee933622cfb728f9bdfc70",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/leeland"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3263",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "3b5f599fddc34051911ce61cab6f2380e0336c5f78d4def8479bdb6adc6724e4",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/leeland"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3264",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "1be0b29fbbc591993472217918da0c7801ec9f3b7e78d3725400a66ad5ff5f81",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/leeland"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3265",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "58121103db8c237c663c1c8d5e28aebc92e27a1d6a001fad645e52da98914762",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/leeland"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3266",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "2fac7cf1cca085b71d8c83bf8596cf544be188cdc2474184b0120c25bfe61c4f",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/leeland"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3267",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "ceb73bed5910048efacaf31bffcacf52f9c6f5675eb5de327e9aa764010ad692",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/leeland"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3268",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "fe58ef47402dcbbeaff93cef73c1f3297aa89ba2febe63b9c2e79c198a1d5a56",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/leeland"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3269",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "baa2195996c03e75be7a8176d6d9623eaa7de6c1db0f70d21fc16233f6661958",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/leeland"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3270",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "2453e29ecc42114658b1bcc78a2d3e83d5a071b579d67df4ab615484dbad91c2",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/telas"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3271",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "536bba8366421d971ad8ef635ab4ff718244ad1be6b7a9e1cf44e0c534bde320",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/telas"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3272",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "8fc8de32af8414ac77123d3c699704da14825d9ba822c8b392a3651dd4b284a8",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/telas"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3273",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "ee4c50afb0b86c992ed7558c6e8660ad523c836020aab5c9661cfabc4c0bfe2d",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/telas"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3274",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "7755c1561c538db16d7568f4ff58465c2b9572fb6b77a72bd6ecaf7d9d9c4417",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/telas"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3275",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "8d867c5eb07ebfbe402d11c2a366d4c18cbe09a3b02df0a923173d58dd975770",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/telas"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3276",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "ac316e09cf5ff7413529c6b60d7c8858c44665dc8dd5e1e40eb52be58eeac976",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/telas"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3277",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "30c0b596cf744d565ae62cf9de455b0a6fd1bcc51274ee8923e4ddb15530763a",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/telas"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3278",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "941d5144fc4a60a94b34d166df79541cb10fd37ff7455491174beccac2ed2e17",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/telas"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3279",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "e7c9be41fb0f08f7f54eb17ecd6db1b343d8441cfbd72697844aedad8c74c9d9",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/telas"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3280",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "5f2c6ae4b3adaf7a184d37d39416cc4e0c2c66d9aceccfd43375c1fe8faf8c03",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/wyrdin"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3281",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "2feb271055d47f5703d931c14bedb4c17b5c67d77899d324ddec55e86b1fe446",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/wyrdin"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3282",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "b5c67d3c2566e2ead03232f506e754d254cb1a030e23add606ccf8aafd1b4217",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/wyrdin"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3283",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "70ec31662de8e8c8edbb0d924f99267ed8cf43d0952adad56a3ae401ee0aa9de",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/wyrdin"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3284",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "d102278c9f722af8b4f96406420434e09a5c874d69042b7ecd589779c0edcebf",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/wyrdin"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3285",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "288d5a08092beff20c19fd94c371bfdf5a4b20abcac6f19c928b4bfbe487086d",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/wyrdin"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3286",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "c041e45b1c0873a58dfa959fb01823c740f928144c5fdfefcfb5a9e658b2ba03",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/wyrdin"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3287",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "93449f28827e3a7d5787cbf66e7729cd013bfd827cb2d5f6934f75a2c420c5ee",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/wyrdin"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3288",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "eb61ca139df42f5d63b0cfd746c65469647ae6cccb212357c515806b7e983a79",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/wyrdin"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3289",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "b4ab7387b722152b48c25204842a4dfc1db76f8b41ffdab14537d45aabfe5896",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/wyrdin"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3290",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "042a253d035e4766745b58d8e4b0e5fecadc7445a564c2eb77f3860d2e6cb973",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission06"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3291",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "474147f4760ea29efedcf0aa3d3e63fe0324628d52cc33cbf56a5ae73f9ae40f",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission06"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3292",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "3e2d3600f5847dfaee12cceda725a3c10d69780560aa4316fcfbb36ee8ad362b",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission06"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3293",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "b894c5c179177f3f127d36931e81f173c7f89d03bb52bb9b48bb209002dd1fc9",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission06"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3294",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "ac50dc62245d94234bd2d7a06d968e7f673a7ade989d548864831e051e4e320c",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3295",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "9c8507daa94d70035575dac8186d9977b4c1df176215b603811ddb43d0fc866b",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3296",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "5028f7ef81487776a9db9047d9af0601b7fc9b4f8547c27d8abf8956e7ae4da7",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3297",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "1beaf5715c5943c23a366ac1efab0173fc5e3a7bb0f091c4da3825dfb352907a",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/questline"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3300",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "982ba62eb929fcc8086966a1065abca80ba7e35c023c11d342cb9d41364b481f",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/leeland_keyword"
+            },
+            {
+              "category": "npc_dialogue",
+              "json_pointer": "/quest_dialogue_links/3301",
+              "packet_sha256": "fdd5ac0e9b2f402eeb04ae3903f59674adfcd0dec4ab9409bfa8f143fe97d285",
+              "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz",
+              "projection_scope": "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "record_sha256": "9e395ccf7d198600b986514ff8e5e69db757c43a6c6869a16cc35c5f18d56161",
+              "source_target": "canary:quest-progress/quest/u8_54/the_new_frontier/mission05/telas_keyword"
+            }
+          ],
+          "whole_quest_complete": false
+        },
+        "payload": {
+          "covered_wiki_titles": [
+            "The New Frontier Quest"
+          ],
+          "donor_source_refs": [
+            {
+              "blob_sha1": "1e469576799258cbcd8dbcbd26cc9d49d2b629f3",
+              "kind": "git",
+              "path": "data-otservbr-global/lib/core/quests/catalog/043_the_new_frontier.lua",
+              "repository": "opentibiabr/canary",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+            },
+            {
+              "blob_sha1": "1b3e292826d90e9b92b75f091566d2fe57e682b3",
+              "kind": "git",
+              "path": "data-global/lib/core/quests.lua",
+              "repository": "zimbadev/crystalserver",
+              "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+            }
+          ],
+          "identity": {
+            "key": "oteryn:quest.the_new_frontier_quest",
+            "revision": "quest-r1"
+          },
+          "recipe": {
+            "adaptations": [
+              "Finish a six-step Farmine settlement journey rather than all seventeen frontier missions; the reward outfit is a chosen early endpoint and not a claim that the legacy tournament or later missions were performed.",
+              "All objectives, requirements, rewards and repetition are selected Oteryn behavior. Existing Source facts, branches, progress and unresolved data remain unchanged; this recipe neither repairs a native owner nor admits runtime play.",
+              "Choose minimum level0 where the original source requirement is UNKNOWN; this is not a recovered source level."
+            ],
+            "repeat": {
+              "basis": "CHOSEN_OTERYN_APPROXIMATION",
+              "kind": "once"
+            },
+            "requirements": {
+              "basis": "CHOSEN_OTERYN_APPROXIMATION",
+              "min_level": 0,
+              "premium": true,
+              "prerequisites": []
+            },
+            "reward_intents": [
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "kind": "outfit",
+                "name": "Warmaster Outfits"
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "kind": "access",
+                "name": "Farmine and Zao route"
+              }
+            ],
+            "source_notes": [
+              "Original Quest identity and graph are retained. Source-derived mission/object names are paraphrased, while stage order and successful outcomes are chosen.",
+              "Captured historical wiki and pinned donor data do not establish current-live gameplay, Native readiness or authoritative delivery."
+            ],
+            "source_refs": [
+              {
+                "content_sha256": "a010f22744255ac717e2bbc18d46a2e329cc63ab0b2272c07e3778845ee6ec5e",
+                "pageid": 41754,
+                "provider": "tibia_fandom",
+                "relation": "base",
+                "revid": 1058656,
+                "url": "https://tibia.fandom.com/index.php?curid=41754&oldid=1058656"
+              },
+              {
+                "content_sha256": "5c3ed9c38a6f7db317005d56e6db9de9a5db845c2e0aaafea6e3821e234ad916",
+                "pageid": 41756,
+                "provider": "tibia_fandom",
+                "relation": "spoiler",
+                "revid": 1099208,
+                "url": "https://tibia.fandom.com/index.php?curid=41756&oldid=1099208"
+              },
+              {
+                "content_sha256": "4acb9a937bc33bb64c5b8e897ad5ed55fb9d5d7ca217f8c63a91d8396607da5d",
+                "pageid": 4536,
+                "provider": "tibiawiki_br",
+                "relation": "crosscheck",
+                "revid": 437241,
+                "url": "https://www.tibiawiki.com.br/index.php?curid=4536&oldid=437241"
+              }
+            ],
+            "stages": [
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s1",
+                "kind": "explore",
+                "next": [
+                  "s2"
+                ],
+                "objective": "Scout the new land from the mountain passage for Ongulf.",
+                "targets": [
+                  "Zao mountain passage"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 3,
+                "key": "s2",
+                "kind": "use",
+                "next": [
+                  "s3"
+                ],
+                "objective": "Place beaver bait on Melfar's three marked trees.",
+                "targets": [
+                  "Beaver Bait",
+                  "Marked Tree"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s3",
+                "kind": "talk",
+                "next": [
+                  "s4"
+                ],
+                "objective": "Negotiate peaceful contact with Lazaran.",
+                "targets": [
+                  "Lazaran"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s4",
+                "kind": "kill",
+                "next": [
+                  "s5"
+                ],
+                "objective": "Defeat the leader threatening Farmine's mine.",
+                "targets": [
+                  "Mine monster leader"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 5,
+                "key": "s5",
+                "kind": "talk",
+                "next": [
+                  "s6"
+                ],
+                "objective": "Request support from Humgolf, Wyrdin, Angus, Telas and Tibianus.",
+                "targets": [
+                  "Humgolf",
+                  "Wyrdin",
+                  "Angus",
+                  "Telas",
+                  "King Tibianus"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s6",
+                "kind": "talk",
+                "next": [
+                  "s7"
+                ],
+                "objective": "Report the united support to Ongulf.",
+                "targets": [
+                  "Ongulf"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s7",
+                "kind": "complete",
+                "next": [],
+                "objective": "Record the chosen completed journey: The New Frontier Quest.",
+                "targets": [
+                  "The New Frontier Quest"
+                ]
+              }
+            ],
+            "summary": "Complete the selected The New Frontier journey: Scout the new land from the mountain passage for Ongulf.",
+            "wiki_title": "The New Frontier Quest"
+          },
+          "source_identity": {
+            "family": "Quest",
+            "key": "canary:quest/the_new_frontier_quest",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "title_stage_keys": {
+            "The New Frontier Quest": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6",
+              "s7"
+            ]
+          }
+        },
+        "profile": "chosen_source_completion_v1",
+        "provenance": {
+          "path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
+          "sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321"
+        },
+        "readiness": "waiting_native_bindings",
+        "recipe_refinement_provenance": {
+          "original_recipe_packet_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+          "path": "tools/content-schema/quest-authoring/samples/refinements242/refinements.json",
+          "qualification_sha256": "11a3afbc8f17df330ee1be94e68ee80b3b0a582e92234181459fecf3f63ac1a5",
+          "reviewed_input_sha256": "b725ee573b26a38bd9bf2ee1b9f66eb215fa7a6eaad2d1f7c9af76e53f544b62",
+          "sha256": "b69dbe6d580221b089d03e8952329c54a7e117abc02f11d476f56f18818254cf"
+        },
+        "runtime_enabled": false,
+        "source_definition_sha256": "1f9390c11ead90b7a88834b8f855eace3e6a21f77d7db0295f54d8c1166a8431",
+        "source_evidence_provenance": {
+          "candidate_count": 9,
+          "classification": "SCOPED_EVIDENCE_ONLY_NOT_SOURCE_CLOSURE",
+          "confirmation_count": 5,
+          "facts_count": 14,
+          "line_spans_rechecked": false,
+          "packet_sha256": "f48af6e10e8ba9a311442bd1f359aff091956e634743b7db08cdb31594faf58f",
+          "path": "tools/content-schema/quest-authoring/samples/enrichment242/enrichment.json",
+          "profile": "scoped_source_enrichment_v1",
+          "raw_body_rechecked": false,
+          "receipt_sha256": "970cc0744e9abf31b9c4d1bd93d5723ae6c89bbb5f8bd9a5100d49015cc2b017",
+          "record_sha256": "3f2364dc87bec7b9f0be3d5f5eeb8df764bb6e197bc20cf8424638038b434c05",
+          "reduced_text_count": 6,
+          "runtime_enabled": false,
+          "source_hold_resolved": false,
+          "source_holds_preserved": true,
+          "source_revision_verified": false
+        },
+        "source_fidelity": "ORIGINAL_HOLDS_PRESERVED"
+      }
+    }
+  }
+]

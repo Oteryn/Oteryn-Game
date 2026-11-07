@@ -1,0 +1,24 @@
+{
+  "id": 16,
+  "name": "QUEST_LOG",
+  "owner_decision": "QUEST-GATE-0 \u00a77 (docs/architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md); numbers allocated by the #1622 control plane (D485) and registered by QUEST-LOG-WIRE-1",
+  "owner": "current ChannelRuntime",
+  "capability": 16,
+  "revision": "per GameSessionId, monotonic and never reused (FND-02 \u00a715), carried in the session continuity across reconnect, resume and channel transfer; every admission, reconnect, resume and transfer sends a snapshot above any revision the session has seen, with no view and the tracked quests (the NPC-0 \u00a74 pattern); a delta carries the whole domain after each accepted query and after each committed receipt that changes the view or a tracked quest",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "QUEST_LOG_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/quest_log_v1.proto#QuestLogV1",
+      "max_payload_bytes": 180268
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "QUEST_LOG_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/quest_log_v1.proto#QuestLogV1",
+      "max_payload_bytes": 180268
+    }
+  ]
+}

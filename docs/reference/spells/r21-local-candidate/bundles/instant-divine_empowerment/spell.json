@@ -1,0 +1,89 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/divine_empowerment",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Divine Empowerment",
+    "carrier": "instant",
+    "words": "utevo grav san",
+    "reference_spell_id": 268,
+    "library_text": "Channelling divine power is not an easy task by any means and most of the earliest paladins weren't able to cast conventional spells. Instead they embraced the principles of order in favour of a stationary approach. They called down powers, that would shatter their mortal shells by the sheer power called upon and imbued the very ground on which they stood with divine energy. In this way they could tap into a part of that energy to empower their attacks with holy force without risking to be turned in a burned out shell. These ancient techniques have recently been rediscovered and honed by the greatest users of divine magic that out time could muster. The result is a stunning new approach to amplify the fighting force of the modern paladins.",
+    "requirements": {
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ],
+      "level": 0,
+      "premium": true,
+      "learning_required": false,
+      "wheel_unlock": true
+    },
+    "costs": {
+      "mana": 500,
+      "soul": 0
+    },
+    "cooldown_ms": 32000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 1,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "execution": {
+      "native_behavior": {
+        "key": "owned_field_buff",
+        "parameters": {
+          "spell_name": "divine empowerment",
+          "wheel_stage_required": true,
+          "field_item": {
+            "family": "Item",
+            "key": "candidate:item/40450",
+            "revision": "spell-p2-r21"
+          },
+          "position_source": "caster_at_cast",
+          "radius_tiles": 1,
+          "duration_ms": 5000,
+          "maximum_fields": 9,
+          "field_count_per_tile": 1,
+          "skip_tile_flags": [
+            "missing_tile",
+            "immovable_block_solid",
+            "floor_change"
+          ],
+          "item_owner": "caster",
+          "owner_only": true,
+          "same_floor_required": true,
+          "bonus_damage_percent_by_stage": [
+            8,
+            10,
+            12
+          ],
+          "cooldown_ms_by_stage": [
+            32000,
+            28000,
+            24000
+          ],
+          "evaluate": "cast_and_periodic_poll",
+          "evaluation_interval_ms": 1000,
+          "cleanup": "only_created_item_instances",
+          "expiry_requires_caster_online": false
+        }
+      }
+    }
+  }
+}

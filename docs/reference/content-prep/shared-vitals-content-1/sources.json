@@ -1,0 +1,2906 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_SOURCE_MANIFEST/v1",
+  "task": "SHARED-VITALS-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "owner_cut_override": "Owner explicitly requested fresh current data on 2026-10-18; historical 2026-09-27 programme cut is not changed repository-wide.",
+  "sources": {
+    "repo:docs/reference/tibia-manual/combat.md": {
+      "path": "docs/reference/tibia-manual/combat.md",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/docs/reference/tibia-manual/combat.md",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "ef518113d52cc089185c6472b23556d7aba74b714a74d3ef1d529f6dc03d1d62",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18"
+    },
+    "wiki:3582:1189634": {
+      "title": "Party",
+      "url": "https://tibia.fandom.com/wiki/Party",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1189634",
+      "revid": 1189634,
+      "revision_timestamp": "2026-06-16T16:56:52Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "c0fef55b62a000474420b5bcafa9aa1ceaf520e0efbdb1304554038f232a3309",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Regeneration%7CStamina%7CSoul%20Points%7CParty&redirects=1"
+    },
+    "repo:docs/reference/tibia-manual/characters.md": {
+      "path": "docs/reference/tibia-manual/characters.md",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/docs/reference/tibia-manual/characters.md",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "f3f89885a0850493e737b109e658c35b9a47186c0e1656da64df907b118d5a79",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18"
+    },
+    "wiki:8516:1071529": {
+      "title": "Stamina",
+      "url": "https://tibia.fandom.com/wiki/Stamina",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1071529",
+      "revid": 1071529,
+      "revision_timestamp": "2024-07-23T06:59:56Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "44f519d47993e6e2d0fc46e38b597d9be2dacf28f9618aa9cabc06b9c485db62",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Regeneration%7CStamina%7CSoul%20Points%7CParty&redirects=1"
+    },
+    "wiki:4560:1204055": {
+      "title": "Soul Point",
+      "url": "https://tibia.fandom.com/wiki/Soul_Point",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1204055",
+      "revid": 1204055,
+      "revision_timestamp": "2026-08-29T23:31:07Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "adbfddb881e190a29acd6a492a1f29ca1bc4d25c7806db6d3e82f445ec404c95",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Regeneration%7CStamina%7CSoul%20Points%7CParty&redirects=1"
+    },
+    "wiki:794:1192367": {
+      "title": "Knight",
+      "url": "https://tibia.fandom.com/wiki/Knight",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1192367",
+      "revid": 1192367,
+      "revision_timestamp": "2026-06-25T13:48:02Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "3bd863ab15f2271d600666072c384274e51fb41f603cc13e0cdb6e4626c1b99d",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%2FCreature%20List%7CCitizen%20Outfits%7CFood%7CKnight%7CElite%20Knight%7CPaladin%7CRoyal%20Paladin%7CDruid%7CElder%20Druid%7CSorcerer%7CMaster%20Sorcerer%7CMonk%7CExalted%20Monk%7CDuelling%20Arena%7CArenas&redirects=1"
+    },
+    "wiki:1414:1121343": {
+      "title": "Paladin",
+      "url": "https://tibia.fandom.com/wiki/Paladin",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1121343",
+      "revid": 1121343,
+      "revision_timestamp": "2025-08-13T13:37:33Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "1b14e319cd092b00f61b717180b03cd649842d0dc840bcef2f3fa1e37a3fc970",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%2FCreature%20List%7CCitizen%20Outfits%7CFood%7CKnight%7CElite%20Knight%7CPaladin%7CRoyal%20Paladin%7CDruid%7CElder%20Druid%7CSorcerer%7CMaster%20Sorcerer%7CMonk%7CExalted%20Monk%7CDuelling%20Arena%7CArenas&redirects=1"
+    },
+    "wiki:1397:1179121": {
+      "title": "Druid",
+      "url": "https://tibia.fandom.com/wiki/Druid",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1179121",
+      "revid": 1179121,
+      "revision_timestamp": "2026-04-26T14:11:16Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "e01a6ec75d65e01a31858c89610c042767aee405f169ee526b6213f0ee74386d",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%2FCreature%20List%7CCitizen%20Outfits%7CFood%7CKnight%7CElite%20Knight%7CPaladin%7CRoyal%20Paladin%7CDruid%7CElder%20Druid%7CSorcerer%7CMaster%20Sorcerer%7CMonk%7CExalted%20Monk%7CDuelling%20Arena%7CArenas&redirects=1"
+    },
+    "wiki:1068:1121345": {
+      "title": "Sorcerer",
+      "url": "https://tibia.fandom.com/wiki/Sorcerer",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1121345",
+      "revid": 1121345,
+      "revision_timestamp": "2025-08-13T13:37:36Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "1313e0599a2274bc8c621c59b7410135ac1922ecd58ecaeee7175b2cc70691b0",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%2FCreature%20List%7CCitizen%20Outfits%7CFood%7CKnight%7CElite%20Knight%7CPaladin%7CRoyal%20Paladin%7CDruid%7CElder%20Druid%7CSorcerer%7CMaster%20Sorcerer%7CMonk%7CExalted%20Monk%7CDuelling%20Arena%7CArenas&redirects=1"
+    },
+    "wiki:107879:1207320": {
+      "title": "Monk",
+      "url": "https://tibia.fandom.com/wiki/Monk",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1207320",
+      "revid": 1207320,
+      "revision_timestamp": "2026-09-28T19:58:31Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "f7e58473859255666f8dcfb5732e56291681501fb10267cf3982861d438ff436",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%2FCreature%20List%7CCitizen%20Outfits%7CFood%7CKnight%7CElite%20Knight%7CPaladin%7CRoyal%20Paladin%7CDruid%7CElder%20Druid%7CSorcerer%7CMaster%20Sorcerer%7CMonk%7CExalted%20Monk%7CDuelling%20Arena%7CArenas&redirects=1"
+    },
+    "wiki:5494:1141317": {
+      "title": "Regeneration",
+      "url": "https://tibia.fandom.com/wiki/Regeneration",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1141317",
+      "revid": 1141317,
+      "revision_timestamp": "2025-11-09T15:51:57Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "6da73b198b6fa432d3006bb5ac52bdc6cc87eb767498dc0a9d1a07aaf4071d20",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Regeneration%7CStamina%7CSoul%20Points%7CParty&redirects=1"
+    },
+    "wiki:20462:1114497": {
+      "title": "Scarab Cheese",
+      "url": "https://tibia.fandom.com/wiki/Scarab_Cheese",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114497",
+      "revid": 1114497,
+      "revision_timestamp": "2025-07-26T10:00:37Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "e95ce7a5d466189fb6cbdd99b37024f115808acca01b6a429ea0c9437ae36a1a",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Red+Christmas+Garland%7CRed+Cushioned+Chair%7CRed+Footboard%7CRed+Headboard%7CRipptor+Claw%7CRipptor+Scales%7CRocking+Chair%7CRocking+Horse%7CRogue+Naga+Scales%7CRoyal+Almandine%7CSabretooth+Fur%7CSail+Pass%7CSample+of+Monster+Blood%7CScarab+Cheese%7CSceptre+of+Sun+and+Sea%7CSchnitzel+Meat+Grinder%7CScroll%7CSheet+of+Tracing+Paper+%28Blank%29%7CSheet+of+Tracing+Paper+%28Full%29%7CSilver+Fafnar+Trophy"
+    },
+    "wiki:20683:1114510": {
+      "title": "Ice Cream Cone (Venorean Dream)",
+      "url": "https://tibia.fandom.com/wiki/Ice_Cream_Cone_(Venorean_Dream)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114510",
+      "revid": 1114510,
+      "revision_timestamp": "2025-07-26T10:01:00Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "74217bdb3c6e1ffb1de562c2759832ef904493e16bc4395336a70042ed4fd66b",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Greeting+Card%7CGuardcatcher%7CHammer+of+Mighty+Cheating%7CHammock+Foot+Section%7CHammock+Head+Section%7CHarp%7CHastily+Scribbled+Note%7CHeadpecker+Beak%7CHeadpecker+Feather%7CHeaven+Blossoms%7CHydrophytes%7CIce+Cream+Cone+%28Venorean+Dream%29%7CIcicle+Chisel%7CIndoor+Plant%7CIvory+Chair%7CIvory+Lyre%7CJungle+Moa+Claw%7CJungle+Moa+Egg%7CJungle+Moa+Feather%7CLabel"
+    },
+    "wiki:20499:1017462": {
+      "title": "Walnut",
+      "url": "https://tibia.fandom.com/wiki/Walnut",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1017462",
+      "revid": 1017462,
+      "revision_timestamp": "2023-07-16T02:34:02Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "74518bb6ec2fc78e1549b1ae5524e118de869d5d22b9671609f9caa730143711",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:21668:1114520": {
+      "title": "Marlin",
+      "url": "https://tibia.fandom.com/wiki/Marlin",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114520",
+      "revid": 1114520,
+      "revision_timestamp": "2025-07-26T10:01:20Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "527865922b9f6f9c0fae41683a88a7838fbc712401e422325362032c99af9b7f",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:1208:1113663": {
+      "title": "Meat",
+      "url": "https://tibia.fandom.com/wiki/Meat",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113663",
+      "revid": 1113663,
+      "revision_timestamp": "2025-07-25T21:29:56Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "91ff4418a65cc061e96f5b2257999358b05177de52ac2132812e5046b65d6c0e",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:1192:1113662": {
+      "title": "Fish",
+      "url": "https://tibia.fandom.com/wiki/Fish",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113662",
+      "revid": 1113662,
+      "revision_timestamp": "2025-07-25T21:29:53Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "cdf3e8653bed0b46d9f50d3c13c888f16520e183a0fea3191032265904603e35",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:2943:1113915": {
+      "title": "Salmon",
+      "url": "https://tibia.fandom.com/wiki/Salmon",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113915",
+      "revid": 1113915,
+      "revision_timestamp": "2025-07-26T09:32:15Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "afd9b8823007a3e668e34c1e83729c9db91150c696f70ece985766dbdaa325cb",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:16985:1114421": {
+      "title": "Northern Pike",
+      "url": "https://tibia.fandom.com/wiki/Northern_Pike",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114421",
+      "revid": 1114421,
+      "revision_timestamp": "2025-07-26T09:58:16Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "fb64cfcea8fad0c4c4b6d33f3bdb03b6ec15c1822f018ee61d638ba328f1222f",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:1207:1113656": {
+      "title": "Ham",
+      "url": "https://tibia.fandom.com/wiki/Ham",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113656",
+      "revid": 1113656,
+      "revision_timestamp": "2025-07-25T21:27:58Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "2495901c12f6ed36c64d3853295df0697bdee52de51b9aa07a48298ca9daccfc",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:2889:1181747": {
+      "title": "Dragon Ham",
+      "url": "https://tibia.fandom.com/wiki/Dragon_Ham",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1181747",
+      "revid": 1181747,
+      "revision_timestamp": "2026-05-03T11:23:55Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "79760f67de0bd676a9818864de797bdb8b123913d8a037d96f5f607018e8d3a4",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:2988:1200942": {
+      "title": "Pear",
+      "url": "https://tibia.fandom.com/wiki/Pear",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1200942",
+      "revid": 1200942,
+      "revision_timestamp": "2026-08-16T18:36:22Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "31affebf713b24f3058a5a1f1b077cdef3634ac1b2d523b624b27409170e2084",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:1250:1200917": {
+      "title": "Red Apple",
+      "url": "https://tibia.fandom.com/wiki/Red_Apple",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1200917",
+      "revid": 1200917,
+      "revision_timestamp": "2026-08-16T17:40:11Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "ae2cbafd3e7835d91b3c6a19e72a573b4bcd82922cd082f7e4a8d6e376aae05a",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:1334:1113686": {
+      "title": "Orange",
+      "url": "https://tibia.fandom.com/wiki/Orange",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113686",
+      "revid": 1113686,
+      "revision_timestamp": "2025-07-25T22:10:22Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "157115b763f4183a2d7727d24aa2843eb03e1ccffe68ad34ccbc51272d6c14a5",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:1333:1113685": {
+      "title": "Banana",
+      "url": "https://tibia.fandom.com/wiki/Banana",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113685",
+      "revid": 1113685,
+      "revision_timestamp": "2025-07-25T22:10:20Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "443a6bcc017e64deb6e3aec0fdab50b6ac23e080b427d1226221f7a06a636487",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:1190:1113660": {
+      "title": "Blueberry",
+      "url": "https://tibia.fandom.com/wiki/Blueberry",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113660",
+      "revid": 1113660,
+      "revision_timestamp": "2025-07-25T21:29:50Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "e5f2b0ba5810aba552be685a1ba01db177865247c68d3211198e17b3ceebf9df",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:1303:1113683": {
+      "title": "Coconut",
+      "url": "https://tibia.fandom.com/wiki/Coconut",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113683",
+      "revid": 1113683,
+      "revision_timestamp": "2025-07-25T22:09:56Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "fec2680ba4c3cea9095c05f657c8dc804a9ed30d85adbd3d04dbe5f766bc8fc5",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:1773:1113807": {
+      "title": "Cherry",
+      "url": "https://tibia.fandom.com/wiki/Cherry",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113807",
+      "revid": 1113807,
+      "revision_timestamp": "2025-07-26T09:28:39Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "137f26b5d06eb38e4335abd1913919a443f876f6853c04766889830cd8fad6f2",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:2997:1016682": {
+      "title": "Strawberry",
+      "url": "https://tibia.fandom.com/wiki/Strawberry",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1016682",
+      "revid": 1016682,
+      "revision_timestamp": "2023-07-16T02:32:31Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "aa24bcec5cc8ea2212b7b169deea893a5a0cd79f1edec5d6d8a22d9876bdb1d6",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:2891:1113911": {
+      "title": "Grapes",
+      "url": "https://tibia.fandom.com/wiki/Grapes",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113911",
+      "revid": 1113911,
+      "revision_timestamp": "2025-07-26T09:32:08Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "8c6fccb832dcc0a45a82b9a356000aaa58622992722fd0f92b1c94fce292d101",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:2983:1113923": {
+      "title": "Melon",
+      "url": "https://tibia.fandom.com/wiki/Melon",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113923",
+      "revid": 1113923,
+      "revision_timestamp": "2025-07-26T09:32:33Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "01ea11e3ec392fc28eca46858857d202baacaca0012463faba6fd11e4c8d81a8",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:3003:1113929": {
+      "title": "Pumpkin",
+      "url": "https://tibia.fandom.com/wiki/Pumpkin",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113929",
+      "revid": 1113929,
+      "revision_timestamp": "2025-07-26T09:32:44Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "b8ed27aff8ded38926a352f48ee44aca953a97c15ab3d9960d7aca0c8cfebd1d",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:1263:1113681": {
+      "title": "Carrot",
+      "url": "https://tibia.fandom.com/wiki/Carrot",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113681",
+      "revid": 1113681,
+      "revision_timestamp": "2025-07-25T22:09:52Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "46206be33a21efd7f55e3b4571d501f8fe7cde00f06ef797298d3f10b7cc667b",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:2999:1113928": {
+      "title": "Tomato",
+      "url": "https://tibia.fandom.com/wiki/Tomato",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113928",
+      "revid": 1113928,
+      "revision_timestamp": "2025-07-26T09:32:42Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "759a16cb31fdb44e3c8c4cd78680480ba0004ea04bee717b7c8b95d10bd72b67",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:2885:1113908": {
+      "title": "Corncob",
+      "url": "https://tibia.fandom.com/wiki/Corncob",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113908",
+      "revid": 1113908,
+      "revision_timestamp": "2025-07-26T09:32:01Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "b8279c2d04de09af64b098b2e9b3e95d110594f4e8e32435a5a423919f7d90de",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:2884:1113907": {
+      "title": "Cookie",
+      "url": "https://tibia.fandom.com/wiki/Cookie",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113907",
+      "revid": 1113907,
+      "revision_timestamp": "2025-07-26T09:31:59Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "2a08fa767696fa5a03decf555429207be5b1a9a8171c23678eb437ae80a3d059",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:1741:1090735": {
+      "title": "Bread",
+      "url": "https://tibia.fandom.com/wiki/Bread",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1090735",
+      "revid": 1090735,
+      "revision_timestamp": "2025-02-11T11:08:23Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "3b502c2ff6ae5a7b1e88a134509f8f5098465f230e72bb12dba4db972d35905b",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:2995:1113927": {
+      "title": "Roll",
+      "url": "https://tibia.fandom.com/wiki/Roll",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113927",
+      "revid": 1113927,
+      "revision_timestamp": "2025-07-26T09:32:40Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "0e490eb795abdb166c74d6e5893adb760465150c6d9643a6a4fad64918e2a06a",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:2869:1113903": {
+      "title": "Brown Bread",
+      "url": "https://tibia.fandom.com/wiki/Brown_Bread",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113903",
+      "revid": 1113903,
+      "revision_timestamp": "2025-07-26T09:31:54Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "5b459782e17cf3c3fc18593c63d7347f71ddb36f5c4b41e8c11a465101e8245e",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:1669:1113787": {
+      "title": "Egg",
+      "url": "https://tibia.fandom.com/wiki/Egg",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113787",
+      "revid": 1113787,
+      "revision_timestamp": "2025-07-26T09:26:29Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "0527e90b6d6834b6ee2e367effc485cb1959eea3149580cb34f363c2f1ccba72",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:1191:1113661": {
+      "title": "Cheese",
+      "url": "https://tibia.fandom.com/wiki/Cheese",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113661",
+      "revid": 1113661,
+      "revision_timestamp": "2025-07-25T21:29:52Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "cbd5c7f910ef49181e70f114b06b4801d1e059b60f43ba0238af5da583b33759",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:1335:1113687": {
+      "title": "White Mushroom",
+      "url": "https://tibia.fandom.com/wiki/White_Mushroom",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113687",
+      "revid": 1113687,
+      "revision_timestamp": "2025-07-25T22:10:23Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "c0bc465d807d3b3cd3e16a28d5054f339a5aa42ad37f008807f0b05ec945bc7d",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:2993:1113926": {
+      "title": "Red Mushroom",
+      "url": "https://tibia.fandom.com/wiki/Red_Mushroom",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113926",
+      "revid": 1113926,
+      "revision_timestamp": "2025-07-26T09:32:38Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "ad46ad981e70b1824a5a3110427432fc7f46abd487d4c5a62dbdc5729064eef9",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:2877:1113905": {
+      "title": "Brown Mushroom",
+      "url": "https://tibia.fandom.com/wiki/Brown_Mushroom",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113905",
+      "revid": 1113905,
+      "revision_timestamp": "2025-07-26T09:31:55Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "ee81b8b9dbe36712f05f0f8b735b276a13470e6137f6b4d26a8d544dd06bbf8a",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:2986:1113924": {
+      "title": "Orange Mushroom",
+      "url": "https://tibia.fandom.com/wiki/Orange_Mushroom",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113924",
+      "revid": 1113924,
+      "revision_timestamp": "2025-07-26T09:32:35Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "563a128f3ceb89c2485acccc40a8e3ecf63d122ddb49d80313b657450576d5d2",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:3001:1110487": {
+      "title": "Wood Mushroom",
+      "url": "https://tibia.fandom.com/wiki/Wood_Mushroom",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1110487",
+      "revid": 1110487,
+      "revision_timestamp": "2025-07-15T16:01:54Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "741c7b7c18da8b57e689842801546963b6f2f9c2d9f18795a41cf2afe44a7a7e",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:2887:1113909": {
+      "title": "Dark Mushroom",
+      "url": "https://tibia.fandom.com/wiki/Dark_Mushroom",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113909",
+      "revid": 1113909,
+      "revision_timestamp": "2025-07-26T09:32:03Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "4589f825ba234ce5059eb6182e1fcc9dc6722c980b340574a0f84c04e3f9e26b",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:2890:1110485": {
+      "title": "Fire Mushroom",
+      "url": "https://tibia.fandom.com/wiki/Fire_Mushroom",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1110485",
+      "revid": 1110485,
+      "revision_timestamp": "2025-07-15T16:00:52Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "1c76b1fc99ed930f47da0ae0b310bd6dbc779171930e1fea46f9ffdc9b6117fb",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:2893:1113912": {
+      "title": "Green Mushroom",
+      "url": "https://tibia.fandom.com/wiki/Green_Mushroom",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113912",
+      "revid": 1113912,
+      "revision_timestamp": "2025-07-26T09:32:09Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "cc0d9364036e12aff666563da0624a3209ad6ef5a3d8e08afe7f74c49b3cb534",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:9136:1114286": {
+      "title": "Mango",
+      "url": "https://tibia.fandom.com/wiki/Mango",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114286",
+      "revid": 1114286,
+      "revision_timestamp": "2025-07-26T09:53:59Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "bc10afbd61eef23bf74244a9fda90e8fa22e662bba0d217bd20ed284b5e18b69",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:12330:1114349": {
+      "title": "Cake",
+      "url": "https://tibia.fandom.com/wiki/Cake",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114349",
+      "revid": 1114349,
+      "revision_timestamp": "2025-07-26T09:56:00Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "792ab72d8e600125c88afe201a8b5954462e0f3d6a24c973c18da6b8865f6044",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Book+%28Blue%29%7CBook+%28Brown%29%7CBook+%28Gemmed%29%7CBook+%28Green%29%7CBook+%28Grey%29%7CBook+%28Orange%29%7CBook+with+Old+Legends+%28Doctored%29%7CBookcase%7CBotanist%27s+Container+%28Empty%29%7CBottle+with+Rat+Urine%7CBox%7CBroken+Compass%7CBronze+Goblet%7CBucket+%28Mead%29%7CButterfly+Conservation+Kit+%28Damselfly%29%7CButterfly+Conservation+Kit+%28Empty%29%7CCabinet+%28Venorean%29%7CCake%7CCandlestick%7CCanopy+Footboard"
+    },
+    "wiki:12515:1017277": {
+      "title": "Valentine's Cake",
+      "url": "https://tibia.fandom.com/wiki/Valentine%27s_Cake",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1017277",
+      "revid": 1017277,
+      "revision_timestamp": "2023-07-16T02:33:41Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "1476d92ff374647f278015589ed541da2088103f3d429a0841bb3484e155994b",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:16905:1114409": {
+      "title": "Rainbow Trout",
+      "url": "https://tibia.fandom.com/wiki/Rainbow_Trout",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114409",
+      "revid": 1114409,
+      "revision_timestamp": "2025-07-26T09:57:53Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "24e49367f52eb303fc90726bdf92312210398cd81c359a4c5d2fd10152fae677",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:17082:1114425": {
+      "title": "Green Perch",
+      "url": "https://tibia.fandom.com/wiki/Green_Perch",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114425",
+      "revid": 1114425,
+      "revision_timestamp": "2025-07-26T09:58:24Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "d6e2e7ea6c9faa3d6ed1a259c3c02c27c4f2e8cba84ea133ee0c4da5e5826a6b",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:37588:1180188": {
+      "title": "Potato",
+      "url": "https://tibia.fandom.com/wiki/Potato",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1180188",
+      "revid": 1180188,
+      "revision_timestamp": "2026-04-29T13:45:26Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "f98754daa911ea7ac23034f137e44b511619a7ebe48e0b70af7d83177fe24887",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:25525:1114591": {
+      "title": "Plum",
+      "url": "https://tibia.fandom.com/wiki/Plum",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114591",
+      "revid": 1114591,
+      "revision_timestamp": "2025-07-26T10:03:35Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "b5a3eeff6f2a4f139446bd3af3cb194c0cb833db7b85b2b62d4fa34038179f69",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:25522:1014861": {
+      "title": "Raspberry",
+      "url": "https://tibia.fandom.com/wiki/Raspberry",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1014861",
+      "revid": 1014861,
+      "revision_timestamp": "2023-07-15T20:56:30Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "abaf71596721b2f8e65bcc695bd7c3f25421bd06c2a1d3cdc7ed484f821ed1c6",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:25524:1114590": {
+      "title": "Lemon",
+      "url": "https://tibia.fandom.com/wiki/Lemon",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114590",
+      "revid": 1114590,
+      "revision_timestamp": "2025-07-26T10:03:34Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "f930a358ec1b5f32f56347d643ffcf591b1c0b13043ab7298fb5504481958804",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:25552:1114596": {
+      "title": "Cucumber",
+      "url": "https://tibia.fandom.com/wiki/Cucumber",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114596",
+      "revid": 1114596,
+      "revision_timestamp": "2025-07-26T10:03:45Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "a8161676b01991ea0bb1763b57bfdd10a4b65c760bb5bab346029e1b72be95e4",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:25638:1114605": {
+      "title": "Onion",
+      "url": "https://tibia.fandom.com/wiki/Onion",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114605",
+      "revid": 1114605,
+      "revision_timestamp": "2025-07-26T10:04:02Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "17228a53ed8052e541ea8a979625255f8dc5e075bee31ddb54e535c39e41b3e8",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:25639:1114606": {
+      "title": "Jalapeno Pepper",
+      "url": "https://tibia.fandom.com/wiki/Jalapeno_Pepper",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114606",
+      "revid": 1114606,
+      "revision_timestamp": "2025-07-26T10:04:03Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "b9f90da2fa77071c3a416338b1013b4a72b9cb1ce60fdab137ca3087b0c64d94",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:25553:1114597": {
+      "title": "Beetroot",
+      "url": "https://tibia.fandom.com/wiki/Beetroot",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114597",
+      "revid": 1114597,
+      "revision_timestamp": "2025-07-26T10:03:47Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "a650ca3e722c4e84739642a8960d784dcba2e61103bf16ac2938902a8e09765a",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:30974:1114695": {
+      "title": "Bulb of Garlic",
+      "url": "https://tibia.fandom.com/wiki/Bulb_of_Garlic",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114695",
+      "revid": 1114695,
+      "revision_timestamp": "2025-07-26T10:06:45Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "d9368c66130ea97a6456c9f4b126a204e18aad05279cbe7c12a413dda2d506cd",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:42128:1016907": {
+      "title": "Terramite Eggs",
+      "url": "https://tibia.fandom.com/wiki/Terramite_Eggs",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1016907",
+      "revid": 1016907,
+      "revision_timestamp": "2023-07-16T02:32:56Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "6c0be375cf85b81fc7a2a89e5eb980f2eecd7de3b5bde9cb602967e848a0473d",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:46414:1014598": {
+      "title": "Pineapple",
+      "url": "https://tibia.fandom.com/wiki/Pineapple",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1014598",
+      "revid": 1014598,
+      "revision_timestamp": "2023-07-15T20:56:00Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "a4a787947d9ed4718d1a07783188e48cc84532c40de7702b8e17d2111e5ced43",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:46408:1007908": {
+      "title": "Aubergine",
+      "url": "https://tibia.fandom.com/wiki/Aubergine",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1007908",
+      "revid": 1007908,
+      "revision_timestamp": "2023-06-29T02:39:43Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "8dfc98304d97401a3514495b73212ecc34453d8e39ac03d845976e4490b2e384",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:46409:1008668": {
+      "title": "Broccoli",
+      "url": "https://tibia.fandom.com/wiki/Broccoli",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1008668",
+      "revid": 1008668,
+      "revision_timestamp": "2023-07-01T20:57:11Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "3f60ddfe39c34d8f0d95e855f8412f99e41528e7b36d91f56c23d7023edc00db",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:46410:1009427": {
+      "title": "Cauliflower",
+      "url": "https://tibia.fandom.com/wiki/Cauliflower",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1009427",
+      "revid": 1009427,
+      "revision_timestamp": "2023-07-07T21:22:45Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "5a1961f37df50622d4d645cb49fe88563885421d137d7cb29376dd63ab874c4c",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:46716:1010316": {
+      "title": "Ectoplasmic Sushi",
+      "url": "https://tibia.fandom.com/wiki/Ectoplasmic_Sushi",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1010316",
+      "revid": 1010316,
+      "revision_timestamp": "2023-07-07T21:24:49Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "abc81c43f690e5c8e09c7748b20f6d6e3c39e57aaaaf1f4755af5ec84374becf",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:46411:1010165": {
+      "title": "Dragonfruit",
+      "url": "https://tibia.fandom.com/wiki/Dragonfruit",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1010165",
+      "revid": 1010165,
+      "revision_timestamp": "2023-07-07T21:24:29Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "62ef24e912ebc21761f4167f120421e11a7b7655ec4954a04bbca6f3984fc9a2",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:46413:1014472": {
+      "title": "Peas",
+      "url": "https://tibia.fandom.com/wiki/Peas",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1014472",
+      "revid": 1014472,
+      "revision_timestamp": "2023-07-15T20:55:46Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "ab8dde4be5d0ed2962d86ac49faade22eb6174e7ff81de6add16c9ae19bdca85",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:59791:1115133": {
+      "title": "Mushroom Pie",
+      "url": "https://tibia.fandom.com/wiki/Mushroom_Pie",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1115133",
+      "revid": 1115133,
+      "revision_timestamp": "2025-07-26T11:27:00Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "33f6d2f4e5846d49732d8c8f4d6a5a73c1775e0c1de96d9263e3f18ae4733192",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:67877:1115365": {
+      "title": "Glooth Sandwich",
+      "url": "https://tibia.fandom.com/wiki/Glooth_Sandwich",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1115365",
+      "revid": 1115365,
+      "revision_timestamp": "2025-07-26T11:44:26Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "4e7b6c0bdbf3b645a3369237887434b4fa4ee64908579cee20a5b71bc9465b23",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:67881:1115366": {
+      "title": "Bowl of Glooth Soup",
+      "url": "https://tibia.fandom.com/wiki/Bowl_of_Glooth_Soup",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1115366",
+      "revid": 1115366,
+      "revision_timestamp": "2025-07-26T11:44:28Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "6b4afd8f7d6800cca89574f4f080a8c8be826781590943e9b1a9e0b097e57a7a",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:67879:1008589": {
+      "title": "Bottle of Glooth Wine",
+      "url": "https://tibia.fandom.com/wiki/Bottle_of_Glooth_Wine",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1008589",
+      "revid": 1008589,
+      "revision_timestamp": "2023-07-01T20:56:56Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "8c514354596f47a4e14e3241a357e52aaddad09c15f53e57f2295ed9d075f0c3",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:67883:1115367": {
+      "title": "Glooth Steak",
+      "url": "https://tibia.fandom.com/wiki/Glooth_Steak",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1115367",
+      "revid": 1115367,
+      "revision_timestamp": "2025-07-26T11:44:31Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "bf69b086f0ca3c00debcda4f8ab5e54df6e4714f5a8dc1786a544043821408ff",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:89631:1136238": {
+      "title": "Veal",
+      "url": "https://tibia.fandom.com/wiki/Veal",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1136238",
+      "revid": 1136238,
+      "revision_timestamp": "2025-10-21T13:39:54Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "83d0ca02d9a75fb318c2b89cb50dd41174ebeae8a7cbc43115f6861ad45db9f4",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:106521:1071267": {
+      "title": "Wafer Paper Flower",
+      "url": "https://tibia.fandom.com/wiki/Wafer_Paper_Flower",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1071267",
+      "revid": 1071267,
+      "revision_timestamp": "2024-07-22T10:01:02Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "3eb51cb63821a4cb2d58dedaf96f986d3dbea6dabb96b0f92522de000bd34e4c",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:106522:1202849": {
+      "title": "Brigadeiro",
+      "url": "https://tibia.fandom.com/wiki/Brigadeiro",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1202849",
+      "revid": 1202849,
+      "revision_timestamp": "2026-08-22T19:50:55Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "94d43af06bf7ece76998f78a404a5d31287df4c308841af5b435e26dd222d6cc",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:106524:1066282": {
+      "title": "Churro Heart",
+      "url": "https://tibia.fandom.com/wiki/Churro_Heart",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1066282",
+      "revid": 1066282,
+      "revision_timestamp": "2024-07-01T09:22:09Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "b3be740b7888ba6ff9222c11d10e8785a8326ed8852cdccdc7fc9eb48c33be15",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:106525:1203029": {
+      "title": "Lime Tart",
+      "url": "https://tibia.fandom.com/wiki/Lime_Tart",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1203029",
+      "revid": 1203029,
+      "revision_timestamp": "2026-08-22T20:03:15Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "4c457d879ba332a8ed03afda91cc24133c997e723109b58ea76e2217254f1f22",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:106527:1066756": {
+      "title": "Pastry Dragon",
+      "url": "https://tibia.fandom.com/wiki/Pastry_Dragon",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1066756",
+      "revid": 1066756,
+      "revision_timestamp": "2024-07-01T09:32:25Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "bb6d9a5427cde3b4564b32ac9dc7c4d21afdf5f84e3a46d9452280654e8d6e66",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:106565:1202810": {
+      "title": "Amber Souvenir",
+      "url": "https://tibia.fandom.com/wiki/Amber_Souvenir",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1202810",
+      "revid": 1202810,
+      "revision_timestamp": "2026-08-22T19:48:42Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "aa2e5b1141b9bffe0462294c53546ba88630df7f186298ec37da088ccadc6c34",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:106567:1203101": {
+      "title": "Resinous Fish Fin",
+      "url": "https://tibia.fandom.com/wiki/Resinous_Fish_Fin",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1203101",
+      "revid": 1203101,
+      "revision_timestamp": "2026-08-22T20:08:01Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "296e30f10aae6a70cd5055478d1bf19cd20a3055cfcfff1a122dc798fbfcf9ff",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:106571:1203099": {
+      "title": "Resin Parasite",
+      "url": "https://tibia.fandom.com/wiki/Resin_Parasite",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1203099",
+      "revid": 1203099,
+      "revision_timestamp": "2026-08-22T20:07:59Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "c91f9f9381d1b44032a1d5ba3c282d917d64a937c4778097732d3686f1128c98",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:106585:1071266": {
+      "title": "Wad of Fairy Floss",
+      "url": "https://tibia.fandom.com/wiki/Wad_of_Fairy_Floss",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1071266",
+      "revid": 1071266,
+      "revision_timestamp": "2024-07-22T10:00:48Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "16f07a64eb90796bca6aebebae3a193c2ffeb9f0da0d2e36afd51a88bad97ccc",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "official:manual:combat:2026-10-18": {
+      "title": "Tibia official manual: combat",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=combat",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "evidence_role": "PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18",
+      "response_sha256": "62b54782e78348ea1cfc720dbddeea48564ab0c54934cec4ce8480eb9a06d58f",
+      "capture_method": "Public URL read through owner-authorized connected computer",
+      "retained_scope": "RESPONSE_DIGEST_AND_PARAPHRASED_FACTS",
+      "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH"
+    },
+    "official:manual:characters:2026-10-18": {
+      "title": "Tibia official manual: characters",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=characters",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "evidence_role": "PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18",
+      "response_sha256": "d14ece6c40d0213c0f996b45938ff215cd050404e5d38abf7255bf29e8568026",
+      "capture_method": "Public URL read through owner-authorized connected computer",
+      "retained_scope": "RESPONSE_DIGEST_AND_PARAPHRASED_FACTS",
+      "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH"
+    },
+    "wiki:Food:888949:rendered:20261018": {
+      "title": "Food: current rendered regenerative and non-regenerative tables",
+      "url": "https://tibia.fandom.com/wiki/Food",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=888949",
+      "revid": 888949,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "rendered_html_sha256": "ee0fc0ecc47db642a626856569158f63589585f904c995961f1121be6334046e",
+      "regenerative_rows": 146,
+      "non_regenerative_rows": 42,
+      "continuity": "CURRENT_RENDER_AT_FETCH_WITH_INDIVIDUALLY_PINNED_ITEM_REVISIONS",
+      "qualification": "Food is a DPL-generated table. The wrapper revision is from 2021; dynamic item rows are retained with their own current revision IDs. The table and each own-item regenseconds are compared, not dated using the wrapper alone."
+    },
+    "official-client:15.33.9d148f:food-native-bindings": {
+      "title": "Full exact-name official appearance scan for the food spot-check identities",
+      "url": "https://www.tibia.com/",
+      "source_class": "INSTALLED_OFFICIAL_CLIENT_DATA",
+      "client_version": "15.33.9d148f",
+      "appearance_sha256": "501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f",
+      "export_sha256": "4d49405eb0075ad7866b74116add360619d589d9c9002c02fbfab3eb591c0120",
+      "extraction_script_sha256": "dd6a631f7824df5e3bdf0b4d13b3eba000bb2560bc8489e4f37b2d2e8e3863d0",
+      "objects": {
+        "169": {
+          "name": "scarab cheese",
+          "cyclopedia_type": 169,
+          "market_trade_as": null
+        },
+        "3585": {
+          "name": "red apple",
+          "cyclopedia_type": 3585,
+          "market_trade_as": 3585
+        },
+        "3587": {
+          "name": "banana",
+          "cyclopedia_type": 3587,
+          "market_trade_as": 3587
+        },
+        "3588": {
+          "name": "blueberry",
+          "cyclopedia_type": 3588,
+          "market_trade_as": 3588
+        },
+        "3590": {
+          "name": "cherry",
+          "cyclopedia_type": 3590,
+          "market_trade_as": 3590
+        },
+        "3591": {
+          "name": "strawberry",
+          "cyclopedia_type": 3591,
+          "market_trade_as": 3591
+        },
+        "3592": {
+          "name": "grapes",
+          "cyclopedia_type": 3592,
+          "market_trade_as": 3592
+        },
+        "3598": {
+          "name": "cookie",
+          "cyclopedia_type": 3598,
+          "market_trade_as": 3598
+        },
+        "3601": {
+          "name": "roll",
+          "cyclopedia_type": 3601,
+          "market_trade_as": 3601
+        },
+        "3724": {
+          "name": "red mushroom",
+          "cyclopedia_type": 3724,
+          "market_trade_as": 3724
+        },
+        "3725": {
+          "name": "brown mushroom",
+          "cyclopedia_type": 3725,
+          "market_trade_as": 3725
+        },
+        "5096": {
+          "name": "mango",
+          "cyclopedia_type": 5096,
+          "market_trade_as": 5096
+        },
+        "8012": {
+          "name": "raspberry",
+          "cyclopedia_type": 8012,
+          "market_trade_as": 8012
+        },
+        "8013": {
+          "name": "lemon",
+          "cyclopedia_type": 8013,
+          "market_trade_as": 8013
+        },
+        "8016": {
+          "name": "jalapeno pepper",
+          "cyclopedia_type": 8016,
+          "market_trade_as": 8016
+        },
+        "11683": {
+          "name": "peas",
+          "cyclopedia_type": 11683,
+          "market_trade_as": 11683
+        },
+        "31966": {
+          "name": "mango",
+          "cyclopedia_type": null,
+          "market_trade_as": null
+        },
+        "31982": {
+          "name": "red mushroom",
+          "cyclopedia_type": null,
+          "market_trade_as": null
+        },
+        "31994": {
+          "name": "banana",
+          "cyclopedia_type": null,
+          "market_trade_as": null
+        },
+        "31998": {
+          "name": "peas",
+          "cyclopedia_type": null,
+          "market_trade_as": null
+        }
+      },
+      "qualification": "Scans the complete object family for the listed exact names. Four measured names have a unique matching native ID. Banana is bound to canonical Market native3587 by its positive market_trade_as mapping and the purchased Market listing; the same-name noncanonical31994 is retained and is not assigned the observation. Other same-name variants are not collapsed. Original client binaries and sprites are not redistributed."
+    },
+    "official-ui:food:20261018:i3725": {
+      "title": "Single-item official Food tooltip spot check: brown mushroom",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "client_version": "15.33.9d148f",
+      "appearance_sha256": "501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f",
+      "identity_source": "official-client:15.33.9d148f:food-native-bindings",
+      "native_item_id": 3725,
+      "display_name": "brown mushroom",
+      "quantity_used": 1,
+      "identity_binding_method": "UNIQUE_EXACT_NAME",
+      "baseline_literal": "You are hungry. Eat something to regenerate hit points and mana faster over time.",
+      "initial_food_tooltip_seconds": 264,
+      "initial_tooltip_literal": "You are regenerating hit points and mana faster for 4 minutes and 24 seconds",
+      "captures": {
+        "look": {
+          "observed_at_utc": "2026-10-18T17:39:37Z",
+          "screenshot_sha256": "ae0ad43614ee1c5c339701b4241ccc1f09123e5c540bdf2f5984b055ddfdb23b",
+          "size": [
+            1280,
+            800
+          ]
+        },
+        "baseline": {
+          "observed_at_utc": "2026-10-18T17:40:23Z",
+          "screenshot_sha256": "6d498a09dba69aac461b689dc70fb4c6f92cd47a9b26f317f642e586b71b8345",
+          "size": [
+            1280,
+            800
+          ]
+        },
+        "post": {
+          "observed_at_utc": "2026-10-18T17:41:04Z",
+          "screenshot_sha256": "f4d4b2432474be20c9a7f72430eda181f120dddb539ad1d225847b6b2bbcc74d",
+          "size": [
+            1280,
+            800
+          ]
+        }
+      },
+      "use_click_window_utc": [
+        "2026-10-18T17:41:02.826803+00:00",
+        "2026-10-18T17:41:02.976424+00:00"
+      ],
+      "method": "One retrieved or purchased ordinary food, Look/Inspect name check, explicit hungry baseline, one Use action, immediate fresh Food tooltip. Visual review uses unique archived paths.",
+      "qualification": "Direct UI observation of the initial reported nutrition duration for this item. Native ID mapping is DERIVED from the exact-name scan, with an additional positive canonical Market purchase binding for banana3587; banana31994 is not measured. No HP/MP regeneration-rate, universal food-cap, or exhaustive instance-variant claim. Five sampled foods do not prove every other row individually.",
+      "retention": "Raw screenshots remain in an owner-authorized private NAS archive; public reference data includes only mechanical observations and digests. No account, character identity, balances or proprietary asset files."
+    },
+    "official-ui:food:20261018:i3588": {
+      "title": "Single-item official Food tooltip spot check: blueberry",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "client_version": "15.33.9d148f",
+      "appearance_sha256": "501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f",
+      "identity_source": "official-client:15.33.9d148f:food-native-bindings",
+      "native_item_id": 3588,
+      "display_name": "blueberry",
+      "quantity_used": 1,
+      "identity_binding_method": "UNIQUE_EXACT_NAME",
+      "baseline_literal": "You are hungry. Eat something to regenerate hit points and mana faster over time.",
+      "initial_food_tooltip_seconds": 12,
+      "initial_tooltip_literal": "You are regenerating hit points and mana faster for 0 minutes and 12 seconds",
+      "captures": {
+        "look": {
+          "observed_at_utc": "2026-10-18T17:48:47Z",
+          "screenshot_sha256": "18a9f00534c43f142116b0b7091d9704623316e59bdda3b1ef3a25e1b7b16bf3",
+          "size": [
+            1280,
+            800
+          ]
+        },
+        "baseline": {
+          "observed_at_utc": "2026-10-18T17:48:49Z",
+          "screenshot_sha256": "76b6574912999d7ec4a0a4319c8d703460c38c6f0bef2d60ebea92bb4d73ef38",
+          "size": [
+            1280,
+            800
+          ]
+        },
+        "post": {
+          "observed_at_utc": "2026-10-18T17:48:52Z",
+          "screenshot_sha256": "b863a3f4597e4b8828e69473fdbab1a8e5381348e640988a140ffa5daa178edc",
+          "size": [
+            1280,
+            800
+          ]
+        }
+      },
+      "use_click_window_utc": [
+        "2026-10-18T17:48:50.612927+00:00",
+        "2026-10-18T17:48:50.768829+00:00"
+      ],
+      "method": "One retrieved or purchased ordinary food, Look/Inspect name check, explicit hungry baseline, one Use action, immediate fresh Food tooltip. Visual review uses unique archived paths.",
+      "qualification": "Direct UI observation of the initial reported nutrition duration for this item. Native ID mapping is DERIVED from the exact-name scan, with an additional positive canonical Market purchase binding for banana3587; banana31994 is not measured. No HP/MP regeneration-rate, universal food-cap, or exhaustive instance-variant claim. Five sampled foods do not prove every other row individually.",
+      "retention": "Raw screenshots remain in an owner-authorized private NAS archive; public reference data includes only mechanical observations and digests. No account, character identity, balances or proprietary asset files."
+    },
+    "official-ui:food:20261018:i3590": {
+      "title": "Single-item official Food tooltip spot check: cherry",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "client_version": "15.33.9d148f",
+      "appearance_sha256": "501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f",
+      "identity_source": "official-client:15.33.9d148f:food-native-bindings",
+      "native_item_id": 3590,
+      "display_name": "cherry",
+      "quantity_used": 1,
+      "identity_binding_method": "UNIQUE_EXACT_NAME",
+      "baseline_literal": "You are hungry. Eat something to regenerate hit points and mana faster over time.",
+      "initial_food_tooltip_seconds": 12,
+      "initial_tooltip_literal": "You are regenerating hit points and mana faster for 0 minutes and 12 seconds",
+      "captures": {
+        "look": {
+          "observed_at_utc": "2026-10-18T17:50:18Z",
+          "screenshot_sha256": "57ccc3bc46cef12bb37db318a54517bbab9306c6fad1f1b6b58bc2bd653c3698",
+          "size": [
+            1280,
+            800
+          ]
+        },
+        "baseline": {
+          "observed_at_utc": "2026-10-18T17:50:21Z",
+          "screenshot_sha256": "f7a0750c744f08cc2a23c03565320bf27995c15546b16cf90ba6eca8a7d5807e",
+          "size": [
+            1280,
+            800
+          ]
+        },
+        "post": {
+          "observed_at_utc": "2026-10-18T17:50:23Z",
+          "screenshot_sha256": "dd59287960b4b0b7ea57bd2dd01a7fa30f19bea9235f1a93a0f41738d57c15e7",
+          "size": [
+            1280,
+            800
+          ]
+        }
+      },
+      "use_click_window_utc": [
+        "2026-10-18T17:50:21.805348+00:00",
+        "2026-10-18T17:50:21.967378+00:00"
+      ],
+      "method": "One retrieved or purchased ordinary food, Look/Inspect name check, explicit hungry baseline, one Use action, immediate fresh Food tooltip. Visual review uses unique archived paths.",
+      "qualification": "Direct UI observation of the initial reported nutrition duration for this item. Native ID mapping is DERIVED from the exact-name scan, with an additional positive canonical Market purchase binding for banana3587; banana31994 is not measured. No HP/MP regeneration-rate, universal food-cap, or exhaustive instance-variant claim. Five sampled foods do not prove every other row individually.",
+      "retention": "Raw screenshots remain in an owner-authorized private NAS archive; public reference data includes only mechanical observations and digests. No account, character identity, balances or proprietary asset files."
+    },
+    "official-ui:food:20261018:i8012": {
+      "title": "Single-item official Food tooltip spot check: raspberry",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "client_version": "15.33.9d148f",
+      "appearance_sha256": "501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f",
+      "identity_source": "official-client:15.33.9d148f:food-native-bindings",
+      "native_item_id": 8012,
+      "display_name": "raspberry",
+      "quantity_used": 1,
+      "identity_binding_method": "UNIQUE_EXACT_NAME",
+      "baseline_literal": "You are hungry. Eat something to regenerate hit points and mana faster over time.",
+      "initial_food_tooltip_seconds": 12,
+      "initial_tooltip_literal": "You are regenerating hit points and mana faster for 0 minutes and 12 seconds",
+      "captures": {
+        "look": {
+          "observed_at_utc": "2026-10-18T17:50:59Z",
+          "screenshot_sha256": "d4dfc4c4289ddbb2cd617dd21b193d68088f6c48e482777ca6d88113258e4059",
+          "size": [
+            1280,
+            800
+          ]
+        },
+        "baseline": {
+          "observed_at_utc": "2026-10-18T17:51:01Z",
+          "screenshot_sha256": "59bfa4aaed455f49b444e45f168f8080eea5263b9eadf2aa45e088c3dcf16d58",
+          "size": [
+            1280,
+            800
+          ]
+        },
+        "post": {
+          "observed_at_utc": "2026-10-18T17:51:04Z",
+          "screenshot_sha256": "0fef91818cd2225765c44aea88e9218980ae2c6fb1315e3567482cf938b73637",
+          "size": [
+            1280,
+            800
+          ]
+        }
+      },
+      "use_click_window_utc": [
+        "2026-10-18T17:51:02.173185+00:00",
+        "2026-10-18T17:51:02.370639+00:00"
+      ],
+      "method": "One retrieved or purchased ordinary food, Look/Inspect name check, explicit hungry baseline, one Use action, immediate fresh Food tooltip. Visual review uses unique archived paths.",
+      "qualification": "Direct UI observation of the initial reported nutrition duration for this item. Native ID mapping is DERIVED from the exact-name scan, with an additional positive canonical Market purchase binding for banana3587; banana31994 is not measured. No HP/MP regeneration-rate, universal food-cap, or exhaustive instance-variant claim. Five sampled foods do not prove every other row individually.",
+      "retention": "Raw screenshots remain in an owner-authorized private NAS archive; public reference data includes only mechanical observations and digests. No account, character identity, balances or proprietary asset files."
+    },
+    "official-ui:food:20261018:i3587": {
+      "title": "Single-item official Food tooltip spot check: banana",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "client_version": "15.33.9d148f",
+      "appearance_sha256": "501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f",
+      "identity_source": "official-client:15.33.9d148f:food-native-bindings",
+      "native_item_id": 3587,
+      "display_name": "banana",
+      "quantity_used": 1,
+      "identity_binding_method": "POSITIVE_MARKET_CANONICAL_PURCHASE",
+      "baseline_literal": "You are hungry. Eat something to regenerate hit points and mana faster over time.",
+      "initial_food_tooltip_seconds": 96,
+      "initial_tooltip_literal": "You are regenerating hit points and mana faster for 1 minutes and 36 seconds",
+      "captures": {
+        "look": {
+          "observed_at_utc": "2026-10-18T18:06:57Z",
+          "screenshot_sha256": "48a29c0a95728c1042065f626fbc76be86a2b3529c44968de124c390681b7613",
+          "size": [
+            1280,
+            800
+          ]
+        },
+        "baseline": {
+          "observed_at_utc": "2026-10-18T18:06:58Z",
+          "screenshot_sha256": "4984ce18b2ab3f7e9abd3382d9ce25e94a14d4838c6d048e547781210ccf12da",
+          "size": [
+            1280,
+            800
+          ]
+        },
+        "post": {
+          "observed_at_utc": "2026-10-18T18:07:01Z",
+          "screenshot_sha256": "900825e00d072ea83f568f5ffcd4aea2525cacff3befe6db2088b3ce7c5c4477",
+          "size": [
+            1280,
+            800
+          ]
+        }
+      },
+      "use_click_window_utc": [
+        "2026-10-18T18:06:59.664639+00:00",
+        "2026-10-18T18:06:59.828890+00:00"
+      ],
+      "method": "One retrieved or purchased ordinary food, Look/Inspect name check, explicit hungry baseline, one Use action, immediate fresh Food tooltip. Visual review uses unique archived paths.",
+      "qualification": "Direct UI observation of the initial reported nutrition duration for this item. Native ID mapping is DERIVED from the exact-name scan, with an additional positive canonical Market purchase binding for banana3587; banana31994 is not measured. No HP/MP regeneration-rate, universal food-cap, or exhaustive instance-variant claim. Five sampled foods do not prove every other row individually.",
+      "retention": "Raw screenshots remain in an owner-authorized private NAS archive; public reference data includes only mechanical observations and digests. No account, character identity, balances or proprietary asset files."
+    },
+    "wiki:57691:1007828": {
+      "title": "Anniversary Cake",
+      "url": "https://tibia.fandom.com/wiki/Anniversary_Cake",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1007828",
+      "revid": 1007828,
+      "revision_timestamp": "2023-06-29T02:39:30Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "d9045f85d3bf6f5be3f36e08c2e7fd5449c7c83c3b35c0ae1de29ecb21ba4c9e",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Anniversary+Cake%7CBar+of+Chocolate%7CBass%7CBeijinho%7CBirthday+Cake%7CBirthday+Layer+Cake%7CBottle+of+Champagne%7CBottle+of+Tibian+Wine%7CBug+Meat%7CCake+%28Decorated%29"
+    },
+    "wiki:13151:1114363": {
+      "title": "Bar of Chocolate",
+      "url": "https://tibia.fandom.com/wiki/Bar_of_Chocolate",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114363",
+      "revid": 1114363,
+      "revision_timestamp": "2025-07-26T09:56:29Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "21dfaeb27aaaf7f574e6f612d7f11c7c4de8ddf7fa95a8784cf5d68c3af4a7d9",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Anniversary+Cake%7CBar+of+Chocolate%7CBass%7CBeijinho%7CBirthday+Cake%7CBirthday+Layer+Cake%7CBottle+of+Champagne%7CBottle+of+Tibian+Wine%7CBug+Meat%7CCake+%28Decorated%29"
+    },
+    "wiki:90767:1138046": {
+      "title": "Bass",
+      "url": "https://tibia.fandom.com/wiki/Bass",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1138046",
+      "revid": 1138046,
+      "revision_timestamp": "2025-10-29T22:10:19Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "0f688d747a5415a2b27730b48e1305e7c0fb4d8b411bf343164a053044496045",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Anniversary+Cake%7CBar+of+Chocolate%7CBass%7CBeijinho%7CBirthday+Cake%7CBirthday+Layer+Cake%7CBottle+of+Champagne%7CBottle+of+Tibian+Wine%7CBug+Meat%7CCake+%28Decorated%29"
+    },
+    "wiki:106523:1071260": {
+      "title": "Beijinho",
+      "url": "https://tibia.fandom.com/wiki/Beijinho",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1071260",
+      "revid": 1071260,
+      "revision_timestamp": "2024-07-22T09:58:43Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "0349e35340373674f0151b279c54d339ed1adb761d2473d38a7728c8b4bb1a38",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Anniversary+Cake%7CBar+of+Chocolate%7CBass%7CBeijinho%7CBirthday+Cake%7CBirthday+Layer+Cake%7CBottle+of+Champagne%7CBottle+of+Tibian+Wine%7CBug+Meat%7CCake+%28Decorated%29"
+    },
+    "wiki:80136:1008156": {
+      "title": "Birthday Cake",
+      "url": "https://tibia.fandom.com/wiki/Birthday_Cake",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1008156",
+      "revid": 1008156,
+      "revision_timestamp": "2023-06-29T02:40:24Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "322ec9dffc3cb918dd4f2c680fd7f428e6bb9f6017c83e42fafd601c13089e73",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Anniversary+Cake%7CBar+of+Chocolate%7CBass%7CBeijinho%7CBirthday+Cake%7CBirthday+Layer+Cake%7CBottle+of+Champagne%7CBottle+of+Tibian+Wine%7CBug+Meat%7CCake+%28Decorated%29"
+    },
+    "wiki:95967:1008160": {
+      "title": "Birthday Layer Cake",
+      "url": "https://tibia.fandom.com/wiki/Birthday_Layer_Cake",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1008160",
+      "revid": 1008160,
+      "revision_timestamp": "2023-06-29T02:40:25Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "4b74566e6e48fb7a741aaed5d12db1c828968c26294fe85a1d3cde3dab15f002",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Anniversary+Cake%7CBar+of+Chocolate%7CBass%7CBeijinho%7CBirthday+Cake%7CBirthday+Layer+Cake%7CBottle+of+Champagne%7CBottle+of+Tibian+Wine%7CBug+Meat%7CCake+%28Decorated%29"
+    },
+    "wiki:95966:1008587": {
+      "title": "Bottle of Champagne",
+      "url": "https://tibia.fandom.com/wiki/Bottle_of_Champagne",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1008587",
+      "revid": 1008587,
+      "revision_timestamp": "2023-07-01T20:56:55Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "d303738b1a4de1af7268ab39cf1213389a5252fa6ac2707d9bf52ec6eb58f168",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Anniversary+Cake%7CBar+of+Chocolate%7CBass%7CBeijinho%7CBirthday+Cake%7CBirthday+Layer+Cake%7CBottle+of+Champagne%7CBottle+of+Tibian+Wine%7CBug+Meat%7CCake+%28Decorated%29"
+    },
+    "wiki:80137:1008593": {
+      "title": "Bottle of Tibian Wine",
+      "url": "https://tibia.fandom.com/wiki/Bottle_of_Tibian_Wine",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1008593",
+      "revid": 1008593,
+      "revision_timestamp": "2023-07-01T20:56:56Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "15464b976b931c9d919f1e48339a7cae3bdba80f2c9b86a27184de5b30f77fa8",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Anniversary+Cake%7CBar+of+Chocolate%7CBass%7CBeijinho%7CBirthday+Cake%7CBirthday+Layer+Cake%7CBottle+of+Champagne%7CBottle+of+Tibian+Wine%7CBug+Meat%7CCake+%28Decorated%29"
+    },
+    "wiki:79542:1115661": {
+      "title": "Bug Meat",
+      "url": "https://tibia.fandom.com/wiki/Bug_Meat",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1115661",
+      "revid": 1115661,
+      "revision_timestamp": "2025-07-26T12:09:31Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "99d057fc4eb47d84cc043479dada7197420979b0e096927ef523a42aa3dbcd72",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Anniversary+Cake%7CBar+of+Chocolate%7CBass%7CBeijinho%7CBirthday+Cake%7CBirthday+Layer+Cake%7CBottle+of+Champagne%7CBottle+of+Tibian+Wine%7CBug+Meat%7CCake+%28Decorated%29"
+    },
+    "wiki:12521:1114358": {
+      "title": "Cake (Decorated)",
+      "url": "https://tibia.fandom.com/wiki/Cake_(Decorated)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114358",
+      "revid": 1114358,
+      "revision_timestamp": "2025-07-26T09:56:19Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "098f11c6223fb0de5a222b9f3a62f45a8bc095f2d0808eabab428470ea3c8f0d",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Anniversary+Cake%7CBar+of+Chocolate%7CBass%7CBeijinho%7CBirthday+Cake%7CBirthday+Layer+Cake%7CBottle+of+Champagne%7CBottle+of+Tibian+Wine%7CBug+Meat%7CCake+%28Decorated%29"
+    },
+    "wiki:84437:1008829": {
+      "title": "Cake (Item)",
+      "url": "https://tibia.fandom.com/wiki/Cake_(Item)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1008829",
+      "revid": 1008829,
+      "revision_timestamp": "2023-07-01T22:16:05Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "8da9697353d482acbb47a04b9991c3470bfe04dd01f9c275a5e3545f9b16b43a",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Cake+%28Item%29%7CCake+with+a+Cherry%7CCandy%7CCandy+Cane%7CCandy+Floss%7CCandy+Floss+%28Large%29%7CCave+Turnip%7CCheese+Cookie%7CChocolate+Cake%7CChristmas+Cookie+Tray"
+    },
+    "wiki:84438:1008840": {
+      "title": "Cake with a Cherry",
+      "url": "https://tibia.fandom.com/wiki/Cake_with_a_Cherry",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1008840",
+      "revid": 1008840,
+      "revision_timestamp": "2023-07-01T22:16:07Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "d2e7a302e47341c940cf4cd486b982bc1030c5959e8c8300341a715242a83642",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Cake+%28Item%29%7CCake+with+a+Cherry%7CCandy%7CCandy+Cane%7CCandy+Floss%7CCandy+Floss+%28Large%29%7CCave+Turnip%7CCheese+Cookie%7CChocolate+Cake%7CChristmas+Cookie+Tray"
+    },
+    "wiki:2879:1113906": {
+      "title": "Candy Cane",
+      "url": "https://tibia.fandom.com/wiki/Candy_Cane",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113906",
+      "revid": 1113906,
+      "revision_timestamp": "2025-07-26T09:31:57Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "02745843e63ab549540ae595b0bc991073b91bdc189490d7ed3adf873f0cf20d",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Cake+%28Item%29%7CCake+with+a+Cherry%7CCandy%7CCandy+Cane%7CCandy+Floss%7CCandy+Floss+%28Large%29%7CCave+Turnip%7CCheese+Cookie%7CChocolate+Cake%7CChristmas+Cookie+Tray"
+    },
+    "wiki:96212:1008864": {
+      "title": "Candy Floss (Large)",
+      "url": "https://tibia.fandom.com/wiki/Candy_Floss_(Large)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1008864",
+      "revid": 1008864,
+      "revision_timestamp": "2023-07-01T22:16:11Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "4baf74801af2b91541be30c703539ce376e7dd24f28cc2809940d962f81ecf1f",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Cake+%28Item%29%7CCake+with+a+Cherry%7CCandy%7CCandy+Cane%7CCandy+Floss%7CCandy+Floss+%28Large%29%7CCave+Turnip%7CCheese+Cookie%7CChocolate+Cake%7CChristmas+Cookie+Tray"
+    },
+    "wiki:92574:1079834": {
+      "title": "Candy Floss",
+      "url": "https://tibia.fandom.com/wiki/Candy_Floss",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1079834",
+      "revid": 1079834,
+      "revision_timestamp": "2024-10-19T13:49:21Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "5d647199d408420654fc710ca0d77ac5986ff0d9489572c084aa1f96031d6c4a",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Cake+%28Item%29%7CCake+with+a+Cherry%7CCandy%7CCandy+Cane%7CCandy+Floss%7CCandy+Floss+%28Large%29%7CCave+Turnip%7CCheese+Cookie%7CChocolate+Cake%7CChristmas+Cookie+Tray"
+    },
+    "wiki:13177:1114367": {
+      "title": "Candy",
+      "url": "https://tibia.fandom.com/wiki/Candy",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114367",
+      "revid": 1114367,
+      "revision_timestamp": "2025-07-26T09:56:36Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "9802e468cebdeeba13be369b86ee52369e4e182ca00ef06b0c17262457665c67",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Cake+%28Item%29%7CCake+with+a+Cherry%7CCandy%7CCandy+Cane%7CCandy+Floss%7CCandy+Floss+%28Large%29%7CCave+Turnip%7CCheese+Cookie%7CChocolate+Cake%7CChristmas+Cookie+Tray"
+    },
+    "wiki:79543:1009431": {
+      "title": "Cave Turnip",
+      "url": "https://tibia.fandom.com/wiki/Cave_Turnip",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1009431",
+      "revid": 1009431,
+      "revision_timestamp": "2023-07-07T21:22:45Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "4a9c467484fbc6ea2ce4768e10617d9b3b99602a95c6dea10a7eab4fb3423eee",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Cake+%28Item%29%7CCake+with+a+Cherry%7CCandy%7CCandy+Cane%7CCandy+Floss%7CCandy+Floss+%28Large%29%7CCave+Turnip%7CCheese+Cookie%7CChocolate+Cake%7CChristmas+Cookie+Tray"
+    },
+    "wiki:57849:1136738": {
+      "title": "Cheese Cookie",
+      "url": "https://tibia.fandom.com/wiki/Cheese_Cookie",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1136738",
+      "revid": 1136738,
+      "revision_timestamp": "2025-10-23T10:24:47Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "f0af199925c60f526c927b59a529c60237c7ef3465f26d271caf0e6bb8cea7e9",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Cake+%28Item%29%7CCake+with+a+Cherry%7CCandy%7CCandy+Cane%7CCandy+Floss%7CCandy+Floss+%28Large%29%7CCave+Turnip%7CCheese+Cookie%7CChocolate+Cake%7CChristmas+Cookie+Tray"
+    },
+    "wiki:25731:1114612": {
+      "title": "Chocolate Cake",
+      "url": "https://tibia.fandom.com/wiki/Chocolate_Cake",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114612",
+      "revid": 1114612,
+      "revision_timestamp": "2025-07-26T10:04:15Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "f57b4d3dc3d3e206a0b0270769687c1f23c5f53769d5bd060a97a3cb56186c69",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Cake+%28Item%29%7CCake+with+a+Cherry%7CCandy%7CCandy+Cane%7CCandy+Floss%7CCandy+Floss+%28Large%29%7CCave+Turnip%7CCheese+Cookie%7CChocolate+Cake%7CChristmas+Cookie+Tray"
+    },
+    "wiki:66290:1162739": {
+      "title": "Christmas Cookie Tray",
+      "url": "https://tibia.fandom.com/wiki/Christmas_Cookie_Tray",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1162739",
+      "revid": 1162739,
+      "revision_timestamp": "2026-02-14T18:25:30Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "fb571db5afa30fc92206c458c7b0b382ff3750ad16b004ec160db304c98d4720",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Cake+%28Item%29%7CCake+with+a+Cherry%7CCandy%7CCandy+Cane%7CCandy+Floss%7CCandy+Floss+%28Large%29%7CCave+Turnip%7CCheese+Cookie%7CChocolate+Cake%7CChristmas+Cookie+Tray"
+    },
+    "wiki:15147:1114385": {
+      "title": "Coloured Egg (Blue)",
+      "url": "https://tibia.fandom.com/wiki/Coloured_Egg_(Blue)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114385",
+      "revid": 1114385,
+      "revision_timestamp": "2025-07-26T09:57:09Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "c0a6a9a38a076756ffd2fecd7502441229431582e841da670d60ad85c5c927ea",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Coloured+Egg+%28Blue%29%7CColoured+Egg+%28Green%29%7CColoured+Egg+%28Purple%29%7CColoured+Egg+%28Red%29%7CColoured+Egg+%28Yellow%29%7CCream+Cake%7CCrocodile+Steak%7CDeepling+Filet%7CDewberries%7CEnergy+Bar"
+    },
+    "wiki:15148:1114386": {
+      "title": "Coloured Egg (Green)",
+      "url": "https://tibia.fandom.com/wiki/Coloured_Egg_(Green)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114386",
+      "revid": 1114386,
+      "revision_timestamp": "2025-07-26T09:57:11Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "0818c1e7a4bec03bcd15b332c9f4fe6c33648c15d4539db6988d7191e9c82431",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Coloured+Egg+%28Blue%29%7CColoured+Egg+%28Green%29%7CColoured+Egg+%28Purple%29%7CColoured+Egg+%28Red%29%7CColoured+Egg+%28Yellow%29%7CCream+Cake%7CCrocodile+Steak%7CDeepling+Filet%7CDewberries%7CEnergy+Bar"
+    },
+    "wiki:15150:1114388": {
+      "title": "Coloured Egg (Purple)",
+      "url": "https://tibia.fandom.com/wiki/Coloured_Egg_(Purple)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114388",
+      "revid": 1114388,
+      "revision_timestamp": "2025-07-26T09:57:14Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "92f6e8220699153a30447a769b5758716caf17627b1f33fdb0446e921d50a919",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Coloured+Egg+%28Blue%29%7CColoured+Egg+%28Green%29%7CColoured+Egg+%28Purple%29%7CColoured+Egg+%28Red%29%7CColoured+Egg+%28Yellow%29%7CCream+Cake%7CCrocodile+Steak%7CDeepling+Filet%7CDewberries%7CEnergy+Bar"
+    },
+    "wiki:15146:1114384": {
+      "title": "Coloured Egg (Red)",
+      "url": "https://tibia.fandom.com/wiki/Coloured_Egg_(Red)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114384",
+      "revid": 1114384,
+      "revision_timestamp": "2025-07-26T09:57:07Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "0492effc4443d00f1b588670912fe42888f3fc575b733f9717debdf96cccff48",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Coloured+Egg+%28Blue%29%7CColoured+Egg+%28Green%29%7CColoured+Egg+%28Purple%29%7CColoured+Egg+%28Red%29%7CColoured+Egg+%28Yellow%29%7CCream+Cake%7CCrocodile+Steak%7CDeepling+Filet%7CDewberries%7CEnergy+Bar"
+    },
+    "wiki:15149:1114387": {
+      "title": "Coloured Egg (Yellow)",
+      "url": "https://tibia.fandom.com/wiki/Coloured_Egg_(Yellow)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114387",
+      "revid": 1114387,
+      "revision_timestamp": "2025-07-26T09:57:12Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "09b84e3e5f3a4f5acb2df4652491d4c859955f83830c73980e682eb951efa2fc",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Coloured+Egg+%28Blue%29%7CColoured+Egg+%28Green%29%7CColoured+Egg+%28Purple%29%7CColoured+Egg+%28Red%29%7CColoured+Egg+%28Yellow%29%7CCream+Cake%7CCrocodile+Steak%7CDeepling+Filet%7CDewberries%7CEnergy+Bar"
+    },
+    "wiki:12514:1114357": {
+      "title": "Cream Cake",
+      "url": "https://tibia.fandom.com/wiki/Cream_Cake",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114357",
+      "revid": 1114357,
+      "revision_timestamp": "2025-07-26T09:56:17Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "2fc626771356bbaec0c49b426a64e6ba9b32eb3b323c444a91e0fa073b789ce3",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Coloured+Egg+%28Blue%29%7CColoured+Egg+%28Green%29%7CColoured+Egg+%28Purple%29%7CColoured+Egg+%28Red%29%7CColoured+Egg+%28Yellow%29%7CCream+Cake%7CCrocodile+Steak%7CDeepling+Filet%7CDewberries%7CEnergy+Bar"
+    },
+    "wiki:42255:1114925": {
+      "title": "Crocodile Steak",
+      "url": "https://tibia.fandom.com/wiki/Crocodile_Steak",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114925",
+      "revid": 1114925,
+      "revision_timestamp": "2025-07-26T11:20:41Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "297fb577d2c4bcbc0ef98d4fc19ff64f9503086497890608571a2fa6ac52ae71",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Coloured+Egg+%28Blue%29%7CColoured+Egg+%28Green%29%7CColoured+Egg+%28Purple%29%7CColoured+Egg+%28Red%29%7CColoured+Egg+%28Yellow%29%7CCream+Cake%7CCrocodile+Steak%7CDeepling+Filet%7CDewberries%7CEnergy+Bar"
+    },
+    "wiki:57151:1009973": {
+      "title": "Deepling Filet",
+      "url": "https://tibia.fandom.com/wiki/Deepling_Filet",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1009973",
+      "revid": 1009973,
+      "revision_timestamp": "2023-07-07T21:24:05Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "a6763b402f2817b06677de3e3e6e72e6e6a020c04f34664234bd29f5ca031b03",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Coloured+Egg+%28Blue%29%7CColoured+Egg+%28Green%29%7CColoured+Egg+%28Purple%29%7CColoured+Egg+%28Red%29%7CColoured+Egg+%28Yellow%29%7CCream+Cake%7CCrocodile+Steak%7CDeepling+Filet%7CDewberries%7CEnergy+Bar"
+    },
+    "wiki:103019:1019826": {
+      "title": "Dewberries",
+      "url": "https://tibia.fandom.com/wiki/Dewberries",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1019826",
+      "revid": 1019826,
+      "revision_timestamp": "2023-07-19T14:40:32Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "db51a621ab8b3e813b8d8109377e0e0c3519f14f7e9416bde90462eed998be4d",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Coloured+Egg+%28Blue%29%7CColoured+Egg+%28Green%29%7CColoured+Egg+%28Purple%29%7CColoured+Egg+%28Red%29%7CColoured+Egg+%28Yellow%29%7CCream+Cake%7CCrocodile+Steak%7CDeepling+Filet%7CDewberries%7CEnergy+Bar"
+    },
+    "wiki:78125:1011115": {
+      "title": "Energy Bar",
+      "url": "https://tibia.fandom.com/wiki/Energy_Bar",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1011115",
+      "revid": 1011115,
+      "revision_timestamp": "2023-07-11T21:01:40Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "5014c3511389e014fae8a69908a69f5bc450e80954b79416f2ee7ecbce5f19e7",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Coloured+Egg+%28Blue%29%7CColoured+Egg+%28Green%29%7CColoured+Egg+%28Purple%29%7CColoured+Egg+%28Red%29%7CColoured+Egg+%28Yellow%29%7CCream+Cake%7CCrocodile+Steak%7CDeepling+Filet%7CDewberries%7CEnergy+Bar"
+    },
+    "wiki:78112:1011129": {
+      "title": "Energy Drink",
+      "url": "https://tibia.fandom.com/wiki/Energy_Drink",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1011129",
+      "revid": 1011129,
+      "revision_timestamp": "2023-07-11T21:01:44Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "f803ea8e16eb351e4f52e1e75d23885867289ce080b564453d7479b6b64fce2c",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Energy+Drink%7CFilled+Milk+Churn%7CFresh+Fruit%7CGingerbreadman%7CGummy+Rotworm%7CHaunch+of+Boar%7CIce+Cream+Cone+%28Blue-Barian%29%7CIce+Cream+Cone+%28Chilly+Cherry%29%7CIce+Cream+Cone+%28Crispy+Chocolate+Chips%29%7CIce+Cream+Cone+%28Mellow+Melon%29"
+    },
+    "wiki:89633:1011374": {
+      "title": "Filled Milk Churn",
+      "url": "https://tibia.fandom.com/wiki/Filled_Milk_Churn",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1011374",
+      "revid": 1011374,
+      "revision_timestamp": "2023-07-11T21:02:19Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "c97eb51071e6a0e943512979b3aa2e03ba611dd901363b3682f8d43cfd37d471",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Energy+Drink%7CFilled+Milk+Churn%7CFresh+Fruit%7CGingerbreadman%7CGummy+Rotworm%7CHaunch+of+Boar%7CIce+Cream+Cone+%28Blue-Barian%29%7CIce+Cream+Cone+%28Chilly+Cherry%29%7CIce+Cream+Cone+%28Crispy+Chocolate+Chips%29%7CIce+Cream+Cone+%28Mellow+Melon%29"
+    },
+    "wiki:81399:1011642": {
+      "title": "Fresh Fruit",
+      "url": "https://tibia.fandom.com/wiki/Fresh_Fruit",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1011642",
+      "revid": 1011642,
+      "revision_timestamp": "2023-07-11T21:07:20Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "73255db1ba9af06f8a5df849220d792bd199ddfa115d60fe17c2dd75f8d2501c",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Energy+Drink%7CFilled+Milk+Churn%7CFresh+Fruit%7CGingerbreadman%7CGummy+Rotworm%7CHaunch+of+Boar%7CIce+Cream+Cone+%28Blue-Barian%29%7CIce+Cream+Cone+%28Chilly+Cherry%29%7CIce+Cream+Cone+%28Crispy+Chocolate+Chips%29%7CIce+Cream+Cone+%28Mellow+Melon%29"
+    },
+    "wiki:12294:1162743": {
+      "title": "Gingerbreadman",
+      "url": "https://tibia.fandom.com/wiki/Gingerbreadman",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1162743",
+      "revid": 1162743,
+      "revision_timestamp": "2026-02-14T18:36:13Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "cc90641b7f839589ad5961a02af9f2d2395fbb716e18c1aa890d6343986c1655",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Energy+Drink%7CFilled+Milk+Churn%7CFresh+Fruit%7CGingerbreadman%7CGummy+Rotworm%7CHaunch+of+Boar%7CIce+Cream+Cone+%28Blue-Barian%29%7CIce+Cream+Cone+%28Chilly+Cherry%29%7CIce+Cream+Cone+%28Crispy+Chocolate+Chips%29%7CIce+Cream+Cone+%28Mellow+Melon%29"
+    },
+    "wiki:88807:1202977": {
+      "title": "Goanna Meat",
+      "url": "https://tibia.fandom.com/wiki/Goanna_Meat",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1202977",
+      "revid": 1202977,
+      "revision_timestamp": "2026-08-22T19:58:44Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "OWN_INFOBOX_OBJECT_TEMPLATE",
+      "retained_text_sha256": "3fc99500c5e72c4905abf648726fa40cf1ef6e6114854b9b550aee4467e41385",
+      "retrieval": "Retained own infobox with latest-revision metadata revalidation"
+    },
+    "wiki:106503:1071262": {
+      "title": "Gummy Rotworm",
+      "url": "https://tibia.fandom.com/wiki/Gummy_Rotworm",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1071262",
+      "revid": 1071262,
+      "revision_timestamp": "2024-07-22T09:59:18Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "1ba91ae1d98353430e03cc5ee314cdc9b674ffe822718e0aca069139097d1618",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Energy+Drink%7CFilled+Milk+Churn%7CFresh+Fruit%7CGingerbreadman%7CGummy+Rotworm%7CHaunch+of+Boar%7CIce+Cream+Cone+%28Blue-Barian%29%7CIce+Cream+Cone+%28Chilly+Cherry%29%7CIce+Cream+Cone+%28Crispy+Chocolate+Chips%29%7CIce+Cream+Cone+%28Mellow+Melon%29"
+    },
+    "wiki:50765:1043822": {
+      "title": "Haunch of Boar",
+      "url": "https://tibia.fandom.com/wiki/Haunch_of_Boar",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1043822",
+      "revid": 1043822,
+      "revision_timestamp": "2023-10-29T15:42:20Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "ffe41b1532a69b90a6d0476dfcdd82bc210f4be80530ea9108f716c1400fc376",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Energy+Drink%7CFilled+Milk+Churn%7CFresh+Fruit%7CGingerbreadman%7CGummy+Rotworm%7CHaunch+of+Boar%7CIce+Cream+Cone+%28Blue-Barian%29%7CIce+Cream+Cone+%28Chilly+Cherry%29%7CIce+Cream+Cone+%28Crispy+Chocolate+Chips%29%7CIce+Cream+Cone+%28Mellow+Melon%29"
+    },
+    "wiki:23995:1114559": {
+      "title": "Ice Cream Cone (Blue-Barian)",
+      "url": "https://tibia.fandom.com/wiki/Ice_Cream_Cone_(Blue-Barian)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114559",
+      "revid": 1114559,
+      "revision_timestamp": "2025-07-26T10:02:37Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "b60123f9930bca02c83088cd190c42584e6759d9eafe60785eb248e9257f2d8e",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Energy+Drink%7CFilled+Milk+Churn%7CFresh+Fruit%7CGingerbreadman%7CGummy+Rotworm%7CHaunch+of+Boar%7CIce+Cream+Cone+%28Blue-Barian%29%7CIce+Cream+Cone+%28Chilly+Cherry%29%7CIce+Cream+Cone+%28Crispy+Chocolate+Chips%29%7CIce+Cream+Cone+%28Mellow+Melon%29"
+    },
+    "wiki:23996:1114560": {
+      "title": "Ice Cream Cone (Chilly Cherry)",
+      "url": "https://tibia.fandom.com/wiki/Ice_Cream_Cone_(Chilly_Cherry)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114560",
+      "revid": 1114560,
+      "revision_timestamp": "2025-07-26T10:02:39Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "18833b958ece9da34c664ca16dab5ea1dffcc5f93750dcc3febce945bafe9a13",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Energy+Drink%7CFilled+Milk+Churn%7CFresh+Fruit%7CGingerbreadman%7CGummy+Rotworm%7CHaunch+of+Boar%7CIce+Cream+Cone+%28Blue-Barian%29%7CIce+Cream+Cone+%28Chilly+Cherry%29%7CIce+Cream+Cone+%28Crispy+Chocolate+Chips%29%7CIce+Cream+Cone+%28Mellow+Melon%29"
+    },
+    "wiki:23997:1114561": {
+      "title": "Ice Cream Cone (Crispy Chocolate Chips)",
+      "url": "https://tibia.fandom.com/wiki/Ice_Cream_Cone_(Crispy_Chocolate_Chips)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114561",
+      "revid": 1114561,
+      "revision_timestamp": "2025-07-26T10:02:40Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "bb982b44568b40e03d000fa94e1cb225d2688ab41381d719dd2215fda406c8f7",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Energy+Drink%7CFilled+Milk+Churn%7CFresh+Fruit%7CGingerbreadman%7CGummy+Rotworm%7CHaunch+of+Boar%7CIce+Cream+Cone+%28Blue-Barian%29%7CIce+Cream+Cone+%28Chilly+Cherry%29%7CIce+Cream+Cone+%28Crispy+Chocolate+Chips%29%7CIce+Cream+Cone+%28Mellow+Melon%29"
+    },
+    "wiki:30862:1059540": {
+      "title": "Ice Cream Cone (Mellow Melon)",
+      "url": "https://tibia.fandom.com/wiki/Ice_Cream_Cone_(Mellow_Melon)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1059540",
+      "revid": 1059540,
+      "revision_timestamp": "2024-05-14T20:41:27Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "b54ce7d629f6df96ac5019268951375edd5967b591271d449b56f725ddd0b233",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Energy+Drink%7CFilled+Milk+Churn%7CFresh+Fruit%7CGingerbreadman%7CGummy+Rotworm%7CHaunch+of+Boar%7CIce+Cream+Cone+%28Blue-Barian%29%7CIce+Cream+Cone+%28Chilly+Cherry%29%7CIce+Cream+Cone+%28Crispy+Chocolate+Chips%29%7CIce+Cream+Cone+%28Mellow+Melon%29"
+    },
+    "wiki:96214:1012441": {
+      "title": "Ice Cream Cone (Sprinkles)",
+      "url": "https://tibia.fandom.com/wiki/Ice_Cream_Cone_(Sprinkles)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1012441",
+      "revid": 1012441,
+      "revision_timestamp": "2023-07-11T21:09:17Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "36aa7be36c3c397d0ca844e1138837adaabc6aa8b24c76e3da1e04ec2588adc2",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Ice+Cream+Cone+%28Sprinkles%29%7CIce+Cream+Cone+%28Sweet+Strawberry%29%7CIce+Cream+Cone+%28Velvet+Vanilla%29%7CInsectoid+Eggs%7CLarvae%7CLeberkassemmel%7CMeringue+Cake%7CMoon+Melon%7CMoon+Melon+Slice%7CPeanut"
+    },
+    "wiki:57222:1059541": {
+      "title": "Ice Cream Cone (Sweet Strawberry)",
+      "url": "https://tibia.fandom.com/wiki/Ice_Cream_Cone_(Sweet_Strawberry)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1059541",
+      "revid": 1059541,
+      "revision_timestamp": "2024-05-14T20:41:48Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "b7a9cfc6c9175e5bdd5214fa853cac4a163cb676282d034f2b7746fdc6dc475b",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Ice+Cream+Cone+%28Sprinkles%29%7CIce+Cream+Cone+%28Sweet+Strawberry%29%7CIce+Cream+Cone+%28Velvet+Vanilla%29%7CInsectoid+Eggs%7CLarvae%7CLeberkassemmel%7CMeringue+Cake%7CMoon+Melon%7CMoon+Melon+Slice%7CPeanut"
+    },
+    "wiki:57224:1059542": {
+      "title": "Ice Cream Cone (Velvet Vanilla)",
+      "url": "https://tibia.fandom.com/wiki/Ice_Cream_Cone_(Velvet_Vanilla)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1059542",
+      "revid": 1059542,
+      "revision_timestamp": "2024-05-14T20:42:05Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "ea306c0f104f09e05afa196856531641cecb0e2dcb8300a077c53aed58ef90aa",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Ice+Cream+Cone+%28Sprinkles%29%7CIce+Cream+Cone+%28Sweet+Strawberry%29%7CIce+Cream+Cone+%28Velvet+Vanilla%29%7CInsectoid+Eggs%7CLarvae%7CLeberkassemmel%7CMeringue+Cake%7CMoon+Melon%7CMoon+Melon+Slice%7CPeanut"
+    },
+    "wiki:62006:1039832": {
+      "title": "Insectoid Eggs",
+      "url": "https://tibia.fandom.com/wiki/Insectoid_Eggs",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1039832",
+      "revid": 1039832,
+      "revision_timestamp": "2023-10-01T00:24:35Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "67e273920c1c34f139a59f028ced2545a685c90df955c7be3ccca2fb7202a49e",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Ice+Cream+Cone+%28Sprinkles%29%7CIce+Cream+Cone+%28Sweet+Strawberry%29%7CIce+Cream+Cone+%28Velvet+Vanilla%29%7CInsectoid+Eggs%7CLarvae%7CLeberkassemmel%7CMeringue+Cake%7CMoon+Melon%7CMoon+Melon+Slice%7CPeanut"
+    },
+    "wiki:57153:1012810": {
+      "title": "Larvae",
+      "url": "https://tibia.fandom.com/wiki/Larvae",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1012810",
+      "revid": 1012810,
+      "revision_timestamp": "2023-07-11T21:24:45Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "ebc8f4977eb3ca9f6602523e5c5eb74a8a78699977190e7cd340c11051f2eda0",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Ice+Cream+Cone+%28Sprinkles%29%7CIce+Cream+Cone+%28Sweet+Strawberry%29%7CIce+Cream+Cone+%28Velvet+Vanilla%29%7CInsectoid+Eggs%7CLarvae%7CLeberkassemmel%7CMeringue+Cake%7CMoon+Melon%7CMoon+Melon+Slice%7CPeanut"
+    },
+    "wiki:89637:1079840": {
+      "title": "Leberkassemmel",
+      "url": "https://tibia.fandom.com/wiki/Leberkassemmel",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1079840",
+      "revid": 1079840,
+      "revision_timestamp": "2024-10-19T13:55:18Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "302013c2d652cc7df390edf8cbf49abd9e9a649ce5598fd70ad2329da00fd75b",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Ice+Cream+Cone+%28Sprinkles%29%7CIce+Cream+Cone+%28Sweet+Strawberry%29%7CIce+Cream+Cone+%28Velvet+Vanilla%29%7CInsectoid+Eggs%7CLarvae%7CLeberkassemmel%7CMeringue+Cake%7CMoon+Melon%7CMoon+Melon+Slice%7CPeanut"
+    },
+    "wiki:87453:1013842": {
+      "title": "Meringue Cake",
+      "url": "https://tibia.fandom.com/wiki/Meringue_Cake",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1013842",
+      "revid": 1013842,
+      "revision_timestamp": "2023-07-15T20:54:35Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "2d0cf0baed3e4e649e056d3bd83282ba8a29829897acd6e6f4e17e0f9ccb7b55",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Ice+Cream+Cone+%28Sprinkles%29%7CIce+Cream+Cone+%28Sweet+Strawberry%29%7CIce+Cream+Cone+%28Velvet+Vanilla%29%7CInsectoid+Eggs%7CLarvae%7CLeberkassemmel%7CMeringue+Cake%7CMoon+Melon%7CMoon+Melon+Slice%7CPeanut"
+    },
+    "wiki:106506:1066693": {
+      "title": "Moon Melon Slice",
+      "url": "https://tibia.fandom.com/wiki/Moon_Melon_Slice",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1066693",
+      "revid": 1066693,
+      "revision_timestamp": "2024-07-01T09:31:11Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "9cefbce3c843f0d398a0b886469d75ce549e5fa1abca6a8c2feb6e9fd2874936",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Ice+Cream+Cone+%28Sprinkles%29%7CIce+Cream+Cone+%28Sweet+Strawberry%29%7CIce+Cream+Cone+%28Velvet+Vanilla%29%7CInsectoid+Eggs%7CLarvae%7CLeberkassemmel%7CMeringue+Cake%7CMoon+Melon%7CMoon+Melon+Slice%7CPeanut"
+    },
+    "wiki:106512:1171907": {
+      "title": "Moon Melon",
+      "url": "https://tibia.fandom.com/wiki/Moon_Melon",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1171907",
+      "revid": 1171907,
+      "revision_timestamp": "2026-04-02T18:09:20Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "89654bd43d1338e4f5ab7d8d017eddda5c329499ac4ffec742f903a0a633167a",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Ice+Cream+Cone+%28Sprinkles%29%7CIce+Cream+Cone+%28Sweet+Strawberry%29%7CIce+Cream+Cone+%28Velvet+Vanilla%29%7CInsectoid+Eggs%7CLarvae%7CLeberkassemmel%7CMeringue+Cake%7CMoon+Melon%7CMoon+Melon+Slice%7CPeanut"
+    },
+    "wiki:20500:1114500": {
+      "title": "Peanut",
+      "url": "https://tibia.fandom.com/wiki/Peanut",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114500",
+      "revid": 1114500,
+      "revision_timestamp": "2025-07-26T10:00:43Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "2dd8649fa845ffc3094d82f6a52b686e14d6500f23a0518132041ea1e4bcbb0d",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Ice+Cream+Cone+%28Sprinkles%29%7CIce+Cream+Cone+%28Sweet+Strawberry%29%7CIce+Cream+Cone+%28Velvet+Vanilla%29%7CInsectoid+Eggs%7CLarvae%7CLeberkassemmel%7CMeringue+Cake%7CMoon+Melon%7CMoon+Melon+Slice%7CPeanut"
+    },
+    "wiki:76965:1014758": {
+      "title": "Prickly Pear",
+      "url": "https://tibia.fandom.com/wiki/Prickly_Pear",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1014758",
+      "revid": 1014758,
+      "revision_timestamp": "2023-07-15T20:56:19Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "479e5423a7e6421876bc05501ee5925b82551461a0943f899772e5969e377bdc",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Prickly+Pear%7CRat+Cheese%7CRice+Ball%7CRoasted+Meat%7CSandfish%7CShell+%28Item%29%7CShrimp%7CSmall+Bass%7CSoft+Cheese%7CSome+Mushrooms"
+    },
+    "wiki:62007:1014860": {
+      "title": "Rat Cheese",
+      "url": "https://tibia.fandom.com/wiki/Rat_Cheese",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1014860",
+      "revid": 1014860,
+      "revision_timestamp": "2023-07-15T20:56:30Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "e2dcbde6a85e7e59bd296e1ff8f28a0cd252466dd0d32f2f6e3aad0f301d2bb9",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Prickly+Pear%7CRat+Cheese%7CRice+Ball%7CRoasted+Meat%7CSandfish%7CShell+%28Item%29%7CShrimp%7CSmall+Bass%7CSoft+Cheese%7CSome+Mushrooms"
+    },
+    "wiki:42049:1114917": {
+      "title": "Rice Ball",
+      "url": "https://tibia.fandom.com/wiki/Rice_Ball",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114917",
+      "revid": 1114917,
+      "revision_timestamp": "2025-07-26T11:20:27Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "dcdaf5a69493cd09dcb5030ac65bb8b3cc9c6413965d57b394806a39c6eec100",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Prickly+Pear%7CRat+Cheese%7CRice+Ball%7CRoasted+Meat%7CSandfish%7CShell+%28Item%29%7CShrimp%7CSmall+Bass%7CSoft+Cheese%7CSome+Mushrooms"
+    },
+    "wiki:76964:1115557": {
+      "title": "Roasted Meat",
+      "url": "https://tibia.fandom.com/wiki/Roasted_Meat",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1115557",
+      "revid": 1115557,
+      "revision_timestamp": "2025-07-26T11:50:09Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "d48dfcb75a2d29b7ab6a374985cabdde34b234f3c2ff5162729b62af2bb53dbc",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Prickly+Pear%7CRat+Cheese%7CRice+Ball%7CRoasted+Meat%7CSandfish%7CShell+%28Item%29%7CShrimp%7CSmall+Bass%7CSoft+Cheese%7CSome+Mushrooms"
+    },
+    "wiki:57155:1015169": {
+      "title": "Sandfish",
+      "url": "https://tibia.fandom.com/wiki/Sandfish",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1015169",
+      "revid": 1015169,
+      "revision_timestamp": "2023-07-15T20:57:05Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "e38e635d670e6aba82c13edaa6aa32755b9ef2afb57b75757f5b51b603ba9bce",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Prickly+Pear%7CRat+Cheese%7CRice+Ball%7CRoasted+Meat%7CSandfish%7CShell+%28Item%29%7CShrimp%7CSmall+Bass%7CSoft+Cheese%7CSome+Mushrooms"
+    },
+    "wiki:80281:1015354": {
+      "title": "Shell (Item)",
+      "url": "https://tibia.fandom.com/wiki/Shell_(Item)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1015354",
+      "revid": 1015354,
+      "revision_timestamp": "2023-07-15T20:57:25Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "c0461de6cf0c56e729e4a4870d02e773434ffd293d7cd4bf293261932ad54bba",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Prickly+Pear%7CRat+Cheese%7CRice+Ball%7CRoasted+Meat%7CSandfish%7CShell+%28Item%29%7CShrimp%7CSmall+Bass%7CSoft+Cheese%7CSome+Mushrooms"
+    },
+    "wiki:2991:1113925": {
+      "title": "Shrimp",
+      "url": "https://tibia.fandom.com/wiki/Shrimp",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113925",
+      "revid": 1113925,
+      "revision_timestamp": "2025-07-26T09:32:37Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "49329f00ac75ba3f8a1bc4d91a7cd6ef0f1378e2eca53a225d3aec1d26b4889f",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Prickly+Pear%7CRat+Cheese%7CRice+Ball%7CRoasted+Meat%7CSandfish%7CShell+%28Item%29%7CShrimp%7CSmall+Bass%7CSoft+Cheese%7CSome+Mushrooms"
+    },
+    "wiki:90769:1016157": {
+      "title": "Small Bass",
+      "url": "https://tibia.fandom.com/wiki/Small_Bass",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1016157",
+      "revid": 1016157,
+      "revision_timestamp": "2023-07-16T02:31:30Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "2c500d33d01bb4a0a0dc369e6f23666f4e82d8f0495132c56dcf9a48b6faa2c1",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Prickly+Pear%7CRat+Cheese%7CRice+Ball%7CRoasted+Meat%7CSandfish%7CShell+%28Item%29%7CShrimp%7CSmall+Bass%7CSoft+Cheese%7CSome+Mushrooms"
+    },
+    "wiki:62008:1016295": {
+      "title": "Soft Cheese",
+      "url": "https://tibia.fandom.com/wiki/Soft_Cheese",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1016295",
+      "revid": 1016295,
+      "revision_timestamp": "2023-07-16T02:31:47Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "6d736fa833d226be8faa52dbecfca0cd693db2e2745a09353e5ddf4797a2137d",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Prickly+Pear%7CRat+Cheese%7CRice+Ball%7CRoasted+Meat%7CSandfish%7CShell+%28Item%29%7CShrimp%7CSmall+Bass%7CSoft+Cheese%7CSome+Mushrooms"
+    },
+    "wiki:11428:1110488": {
+      "title": "Some Mushrooms (Brown)",
+      "url": "https://tibia.fandom.com/wiki/Some_Mushrooms_(Brown)",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1110488",
+      "revid": 1110488,
+      "revision_timestamp": "2025-07-15T16:02:03Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "6587826cabf8446ba4d6cf2aaf340f605de98b3410b659502aa6a581a3de95ac",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Some+Mushrooms+%28Brown%29%7CStockfish%7CSun+Fruit%7CTaiyaki%7CThe+Carrot+of+Doom%7CTiny+Bass%7CTortoise+Egg%7CTortoise+Egg+from+Nargor%7CWinterberry+Liquor%7CYummy+Gummy+Worm"
+    },
+    "wiki:11114:1114330": {
+      "title": "Some Mushrooms",
+      "url": "https://tibia.fandom.com/wiki/Some_Mushrooms",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114330",
+      "revid": 1114330,
+      "revision_timestamp": "2025-07-26T09:55:24Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "f524cefb5374dabb1b1206a59866f8cc2f64e79c36c51e33a9021d4b22e7161e",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Prickly+Pear%7CRat+Cheese%7CRice+Ball%7CRoasted+Meat%7CSandfish%7CShell+%28Item%29%7CShrimp%7CSmall+Bass%7CSoft+Cheese%7CSome+Mushrooms"
+    },
+    "wiki:92576:1079841": {
+      "title": "Stockfish",
+      "url": "https://tibia.fandom.com/wiki/Stockfish",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1079841",
+      "revid": 1079841,
+      "revision_timestamp": "2024-10-19T13:55:51Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "3d55d682587effb8c94d9b55dad948ca1cd91813306f176352731de9abc7e2b5",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Some+Mushrooms+%28Brown%29%7CStockfish%7CSun+Fruit%7CTaiyaki%7CThe+Carrot+of+Doom%7CTiny+Bass%7CTortoise+Egg%7CTortoise+Egg+from+Nargor%7CWinterberry+Liquor%7CYummy+Gummy+Worm"
+    },
+    "wiki:86895:1115926": {
+      "title": "Sun Fruit",
+      "url": "https://tibia.fandom.com/wiki/Sun_Fruit",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1115926",
+      "revid": 1115926,
+      "revision_timestamp": "2025-07-26T12:20:22Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "b1270f8b6667c17efd9f6ea6efe646d9929c45729461f8ed48cd37fa62ac12f2",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Some+Mushrooms+%28Brown%29%7CStockfish%7CSun+Fruit%7CTaiyaki%7CThe+Carrot+of+Doom%7CTiny+Bass%7CTortoise+Egg%7CTortoise+Egg+from+Nargor%7CWinterberry+Liquor%7CYummy+Gummy+Worm"
+    },
+    "wiki:106502:1066957": {
+      "title": "Taiyaki",
+      "url": "https://tibia.fandom.com/wiki/Taiyaki",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1066957",
+      "revid": 1066957,
+      "revision_timestamp": "2024-07-01T09:36:28Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "ac773542f4308547b0a6863f648cfae3399df5232f848bf8b819463df97c786d",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Some+Mushrooms+%28Brown%29%7CStockfish%7CSun+Fruit%7CTaiyaki%7CThe+Carrot+of+Doom%7CTiny+Bass%7CTortoise+Egg%7CTortoise+Egg+from+Nargor%7CWinterberry+Liquor%7CYummy+Gummy+Worm"
+    },
+    "wiki:14277:1016926": {
+      "title": "The Carrot of Doom",
+      "url": "https://tibia.fandom.com/wiki/The_Carrot_of_Doom",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1016926",
+      "revid": 1016926,
+      "revision_timestamp": "2023-07-16T02:32:59Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "c1e1f67e9a6eb2f91a9ac9b797985850c72de11a308398c0de4b504195b260d5",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Some+Mushrooms+%28Brown%29%7CStockfish%7CSun+Fruit%7CTaiyaki%7CThe+Carrot+of+Doom%7CTiny+Bass%7CTortoise+Egg%7CTortoise+Egg+from+Nargor%7CWinterberry+Liquor%7CYummy+Gummy+Worm"
+    },
+    "wiki:90768:1164178": {
+      "title": "Tiny Bass",
+      "url": "https://tibia.fandom.com/wiki/Tiny_Bass",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1164178",
+      "revid": 1164178,
+      "revision_timestamp": "2026-02-21T20:49:24Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "71893e4bf86b96d1717dbfb0f97877cdcc81ec0415b60e3930487e9d71c8d439",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Some+Mushrooms+%28Brown%29%7CStockfish%7CSun+Fruit%7CTaiyaki%7CThe+Carrot+of+Doom%7CTiny+Bass%7CTortoise+Egg%7CTortoise+Egg+from+Nargor%7CWinterberry+Liquor%7CYummy+Gummy+Worm"
+    },
+    "wiki:29594:1114657": {
+      "title": "Tortoise Egg from Nargor",
+      "url": "https://tibia.fandom.com/wiki/Tortoise_Egg_from_Nargor",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114657",
+      "revid": 1114657,
+      "revision_timestamp": "2025-07-26T10:05:38Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "61f2e772089fdb10085da2129cc2fc5f03d046db6f77511c1260b7dcc16a5927",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Some+Mushrooms+%28Brown%29%7CStockfish%7CSun+Fruit%7CTaiyaki%7CThe+Carrot+of+Doom%7CTiny+Bass%7CTortoise+Egg%7CTortoise+Egg+from+Nargor%7CWinterberry+Liquor%7CYummy+Gummy+Worm"
+    },
+    "wiki:8738:1114231": {
+      "title": "Tortoise Egg",
+      "url": "https://tibia.fandom.com/wiki/Tortoise_Egg",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114231",
+      "revid": 1114231,
+      "revision_timestamp": "2025-07-26T09:52:04Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "fd85ca84d46a34da37ee6e335fb0368987eeaa49f7a1d4fc68037488a696a307",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Some+Mushrooms+%28Brown%29%7CStockfish%7CSun+Fruit%7CTaiyaki%7CThe+Carrot+of+Doom%7CTiny+Bass%7CTortoise+Egg%7CTortoise+Egg+from+Nargor%7CWinterberry+Liquor%7CYummy+Gummy+Worm"
+    },
+    "wiki:87452:1017657": {
+      "title": "Winterberry Liquor",
+      "url": "https://tibia.fandom.com/wiki/Winterberry_Liquor",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1017657",
+      "revid": 1017657,
+      "revision_timestamp": "2023-07-16T02:34:25Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "0bfa98b1b95950609fcdbee270f6bf2e3a3183a99f4813d6632e82597cdcd0f9",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Some+Mushrooms+%28Brown%29%7CStockfish%7CSun+Fruit%7CTaiyaki%7CThe+Carrot+of+Doom%7CTiny+Bass%7CTortoise+Egg%7CTortoise+Egg+from+Nargor%7CWinterberry+Liquor%7CYummy+Gummy+Worm"
+    },
+    "wiki:29913:1017827": {
+      "title": "Yummy Gummy Worm",
+      "url": "https://tibia.fandom.com/wiki/Yummy_Gummy_Worm",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1017827",
+      "revid": 1017827,
+      "revision_timestamp": "2023-07-16T02:34:44Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "9d42d32ce0701ed9009c8e54ab01fce19b3eefc65055891d0efd6a85b8968fd6",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Some+Mushrooms+%28Brown%29%7CStockfish%7CSun+Fruit%7CTaiyaki%7CThe+Carrot+of+Doom%7CTiny+Bass%7CTortoise+Egg%7CTortoise+Egg+from+Nargor%7CWinterberry+Liquor%7CYummy+Gummy+Worm"
+    },
+    "owner:food-defaults:20261018": {
+      "title": "Explicit owner decisions for three unresolved Food durations",
+      "source_class": "OWNER_DECISION / REFERENCE_DEFAULT_NOT_TIBIA_MEASUREMENT",
+      "fetched_at": "2026-10-18",
+      "retained_scope": "Exact owner instructions in this chat",
+      "instructions": [
+        "dla item 1 i 2 ustal 240 sekund",
+        "3 ustal czas dla tego itemu do najblizej zblizonego itemu pasujacego do 3"
+      ],
+      "decision": "Cake (Item)=240s; Cake with a Cherry=240s. Cheese Cookie uses Cookie3598 as closest biscuit analogue, 24s. These are owner-selected reference defaults; original exact-item source durations remain unknown.",
+      "reference_only": true
+    },
+    "official:news:8543:20261018": {
+      "title": "A New Helping Hand II",
+      "url": "https://www.tibia.com/news/?id=8543&subtopic=newsarchive",
+      "fetched_at": "2026-10-18",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "retained_scope": "TARGETED_SOURCE_RETRIEVAL",
+      "retained_response_sha256": "f7016d3d6244a41c1bbb07c9b3178a8d71e5010064cb0d2b2b4c14cfe64dfb23",
+      "supported_claim": "HP/MP tick intervals4/6s; saturated3/5s; restored amounts depend on vocation.",
+      "publication_date": "2025-10-15",
+      "retrieval_method": "SEARCH_INDEX_OF_PRIMARY_OFFICIAL_PUBLICATION",
+      "direct_fetch": "HTTP403_FROM_WEB_FETCH_AND_OWNER_PC_URL_READER",
+      "qualification": "Primary official publication indexed at fetch; direct HTTP retrieval was blocked. Claim scope is the cited announcement, corroborated against release evidence where stated; no controlled server measurement is claimed."
+    },
+    "official:news:8553:20261018": {
+      "title": "Newhaven release",
+      "url": "https://www.tibia.com/news/?id=8553&subtopic=newsarchive",
+      "fetched_at": "2026-10-18",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "retained_scope": "TARGETED_SOURCE_RETRIEVAL",
+      "retained_response_sha256": "2a580ffff4cb85910c6957e9aea5c2d9699205e3897f7207f9c820c7a38e2ed7",
+      "supported_claim": "Newhaven and associated changes released2025-10-21.",
+      "publication_date": "2025-10-21",
+      "retrieval_method": "SEARCH_INDEX_OF_PRIMARY_OFFICIAL_PUBLICATION",
+      "direct_fetch": "HTTP403_FROM_WEB_FETCH_AND_OWNER_PC_URL_READER",
+      "qualification": "Primary official publication indexed at fetch; direct HTTP retrieval was blocked. Claim scope is the cited announcement, corroborated against release evidence where stated; no controlled server measurement is claimed."
+    },
+    "wiki-br:newhaven-update:429434": {
+      "title": "Updates/15.12.c7d92c",
+      "url": "https://www.tibiawiki.com.br/wiki/Updates/15.12.c7d92c",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_REFERENCE",
+      "retained_scope": "TARGETED_SOURCE_RETRIEVAL",
+      "retained_response_sha256": "9f501137d503f16d1dd92cbb428a75d5a18bc2cc5aaf662ac1cd1462f259bb39",
+      "supported_claim": "Confirms4/6s standard intervals and3/5s while fed.",
+      "revid": 429434,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Updates/15.12.c7d92c&oldid=429434"
+    },
+    "owner:oteryn-data-completion:2026-10-19": {
+      "source_class": "OWNER_AUTHORIZED_OTERYN_WORKING_PARAMETERS",
+      "instruction": "No to uzupełnij te dane bo piszę ci to5raz",
+      "prior_instruction": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+      "parameter_document": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json",
+      "selection_actor": "assistant completing owner-authorized reference/data task",
+      "scope": "Populate working Oteryn data defaults, keeping evidence limits explicit; no runtime or architectural acceptance is implied."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:party.activity_timeout": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/grouping/party.cpp",
+      "line": 621,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/grouping/party.cpp#L621",
+      "file_sha256": "ef20ad81d4da214ab47e1dd77c208a42dda1c9a726d69ea1812c1f4d80c502c5",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": 120,
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Knight": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "line": 62,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L62",
+      "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "attributes": {
+          "id": "4",
+          "clientid": "1",
+          "baseid": "4",
+          "name": "Knight",
+          "description": "a knight",
+          "magicshield": "0",
+          "gaincap": "25",
+          "gainhp": "15",
+          "gainmana": "5",
+          "gainhpticks": "6000",
+          "gainhpamount": "1",
+          "gainmanaticks": "6000",
+          "gainmanaamount": "2",
+          "manamultiplier": "3.0",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "100",
+          "gainsoulticks": "120000",
+          "fromvoc": "4",
+          "avatarlooktype": "1593"
+        },
+        "skill_multipliers": {
+          "0": "1.1",
+          "1": "1.1",
+          "2": "1.1",
+          "3": "1.1",
+          "4": "1.4",
+          "5": "1.1",
+          "6": "1.1"
+        }
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Elite Knight": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "line": 123,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L123",
+      "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "attributes": {
+          "id": "8",
+          "clientid": "11",
+          "baseid": "4",
+          "name": "Elite Knight",
+          "description": "an elite knight",
+          "magicshield": "0",
+          "gaincap": "25",
+          "gainhp": "15",
+          "gainmana": "5",
+          "gainhpticks": "4000",
+          "gainhpamount": "1",
+          "gainmanaticks": "6000",
+          "gainmanaamount": "2",
+          "manamultiplier": "3.0",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "200",
+          "gainsoulticks": "15000",
+          "fromvoc": "4",
+          "avatarlooktype": "1593"
+        },
+        "skill_multipliers": {
+          "0": "1.1",
+          "1": "1.1",
+          "2": "1.1",
+          "3": "1.1",
+          "4": "1.4",
+          "5": "1.1",
+          "6": "1.1"
+        }
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Paladin": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "line": 49,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L49",
+      "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "attributes": {
+          "id": "3",
+          "clientid": "2",
+          "baseid": "3",
+          "name": "Paladin",
+          "description": "a paladin",
+          "magicshield": "0",
+          "gaincap": "20",
+          "gainhp": "10",
+          "gainmana": "15",
+          "gainhpticks": "8000",
+          "gainhpamount": "1",
+          "gainmanaticks": "4000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.4",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "100",
+          "gainsoulticks": "120000",
+          "fromvoc": "3",
+          "avatarlooktype": "1594"
+        },
+        "skill_multipliers": {
+          "0": "1.2",
+          "1": "1.2",
+          "2": "1.2",
+          "3": "1.2",
+          "4": "1.1",
+          "5": "1.1",
+          "6": "1.1"
+        }
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Royal Paladin": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "line": 107,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L107",
+      "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "attributes": {
+          "id": "7",
+          "clientid": "12",
+          "baseid": "3",
+          "name": "Royal Paladin",
+          "description": "a royal paladin",
+          "magicshield": "0",
+          "gaincap": "20",
+          "gainhp": "10",
+          "gainmana": "15",
+          "gainhpticks": "6000",
+          "gainhpamount": "1",
+          "gainmanaticks": "3000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.4",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "200",
+          "gainsoulticks": "15000",
+          "fromvoc": "3",
+          "avatarlooktype": "1594"
+        },
+        "skill_multipliers": {
+          "0": "1.2",
+          "1": "1.2",
+          "2": "1.2",
+          "3": "1.2",
+          "4": "1.1",
+          "5": "1.1",
+          "6": "1.1"
+        }
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Druid": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "line": 36,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L36",
+      "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "attributes": {
+          "id": "2",
+          "clientid": "4",
+          "baseid": "2",
+          "name": "Druid",
+          "description": "a druid",
+          "magicshield": "1",
+          "gaincap": "10",
+          "gainhp": "5",
+          "gainmana": "30",
+          "gainhpticks": "12000",
+          "gainhpamount": "1",
+          "gainmanaticks": "3000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.1",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "100",
+          "gainsoulticks": "120000",
+          "fromvoc": "2",
+          "avatarlooktype": "1596"
+        },
+        "skill_multipliers": {
+          "0": "1.5",
+          "1": "1.8",
+          "2": "1.8",
+          "3": "1.8",
+          "4": "1.8",
+          "5": "1.5",
+          "6": "1.1"
+        }
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Elder Druid": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "line": 91,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L91",
+      "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "attributes": {
+          "id": "6",
+          "clientid": "14",
+          "baseid": "2",
+          "name": "Elder Druid",
+          "description": "an elder druid",
+          "magicshield": "1",
+          "gaincap": "10",
+          "gainhp": "5",
+          "gainmana": "30",
+          "gainhpticks": "12000",
+          "gainhpamount": "1",
+          "gainmanaticks": "2000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.1",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "200",
+          "gainsoulticks": "15000",
+          "fromvoc": "2",
+          "avatarlooktype": "1596"
+        },
+        "skill_multipliers": {
+          "0": "1.5",
+          "1": "1.8",
+          "2": "1.8",
+          "3": "1.8",
+          "4": "1.8",
+          "5": "1.5",
+          "6": "1.1"
+        }
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Sorcerer": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "line": 23,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L23",
+      "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "attributes": {
+          "id": "1",
+          "clientid": "3",
+          "baseid": "1",
+          "name": "Sorcerer",
+          "description": "a sorcerer",
+          "magicshield": "1",
+          "gaincap": "10",
+          "gainhp": "5",
+          "gainmana": "30",
+          "gainhpticks": "12000",
+          "gainhpamount": "1",
+          "gainmanaticks": "3000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.1",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "100",
+          "gainsoulticks": "120000",
+          "fromvoc": "1",
+          "avatarlooktype": "1595"
+        },
+        "skill_multipliers": {
+          "0": "1.5",
+          "1": "2.0",
+          "2": "2.0",
+          "3": "2.0",
+          "4": "2.0",
+          "5": "1.5",
+          "6": "1.1"
+        }
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Master Sorcerer": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "line": 75,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L75",
+      "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "attributes": {
+          "id": "5",
+          "clientid": "13",
+          "baseid": "1",
+          "name": "Master Sorcerer",
+          "description": "a master sorcerer",
+          "magicshield": "1",
+          "gaincap": "10",
+          "gainhp": "5",
+          "gainmana": "30",
+          "gainhpticks": "12000",
+          "gainhpamount": "1",
+          "gainmanaticks": "2000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.1",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "200",
+          "gainsoulticks": "15000",
+          "fromvoc": "1",
+          "avatarlooktype": "1595"
+        },
+        "skill_multipliers": {
+          "0": "1.5",
+          "1": "2.0",
+          "2": "2.0",
+          "3": "2.0",
+          "4": "2.0",
+          "5": "1.5",
+          "6": "1.1"
+        }
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Monk": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "line": 139,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L139",
+      "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "attributes": {
+          "id": "9",
+          "clientid": "5",
+          "baseid": "5",
+          "name": "Monk",
+          "description": "an monk",
+          "magicshield": "0",
+          "gaincap": "25",
+          "gainhp": "10",
+          "gainmana": "10",
+          "gainhpticks": "7000",
+          "gainhpamount": "1",
+          "gainmanaticks": "4000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.3",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "200",
+          "gainsoulticks": "15000",
+          "fromvoc": "9",
+          "avatarlooktype": "1823"
+        },
+        "skill_multipliers": {
+          "0": "1.1",
+          "1": "1.2",
+          "2": "1.2",
+          "3": "1.2",
+          "4": "1.5",
+          "5": "1.1",
+          "6": "1.1"
+        }
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:vocation.Exalted Monk": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "line": 151,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml#L151",
+      "file_sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "attributes": {
+          "id": "10",
+          "clientid": "15",
+          "baseid": "5",
+          "name": "Exalted Monk",
+          "description": "an exalted monk",
+          "magicshield": "0",
+          "gaincap": "25",
+          "gainhp": "10",
+          "gainmana": "10",
+          "gainhpticks": "5000",
+          "gainhpamount": "1",
+          "gainmanaticks": "3000",
+          "gainmanaamount": "2",
+          "manamultiplier": "1.3",
+          "attackspeed": "2000",
+          "basespeed": "110",
+          "soulmax": "200",
+          "gainsoulticks": "15000",
+          "fromvoc": "9",
+          "avatarlooktype": "1823"
+        },
+        "skill_multipliers": {
+          "0": "1.1",
+          "1": "1.2",
+          "2": "1.2",
+          "3": "1.2",
+          "4": "1.5",
+          "5": "1.1",
+          "6": "1.1"
+        }
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml": {
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "data/XML/vocations.xml",
+      "blob_sha": "57c014e720bbe8d7f83501970c2b89976598cc3d",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/data/XML/vocations.xml",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp": {
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/creatures/players/grouping/party.cpp",
+      "blob_sha": "c3493c962548bffa5e393adc3359137b200b6384",
+      "sha256": "005f0e482dced6dace0507d2f847b65b44125dc73fe589893551199afdecb46e",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/creatures/players/grouping/party.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:canary:52550d5:config.lua.dist": {
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "config.lua.dist",
+      "blob_sha": "55ccf0802351aa84a98bfe59e176a5f98f94a56b",
+      "sha256": "5ad741b00ff26c0200a9d0c3a4f056801647be5a59a45b0ef687c87887a762d3",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/config.lua.dist",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "blob_sha": "eed5290955fd7a988acab73672dc5356ed0e0ba8",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/grouping/party.cpp",
+      "blob_sha": "fcd5da96b80237b256933f40ac4be7f7ba512568",
+      "sha256": "ef20ad81d4da214ab47e1dd77c208a42dda1c9a726d69ea1812c1f4d80c502c5",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/grouping/party.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "config.lua.dist",
+      "blob_sha": "f215fa6e4612bd8f500e859c504935ef649e3e00",
+      "sha256": "93f50fc744c9e5f1bc39165ea2ea037f5f56131a3768f1b127ebb23be4b6a544",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/config.lua.dist",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "official:regen-recheck:8543:20261019": {
+      "url": "https://www.tibia.com/news/?id=8543&subtopic=newsarchive",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "fetched_at": "2026-10-19",
+      "retrieval": "Indexed primary announcement; confirms intervals, not complete point table",
+      "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+    },
+    "community:regen-recheck:reddit:1pnillt": {
+      "url": "https://www.reddit.com/r/TibiaMMO/comments/1pnillt/new_mana_and_health_regeneration_values/",
+      "source_class": "UNCONTROLLED_COMMUNITY_REPORT",
+      "fetched_at": "2026-10-19",
+      "selector": "Post and correcting comment; inconsistent intervals/mage mana claims",
+      "limitation": "Not owner-controlled evidence; missing Paladin/Monk and conflicting HP timing. No reported values adopted."
+    },
+    "official:party-recheck:91:20261019": {
+      "url": "https://www.tibia.com/support/?entryid=91&subtopic=gethelp",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "fetched_at": "2026-10-19",
+      "retrieval": "Fresh indexed primary support entry",
+      "selector": "SharedXPbonuses20/30/60/100%; base monsterXP>=20"
+    },
+    "official:soul-recheck:76:20261019": {
+      "url": "https://www.tibia.com/support/?entryid=76&subtopic=gethelp",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "fetched_at": "2026-10-19",
+      "retrieval": "Fresh indexed primary support entry",
+      "selector": "Normal100/promoted200; normal120s/promoted15s"
+    },
+    "controlled-global:regeneration:druid:20261019": {
+      "title": "Controlled official-client regeneration observations: Druid without active promotion",
+      "source_class": "CONTROLLED_GLOBAL_CLIENT_OBSERVATION",
+      "observed_at": "2026-10-19",
+      "evidence_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
+      "selector": "Druid",
+      "evidence_role": "SCOPED_CURRENT_CLIENT_MEASUREMENT",
+      "retained_scope": "Reviewed numeric observations, timestamps and SHA256 digests. Original videos/screenshots remain private; no original game assets redistributed.",
+      "qualification": "Observed vocation, hunger state and equipment only; no extrapolation to promotions, other vocations or native runtime admission. Client display timestamps have capture/network jitter; no server telemetry."
+    },
+    "controlled-global:regeneration:monk:20261019": {
+      "title": "Controlled official-client regeneration observations: Monk without active promotion",
+      "source_class": "CONTROLLED_GLOBAL_CLIENT_OBSERVATION",
+      "observed_at": "2026-10-19",
+      "evidence_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
+      "selector": "Monk",
+      "evidence_role": "SCOPED_CURRENT_CLIENT_MEASUREMENT",
+      "retained_scope": "Reviewed numeric observations, timestamps and SHA256 digests. Original videos/screenshots remain private; no original game assets redistributed.",
+      "qualification": "Observed vocation, hunger state and equipment only; no extrapolation to promotions, other vocations or native runtime admission. Client display timestamps have capture/network jitter; no server telemetry."
+    },
+    "controlled-global:regeneration:paladin:20261019": {
+      "title": "Controlled official-client regeneration: Paladin without active promotion",
+      "source_class": "CONTROLLED_GLOBAL_CLIENT_OBSERVATION",
+      "observed_at": "2026-10-19",
+      "evidence_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
+      "selector": "Paladin",
+      "evidence_role": "SCOPED_CURRENT_CLIENT_MEASUREMENT",
+      "retained_scope": "Reviewed numbers, frame timestamps and SHA256; original media retained privately.",
+      "qualification": "Anzaa self-Look reports Paladin. Fixed safe positions outside PZ, regenerative equipment slots empty. No extrapolation to Royal Paladin or runtime admission; approximate client display periods, no server telemetry."
+    },
+    "controlled-global:regeneration:knight:20261019": {
+      "title": "Controlled official-client regeneration: Knight without active promotion",
+      "source_class": "CONTROLLED_GLOBAL_CLIENT_OBSERVATION",
+      "observed_at": "2026-10-19",
+      "evidence_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
+      "selector": "Knight",
+      "evidence_role": "SCOPED_CURRENT_CLIENT_MEASUREMENT",
+      "retained_scope": "Reviewed numeric series, frame timestamps and SHA256; original media remain private.",
+      "qualification": "Quattro Formaggi self-Look reports Knight, level8. Outside PZ, no combat or agent movement; leather boots have empty imbuement slot. Fed HP has only two full +4 gains and one measured3s interval before cap; weaker replication explicitly retained. No promoted Knight or native runtime admission."
+    },
+    "owner:sorcerer-druid-equivalence:20261019": {
+      "title": "Owner instruction: set Sorcerer equal to measured Druid",
+      "source_class": "OWNER_INSTRUCTION",
+      "observed_at": "2026-10-19",
+      "quote": "sorcerera zapisz tak samo jak druda bo sa 1:1",
+      "scope": "Authorize Sorcerer reference values by Druid equivalence; not a claim of direct Sorcerer measurement or runtime activation.",
+      "evidence_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
+      "selector": "owner_derived_sorcerer_equivalence"
+    }
+  }
+}

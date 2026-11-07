@@ -1,0 +1,63 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/intense_healing",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Intense Healing",
+    "carrier": "instant",
+    "words": "exura gran",
+    "reference_spell_id": 2,
+    "library_text": "Ever since their revolutionary discovery of magic that was capable of healing wounds and injuries, the druid researchers have been looking for ways to improve and to perfect this magic. The Intense Healing spell was a major step forward in these efforts. Its healing effect easily surpasses that of the common healing spell, and for obvious reasons the spell gained immediate and lasting popularity. Unfortunately, the spell's complexity is way above the knights' limited grasp of magic, so adventurers of this class cannot master this spell. Admittedly, Intense Healing is not as frequently cast today because its successor, the Ultimate Healing spell, provides even better healing, but it is still commonly used among less experienced adventurers as well as among skilled spell casters who know how to make the most of the spells they cast.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "exalted_monk",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 20,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 70,
+      "soul": 0
+    },
+    "cooldown_ms": 1000,
+    "groups": [
+      {
+        "group": "healing",
+        "cooldown_ms": 1000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_intense_healing"
+    },
+    "base_power": 120,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/intense_healing",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

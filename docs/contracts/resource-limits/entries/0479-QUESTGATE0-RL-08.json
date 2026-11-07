@@ -1,0 +1,23 @@
+{
+  "id": "QUESTGATE0-RL-08",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+  "resource": "Missions of one quest line (domain 16 QuestLineV1)",
+  "unit": "missions per quest line",
+  "hard_maximum": 128,
+  "configurable_range": {
+    "minimum": 128,
+    "maximum": 128
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Measured 87 (Killing in the Name Of), the largest of 529 missions in 58 quests. A quest with more missions does not load; a line with more fails closed in the codec.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=128: a line of 128 missions encodes and decodes",
+    "max+1=129: a 129th mission fails closed both ways"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/quest_log.rs MAX_QUEST_LINE_MISSIONS",
+    "apps/game-server/src/quest/log.rs"
+  ],
+  "notes": "QUEST-GATE-0 \u00a79 (measured by QUEST-LOG-WIRE-1). Measured over content/quests/definitions (58 storyline quests with missions, 529 missions) from each mission's name and the longest journal text reference length, a template counted with 20 bytes per placeholder. Tests: quest_log::tests::a_line_holds_128_missions_within_its_byte_bound_and_refuses_more, quest::log::tests::a_catalogue_over_the_bounds_does_not_load. Registered by OTV2-20261004-quest-log-wire-1."
+}

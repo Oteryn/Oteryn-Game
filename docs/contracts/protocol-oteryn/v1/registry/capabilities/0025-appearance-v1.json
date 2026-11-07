@@ -1,0 +1,17 @@
+{
+  "id": 25,
+  "name": "APPEARANCE_V1",
+  "owner_decision": "CHARACTER_APPEARANCE §4.3–4.6; APP-3 D1094 candidate allocation",
+  "owner": "APP-3; Character appearance owner",
+  "requires": [
+    6
+  ],
+  "command_types": [
+    25
+  ],
+  "state_domains": [
+    21
+  ],
+  "offered": false,
+  "offer_gate": "Only the composed APP-3 owner with admitted native cosmetics offers 25. Requires 6. Item Look additionally requires 4 and the exact Item dictionary. Every reconnect starts a new appearance dictionary."
+}

@@ -1,0 +1,114 @@
+{
+  "encounter": "canary:encounter/mazzinor",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "mazzinorDeath": [
+      "canary:creature/mazzinor"
+    ],
+    "mazzinorHealth": [
+      "canary:creature/mazzinor"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/the_secret_library/bosses/mazzinor.lua",
+      "blob_sha1": "f93e6785563fb5fdeb31f553985e4b41f5d83a83"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/the_secret_library/wild_knowledge.lua",
+      "blob_sha1": "0035349e042fdb2c47538a785695c0d86eaeaf75"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_mazzinor.lua",
+      "blob_sha1": "1931906f9bb42c68b83b4018a420e2cf11592f2b"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Mazzinor is the mazzinor participant; its file registers mazzinorDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        18
+      ],
+      "status": "mapped",
+      "resolution": "Mazzinor is the mazzinor participant; its file registers mazzinorHealth.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Wild Knowledge is the wild_knowledge participant.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        4,
+        6,
+        7,
+        8,
+        19,
+        20,
+        22
+      ],
+      "status": "approved_omission",
+      "resolution": "mazzinorDeath is registered only by Mazzinor, but its body acts only on a creature named \"wild knowledge\", so Mazzinor's death has no effect; Wild Knowledge (corpse 0) registers no event, so in Canary no vortex appears."
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        2,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ],
+      "status": "mapped",
+      "resolution": "The reference-date wiki (The Secret Library Quest/Spoiler: \"Once you kill them, they will become a blue vortex\") decides (D25): vortex 28673 with action id 4951 on the death position of a wild knowledge, removed after one minute. Action id 4951 (movements_mazzinor.lua) gives the player stepping in a 30 s outfit condition and removes the vortex (interaction domain).",
+      "destination": "/encounter/rules/0"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        24,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        33
+      ],
+      "status": "approved_omission",
+      "resolution": "mazzinorHealth re-applies the primary part of every change to Mazzinor through creature:addHealth without an attacker and zeroes the original (damage arrives negative, game.cpp combatChangeHealth): the secondary part of each hit is lost and no player is credited with any damage, so the reward boss would leave no rewards. The reference-date wiki describes an ordinary fight in which players attack Mazzinor directly and lists its loot, so the change is not reproduced (D25); Crystal (D30) has the same script."
+    }
+  ],
+  "outcome_evidence": []
+}

@@ -1,0 +1,1469 @@
+//! Production delegation to the existing mechanic owners.
+
+use crate::gameplay_transport::connection::{AchievementNoticeObservation, UseCommand};
+use crate::gameplay_transport::item_view::ItemKey;
+use crate::gameplay_transport::*;
+
+impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    #[cfg(test)]
+    fn test_durability_root(&self) -> Option<&crate::durability::DurabilityRoot> {
+        Some(self.root)
+    }
+
+    async fn observe_sounds(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        after: u64,
+    ) -> Option<(
+        u64,
+        Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
+    )> {
+        let mut runtime = self.runtime.lock().await;
+        runtime.player_control_facts(actor, session).ok()?;
+        let zone = crate::gameplay_transport::spell_presentation_publisher::ambient_sounds::zone(
+            &mut runtime,
+            self.movement_cells,
+            actor,
+        );
+        let minute = self.world_clock_utc_ms().and_then(|now| {
+            crate::world_clock::WorldClockSource::new(
+                crate::world_clock::DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS,
+            )
+            .tibian_minute(now)
+        });
+        let mut states = self.states.spell_states.lock().await;
+        let actor_spell::ChannelSpellStates {
+            presentations,
+            sounds,
+            ..
+        } = &mut *states;
+        if let Some(owner) = presentations {
+            sounds.capture(owner, &runtime).ok()?;
+        }
+        if after == u64::MAX {
+            sounds.forget_ambient(session);
+        } else if let Some(minute) = minute {
+            sounds.ambient(&runtime, actor, session, zone, minute);
+        }
+        sounds.observe(&runtime, actor, session, after, true)
+    }
+
+    fn observe_movement_effects(
+        &self,
+        after: u64,
+    ) -> Vec<(u64, crate::map::overlay::TilePos, u16)> {
+        self.bundle_map()
+            .map(|map| map.facts.movement_effects_since(after))
+            .unwrap_or_default()
+    }
+    async fn resolve_native_scope(&self, admitted: AdmittedSession) -> Result<Option<Self>, ()> {
+        self.resolve_runtime_view(admitted).await
+    }
+    async fn boss_activity_command(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        kind: u32,
+        payload: &[u8],
+    ) -> Option<(crate::foundation::CommandStatus, Vec<u8>)> {
+        self.boss_activity_wire(admitted, id, kind, payload).await
+    }
+    async fn settle_activity_connection(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<AdmittedSession, ()> {
+        let admitted = self.settle_native_activity_connection(admitted).await?;
+        self.settle_native_return_connection(admitted).await
+    }
+    fn current_activity_connection(&self, admitted: AdmittedSession) -> AdmittedSession {
+        self.activity_runtimes.current_connection(admitted)
+    }
+    fn remember_activity_connection(&self, admitted: AdmittedSession) -> bool {
+        self.activity_runtimes.remember(admitted).is_ok()
+    }
+    async fn pending_activity_switch(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<Option<crate::gameplay_transport::activity_runtime::ActivityConnectionSwitch>, ()>
+    {
+        self.activity_runtimes.pending_switch(admitted)
+    }
+    fn finish_activity_switch(
+        &self,
+        source: AdmittedSession,
+        destination: AdmittedSession,
+    ) -> bool {
+        self.activity_runtimes
+            .finish_switch(source, destination)
+            .is_ok()
+    }
+    fn finish_activity_connection_lineage(&self, admitted: AdmittedSession) {
+        let _ = self.activity_runtimes.finish_connection_lineage(admitted);
+    }
+    async fn sleep_in_bed(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: oteryn_protocol_oteryn::bed::BedSleepIntent,
+        target: ItemKey,
+    ) -> Result<UseOutcome, crate::durability::DurabilityError> {
+        self.production_bed_sleep(actor, command, intent, target)
+            .await
+    }
+    async fn use_key_on_door(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        key: ItemKey,
+        door: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Option<UseOutcome> {
+        self.use_bundle_key(actor, command, key, &door).await
+    }
+    async fn analyser_snapshot(&self, admitted: AdmittedSession) -> Option<bool> {
+        ComposedFreshAdmission::analyser_snapshot(self, admitted).await
+    }
+    async fn analyser_next(&self, admitted: AdmittedSession) -> Option<Vec<u8>> {
+        ComposedFreshAdmission::analyser_next(self, admitted).await
+    }
+    mechanic_composed_methods!();
+    async fn activity_transfer_input(&self, admitted: AdmittedSession) -> bool {
+        self.note_activity_input(admitted).await
+    }
+    async fn activity_scope_snapshot(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<Option<Vec<u8>>, ()> {
+        self.project_activity_scope(admitted).await
+    }
+
+    async fn house_transfer_input(&self, admitted: AdmittedSession) -> bool {
+        self.note_house_input(admitted).await
+    }
+    async fn observe_house_map(
+        &self,
+        admitted: AdmittedSession,
+        view: &mut world_map::SessionMapView,
+        items: &mut item_view::SessionItemView,
+    ) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
+        self.observe_house_item_map(admitted, view, items).await
+    }
+
+    async fn house_scope_ack(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<Option<(u64, Vec<u8>)>, ()> {
+        self.project_house_transfer(admitted).await
+    }
+    async fn house_transfer(
+        &self,
+        admitted: AdmittedSession,
+        command: u64,
+        body: &[u8],
+    ) -> super::super::super::house_transfer::TransferResult {
+        self.transfer_house(admitted, command, body).await
+    }
+    fn channel_list(&self) -> Option<Vec<u8>> {
+        Some(oteryn_protocol_oteryn::channel_list::encode_channel_list(
+            self.world_id.as_bytes(),
+            self.channel_id.as_bytes(),
+            self.premium_only,
+        ))
+    }
+    async fn observe_party_icons(
+        &self,
+        admitted: connection::AdmittedSession,
+    ) -> Option<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>> {
+        self.observe_party_skull(admitted).await
+    }
+
+    async fn party_command(
+        &self,
+        admitted: connection::AdmittedSession,
+        command_id: u64,
+        command_type: u32,
+        payload: &[u8],
+        view: &mut party_command::SessionPartyView,
+    ) -> Option<Vec<u8>> {
+        self.party_wire_command(admitted, command_id, command_type, payload, view)
+            .await
+    }
+
+    async fn timed_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        payload: &[u8],
+        target: Option<item_view::ItemKey>,
+    ) -> Option<Vec<u8>> {
+        self.timed_item_command(actor, command, payload, target)
+            .await
+    }
+
+    fn session_commands(&self) -> Option<&session_ingress::SessionCommands> {
+        Some(&self.states.command_ingress)
+    }
+    async fn observe_quest_log(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        since: Option<u64>,
+    ) -> quest_log::QuestLogObservation {
+        self.quest_log_observation(actor, session, since).await
+    }
+
+    fn world_weather(&self) -> Option<&crate::world_weather::WorldWeatherSource> {
+        // WEATHER-1 (D1027 signed off, D1448): the shipped Oteryn-designed data, `None` (never
+        // offered) when it is missing or invalid. The data is public and stateless: its binding
+        // token is the content revision, so no per-World secret is read.
+        crate::world_weather::shipped()
+    }
+
+    async fn chat_admit(
+        &self,
+        _actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> oteryn_protocol_oteryn::chat::ChatRoomSet {
+        self.chat_open(session).await
+    }
+
+    async fn chat_intent(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        intent: oteryn_protocol_oteryn::chat::ChatIntent,
+    ) -> oteryn_protocol_oteryn::chat::ChatIntentResult {
+        self.complete_chat_intent(actor, session, command_id, &intent)
+            .await
+            .map_or(
+                oteryn_protocol_oteryn::chat::ChatIntentResult {
+                    disposition: oteryn_protocol_oteryn::chat::ChatDisposition::ChatUnavailable,
+                    wait_seconds: 0,
+                },
+                |(result, _)| result,
+            )
+    }
+
+    async fn chat_intent_completion(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        intent: oteryn_protocol_oteryn::chat::ChatIntent,
+    ) -> Option<(
+        oteryn_protocol_oteryn::chat::ChatIntentResult,
+        Option<actor_spell::SpellCastOutcome>,
+    )> {
+        self.complete_chat_intent(actor, session, command_id, &intent)
+            .await
+    }
+
+    async fn public_chat_admit(
+        &self,
+        admitted: AdmittedSession,
+        rooms: oteryn_protocol_oteryn::chat::ChatRoomSet,
+    ) -> oteryn_protocol_oteryn::chat::ChatRoomSet {
+        ComposedFreshAdmission::public_chat_admit(self, admitted, rooms).await
+    }
+
+    async fn public_chat_preflight(
+        &self,
+        admitted: AdmittedSession,
+        command_id: u64,
+        intent: &oteryn_protocol_oteryn::chat::ChatIntent,
+    ) -> Option<Option<oteryn_protocol_oteryn::chat::ChatIntentResult>> {
+        ComposedFreshAdmission::public_chat_preflight(self, admitted, command_id, intent).await
+    }
+
+    async fn chat_private_admit_bound(&self, admitted: AdmittedSession, selected: bool) {
+        self.private_channel_admit(admitted, selected).await;
+    }
+
+    async fn chat_channel_list_bound(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::chat::private_channel::ChatChannelList> {
+        self.private_channel_list(admitted).await
+    }
+
+    async fn chat_private_intent(
+        &self,
+        admitted: AdmittedSession,
+        command_id: u64,
+        intent: oteryn_protocol_oteryn::chat::private_channel::PrivateChannelIntent,
+    ) -> Option<oteryn_protocol_oteryn::chat::ChatIntentResult> {
+        self.private_channel_command(admitted, command_id, &intent)
+            .await
+    }
+
+    async fn chat_guild_admit(
+        &self,
+        admitted: AdmittedSession,
+    ) -> oteryn_protocol_oteryn::chat::guild_room::GuildRoomState {
+        self.guild_chat_admit(admitted).await
+    }
+
+    async fn chat_party_admit(&self, admitted: AdmittedSession) {
+        if admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::chat::party_room::CAPABILITY_CHAT_PARTY_ROOM_V1)
+        {
+            self.states.chat.party.bind(admitted);
+        }
+    }
+
+    async fn chat_party_intent(
+        &self,
+        admitted: AdmittedSession,
+        text: String,
+    ) -> oteryn_protocol_oteryn::chat::ChatIntentResult {
+        self.party_chat_send(admitted, text).await
+    }
+
+    async fn chat_guild_intent(
+        &self,
+        admitted: AdmittedSession,
+        text: String,
+    ) -> oteryn_protocol_oteryn::chat::ChatIntentResult {
+        self.guild_chat_send(admitted, text).await
+    }
+
+    async fn chat_next_bound(
+        &self,
+        admitted: AdmittedSession,
+        remaining: &mut usize,
+    ) -> Option<oteryn_protocol_oteryn::chat::ChatLine> {
+        self.emit_mount_voice(admitted).await;
+        self.guild_chat_next(admitted, remaining).await
+    }
+
+    async fn chat_delivered(&self, session: GameSessionId) {
+        self.states.chat.delivered(session);
+    }
+
+    async fn chat_rooms_changed_bound(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::chat::ChatRoomSet> {
+        self.states.chat.take_public_rooms_change(&admitted)
+    }
+
+    async fn npc_session_open(&self, session: GameSessionId) {
+        self.open_npc_session(session).await
+    }
+
+    async fn npc_follow(
+        &self,
+        _actor: ExactActorRef,
+        session: GameSessionId,
+        shown: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
+    ) -> Option<npc_command::NpcUpdate> {
+        self.follow_npc_session(_actor, session, shown).await
+    }
+
+    async fn resume_npc_bank(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+    ) -> Option<npc_command::NpcTalkOutcome> {
+        // Retained-work lookups use the same non-blocking holder as background passes.
+        // A busy lookup proves neither an absent original nor a terminal result. Retry the
+        // idempotent reconciliation under the existing command budget before closing.
+        let budget = AdmissionRetryBudget::for_command(self.root);
+        let mut outcome = loop {
+            let outcome = npc_command::resume_npc_talk(self, actor, command).await?;
+            if !outcome.unknown
+                || !budget
+                    .retries_unavailable(AdmissionRefusal::Unavailable)
+                    .await
+            {
+                break outcome;
+            }
+        };
+        if let Some(name) = self.states.chat.speaker_name(command.game_session_id)
+            && let Some(conversation) = &mut outcome.conversation
+        {
+            for line in &mut conversation.lines {
+                *line = oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name);
+            }
+        }
+        Some(outcome)
+    }
+
+    async fn npc_talk(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
+    ) -> npc_command::NpcTalkOutcome {
+        let mut outcome = self.vocation_talk(actor, command, intent).await;
+        if let Some(name) = self.states.chat.speaker_name(command.game_session_id)
+            && let Some(conversation) = &mut outcome.conversation
+        {
+            for line in &mut conversation.lines {
+                *line = oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name);
+            }
+        }
+        outcome
+    }
+
+    fn server_save_countdown(
+        &self,
+    ) -> Option<crate::gameplay_transport::server_save_countdown::DueServerSaveCountdown> {
+        self.states.server_save.current()
+    }
+
+    fn server_motd(&self) -> &str {
+        self.server_motd
+    }
+
+    fn server_messages_joined(&self, admitted: AdmittedSession) -> bool {
+        !raid_notices::selected(admitted)
+            || self.states.server_messages.join(
+                admitted.game_session_id,
+                admitted.continuity.connection_generation,
+            )
+    }
+
+    fn server_messages_left(&self, admitted: AdmittedSession) {
+        self.states.server_messages.leave(
+            admitted.game_session_id,
+            admitted.continuity.connection_generation,
+        );
+    }
+
+    fn take_server_notice(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::zones_nologout::ServerMessage> {
+        if !raid_notices::selected(admitted) {
+            return None;
+        }
+        self.states.server_messages.take(
+            admitted.game_session_id,
+            admitted.continuity.connection_generation,
+        )
+    }
+
+    async fn server_messages_changed(&self, admitted: AdmittedSession) {
+        if !raid_notices::selected(admitted) {
+            std::future::pending::<()>().await;
+        }
+        self.states
+            .server_messages
+            .wait(
+                admitted.game_session_id,
+                admitted.continuity.connection_generation,
+            )
+            .await;
+    }
+
+    fn take_tutorial_notice(
+        &self,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::tutorial_notices::TutorialNotice> {
+        self.states.tutorial_sessions.take(session)
+    }
+
+    async fn npc_trade(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::npc_service::NpcTradeIntent,
+    ) -> npc_trade_command::NpcTradeStep {
+        npc_trade_command::npc_trade(self, actor, command, intent).await
+    }
+
+    /// MAP-CUTOVER-1b: a bundle World offers the Item view set plus capability 18.
+    /// MAP-ITEM-REF-1: any other World offers capability 4 (once Part B sets its gate) only when
+    /// the active generation pins a non-empty Item key set. ADMIT0: boot validated
+    /// `required_capabilities` against this same offer; a bundle World's floor holds 18, so
+    /// admission requires it through the authenticated check in `admit`, not here.
+    fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
+        store::with_store_offer(
+            loop_training::offer(
+                self,
+                world_required_capabilities::offered_for_scope(
+                    self.bundle_map().is_some(),
+                    self.active_generation,
+                ),
+            ),
+            self.store.is_some(),
+        )
+    }
+
+    /// MAP-CUTOVER-1b: domain 17 of a bundle World at the actor's current position. The position
+    /// is read under the runtime lock `step` takes (§1.4); the window is composed and encoded
+    /// after the lock is released.
+    async fn observe_world_map(
+        &self,
+        actor: ExactActorRef,
+        view: &mut world_map::SessionMapView,
+        items: &mut item_view::SessionItemView,
+    ) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
+        bundle_map_position::observe(self, actor, view, items).await
+    }
+
+    async fn observe(&self, actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+        self.observe_actor_position(actor).await
+    }
+
+    /// MAP-ITEM-REF-1: domain 9 from the durable backpack, each definition through the Channel
+    /// content pin's Item definition index.
+    async fn observe_character_inventory(
+        &self,
+        _actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<item_view::InventoryItems> {
+        item_ref_admission::observe_character_inventory(self, game_session_id).await
+    }
+
+    async fn observe_character_equipment(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<
+        Vec<(
+            oteryn_protocol_oteryn::item_view::EquipmentSlot,
+            item_view::ViewItem,
+        )>,
+    > {
+        // Named-House custody retains the Channel carrier's ExactActorRef.
+        // Select the reader from the actual resident, not that carrier namespace.
+        let in_house = self
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, game_session_id)
+            .is_ok();
+        if in_house {
+            equipment_move::observe_house_character_equipment(self, actor, game_session_id).await
+        } else {
+            equipment_move::observe_character_equipment(self, game_session_id).await
+        }
+    }
+
+    async fn committed_equipment_move(
+        &self,
+        _actor: ExactActorRef,
+        command: connection::UseCommand,
+    ) -> Option<item_move::EquipmentMoveReplay> {
+        equipment_move::committed_equipment_move(self, command).await
+    }
+
+    async fn move_equipment(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        request: item_move::EquipmentMove,
+    ) -> item_move::EquipmentMoveResult {
+        equipment_move::move_equipment(self, actor, command, request).await
+    }
+
+    async fn stash(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::stash::StashIntent,
+        item: Option<item_view::ItemKey>,
+        row_open: bool,
+    ) -> Option<oteryn_protocol_oteryn::stash::StashReply> {
+        stash::execute(self, actor, command, intent, item, row_open).await
+    }
+
+    async fn depot(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::depot::DepotIntent,
+        item: Option<item_view::ItemKey>,
+    ) -> Option<connection::DepotObservation> {
+        depot::execute(self, actor, command, intent, item).await
+    }
+
+    async fn committed_loop_move(
+        &self,
+        _actor: ExactActorRef,
+        command: connection::UseCommand,
+    ) -> Option<item_move::LoopMoveReplay> {
+        loop_move::committed_loop_move(self, command).await
+    }
+
+    async fn move_loop_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        request: item_move::LoopMove,
+    ) -> item_move::LoopMoveResult {
+        loop_move::move_loop_item(self, actor, command, request).await
+    }
+
+    /// Carried or reachable proven direct Ground container (capability 14).
+    async fn observe_container(
+        &self,
+        actor: ExactActorRef,
+        fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
+        target: item_view::ItemKey,
+    ) -> Option<container_view::ContainerObservation> {
+        loop_move::observe_container(self, actor, fence, target).await
+    }
+
+    /// VIS-3: the Channel's players, live creatures and (NPC-LOAD-1) NPC actors, read in one
+    /// owner work item, and (MAP-ITEM-REF-1 Part B) its bound corpses as objects in the same
+    /// read.
+    async fn observe_named_visible_entities(
+        &self,
+        actor: ExactActorRef,
+    ) -> Option<world_spatial::ChannelEntities> {
+        self.named_channel_entities(actor).await
+    }
+
+    async fn observe_visible_entities(
+        &self,
+        actor: ExactActorRef,
+    ) -> Option<world_spatial::ChannelEntities> {
+        self.observe_channel_entities(actor).await
+    }
+
+    /// The Channel's current door `WORLD_OBJECT_OVERLAY` (USE-WIRE-V1, #162 5868482467), for
+    /// the join/resync snapshot. Channel-global, unlike `observe`: no actor is involved.
+    async fn observe_world_object_overlay(
+        &self,
+    ) -> Option<oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry> {
+        self.observe_object_overlay().await
+    }
+
+    /// One Channel-owner work item for one actor (`MOVE-RL-02` = 1): the pinned context, one
+    /// direct lookup in the active generation's qualified cells (`MOVE-RL-03` = 1) and the
+    /// owner's compare-commit. A blocked or out-of-room destination is `Blocked`; any stale,
+    /// unpositioned or mismatched binding is `Rejected`. Nothing moves unless the step commits.
+    ///
+    /// SPEED-1: the step is paced by the step duration onto its destination (CONDITIONS-0 §4.2):
+    /// the player's effective speed, with the actor's active `SPEED` condition delta for
+    /// `session` at the owner's time, and the destination's ground speed from the §1.11 seam.
+    /// A destination whose duration cannot be computed is refused before anything moves.
+    async fn paced_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        direction: StepDirection,
+    ) -> (StepOutcome, Option<Duration>) {
+        if self
+            .runtime
+            .lock()
+            .await
+            .house_actor_state(actor, session)
+            .is_ok()
+        {
+            return self.house_paced_step(actor, session, direction).await;
+        }
+        self.tutorial_paced_step(actor, session, direction).await
+    }
+
+    async fn turn_actor_valid(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        let runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        !states.is_dead(actor)
+            && !self.states.newhaven_travel.held(session)
+            && runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+    }
+
+    async fn turn_actor(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        direction: StepDirection,
+    ) -> bool {
+        use crate::foundation::MovementFacing;
+        let mut runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        if states.is_dead(actor)
+            || self.states.newhaven_travel.held(session)
+            || !runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return false;
+        }
+        let context = runtime.pinned_movement_context();
+        let mut movement = runtime.borrow_movement_position();
+        let Ok(expected) = movement.read(actor) else {
+            return false;
+        };
+        if expected.context() != context {
+            return false;
+        }
+        let facing = match direction {
+            StepDirection::North => MovementFacing::North,
+            StepDirection::East => MovementFacing::East,
+            StepDirection::South => MovementFacing::South,
+            StepDirection::West => MovementFacing::West,
+        };
+        movement.commit_turn(expected, facing).is_ok()
+    }
+
+    async fn item_walk_route(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        target: AutoWalkTarget,
+    ) -> Result<Option<AutoWalkRoute>, ()> {
+        ComposedFreshAdmission::item_walk_route(self, actor, session, target).await
+    }
+
+    async fn item_walk_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        expected: crate::foundation::MovementPositionSnapshot,
+        direction: StepDirection,
+        follow: Option<(ExactActorRef, crate::foundation::MovementPositionSnapshot)>,
+    ) -> (
+        StepOutcome,
+        Option<Duration>,
+        Option<crate::foundation::MovementPositionSnapshot>,
+    ) {
+        ComposedFreshAdmission::item_walk_step(self, actor, session, expected, direction, follow)
+            .await
+    }
+
+    async fn item_walk_valid(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        expected: crate::foundation::MovementPositionSnapshot,
+    ) -> bool {
+        let mut runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        !states.is_dead(actor)
+            && !self.states.newhaven_travel.held(session)
+            && runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+            && runtime.borrow_movement_position().read(actor) == Ok(expected)
+    }
+
+    /// CHASE-1 (RANGED-0 §8): the owner's chase step (`attack::chase_step_now`).
+    async fn chase_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(StepOutcome, Option<Duration>)> {
+        self.newhaven_chase_step(actor, session).await
+    }
+
+    async fn yield_chase_to_client(&self, actor: ExactActorRef, session: GameSessionId) {
+        self.chase_yield_to_client(actor, session).await;
+    }
+
+    async fn chase_search_waiting(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.chase_search_waiting_now(actor, session).await
+    }
+
+    async fn actor_step_deadline(&self, actor: ExactActorRef) -> Option<tokio::time::Instant> {
+        self.actor_step_deadline_now(actor).await
+    }
+
+    async fn begin_actor_step(
+        &self,
+        actor: ExactActorRef,
+        holder: &std::sync::Arc<()>,
+    ) -> Option<tokio::time::Instant> {
+        self.begin_actor_step_now(actor, holder).await
+    }
+
+    async fn record_actor_step_deadline(
+        &self,
+        actor: ExactActorRef,
+        holder: &std::sync::Arc<()>,
+        due: Option<tokio::time::Instant>,
+    ) {
+        self.record_actor_step_deadline_now(actor, holder, due)
+            .await;
+    }
+
+    /// ITEM-USE-1c: one `USE` of a main backpack entry under capability 15.
+    async fn use_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        item: item_view::ItemKey,
+    ) -> UseOutcome {
+        self.use_backpack_item(actor, command, item).await
+    }
+
+    async fn tame_mount(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        item_target: Option<item_view::ItemKey>,
+        visible: bool,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.tame_mount_impl(actor, command, intent, source, item_target, visible)
+            .await
+    }
+
+    async fn observe_house_destroy(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        source: [u8; 16],
+        target: [u8; 16],
+    ) -> Option<house_destroy::Candidate> {
+        self.observe_house_destroy_impl(actor, command, source, target)
+            .await
+    }
+    async fn destroy_house_furniture(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        input: crate::durability::house_furniture_destroy::HouseDestroyCommand,
+    ) -> Option<UseOutcome> {
+        self.destroy_house_furniture_impl(actor, command, input)
+            .await
+    }
+
+    async fn use_pick(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Option<UseOutcome> {
+        if let Some(outcome) = self
+            .use_machete_impl(actor, command, &intent, source, target)
+            .await
+        {
+            return outcome;
+        }
+        self.use_pick_impl(actor, command, intent, source, target)
+            .await
+    }
+
+    async fn use_imbuement_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Option<UseOutcome> {
+        self.use_imbuement_item_impl(actor, command, intent, source, target)
+            .await
+    }
+
+    async fn use_item_completion(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        item: item_view::ItemKey,
+    ) -> Option<UseOutcome> {
+        if let Some(outcome) = self.use_coin(actor, command, item).await {
+            return outcome;
+        }
+        if let Some(outcome) = self.use_reward_bag(actor, command, item).await {
+            return outcome;
+        }
+        if let Some(outcome) = self.use_lottery_ticket(actor, command, item).await {
+            return outcome;
+        }
+        if let Some(outcome) = self.use_converter_item(actor, command, item).await {
+            return outcome;
+        }
+        if let Some(outcome) = self.use_timed_item(actor, command, item).await {
+            return outcome;
+        }
+        Some(self.use_item(actor, command, item).await)
+    }
+
+    async fn item_use_pending(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        let states = self.states.spell_states.lock().await;
+        states
+            .pending_gourmet
+            .iter()
+            .any(|pending| pending.actor == actor && pending.session == session)
+            || states
+                .pending_hireling_lamps
+                .iter()
+                .any(|pending| pending.actor == actor && pending.session == session)
+            || states.pending_item_effects.iter().any(|pending| {
+                pending.actor == actor && pending.request.command.game_session_id() == session
+            })
+    }
+
+    async fn use_event_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        visible_target: bool,
+    ) -> Result<Option<UseOutcome>, ()> {
+        if matches!(
+            command.item_fence.map(|fence| fence.runtime_scope),
+            Some(crate::foundation::RuntimeScopeRefV1::Instance { .. })
+        ) {
+            return self
+                .use_house_event_item(actor, command, &intent, source)
+                .await;
+        }
+        if let Some(outcome) = self
+            .use_reward_bag_intent(actor, command, &intent, source)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        if let Some(outcome) = self
+            .use_cosmetic_item_impl(actor, command, intent.clone(), source)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        self.use_event_item_impl(actor, command, intent, source, visible_target)
+            .await
+    }
+
+    async fn use_consume_transform(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Option<UseOutcome> {
+        self.use_consume_transform(actor, command, intent, source, target)
+            .await
+    }
+
+    async fn use_coin_converter(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        converter: item_view::ItemKey,
+        coin: item_view::ItemKey,
+    ) -> Option<UseOutcome> {
+        self.use_gold_converter(actor, command, converter, coin)
+            .await
+    }
+
+    async fn use_fluid_container(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        source: item_view::ItemKey,
+        target: item_view::ItemKey,
+    ) -> Option<UseOutcome> {
+        self.pour_fluid(actor, command, source, target).await
+    }
+
+    async fn use_fluid_on_map(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        source: item_view::ItemKey,
+        target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Option<UseOutcome> {
+        self.use_fluid_map(actor, command, source, target).await
+    }
+
+    async fn use_item_by_definition(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        definition: std::num::NonZeroU32,
+    ) -> UseOutcome {
+        self.use_item_definition(actor, command, definition).await
+    }
+
+    async fn use_soulpit_items(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.dispatch_soulpit_items(actor, command, &intent, source, target)
+            .await
+    }
+
+    async fn use_craft(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Option<UseOutcome> {
+        self.use_cooking_conversion(actor, command, intent, source, target)
+            .await
+    }
+
+    async fn use_rune(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        key: Option<item_view::ItemKey>,
+        visible: bool,
+        field_runes: bool,
+    ) -> Option<UseOutcome> {
+        self.use_legacy_rune(actor, command, intent, key, visible, field_runes)
+            .await
+    }
+
+    /// One `USE_INTENT` for the admitted actor against the one entry-room door (#162
+    /// 5868482467, USE-WIRE-V1). The client names only the target placement and its expected
+    /// revision; the server selects the unique bound transition
+    /// (`LocalObjectRuntime::attempt_use`). Reach is same floor, Chebyshev distance <=1 from the
+    /// door's own collision cell, no line-of-sight check. `runtime` is locked first, then
+    /// `door`, the same fixed order `step` uses, so the two can never deadlock against each
+    /// other; both stay locked for this whole decision so nothing else can move the acting actor
+    /// or the door state in between.
+    ///
+    /// C2: a `USE` naming the injected entry chest is routed to [`Self::use_chest`] instead;
+    /// every other placement takes the unchanged door path.
+    async fn quest_callback_unresolved(&self, session: GameSessionId) -> bool {
+        self.has_pending_quest_callback(session) || self.states.dawnport_departures.held(session)
+    }
+
+    async fn prepare_quest_callback_resume(&self, admitted: &mut AdmittedSession) -> bool {
+        if let Some(actor) = admitted.runtime_actor
+            && !self
+                .resume_dawnport_departure(actor, admitted.game_session_id)
+                .await
+        {
+            return false;
+        }
+        if !tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            self.prepare_grizzly_npc_resume(admitted).await
+                && self
+                    .reconcile_quest_callbacks(admitted.game_session_id)
+                    .await
+        })
+        .await
+        .unwrap_or(false)
+        {
+            return false;
+        }
+        if !crate::gameplay_transport::hireling::recover_pending_lamp_ingress(self, admitted).await
+        {
+            return false;
+        }
+        self.states
+            .command_ingress
+            .recover_trade_continuity(admitted)
+            .is_some()
+            || admitted.continuity.next_command_id == 1
+    }
+
+    async fn use_event_world_object(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.use_map_harvest_object(actor, command, &target).await
+    }
+
+    async fn use_object(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> UseOutcome {
+        self.use_world_object(actor, command, target).await
+    }
+
+    async fn observe_spell_catalog(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<Vec<oteryn_protocol_oteryn::actor_spell_catalog::SpellCatalogEntry>> {
+        self.actor_spell_catalog(actor, session).await
+    }
+
+    async fn observe_vitals(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<(u64, actor_spell::ActorVitals)> {
+        self.observe_actor_vitals(actor, game_session_id).await
+    }
+
+    /// One cast as one Channel-owner work item (`SPELL-RL-01` = 1), under the same runtime lock
+    /// `step` and `use_object` take.
+    async fn cast_spell(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        command_id: u64,
+        intent: actor_spell::SpellCastIntent,
+    ) -> actor_spell::SpellCastOutcome {
+        self.cast_actor_spell(actor, game_session_id, command_id, intent)
+            .await
+    }
+
+    async fn cast_spell_completion(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        command_id: u64,
+        intent: actor_spell::SpellCastIntent,
+    ) -> Option<actor_spell::SpellCastOutcome> {
+        self.complete_actor_spell(actor, game_session_id, command_id, intent)
+            .await
+    }
+
+    /// Display contract §4: a read-only query of the facts, no Character fence and no Channel
+    /// owner lock. More facts than catalogue keys prove an unknown key, so one more than the
+    /// catalogue's size is read and the page build refuses it.
+    async fn observe_achievement_notices(
+        &self,
+        account_id: [u8; 16],
+    ) -> Option<oteryn_protocol_oteryn::achievement_notices::AchievementWatermark> {
+        self.observe_account_achievement_notices(account_id).await
+    }
+
+    async fn observe_achievement_notice_facts(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<AchievementNoticeObservation> {
+        AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || {
+                self.observe_current_achievement_facts(admitted)
+                    .await
+                    .ok_or(AdmissionRefusal::Unavailable)
+            })
+            .await
+            .ok()
+    }
+
+    async fn account_achievements(
+        &self,
+        request: AccountAchievementsRequest,
+    ) -> AccountAchievementsReply {
+        self.query_account_achievements(request).await
+    }
+
+    async fn world_event(&self, command: connection::UseCommand) -> world_event::Reply {
+        world_event::query(self, command).await
+    }
+
+    async fn raid_schedule(&self, command: connection::UseCommand) -> raid_schedule::Reply {
+        raid_schedule::query(self, command).await
+    }
+
+    async fn highscores(
+        &self,
+        world: WorldId,
+        session: GameSessionId,
+        query: oteryn_protocol_oteryn::highscores::HighscoresQuery,
+    ) -> highscores::HighscoresReply {
+        highscores::answer_session_highscores(self.root, self.world_id, world, session, query).await
+    }
+
+    /// The periodic 1000 ms Serene evaluation of the admitted actor (SPELL-D8 §8.2), under the
+    /// same runtime lock as a cast. DEATH-2: a dead actor is respawned on this cadence instead
+    /// ([`Self::respawn_after_death`]), and its respawn vitals are the published delta.
+    async fn tick_vitals(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<(u64, actor_spell::ActorVitals)> {
+        self.expire_house_furniture_on_tick(actor, game_session_id)
+            .await;
+        self.tick_actor_vitals(actor, game_session_id).await
+    }
+
+    /// ATTACK-1b: one `ATTACK_TARGET_INTENT` as one Channel-owner work item, under the runtime
+    /// lock; a dead or unbound actor takes no target.
+    async fn attack_target(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        command_id: u64,
+        target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
+    ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
+        self.select_attack_target(actor, game_session_id, command_id, target)
+            .await
+    }
+
+    async fn fight_modes(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        modes: oteryn_protocol_oteryn::attack::FightModes,
+    ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
+        self.set_fight_modes(actor, game_session_id, modes).await
+    }
+
+    async fn expert_fight_modes(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
+    ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
+        self.set_expert_fight_modes(actor, session, command_id, modes)
+            .await
+    }
+
+    async fn observe_expert_modes(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::pvp_expert::ExpertFightModes> {
+        AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || {
+                self.observe_expert_fight_modes(actor, session)
+                    .await
+                    .ok_or(AdmissionRefusal::Unavailable)
+            })
+            .await
+            .ok()
+    }
+
+    async fn observe_combat_state(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::attack::ActorCombatState> {
+        self.observe_actor_combat_state(actor, game_session_id)
+            .await
+    }
+
+    /// ATTACK-1b: every 250 ms while a session has domain 10, so a 2000 ms swing is late by at
+    /// most one refresh; the Serene cadence drains as well.
+    async fn tick_combat(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::attack::ActorCombatState> {
+        self.tick_actor_combat(actor, game_session_id).await
+    }
+
+    async fn lose_control(
+        &self,
+        admitted: AdmittedSession,
+        wait: Duration,
+        reset: Option<&crate::durability::world_reset::RetiringWorldReset>,
+    ) -> ControlLossResult {
+        let admitted = match self.settle_activity_connection(admitted).await {
+            Ok(admitted) => admitted,
+            Err(()) => return ControlLossResult::Unknown,
+        };
+        let scoped = match self.resolve_runtime_view(admitted).await {
+            Ok(scoped) => scoped,
+            Err(()) => return ControlLossResult::Unknown,
+        };
+        let owner = scoped.as_ref().unwrap_or(self);
+        owner.lose_control_for_cause(admitted, wait, reset).await
+    }
+
+    async fn enter_input(&self, session: GameSessionId) -> Option<input_gate::InputPermit<'_>> {
+        let permit = self.states.input_gate.enter().await?;
+        if !tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            self.reconcile_quest_callbacks(session),
+        )
+        .await
+        .unwrap_or(false)
+        {
+            return None;
+        }
+        Some(permit)
+    }
+
+    async fn resume(
+        &self,
+        attempt: connection::ResumeAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        self.resume_session(attempt).await
+    }
+
+    /// The abandoned-session release follows the same fence, commit and settle steps as grace
+    /// expiry (CHARM-DESC-FENCE-LEASE §3 item 1), under one transition token minted for it.
+    async fn release_abandoned(&self, admitted: AdmittedSession) -> GraceExpiryResult {
+        let admitted = match self.settle_activity_connection(admitted).await {
+            Ok(admitted) => admitted,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let scoped = match self.resolve_runtime_view(admitted).await {
+            Ok(scoped) => scoped,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let owner = scoped.as_ref().unwrap_or(self);
+        owner.release_abandoned_session(admitted).await
+    }
+
+    async fn reconcile_terminal(&self, admitted: AdmittedSession) -> GraceExpiryResult {
+        let admitted = match self.settle_activity_connection(admitted).await {
+            Ok(admitted) => admitted,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let scoped = match self.resolve_runtime_view(admitted).await {
+            Ok(scoped) => scoped,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let owner = scoped.as_ref().unwrap_or(self);
+        owner.reconcile_terminal_session(admitted).await
+    }
+
+    async fn offline_training(
+        &self,
+        admitted: AdmittedSession,
+        command: connection::UseCommand,
+        target: item_view::ItemKey,
+    ) -> Option<oteryn_protocol_oteryn::loop_training::TrainingResult> {
+        self.offline_training(admitted, command, target).await
+    }
+    async fn exercise_training(
+        &self,
+        admitted: AdmittedSession,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::loop_training::ExerciseIntent,
+        weapon: Option<item_view::ItemKey>,
+        dummy: Option<item_view::ItemKey>,
+    ) -> Option<oteryn_protocol_oteryn::loop_training::TrainingResult> {
+        self.exercise_training(admitted, command, intent, weapon, dummy)
+            .await
+    }
+    fn gameplay_idle_policy(&self) -> super::super::GameplayIdlePolicy {
+        self.states.gameplay_idle_policy
+    }
+
+    fn observe_gameplay_idle(&self, admitted: AdmittedSession) {
+        if admitted.world_id == self.world_id && admitted.channel_id == self.channel_id {
+            self.states.gameplay_idle_presence.observe(admitted);
+        }
+    }
+
+    async fn gameplay_idle_exemptions(&self, admitted: AdmittedSession) -> Option<(bool, bool)> {
+        let actor = admitted.runtime_actor?;
+        let mut runtime = self.runtime.lock().await;
+        runtime.owner_fence().ok()?;
+        let facts = runtime
+            .player_control_facts(actor, admitted.game_session_id)
+            .ok()?;
+        if facts.control_loss.is_some() {
+            return None;
+        }
+        let no_logout = self.no_logout_tile(&mut runtime, actor)?;
+        drop(runtime);
+        Some((self.idle_training(admitted).await?, no_logout))
+    }
+
+    async fn training_activity(&self, admitted: AdmittedSession, kind: u32) -> bool {
+        self.loop_training_activity(admitted, kind).await
+    }
+    async fn logout(&self, admitted: AdmittedSession) -> logout::LogoutReply {
+        self.logout_session(admitted).await
+    }
+    async fn logout_command(
+        &self,
+        admitted: AdmittedSession,
+        command_id: u64,
+    ) -> logout::LogoutReply {
+        self.logout_activity_command(admitted, command_id).await
+    }
+    async fn logout_idle(&self, admitted: AdmittedSession) -> logout::LogoutReply {
+        self.logout_activity_idle(admitted).await
+    }
+
+    async fn expire_control_loss(&self, admitted: AdmittedSession) -> GraceExpiryResult {
+        let admitted = match self.settle_activity_connection(admitted).await {
+            Ok(admitted) => admitted,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let scoped = match self.resolve_runtime_view(admitted).await {
+            Ok(scoped) => scoped,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let owner = scoped.as_ref().unwrap_or(self);
+        owner.expire_session_control_loss(admitted).await
+    }
+
+    async fn admit(
+        &self,
+        attempt: FreshAdmissionAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        self.admit_fresh_session(attempt).await
+    }
+
+    /// ITEM-MOVE-1 replay first: the receipt of this command 9's CommandRef in
+    /// `game_item_transfer_receipts`, read under the cause lock. Without an item fence nothing can
+    /// have committed for the session.
+    async fn committed_item_move(
+        &self,
+        _actor: ExactActorRef,
+        command: connection::UseCommand,
+    ) -> Result<
+        Option<crate::durability::item_transfer::CommittedItemTransfer>,
+        crate::durability::item_transfer::ItemTransferError,
+    > {
+        self.read_committed_item_move(_actor, command).await
+    }
+
+    /// READ-WRITE-1a: read a visible base placement without materializing it.
+    async fn look_world_object(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> ItemLookResult {
+        item_look::look_world_object(self, actor, game_session_id, target).await
+    }
+
+    /// LOOK-2: examine a freshly observed item admitted by the session's handle table.
+    async fn look_item(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        fence: Option<CurrentCharacterItemFence>,
+        views: &item_view::SessionItemView,
+        target: ItemHandle,
+    ) -> ItemLookResult {
+        item_look::look_item(self, actor, game_session_id, fence, views, target).await
+    }
+
+    /// LOOK-2: examine a current visible actor incarnation.
+    async fn look_creature(
+        &self,
+        actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+        target: EntityRef,
+    ) -> ItemLookResult {
+        item_look::look_creature(self, actor, target).await
+    }
+
+    /// MAP-ITEM-REF-1 Part B: a bound corpse's durable contents for `USE` (domain 11).
+    async fn observe_item_target(
+        &self,
+        actor: ExactActorRef,
+        target: item_view::ItemKey,
+    ) -> Option<item_view::ItemTargetObservation> {
+        item_ref_admission::observe_item_target(self, actor, target).await
+    }
+
+    /// MAP-ITEM-REF-1 Part B: command 9's corpse-entry TRANSFER into the main backpack.
+    async fn take_corpse_entry(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        corpse: item_view::ItemKey,
+        entry: item_view::ItemKey,
+    ) -> Result<
+        crate::durability::item_transfer::ItemTransferOutcome,
+        crate::combat_pickup::GroundPickupError,
+    > {
+        item_ref_admission::take_corpse_entry(self, actor, command, corpse, entry).await
+    }
+}

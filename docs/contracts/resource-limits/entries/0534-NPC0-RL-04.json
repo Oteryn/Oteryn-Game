@@ -1,0 +1,22 @@
+{
+  "id": "NPC0-RL-04",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+  "resource": "NPC_TALK_INTENT commands (command type 7) of one GameSession",
+  "unit": "commands per second",
+  "hard_maximum": 4,
+  "configurable_range": {
+    "minimum": 4,
+    "maximum": 4
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounds keyword scans and conversation deltas per session; an over-rate command has no effect and is answered RATE_LIMITED. Enforced by NPC-TALK-1.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=4: four intents in one second are served",
+    "max+1=5: a fifth intent in the same second is answered RATE_LIMITED without effect"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/npc_service.rs MAX_TALK_INTENTS_PER_SECOND"
+  ],
+  "notes": "NPC-0 \u00a74. Worker-set; the enforcing window is NPC-TALK-1's. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+}

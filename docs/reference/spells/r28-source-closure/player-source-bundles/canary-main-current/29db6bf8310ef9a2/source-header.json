@@ -1,0 +1,43 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 16000,
+    "costs": {
+      "mana": 300
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "harmony_role": "builder",
+    "name": "Greater Flurry of Blows",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_berserk"
+    },
+    "reference_spell_id": 289,
+    "requirements": {
+      "level": 90,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "needs_direction": true
+    },
+    "words": "exori gran mas pug"
+  }
+}

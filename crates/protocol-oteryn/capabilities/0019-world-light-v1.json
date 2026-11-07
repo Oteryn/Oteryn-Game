@@ -1,0 +1,19 @@
+{
+  "id": 19,
+  "name": "WORLD_LIGHT_V1",
+  "constant": "world_clock::CAPABILITY_WORLD_LIGHT_V1",
+  "requires": [
+    6
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [
+    18
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

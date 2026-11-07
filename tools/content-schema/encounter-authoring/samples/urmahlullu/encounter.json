@@ -1,0 +1,156 @@
+{
+  "identity": {
+    "key": "canary:encounter/urmahlullu",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Kilmaresh: Urmahlullu",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "urmahlullu_the_immaculate",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/urmahlullu_the_immaculate",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "wildness_of_urmahlullu",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/wildness_of_urmahlullu",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "urmahlullu_the_tamed",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/urmahlullu_the_tamed",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "wisdom_of_urmahlullu",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/wisdom_of_urmahlullu",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "urmahlullu_the_immaculate_changes",
+      "trigger": {
+        "kind": "lethal_damage",
+        "role": "urmahlullu_the_immaculate"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "prevent_death",
+          "role": "urmahlullu_the_immaculate"
+        },
+        {
+          "kind": "transform",
+          "role": "urmahlullu_the_immaculate",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/wildness_of_urmahlullu",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "wildness_of_urmahlullu_changes",
+      "trigger": {
+        "kind": "lethal_damage",
+        "role": "wildness_of_urmahlullu"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "prevent_death",
+          "role": "wildness_of_urmahlullu"
+        },
+        {
+          "kind": "transform",
+          "role": "wildness_of_urmahlullu",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/urmahlullu_the_tamed",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "urmahlullu_the_tamed_changes",
+      "trigger": {
+        "kind": "lethal_damage",
+        "role": "urmahlullu_the_tamed"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "prevent_death",
+          "role": "urmahlullu_the_tamed"
+        },
+        {
+          "kind": "transform",
+          "role": "urmahlullu_the_tamed",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/wisdom_of_urmahlullu",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "wisdom_of_urmahlullu_changes",
+      "trigger": {
+        "kind": "lethal_damage",
+        "role": "wisdom_of_urmahlullu"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "prevent_death",
+          "role": "wisdom_of_urmahlullu"
+        },
+        {
+          "kind": "transform",
+          "role": "wisdom_of_urmahlullu",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/urmahlullu_the_weakened",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

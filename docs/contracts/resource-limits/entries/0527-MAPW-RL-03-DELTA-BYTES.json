@@ -1,0 +1,23 @@
+{
+  "id": "MAPW-RL-03-DELTA-BYTES",
+  "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+  "resource": "Encoded WorldMapViewDeltaV1 (domain 17 delta payload)",
+  "unit": "bytes",
+  "hard_maximum": 93376,
+  "configurable_range": {
+    "minimum": 93376,
+    "maximum": 93376
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "248 x 360 + 248 x 16 + 128 = 93,376, under FND02-STATE-DELTA-PAYLOAD-BYTES (262,144).",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=93376: a 248-entry delta of the largest tiles encodes within the bound",
+    "max+1=93377: a payload one byte over fails closed before parsing"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/world_map.rs MAX_DELTA_PAYLOAD_BYTES",
+    "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json state domain 17"
+  ],
+  "notes": "MAP-WIRE-1 \u00a73. Test: world_map::tests::encoded_sizes_stay_within_the_bounds. Registered by OTV2-20261004-map-wire-2."
+}

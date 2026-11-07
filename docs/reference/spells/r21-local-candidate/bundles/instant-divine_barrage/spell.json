@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/divine_barrage",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Divine Barrage",
+    "carrier": "instant",
+    "words": "exori dir san",
+    "reference_spell_id": 302,
+    "library_text": "As the most holy of paladins are trained in wielding divine might, a lifetime of training and exercise can perfect certain skills. Devotion and continued practice allows a skilled paladin to unfetter a barrage of holy energy. Destined to teach a valuable lesson to any target, the after-effect of this spell will definitely leave a lasting impression.",
+    "requirements": {
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ],
+      "level": 70,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 175,
+      "soul": 0
+    },
+    "cooldown_ms": 4000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 7,
+      "parameter": "none",
+      "cast_at_position": true
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_divine_caldera"
+    },
+    "base_power": 130,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/divine_barrage",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

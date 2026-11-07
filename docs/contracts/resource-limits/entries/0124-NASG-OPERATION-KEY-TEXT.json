@@ -1,0 +1,19 @@
+{
+  "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+  "boundary_tests": [
+    "Exactly 43 ASCII characters accepted only with canonical encoding; 42 and 44 rejected",
+    "Text and binary boundaries bind the same opaque operation; conflicting retry cannot mint a new identity"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "minimum": 43,
+    "maximum": 43
+  },
+  "failure_category": "INVALID_INPUT",
+  "hard_maximum": 43,
+  "id": "NASG-OPERATION-KEY-TEXT",
+  "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+  "resource": "Exact canonical unpadded base64url key",
+  "unit": "ASCII characters"
+}

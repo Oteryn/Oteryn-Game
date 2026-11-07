@@ -1,0 +1,547 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oteryn:schema/source-text/v1",
+  "$defs": {
+    "text_ref": {
+      "description": "Narrative text is reserved content (LICENSE-ASSETS.md): a digest, length and placeholders, never the text.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sha256",
+        "length",
+        "placeholders"
+      ],
+      "properties": {
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "placeholders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "enum": [
+            "canary",
+            "crystalserver"
+          ]
+        },
+        "repository": {
+          "enum": [
+            "opentibiabr/canary",
+            "zimbadev/crystalserver"
+          ]
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^(data|data-otservbr-global|data-global|data-crystal)/.+\\.lua$"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "blob_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "token_kind": {
+          "enum": [
+            "string",
+            "lstring"
+          ]
+        },
+        "raw_literal": {
+          "type": "string",
+          "minLength": 2
+        },
+        "literal_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "decoder": {
+          "const": "lua_tables._string/v1"
+        },
+        "source_read_mode": {
+          "enum": [
+            "raw_utf8",
+            "universal_newlines"
+          ]
+        },
+        "text_transform": {
+          "enum": [
+            "identity",
+            "chest_written_text_strip_lf"
+          ]
+        },
+        "transform_provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "line",
+            "blob_sha256",
+            "expression"
+          ],
+          "properties": {
+            "path": {
+              "const": "tools/content-schema/quest-authoring/ots_chests.py"
+            },
+            "line": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "blob_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expression": {
+              "const": "text_ref(text['text'].strip('\\n'))"
+            }
+          }
+        },
+        "source_binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "table",
+            "uid",
+            "field"
+          ],
+          "properties": {
+            "table": {
+              "const": "AttributeTable"
+            },
+            "uid": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "field": {
+              "const": "text"
+            }
+          }
+        }
+      },
+      "required": [
+        "source",
+        "repository",
+        "revision",
+        "path",
+        "line",
+        "blob_sha256",
+        "token_kind",
+        "raw_literal",
+        "literal_sha256",
+        "decoder",
+        "source_read_mode",
+        "text_transform"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "source": {
+                "const": "canary"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "repository": {
+                "const": "opentibiabr/canary"
+              },
+              "revision": {
+                "const": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source": {
+                "const": "crystalserver"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "repository": {
+                "const": "zimbadev/crystalserver"
+              },
+              "revision": {
+                "const": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "text_transform": {
+                "const": "chest_written_text_strip_lf"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "transform_provenance",
+              "source_binding"
+            ]
+          }
+        }
+      ]
+    },
+    "captured_text": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reference": {
+          "$ref": "#/$defs/text_ref"
+        },
+        "text": {
+          "type": "string"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/source"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "reference",
+        "text",
+        "sources"
+      ]
+    },
+    "location": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "quests",
+            "progress",
+            "interactions",
+            "gates",
+            "claims",
+            "wiki_catalogue"
+          ]
+        },
+        "record": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^/"
+        },
+        "owners": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(canary|crystalserver):quest/"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "role",
+        "record",
+        "path",
+        "owners"
+      ]
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reference": {
+          "$ref": "#/$defs/text_ref"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/location"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "classification": {
+          "enum": [
+            "KNOWN",
+            "UNKNOWN"
+          ]
+        },
+        "text": {
+          "type": "string"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/source"
+          },
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "reference",
+        "references",
+        "classification"
+      ],
+      "oneOf": [
+        {
+          "properties": {
+            "classification": {
+              "const": "KNOWN"
+            }
+          },
+          "required": [
+            "text",
+            "sources"
+          ],
+          "not": {
+            "required": [
+              "reason"
+            ]
+          }
+        },
+        {
+          "properties": {
+            "classification": {
+              "const": "UNKNOWN"
+            }
+          },
+          "required": [
+            "reason"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "text"
+                ]
+              },
+              {
+                "required": [
+                  "sources"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "capture": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "OTERYN_SOURCE_TEXT_CAPTURE/v1"
+        },
+        "classification": {
+          "const": "OTS_HYPOTHESIS_ONLY"
+        },
+        "scope": {
+          "const": "source_reference_prose_only; no native or runtime admission"
+        },
+        "texts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/captured_text"
+          },
+          "uniqueItems": true
+        },
+        "source_checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "enum": [
+                  "canary",
+                  "crystalserver"
+                ]
+              },
+              "path": {
+                "type": "string"
+              },
+              "blob_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "source",
+              "path",
+              "blob_sha256",
+              "reason"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "captured_texts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "parsed_lua_files": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unparsed_lua_files": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "captured_texts",
+            "parsed_lua_files",
+            "unparsed_lua_files"
+          ]
+        }
+      },
+      "required": [
+        "schema",
+        "classification",
+        "scope",
+        "texts",
+        "source_checks",
+        "summary"
+      ]
+    },
+    "registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "OTERYN_SOURCE_TEXT_REGISTRY/v1"
+        },
+        "classification": {
+          "const": "OTS_HYPOTHESIS_ONLY"
+        },
+        "scope": {
+          "const": "source_reference_prose_only; no native or runtime admission"
+        },
+        "texts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/entry"
+          },
+          "uniqueItems": true
+        },
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "wanted": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "known": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unknown": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "wanted",
+            "known",
+            "unknown"
+          ]
+        },
+        "capture_provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ]
+        },
+        "input_provenance": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "role": {
+                "enum": [
+                  "quests",
+                  "progress",
+                  "interactions",
+                  "gates",
+                  "claims",
+                  "wiki_catalogue",
+                  "interactions_manifest"
+                ]
+              },
+              "path": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "role",
+              "path",
+              "sha256"
+            ]
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "schema",
+        "classification",
+        "scope",
+        "texts",
+        "summary",
+        "capture_provenance",
+        "input_provenance"
+      ]
+    }
+  },
+  "$ref": "#/$defs/registry"
+}

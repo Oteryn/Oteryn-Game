@@ -1,0 +1,48 @@
+[
+  {
+    "mechanic": "0040-guild",
+    "kind": "handlers",
+    "id": "0040-guild-intent",
+    "status": "supported",
+    "commands": [
+      40
+    ],
+    "direction": "client_to_server",
+    "capability": 40,
+    "entry": "mod.rs::request",
+    "not_applicable": {
+      "settings": "Guild state is persisted by the server; no local authority settings."
+    }
+  },
+  {
+    "mechanic": "0040-guild",
+    "kind": "keybindings",
+    "id": "0040-guild-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+G",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0040-guild",
+    "kind": "panels",
+    "id": "0040-guild-panel",
+    "status": "supported",
+    "entry": "mod.rs::panel_text"
+  },
+  {
+    "mechanic": "0040-guild",
+    "kind": "handlers",
+    "id": "0040-guild-query",
+    "status": "supported",
+    "commands": [
+      41
+    ],
+    "direction": "client_to_server",
+    "capability": 40,
+    "entry": "mod.rs::request",
+    "not_applicable": {
+      "settings": "Guild state is persisted by the server; no local authority settings."
+    }
+  }
+]

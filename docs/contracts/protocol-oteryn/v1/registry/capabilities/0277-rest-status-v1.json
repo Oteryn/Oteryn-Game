@@ -1,0 +1,13 @@
+{
+  "id": 277,
+  "name": "REST_STATUS_V1",
+  "owner_decision": "GAP-SV7 C10; read-only native rest and food state",
+  "owner": "Game physical actor resting and condition owners",
+  "requires": [],
+  "command_types": [
+    493
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only when the native bundle map is available; command 493 reads only the admitted exact actor and current session."
+}

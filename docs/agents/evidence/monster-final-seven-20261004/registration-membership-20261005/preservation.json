@@ -1,0 +1,18 @@
+{
+  "base_sha": "ec15a486bb82589d7beaa9a4738ba095b9f2314f",
+  "source_sha": "05b01e485e6efb31689de5d758f998eb009275c9",
+  "native_records_preserved": 1870,
+  "old_records_sha256": "0037e98515292706c795c176143216353139c558250d095042683ce62f3f168a",
+  "new_records_sha256": "0037e98515292706c795c176143216353139c558250d095042683ce62f3f168a",
+  "source_definitions_sha256": "fd118b22fcaa9870fe70d107fbc2623f00ea726c153e5a22dd17a89702c5b630",
+  "unchanged": [
+    "content/world",
+    "content/quests",
+    "content/creatures/definitions/creatures-*.json",
+    "imports/spells/monster-seven/accepted-authoring-overlay.json",
+    "imports/spells/monster-seven/adopted-qualification.json",
+    "apps/game-server/src/durability",
+    "apps/game-server/migrations"
+  ],
+  "runtime_activation": false
+}

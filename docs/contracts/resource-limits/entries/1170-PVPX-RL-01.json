@@ -1,0 +1,21 @@
+{
+  "id": "PVPX-RL-01",
+  "owner_contract": "protocol-oteryn/v1/pvp_expert_v1.proto",
+  "resource": "Expert fight mode command and state payload",
+  "unit": "bytes",
+  "hard_maximum": 8,
+  "configurable_range": {
+    "minimum": 8,
+    "maximum": 8
+  },
+  "failure_category": "REJECTED",
+  "allocation_impact": "Four required one-byte keys and enum/bool values; both mode commands share ATTACK0-RL-02.",
+  "client_visible": true,
+  "boundary_tests": [
+    "pvp_expert_wire_all_modes_round_trip",
+    "pvp_expert_wire_refuses_missing_duplicate_unknown_and_invalid_fields"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/pvp_expert.rs"
+  ]
+}

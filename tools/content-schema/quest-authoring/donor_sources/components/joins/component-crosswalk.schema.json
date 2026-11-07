@@ -1,0 +1,1490 @@
+{
+  "$id": "https://oteryn.local/schemas/quest-component-associations/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "assignment_sha256": {
+      "type": "string"
+    },
+    "components": {
+      "items": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_quest_keys": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_quest_keys": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "holds": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "proofs": {
+                "items": {},
+                "maxItems": 0,
+                "type": "array"
+              },
+              "provenance": {
+                "additionalProperties": false,
+                "properties": {
+                  "byte_count": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "git_blob_sha1": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "repository": {
+                    "type": "string"
+                  },
+                  "revision": {
+                    "type": "string"
+                  },
+                  "sha256": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "byte_count",
+                  "git_blob_sha1",
+                  "path",
+                  "repository",
+                  "revision",
+                  "sha256",
+                  "source"
+                ],
+                "type": "object"
+              },
+              "role": {
+                "const": "QUEST_FOLDER_COMPONENT_NOT_INDEPENDENT_QUEST"
+              },
+              "source_component_id": {
+                "type": "string"
+              },
+              "verdict": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_quest_keys",
+              "candidate_quest_keys",
+              "holds",
+              "native_admission",
+              "proofs",
+              "provenance",
+              "role",
+              "source_component_id",
+              "verdict"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_quest_keys": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_quest_keys": {
+                "items": {},
+                "type": "array"
+              },
+              "holds": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "proofs": {
+                "items": {},
+                "maxItems": 0,
+                "type": "array"
+              },
+              "provenance": {
+                "additionalProperties": false,
+                "properties": {
+                  "byte_count": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "git_blob_sha1": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "repository": {
+                    "type": "string"
+                  },
+                  "revision": {
+                    "type": "string"
+                  },
+                  "sha256": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "byte_count",
+                  "git_blob_sha1",
+                  "path",
+                  "repository",
+                  "revision",
+                  "sha256",
+                  "source"
+                ],
+                "type": "object"
+              },
+              "role": {
+                "const": "QUEST_FOLDER_COMPONENT_NOT_INDEPENDENT_QUEST"
+              },
+              "source_component_id": {
+                "type": "string"
+              },
+              "verdict": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_quest_keys",
+              "candidate_quest_keys",
+              "holds",
+              "native_admission",
+              "proofs",
+              "provenance",
+              "role",
+              "source_component_id",
+              "verdict"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_quest_keys": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "candidate_quest_keys": {
+                "items": {},
+                "type": "array"
+              },
+              "holds": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "proofs": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "accessor_dispatch_binding": {
+                          "type": "string"
+                        },
+                        "basis": {
+                          "const": "LEXICAL_STORAGE_ACCESSOR_TARGET_TO_DECLARED_TRACK"
+                        },
+                        "component_evidence": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "char_end": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "char_start": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "line": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "line_sha256": {
+                              "type": "string"
+                            },
+                            "token": {
+                              "type": "string"
+                            },
+                            "token_sha256": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "char_end",
+                            "char_start",
+                            "line",
+                            "line_sha256",
+                            "token",
+                            "token_sha256"
+                          ],
+                          "type": "object"
+                        },
+                        "existing_occurrence": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "blob_sha256": {
+                              "type": "string"
+                            },
+                            "line": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "line_sha256": {
+                              "type": "string"
+                            },
+                            "path": {
+                              "type": "string"
+                            },
+                            "revision": {
+                              "type": "string"
+                            },
+                            "source": {
+                              "type": "string"
+                            },
+                            "target": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "blob_sha256",
+                            "line",
+                            "line_sha256",
+                            "path",
+                            "revision",
+                            "source",
+                            "target"
+                          ],
+                          "type": "object"
+                        },
+                        "limit": {
+                          "const": "Track association only; does not prove callback completeness or sole Quest ownership."
+                        },
+                        "quest_keys": {
+                          "items": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "type": "array"
+                        },
+                        "track_key": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "accessor_dispatch_binding",
+                        "basis",
+                        "component_evidence",
+                        "existing_occurrence",
+                        "limit",
+                        "quest_keys",
+                        "track_key"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "provenance": {
+                "additionalProperties": false,
+                "properties": {
+                  "byte_count": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "git_blob_sha1": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "repository": {
+                    "type": "string"
+                  },
+                  "revision": {
+                    "type": "string"
+                  },
+                  "sha256": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "byte_count",
+                  "git_blob_sha1",
+                  "path",
+                  "repository",
+                  "revision",
+                  "sha256",
+                  "source"
+                ],
+                "type": "object"
+              },
+              "role": {
+                "const": "QUEST_FOLDER_COMPONENT_NOT_INDEPENDENT_QUEST"
+              },
+              "source_component_id": {
+                "type": "string"
+              },
+              "verdict": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_quest_keys",
+              "candidate_quest_keys",
+              "holds",
+              "native_admission",
+              "proofs",
+              "provenance",
+              "role",
+              "source_component_id",
+              "verdict"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "type": "array"
+    },
+    "corpus_manifest_sha256": {
+      "type": "string"
+    },
+    "external_wiki_read": {
+      "const": false
+    },
+    "input_sha256": {
+      "additionalProperties": {
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "quests": {
+      "items": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {},
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "accepted_component_ids": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "candidate_component_ids": {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "definition_readiness": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "native_admission": {
+                "const": "NOT_ASSESSED"
+              },
+              "original_missing_data": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "quest_completeness": {
+                "const": "NOT_ASSESSED"
+              },
+              "quest_key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "accepted_component_ids",
+              "candidate_component_ids",
+              "definition_readiness",
+              "display_name",
+              "native_admission",
+              "original_missing_data",
+              "quest_completeness",
+              "quest_key"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "type": "array"
+    },
+    "schema": {
+      "const": "OTERYN_QUEST_COMPONENT_ASSOCIATIONS/v1"
+    },
+    "semantic_quest_completeness": {
+      "const": "NOT_ESTABLISHED"
+    },
+    "summary": {
+      "additionalProperties": false,
+      "properties": {
+        "components": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "quests": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "quests_with_accepted_components": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "quests_with_candidates": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "verdicts": {
+          "additionalProperties": false,
+          "properties": {
+            "ACCEPTED_SOURCE_ASSOCIATION_PARTIAL_SEMANTICS": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "DIRECTORY_CANDIDATE_ONLY": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "UNLINKED_SOURCE_COMPONENT": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "ACCEPTED_SOURCE_ASSOCIATION_PARTIAL_SEMANTICS",
+            "DIRECTORY_CANDIDATE_ONLY",
+            "UNLINKED_SOURCE_COMPONENT"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "components",
+        "quests",
+        "quests_with_accepted_components",
+        "quests_with_candidates",
+        "verdicts"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "assignment_sha256",
+    "components",
+    "corpus_manifest_sha256",
+    "external_wiki_read",
+    "input_sha256",
+    "quests",
+    "schema",
+    "semantic_quest_completeness",
+    "summary"
+  ],
+  "type": "object"
+}

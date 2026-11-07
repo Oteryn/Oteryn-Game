@@ -1,0 +1,240 @@
+{
+  "encounter": "canary:encounter/ferumbras_mortal_shell",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "FerumbrasSoulSplinterDeath": [
+      "canary:creature/ferumbras_soul_splinter"
+    ],
+    "FerumbrasEssenceImmortal": [
+      "canary:creature/ferumbras_essence"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/ferumbras_ascension/bosses/ferumbras_mortal_shell.lua",
+      "blob_sha1": "2bbd45649e439c07125039125abcd49145543117"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua",
+      "blob_sha1": "2c9515d9786c140168dd4af255961cf7ab3f6ac2"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/ferumbras_ascension/bosses/ferumbras_soul_splinter.lua",
+      "blob_sha1": "6d0bf3447fb6a998ca10ff70a3966cec61499aa6"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/ferumbras_ascension/ferumbras_essence.lua",
+      "blob_sha1": "e3c0cd883c5c077525c37e922d4b22e09c833c39"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_ferumbras_soul_splinter.lua",
+      "blob_sha1": "cfcf638251c4b1b12e94c4a266fc2382c5fafaf0"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Ferumbras Mortal Shell is the ferumbras_mortal_shell participant.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        97,
+        109,
+        110,
+        111,
+        112,
+        113,
+        50
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the configured boss \"Ferumbras Mortal Shell\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125
+      ],
+      "status": "mapped",
+      "resolution": "onDeathForDamagingPlayers credits every damaging player (D27): the reward domain sets FerumbrasAscension.FerumbrasMortalShellTimer to now + 332 h and tells the player when the boss can be fought again.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95
+      ],
+      "status": "mapped",
+      "resolution": "The teleporter item 1949 on the teleport position becomes 22761 with a thunder effect and leads to the Godbreaker; after 60 s revertTeleport turns it back into 1949 leading to (33319, 32318, 13).",
+      "destination": "/encounter/rules/0/actions/1"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        51,
+        52
+      ],
+      "status": "mapped",
+      "resolution": "teleportPos and godbreakerPos become the exit_teleporter and godbreaker anchors (bound by the map project).",
+      "destination": "/encounter/anchors"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "Two minutes after the kill, for each damaging player, the eight Ferumbras crystals are reset: quest-wide global storages and each player's storage go to 0 and crystal items 14961 on fixed tiles turn into 14955. This is quest-wide state shared by all parties (D27 quest domain) acting on fixed map items; it needs a quest-domain outcome contract first."
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        56
+      ],
+      "status": "mapped",
+      "resolution": "Ferumbras Soul Splinter is the ferumbras_soul_splinter participant; its file registers FerumbrasSoulSplinterDeath.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Ferumbras Essence is the ferumbras_essence participant; its file registers FerumbrasEssenceImmortal.",
+      "destination": "/encounter/participants/2/creatures"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        1,
+        3
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of a Ferumbras soul splinter.",
+      "destination": "/encounter/rules/1/trigger"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "status": "mapped",
+      "resolution": "A Ferumbras essence on the death position (extended, forced); the failure log has no game effect.",
+      "destination": "/encounter/rules/1/actions/0"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        14,
+        15,
+        16,
+        17
+      ],
+      "status": "mapped",
+      "resolution": "onHealthChange returns zero for every hit: the essence takes no damage. It also zeroes the essence's own heal (15-25), which changes nothing on a creature that never loses health.",
+      "destination": "/encounter/rules/2"
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "ferumbras_mortal_shell_defeated",
+      "credited": "damage_contributors",
+      "reward_domain": {
+        "canary_storage": "Storage.Quest.U10_90.FerumbrasAscension.FerumbrasMortalShellTimer",
+        "cooldown_seconds": 1195200,
+        "message": "You have defeated <boss>. You can challenge this boss again in <cooldown>."
+      }
+    }
+  ]
+}

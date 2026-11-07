@@ -1,0 +1,253 @@
+{
+  "profiles": {
+    "oteryn:encounter.crystal_smelly_cheese": {
+      "kind": "Encounter",
+      "profile": {
+        "encounter_type": "Generic",
+        "scope": "Instance",
+        "details": {
+          "display_name": "Crystal source mechanics: smelly_cheese",
+          "participants": [
+            {
+              "role": "smelly_cheese",
+              "creatures": [
+                {
+                  "family": "Creature",
+                  "key": "oteryn:creature.smelly_cheese",
+                  "revision": "definition-r1"
+                }
+              ]
+            }
+          ],
+          "covers": [
+            {
+              "family": "Creature",
+              "key": "oteryn:creature.smelly_cheese",
+              "revision": "definition-r1"
+            }
+          ],
+          "state": {},
+          "rules": [
+            {
+              "key": "pulse_1",
+              "trigger": {
+                "kind": "ability_cast",
+                "role": "smelly_cheese",
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.smelly_cheese.berserk_bridge",
+                  "revision": "definition-r1"
+                }
+              },
+              "delay_ms": {
+                "min": 500,
+                "max": 500
+              },
+              "actions": [
+                {
+                  "kind": "cast",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.smelly_cheese.berserk_pulse_1",
+                    "revision": "definition-r1"
+                  },
+                  "at": {
+                    "kind": "subject_position"
+                  }
+                }
+              ]
+            },
+            {
+              "key": "pulse_2",
+              "trigger": {
+                "kind": "ability_cast",
+                "role": "smelly_cheese",
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.smelly_cheese.berserk_bridge",
+                  "revision": "definition-r1"
+                }
+              },
+              "delay_ms": {
+                "min": 700,
+                "max": 700
+              },
+              "actions": [
+                {
+                  "kind": "cast",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.smelly_cheese.berserk_pulse_2",
+                    "revision": "definition-r1"
+                  },
+                  "at": {
+                    "kind": "subject_position"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "oteryn:ability.creature.smelly_cheese.berserk_bridge": {
+      "kind": "Ability",
+      "profile": {
+        "details": {
+          "kind": "Spell",
+          "range_tiles": 0,
+          "needs_target": false,
+          "needs_direction": false,
+          "encounter": {
+            "family": "Encounter",
+            "key": "oteryn:encounter.crystal_smelly_cheese",
+            "revision": "definition-r1"
+          }
+        }
+      }
+    },
+    "oteryn:ability.creature.smelly_cheese.berserk_pulse_1": {
+      "kind": "Ability",
+      "profile": {
+        "details": {
+          "kind": "Spell",
+          "range_tiles": 0,
+          "needs_target": false,
+          "needs_direction": false,
+          "area": {
+            "shape": "Matrix",
+            "north": [
+              "xxx",
+              "xCx",
+              "xxx"
+            ]
+          },
+          "effects": [
+            {
+              "kind": "Executable",
+              "effect": {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.smelly_cheese.berserk_pulse_1",
+                "revision": "definition-r1"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "oteryn:ability.creature.smelly_cheese.berserk_pulse_2": {
+      "kind": "Ability",
+      "profile": {
+        "details": {
+          "kind": "Spell",
+          "range_tiles": 0,
+          "needs_target": false,
+          "needs_direction": false,
+          "area": {
+            "shape": "Matrix",
+            "north": [
+              "xxx",
+              "xCx",
+              "xxx"
+            ]
+          },
+          "effects": [
+            {
+              "kind": "Inline",
+              "effect": {
+                "key": "oteryn:effect.creature.smelly_cheese.berserk_pulse_2",
+                "operation": {
+                  "operation": "PresentationOnly"
+                },
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/poisonarea"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "oteryn:effect.creature.smelly_cheese.berserk_pulse_1": {
+      "kind": "Effect",
+      "profile": {
+        "damage_type": "earth",
+        "affects": {
+          "kind": "Players",
+          "top_creature_only": true,
+          "excludes_caster_name": false,
+          "includes_caster": false
+        },
+        "presentation": {
+          "impact_asset_binding": "canary.appearance:effect/hitbypoison"
+        }
+      }
+    },
+    "oteryn:formula.creature.smelly_cheese.berserk_pulse_1": {
+      "kind": "Formula",
+      "profile": {
+        "formula": "Range",
+        "minimum": 400,
+        "maximum": 800
+      }
+    }
+  },
+  "records": [
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.smelly_cheese.berserk_bridge",
+        "revision": "definition-r1"
+      },
+      "effects": []
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.smelly_cheese.berserk_pulse_1",
+        "revision": "definition-r1"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.smelly_cheese.berserk_pulse_1",
+          "revision": "definition-r1"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.smelly_cheese.berserk_pulse_2",
+        "revision": "definition-r1"
+      },
+      "effects": []
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.smelly_cheese.berserk_pulse_1",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.smelly_cheese.berserk_pulse_1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.smelly_cheese.berserk_pulse_1",
+        "revision": "definition-r1"
+      }
+    }
+  ]
+}

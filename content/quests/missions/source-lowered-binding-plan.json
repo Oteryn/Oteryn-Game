@@ -1,0 +1,3213 @@
+{
+  "classification": "BINDING_WORK_QUEUE_NOT_RUNTIME_AUTHORITY",
+  "inputs": {
+    "chosen_binding_plan": "content/quests/missions/completion-binding-plan.json",
+    "quest_state": "content/quests/missions/quest-state.json"
+  },
+  "limits": [
+    "Every row names an existing QuestState transition; no transition key is invented.",
+    "NPC requested_by evidence is a binding candidate for NPC-QUEST-1, not an executable dialogue binding.",
+    "Source action/movement ownership routes work to QUEST-TRIGGER-1 but does not bind a placement or occurrence root.",
+    "runtime_enabled remains false until the owning runtime child admits the exact binding."
+  ],
+  "records": [
+    {
+      "native_binding_count": 0,
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "runtime_enabled": false,
+      "source_completion_state": "LOWERED",
+      "transition_count": 48,
+      "transitions": [
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/cookbook_door/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              23
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/current_dish/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              3
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/current_dish/npc_10",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              21
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_10",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/current_dish/npc_11",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              23
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_11",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/current_dish/npc_12",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              25
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_12",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/current_dish/npc_13",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              27
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_13",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/current_dish/npc_14",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              29
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_14",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/current_dish/npc_15",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              31
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_15",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/current_dish/npc_2",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              5
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_2",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/current_dish/npc_3",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              7
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_3",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/current_dish/npc_4",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              9
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_4",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/current_dish/npc_5",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              11
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_5",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/current_dish/npc_6",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              13
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_6",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/current_dish/npc_7",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              15
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_7",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/current_dish/npc_8",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              17
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_8",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/current_dish/npc_9",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              19
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_9",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/last_interaction_date10/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              21
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/last_interaction_date11/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              23
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/last_interaction_date12/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              25
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/last_interaction_date13/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              27
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/last_interaction_date14/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              29
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/last_interaction_date15/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              31
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/last_interaction_date2/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              5
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/last_interaction_date3/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              7
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/last_interaction_date4/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              9
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/last_interaction_date5/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              11
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/last_interaction_date6/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              13
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/last_interaction_date7/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              15
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/last_interaction_date8/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              17
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/last_interaction_date9/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              19
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_log/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              3
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_log/npc_10",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              21
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_10",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_log/npc_11",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              23
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_11",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_log/npc_12",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              25
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_12",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_log/npc_13",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              27
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_13",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_log/npc_14",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              29
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_14",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_log/npc_15",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              31
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_15",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": true,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_log/npc_16",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "crystal:npc/jean_pierre",
+            "topics": [
+              33
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_16",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_log/npc_2",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              5
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_2",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_log/npc_3",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              7
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_3",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_log/npc_4",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              9
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_4",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_log/npc_5",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              11
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_5",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_log/npc_6",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              13
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_6",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_log/npc_7",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              15
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_7",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_log/npc_8",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              17
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_8",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_log/npc_9",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              19
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_9",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_start/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              3
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_5/hot_cuisine_quest/quest_start/npc_2",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jean_pierre",
+            "topics": [
+              31
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_2",
+            "owner": "npc",
+            "script": "npc/jean_pierre.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "native_binding_count": 0,
+      "quest": "oteryn:quest.oramond_quest",
+      "runtime_enabled": false,
+      "source_completion_state": "LOWERED",
+      "transition_count": 29,
+      "transitions": [
+        {
+          "binding_basis": "QUEST_STATE_SOURCE_CALLBACK_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "QUEST_TRIGGER_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/probing/mission/action_1",
+          "requested_by": null,
+          "runtime_enabled": false,
+          "source": {
+            "callback": "onUse",
+            "key": "action_1",
+            "owner": "action",
+            "script": "scripts/quests/oramond/probing/actions_mono_detector_strange_probing_device.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/probing/mission/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/doubleday",
+            "topics": [
+              3
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/doubleday.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/probing/mission/npc_2",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/doubleday",
+            "topics": [
+              8
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_2",
+            "owner": "npc",
+            "script": "npc/doubleday.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/probing/mission/npc_3",
+          "requested_by": {
+            "keywords": [
+              "probe"
+            ],
+            "npc": "canary:npc/doubleday",
+            "topics": []
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_3",
+            "owner": "npc",
+            "script": "npc/doubleday.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/probing/mono_detector/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/doubleday",
+            "topics": [
+              3
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/doubleday.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_SOURCE_CALLBACK_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "QUEST_TRIGGER_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/quest_line/action_1",
+          "requested_by": null,
+          "runtime_enabled": false,
+          "source": {
+            "callback": "onUse",
+            "key": "action_1",
+            "owner": "action",
+            "script": "scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/quest_line/npc_1",
+          "requested_by": {
+            "keywords": [
+              "mission"
+            ],
+            "npc": "canary:npc/barnabas_dee",
+            "topics": []
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/barnabas_dee.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/quest_line/npc_2",
+          "requested_by": {
+            "keywords": [
+              "food"
+            ],
+            "npc": "canary:npc/chavis",
+            "topics": []
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_2",
+            "owner": "npc",
+            "script": "npc/chavis.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/quest_line/npc_3",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/doubleday",
+            "topics": [
+              3
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_3",
+            "owner": "npc",
+            "script": "npc/doubleday.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/quest_line/npc_4",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/elliott",
+            "topics": [
+              2
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_4",
+            "owner": "npc",
+            "script": "npc/elliott.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/quest_line/npc_5",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jacob",
+            "topics": [
+              2
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_5",
+            "owner": "npc",
+            "script": "npc/jacob.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/the_ancient_sewers/door/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/elliott",
+            "topics": [
+              2
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/elliott.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/the_ancient_sewers/door/npc_2",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jacob",
+            "topics": [
+              2
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_2",
+            "owner": "npc",
+            "script": "npc/jacob.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_SOURCE_CALLBACK_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "QUEST_TRIGGER_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/the_ancient_sewers/mission/action_1",
+          "requested_by": null,
+          "runtime_enabled": false,
+          "source": {
+            "callback": "onUse",
+            "key": "action_1",
+            "owner": "action",
+            "script": "scripts/quests/oramond/the_ancient_sewers/actions_the_ancient_sewers.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_SOURCE_CALLBACK_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "QUEST_TRIGGER_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/the_ancient_sewers/mission/action_2",
+          "requested_by": null,
+          "runtime_enabled": false,
+          "source": {
+            "callback": "onUse",
+            "key": "action_2",
+            "owner": "action",
+            "script": "scripts/quests/oramond/the_ancient_sewers/actions_the_ancient_sewers.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/the_ancient_sewers/mission/npc_1",
+          "requested_by": {
+            "keywords": [
+              "abandoned sewers"
+            ],
+            "npc": "canary:npc/elliott",
+            "topics": []
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/elliott.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/the_ancient_sewers/mission/npc_2",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/elliott",
+            "topics": [
+              2
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_2",
+            "owner": "npc",
+            "script": "npc/elliott.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/the_ancient_sewers/mission/npc_3",
+          "requested_by": {
+            "keywords": [
+              "ok"
+            ],
+            "npc": "canary:npc/elliott",
+            "topics": [
+              3
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_3",
+            "owner": "npc",
+            "script": "npc/elliott.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/the_ancient_sewers/mission/npc_4",
+          "requested_by": {
+            "keywords": [
+              "abandoned sewers"
+            ],
+            "npc": "canary:npc/jacob",
+            "topics": []
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_4",
+            "owner": "npc",
+            "script": "npc/jacob.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/the_ancient_sewers/mission/npc_5",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/jacob",
+            "topics": [
+              2
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_5",
+            "owner": "npc",
+            "script": "npc/jacob.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/the_ancient_sewers/mission/npc_6",
+          "requested_by": {
+            "keywords": [
+              "ok"
+            ],
+            "npc": "canary:npc/jacob",
+            "topics": [
+              3
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_6",
+            "owner": "npc",
+            "script": "npc/jacob.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/the_powder_of_the_stars/mission/npc_1",
+          "requested_by": {
+            "keywords": [
+              "mission"
+            ],
+            "npc": "canary:npc/barnabas_dee",
+            "topics": []
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/barnabas_dee.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/the_powder_of_the_stars/mission/npc_2",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/barnabas_dee",
+            "topics": [
+              1
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_2",
+            "owner": "npc",
+            "script": "npc/barnabas_dee.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_SOURCE_CALLBACK_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "QUEST_TRIGGER_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/to_take_roots/count/action_1",
+          "requested_by": null,
+          "runtime_enabled": false,
+          "source": {
+            "callback": "onUse",
+            "key": "action_1",
+            "owner": "action",
+            "script": "scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/to_take_roots/count/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/chavis",
+            "topics": [
+              1
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/chavis.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/to_take_roots/door/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/chavis",
+            "topics": [
+              1
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/chavis.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_SOURCE_CALLBACK_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "QUEST_TRIGGER_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/to_take_roots/mission/action_1",
+          "requested_by": null,
+          "runtime_enabled": false,
+          "source": {
+            "callback": "onUse",
+            "key": "action_1",
+            "owner": "action",
+            "script": "scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/to_take_roots/mission/npc_1",
+          "requested_by": {
+            "keywords": [
+              "food"
+            ],
+            "npc": "canary:npc/chavis",
+            "topics": []
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/chavis.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/to_take_roots/mission/npc_2",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/chavis",
+            "topics": [
+              1
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_2",
+            "owner": "npc",
+            "script": "npc/chavis.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "native_binding_count": 0,
+      "quest": "oteryn:quest.sam_s_old_backpack_quest",
+      "runtime_enabled": false,
+      "source_completion_state": "LOWERED",
+      "transition_count": 3,
+      "transitions": [
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_5/sams_old_backpack/sams_old_backpack_door/npc_1",
+          "requested_by": {
+            "keywords": [
+              {
+                "length": 11,
+                "placeholders": [],
+                "sha256": "c6c6263dd5b24b110e1c84eb5eb558eb841ddc7e2b5578c992ef7fa22686b0e3"
+              },
+              {
+                "length": 11,
+                "placeholders": [],
+                "sha256": "d6bb231d1b39d52917e299e91a4ef0b1ce4e706be98f002efa35437753220b62"
+              }
+            ],
+            "npc": "canary:npc/kroox",
+            "topics": []
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/kroox.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_5/sams_old_backpack/sams_old_backpack_npc/npc_1",
+          "requested_by": {
+            "keywords": [
+              {
+                "length": 11,
+                "placeholders": [],
+                "sha256": "c6c6263dd5b24b110e1c84eb5eb558eb841ddc7e2b5578c992ef7fa22686b0e3"
+              },
+              {
+                "length": 11,
+                "placeholders": [],
+                "sha256": "d6bb231d1b39d52917e299e91a4ef0b1ce4e706be98f002efa35437753220b62"
+              }
+            ],
+            "npc": "canary:npc/kroox",
+            "topics": []
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/kroox.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_5/sams_old_backpack/sams_old_backpack_npc/npc_2",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/sam",
+            "topics": [
+              1
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_2",
+            "owner": "npc",
+            "script": "npc/sam.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "native_binding_count": 0,
+      "quest": "oteryn:quest.spirithunters_quest",
+      "runtime_enabled": false,
+      "source_completion_state": "LOWERED",
+      "transition_count": 11,
+      "transitions": [
+        {
+          "binding_basis": "QUEST_STATE_SOURCE_CALLBACK_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "QUEST_TRIGGER_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_7/spirit_hunters/charm_use/action_1",
+          "requested_by": null,
+          "runtime_enabled": false,
+          "source": {
+            "callback": "onUse",
+            "key": "action_1",
+            "owner": "action",
+            "script": "scripts/quests/spirit_hunters/actions_magical_device.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_SOURCE_CALLBACK_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "QUEST_TRIGGER_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_7/spirit_hunters/ghost_use/action_1",
+          "requested_by": null,
+          "runtime_enabled": false,
+          "source": {
+            "callback": "onUse",
+            "key": "action_1",
+            "owner": "action",
+            "script": "scripts/quests/spirit_hunters/actions_magical_device.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_7/spirit_hunters/mission01/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/sinclair",
+            "topics": [
+              2
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/sinclair.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_7/spirit_hunters/mission01/npc_2",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/sinclair",
+            "topics": [
+              3
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_2",
+            "owner": "npc",
+            "script": "npc/sinclair.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_7/spirit_hunters/mission01/npc_3",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/sinclair",
+            "topics": [
+              4
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_3",
+            "owner": "npc",
+            "script": "npc/sinclair.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": true,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_7/spirit_hunters/mission01/npc_4",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/sinclair",
+            "topics": [
+              6
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_4",
+            "owner": "npc",
+            "script": "npc/sinclair.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_7/spirit_hunters/mission01/npc_5",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/spectulus",
+            "topics": [
+              18
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_5",
+            "owner": "npc",
+            "script": "npc/spectulus.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_7/spirit_hunters/mission01/npc_6",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/spectulus",
+            "topics": [
+              19
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_6",
+            "owner": "npc",
+            "script": "npc/spectulus.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_SOURCE_CALLBACK_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "QUEST_TRIGGER_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_7/spirit_hunters/nightstalker_use/action_1",
+          "requested_by": null,
+          "runtime_enabled": false,
+          "source": {
+            "callback": "onUse",
+            "key": "action_1",
+            "owner": "action",
+            "script": "scripts/quests/spirit_hunters/actions_magical_device.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_SOURCE_CALLBACK_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "QUEST_TRIGGER_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_7/spirit_hunters/souleater_use/action_1",
+          "requested_by": null,
+          "runtime_enabled": false,
+          "source": {
+            "callback": "onUse",
+            "key": "action_1",
+            "owner": "action",
+            "script": "scripts/quests/spirit_hunters/actions_magical_device.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_SOURCE_CALLBACK_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "QUEST_TRIGGER_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u8_7/spirit_hunters/tomb_use/action_1",
+          "requested_by": null,
+          "runtime_enabled": false,
+          "source": {
+            "callback": "onUse",
+            "key": "action_1",
+            "owner": "action",
+            "script": "scripts/quests/spirit_hunters/actions_magical_device.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "native_binding_count": 0,
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "runtime_enabled": false,
+      "source_completion_state": "LOWERED",
+      "transition_count": 29,
+      "transitions": [
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/casks_door/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              14
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/chor_door/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              6
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/dworc_door/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              2
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/fibula_door/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              12
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/fibula_door/npc_2",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              13
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_2",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/holy_ape_hair/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              16
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_SOURCE_CALLBACK_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "QUEST_TRIGGER_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/parchment_decyphering/movement_1",
+          "requested_by": null,
+          "runtime_enabled": false,
+          "source": {
+            "callback": "onStepIn",
+            "key": "movement_1",
+            "owner": "movement",
+            "script": "scripts/quests/the_ape_city/movements_mission4_parchment_decyphering.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_1",
+          "requested_by": {
+            "keywords": [
+              "mission"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": []
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_10",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              9
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_10",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_11",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              10
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_11",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_12",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              11
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_12",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_13",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              12
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_13",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_14",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              13
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_14",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_15",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              14
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_15",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_16",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              15
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_16",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_17",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              16
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_17",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_18",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              17
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_18",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_2",
+          "requested_by": {
+            "keywords": [
+              "mission"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": []
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_2",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": true,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_3",
+          "requested_by": {
+            "keywords": [
+              "mission"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": []
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_3",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_4",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              2
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_4",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_5",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              3
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_5",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_6",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              4
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_6",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_7",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              6
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_7",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_8",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              7
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_8",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/questline/npc_9",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              8
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_9",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/shaman_outfit/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              18
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_SOURCE_CALLBACK_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "QUEST_TRIGGER_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/snake_destroyer/action_1",
+          "requested_by": null,
+          "runtime_enabled": false,
+          "source": {
+            "callback": "onUse",
+            "key": "action_1",
+            "owner": "action",
+            "script": "scripts/quests/the_ape_city/actions_mission09_snake_destroyer.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_REQUESTED_BY_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "NPC_QUEST_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/started/npc_1",
+          "requested_by": {
+            "keywords": [
+              "yes"
+            ],
+            "npc": "canary:npc/hairycles",
+            "topics": [
+              2
+            ]
+          },
+          "runtime_enabled": false,
+          "source": {
+            "callback": null,
+            "key": "npc_1",
+            "owner": "npc",
+            "script": "npc/hairycles.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        },
+        {
+          "binding_basis": "QUEST_STATE_SOURCE_CALLBACK_EVIDENCE",
+          "completes": false,
+          "consumer_lane": "QUEST_TRIGGER_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u7_6/the_ape_city/the_large_amphoras_cooldown/action_1",
+          "requested_by": null,
+          "runtime_enabled": false,
+          "source": {
+            "callback": "onUse",
+            "key": "action_1",
+            "owner": "action",
+            "script": "scripts/quests/the_ape_city/actions_mission09_snake_destroyer.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "native_binding_count": 0,
+      "quest": "oteryn:quest.the_outlaw_camp_quest",
+      "runtime_enabled": false,
+      "source_completion_state": "LOWERED",
+      "transition_count": 1,
+      "transitions": [
+        {
+          "binding_basis": "QUEST_STATE_SOURCE_CALLBACK_EVIDENCE",
+          "completes": true,
+          "consumer_lane": "QUEST_TRIGGER_1",
+          "native_binding": null,
+          "quest_transition_key": "oteryn:quest-transition/quest/u6_4/outlaw_camp_quest/action_1",
+          "requested_by": null,
+          "runtime_enabled": false,
+          "source": {
+            "callback": "onUse",
+            "key": "action_1",
+            "owner": "action",
+            "script": "scripts/quests/the_outlaw_camp/actions_the_outlaw_camp_quest.lua",
+            "servers": [
+              "canary",
+              "crystalserver"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "runtime_enabled": false,
+  "schema": "OTERYN_QUEST_SOURCE_LOWERED_BINDING_PLAN/v1",
+  "summary": {
+    "completion_transitions": 4,
+    "consumer_lanes": {
+      "NPC_QUEST_1": 106,
+      "QUEST_TRIGGER_1": 15
+    },
+    "native_bindings": 0,
+    "quests": 6,
+    "requested_by_transitions": 106,
+    "source_owners": {
+      "action": 14,
+      "movement": 1,
+      "npc": 106
+    },
+    "transitions": 121
+  }
+}

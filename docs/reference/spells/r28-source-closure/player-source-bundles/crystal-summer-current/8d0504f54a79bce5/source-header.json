@@ -1,0 +1,44 @@
+{
+  "spell": {
+    "base_power": 10,
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 8
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Scorch",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_scorch"
+    },
+    "reference_spell_id": 178,
+    "requirements": {
+      "level": 1,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "needs_direction": true
+    },
+    "words": "exevo infir flam hur"
+  }
+}

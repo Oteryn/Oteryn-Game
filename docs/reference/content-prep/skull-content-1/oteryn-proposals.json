@@ -1,0 +1,287 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_PROPOSALS/v1",
+  "task": "SKULL-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "SOURCE_RECONCILED_WITH_EXPLICIT_POINT_AND_CLOCK_GAPS",
+  "global_evidence_policy": "Original Global UNKNOWN/CONFLICT facts are retained in the source archive. Target fields now contain scoped DERIVED Oteryn working parameters.",
+  "owner_authorization": {
+    "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+    "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
+  },
+  "predecessor_sha": "b08e8a9303d7d5c0f375951275129918badb95f1",
+  "original_field_list_sha256": "f9bd228c7a49e3f54d9624672277c2ff0f58126d686d35b4f0dd2e320673d1bb",
+  "coverage": {
+    "held_fields": 4,
+    "proposals": 4,
+    "uncovered": 0,
+    "original_classifications": {
+      "UNKNOWN": 4
+    }
+  },
+  "shared_policies": {},
+  "source_observations": [],
+  "proposals": [
+    {
+      "original_field_path": "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json/records/0/facts/duration_seconds",
+      "subject": "skull.white",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "ordinary_attack": 60,
+        "after_player_kill_minimum": 900,
+        "further_combat_refresh_seconds": 60,
+        "expiry": "linked_logout_block_expires",
+        "qualification": "Conditional policy for an attacker marked white; not every assist receives the killer minimum."
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_POLICY_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "official:manual:combat:indexed:20261019",
+            "selector": "5.3 logout/PZ blocks and5.3.12.b White Skulls"
+          }
+        ],
+        "rationale": "Combines explicit official logout-block timings with the official rule that white skull follows the linked block. Combat during the final minute extends the block; it does not restart a new15-minute minimum for every ordinary offense. No fixed duration for every participant is implied."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_ONLY_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json/records/0/facts/duration_seconds",
+        "subject": "skull.white",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "ordinary_attack": 60,
+          "after_player_kill_minimum": 900,
+          "further_combat_refresh_seconds": 60,
+          "expiry": "after_minimum_and_combat_logout_block_end"
+        },
+        "basis": {
+          "kind": "PRIMARY_SOURCE_PRECEDENCE",
+          "rationale": "Use existing qualified white-skull timing supplement; keep runtime index overlap untouched.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json/records/1/facts/thresholds",
+      "subject": "skull.red",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "EXACT_POINT_ALLOCATION_UNRESOLVED",
+        "official_trigger": "unjustified_points_bar_filled",
+        "official_kill_count_guidance": {
+          "hours24": [
+            3,
+            5
+          ],
+          "days7": [
+            5,
+            9
+          ],
+          "days30": [
+            10,
+            19
+          ]
+        },
+        "kill_count_is_deterministic_threshold": false,
+        "point_shares_depend_on_participation": true,
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_POLICY_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "official:manual:combat:indexed:20261019",
+            "selector": "5.3.12.a-b Unjustified Points and skull marks"
+          },
+          {
+            "source": "wiki:2850:1013215",
+            "selector": "Red/Black Skull community tables"
+          },
+          {
+            "source": "wiki-br:skull:indexed:20261019",
+            "selector": "Red/Black Skull community tables"
+          }
+        ],
+        "rationale": "The primary source supplies qualified kill-count guidance and a point-bar trigger. Community3/5/10or6/10/20tables do not establish exact point allocation for all combat situations. Withdraw the fixed-kill project default; no replacement allocation algorithm is selected."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_ONLY_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json/records/1/facts/thresholds",
+        "subject": "skull.red",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "rolling_24h": 3,
+          "rolling_7d": 5,
+          "rolling_30d": 10
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Choose24h daily window; deliberately reject donor dayKills4h behavior."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json/records/2/facts/thresholds",
+      "subject": "skull.black",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "EXACT_POINT_ALLOCATION_UNRESOLVED",
+        "official_trigger": "unjustified_points_bar_filled",
+        "official_kill_count_guidance": {
+          "hours24_minimum": 6,
+          "days7_minimum": 10,
+          "days30_minimum": 20
+        },
+        "kill_count_is_deterministic_threshold": false,
+        "point_shares_depend_on_participation": true,
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_POLICY_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "official:manual:combat:indexed:20261019",
+            "selector": "5.3.12.a-b Unjustified Points and skull marks"
+          },
+          {
+            "source": "wiki:2850:1013215",
+            "selector": "Red/Black Skull community tables"
+          },
+          {
+            "source": "wiki-br:skull:indexed:20261019",
+            "selector": "Red/Black Skull community tables"
+          }
+        ],
+        "rationale": "The primary source supplies qualified kill-count guidance and a point-bar trigger. Community3/5/10or6/10/20tables do not establish exact point allocation for all combat situations. Withdraw the fixed-kill project default; no replacement allocation algorithm is selected."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_ONLY_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json/records/2/facts/thresholds",
+        "subject": "skull.black",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "rolling_24h": 6,
+          "rolling_7d": 10,
+          "rolling_30d": 20
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Choose24h daily window; deliberately reject donor dayKills4h behavior."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json/records/4/facts/clock_boundaries",
+      "subject": "skull.frag_windows",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "status": "GLOBAL_CLOCK_BOUNDARY_UNRESOLVED",
+        "official_windows_seconds": [
+          86400,
+          604800,
+          2592000
+        ],
+        "donor_skull_decision_windows_seconds": [
+          14400,
+          604800,
+          2592000
+        ],
+        "donor_widget_windows_seconds": [
+          86400,
+          604800,
+          2592000
+        ],
+        "donor_comparison": "elapsed_seconds <= window",
+        "donor_clock": "time(nullptr) wall-clock epoch seconds",
+        "global_inclusive_endpoint": "NOT_ESTABLISHED",
+        "global_calendar_or_rolling_implementation": "NOT_ESTABLISHED_BY_INSPECTED_PRIMARY_TEXT",
+        "selected_for_native_runtime": false
+      },
+      "basis": {
+        "kind": "SOURCE_QUALIFIED_POLICY_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "official:manual:combat:indexed:20261019",
+            "selector": "5.3.12.b 24hours/7days/30days"
+          },
+          {
+            "source": "ots:skull:canary:player:52550d5",
+            "selector": "addUnjustifiedDead and sendUnjustifiedPoints"
+          },
+          {
+            "source": "ots:skull:crystalserver-summer:player:ddb4930",
+            "selector": "addUnjustifiedDead and sendUnjustifiedPoints"
+          }
+        ],
+        "rationale": "Both pinned donors use4hours for the skull-decision day counter but24hours for the client widget. Their inclusive wall-clock test is known; it does not prove Global endpoint or clock semantics. Withdraw the invented UTC-monotonic/inclusive project clock. No code change is made."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_ONLY_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/skull-content-1/admission-evidence/reference-evidence.json/records/4/facts/clock_boundaries",
+        "subject": "skull.frag_windows",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "windows_seconds": [
+            86400,
+            604800,
+            2592000
+          ],
+          "clock": "server_utc_monotonic_elapsed",
+          "inclusive_boundary": true,
+          "calendar_reset": false
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    }
+  ],
+  "materialization": {
+    "parameter_document": "docs/reference/content-prep/skull-content-1/oteryn-parameters.json",
+    "source_archive": "docs/reference/content-prep/skull-content-1/tibia-source-archive.json",
+    "filled_field_count": 1,
+    "not_runtime_activation": true,
+    "remaining_unresolved_source_fields": 3
+  },
+  "source_repair": {
+    "source_check": "docs/reference/content-prep/skull-content-1/skull-source-reconciliation.json",
+    "withdrawn_fixed_kill_thresholds": 2,
+    "conditional_white_timing": "SOURCE_BACKED",
+    "exact_unjustified_point_allocation": "UNRESOLVED",
+    "clock_boundary": "CONFLICT_DONOR_VS_OFFICIAL_WINDOW",
+    "remaining_unresolved_source_fields": 3,
+    "selected_for_native_runtime": false
+  }
+}

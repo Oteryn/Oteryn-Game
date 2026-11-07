@@ -1,0 +1,22 @@
+{
+  "allocation_impact": "An ambiguous write whose record is still unknown after this bound keeps the item inactive and reserved; nothing else is written for it until reconciliation reads the record.",
+  "boundary_tests": [
+    "max=2000: a lookup at 2,000 ms is still within the bound",
+    "max+1=2001: at 2,001 ms the lane holds for reconciliation"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "maximum": 2000,
+    "minimum": 2000
+  },
+  "consumers": [
+    "apps/game-server/src/domain/timed_item.rs ambiguous_bound_exceeded"
+  ],
+  "failure_category": "CAPACITY_EXCEEDED",
+  "hard_maximum": 2000,
+  "id": "TIMEDITEM0B-RL-02",
+  "notes": "\u00a75.2. Registered by OTV2-20261003-timed-rt-1a.",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md",
+  "resource": "Ambiguous timed write outcome before the lane holds for reconciliation",
+  "unit": "milliseconds"
+}

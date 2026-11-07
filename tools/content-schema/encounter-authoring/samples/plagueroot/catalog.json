@@ -1,0 +1,19 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/plagueroot",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/plant_abomination",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/plant_attendant",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

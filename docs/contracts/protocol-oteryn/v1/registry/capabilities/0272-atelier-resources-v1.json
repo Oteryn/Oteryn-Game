@@ -1,0 +1,15 @@
+{
+  "id": 272,
+  "name": "ATELIER_RESOURCES_V1",
+  "owner_decision": "GEM-ATELIER-P07",
+  "owner": "Game Gem Atelier owner",
+  "requires": [
+    148
+  ],
+  "command_types": [
+    484
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Requires WHEEL_ALLOCATION_V1 and a current admitted Character session. Read-only balances remain server-owned and never authorize a mutation."
+}

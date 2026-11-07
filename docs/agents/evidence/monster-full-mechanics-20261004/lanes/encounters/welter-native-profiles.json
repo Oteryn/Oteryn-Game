@@ -1,0 +1,383 @@
+[
+  {
+    "data": {
+      "kind": "Creature",
+      "profile": {
+        "abilities": [
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.the_welter.attack-1",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.the_welter.attack-2",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.the_welter.attack-3",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.the_welter.attack-4",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.the_welter.attack-5",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.the_welter.defense-1",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.the_welter.defense-2",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.spell.the_welter_paralyze",
+            "revision": "definition-r1"
+          }
+        ],
+        "armor": 27,
+        "details": {
+          "bosstiary": {
+            "category": "nemesis",
+            "expertise_kills": 3,
+            "expertise_points": 30,
+            "mastery_kills": 5,
+            "mastery_points": 60,
+            "prowess_kills": 1,
+            "prowess_points": 10
+          },
+          "condition_immunities": [
+            "invisible",
+            "paralyze"
+          ],
+          "corpse_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i18974",
+            "revision": "definition-r1"
+          },
+          "critical_chance_ppm": 0,
+          "death_residue": {
+            "fluid_type": "blood",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2886",
+              "revision": "definition-r1"
+            }
+          },
+          "defense": 45,
+          "display_name": "The Welter",
+          "encyclopedia_document": {
+            "family": "Document",
+            "key": "oteryn:document/monster-encyclopedia/the_welter",
+            "revision": "definition-r1"
+          },
+          "flags": {
+            "attackable": true,
+            "health_hidden": false,
+            "illusionable": false
+          },
+          "inspection": "The Welter",
+          "spawn_eligibility": {
+            "blocked_by_nearby_players": false,
+            "ignore_period_underground": false,
+            "period": "All"
+          },
+          "summoning": {
+            "convinceable": false,
+            "is_familiar": false,
+            "summonable": false
+          },
+          "system_eligibility": {
+            "exclusive_prey": false,
+            "forge": true,
+            "prey": true,
+            "reward_boss": true
+          }
+        },
+        "experience": 11000,
+        "health": 25000,
+        "mitigation": {
+          "denominator": 100,
+          "numerator": 229
+        },
+        "resistances": [
+          {
+            "damage_type": "death",
+            "percent": {
+              "denominator": 1,
+              "numerator": 30
+            }
+          },
+          {
+            "damage_type": "earth",
+            "percent": {
+              "denominator": 1,
+              "numerator": 100
+            }
+          },
+          {
+            "damage_type": "energy",
+            "percent": {
+              "denominator": 1,
+              "numerator": 15
+            }
+          },
+          {
+            "damage_type": "fire",
+            "percent": {
+              "denominator": 1,
+              "numerator": 20
+            }
+          },
+          {
+            "damage_type": "holy",
+            "percent": {
+              "denominator": 1,
+              "numerator": 50
+            }
+          },
+          {
+            "damage_type": "ice",
+            "percent": {
+              "denominator": 1,
+              "numerator": 50
+            }
+          },
+          {
+            "damage_type": "physical",
+            "percent": {
+              "denominator": 1,
+              "numerator": 20
+            }
+          }
+        ],
+        "speed": 128
+      }
+    },
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.the_welter",
+      "revision": "definition-r1"
+    }
+  },
+  {
+    "data": {
+      "kind": "Creature",
+      "profile": {
+        "armor": 10,
+        "details": {
+          "condition_immunities": [
+            "invisible",
+            "outfit",
+            "paralyze"
+          ],
+          "critical_chance_ppm": 0,
+          "death_residue": {
+            "fluid_type": "blood",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2886",
+              "revision": "definition-r1"
+            }
+          },
+          "defense": 5,
+          "display_name": "Egg",
+          "encyclopedia_document": {
+            "family": "Document",
+            "key": "oteryn:document/monster-encyclopedia/egg",
+            "revision": "definition-r1"
+          },
+          "flags": {
+            "attackable": true,
+            "health_hidden": false,
+            "illusionable": false
+          },
+          "inspection": "Egg",
+          "spawn_eligibility": {
+            "blocked_by_nearby_players": true,
+            "ignore_period_underground": false,
+            "period": "All"
+          },
+          "summoning": {
+            "convinceable": false,
+            "is_familiar": false,
+            "summonable": false
+          },
+          "system_eligibility": {
+            "exclusive_prey": false,
+            "forge": true,
+            "prey": true,
+            "reward_boss": false
+          }
+        },
+        "encounters": [
+          {
+            "family": "Encounter",
+            "key": "oteryn:encounter.the_welter",
+            "revision": "definition-r1"
+          }
+        ],
+        "experience": 0,
+        "health": 800,
+        "immunities": [
+          "death"
+        ],
+        "mitigation": {
+          "denominator": 25,
+          "numerator": 11
+        },
+        "speed": 0
+      }
+    },
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.egg",
+      "revision": "definition-r1"
+    }
+  },
+  {
+    "data": {
+      "kind": "Creature",
+      "profile": {
+        "abilities": [
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.spawn_of_the_welter.attack-1",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.spawn_of_the_welter.attack-2",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.spawn_of_the_welter.defense-1",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.spell.spawn_of_the_welter_heal",
+            "revision": "definition-r1"
+          }
+        ],
+        "armor": 27,
+        "details": {
+          "condition_immunities": [
+            "invisible",
+            "paralyze"
+          ],
+          "corpse_item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i6048",
+            "revision": "definition-r1"
+          },
+          "critical_chance_ppm": 0,
+          "death_residue": {
+            "fluid_type": "blood",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2886",
+              "revision": "definition-r1"
+            }
+          },
+          "defense": 35,
+          "display_name": "Spawn of the Welter",
+          "encyclopedia_document": {
+            "family": "Document",
+            "key": "oteryn:document/monster-encyclopedia/spawn_of_the_welter",
+            "revision": "definition-r1"
+          },
+          "flags": {
+            "attackable": true,
+            "health_hidden": false,
+            "illusionable": false
+          },
+          "inspection": "Spawn of the Welter",
+          "spawn_eligibility": {
+            "blocked_by_nearby_players": false,
+            "ignore_period_underground": false,
+            "period": "All"
+          },
+          "summoning": {
+            "convinceable": false,
+            "is_familiar": false,
+            "summonable": false
+          },
+          "system_eligibility": {
+            "exclusive_prey": false,
+            "forge": true,
+            "prey": true,
+            "reward_boss": false
+          }
+        },
+        "experience": 0,
+        "health": 1850,
+        "mitigation": {
+          "denominator": 25,
+          "numerator": 27
+        },
+        "resistances": [
+          {
+            "damage_type": "earth",
+            "percent": {
+              "denominator": 1,
+              "numerator": 0
+            }
+          },
+          {
+            "damage_type": "energy",
+            "percent": {
+              "denominator": 1,
+              "numerator": 0
+            }
+          },
+          {
+            "damage_type": "holy",
+            "percent": {
+              "denominator": 1,
+              "numerator": 0
+            }
+          },
+          {
+            "damage_type": "ice",
+            "percent": {
+              "denominator": 1,
+              "numerator": 0
+            }
+          },
+          {
+            "damage_type": "life_drain",
+            "percent": {
+              "denominator": 1,
+              "numerator": 100
+            }
+          },
+          {
+            "damage_type": "physical",
+            "percent": {
+              "denominator": 1,
+              "numerator": 0
+            }
+          }
+        ],
+        "speed": 103
+      }
+    },
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.spawn_of_the_welter",
+      "revision": "definition-r1"
+    }
+  }
+]

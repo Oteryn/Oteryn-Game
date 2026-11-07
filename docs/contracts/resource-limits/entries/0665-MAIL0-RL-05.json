@@ -1,0 +1,22 @@
+{
+  "id": "MAIL0-RL-05",
+  "status": "CANDIDATE",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md",
+  "resource": "Recipient Inbox ceiling for player mail",
+  "unit": "ItemInstances including descendants",
+  "hard_maximum": 50000,
+  "configurable_range": {
+    "minimum": 50000,
+    "maximum": 50000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Pure rules reject the whole input; no truncation, partial delivery or alternate Inbox.",
+  "client_visible": false,
+  "boundary_tests": [
+    "mail_juniors_and_inbox_ceiling_are_owner_differences"
+  ],
+  "consumers": [
+    "crates/gameplay/items/src/mail.rs"
+  ],
+  "notes": "MAIL-1 independent L3 rules checkpoint. MAIL0-RL-03 is split into its accepted direct, height and whole-tree bounds. CANDIDATE for runtime activation: BAGS-DEPOT-1 Inbox trees and qualified MAIL-CONTENT-1 stamp/mailbox bindings remain absent. This row authorizes no delivery or storage grant."
+}

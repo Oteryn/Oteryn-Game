@@ -1,0 +1,13 @@
+syntax = "proto3";
+package oteryn.game.v1.creature_push;
+// Target uses AttackTargetIntent with a required target (identity and generation).
+// Destination uses the existing world_spatial ActorPosition encoding (sint32 x/y/floor).
+message CreaturePushIntent {
+  bytes target = 1;
+  bytes destination = 2;
+}
+message CreaturePushResult {
+  // 1 moved; 2 not movable; 3 rejected; 4 not possible; 5 not enough room;
+  // 6 destination out of reach; 7 exhausted (push delay). Only 1 moves anything.
+  uint32 disposition = 1;
+}

@@ -1,0 +1,20 @@
+{
+  "id": "DFR-PG-PARAMETER-STATUS-RAW-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+  "resource": "Raw variable key/value bytes retained from ParameterStatus messages by the first-slice production root profile",
+  "unit": "retained raw bytes",
+  "hard_maximum": 0,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 0
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Retain no raw ParameterStatus name/value String backing. Parse server_version into the normalized numeric field inside the bounded received message, then release the raw message backing.",
+  "client_visible": false,
+  "boundary_tests": [
+    "0 raw ParameterStatus variable bytes retained after a valid server_version status is normalized",
+    "1 byte of attempted raw retained status backing is prevented before retained String/map allocation",
+    "Repeated large-but-frame-valid unneeded statuses leave zero raw retained status bytes after each message"
+  ],
+  "notes": "The normalized Option<u32> server_version_num is fixed-size state and is not raw ParameterStatus variable backing."
+}

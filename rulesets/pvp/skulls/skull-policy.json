@@ -1,0 +1,25 @@
+{
+  "schema": "OTERYN_PVP_SKULL_POLICY/v1",
+  "pvp_type": "OPTIONAL",
+  "frag_windows_us": [86400000000, 604800000000, 2592000000000],
+  "red_thresholds_milli": [3000, 5000, 10000],
+  "black_thresholds_milli": [6000, 10000, 20000],
+  "red_duration_us": 2592000000000,
+  "black_duration_us": 3888000000000,
+  "revenge_duration_us": 604800000000,
+  "kill_block_us": 900000000,
+  "ledger_window_us": 300000000,
+  "point_retention_us": 3888000000000,
+  "max_contributors": 80,
+  "damage_points_milli": 1000,
+  "assist_points_milli": 500,
+  "full_damage_contributors": 5,
+  "window_end": "EXCLUSIVE",
+  "provenance": {
+    "durations": "OFFICIAL_MANUAL",
+    "thresholds_and_split": "OTS_HYPOTHESIS_ONLY",
+    "assist_retention_cap": "OTERYN_DECISION:PARITY_PENDING"
+  },
+  "source": "docs/architecture/reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md",
+  "activation": "PVP-0 section 8 go-live gate unchanged"
+}

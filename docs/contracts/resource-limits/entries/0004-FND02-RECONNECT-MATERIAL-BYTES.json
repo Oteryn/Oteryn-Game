@@ -1,0 +1,21 @@
+{
+  "id": "FND02-RECONNECT-MATERIAL-BYTES",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "ClientResume.reconnect_material",
+  "unit": "bytes",
+  "hard_maximum": 16384,
+  "configurable_range": {
+    "minimum": 16384,
+    "maximum": 16384
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject peer-controlled length before copying or verification.",
+  "client_visible": true,
+  "boundary_tests": [
+    "16,384 accepted",
+    "16,385 rejected before reconnect verification"
+  ],
+  "consumers": [
+    "FND-04 reconnect consumer"
+  ]
+}

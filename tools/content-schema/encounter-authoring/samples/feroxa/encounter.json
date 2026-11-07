@@ -1,0 +1,91 @@
+{
+  "identity": {
+    "key": "canary:encounter/feroxa",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Grimvale: Feroxa",
+  "scope": "channel_shared",
+  "participants": [
+    {
+      "role": "feroxa",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/feroxa",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "feroxa2",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/feroxa2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "feroxa_second_form",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "feroxa",
+        "percent": 50
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "feroxa",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/feroxa2",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "feroxa_third_form",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "feroxa2",
+        "percent": 50
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "feroxa2",
+          "into": {
+            "random_of": [
+              {
+                "family": "Creature",
+                "key": "canary:creature/feroxa3",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Creature",
+                "key": "canary:creature/feroxa4",
+                "revision": "canary-47dfd51f"
+              }
+            ]
+          },
+          "health": "full"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

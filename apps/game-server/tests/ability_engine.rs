@@ -1,0 +1,600 @@
+// This historical standalone fixture includes Ability's source directly.
+// Its narrow test-only owner shim keeps the typed bridge compiling here;
+// Foundation's focused unit tests exercise the actual carrier and HP slot.
+pub use oteryn_gameplay_domain::domain::appearance;
+mod domain {
+    pub(crate) use crate::appearance;
+}
+#[allow(dead_code)]
+#[path = "../../../crates/gameplay/foundation/src/foundation/ability_data/mod.rs"]
+pub(crate) mod ability_data;
+#[allow(dead_code, unused_imports)]
+#[path = "../../../crates/gameplay/foundation/src/foundation/condition.rs"]
+pub mod condition;
+// This standalone Ability fixture has no native content authority. Keep the
+// source bridge fail-closed; real native admission is tested by combat and AI.
+mod creature_auto_attack {
+    pub(crate) struct MeleeSource {
+        pub(crate) minimum: u32,
+        pub(crate) maximum: u32,
+    }
+
+    impl MeleeSource {
+        pub(crate) fn admits_bite_definition(
+            &self,
+            _: &crate::foundation::ChannelRuntimeV1,
+            _: crate::foundation::ExactActorRef,
+            _: oteryn_gameplay_domain::domain::melee_definition::MeleeDefinition,
+        ) -> bool {
+            false
+        }
+    }
+}
+#[allow(dead_code)]
+mod foundation {
+    pub(crate) use crate::ability_data;
+    pub use crate::condition;
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct ExactActorRef(pub(crate) u64);
+    impl ExactActorRef {
+        pub(crate) fn placement_identity(self) -> [u8; 16] {
+            let mut identity = [0; 16];
+            identity[8..].copy_from_slice(&self.0.to_be_bytes());
+            identity
+        }
+    }
+    // AI-4's creature bite reads the Channel owner; the real owner is tested in Foundation.
+    pub(crate) mod owner_timer {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+        pub(crate) struct SemanticTimeMicros(u64);
+        impl SemanticTimeMicros {
+            pub(crate) const fn from_micros(value: u64) -> Self {
+                Self(value)
+            }
+            pub(crate) const fn get(self) -> u64 {
+                self.0
+            }
+            pub(crate) const fn saturating_add_micros(self, delta: u64) -> Self {
+                Self(self.0.saturating_add(delta))
+            }
+        }
+    }
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct GameSessionId;
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct MovementLocalPosition {
+        pub(crate) x: i32,
+        pub(crate) y: i32,
+        pub(crate) floor: i16,
+    }
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct MovementPositionContext;
+    #[derive(Debug, Clone, Copy)]
+    pub(crate) struct MovementPositionSnapshot(MovementLocalPosition);
+    impl MovementPositionSnapshot {
+        pub(crate) const fn position(self) -> MovementLocalPosition {
+            self.0
+        }
+        pub(crate) const fn context(self) -> MovementPositionContext {
+            MovementPositionContext
+        }
+    }
+    pub(crate) struct ContentPin;
+    impl ContentPin {
+        pub(crate) const fn server_artifact_digest(&self) -> [u8; 32] {
+            [0; 32]
+        }
+    }
+    pub(crate) struct ChannelRuntimeV1;
+    impl ChannelRuntimeV1 {
+        pub(crate) const fn content_pin(&self) -> ContentPin {
+            ContentPin
+        }
+        pub(crate) fn contains_live_creature(&self, _: ExactActorRef) -> bool {
+            false
+        }
+        pub(crate) fn read_actor_position(
+            &self,
+            _: ExactActorRef,
+        ) -> Result<MovementPositionSnapshot, CarrierError> {
+            Err(CarrierError::Invalid)
+        }
+        pub(crate) fn player_control_facts(
+            &self,
+            _: ExactActorRef,
+            _: GameSessionId,
+        ) -> Result<(), CarrierError> {
+            Err(CarrierError::Invalid)
+        }
+    }
+    pub(crate) struct CurrentOwnerExactActorLookup<'a>(pub(crate) &'a ExactActorRef);
+    impl CurrentOwnerExactActorLookup<'_> {
+        pub(crate) fn contains(&self, actor: ExactActorRef) -> bool {
+            *self.0 == actor
+        }
+    }
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct OwnerDamageResult {
+        pub(crate) applied: bool,
+        pub(crate) health_before: i64,
+        pub(crate) health_after: i64,
+    }
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct CharacterId;
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct CommandRef;
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct CharacterLease;
+    impl CharacterLease {
+        pub(crate) const fn character_id(self) -> CharacterId {
+            CharacterId
+        }
+        pub(crate) const fn generation(self) -> u64 {
+            1
+        }
+        pub(crate) const fn accepts_generation(self, generation: u64) -> bool {
+            generation == 1
+        }
+    }
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct AttackerCommand;
+    impl AttackerCommand {
+        pub(crate) const fn new(_: CharacterId, _: u64, _: CommandRef, _: u16) -> Self {
+            Self
+        }
+    }
+    pub(crate) struct OwnerDamageCommand<'a> {
+        pub(crate) target: &'a [u8],
+        pub(crate) occurrence: &'a [u8],
+        pub(crate) binding: &'a [u8],
+        pub(crate) damage: i64,
+    }
+    #[derive(Debug, PartialEq, Eq)]
+    pub(crate) enum CarrierError {
+        Invalid,
+        SupersededAttackerSession,
+    }
+    pub(crate) struct CurrentOwnerExactActorCommit<'a>(pub(crate) &'a mut Option<Vec<u8>>);
+    impl CurrentOwnerExactActorCommit<'_> {
+        pub(crate) fn bound_attacker_lease(
+            &self,
+            _attacker: ExactActorRef,
+            _command: CommandRef,
+        ) -> Result<CharacterLease, CarrierError> {
+            Ok(CharacterLease)
+        }
+        pub(crate) fn commit_damage_for_bound_attacker(
+            &mut self,
+            _actor: ExactActorRef,
+            _attacker: ExactActorRef,
+            _command: CommandRef,
+            _sub_ordinal: u16,
+            command: OwnerDamageCommand<'_>,
+        ) -> Result<OwnerDamageResult, CarrierError> {
+            if self.0.is_some() {
+                return Err(CarrierError::Invalid);
+            }
+            *self.0 = Some(command.binding.to_vec());
+            Ok(OwnerDamageResult {
+                applied: true,
+                health_before: 20,
+                health_after: 20 - command.damage,
+            })
+        }
+        pub(crate) fn commit_swing_damage_for_bound_attacker(
+            &mut self,
+            actor: ExactActorRef,
+            attacker: ExactActorRef,
+            lineage: CommandRef,
+            _swing_ordinal: u16,
+            command: OwnerDamageCommand<'_>,
+        ) -> Result<OwnerDamageResult, CarrierError> {
+            self.commit_damage_for_bound_attacker(actor, attacker, lineage, 0, command)
+        }
+    }
+}
+
+#[path = "../../../crates/gameplay/combat/src/ability/mod.rs"]
+mod ability;
+
+use ability::{
+    AbilityEngine, AbilityError, AbilityIntent, AbilityOccurrence, AiAbilityAdapter,
+    CalculationStage, ClientAbilityAdapter, CommitGroup, CommitGroupMode, CommitReceipt, Effect,
+    EffectPlan, MAX_EFFECT_PLAN_BYTES, ProposalSource, RevisionSet, ScriptAbilityAdapter,
+    SubOccurrenceRef, TargetId,
+};
+
+fn revisions(version: &str) -> Result<RevisionSet, AbilityError> {
+    RevisionSet::new(
+        "ruleset:v1",
+        "content:v1",
+        "world-policy:v1",
+        version,
+        "simulation:v1",
+    )
+}
+
+fn stages(count: usize) -> Result<Vec<CalculationStage>, AbilityError> {
+    (0..count)
+        .map(|index| CalculationStage::new(&format!("stage:{index}")))
+        .collect()
+}
+
+fn immediate_damage_plan(occurrence: AbilityOccurrence) -> Result<EffectPlan, AbilityError> {
+    let intent =
+        AbilityIntent::normalize(ProposalSource::Client, "actor:fixture", &["target:fixture"])?;
+    EffectPlan::immediate(
+        occurrence,
+        intent,
+        vec![Effect::damage("target:fixture", 7)?],
+        stages(1)?,
+        CommitGroup::atomic("runtime-scope:fixture", "commit-group:primary")?,
+    )
+}
+
+#[test]
+fn plan_rejects_directly_constructed_non_positive_damage_and_heal() -> Result<(), AbilityError> {
+    let target = TargetId::new("target:fixture")?;
+    for (index, effect) in [
+        Effect::Damage {
+            target: target.clone(),
+            magnitude: 0,
+        },
+        Effect::Damage {
+            target: target.clone(),
+            magnitude: -7,
+        },
+        Effect::Heal {
+            target: target.clone(),
+            magnitude: 0,
+        },
+        Effect::Heal {
+            target: target.clone(),
+            magnitude: -7,
+        },
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let occurrence = AbilityOccurrence::new(
+            &format!("ability-occurrence:invalid-magnitude:{index}"),
+            revisions("formula:v1")?,
+        )?;
+        let intent =
+            AbilityIntent::normalize(ProposalSource::Client, "actor:fixture", &[target.as_str()])?;
+        let result = if index % 2 == 0 {
+            EffectPlan::new(
+                occurrence,
+                intent,
+                vec![effect],
+                stages(1)?,
+                CommitGroup::atomic("runtime-scope:fixture", "commit-group:invalid")?,
+            )
+        } else {
+            EffectPlan::immediate(
+                occurrence,
+                intent,
+                vec![effect],
+                stages(1)?,
+                CommitGroup::ordered_sequential("runtime-scope:fixture", "commit-group:invalid")?,
+            )
+        };
+        assert_eq!(result, Err(AbilityError::InvalidMagnitude));
+    }
+    Ok(())
+}
+
+#[test]
+fn retry_reuses_the_original_occurrence_revision_without_double_commit() -> Result<(), AbilityError>
+{
+    let occurrence = AbilityOccurrence::new("ability-occurrence:1", revisions("formula:v1")?)?;
+    let plan = immediate_damage_plan(occurrence.clone())?;
+    let mut engine = AbilityEngine::new();
+
+    let first: CommitReceipt = engine.commit(plan.clone())?;
+    assert!(first.applied());
+    assert_eq!(engine.fixture_health("target:fixture"), Some(-7));
+
+    let retry = engine.commit(plan)?;
+    assert!(!retry.applied());
+    assert_eq!(engine.fixture_health("target:fixture"), Some(-7));
+
+    let incompatible_retry = immediate_damage_plan(AbilityOccurrence::new(
+        "ability-occurrence:1",
+        revisions("formula:v2")?,
+    )?)?;
+    assert_eq!(
+        engine.commit(incompatible_retry),
+        Err(AbilityError::OccurrenceRevisionConflict)
+    );
+    assert_eq!(engine.fixture_health("target:fixture"), Some(-7));
+    Ok(())
+}
+
+#[test]
+fn plan_accepts_each_registered_maximum_and_rejects_max_plus_one_before_commit()
+-> Result<(), AbilityError> {
+    let occurrence = AbilityOccurrence::new("ability-occurrence:limits", revisions("formula:v1")?)?;
+    let maximum_intent = AbilityIntent::normalize(
+        ProposalSource::Script,
+        "actor:fixture",
+        &["target:a", "target:b"],
+    )?;
+    let resolved_targets: &[TargetId] = maximum_intent.resolved_targets();
+    assert_eq!(resolved_targets.len(), 2);
+    assert_eq!(maximum_intent.candidate_count(), 2);
+
+    let maximum_plan = EffectPlan::new(
+        occurrence.clone(),
+        maximum_intent,
+        vec![Effect::damage("target:a", 1)?, Effect::heal("target:b", 1)?],
+        stages(8)?,
+        CommitGroup::ordered_sequential("runtime-scope:fixture", "commit-group:sequential")?,
+    )?;
+    assert_eq!(maximum_plan.effects().len(), 2);
+    assert_eq!(maximum_plan.intent().candidate_count(), 2);
+    assert_eq!(maximum_plan.calculation_stages().len(), 8);
+    assert_eq!(
+        maximum_plan.commit_group().mode(),
+        CommitGroupMode::OrderedSequential
+    );
+    assert_eq!(
+        maximum_plan.commit_group().owner_scope(),
+        "runtime-scope:fixture"
+    );
+    assert_eq!(
+        maximum_plan.commit_group().group_id(),
+        "commit-group:sequential"
+    );
+    let mut engine = AbilityEngine::new();
+    assert!(engine.commit(maximum_plan)?.applied());
+    assert_eq!(engine.fixture_health("target:a"), Some(-1));
+    assert_eq!(engine.fixture_health("target:b"), Some(1));
+
+    assert_eq!(
+        AbilityIntent::normalize(
+            ProposalSource::Client,
+            "actor:fixture",
+            &["target:a", "target:b", "target:c"],
+        ),
+        Err(AbilityError::TooManyTargetCandidates)
+    );
+
+    let valid_intent = AbilityIntent::normalize(
+        ProposalSource::Ai,
+        "actor:fixture",
+        &["target:a", "target:b"],
+    )?;
+    assert_eq!(
+        EffectPlan::new(
+            occurrence.clone(),
+            valid_intent.clone(),
+            vec![
+                Effect::damage("target:a", 1)?,
+                Effect::damage("target:b", 1)?,
+                Effect::heal("target:a", 1)?,
+            ],
+            stages(1)?,
+            CommitGroup::atomic("runtime-scope:fixture", "commit-group:primary")?,
+        ),
+        Err(AbilityError::TooManyEffectPlanEntries)
+    );
+    assert_eq!(
+        EffectPlan::new(
+            occurrence.clone(),
+            valid_intent.clone(),
+            vec![Effect::damage("target:a", 1)?],
+            stages(9)?,
+            CommitGroup::atomic("runtime-scope:fixture", "commit-group:primary")?,
+        ),
+        Err(AbilityError::TooManyCalculationStages)
+    );
+    let base_plan = EffectPlan::new(
+        AbilityOccurrence::new("o", revisions("formula:v1")?)?,
+        valid_intent.clone(),
+        vec![Effect::damage("target:a", 1)?],
+        stages(1)?,
+        CommitGroup::atomic("runtime-scope:fixture", "commit-group:bytes")?,
+    )?;
+    let exact_id = "o".repeat(1 + MAX_EFFECT_PLAN_BYTES - base_plan.retained_bytes());
+    let exact_plan = EffectPlan::new(
+        AbilityOccurrence::new(&exact_id, revisions("formula:v1")?)?,
+        valid_intent.clone(),
+        vec![Effect::damage("target:a", 1)?],
+        stages(1)?,
+        CommitGroup::atomic("runtime-scope:fixture", "commit-group:bytes")?,
+    )?;
+    assert_eq!(exact_plan.retained_bytes(), MAX_EFFECT_PLAN_BYTES);
+    let oversized_id = "o".repeat(exact_id.len() + 1);
+    assert_eq!(
+        EffectPlan::new(
+            AbilityOccurrence::new(&oversized_id, revisions("formula:v1")?)?,
+            valid_intent,
+            vec![Effect::damage("target:a", 1)?],
+            stages(1)?,
+            CommitGroup::atomic("runtime-scope:fixture", "commit-group:bytes")?,
+        ),
+        Err(AbilityError::EffectPlanTooLarge)
+    );
+    assert_eq!(engine.fixture_health("target:c"), None);
+    Ok(())
+}
+
+#[test]
+fn proposals_remain_non_mutating_until_the_authoritative_engine_commits() -> Result<(), AbilityError>
+{
+    let client = ClientAbilityAdapter::normalize("actor:client", &["target:fixture"])?;
+    let ai = AiAbilityAdapter::normalize("actor:ai", &["target:fixture"])?;
+    let script = ScriptAbilityAdapter::normalize("actor:script", &["target:fixture"])?;
+    assert_eq!(client.proposal_source(), ProposalSource::Client);
+    assert_eq!(ai.proposal_source(), ProposalSource::Ai);
+    assert_eq!(script.proposal_source(), ProposalSource::Script);
+
+    let engine = AbilityEngine::new();
+    assert_eq!(engine.fixture_health("target:fixture"), None);
+    Ok(())
+}
+
+#[test]
+fn resolved_target_limit_rejects_resolver_output_after_candidate_validation()
+-> Result<(), AbilityError> {
+    assert_eq!(
+        AbilityIntent::resolve(
+            ProposalSource::Client,
+            "actor:fixture",
+            &["candidate:one"],
+            &["target:a", "target:b", "target:c"],
+        ),
+        Err(AbilityError::TooManyResolvedTargets)
+    );
+    Ok(())
+}
+
+#[test]
+fn plan_canonicalizes_calculation_and_effect_order_before_sequential_commit()
+-> Result<(), AbilityError> {
+    let occurrence =
+        AbilityOccurrence::new("ability-occurrence:ordered", revisions("formula:v1")?)?;
+    let intent = AbilityIntent::resolve(
+        ProposalSource::Script,
+        "actor:fixture",
+        &["candidate:one"],
+        &["target:a", "target:b"],
+    )?;
+    let plan = EffectPlan::new(
+        occurrence,
+        intent,
+        vec![Effect::heal("target:b", 2)?, Effect::damage("target:a", 3)?],
+        vec![
+            CalculationStage::new("stage:z")?,
+            CalculationStage::new("stage:a")?,
+        ],
+        CommitGroup::ordered_sequential("runtime-scope:fixture", "commit-group:ordered")?,
+    )?;
+    let effect_targets = plan
+        .effects()
+        .iter()
+        .map(|effect| effect.target().as_str())
+        .collect::<Vec<_>>();
+    let stage_names = plan
+        .calculation_stages()
+        .iter()
+        .map(CalculationStage::as_str)
+        .collect::<Vec<_>>();
+    assert_eq!(effect_targets, vec!["target:a", "target:b"]);
+    assert_eq!(stage_names, vec!["stage:a", "stage:z"]);
+
+    let declared = EffectPlan::ordered_sequential(
+        plan.occurrence().clone(),
+        plan.intent().clone(),
+        vec![Effect::heal("target:b", 2)?, Effect::damage("target:a", 3)?],
+        plan.calculation_stages().to_vec(),
+        plan.commit_group().owner_scope(),
+        plan.commit_group().group_id(),
+    )?;
+    assert_eq!(declared.effects()[0].target().as_str(), "target:b");
+    assert_eq!(declared.effects()[1].target().as_str(), "target:a");
+    assert_eq!(declared.calculation_stages(), plan.calculation_stages());
+    assert_eq!(declared.sub_occurrence(1).map(|sub| sub.ordinal()), Some(1));
+
+    let mut engine = AbilityEngine::new();
+    let receipt: CommitReceipt = engine.commit(plan)?;
+    assert!(receipt.applied());
+    assert_eq!(receipt.applied_suboccurrences(), 2);
+    let suboccurrences: &[SubOccurrenceRef] = receipt.suboccurrences();
+    assert_eq!(suboccurrences[0].ordinal(), 0);
+    assert_eq!(suboccurrences[1].ordinal(), 1);
+    assert_eq!(
+        suboccurrences[0].root_occurrence().id().as_str(),
+        "ability-occurrence:ordered"
+    );
+    assert_eq!(suboccurrences[0].owner_scope(), "runtime-scope:fixture");
+    assert_eq!(suboccurrences[0].group_id(), "commit-group:ordered");
+    assert_eq!(engine.fixture_health("target:a"), Some(-3));
+    assert_eq!(engine.fixture_health("target:b"), Some(2));
+    Ok(())
+}
+
+#[test]
+fn sequential_commit_records_progress_without_replaying_prior_suboccurrences()
+-> Result<(), AbilityError> {
+    let setup_occurrence =
+        AbilityOccurrence::new("ability-occurrence:partial-setup", revisions("formula:v1")?)?;
+    let setup_intent =
+        AbilityIntent::normalize(ProposalSource::Client, "actor:fixture", &["target:fixture"])?;
+    let setup_plan = EffectPlan::new(
+        setup_occurrence,
+        setup_intent,
+        vec![Effect::heal("target:fixture", i64::MAX)?],
+        stages(1)?,
+        CommitGroup::atomic("runtime-scope:fixture", "commit-group:partial-setup")?,
+    )?;
+    let occurrence =
+        AbilityOccurrence::new("ability-occurrence:partial", revisions("formula:v1")?)?;
+    let intent =
+        AbilityIntent::normalize(ProposalSource::Client, "actor:fixture", &["target:fixture"])?;
+    let plan = EffectPlan::new(
+        occurrence,
+        intent,
+        vec![
+            Effect::damage("target:fixture", 1)?,
+            Effect::heal("target:fixture", 2)?,
+        ],
+        stages(1)?,
+        CommitGroup::ordered_sequential("runtime-scope:fixture", "commit-group:partial")?,
+    )?;
+    let mut engine = AbilityEngine::new();
+    assert!(engine.commit(setup_plan)?.applied());
+    assert_eq!(engine.fixture_health("target:fixture"), Some(i64::MAX));
+
+    assert_eq!(
+        engine.commit(plan.clone()),
+        Err(AbilityError::NumericOverflow)
+    );
+    assert_eq!(engine.fixture_health("target:fixture"), Some(i64::MAX - 1));
+    assert_eq!(engine.commit(plan), Err(AbilityError::NumericOverflow));
+    // Replaying the prior damage would lower health to MAX - 2, letting heal(2)
+    // succeed. The unchanged overflow proves retry resumes at the failed effect.
+    assert_eq!(engine.fixture_health("target:fixture"), Some(i64::MAX - 1));
+    Ok(())
+}
+
+#[test]
+fn atomic_commit_rejects_later_overflow_without_partial_fixture_mutation()
+-> Result<(), AbilityError> {
+    let occurrence = AbilityOccurrence::new("ability-occurrence:atomic", revisions("formula:v1")?)?;
+    let intent =
+        AbilityIntent::normalize(ProposalSource::Client, "actor:fixture", &["target:fixture"])?;
+    let plan = EffectPlan::new(
+        occurrence,
+        intent,
+        vec![
+            Effect::heal("target:fixture", i64::MAX)?,
+            Effect::heal("target:fixture", 1)?,
+        ],
+        stages(1)?,
+        CommitGroup::atomic("runtime-scope:fixture", "commit-group:atomic")?,
+    )?;
+    let mut engine = AbilityEngine::new();
+
+    assert_eq!(engine.commit(plan), Err(AbilityError::NumericOverflow));
+    assert_eq!(engine.fixture_health("target:fixture"), None);
+    Ok(())
+}
+
+#[test]
+fn normalization_has_stable_membership_and_order_under_shuffled_candidates()
+-> Result<(), AbilityError> {
+    let normalized = AbilityIntent::normalize(
+        ProposalSource::Client,
+        "actor:fixture",
+        &["target:b", "target:a"],
+    )?;
+    let targets = normalized
+        .resolved_targets()
+        .iter()
+        .map(|target| target.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(targets, vec!["target:a", "target:b"]);
+    Ok(())
+}

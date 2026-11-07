@@ -1,0 +1,23 @@
+{
+  "allocation_impact": "Checked from the header before the manifest is parsed.",
+  "boundary_tests": [
+    "a 16 MiB manifest is length-accepted",
+    "a manifest length over 16 MiB is rejected before parsing"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "maximum": 16777216,
+    "minimum": 16777216
+  },
+  "consumers": [
+    "world bundle compiler",
+    "game server World runtime (MAP-LOAD-1)"
+  ],
+  "failure_category": "INVALID_INPUT",
+  "hard_maximum": 16777216,
+  "id": "MAP01-BUNDLE-MANIFEST-BYTES",
+  "notes": "MAP-BUNDLE-1a; ADR-0021 \u00a74.2 and \u00a74.8; format document \u00a79.",
+  "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+  "resource": "Canonical JSON manifest of one bundle, palette included",
+  "unit": "bytes"
+}

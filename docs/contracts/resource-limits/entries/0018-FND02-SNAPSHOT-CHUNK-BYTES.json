@@ -1,0 +1,21 @@
+{
+  "id": "FND02-SNAPSHOT-CHUNK-BYTES",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "SnapshotChunk.data",
+  "unit": "bytes",
+  "hard_maximum": 524288,
+  "configurable_range": {
+    "minimum": 524288,
+    "maximum": 524288
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Validate chunk length before retaining or copying.",
+  "client_visible": true,
+  "boundary_tests": [
+    "524,288 accepted",
+    "524,289 rejected"
+  ],
+  "consumers": [
+    "client snapshot assembler"
+  ]
+}

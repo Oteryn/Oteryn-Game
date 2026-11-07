@@ -1,0 +1,23 @@
+{
+  "id": "DUR03-RL-03-PROF",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+  "resource": "Value lines in one perk modification receipt",
+  "unit": "value lines per receipt",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked before any write; never truncated; the shape is fixed, so a plan over it fails closed (InvalidStoredState) before any write. One line carries the receipt's dust cost; 0060 re-proves it at commit.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=1 admitted",
+    "max+1=2 rejected (CAPACITY_EXCEEDED)"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/character_proficiency_modification.rs (ProficiencyModificationUsage: checked after the plan, before any write)",
+    "apps/game-server/migrations/0060_proficiency_modification_value_lines.sql (dust guard: a receipt with dust has exactly one line and one equal SPEND entry)"
+  ],
+  "notes": "PROFICIENCY-1B composed dust burn shape (DUR-03 \u00a739.3 amendment); dust SPEND only, the orb BURN is not admitted and its DUR03-RL-01/02-PROF rows are registered by the orb slice; registered by OTV2-20261003-prof-shape-1b."
+}

@@ -1,0 +1,490 @@
+{
+  "accepted_s2ward_custody": {
+    "bytes": 9244,
+    "capture_file": "/workspace/npc-r8-research/transcripts/data/npcs/text/Kazordoon/Rapanaio.txt",
+    "git_blob_sha1": "9abcd66c0c8b7cbd49157d58a879e059825a5c4a",
+    "greet_line": 3,
+    "parser_alias_fallback_existing": true,
+    "revision": "8824eb38872a1174b0f0c923e08719e981f32ecc",
+    "sha256": "377f3340374408c1d4437cf310434400354e11f6b6bd54a73050df18028802a6",
+    "source_variant_blocks_present": false,
+    "url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Kazordoon/Rapanaio.txt"
+  },
+  "authorizing_owner_direction": {
+    "date": "2026-10-01",
+    "instruction": "korzystaj z crystal i canary server ... wiki br oraz fandom i tibiopedia oraz innych zrodel w internecie",
+    "scope": "Two existing Rapanaio static dialogues; additional pinned Fandom transcript proof under D10. No native Quest/runtime authority."
+  },
+  "fandom_custody": {
+    "capture_file": "/workspace/npc-r8-research/captures/rapanaio-quest-raw.json",
+    "capture_file_sha256": "aa29a56932286fcd2bcc31df40d1b8170aa340dde06bd3d1c12dc1be77cdda0a",
+    "captured_at": "2026-10-01T12:57:31.296Z",
+    "decoded_wikitext_bytes": 25448,
+    "decoded_wikitext_sha256": "6614320647a29ec07fb666c31d04072269a9d01bd8f9114b7849fd3eb5d257b1",
+    "http_body_sha256": "eef30bf9cf4b90c354107898a52cb8eaf1f7a007f859e1485917969c15a67852",
+    "pageid": 36717,
+    "public_page_url": "https://tibia.fandom.com/wiki/The_Isle_of_Evil_Quest/Spoiler?oldid=855959",
+    "revid": 855959,
+    "source_line_numbering": "Decoded wikitext UTF-8; source byte ranges include line endings.",
+    "source_url": "https://tibia.fandom.com/api.php?action=parse&page=Isle_of_Evil_Quest%2FSpoiler&redirects=1&prop=wikitext|revid&format=json"
+  },
+  "global_complete": false,
+  "owning_D10_amendment_required": false,
+  "pinned_base_variant_negative_witness": {
+    "bytes": 18246,
+    "capture": "/workspace/npc-r8-research/crystal-rapanaio-base.lua",
+    "definition_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+    "git_blob_sha1": "b5a1ee36924fd594d9f40ae65e9da1ae029070cd",
+    "git_blob_verified_against_pinned_tree": true,
+    "sha256": "625b6bb2fa4b0027f2b99fd806ac2841f44a55bc38c72b76bb9f92b375b3426b",
+    "status": 200,
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/data-global/npc/rapanaio.lua"
+  },
+  "preserves_existing_s2ward_decisions": true,
+  "records": [
+    {
+      "R7_source_research_scores": {
+        "canary": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        },
+        "crystal": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        }
+      },
+      "name": "Bloodshade Rotten",
+      "note": "Original s2ward decisions retained; two additional pinned Fandom variant blocks qualify under the owner-directed source extension.",
+      "npc_key": "oteryn:npc.bloodshade_rotten",
+      "pre_r8_D10_admissible": false,
+      "pre_r8_D10_decision": "HELD",
+      "r8_D10_admissible": false,
+      "r8_D10_decision": "HELD_NO_NEW_QUALIFIED_DIFFERING_REPLY",
+      "runtime_qualified": false
+    },
+    {
+      "R7_source_research_scores": {
+        "canary": {
+          "matches": 0,
+          "misses": 0,
+          "total": 0
+        },
+        "crystal": {
+          "matches": 0,
+          "misses": 13,
+          "total": 13
+        }
+      },
+      "name": "Eremo",
+      "note": "Original s2ward decisions retained; two additional pinned Fandom variant blocks qualify under the owner-directed source extension.",
+      "npc_key": "oteryn:npc.eremo",
+      "pre_r8_D10_admissible": false,
+      "pre_r8_D10_decision": "HELD",
+      "r8_D10_admissible": false,
+      "r8_D10_decision": "HELD_NO_NEW_QUALIFIED_DIFFERING_REPLY",
+      "runtime_qualified": false
+    },
+    {
+      "R7_source_research_scores": {
+        "canary": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        },
+        "crystal": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        }
+      },
+      "name": "Harlow (Vengoth)",
+      "note": "Original s2ward decisions retained; two additional pinned Fandom variant blocks qualify under the owner-directed source extension.",
+      "npc_key": "oteryn:npc.harlow_vengoth",
+      "pre_r8_D10_admissible": false,
+      "pre_r8_D10_decision": "HELD",
+      "r8_D10_admissible": false,
+      "r8_D10_decision": "HELD_NO_NEW_QUALIFIED_DIFFERING_REPLY",
+      "runtime_qualified": false
+    },
+    {
+      "R7_source_research_scores": {
+        "canary": {
+          "matches": 0,
+          "misses": 3,
+          "total": 3
+        },
+        "crystal": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        }
+      },
+      "candidate_declaration": {
+        "farewell": [
+          "Good bye. Recommend us if you were satisfied with our service."
+        ],
+        "fields": [],
+        "greet": [
+          "Psht! Not that loud! Evil lurks everywhere."
+        ],
+        "identity": {
+          "key": "oteryn:dialogue.npc.rapanaio_boat",
+          "revision": "definition-r1"
+        },
+        "keywords": [
+          {
+            "key": "name",
+            "reply": [
+              "My name is Rapanaio from the Royal Tibia Line."
+            ],
+            "triggers": [
+              "name"
+            ]
+          },
+          {
+            "key": "job",
+            "reply": [
+              "I am the captain of this sailing-ship."
+            ],
+            "triggers": [
+              "job"
+            ]
+          }
+        ],
+        "kind": "Dialogue",
+        "voices": {
+          "chance_ppm": 500000,
+          "entries": [
+            {
+              "mode": "Say",
+              "text": "Passage to {Evil Isle}."
+            }
+          ],
+          "interval_ms": 15000
+        },
+        "walkaway": [
+          "Good bye then."
+        ]
+      },
+      "current_s2ward_scores": {
+        "canary": {
+          "matches": 0,
+          "misses": 3,
+          "total": 3
+        },
+        "crystal": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        }
+      },
+      "fandom_scores": {
+        "canary": {
+          "matches": 0,
+          "misses": 3,
+          "total": 3
+        },
+        "crystal": {
+          "matches": 1,
+          "misses": 0,
+          "total": 1
+        }
+      },
+      "greeting_witness": {
+        "actor": "Rapanaio",
+        "source_byte_end_exclusive": 22082,
+        "source_byte_start": 22022,
+        "source_line": 235,
+        "source_line_bytes_sha256": "6541f9db30f68b1bac0cb6979ad36b745bba913d8cc0179bdf99d542e061b4f0",
+        "speech": "Psht! Not that loud! Evil lurks everywhere.",
+        "speech_sha256": "08fc830b7dc5f35d87ac2b11100e0665ba6021dba1cf108ef7f3878e9c8fe3af"
+      },
+      "name": "Rapanaio (Boat)",
+      "note": "Original s2ward decisions retained; two additional pinned Fandom variant blocks qualify under the owner-directed source extension.",
+      "npc_key": "oteryn:npc.rapanaio_boat",
+      "pre_r8_D10_admissible": false,
+      "pre_r8_D10_decision": "HELD",
+      "r8_D10_admissible": true,
+      "r8_D10_decision": "CRYSTAL_WHOLE_STATIC_PROGRAM",
+      "runtime_qualified": false,
+      "selected_program": {
+        "source_capture": {
+          "bytes": 6232,
+          "capture": "raw/crystal/data-global/npc/rapanaio_boat.lua",
+          "git_blob_sha1": "a511b50dd92c201f669a70ad2a5e14cb897222df",
+          "git_blob_verified": true,
+          "path": "data-global/npc/rapanaio_boat.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "sha256": "00fb234a23a56d91cae7417bd81db23291c544421880f5266670c95539146632",
+          "source": "crystal",
+          "targets": [
+            {
+              "binding_from_promotion_candidate": true,
+              "name": "Rapanaio (Boat)",
+              "native_file_binding": {
+                "key": "crystal:npc/rapanaio_boat",
+                "sha256": "00fb234a23a56d91cae7417bd81db23291c544421880f5266670c95539146632"
+              },
+              "npc_key": "oteryn:npc.rapanaio_boat",
+              "target_scope": "EXISTING_NO_PRIMARY"
+            }
+          ],
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/data-global/npc/rapanaio_boat.lua"
+        },
+        "source_program_sha256": "8b3e2496806af5a23d5d59c6cb96e0848ebecff7895b4ef891d051616c6aa67f",
+        "static_candidate_sha256": "81a5f3b48bf0ccabc08d0d1c9cd2e5232a60f16165af197440643edec72f5586",
+        "static_drop_counts": {
+          "keyword_nodes": 2
+        }
+      },
+      "source_authority": "Pinned Crystal Lua supplies all admitted static text and topology; Fandom supplies only source-choice and variant-attribution evidence.",
+      "static_exclusions": "All Lua scripted callbacks, quest/storage predicates, effects, transitions and non-say child callbacks remain excluded. Witness callback speech binds the source variant but is not copied into the static dialogue.",
+      "variant_binding": {
+        "anchor_witnesses": [
+          {
+            "actor_fact": {
+              "actor": "Rapanaio",
+              "source_byte_end_exclusive": 22344,
+              "source_byte_start": 22114,
+              "source_line": 237,
+              "source_line_bytes_sha256": "b9916ab6b4839e8ca5575c83721584a7f82b43fe05b7a3e13381616a991b0bf4",
+              "speech": "Hello, my friend, what took you so long? Some sightseeing in my cavern, perhaps? You did not even notice me when I passed you in the cavern earlier. Tsk, you really should be more alert if you value your life. ...",
+              "speech_sha256": "fbbf1330dc51a9ff14326b28928a2fc93265922c8e432cbf9390aa7a399ce37b"
+            },
+            "matching_candidate_lua_lines": [
+              {
+                "source_byte_end_exclusive": 2756,
+                "source_byte_start": 2536,
+                "source_line": 95,
+                "source_line_bytes_sha256": "159b384ae5fa4aa8f0c9758c748684d6c51373dc8727dd703f3b8622aaeafe24"
+              }
+            ],
+            "not_in_other_candidate_variant": true,
+            "not_in_pinned_base_variant": true
+          },
+          {
+            "actor_fact": {
+              "actor": "Rapanaio",
+              "source_byte_end_exclusive": 22606,
+              "source_byte_start": 22344,
+              "source_line": 238,
+              "source_line_bytes_sha256": "442395c95fe80564f1fd5f2780a89b871daaface078f66ace2ff4ff880f27807",
+              "speech": "This here is my secret. An underwater boat! Evil will not even see us coming! I hope you are prepared for a big battle on that isle! If not, you had better go and get some additional resources and then return. So, do you feel ready for our trip?",
+              "speech_sha256": "74f5a49a68693b436f8bfcbc33d446d9cb96ad358a851ac410b5d3629757a2c8"
+            },
+            "matching_candidate_lua_lines": [
+              {
+                "source_byte_end_exclusive": 3008,
+                "source_byte_start": 2756,
+                "source_line": 96,
+                "source_line_bytes_sha256": "f8b89c6e44da621d9a95dd8453011158e3f937db4d720492223831c8bb1c9348"
+              }
+            ],
+            "not_in_other_candidate_variant": true,
+            "not_in_pinned_base_variant": true
+          }
+        ],
+        "binding_basis": "Named actor greeting and exact source-exclusive callback replies in the same transcript block. Quest scene context corroborates variant. No exact map tile is asserted.",
+        "block_bytes_sha256": "8ec8d8ed31877effe36bdfde857e1663a73126d24a55bb4f1d071f3712c51848",
+        "block_end_line": 256,
+        "block_start_line": 233,
+        "independent_review_required_for_application": true,
+        "source_variant_bound": true
+      }
+    },
+    {
+      "R7_source_research_scores": {
+        "canary": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        },
+        "crystal": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        }
+      },
+      "candidate_declaration": {
+        "farewell": [
+          "Good bye. Recommend us if you were satisfied with our service."
+        ],
+        "fields": [],
+        "greet": [
+          "Psht! Not that loud! Evil lurks everywhere."
+        ],
+        "identity": {
+          "key": "oteryn:dialogue.npc.rapanaio_isle_of_evil",
+          "revision": "definition-r1"
+        },
+        "keywords": [
+          {
+            "children": [
+              {
+                "key": "no",
+                "reply": [
+                  "We would like to serve you some time."
+                ],
+                "reset": true,
+                "triggers": [
+                  "no"
+                ]
+              }
+            ],
+            "key": "kazordoon",
+            "reply": [
+              "Do you seek a passage to Kazordoon for |TRAVELCOST|?"
+            ],
+            "triggers": [
+              "kazordoon"
+            ]
+          },
+          {
+            "key": "name",
+            "reply": [
+              "My name is Rapanaio from the Royal Tibia Line."
+            ],
+            "triggers": [
+              "name"
+            ]
+          },
+          {
+            "key": "job",
+            "reply": [
+              "I am the captain of this sailing-ship."
+            ],
+            "triggers": [
+              "job"
+            ]
+          }
+        ],
+        "kind": "Dialogue",
+        "voices": {
+          "chance_ppm": 500000,
+          "entries": [
+            {
+              "mode": "Say",
+              "text": "Passage to {Kazordoon}."
+            }
+          ],
+          "interval_ms": 15000
+        },
+        "walkaway": [
+          "Good bye then."
+        ]
+      },
+      "current_s2ward_scores": {
+        "canary": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        },
+        "crystal": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        }
+      },
+      "fandom_scores": {
+        "canary": {
+          "matches": 0,
+          "misses": 1,
+          "total": 1
+        },
+        "crystal": {
+          "matches": 1,
+          "misses": 0,
+          "total": 1
+        }
+      },
+      "greeting_witness": {
+        "actor": "Rapanaio",
+        "source_byte_end_exclusive": 24044,
+        "source_byte_start": 23984,
+        "source_line": 260,
+        "source_line_bytes_sha256": "6541f9db30f68b1bac0cb6979ad36b745bba913d8cc0179bdf99d542e061b4f0",
+        "speech": "Psht! Not that loud! Evil lurks everywhere.",
+        "speech_sha256": "08fc830b7dc5f35d87ac2b11100e0665ba6021dba1cf108ef7f3878e9c8fe3af"
+      },
+      "name": "Rapanaio (Isle of Evil)",
+      "note": "Original s2ward decisions retained; two additional pinned Fandom variant blocks qualify under the owner-directed source extension.",
+      "npc_key": "oteryn:npc.rapanaio_isle_of_evil",
+      "pre_r8_D10_admissible": false,
+      "pre_r8_D10_decision": "HELD",
+      "r8_D10_admissible": true,
+      "r8_D10_decision": "CRYSTAL_WHOLE_STATIC_PROGRAM",
+      "runtime_qualified": false,
+      "selected_program": {
+        "source_capture": {
+          "bytes": 5073,
+          "capture": "raw/crystal/data-global/npc/rapanaio_isle_of_evil.lua",
+          "git_blob_sha1": "7ce4803f69ba8ea32808059fb342137968478810",
+          "git_blob_verified": true,
+          "path": "data-global/npc/rapanaio_isle_of_evil.lua",
+          "repository": "zimbadev/crystalserver",
+          "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "sha256": "b019e365ea9eebea4de89bda67d24b3778f75be58c884b02fc5a0a0ea1a0c257",
+          "source": "crystal",
+          "targets": [
+            {
+              "binding_from_promotion_candidate": true,
+              "name": "Rapanaio (Isle of Evil)",
+              "native_file_binding": {
+                "key": "crystal:npc/rapanaio_isle_of_evil",
+                "sha256": "b019e365ea9eebea4de89bda67d24b3778f75be58c884b02fc5a0a0ea1a0c257"
+              },
+              "npc_key": "oteryn:npc.rapanaio_isle_of_evil",
+              "target_scope": "EXISTING_NO_PRIMARY"
+            }
+          ],
+          "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/data-global/npc/rapanaio_isle_of_evil.lua"
+        },
+        "source_program_sha256": "25e259ad5d4a517905d712b9d44c6b1c7bfa57b58484e5529187ce6b27b5658f",
+        "static_candidate_sha256": "185a2b15d03f63362733580fabeb5f684ec18d0d0806ee2f19d2525d9ca53121",
+        "static_drop_counts": {
+          "dropped_non_say_gated": 1,
+          "keyword_nodes": 4
+        }
+      },
+      "source_authority": "Pinned Crystal Lua supplies all admitted static text and topology; Fandom supplies only source-choice and variant-attribution evidence.",
+      "static_exclusions": "All Lua scripted callbacks, quest/storage predicates, effects, transitions and non-say child callbacks remain excluded. Witness callback speech binds the source variant but is not copied into the static dialogue.",
+      "variant_binding": {
+        "anchor_witnesses": [
+          {
+            "actor_fact": {
+              "actor": "Rapanaio",
+              "source_byte_end_exclusive": 24220,
+              "source_byte_start": 24076,
+              "source_line": 262,
+              "source_line_bytes_sha256": "6de0f0b94e4059cfc68977af620e847bf6acbc0594098a5fc0717ba6032a0fd0",
+              "speech": "Now that we have arrived you should waste no time and fight your way to the lair of evil and destroy its master before it's too late!",
+              "speech_sha256": "8e0c0a9b26430d1bf42db067bee217734f2180eed0acdc2d8c61f260daffffc8"
+            },
+            "matching_candidate_lua_lines": [
+              {
+                "source_byte_end_exclusive": 2869,
+                "source_byte_start": 2699,
+                "source_line": 85,
+                "source_line_bytes_sha256": "f56658dba57dafb92048ee6792876d9b6b38d0ffd08622524ec0a633eabc6951"
+              }
+            ],
+            "not_in_other_candidate_variant": true,
+            "not_in_pinned_base_variant": true
+          }
+        ],
+        "binding_basis": "Named actor greeting and exact source-exclusive callback replies in the same transcript block. Quest scene context corroborates variant. No exact map tile is asserted.",
+        "block_bytes_sha256": "db10f98d55dc94dc0542b3032f5412bd9a01e028d3d8be5cce86efa89ceccc0a",
+        "block_end_line": 263,
+        "block_start_line": 258,
+        "independent_review_required_for_application": true,
+        "source_variant_bound": true
+      }
+    }
+  ],
+  "runtime_qualified": false,
+  "schema": "npc-d10-variant-source-facts/v1",
+  "status": "SOURCE_AUTHORING_QUALIFIED"
+}

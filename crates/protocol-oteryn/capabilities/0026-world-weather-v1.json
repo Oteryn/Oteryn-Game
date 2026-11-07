@@ -1,0 +1,19 @@
+{
+  "id": 26,
+  "name": "WORLD_WEATHER_V1",
+  "constant": "world_weather::CAPABILITY_WORLD_WEATHER_V1",
+  "requires": [
+    6
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [
+    22
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

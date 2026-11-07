@@ -1,0 +1,22 @@
+{
+  "id": "PROF1B-RL-05",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
+  "resource": "Ambiguous perk modification commit before a reconciliation hold",
+  "unit": "milliseconds",
+  "hard_maximum": 2000,
+  "configurable_range": {
+    "minimum": 2000,
+    "maximum": 2000
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "No allocation; an occurrence whose commit outcome is unknown after 2,000 ms is held until reconciliation reads its receipt or terminal record.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=2000: an outcome unknown for 2,000 ms is not yet held",
+    "max+1=2001: at 2,001 ms the occurrence needs reconciliation"
+  ],
+  "consumers": [
+    "apps/game-server/src/domain/weapon_proficiency.rs proficiency_modification_needs_reconciliation"
+  ],
+  "notes": "PROFICIENCY-1B \u00a76.3 and \u00a712; test: weapon_proficiency::modification_tests::limits_hold_at_max_and_refuse_max_plus_one. Registered by OTV2-20261003-prof-shape-1."
+}

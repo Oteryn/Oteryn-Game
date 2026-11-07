@@ -1,0 +1,42 @@
+{
+  "spell": {
+    "base_power": 52,
+    "carrier": "instant",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 110
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Shield Slam",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_groundshaker"
+    },
+    "reference_spell_id": 316,
+    "requirements": {
+      "learning_required": false,
+      "level": 30,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "words": "exori scu"
+  }
+}

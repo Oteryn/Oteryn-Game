@@ -1,0 +1,104 @@
+{
+  "abilities": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/crystal-summer-current/d7f3d89d31186aa3/ability/effect",
+          "revision": "source-player-r28"
+        },
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/crystal-summer-current/d7f3d89d31186aa3/ability/effect-dispel",
+          "revision": "source-player-r28"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d7f3d89d31186aa3/ability",
+        "revision": "source-player-r28"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": false,
+      "range_tiles": 0
+    }
+  ],
+  "effects": [
+    {
+      "damage_type": "healing",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:spell/source/crystal-summer-current/d7f3d89d31186aa3/ability/formula-player",
+        "revision": "source-player-r28"
+      },
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d7f3d89d31186aa3/ability/effect",
+        "revision": "source-player-r28"
+      },
+      "operation": "damage",
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d7f3d89d31186aa3/ability/effect-dispel",
+        "revision": "source-player-r28"
+      },
+      "operation": "remove_condition",
+      "removed_condition": "paralyze"
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d7f3d89d31186aa3/ability/formula-player",
+        "revision": "source-player-r28"
+      },
+      "inputs": "level_magic",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "const": "-5"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "const": "-9"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "max"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "const": "-5"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "const": "-9"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "min"
+      }
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "content_lock": "content/content.lock.json",
+  "legacy_compatibility_root": "content/world",
+  "manifest": "content/manifest.json",
+  "migrated_families": [
+    "Item",
+    "Mount",
+    "Creature",
+    "Presentation",
+    "Behavior",
+    "Loot",
+    "Ability",
+    "Effect",
+    "Formula",
+    "NPC",
+    "Encounter",
+    "Dialogue",
+    "Document",
+    "Service",
+    "Charm",
+    "Proficiency",
+    "RewardClaim",
+    "StarterKit",
+    "Quest",
+    "item_conversion",
+    "Encounter.Raid"
+  ],
+  "next_population_families": [
+    "Achievement",
+    "Outfit",
+    "Area",
+    "House",
+    "WorldObject"
+  ],
+  "populated_rulesets": [
+    "Imbuements"
+  ],
+  "project_revision": "tree-npc-reviewed-definitions-r1",
+  "runtime_source": "legacy_until_separately_qualified",
+  "schema": "OTERYN_GAME_CONTENT_TREE_PROJECT/v1"
+}

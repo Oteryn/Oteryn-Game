@@ -1,0 +1,23 @@
+{
+  "id": "MARKET0-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md",
+  "resource": "Open offers per Character",
+  "unit": "offers",
+  "hard_maximum": 100,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 100
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounded MARKET0 rules and dormant storage; no runtime value writer is enabled.",
+  "client_visible": false,
+  "boundary_tests": [
+    "market_storage_capacity_serializes_last_slot_across_sides_and_books"
+  ],
+  "consumers": [
+    "crates/gameplay/economy/src/market.rs",
+    "crates/gameplay/durability/src/durability/market.rs",
+    "apps/game-server/migrations/0155_market_offer_book.sql"
+  ],
+  "notes": "MARKET-1 dependency fallback. Native escrow admission, atomic Bank/Inbox settlement, audit and wire remain unfinished."
+}

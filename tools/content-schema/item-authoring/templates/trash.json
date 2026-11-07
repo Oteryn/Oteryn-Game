@@ -1,0 +1,22 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.trash",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Trash",
+  "family_profile": "trash",
+  "delivery_task_eligible": false,
+  "taxonomy": {
+    "item_class": "trash",
+    "primary": "trash",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "DUR03-RL-01-BANK",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK0_ACCOUNT_BANK_BALANCE_DECISION_2026-09-30.md",
+  "resource": "ItemInstances touched by one bank operation (BANK-0 \u00a75, \u00a78)",
+  "unit": "ItemInstances per logical transaction",
+  "hard_maximum": 22,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 22
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "22 for a deposit (20 inputs and 2 change outputs), 3 for a withdrawal, 0 for a transfer; checked before any write and in the payload gate, never truncated. The one-item DUR03-RL-01 row is unchanged.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=22: a 20-input deposit with 2 change outputs encodes",
+    "max+1=23 coin lines are rejected (CAPACITY_EXCEEDED) before encoding"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/bank_audit.rs",
+    "apps/game-server/src/durability/bank.rs (bank writer: checked before any ledger entry, coin line, balance change or event; a typed refusal or error writes no value)"
+  ],
+  "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
+}

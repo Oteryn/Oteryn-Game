@@ -1,0 +1,237 @@
+{
+  "schema": "OTERYN_QUALIFIED_WIKI_BESTIARY_MATRIX/v1",
+  "reference_cut": "2026-09-27",
+  "capture_input_sha256": "3b54c3c476c09859a67739318b99b9fad9b8b929f0daeb98b22519600361429d",
+  "table_capture_input_sha256": "c6848afae68a8f3694c213843e729a7590c5484893168d0933df3ab10a288ada",
+  "sources": [
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Template:Charm Points",
+      "page_id": 85849,
+      "revision_id": 1074480,
+      "content_sha256": "718b090672c0917d6b5046fc624cd56f1e9e9f61dda79913c05eb9e8ed713325"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Template:Kills to Unlock",
+      "page_id": 87506,
+      "revision_id": 805830,
+      "content_sha256": "8b4ba700121a6e9d74cb65a69705c7f0b5f9050e9c7ed6af09f14c7a3e3066ed"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Bestiary Difficulties",
+      "page_id": 83929,
+      "revision_id": 1132172,
+      "content_sha256": "b4f399a70cf117857bcb3d3c82810f6862493bbbec326212b5b3b3513347ba19"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Template:Bestiary Table",
+      "page_id": 85678,
+      "revision_id": 1152628,
+      "content_sha256": "f8afb8561a2cd5cf34210db1606afab6f319ef59b9bd9545ae696129dd07dff4"
+    }
+  ],
+  "profiles": {
+    "harmless": {
+      "regular": {
+        "stars": 0,
+        "charm_points": 1,
+        "kill_thresholds": [
+          5,
+          10,
+          25
+        ],
+        "charm_source_index": 0,
+        "charm_wiki_line": 11,
+        "threshold_source_index": 2,
+        "threshold_wiki_line": 10,
+        "completion_source_index": 1,
+        "completion_wiki_line": 11
+      },
+      "very_rare": {
+        "stars": 0,
+        "charm_points": 5,
+        "kill_thresholds": [
+          2,
+          3,
+          5
+        ],
+        "charm_source_index": 0,
+        "charm_wiki_line": 11,
+        "threshold_source_index": 3,
+        "threshold_wiki_line": 21,
+        "completion_source_index": 1,
+        "completion_wiki_line": 11
+      }
+    },
+    "trivial": {
+      "regular": {
+        "stars": 1,
+        "charm_points": 5,
+        "kill_thresholds": [
+          10,
+          100,
+          250
+        ],
+        "charm_source_index": 0,
+        "charm_wiki_line": 12,
+        "threshold_source_index": 2,
+        "threshold_wiki_line": 25,
+        "completion_source_index": 1,
+        "completion_wiki_line": 12
+      },
+      "very_rare": {
+        "stars": 1,
+        "charm_points": 10,
+        "kill_thresholds": [
+          2,
+          3,
+          5
+        ],
+        "charm_source_index": 0,
+        "charm_wiki_line": 12,
+        "threshold_source_index": 3,
+        "threshold_wiki_line": 36,
+        "completion_source_index": 1,
+        "completion_wiki_line": 12
+      }
+    },
+    "easy": {
+      "regular": {
+        "stars": 2,
+        "charm_points": 15,
+        "kill_thresholds": [
+          25,
+          250,
+          500
+        ],
+        "charm_source_index": 0,
+        "charm_wiki_line": 13,
+        "threshold_source_index": 2,
+        "threshold_wiki_line": 39,
+        "completion_source_index": 1,
+        "completion_wiki_line": 13
+      },
+      "very_rare": {
+        "stars": 2,
+        "charm_points": 30,
+        "kill_thresholds": [
+          2,
+          3,
+          5
+        ],
+        "charm_source_index": 0,
+        "charm_wiki_line": 13,
+        "threshold_source_index": 3,
+        "threshold_wiki_line": 51,
+        "completion_source_index": 1,
+        "completion_wiki_line": 13
+      }
+    },
+    "medium": {
+      "regular": {
+        "stars": 3,
+        "charm_points": 25,
+        "kill_thresholds": [
+          50,
+          500,
+          1000
+        ],
+        "charm_source_index": 0,
+        "charm_wiki_line": 14,
+        "threshold_source_index": 2,
+        "threshold_wiki_line": 53,
+        "completion_source_index": 1,
+        "completion_wiki_line": 14
+      },
+      "very_rare": {
+        "stars": 3,
+        "charm_points": 50,
+        "kill_thresholds": [
+          2,
+          3,
+          5
+        ],
+        "charm_source_index": 0,
+        "charm_wiki_line": 14,
+        "threshold_source_index": 3,
+        "threshold_wiki_line": 66,
+        "completion_source_index": 1,
+        "completion_wiki_line": 14
+      }
+    },
+    "hard": {
+      "regular": {
+        "stars": 4,
+        "charm_points": 50,
+        "kill_thresholds": [
+          100,
+          1000,
+          2500
+        ],
+        "charm_source_index": 0,
+        "charm_wiki_line": 15,
+        "threshold_source_index": 2,
+        "threshold_wiki_line": 67,
+        "completion_source_index": 1,
+        "completion_wiki_line": 15
+      },
+      "very_rare": {
+        "stars": 4,
+        "charm_points": 100,
+        "kill_thresholds": [
+          2,
+          3,
+          5
+        ],
+        "charm_source_index": 0,
+        "charm_wiki_line": 15,
+        "threshold_source_index": 3,
+        "threshold_wiki_line": 81,
+        "completion_source_index": 1,
+        "completion_wiki_line": 15
+      }
+    },
+    "challenging": {
+      "regular": {
+        "stars": 5,
+        "charm_points": 100,
+        "kill_thresholds": [
+          200,
+          2000,
+          5000
+        ],
+        "charm_source_index": 0,
+        "charm_wiki_line": 16,
+        "threshold_source_index": 2,
+        "threshold_wiki_line": 81,
+        "completion_source_index": 1,
+        "completion_wiki_line": 16
+      },
+      "very_rare": {
+        "stars": 5,
+        "charm_points": 200,
+        "kill_thresholds": [
+          2,
+          3,
+          5
+        ],
+        "charm_source_index": 0,
+        "charm_wiki_line": 16,
+        "threshold_source_index": 3,
+        "threshold_wiki_line": 96,
+        "completion_source_index": 1,
+        "completion_wiki_line": 16
+      }
+    }
+  },
+  "stars_semantics": "Existing accepted Canary Stars0..5 to authoring difficulty mapping, applied to qualified canonical difficulty.",
+  "qualification": "Dated public Creature difficulty+occurrence combined with pinned public Bestiary templates; no inference from compact absent/MATCH fields.",
+  "very_rare_triplet_qualified": true
+}

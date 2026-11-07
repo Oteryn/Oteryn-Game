@@ -1,0 +1,1204 @@
+{
+  "bases": {
+    "1": {
+      "duration": 72000,
+      "price": 7500,
+      "removecost": 15000
+    },
+    "2": {
+      "duration": 72000,
+      "price": 60000,
+      "removecost": 15000
+    },
+    "3": {
+      "duration": 72000,
+      "price": 250000,
+      "removecost": 15000
+    }
+  },
+  "categories": {
+    "0": "Elemental Damage",
+    "1": "Life Leech",
+    "10": "Increase Speed",
+    "11": "Skillboost (Axe Fighting)",
+    "12": "Skillboost (Sword Fighting)",
+    "13": "Skillboost (Club Fighting)",
+    "14": "Skillboost (Shielding)",
+    "15": "Skillboost (Distance Fighting)",
+    "16": "Skillboost (Magic Level)",
+    "17": "Increase Capacity",
+    "18": "Skillboost (Fist Fighting)",
+    "19": "Paralysis Removal",
+    "2": "Mana Leech",
+    "3": "Critical Hit",
+    "4": "Elemental Protection (Death)",
+    "5": "Elemental Protection (Earth)",
+    "6": "Elemental Protection (Fire)",
+    "7": "Elemental Protection (Ice)",
+    "8": "Elemental Protection (Energy)",
+    "9": "Elemental Protection (Holy)"
+  },
+  "evidence": "OtsHypothesisOnly",
+  "extracted_by": "tools/content-migration/imbuement_catalogue.py --stage-crystal",
+  "recipes": [
+    {
+      "category": 13,
+      "materials": [
+        [
+          9657,
+          20
+        ]
+      ],
+      "name": "Bash",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 13,
+      "materials": [
+        [
+          9657,
+          20
+        ],
+        [
+          22189,
+          15
+        ]
+      ],
+      "name": "Bash",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 13,
+      "materials": [
+        [
+          9657,
+          20
+        ],
+        [
+          22189,
+          15
+        ],
+        [
+          10405,
+          10
+        ]
+      ],
+      "name": "Bash",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 14,
+      "materials": [
+        [
+          9641,
+          20
+        ]
+      ],
+      "name": "Blockade",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 14,
+      "materials": [
+        [
+          9641,
+          20
+        ],
+        [
+          11703,
+          25
+        ]
+      ],
+      "name": "Blockade",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 14,
+      "materials": [
+        [
+          9641,
+          20
+        ],
+        [
+          11703,
+          25
+        ],
+        [
+          20199,
+          25
+        ]
+      ],
+      "name": "Blockade",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 11,
+      "materials": [
+        [
+          10196,
+          20
+        ]
+      ],
+      "name": "Chop",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 11,
+      "materials": [
+        [
+          10196,
+          20
+        ],
+        [
+          11447,
+          25
+        ]
+      ],
+      "name": "Chop",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 11,
+      "materials": [
+        [
+          10196,
+          20
+        ],
+        [
+          11447,
+          25
+        ],
+        [
+          21200,
+          20
+        ]
+      ],
+      "name": "Chop",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 8,
+      "materials": [
+        [
+          9644,
+          20
+        ]
+      ],
+      "name": "Cloud Fabric",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 8,
+      "materials": [
+        [
+          9644,
+          20
+        ],
+        [
+          14079,
+          15
+        ]
+      ],
+      "name": "Cloud Fabric",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 8,
+      "materials": [
+        [
+          9644,
+          20
+        ],
+        [
+          14079,
+          15
+        ],
+        [
+          9665,
+          10
+        ]
+      ],
+      "name": "Cloud Fabric",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 9,
+      "materials": [
+        [
+          9639,
+          25
+        ]
+      ],
+      "name": "Demon Presence",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 9,
+      "materials": [
+        [
+          9639,
+          25
+        ],
+        [
+          9638,
+          25
+        ]
+      ],
+      "name": "Demon Presence",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 9,
+      "materials": [
+        [
+          9639,
+          25
+        ],
+        [
+          9638,
+          25
+        ],
+        [
+          10304,
+          20
+        ]
+      ],
+      "name": "Demon Presence",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 6,
+      "materials": [
+        [
+          5877,
+          20
+        ]
+      ],
+      "name": "Dragon Hide",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 6,
+      "materials": [
+        [
+          5877,
+          20
+        ],
+        [
+          16131,
+          10
+        ]
+      ],
+      "name": "Dragon Hide",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 6,
+      "materials": [
+        [
+          5877,
+          20
+        ],
+        [
+          16131,
+          10
+        ],
+        [
+          11658,
+          5
+        ]
+      ],
+      "name": "Dragon Hide",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 0,
+      "materials": [
+        [
+          18993,
+          25
+        ]
+      ],
+      "name": "Electrify",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 0,
+      "materials": [
+        [
+          18993,
+          25
+        ],
+        [
+          21975,
+          5
+        ]
+      ],
+      "name": "Electrify",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 0,
+      "materials": [
+        [
+          18993,
+          25
+        ],
+        [
+          21975,
+          5
+        ],
+        [
+          23508,
+          1
+        ]
+      ],
+      "name": "Electrify",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 16,
+      "materials": [
+        [
+          9635,
+          25
+        ]
+      ],
+      "name": "Epiphany",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 16,
+      "materials": [
+        [
+          9635,
+          25
+        ],
+        [
+          11452,
+          15
+        ]
+      ],
+      "name": "Epiphany",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 16,
+      "materials": [
+        [
+          9635,
+          25
+        ],
+        [
+          11452,
+          15
+        ],
+        [
+          10309,
+          15
+        ]
+      ],
+      "name": "Epiphany",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 17,
+      "materials": [
+        [
+          25694,
+          20
+        ]
+      ],
+      "name": "Featherweight",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 17,
+      "materials": [
+        [
+          25694,
+          20
+        ],
+        [
+          25702,
+          10
+        ]
+      ],
+      "name": "Featherweight",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 17,
+      "materials": [
+        [
+          25694,
+          20
+        ],
+        [
+          25702,
+          10
+        ],
+        [
+          20205,
+          5
+        ]
+      ],
+      "name": "Featherweight",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 0,
+      "materials": [
+        [
+          9661,
+          25
+        ]
+      ],
+      "name": "Frost",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 0,
+      "materials": [
+        [
+          9661,
+          25
+        ],
+        [
+          21801,
+          10
+        ]
+      ],
+      "name": "Frost",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 0,
+      "materials": [
+        [
+          9661,
+          25
+        ],
+        [
+          21801,
+          10
+        ],
+        [
+          9650,
+          5
+        ]
+      ],
+      "name": "Frost",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 4,
+      "materials": [
+        [
+          11466,
+          25
+        ]
+      ],
+      "name": "Lich Shroud",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 4,
+      "materials": [
+        [
+          11466,
+          25
+        ],
+        [
+          22007,
+          20
+        ]
+      ],
+      "name": "Lich Shroud",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 4,
+      "materials": [
+        [
+          11466,
+          25
+        ],
+        [
+          22007,
+          20
+        ],
+        [
+          9660,
+          5
+        ]
+      ],
+      "name": "Lich Shroud",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 15,
+      "materials": [
+        [
+          11464,
+          25
+        ]
+      ],
+      "name": "Precision",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 15,
+      "materials": [
+        [
+          11464,
+          25
+        ],
+        [
+          18994,
+          20
+        ]
+      ],
+      "name": "Precision",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 15,
+      "materials": [
+        [
+          11464,
+          25
+        ],
+        [
+          18994,
+          20
+        ],
+        [
+          10298,
+          10
+        ]
+      ],
+      "name": "Precision",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 18,
+      "materials": [
+        [
+          10281,
+          25
+        ]
+      ],
+      "name": "Punch",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 18,
+      "materials": [
+        [
+          10281,
+          25
+        ],
+        [
+          11489,
+          20
+        ]
+      ],
+      "name": "Punch",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 18,
+      "materials": [
+        [
+          10281,
+          25
+        ],
+        [
+          11489,
+          20
+        ],
+        [
+          40529,
+          15
+        ]
+      ],
+      "name": "Punch",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 7,
+      "materials": [
+        [
+          10295,
+          25
+        ]
+      ],
+      "name": "Quara Scale",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 7,
+      "materials": [
+        [
+          10295,
+          25
+        ],
+        [
+          10307,
+          15
+        ]
+      ],
+      "name": "Quara Scale",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 7,
+      "materials": [
+        [
+          10295,
+          25
+        ],
+        [
+          10307,
+          15
+        ],
+        [
+          14012,
+          10
+        ]
+      ],
+      "name": "Quara Scale",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 0,
+      "materials": [
+        [
+          11484,
+          25
+        ]
+      ],
+      "name": "Reap",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 0,
+      "materials": [
+        [
+          11484,
+          25
+        ],
+        [
+          9647,
+          20
+        ]
+      ],
+      "name": "Reap",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 0,
+      "materials": [
+        [
+          11484,
+          25
+        ],
+        [
+          9647,
+          20
+        ],
+        [
+          10420,
+          5
+        ]
+      ],
+      "name": "Reap",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 0,
+      "materials": [
+        [
+          9636,
+          25
+        ]
+      ],
+      "name": "Scorch",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 0,
+      "materials": [
+        [
+          9636,
+          25
+        ],
+        [
+          5920,
+          5
+        ]
+      ],
+      "name": "Scorch",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 0,
+      "materials": [
+        [
+          9636,
+          25
+        ],
+        [
+          5920,
+          5
+        ],
+        [
+          5954,
+          5
+        ]
+      ],
+      "name": "Scorch",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 12,
+      "materials": [
+        [
+          9691,
+          25
+        ]
+      ],
+      "name": "Slash",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 12,
+      "materials": [
+        [
+          9691,
+          25
+        ],
+        [
+          21202,
+          25
+        ]
+      ],
+      "name": "Slash",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 12,
+      "materials": [
+        [
+          9691,
+          25
+        ],
+        [
+          21202,
+          25
+        ],
+        [
+          9654,
+          5
+        ]
+      ],
+      "name": "Slash",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 5,
+      "materials": [
+        [
+          17823,
+          25
+        ]
+      ],
+      "name": "Snake Skin",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 5,
+      "materials": [
+        [
+          17823,
+          25
+        ],
+        [
+          9694,
+          20
+        ]
+      ],
+      "name": "Snake Skin",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 5,
+      "materials": [
+        [
+          17823,
+          25
+        ],
+        [
+          9694,
+          20
+        ],
+        [
+          11702,
+          10
+        ]
+      ],
+      "name": "Snake Skin",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 3,
+      "materials": [
+        [
+          11444,
+          20
+        ]
+      ],
+      "name": "Strike",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 3,
+      "materials": [
+        [
+          11444,
+          20
+        ],
+        [
+          10311,
+          25
+        ]
+      ],
+      "name": "Strike",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 3,
+      "materials": [
+        [
+          11444,
+          20
+        ],
+        [
+          10311,
+          25
+        ],
+        [
+          22728,
+          5
+        ]
+      ],
+      "name": "Strike",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 10,
+      "materials": [
+        [
+          17458,
+          15
+        ]
+      ],
+      "name": "Swiftness",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 10,
+      "materials": [
+        [
+          17458,
+          15
+        ],
+        [
+          10302,
+          25
+        ]
+      ],
+      "name": "Swiftness",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 10,
+      "materials": [
+        [
+          17458,
+          15
+        ],
+        [
+          10302,
+          25
+        ],
+        [
+          14081,
+          20
+        ]
+      ],
+      "name": "Swiftness",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 1,
+      "materials": [
+        [
+          9685,
+          25
+        ]
+      ],
+      "name": "Vampirism",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 1,
+      "materials": [
+        [
+          9685,
+          25
+        ],
+        [
+          9633,
+          15
+        ]
+      ],
+      "name": "Vampirism",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 1,
+      "materials": [
+        [
+          9685,
+          25
+        ],
+        [
+          9633,
+          15
+        ],
+        [
+          9663,
+          5
+        ]
+      ],
+      "name": "Vampirism",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 0,
+      "materials": [
+        [
+          9686,
+          25
+        ]
+      ],
+      "name": "Venom",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 0,
+      "materials": [
+        [
+          9686,
+          25
+        ],
+        [
+          9640,
+          20
+        ]
+      ],
+      "name": "Venom",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 0,
+      "materials": [
+        [
+          9686,
+          25
+        ],
+        [
+          9640,
+          20
+        ],
+        [
+          21194,
+          2
+        ]
+      ],
+      "name": "Venom",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 19,
+      "materials": [
+        [
+          22053,
+          20
+        ]
+      ],
+      "name": "Vibrancy",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 19,
+      "materials": [
+        [
+          22053,
+          20
+        ],
+        [
+          23507,
+          15
+        ]
+      ],
+      "name": "Vibrancy",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 19,
+      "materials": [
+        [
+          22053,
+          20
+        ],
+        [
+          23507,
+          15
+        ],
+        [
+          28567,
+          5
+        ]
+      ],
+      "name": "Vibrancy",
+      "premium": true,
+      "tier": 3
+    },
+    {
+      "category": 2,
+      "materials": [
+        [
+          11492,
+          25
+        ]
+      ],
+      "name": "Void",
+      "premium": false,
+      "tier": 1
+    },
+    {
+      "category": 2,
+      "materials": [
+        [
+          11492,
+          25
+        ],
+        [
+          20200,
+          25
+        ]
+      ],
+      "name": "Void",
+      "premium": true,
+      "tier": 2
+    },
+    {
+      "category": 2,
+      "materials": [
+        [
+          11492,
+          25
+        ],
+        [
+          20200,
+          25
+        ],
+        [
+          22730,
+          5
+        ]
+      ],
+      "name": "Void",
+      "premium": true,
+      "tier": 3
+    }
+  ],
+  "schema": "OTERYN_CRYSTAL_IMBUEMENT_MATERIAL_FACTS/v1",
+  "source": {
+    "path": "data/XML/imbuements.xml",
+    "repository": "zimbadev/crystalserver",
+    "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+    "sha256": "7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+  }
+}

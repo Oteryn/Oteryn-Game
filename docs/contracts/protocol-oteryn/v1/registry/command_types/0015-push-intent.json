@@ -1,0 +1,10 @@
+{
+  "id": 15,
+  "name": "PUSH_INTENT",
+  "owner_decision": "WORLD-INTERACTION-0 \u00a710.1 and WORLDINT0-RL-21 (docs/architecture/reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md); number leased to LOOP-WORLD-1 by the #1622 control plane",
+  "capability": 11,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/world_interaction_v1.proto#PushIntentV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/world_interaction_v1.proto#PushResultV1",
+  "max_payload_bytes": 41,
+  "max_result_payload_bytes": 4
+}

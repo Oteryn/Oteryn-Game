@@ -1,0 +1,22 @@
+{
+  "id": "QUICKLOOT1-RL-1283",
+  "owner_contract": "../architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md",
+  "resource": "Encoded quick-loot result payload",
+  "unit": "bytes per payload",
+  "hard_maximum": 32768,
+  "configurable_range": {
+    "minimum": 32768,
+    "maximum": 32768
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Length is checked before decoding or allocating repeated entries. Unknown, repeated or noncanonical fields fail closed.",
+  "client_visible": true,
+  "boundary_tests": [
+    "wire_limits_reject_before_allocating: rejects limit+1 payload bytes before decoding; 1281 result entries cannot encode",
+    "requests_round_trip_and_reject_ambiguous_shapes and maximum_bounded_quick_loot_result_fits_the_wire: valid canonical payloads round-trip"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/quick_loot.rs"
+  ],
+  "notes": "QUICKLOOT-1. One terminal batch receipt and current session-generation fence cover every accepted child move."
+}

@@ -1,0 +1,47 @@
+{
+  "spell": {
+    "base_power": 15,
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 6
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Mud Attack",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_mud_attack"
+    },
+    "reference_spell_id": 174,
+    "requirements": {
+      "level": 1,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "range_tiles": 3,
+      "target_or_direction": true
+    },
+    "words": "exori infir tera"
+  }
+}

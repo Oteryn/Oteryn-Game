@@ -1,0 +1,10 @@
+name=team_finder_leader
+commands=390,391
+transport=team_finder_leader
+composed=team_finder_leader
+authority=team_finder_leader
+[route]
+match routing::team_finder_leader::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

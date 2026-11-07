@@ -1,0 +1,20 @@
+{
+  "id": "DFR-PG-BACKEND-MESSAGE-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+  "resource": "One PostgreSQL backend message on the first-slice production root profile, including type byte, four-byte PostgreSQL length field and body",
+  "unit": "total wire bytes",
+  "hard_maximum": 131207,
+  "configurable_range": {
+    "minimum": 131207,
+    "maximum": 131207
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Inspect the five-byte backend header first and reject any total above 131207 (announced PostgreSQL length above 131206; body above 131202) before reserve, growth or a read target derived from the peer length. Larger admitted messages than the 8192-byte reusable scratch require separately owned same-root R/T backing reserved before allocation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "131207 total wire bytes accepted only when the message-specific structural/profile checks and existing root funding also pass",
+    "131208 total wire bytes, announced length 131207, or any checked arithmetic overflow rejected as UNAVAILABLE immediately after the five-byte header and before peer-length-driven allocation/growth",
+    "Prepared/binary row-bearing qualification proves the bound is never applied to a simple/text DataRow path"
+  ],
+  "notes": "First-slice PostgreSQL-specific cap. The selected prepared/binary DataRow maximum is 1 type + 4 length + 2 field count + (32 * 4 field-length prefixes) + 131072 admitted row-value bytes = 131207. This is not DFR-SQL-RESULT-BYTES and does not reuse FND02-WIRE-FRAME-BYTES."
+}

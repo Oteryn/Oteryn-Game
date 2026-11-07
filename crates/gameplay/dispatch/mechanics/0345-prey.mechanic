@@ -1,0 +1,11 @@
+name=prey
+commands=160
+transport=prey
+composed=prey
+authority=prey
+offer=41,prey::offered,prey_available
+[route]
+match routing::prey::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

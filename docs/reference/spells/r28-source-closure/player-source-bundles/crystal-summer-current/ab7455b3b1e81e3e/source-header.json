@@ -1,0 +1,51 @@
+{
+  "spell": {
+    "base_power": 105,
+    "carrier": "instant",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 180
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 2000,
+        "group": "special"
+      }
+    ],
+    "name": "Forked Thorns",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_strong_terra_strike"
+    },
+    "reference_spell_id": 318,
+    "requirements": {
+      "learning_required": false,
+      "level": 80,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "needs_target": false,
+      "range_tiles": 7
+    },
+    "words": "exevo fur tera"
+  }
+}

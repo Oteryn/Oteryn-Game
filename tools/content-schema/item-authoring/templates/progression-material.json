@@ -1,0 +1,26 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.progression-material",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Progression Material",
+  "family_profile": "progression_material",
+  "delivery_task_eligible": false,
+  "taxonomy": {
+    "item_class": "material",
+    "primary": "progression-material",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "trade": {
+    "tradeable": true,
+    "marketable": false
+  }
+}

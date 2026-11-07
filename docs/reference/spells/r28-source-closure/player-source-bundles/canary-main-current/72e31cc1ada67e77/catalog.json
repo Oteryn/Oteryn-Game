@@ -1,0 +1,84 @@
+{
+  "definitions": [
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/105",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/2118",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/2119",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/2120",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/2121",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/2122",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/2123",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/2124",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/2125",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/2126",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/2132",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/2133",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/2134",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/2135",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/21465",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/3148",
+      "revision": "source-player-r28"
+    }
+  ]
+}

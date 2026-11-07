@@ -1,0 +1,2268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.oteryn.invalid/source/wiki-spec-supplement-v1",
+  "$defs": {
+    "witness": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byte_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "line",
+        "line_sha256",
+        "byte_offset",
+        "byte_length",
+        "span_sha256"
+      ],
+      "additionalProperties": false
+    },
+    "source_ref": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "enum": [
+            "tibia_fandom",
+            "tibiawiki_br"
+          ]
+        },
+        "relation": {
+          "enum": [
+            "base",
+            "spoiler",
+            "crosscheck"
+          ]
+        },
+        "pageid": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "revid": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://(?:tibia\\.fandom\\.com|www\\.tibiawiki\\.com\\.br)/"
+        }
+      },
+      "required": [
+        "provider",
+        "relation",
+        "pageid",
+        "revid",
+        "content_sha256",
+        "url"
+      ],
+      "additionalProperties": false
+    },
+    "entity": {
+      "type": "object",
+      "properties": {
+        "entity": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "binding_status": {
+          "const": "UNKNOWN"
+        },
+        "source_namespace": {
+          "const": "mediawiki/page_title"
+        }
+      },
+      "required": [
+        "entity",
+        "quantity",
+        "binding_status",
+        "source_namespace"
+      ],
+      "additionalProperties": false
+    },
+    "requirement_node": {
+      "type": "object",
+      "properties": {
+        "entity": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "binding_status": {
+          "const": "UNKNOWN"
+        },
+        "source_namespace": {
+          "const": "mediawiki/page_title"
+        },
+        "kind": {
+          "const": "entity_reference"
+        }
+      },
+      "required": [
+        "entity",
+        "quantity",
+        "binding_status",
+        "source_namespace",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "reward_group": {
+      "type": "object",
+      "properties": {
+        "scope_anchor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "entities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/entity"
+          }
+        },
+        "evidence": {
+          "$ref": "#/$defs/witness"
+        }
+      },
+      "required": [
+        "scope_anchor",
+        "entities",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "quantitative_reward": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "experience",
+            "gold"
+          ]
+        },
+        "amount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scope": {
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/witness"
+        }
+      },
+      "required": [
+        "kind",
+        "amount",
+        "scope",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "prerequisite": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byte_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "section": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "scope_anchor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "execution_semantics": {
+          "const": "UNKNOWN"
+        },
+        "operator": {
+          "enum": [
+            "references",
+            "any_of_references"
+          ]
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/requirement_node"
+          }
+        },
+        "declaration_strength": {
+          "const": "reference_only"
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "line",
+        "line_sha256",
+        "byte_offset",
+        "byte_length",
+        "span_sha256",
+        "section",
+        "scope",
+        "scope_anchor",
+        "execution_semantics",
+        "operator",
+        "nodes",
+        "declaration_strength"
+      ],
+      "additionalProperties": false
+    },
+    "unparsed": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byte_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "line",
+        "line_sha256",
+        "byte_offset",
+        "byte_length",
+        "span_sha256",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "delta": {
+      "type": "object",
+      "properties": {
+        "reward_entity_references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/entity"
+          }
+        },
+        "reward_groups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/reward_group"
+          }
+        },
+        "reward_quantitative_facts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/quantitative_reward"
+          }
+        },
+        "prerequisite_expressions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/prerequisite"
+          }
+        },
+        "unparsed_requirements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/unparsed"
+          }
+        },
+        "reward_declared_none": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "reward_entity_references",
+        "reward_groups",
+        "reward_quantitative_facts",
+        "prerequisite_expressions",
+        "unparsed_requirements",
+        "reward_declared_none"
+      ],
+      "additionalProperties": false
+    },
+    "span": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byte_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "field": {
+          "type": "string"
+        },
+        "section": {
+          "type": "string"
+        },
+        "source_order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "classification": {
+          "const": "DERIVED"
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "line",
+        "line_sha256",
+        "byte_offset",
+        "byte_length",
+        "span_sha256",
+        "field",
+        "section",
+        "source_order",
+        "classification"
+      ],
+      "additionalProperties": false
+    },
+    "heading": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byte_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "heading": {
+          "type": "string"
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "source_order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "execution_order": {
+          "const": "UNKNOWN"
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "line",
+        "line_sha256",
+        "byte_offset",
+        "byte_length",
+        "span_sha256",
+        "heading",
+        "level",
+        "source_order",
+        "execution_order"
+      ],
+      "additionalProperties": false
+    },
+    "journal": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byte_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "value": {
+          "const": "REFERENCE_ONLY"
+        },
+        "section": {
+          "type": "string"
+        },
+        "source_order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "journal_text_ref": {
+          "$ref": "#/$defs/witness"
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "line",
+        "line_sha256",
+        "byte_offset",
+        "byte_length",
+        "span_sha256",
+        "value",
+        "section",
+        "source_order",
+        "journal_text_ref"
+      ],
+      "additionalProperties": false
+    },
+    "counter": {
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unit": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "interpretation": {
+          "const": "LITERAL_ONLY"
+        }
+      },
+      "required": [
+        "amount",
+        "unit",
+        "scope",
+        "interpretation"
+      ],
+      "additionalProperties": false
+    },
+    "table_cell": {
+      "type": "object",
+      "properties": {
+        "entity_references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/entity"
+          }
+        },
+        "numeric_literals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence": {
+          "$ref": "#/$defs/witness"
+        },
+        "header": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "entity_references",
+        "numeric_literals",
+        "evidence",
+        "header"
+      ],
+      "additionalProperties": false
+    },
+    "json_value": {
+      "anyOf": [
+        {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/json_value"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/json_value"
+          }
+        }
+      ]
+    },
+    "fact": {
+      "type": "object",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byte_offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "kind": {
+          "enum": [
+            "source_reference",
+            "reward_reference",
+            "recommendation",
+            "source_requirement_list",
+            "exchange_reference",
+            "source_table",
+            "curated_source_fact"
+          ]
+        },
+        "section": {
+          "type": "string"
+        },
+        "source_order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "entity_references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/entity"
+          }
+        },
+        "counters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/counter"
+          }
+        },
+        "execution_semantics": {
+          "const": "UNKNOWN"
+        },
+        "headers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "header_witnesses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/witness"
+          }
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/table_cell"
+            }
+          }
+        },
+        "scope": {
+          "type": "string"
+        },
+        "facts": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/json_value"
+          }
+        },
+        "field": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/json_value"
+        },
+        "evidence": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/witness"
+              }
+            },
+            {
+              "$ref": "#/$defs/witness"
+            }
+          ]
+        },
+        "classification": {
+          "const": "DERIVED"
+        },
+        "binding_status": {
+          "const": "UNKNOWN"
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "kind",
+        "source_order",
+        "execution_semantics"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "curated_source_fact"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "evidence",
+              "binding_status"
+            ],
+            "oneOf": [
+              {
+                "required": [
+                  "scope",
+                  "facts",
+                  "classification"
+                ],
+                "properties": {
+                  "evidence": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/witness"
+                    },
+                    "minItems": 1
+                  }
+                }
+              },
+              {
+                "required": [
+                  "field",
+                  "value"
+                ],
+                "properties": {
+                  "evidence": {
+                    "$ref": "#/$defs/witness"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_table"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "section",
+              "headers",
+              "header_witnesses",
+              "rows"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "not": {
+                  "enum": [
+                    "curated_source_fact",
+                    "source_table"
+                  ]
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "line",
+              "line_sha256",
+              "byte_offset",
+              "byte_length",
+              "span_sha256",
+              "section",
+              "entity_references",
+              "counters"
+            ]
+          }
+        }
+      ]
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "enum": [
+            "tibia_fandom",
+            "tibiawiki_br"
+          ]
+        },
+        "relation": {
+          "enum": [
+            "base",
+            "spoiler",
+            "crosscheck"
+          ]
+        },
+        "pageid": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "revid": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://(?:tibia\\.fandom\\.com|www\\.tibiawiki\\.com\\.br)/"
+        },
+        "semantic_enrichment_delta": {
+          "$ref": "#/$defs/delta"
+        },
+        "source_spans": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/span"
+          }
+        },
+        "heading_witnesses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/heading"
+          }
+        },
+        "journal_field_witnesses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/journal"
+          }
+        },
+        "source_fact_entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fact"
+          }
+        },
+        "source_fields": {
+          "type": "object",
+          "properties": {
+            "lvl": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "lvlrec": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "lvlreq": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "lvlmax": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "premium": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "questlog": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "quest_log": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "log": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "team": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "levelnote": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "lvlnote": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "time": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "timealloc": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "duration": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "removed": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            },
+            "requirements": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "byte_offset": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_length": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "span_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "meaning": {
+                  "enum": [
+                    "recommendation",
+                    "source_field_only"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "byte_offset",
+                "byte_length",
+                "span_sha256",
+                "value",
+                "meaning"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "source_field_listing_complete": {
+          "const": false
+        },
+        "access_method": {
+          "const": "remote_desktop_browser"
+        },
+        "processing_method": {
+          "const": "offline_pinned_capture"
+        },
+        "target_cut": {
+          "enum": [
+            "2026-09-27",
+            "2026-10-01"
+          ]
+        },
+        "revision_timestamp": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+        },
+        "raw_capture": {
+          "type": "object",
+          "properties": {
+            "body_path": {
+              "type": "string"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "publication": {
+              "const": "REFERENCE_ONLY_SCRATCH"
+            }
+          },
+          "required": [
+            "body_path",
+            "bytes",
+            "sha256",
+            "publication"
+          ],
+          "additionalProperties": false
+        },
+        "source_revision_verified": {
+          "const": false
+        },
+        "historical_acquisition_verified": {
+          "const": true
+        },
+        "proof_verification": {
+          "const": "RECORDED_ACQUISITION_ONLY"
+        },
+        "classification": {
+          "const": "DERIVED"
+        },
+        "runtime_promotion": {
+          "const": false
+        },
+        "unclosed_table": {
+          "const": true
+        },
+        "bounded_scope_corrections": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "provider",
+        "relation",
+        "pageid",
+        "revid",
+        "content_sha256",
+        "url",
+        "semantic_enrichment_delta",
+        "source_spans",
+        "heading_witnesses",
+        "journal_field_witnesses",
+        "source_fact_entries",
+        "source_fields",
+        "source_field_listing_complete",
+        "access_method",
+        "processing_method",
+        "target_cut",
+        "revision_timestamp",
+        "raw_capture",
+        "source_revision_verified",
+        "historical_acquisition_verified",
+        "proof_verification",
+        "classification",
+        "runtime_promotion"
+      ],
+      "additionalProperties": false
+    },
+    "entry": {
+      "type": "object",
+      "properties": {
+        "historical_donor_status": {
+          "type": "object"
+        },
+        "source_identity_overlap": {
+          "type": "object"
+        },
+        "source_field_completeness": {
+          "type": "string"
+        },
+        "canonical_binding_readiness": {
+          "type": "string"
+        },
+        "source_specification": {
+          "type": "array"
+        },
+        "unresolved": {
+          "type": "array"
+        },
+        "item_name_review_candidates": {
+          "type": "array"
+        },
+        "source_fields_with_provenance": {
+          "type": "array"
+        },
+        "source_identity_links": {
+          "type": "array"
+        },
+        "source_item_identity_bindings": {
+          "type": "array"
+        },
+        "verified_source_conditions": {
+          "type": "array"
+        },
+        "wiki_title": {
+          "type": "string"
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/source_ref"
+          }
+        },
+        "migration_status": {
+          "const": "BLOCKED_UNKNOWN_BINDINGS"
+        },
+        "definition_complete": {
+          "const": false
+        },
+        "runtime_readiness": {
+          "const": "UNKNOWN"
+        },
+        "available_model_projection": {
+          "type": "string"
+        },
+        "baseline_entry_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_fact_supplements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/source"
+          }
+        },
+        "source_capture_complete_for_selected_revisions": {
+          "const": true
+        },
+        "source_field_listing_complete": {
+          "const": false
+        }
+      },
+      "required": [
+        "wiki_title",
+        "source_refs",
+        "source_specification",
+        "unresolved",
+        "migration_status",
+        "definition_complete",
+        "runtime_readiness",
+        "baseline_entry_sha256",
+        "source_fact_supplements",
+        "source_capture_complete_for_selected_revisions",
+        "source_field_listing_complete"
+      ],
+      "additionalProperties": false
+    },
+    "authored_supplement": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "OTERYN_BOUNDED_WIKI_FACT_SUPPLEMENT/v1"
+        },
+        "chunk": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "wiki_title": {
+                "type": "string"
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/source"
+                }
+              },
+              "definition_complete": {
+                "const": false
+              },
+              "runtime_promotion": {
+                "const": false
+              }
+            },
+            "required": [
+              "wiki_title",
+              "sources",
+              "definition_complete",
+              "runtime_promotion"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "definition_complete": {
+          "const": false
+        },
+        "runtime_promotion": {
+          "const": false
+        },
+        "source_field_listing_complete": {
+          "const": false
+        }
+      },
+      "required": [
+        "schema",
+        "chunk",
+        "entries",
+        "definition_complete",
+        "runtime_promotion",
+        "source_field_listing_complete"
+      ],
+      "additionalProperties": false
+    },
+    "acquisition_receipt": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "OTERYN_RECORDED_WIKI_ACQUISITION/v1"
+        },
+        "qualification": {
+          "const": "RAW_BODIES_VERIFIED_IN_PRIOR_ACQUISITION_ONLY"
+        },
+        "frozen_handoff_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "frozen_output_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "raw_capture_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "baseline_inventory_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "selection_receipt_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "enum": [
+                  "tibia_fandom",
+                  "tibiawiki_br"
+                ]
+              },
+              "relation": {
+                "enum": [
+                  "base",
+                  "spoiler",
+                  "crosscheck"
+                ]
+              },
+              "pageid": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "revid": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "content_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "url": {
+                "type": "string",
+                "pattern": "^https://(?:tibia\\.fandom\\.com|www\\.tibiawiki\\.com\\.br)/"
+              },
+              "wiki_title": {
+                "type": "string"
+              },
+              "source_fact_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "frozen_source_fact_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "provider",
+              "relation",
+              "pageid",
+              "revid",
+              "content_sha256",
+              "url",
+              "wiki_title",
+              "source_fact_sha256",
+              "frozen_source_fact_sha256"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "runtime_promotion": {
+          "const": false
+        }
+      },
+      "required": [
+        "schema",
+        "qualification",
+        "frozen_handoff_sha256",
+        "frozen_output_sha256",
+        "raw_capture_manifest_sha256",
+        "baseline_inventory_sha256",
+        "selection_receipt_sha256",
+        "source_records",
+        "runtime_promotion"
+      ],
+      "additionalProperties": false
+    },
+    "input_manifest": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "OTERYN_PORTABLE_SOURCE_INPUT_MANIFEST/v1"
+        },
+        "inputs": {
+          "type": "object",
+          "patternProperties": {
+            "^[a-z0-9-]+\\.json$": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schema",
+        "inputs"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "OTERYN_WIKI_ONLY_SOURCE_SPEC_ENRICHMENT/v2"
+    },
+    "titles": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entry"
+      }
+    },
+    "no_runtime_promotion": {
+      "const": true
+    },
+    "supplement_summary": {
+      "type": "object",
+      "properties": {
+        "source_revisions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_spans": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "heading_witnesses": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "journal_field_witnesses": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_fact_entries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unparsed_requirements": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "curated_source_fact_groups": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "titles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "provider:tibia_fandom": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "provider:tibiawiki_br": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "source_field_listing_complete": {
+      "const": false
+    },
+    "selected_source_capture_complete": {
+      "const": true
+    },
+    "source_definition_complete": {
+      "const": false
+    },
+    "baseline_inventory_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source_access": {
+      "type": "object",
+      "properties": {
+        "repositories": {
+          "const": "normal_github_and_local_pinned_read"
+        },
+        "tibia_fandom": {
+          "const": "remote_desktop_browser_after_normal_http_402"
+        },
+        "tibiawiki_br": {
+          "const": "remote_desktop_browser_after_normal_http_403"
+        },
+        "tibiopedia": {
+          "const": "UNAVAILABLE"
+        }
+      },
+      "required": [
+        "repositories",
+        "tibia_fandom",
+        "tibiawiki_br",
+        "tibiopedia"
+      ],
+      "additionalProperties": false
+    },
+    "supplement_inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "artifact": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "artifact",
+          "sha256"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "inventory_scope": {
+      "type": "object",
+      "properties": {
+        "repository": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "path": {
+          "type": "string"
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "selection": {
+          "const": "unbound_at_pinned_catalogue_baseline"
+        },
+        "later_partial_bindings_do_not_remove_snapshot_specifications": {
+          "const": true
+        },
+        "runtime_promotion": {
+          "const": false
+        },
+        "selected_title_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "current_binding_observation": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "catalogue_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "snapshot_titles_with_current_source_binding": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "snapshot_titles_currently_unbound": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "current_source_binding_does_not_assert_native_definition_ready": {
+                  "const": true
+                }
+              },
+              "required": [
+                "catalogue_sha256",
+                "snapshot_titles_with_current_source_binding",
+                "snapshot_titles_currently_unbound",
+                "current_source_binding_does_not_assert_native_definition_ready"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "repository",
+        "revision",
+        "path",
+        "content_sha256",
+        "selection",
+        "later_partial_bindings_do_not_remove_snapshot_specifications",
+        "runtime_promotion",
+        "selected_title_count",
+        "current_binding_observation"
+      ],
+      "additionalProperties": false
+    },
+    "offline_verification": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "const": "AUTHORED_FACTS_AND_RECORDED_ACQUISITION_ONLY"
+        },
+        "raw_body_rechecked": {
+          "const": false
+        },
+        "line_spans_rechecked": {
+          "const": false
+        },
+        "source_membership_checked": {
+          "const": true
+        },
+        "authored_fact_digests_checked": {
+          "const": true
+        },
+        "acquisition_receipt_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "frozen_acquisition_handoff_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "mode",
+        "raw_body_rechecked",
+        "line_spans_rechecked",
+        "source_membership_checked",
+        "authored_fact_digests_checked",
+        "acquisition_receipt_sha256",
+        "frozen_acquisition_handoff_sha256"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema",
+    "titles",
+    "entries",
+    "no_runtime_promotion",
+    "supplement_summary",
+    "source_field_listing_complete",
+    "selected_source_capture_complete",
+    "source_definition_complete",
+    "baseline_inventory_sha256",
+    "source_access",
+    "supplement_inputs",
+    "inventory_scope",
+    "offline_verification"
+  ],
+  "additionalProperties": false
+}

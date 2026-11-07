@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-FIRST-PROD-SECTIONS",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+  "resource": "Critical sections per bootstrap projection artifact",
+  "unit": "sections",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 2,
+    "maximum": 2
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Validate section count before section-table allocation; profile requires exactly manifest and body.",
+  "client_visible": false,
+  "boundary_tests": [
+    "2 known critical sections accepted",
+    "0/1/3 sections rejected",
+    "unknown critical section rejected"
+  ]
+}

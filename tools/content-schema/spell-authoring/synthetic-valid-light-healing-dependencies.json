@@ -1,0 +1,123 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "oteryn:ability.spell.light_healing",
+        "revision": "definition-r1"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.spell.light_healing.heal",
+          "revision": "definition-r1"
+        },
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.spell.light_healing.cure_paralysis",
+          "revision": "definition-r1"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "oteryn:effect.spell.light_healing.heal",
+        "revision": "definition-r1"
+      },
+      "operation": "heal",
+      "damage_type": "healing",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.spell.light_healing",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:effect.spell.light_healing.cure_paralysis",
+        "revision": "definition-r1"
+      },
+      "operation": "remove_condition",
+      "removed_condition": "paralyze"
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "oteryn:formula.spell.light_healing",
+        "revision": "definition-r1"
+      },
+      "kind": "player_expression",
+      "inputs": "level_magic",
+      "minimum": {
+        "op": "add",
+        "args": [
+          {
+            "op": "add",
+            "args": [
+              {
+                "fn": "level_base_damage_healing",
+                "args": [
+                  {
+                    "var": "level"
+                  }
+                ]
+              },
+              {
+                "op": "mul",
+                "args": [
+                  {
+                    "var": "magic_level"
+                  },
+                  {
+                    "const": "1.4"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "const": "8"
+          }
+        ]
+      },
+      "maximum": {
+        "op": "add",
+        "args": [
+          {
+            "op": "add",
+            "args": [
+              {
+                "fn": "level_base_damage_healing",
+                "args": [
+                  {
+                    "var": "level"
+                  }
+                ]
+              },
+              {
+                "op": "mul",
+                "args": [
+                  {
+                    "var": "magic_level"
+                  },
+                  {
+                    "const": "1.795"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "const": "11"
+          }
+        ]
+      }
+    }
+  ]
+}

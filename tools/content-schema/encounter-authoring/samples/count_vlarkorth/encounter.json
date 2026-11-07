@@ -1,0 +1,379 @@
+{
+  "identity": {
+    "key": "canary:encounter/count_vlarkorth",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Grave Danger: Count Vlarkorth",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "count_vlarkorth",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/count_vlarkorth",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "vlarkorth_room",
+      "kind": "area",
+      "description": "Every tile within 10 of Canary (33456, 31437, 13): x 33446-33466, y 31427-31447.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33446,
+              33466
+            ],
+            "y": [
+              31427,
+              31447
+            ],
+            "floor": 13
+          }
+        ]
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "shield",
+        "initial": 0
+      },
+      {
+        "name": "waves",
+        "initial": 0
+      }
+    ],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "count_vlarkorth_calls_the_darks",
+      "trigger": {
+        "kind": "damage_accumulated",
+        "role": "count_vlarkorth",
+        "percent": 15
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "shield",
+          "op": "==",
+          "value": 0
+        },
+        {
+          "kind": "counter_compare",
+          "counter": "waves",
+          "op": "<",
+          "value": 2
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn_per_player",
+          "players_in": "vlarkorth_room",
+          "by_base_vocation": {
+            "sorcerer": {
+              "family": "Creature",
+              "key": "canary:creature/dark_sorcerer",
+              "revision": "canary-47dfd51f"
+            },
+            "druid": {
+              "family": "Creature",
+              "key": "canary:creature/dark_druid",
+              "revision": "canary-47dfd51f"
+            },
+            "paladin": {
+              "family": "Creature",
+              "key": "canary:creature/dark_paladin",
+              "revision": "canary-47dfd51f"
+            },
+            "knight": {
+              "family": "Creature",
+              "key": "canary:creature/dark_knight",
+              "revision": "canary-47dfd51f"
+            },
+            "monk": {
+              "family": "Creature",
+              "key": "canary:creature/dark_merudri",
+              "revision": "canary-47dfd51f"
+            }
+          },
+          "at": "closest_free_tile",
+          "owner": "none",
+          "health": "full",
+          "counter": "shield"
+        },
+        {
+          "kind": "counter",
+          "counter": "waves",
+          "operation": "add",
+          "value": 1
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "count_vlarkorth"
+          },
+          "text": "Face your own darkness!",
+          "mode": "say"
+        }
+      ]
+    },
+    {
+      "key": "count_vlarkorth_is_shielded",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "count_vlarkorth",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "shield",
+          "op": ">",
+          "value": 0
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "count_vlarkorth",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "knight_remains_weaken_the_shield",
+      "trigger": {
+        "kind": "item_used",
+        "role": "count_vlarkorth",
+        "item": {
+          "family": "Item",
+          "key": "canary:item/31203",
+          "revision": "canary-47dfd51f"
+        },
+        "base_vocation": "knight"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "shield",
+          "op": ">",
+          "value": 0
+        }
+      ],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "shield",
+          "operation": "add",
+          "value": -1
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "count_vlarkorth"
+          },
+          "text": "The magic shield of protection is weakened!",
+          "mode": "say"
+        }
+      ]
+    },
+    {
+      "key": "paladin_remains_weaken_the_shield",
+      "trigger": {
+        "kind": "item_used",
+        "role": "count_vlarkorth",
+        "item": {
+          "family": "Item",
+          "key": "canary:item/31204",
+          "revision": "canary-47dfd51f"
+        },
+        "base_vocation": "paladin"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "shield",
+          "op": ">",
+          "value": 0
+        }
+      ],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "shield",
+          "operation": "add",
+          "value": -1
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "count_vlarkorth"
+          },
+          "text": "The magic shield of protection is weakened!",
+          "mode": "say"
+        }
+      ]
+    },
+    {
+      "key": "druid_remains_weaken_the_shield",
+      "trigger": {
+        "kind": "item_used",
+        "role": "count_vlarkorth",
+        "item": {
+          "family": "Item",
+          "key": "canary:item/31205",
+          "revision": "canary-47dfd51f"
+        },
+        "base_vocation": "druid"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "shield",
+          "op": ">",
+          "value": 0
+        }
+      ],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "shield",
+          "operation": "add",
+          "value": -1
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "count_vlarkorth"
+          },
+          "text": "The magic shield of protection is weakened!",
+          "mode": "say"
+        }
+      ]
+    },
+    {
+      "key": "sorcerer_remains_weaken_the_shield",
+      "trigger": {
+        "kind": "item_used",
+        "role": "count_vlarkorth",
+        "item": {
+          "family": "Item",
+          "key": "canary:item/31206",
+          "revision": "canary-47dfd51f"
+        },
+        "base_vocation": "sorcerer"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "shield",
+          "op": ">",
+          "value": 0
+        }
+      ],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "shield",
+          "operation": "add",
+          "value": -1
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "count_vlarkorth"
+          },
+          "text": "The magic shield of protection is weakened!",
+          "mode": "say"
+        }
+      ]
+    },
+    {
+      "key": "monk_remains_weaken_the_shield",
+      "trigger": {
+        "kind": "item_used",
+        "role": "count_vlarkorth",
+        "item": {
+          "family": "Item",
+          "key": "canary:item/50311",
+          "revision": "canary-47dfd51f"
+        },
+        "base_vocation": "monk"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "shield",
+          "op": ">",
+          "value": 0
+        }
+      ],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "shield",
+          "operation": "add",
+          "value": -1
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "count_vlarkorth"
+          },
+          "text": "The magic shield of protection is weakened!",
+          "mode": "say"
+        }
+      ]
+    },
+    {
+      "key": "players_engage_count_vlarkorth_on_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "count_vlarkorth",
+        "source": "any"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "count_vlarkorth_engaged",
+          "credited": "players_in_anchor",
+          "anchor": "vlarkorth_room"
+        }
+      ]
+    },
+    {
+      "key": "players_engage_count_vlarkorth_on_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "count_vlarkorth",
+        "source": "any"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "count_vlarkorth_engaged",
+          "credited": "players_in_anchor",
+          "anchor": "vlarkorth_room"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "count_vlarkorth_engaged"
+  ]
+}

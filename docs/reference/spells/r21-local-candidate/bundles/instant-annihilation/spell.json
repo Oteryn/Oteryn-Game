@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/annihilation",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Annihilation",
+    "carrier": "instant",
+    "words": "exori gran ico",
+    "reference_spell_id": 62,
+    "library_text": "This technique is a curious mixture of various fighting techniques as well as self-control and advanced magic. It was developed by a secret order of battle mages that only reluctantly made it more or less public to better its reputation in the eyes of the ever vigilant inquisition. It is unknown what led to the development of this spell but it seems to be a curious blend of seemingly contradicting traditions. It is often called the pinnacle of fighting techniques as it uses weapon and body of the combatant in such a devastating and efficient destruction that it rivals the powerful spells of sorcerers and druids. For a moment the fighter turns into a whirlwind of steel, muscle and determination that can strike down even the most powerful foes.",
+    "requirements": {
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ],
+      "level": 110,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 300,
+      "soul": 0
+    },
+    "cooldown_ms": 30000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": true,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 1,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_annihilation"
+    },
+    "base_power": 125,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/annihilation",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

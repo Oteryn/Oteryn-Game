@@ -1,0 +1,41 @@
+{
+  "schema": "NPC_R9_IMMUTABLE_EVIDENCE_MANIFEST/v1",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 3427,
+      "sha256": "9d5549a36ea8e2d2c29076f4a28a99848bc9c489fe653149f016f61f089361b1"
+    },
+    {
+      "path": "independent-review.json",
+      "bytes": 5547,
+      "sha256": "2675741ab8121f98c793687b38f92b6fa754cd776af5c99f94e2f6936a690a78"
+    },
+    {
+      "path": "official-map-marker-facts.json",
+      "bytes": 185344,
+      "sha256": "2efba7877fe19a5866b0eea7dbd7fe79de9e2d61e6867894180f321410b8e92f"
+    },
+    {
+      "path": "qualified-literal-names.json",
+      "bytes": 3696,
+      "sha256": "00eb713809bd7290474dc5ec7b6d27a5ceaf128e1c358ab0f710fa2aad022f54"
+    },
+    {
+      "path": "readiness.json",
+      "bytes": 1319,
+      "sha256": "c56c5f1bd1fa8016131a4e4a37c7c49bf6271ad524edb812795a4b982496a78e"
+    },
+    {
+      "path": "targets.json",
+      "bytes": 356672,
+      "sha256": "1de64a588981fcaefd3d98f5f976344cb273b43697751b713f7e26b1e28f4a5b"
+    },
+    {
+      "path": "validation.json",
+      "bytes": 670,
+      "sha256": "906359b37e60308404ab4c73ddbc771a2da7e3b762f1b2eb88a4fcf38310b543"
+    }
+  ],
+  "self_hash_excluded": true
+}

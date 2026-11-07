@@ -1,0 +1,11 @@
+{
+  "id": 81,
+  "name": "NPC_SHOP_V1",
+  "owner_decision": "NPC-TRADE-SELLALL-1 coordinator decision 2026-10-25 (parity audit gap 21)",
+  "owner": "current ChannelRuntime NPC trade owner (the trade window of capability 3) with the Game-owned durable NPC trade (NPC-0 §5)",
+  "requires": [3],
+  "command_types": [97],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Offered with capability 3 only by a node serving a World booted from a bundle (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. Without it selected, command type 97 is refused as unsupported."
+}

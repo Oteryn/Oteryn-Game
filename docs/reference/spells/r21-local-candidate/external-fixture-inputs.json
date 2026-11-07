@@ -1,0 +1,67 @@
+{
+  "schema": "OTERYN_SPELL_TEST_EXTERNAL_FIXTURES/v1",
+  "distribution": "Original upstream Lua stays outside this distribution; exact public pinned retrieval inputs only",
+  "instructions": "For the six completion-source test fixtures, retrieve each exact URL into its local_path under the base checkout, verify sha256 before running tests. The active native artifact does not load these files.",
+  "entries": [
+    {
+      "local_path": "tools/content-schema/spell-authoring/fixtures/completion-sources/canary/data/scripts/runes/paralyze_rune.lua",
+      "sha256": "40b12d7797b1cc0448f1b8020543a977486db671c0be501408de0b15f0bd6781",
+      "bytes": 1021,
+      "source_repository": "opentibiabr/canary",
+      "source_revision": "99902524e052f37574194466c2949c576e4ab269",
+      "source_path": "data/scripts/runes/paralyze_rune.lua",
+      "git_blob": "b0c602a159b091d8557a4f2905155d9cb52e38b8",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/99902524e052f37574194466c2949c576e4ab269/data/scripts/runes/paralyze_rune.lua"
+    },
+    {
+      "local_path": "tools/content-schema/spell-authoring/fixtures/completion-sources/canary/data/scripts/spells/healing/heal_friend.lua",
+      "sha256": "eac2cbfaa994562b35b2f6d7448d8354270bf1f440d607d6198261549eb6008e",
+      "bytes": 1194,
+      "source_repository": "opentibiabr/canary",
+      "source_revision": "99902524e052f37574194466c2949c576e4ab269",
+      "source_path": "data/scripts/spells/healing/heal_friend.lua",
+      "git_blob": "6da5a9ff3f75a37b7aa446d3bcf45745e17a5518",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/99902524e052f37574194466c2949c576e4ab269/data/scripts/spells/healing/heal_friend.lua"
+    },
+    {
+      "local_path": "tools/content-schema/spell-authoring/fixtures/completion-sources/canary/data/scripts/spells/attack/inflict_wound.lua",
+      "sha256": "e43d1f1f8a37ef951b9c5c8ecddab7f3b2752fd4092784dc0f5214150abde4c5",
+      "bytes": 1080,
+      "source_repository": "opentibiabr/canary",
+      "source_revision": "99902524e052f37574194466c2949c576e4ab269",
+      "source_path": "data/scripts/spells/attack/inflict_wound.lua",
+      "git_blob": "117f2ebbd850622d1492775648d6fd907e63956a",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/99902524e052f37574194466c2949c576e4ab269/data/scripts/spells/attack/inflict_wound.lua"
+    },
+    {
+      "local_path": "tools/content-schema/spell-authoring/fixtures/completion-sources/crystal/data/scripts/runes/paralyze_rune.lua",
+      "sha256": "40b12d7797b1cc0448f1b8020543a977486db671c0be501408de0b15f0bd6781",
+      "bytes": 1021,
+      "source_repository": "zimbadev/crystalserver",
+      "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "source_path": "data/scripts/runes/paralyze_rune.lua",
+      "git_blob": "b0c602a159b091d8557a4f2905155d9cb52e38b8",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/data/scripts/runes/paralyze_rune.lua"
+    },
+    {
+      "local_path": "tools/content-schema/spell-authoring/fixtures/completion-sources/crystal/data/scripts/spells/healing/heal_friend.lua",
+      "sha256": "bd5daf081c3475ac9096d8debe43c447e3fd284088c992d0b347e11f37c4b466",
+      "bytes": 3447,
+      "source_repository": "zimbadev/crystalserver",
+      "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "source_path": "data/scripts/spells/healing/heal_friend.lua",
+      "git_blob": "87c89b84a469e16b271618eae3359f48f2a643ef",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/data/scripts/spells/healing/heal_friend.lua"
+    },
+    {
+      "local_path": "tools/content-schema/spell-authoring/fixtures/completion-sources/crystal/data/scripts/spells/attack/inflict_wound.lua",
+      "sha256": "ae79840bd482d5448be27de21a37c08848d827e053037e2d6b537e3bb46de08e",
+      "bytes": 1065,
+      "source_repository": "zimbadev/crystalserver",
+      "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "source_path": "data/scripts/spells/attack/inflict_wound.lua",
+      "git_blob": "b71ff7140d23f075fc2b70d8998512d5fd076331",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/data/scripts/spells/attack/inflict_wound.lua"
+    }
+  ]
+}

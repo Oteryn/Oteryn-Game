@@ -1,0 +1,5 @@
+Original log SHA256: e1fa4bb28e53400317b77bfc820176d75e8cf70a542a722af7e6922682d11a8d
+
+running 1 test
+test monster_combat_lane::defense_composition_tests::captured_native_defense_proposals_heal_actual_creature_and_invisible_expires_in_perception ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2372 filtered out; finished in 17.49s

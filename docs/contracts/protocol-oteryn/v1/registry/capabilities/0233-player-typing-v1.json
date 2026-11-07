@@ -1,0 +1,16 @@
+{
+  "id": 233,
+  "name": "PLAYER_TYPING_V1",
+  "owner_decision": "S19",
+  "owner": "Game Channel typing owner",
+  "requires": [
+    6,
+    7
+  ],
+  "command_types": [
+    447
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "S19: only BUNDLE_WORLD_OFFERED_CAPABILITIES offers typing; CHAT domain 12 delta 4 additionally requires this capability."
+}

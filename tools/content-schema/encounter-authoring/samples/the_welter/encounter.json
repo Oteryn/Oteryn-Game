@@ -1,0 +1,57 @@
+{
+  "identity": {
+    "key": "canary:encounter/the_welter",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Raid: The Welter",
+  "scope": "channel_shared",
+  "participants": [
+    {
+      "role": "egg",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/egg",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "egg_hatches",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "egg"
+      },
+      "delay_ms": 10000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spawn_of_the_welter",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": "subject_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "remove",
+          "triggering": true
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

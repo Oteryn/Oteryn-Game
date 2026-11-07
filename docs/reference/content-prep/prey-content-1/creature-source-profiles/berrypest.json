@@ -1,0 +1,86 @@
+{
+  "name": "Berrypest",
+  "source_identity": {
+    "namespace": "cipsoft/staticdata/creature_id",
+    "id": 691,
+    "client_version": "15.30"
+  },
+  "classification": "DERIVED",
+  "target_cut": "2026-10-19",
+  "continuity": "SOURCE_RECONCILIATION_NATIVE_ADMISSION_PENDING",
+  "native_identity_assigned": false,
+  "native_admission_authorized": false,
+  "sources": [
+    {
+      "id": "wikibr-current",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Berrypest&oldid=444987",
+      "revision_id": 444987,
+      "representation": "rendered HTML",
+      "response_sha256": "4a1394f6ec09ed54fe0cb09ea88cd6e77d9e7484f262f2d2b4df4896b7c32b1a",
+      "checked_at": "2026-10-19T09:55:30.829137+00:00",
+      "scope": "COMMUNITY_WIKI_OBSERVATION"
+    },
+    {
+      "id": "fandom-indexed",
+      "url": "https://tibia.fandom.com/wiki/Berrypest",
+      "representation": "Indexed page text; direct access blocked",
+      "revision_id": null,
+      "checked_at": "2026-10-19T09:55:30.829137+00:00",
+      "scope": "COMMUNITY_WIKI_OBSERVATION_UNPINNED_REVISION"
+    }
+  ],
+  "wikibr_observations": {
+    "classification": "PROVEN",
+    "evidence_scope": "OBSERVED_COMMUNITY_PAGE_NOT_OFFICIAL_GLOBAL",
+    "source": "wikibr-current",
+    "fields": {
+      "hp": 500,
+      "xp": 0,
+      "speed": 105,
+      "armor": 0,
+      "mitigation_percent": 0,
+      "bestiary_kills": 5,
+      "charm_points": 5,
+      "pushable": false,
+      "push_objects": false,
+      "damage_taken_percent": {
+        "physical": 100,
+        "earth": 100,
+        "fire": 100,
+        "death": 100,
+        "energy": 100,
+        "holy": 100,
+        "ice": 100
+      },
+      "abilities": [],
+      "loot": [],
+      "behaviour": "non-attacking follower",
+      "location": "Winterberry Cellar",
+      "event": "Annual Autumn Vintage"
+    }
+  },
+  "discrepancies": {
+    "classification": "CONFLICT",
+    "sources": [
+      "wikibr-current",
+      "fandom-indexed"
+    ],
+    "rows": [
+      {
+        "field": "pushable",
+        "wikibr": false,
+        "fandom": true
+      },
+      {
+        "field": "paralysable",
+        "retained_wikibr_immunity": "Paralysis",
+        "fandom": true,
+        "qualification": "Old retained BR observation differs from indexed Fandom; current BR rendered immunity icons are not decoded here."
+      }
+    ]
+  },
+  "unresolved_native_authoring": [
+    "Resolve the wiki pushability/paralysis conflict and qualify event progression/interaction hooks before native admission. Explicit wiki observations of no attacks and no loot are preserved as empty arrays; they do not require invented attack timers or loot rolls.",
+    "Native Creature/Behavior/Presentation and asset bindings remain implementation-owned; no placeholder or borrowed creature identity is assigned."
+  ]
+}

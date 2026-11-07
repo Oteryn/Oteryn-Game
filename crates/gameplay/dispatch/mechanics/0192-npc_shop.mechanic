@@ -1,0 +1,18 @@
+name=npc_shop
+commands=97
+transport=npc_shop
+composed=npc_shop
+authority=npc_shop
+[route]
+match routing::npc_shop::route(
+    authority,
+    session.actor,
+    &mut session.admitted,
+    command,
+    &mut session.item_view,
+)
+.await
+{
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

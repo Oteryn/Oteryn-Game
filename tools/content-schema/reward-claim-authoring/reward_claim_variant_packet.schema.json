@@ -1,0 +1,1067 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oteryn:schema/reward-claim-source-migration-packet/v1",
+  "title": "RewardClaim variant source data, accepted architecture and pending native implementation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "classification",
+    "source_claim_count",
+    "record_count",
+    "canonical_eligible",
+    "canonical_eligible_missing",
+    "native_lowering",
+    "source_schema_sha256",
+    "charge_evidence",
+    "authoring_sources",
+    "source_refs",
+    "records",
+    "source_completeness_scope",
+    "architect_rulings"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_REWARD_CLAIM_SOURCE_MIGRATION_PACKET/v1"
+    },
+    "classification": {
+      "const": "OTS_HYPOTHESIS_ONLY"
+    },
+    "source_claim_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "record_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "canonical_eligible": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "canonical_eligible_missing": {
+      "type": "array",
+      "items": {
+        "$ref": "oteryn:schema/quest-content/v1#/$defs/identity"
+      }
+    },
+    "native_lowering": {
+      "const": "WAITING_IMPLEMENTATION"
+    },
+    "source_schema_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "charge_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classification",
+        "charged_items",
+        "source_refs",
+        "rule",
+        "citations"
+      ],
+      "properties": {
+        "classification": {
+          "const": "OTS_HYPOTHESIS_ONLY"
+        },
+        "charged_items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "tibia_id",
+              "default_charges"
+            ],
+            "properties": {
+              "tibia_id": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "default_charges": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "repository",
+              "revision",
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "repository": {
+                "type": "string",
+                "minLength": 1
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "minItems": 1
+        },
+        "rule": {
+          "type": "string",
+          "minLength": 1
+        },
+        "citations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "repository",
+              "revision",
+              "path",
+              "lines"
+            ],
+            "properties": {
+              "repository": {
+                "type": "string",
+                "minLength": 1
+              },
+              "revision": {
+                "type": "string",
+                "minLength": 1
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "lines": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "minItems": 1
+              }
+            }
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "authoring_sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "repository",
+          "revision",
+          "path",
+          "blob_sha1"
+        ],
+        "properties": {
+          "kind": {
+            "const": "git"
+          },
+          "repository": {
+            "type": "string",
+            "minLength": 1
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "blob_sha1": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_claim",
+          "item_bindings",
+          "placement_bindings",
+          "source_data",
+          "native_lowering",
+          "authoring_dispositions",
+          "achievement_grants",
+          "charge_dispositions"
+        ],
+        "properties": {
+          "source_claim": {
+            "$ref": "oteryn:schema/quest-content/v1#/$defs/claim"
+          },
+          "item_bindings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "placement_index",
+                "reward_field",
+                "reward_index",
+                "source_item",
+                "canonical_item",
+                "argument"
+              ],
+              "properties": {
+                "placement_index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "reward_field": {
+                  "enum": [
+                    "items",
+                    "random_one_of",
+                    "container",
+                    "written_text"
+                  ]
+                },
+                "reward_index": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "source_item": {
+                  "$ref": "oteryn:schema/quest-content/v1#/$defs/ref"
+                },
+                "canonical_item": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "family",
+                        "key",
+                        "revision"
+                      ],
+                      "properties": {
+                        "family": {
+                          "const": "Item"
+                        },
+                        "key": {
+                          "type": "string",
+                          "pattern": "^oteryn:item\\.tibia\\.i[1-9][0-9]*$"
+                        },
+                        "revision": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  ]
+                },
+                "argument": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "raw_count_argument",
+                        "kind",
+                        "source_quantity",
+                        "source_charges"
+                      ],
+                      "properties": {
+                        "raw_count_argument": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "kind": {
+                          "const": "COUNT_OR_SUBTYPE_RETAINED"
+                        },
+                        "source_quantity": {
+                          "type": "null"
+                        },
+                        "source_charges": {
+                          "type": "null"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "raw_count_argument",
+                        "kind",
+                        "source_quantity",
+                        "source_charges"
+                      ],
+                      "properties": {
+                        "raw_count_argument": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "kind": {
+                          "const": "CHARGES_SUBTYPE"
+                        },
+                        "source_quantity": {
+                          "const": 1
+                        },
+                        "source_charges": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "minItems": 1
+          },
+          "placement_bindings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "placement_index",
+                "manifest_entries"
+              ],
+              "properties": {
+                "placement_index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "manifest_entries": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "destination",
+                      "position",
+                      "resolution",
+                      "sources",
+                      "status"
+                    ],
+                    "properties": {
+                      "destination": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "position": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "minItems": 3,
+                        "maxItems": 3
+                      },
+                      "resolution": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "sources": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "source",
+                            "uid",
+                            "source_lines"
+                          ],
+                          "properties": {
+                            "source": {
+                              "enum": [
+                                "canary",
+                                "crystalserver"
+                              ]
+                            },
+                            "uid": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "source_lines": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "minItems": 1
+                            }
+                          }
+                        },
+                        "minItems": 1
+                      },
+                      "status": {
+                        "const": "mapped"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "minItems": 1
+          },
+          "source_data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "missing"
+            ],
+            "properties": {
+              "status": {
+                "enum": [
+                  "COMPLETE",
+                  "WAITING_SOURCE"
+                ]
+              },
+              "missing": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code",
+                        "placement_index"
+                      ],
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SOURCE_PLACEMENT_BINDING_MISSING",
+                            "SOURCE_WRITTEN_TEXT_CARRIER_UNRESOLVED"
+                          ]
+                        },
+                        "placement_index": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "code",
+                        "placement_index",
+                        "source_key"
+                      ],
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "ITEM_IDENTITY_BINDING_MISSING",
+                            "ACHIEVEMENT_IDENTITY_BINDING_UNRESOLVED"
+                          ]
+                        },
+                        "placement_index": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "source_key": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "status": {
+                      "const": "COMPLETE"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "missing": {
+                      "maxItems": 0
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "missing": {
+                      "minItems": 1
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "native_lowering": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "pending_implementation"
+            ],
+            "properties": {
+              "status": {
+                "const": "WAITING_IMPLEMENTATION"
+              },
+              "pending_implementation": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
+                    "KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
+                    "WRITTEN_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
+                    "RANDOM_CLAIM_NATIVE_LOWERING_NOT_IMPLEMENTED",
+                    "COOLDOWN_CLAIM_NATIVE_LOWERING_NOT_IMPLEMENTED",
+                    "ACHIEVEMENT_OWNER_ARCHITECTURE_AFTER_CLOSEOUT",
+                    "NATIVE_INSTANCE_LOWERING_NOT_IMPLEMENTED",
+                    "TIMED_ITEM_BEHAVIOUR_NOT_IMPLEMENTED"
+                  ]
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              }
+            }
+          },
+          "authoring_dispositions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "feature",
+                "data_format",
+                "data_status",
+                "reasons",
+                "closed_contract_refs",
+                "ruling_id"
+              ],
+              "properties": {
+                "feature": {
+                  "enum": [
+                    "container",
+                    "key_binding",
+                    "written_text",
+                    "random_one_of",
+                    "cooldown",
+                    "achievement",
+                    "charges"
+                  ]
+                },
+                "data_format": {
+                  "const": "COVERED"
+                },
+                "data_status": {
+                  "enum": [
+                    "AUTHORED",
+                    "WAITING_DATA",
+                    "CONFLICT"
+                  ]
+                },
+                "reasons": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "CONTENTS_FIELD_AUTHORING_CHILD_AFTER_CLOSEOUT",
+                      "D25_SOURCE_WRITTEN_TEXT_CARRIER_CONFLICT",
+                      "SOURCE_CHARGE_MISMATCH",
+                      "CHARGES_DEFINITION_FACT_UNKNOWN"
+                    ]
+                  },
+                  "minItems": 0
+                },
+                "closed_contract_refs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "minItems": 1
+                },
+                "ruling_id": {
+                  "const": 5933264015
+                }
+              }
+            },
+            "minItems": 1
+          },
+          "achievement_grants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "placement_index",
+                "source_achievement",
+                "binding_basis",
+                "grant_request",
+                "native_status",
+                "architecture_item"
+              ],
+              "properties": {
+                "placement_index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "source_achievement": {
+                  "$ref": "oteryn:schema/quest-content/v1#/$defs/ref"
+                },
+                "binding_basis": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "grant_request": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "state"
+                      ],
+                      "properties": {
+                        "state": {
+                          "const": "UNKNOWN"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "state",
+                        "value"
+                      ],
+                      "properties": {
+                        "state": {
+                          "const": "KNOWN"
+                        },
+                        "value": {
+                          "allOf": [
+                            {
+                              "$ref": "oteryn:schema/interaction/v1#/$defs/child"
+                            },
+                            {
+                              "properties": {
+                                "owner": {
+                                  "const": "Achievement"
+                                },
+                                "request": {
+                                  "const": "grant"
+                                }
+                              },
+                              "required": [
+                                "owner",
+                                "request",
+                                "achievement"
+                              ]
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                },
+                "native_status": {
+                  "const": "WAITING_ARCHITECTURE"
+                },
+                "architecture_item": {
+                  "const": "ACHIEVEMENT_OWNER_ARCHITECTURE_AFTER_CLOSEOUT"
+                }
+              }
+            },
+            "minItems": 0
+          },
+          "charge_dispositions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "placement_index",
+                "reward_field",
+                "reward_index",
+                "source_raw_argument",
+                "definition_charges",
+                "normalized_quantity",
+                "data_status",
+                "reason",
+                "native_status"
+              ],
+              "properties": {
+                "placement_index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "reward_field": {
+                  "enum": [
+                    "items",
+                    "random_one_of"
+                  ]
+                },
+                "reward_index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "source_raw_argument": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "definition_charges": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "state"
+                      ],
+                      "properties": {
+                        "state": {
+                          "const": "UNKNOWN"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "state",
+                        "value"
+                      ],
+                      "properties": {
+                        "state": {
+                          "const": "KNOWN"
+                        },
+                        "value": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      }
+                    }
+                  ]
+                },
+                "normalized_quantity": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "state"
+                      ],
+                      "properties": {
+                        "state": {
+                          "const": "UNKNOWN"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "state",
+                        "value"
+                      ],
+                      "properties": {
+                        "state": {
+                          "const": "KNOWN"
+                        },
+                        "value": {
+                          "const": 1
+                        }
+                      }
+                    }
+                  ]
+                },
+                "data_status": {
+                  "enum": [
+                    "AUTHORED",
+                    "CONFLICT",
+                    "WAITING_DATA"
+                  ]
+                },
+                "reason": {
+                  "enum": [
+                    "DEFINITION_CHARGES_EQUAL_SOURCE_EVIDENCE",
+                    "SOURCE_CHARGE_MISMATCH",
+                    "CHARGES_DEFINITION_FACT_UNKNOWN"
+                  ]
+                },
+                "native_status": {
+                  "const": "WAITING_IMPLEMENTATION"
+                }
+              }
+            },
+            "minItems": 0
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "source_completeness_scope": {
+      "const": "SOURCE_FIELDS_AND_IDENTITY_BINDINGS"
+    },
+    "architect_rulings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "classification",
+          "decision",
+          "comment_id",
+          "url",
+          "author_login",
+          "created_at",
+          "updated_at",
+          "body_sha256",
+          "quest_data_excerpt",
+          "closed_contracts",
+          "achievement_source_bindings"
+        ],
+        "properties": {
+          "classification": {
+            "const": "ACCEPTED_ARCHITECT_RULING"
+          },
+          "decision": {
+            "const": "D277"
+          },
+          "comment_id": {
+            "const": 5933264015
+          },
+          "url": {
+            "const": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015"
+          },
+          "author_login": {
+            "type": "string",
+            "minLength": 1
+          },
+          "created_at": {
+            "type": "string",
+            "minLength": 1
+          },
+          "updated_at": {
+            "type": "string",
+            "minLength": 1
+          },
+          "body_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "quest_data_excerpt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "closed_contracts": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "container",
+              "key_binding",
+              "written_text",
+              "random_one_of",
+              "cooldown",
+              "achievement",
+              "charges"
+            ],
+            "properties": {
+              "container": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "key_binding": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "written_text": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "random_one_of": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "cooldown": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "achievement": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "charges": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              }
+            }
+          },
+          "achievement_source_bindings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source_key",
+                "source_id",
+                "name",
+                "sources"
+              ],
+              "properties": {
+                "source_key": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "source_id": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sources": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "source",
+                      "repository",
+                      "revision",
+                      "path",
+                      "line",
+                      "source_id",
+                      "name",
+                      "sha256",
+                      "classification"
+                    ],
+                    "properties": {
+                      "source": {
+                        "enum": [
+                          "canary",
+                          "crystalserver"
+                        ]
+                      },
+                      "repository": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "revision": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{40}$"
+                      },
+                      "path": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "line": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "source_id": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "classification": {
+                        "const": "OTS_HYPOTHESIS_ONLY"
+                      }
+                    }
+                  },
+                  "minItems": 1
+                }
+              }
+            },
+            "minItems": 1
+          }
+        }
+      },
+      "minItems": 1
+    }
+  }
+}

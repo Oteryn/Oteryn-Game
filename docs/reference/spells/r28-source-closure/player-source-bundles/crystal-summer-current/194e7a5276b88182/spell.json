@@ -1,0 +1,109 @@
+{
+  "spell": {
+    "base_power": 10,
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/194e7a5276b88182/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/194e7a5276b88182",
+      "revision": "source-player-r28"
+    },
+    "name": "lightest magic missile rune",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_practise_magic_missile_rune"
+    },
+    "pz_locks_caster": false,
+    "reference_rune_item_id": 17512,
+    "reference_spell_id": 7,
+    "requirements": {
+      "learning_required": false,
+      "level": 1,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "knight",
+        "master_sorcerer",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": true
+      },
+      "charges": 10,
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/source/crystal-summer-current/17512",
+        "revision": "source-player-r28"
+      },
+      "magic_level": 0
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    }
+  }
+}

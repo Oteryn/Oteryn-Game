@@ -1,0 +1,292 @@
+{
+  "encounter": "canary:encounter/count_vlarkorth",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "count_vlarkorth_transform": [
+      "canary:creature/count_vlarkorth"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/grave_danger/bosses/count_vlarkorth.lua",
+      "blob_sha1": "e572b73b1ee5956a97a4b05b99a9fb9a3a839edc"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_count_vlarkorth.lua",
+      "blob_sha1": "d6f15d08cb0605e61f20102ff5d532bc71f3a8b1"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/grave_danger_quest/actions_dark_remains.lua",
+      "blob_sha1": "2580a209fba5f568f9f55df8e0477dda75f1bd0c"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Count Vlarkorth is the count_vlarkorth participant; its file registers count_vlarkorth_transform.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85
+      ],
+      "status": "mapped",
+      "resolution": "onHealthChange adds each hit to a damage store; at 15% of the maximum health (getMaxHealth() * 0.15) the store restarts and every player within 10 tiles of the room centre gets one dark creature of their base vocation on the closest free tile, each raising the shield. The reference-date wiki (Fandom Count Vlarkorth rev 1140872) says this happens twice in the fight, one Dark <vocation> for each player in the room, so the waves counter stops it after two (D25); Canary has no limit. Canary has no Monk entry: the wiki-authored Dark Merudri (D44) answers a Monk.",
+      "destination": "/encounter/rules/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        75,
+        76,
+        77,
+        78
+      ],
+      "status": "mapped",
+      "resolution": "While the shield is up Canary shows a block effect and stops counting the damage, but still lets the hit through. The reference-date wiki says the remains make the boss \"vulnerable again\", so it takes no damage while the shield holds (D25); taking no damage, it also accumulates none.",
+      "destination": "/encounter/rules/1"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        2,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        17,
+        18,
+        19,
+        20,
+        21,
+        27
+      ],
+      "status": "mapped",
+      "resolution": "A knight using item 31203 (good remains of a knight) on Count Vlarkorth uses it up, lowers the shield by one and makes the boss say the line; any other vocation cannot use it. The rule needs a raised shield, so a spare remains cannot bank protection in advance (Canary would let the shield go below zero).",
+      "destination": "/encounter/rules/2"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        3,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        17,
+        18,
+        19,
+        20,
+        21,
+        27
+      ],
+      "status": "mapped",
+      "resolution": "A paladin using item 31204 (good remains of a paladin) on Count Vlarkorth uses it up, lowers the shield by one and makes the boss say the line; any other vocation cannot use it. The rule needs a raised shield, so a spare remains cannot bank protection in advance (Canary would let the shield go below zero).",
+      "destination": "/encounter/rules/3"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        4,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        17,
+        18,
+        19,
+        20,
+        21,
+        27
+      ],
+      "status": "mapped",
+      "resolution": "A druid using item 31205 (good remains of a druid) on Count Vlarkorth uses it up, lowers the shield by one and makes the boss say the line; any other vocation cannot use it. The rule needs a raised shield, so a spare remains cannot bank protection in advance (Canary would let the shield go below zero).",
+      "destination": "/encounter/rules/4"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        5,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        17,
+        18,
+        19,
+        20,
+        21,
+        27
+      ],
+      "status": "mapped",
+      "resolution": "A sorcerer using item 31206 (good remains of a sorcerer) on Count Vlarkorth uses it up, lowers the shield by one and makes the boss say the line; any other vocation cannot use it. The rule needs a raised shield, so a spare remains cannot bank protection in advance (Canary would let the shield go below zero).",
+      "destination": "/encounter/rules/5"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "status": "mapped",
+      "resolution": "Canary has no Monk remains. The reference-date wiki (Fandom Good Remains of a Merudri rev 1116306, item 50311, and Count Vlarkorth rev 1140872: \"the respective vocation must use the corpse\") gives a Monk the same rule with the remains of the Dark Merudri. NEEDS VERIFICATION (D44).",
+      "destination": "/encounter/rules/6"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1,
+        2,
+        5,
+        6,
+        13,
+        14,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58
+      ],
+      "status": "mapped",
+      "resolution": "Every health change of the boss, a hit, credits the players in the room (D27): the reward domain starts a 20-hour boss cooldown and a 30-minute room timer for each, when not already running.",
+      "destination": "/encounter/rules/7"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1,
+        2,
+        5,
+        6,
+        13,
+        14,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58
+      ],
+      "status": "mapped",
+      "resolution": "Every health change of the boss, a heal (Canary runs the handler for heals too), credits the players in the room (D27): the reward domain starts a 20-hour boss cooldown and a 30-minute room timer for each, when not already running.",
+      "destination": "/encounter/rules/8"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        60,
+        61,
+        62,
+        88
+      ],
+      "status": "approved_omission",
+      "resolution": "Canary returns the secondary part of every heal and of every unshielded hit with its sign flipped. The reference-date wiki says nothing of it and no other boss script does it; it is not transcribed. NEEDS VERIFICATION."
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        3,
+        4,
+        64,
+        65,
+        66
+      ],
+      "status": "approved_omission",
+      "resolution": "newPosition and exitPos are unused by this script; a health change without a creature changes nothing."
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "count_vlarkorth_engaged",
+      "credited": "players_in_anchor",
+      "reward_domain": {
+        "canary_storage": "Storage.Quest.U12_20.GraveDanger.Bosses.CountVlarkorth.Timer",
+        "cooldown_seconds": 72000,
+        "room_storage": "Storage.Quest.U12_20.GraveDanger.Bosses.CountVlarkorth.Room",
+        "room_seconds": 1800
+      }
+    }
+  ]
+}

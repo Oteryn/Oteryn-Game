@@ -1,0 +1,77 @@
+{
+  "schema": "OTERYN_MONSTER_SERVER_DATA_IMPORT/v1",
+  "classification": "PROVEN",
+  "scope": "Native data import and filesystem loader; gameplay and live deployment excluded",
+  "parent_snapshot_sha": "ffc7300ef4649beafd848d17a17bd64a0bd205f1",
+  "prepared_index_sha256": "0117ce9b1996a21c609c62d7ba9680614fb1f1fb2337e30d50a4ba1ab2bc049f",
+  "prepared_stage_sha256": "8d906e69c1e111852e75c7c427d1da68cdf83dfc906e450696d2f0767e0895be",
+  "import_stage_sha256": "7bf45bf02db42220edb9665331ab6e8fefc1d55ba538a9c84a6b2e9765980857",
+  "normalization": {
+    "actor": "oteryn:creature.energy_pulse",
+    "field": "details.inspection",
+    "before": " an energy pulse",
+    "after": "an energy pulse",
+    "source_snapshot_modified": false
+  },
+  "counts": {
+    "creatures": 1763,
+    "encounters": 104,
+    "encyclopedia_documents": 1609,
+    "encyclopedia_refs": 1609,
+    "creature_reference_records": 24933,
+    "creature_authoring_profiles": 23823,
+    "creature_and_encounter_source_bindings": 1867,
+    "canonical_file_documents": 11,
+    "items": 34031,
+    "npcs": 1110
+  },
+  "canonical_tree_sha256": "033f7d2d3173916726724804190e46a6b8ee950d85e18b1dcb91695caddd0ea3",
+  "native_loader_result": {
+    "canonical_file_documents": 11,
+    "creatures": 1763,
+    "documents": 1609,
+    "encounters": 104,
+    "encyclopedia_links": 1609,
+    "exact_staged_declarations": 1713,
+    "exact_staged_profiles": 23823,
+    "exact_staged_records": 24933,
+    "exact_staged_source_bindings": 1867,
+    "existing_crystal_batch_revision_normalizations": 96,
+    "filesystem_limits_match_existing_repository_loader_test": true,
+    "gameplay_execution_tested": false,
+    "live_server_started": false,
+    "negative_controls": 2,
+    "project_limits_match_actual_materializer": true,
+    "protected_item_alias_normalization_verified": true,
+    "scope": "CURRENT_NATIVE_FILESYSTEM_PROJECT_LOADER_CANONICAL_ROUNDTRIP_AND_EXACT_STAGED_LINKS"
+  },
+  "checks": {
+    "importer_unit_tests": 3,
+    "document_stage_tests": 9,
+    "tree_roundtrip": true,
+    "document_negative_controls": 4,
+    "materialized_nodes": "97/97",
+    "item_reference_checks": 244585,
+    "governance_tests": 36,
+    "server_package_tests": {
+      "passed": 16325,
+      "failed": 0,
+      "ignored": 7,
+      "groups": 58,
+      "postgres": "17.6",
+      "profile": "CARGO_PROFILE_TEST_DEBUG=0; CARGO_INCREMENTAL=0",
+      "command": "cargo test --locked -p oteryn-game-server --quiet --no-fail-fast"
+    },
+    "rustfmt": true,
+    "clippy_all_targets": true,
+    "native_repository_package_tests": 3
+  },
+  "server_started_live": false,
+  "runtime_source": "content/world",
+  "reference_parity_claim": "Existing source/estimate flags retained; import success does not claim full Global behavior parity",
+  "integration_owner_issue": 162,
+  "workspace_admission_repair": {
+    "issue": "Four byte-identical canonical files had archival hardlinks; secure loader correctly refused nlink>1",
+    "repair": "Atomic independent copies; unchanged bytes and hashes; no validation relaxation"
+  }
+}

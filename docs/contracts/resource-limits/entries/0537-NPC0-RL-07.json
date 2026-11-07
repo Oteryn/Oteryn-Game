@@ -1,0 +1,22 @@
+{
+  "id": "NPC0-RL-07",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+  "resource": "Talk range of an NPC conversation (Chebyshev distance, same floor)",
+  "unit": "tiles",
+  "hard_maximum": 4,
+  "configurable_range": {
+    "minimum": 4,
+    "maximum": 4
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A customer beyond 4 tiles, or on another floor, has the conversation closed on every committed move of the customer or the NPC. CHAT0-RL-08 reads this limit.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=4: a customer at distance 4 stays in conversation",
+    "max+1=5: a customer at distance 5 has the conversation closed"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/npc_service.rs TALK_RANGE_TILES"
+  ],
+  "notes": "NPC-BEHAVIOUR-0 \u00a77; value fixed by the amendment of NPC-0 \u00a74.1. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+}

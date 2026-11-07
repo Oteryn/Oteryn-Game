@@ -1,0 +1,1297 @@
+{
+  "database": "oteryn_prof1_semantics_20261001_125108",
+  "server": "17.6 (Debian 17.6-2.pgdg12+1)",
+  "candidate_sha256": "9bde3bfcc946e18600913e295a983998321f4fdfd9dd244bf5b28a28e04142b5",
+  "cases": 161,
+  "passed": 161,
+  "results": [
+    {
+      "name": "001_seed_independent_authority",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "002_training_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "003_selection_first_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "004_migration_first_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "005_second_training_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "006_header_proficiency_occurrence_id_'40000000-0000-4000-",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_rece_proficiency_occurrence_id_check\"\nDETAIL:  Failing row contains (40000000-0000-4000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 1, 2, training, \\x01, \\x01010101010101010101010101010101010101010101010101010101010101..., 1, 1, 0, 0, v1, v1, v1, v1, v1, v1, v1, v1, 100).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_rece_proficiency_occurrence_id_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "007_header_original_character_revision_0",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_re_original_character_revision_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 0, 2, training, \\x01, \\x01010101010101010101010101010101010101010101010101010101010101..., 1, 1, 0, 0, v1, v1, v1, v1, v1, v1, v1, v1, 100).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_re_original_character_revision_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "008_header_committed_character_revision_3",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_receipts_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 1, 3, training, \\x01, \\x01010101010101010101010101010101010101010101010101010101010101..., 1, 1, 0, 0, v1, v1, v1, v1, v1, v1, v1, v1, 100).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "009_header_cause_'invalid'",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_receipts_cause_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 1, 2, invalid, \\x01, \\x01010101010101010101010101010101010101010101010101010101010101..., 1, 1, 0, 0, v1, v1, v1, v1, v1, v1, v1, v1, 100).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_cause_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "010_header_command_binding_decode('','hex')",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_receipts_command_binding_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 1, 2, training, \\x, \\x01010101010101010101010101010101010101010101010101010101010101..., 1, 1, 0, 0, v1, v1, v1, v1, v1, v1, v1, v1, 100).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_command_binding_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "011_header_command_binding_decode(repeat('01',1",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_receipts_command_binding_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 1, 2, training, \\x01010101010101010101010101010101010101010101010101010101010101..., \\x01010101010101010101010101010101010101010101010101010101010101..., 1, 1, 0, 0, v1, v1, v1, v1, v1, v1, v1, v1, 100).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_command_binding_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "012_header_policy_digest_decode(repeat('01',3",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_receipts_policy_digest_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 1, 2, training, \\x01, \\x01010101010101010101010101010101010101010101010101010101010101, 1, 1, 0, 0, v1, v1, v1, v1, v1, v1, v1, v1, 100).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_policy_digest_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "013_header_level_after_2",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_receipts_check1\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 1, 2, training, \\x01, \\x01010101010101010101010101010101010101010101010101010101010101..., 1, 2, 0, 0, v1, v1, v1, v1, v1, v1, v1, v1, 100).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_check1\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "014_header_experience_after_1",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_receipts_check2\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 1, 2, training, \\x01, \\x01010101010101010101010101010101010101010101010101010101010101..., 1, 1, 0, 1, v1, v1, v1, v1, v1, v1, v1, v1, 100).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_check2\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "015_header_committed_at_-1",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_receipts_committed_at_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 1, 2, training, \\x01, \\x01010101010101010101010101010101010101010101010101010101010101..., 1, 1, 0, 0, v1, v1, v1, v1, v1, v1, v1, v1, -1).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_committed_at_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "016_header_profile_revision_'invalid revision'",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_receipts_profile_revision_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 1, 2, training, \\x01, \\x01010101010101010101010101010101010101010101010101010101010101..., 1, 1, 0, 0, invalid revision, v1, v1, v1, v1, v1, v1, v1, 100).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_profile_revision_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "017_header_ruleset_revision_'invalid revision'",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_receipts_ruleset_revision_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 1, 2, training, \\x01, \\x01010101010101010101010101010101010101010101010101010101010101..., 1, 1, 0, 0, v1, invalid revision, v1, v1, v1, v1, v1, v1, 100).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_ruleset_revision_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "018_header_content_revision_'invalid revision'",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_receipts_content_revision_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 1, 2, training, \\x01, \\x01010101010101010101010101010101010101010101010101010101010101..., 1, 1, 0, 0, v1, v1, invalid revision, v1, v1, v1, v1, v1, 100).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_content_revision_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "019_header_simulation_revision_'invalid revision'",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_receipts_simulation_revision_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 1, 2, training, \\x01, \\x01010101010101010101010101010101010101010101010101010101010101..., 1, 1, 0, 0, v1, v1, v1, invalid revision, v1, v1, v1, v1, 100).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_simulation_revision_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "020_header_evidence_revision_'invalid revision'",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_receipts_evidence_revision_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 1, 2, training, \\x01, \\x01010101010101010101010101010101010101010101010101010101010101..., 1, 1, 0, 0, v1, v1, v1, v1, invalid revision, v1, v1, v1, 100).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_evidence_revision_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "021_header_declaration_revision_'invalid revision'",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_receipts_declaration_revision_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 1, 2, training, \\x01, \\x01010101010101010101010101010101010101010101010101010101010101..., 1, 1, 0, 0, v1, v1, v1, v1, v1, invalid revision, v1, v1, 100).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_declaration_revision_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "022_header_policy_revision_'invalid revision'",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_receipts_policy_revision_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 1, 2, training, \\x01, \\x01010101010101010101010101010101010101010101010101010101010101..., 1, 1, 0, 0, v1, v1, v1, v1, v1, v1, invalid revision, v1, 100).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_policy_revision_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "023_header_reward_revision_'invalid revision'",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipts\" violates check constraint \"game_character_proficiency_receipts_reward_revision_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 1, 2, training, \\x01, \\x01010101010101010101010101010101010101010101010101010101010101..., 1, 1, 0, 0, v1, v1, v1, v1, v1, v1, v1, invalid revision, 100).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_reward_revision_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "024_header_unknown_character",
+      "passed": true,
+      "expected_state": "23503",
+      "actual_state": "23503",
+      "expected_message": null,
+      "error": "ERROR:  23503: insert or update on table \"game_character_proficiency_receipts\" violates foreign key constraint \"game_character_proficiency_receipts_character_id_fkey\"\nDETAIL:  Key (character_id)=(10000000-0000-7000-8000-000000000099) is not present in table \"game_character_roots\".\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_character_id_fkey\nLOCATION:  ri_ReportViolation, ri_triggers.c:2599"
+    },
+    {
+      "name": "025_header_without_lines",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "invalid changed-track line count",
+      "error": "ERROR:  23514: proficiency receipt has an invalid changed-track line count\nCONTEXT:  PL/pgSQL function game_character_proficiency_receipt_guard() line 15 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "026_header_future_root",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: proficiency receipt is not at the current Character root revision\nCONTEXT:  PL/pgSQL function game_character_proficiency_receipt_guard() line 9 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "027_root_without_receipt",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "028_state_missing_successor",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "029_initial_proficiency_row",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: proficiency row/line has no committed latest track line\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 42 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "030_selection_two_lines",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "invalid changed-track line count",
+      "error": "ERROR:  23514: proficiency receipt has an invalid changed-track line count\nCONTEXT:  PL/pgSQL function game_character_proficiency_receipt_guard() line 15 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "031_line_header_binding_proficiency_occurrence_id",
+      "passed": true,
+      "expected_state": "23503",
+      "actual_state": "23503",
+      "expected_message": null,
+      "error": "ERROR:  23503: insert or update on table \"game_character_proficiency_receipt_lines\" violates foreign key constraint \"game_character_proficiency_re_proficiency_occurrence_id_ch_fkey\"\nDETAIL:  Key (proficiency_occurrence_id, character_id, committed_character_revision, cause)=(40000000-0000-7000-8000-000000000099, 10000000-0000-7000-8000-000000000001, 2, training) is not present in table \"game_character_proficiency_receipts\".\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_re_proficiency_occurrence_id_ch_fkey\nLOCATION:  ri_ReportViolation, ri_triggers.c:2599"
+    },
+    {
+      "name": "032_line_header_binding_character_id",
+      "passed": true,
+      "expected_state": "23503",
+      "actual_state": "23503",
+      "expected_message": null,
+      "error": "ERROR:  23503: insert or update on table \"game_character_proficiency_receipt_lines\" violates foreign key constraint \"game_character_proficiency_re_proficiency_occurrence_id_ch_fkey\"\nDETAIL:  Key (proficiency_occurrence_id, character_id, committed_character_revision, cause)=(40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000099, 2, training) is not present in table \"game_character_proficiency_receipts\".\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_re_proficiency_occurrence_id_ch_fkey\nLOCATION:  ri_ReportViolation, ri_triggers.c:2599"
+    },
+    {
+      "name": "033_line_header_binding_committed_character_revision",
+      "passed": true,
+      "expected_state": "23503",
+      "actual_state": "23503",
+      "expected_message": null,
+      "error": "ERROR:  23503: insert or update on table \"game_character_proficiency_receipt_lines\" violates foreign key constraint \"game_character_proficiency_re_proficiency_occurrence_id_ch_fkey\"\nDETAIL:  Key (proficiency_occurrence_id, character_id, committed_character_revision, cause)=(40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 3, training) is not present in table \"game_character_proficiency_receipts\".\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_re_proficiency_occurrence_id_ch_fkey\nLOCATION:  ri_ReportViolation, ri_triggers.c:2599"
+    },
+    {
+      "name": "034_line_header_binding_cause",
+      "passed": true,
+      "expected_state": "23503",
+      "actual_state": "23503",
+      "expected_message": null,
+      "error": "ERROR:  23503: insert or update on table \"game_character_proficiency_receipt_lines\" violates foreign key constraint \"game_character_proficiency_re_proficiency_occurrence_id_ch_fkey\"\nDETAIL:  Key (proficiency_occurrence_id, character_id, committed_character_revision, cause)=(40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, migration) is not present in table \"game_character_proficiency_receipts\".\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_re_proficiency_occurrence_id_ch_fkey\nLOCATION:  ri_ReportViolation, ri_triggers.c:2599"
+    },
+    {
+      "name": "035_line_source_item_key_'other:item.sword'",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"game_character_proficiency_receipt_lines_item_key_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, other:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, {NULL,NULL}, {NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_receipt_lines_item_key_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "036_line_source_item_key_'oteryn:item.'",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"game_character_proficiency_receipt_lines_item_key_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item., oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, {NULL,NULL}, {NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_receipt_lines_item_key_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "037_line_source_definition_key_before_'other:proficiency.sword'",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"game_character_proficiency_receipt__definition_key_before_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, other:proficiency.sword, d1, other:proficiency.sword, d1, 0, 1, {NULL,NULL}, {NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_receipt__definition_key_before_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "038_line_source_definition_key_before_'oteryn:proficiency.'",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"game_character_proficiency_receipt__definition_key_before_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency., d1, oteryn:proficiency., d1, 0, 1, {NULL,NULL}, {NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_receipt__definition_key_before_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "039_line_source_definition_revision_before_'bad revision'",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"game_character_proficiency_line_cause_direction\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, bad revision, oteryn:proficiency.sword, d1, 0, 1, {NULL,NULL}, {NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_line_cause_direction\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "040_line_source_definition_key_after_'oteryn:proficiency.axe'",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"game_character_proficiency_line_same_definition_key\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.axe, d1, 0, 1, {NULL,NULL}, {NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_line_same_definition_key\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "041_line_source_progress_before_-1",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"game_character_proficiency_receipt_lines_progress_before_check\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, -1, 1, {NULL,NULL}, {NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_receipt_lines_progress_before_check\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "042_direction_training_progress_after",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "cause_direction",
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"game_character_proficiency_line_cause_direction\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 0, {NULL,NULL}, {NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_line_cause_direction\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "043_direction_training_definition_revision_after",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "cause_direction",
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"game_character_proficiency_line_cause_direction\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d2, 0, 1, {NULL,NULL}, {NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_line_cause_direction\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "044_direction_training_selections_after",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "cause_direction",
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"game_character_proficiency_line_cause_direction\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, {NULL,NULL}, {0,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_line_cause_direction\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "045_direction_perk_selection_selections_after",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "cause_direction",
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"game_character_proficiency_line_cause_direction\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, perk_selection, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 0, {NULL,NULL}, {NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_line_cause_direction\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "046_direction_perk_selection_selections_after",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "cause_direction",
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"game_character_proficiency_line_cause_direction\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, perk_selection, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 0, {NULL,NULL}, {0,1}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_line_cause_direction\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "047_direction_perk_selection_progress_after",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "cause_direction",
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"game_character_proficiency_line_cause_direction\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, perk_selection, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, {NULL,NULL}, {0,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_line_cause_direction\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "048_direction_perk_selection_definition_revision_after",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "cause_direction",
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"game_character_proficiency_line_cause_direction\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, perk_selection, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d2, 0, 0, {NULL,NULL}, {0,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_line_cause_direction\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "049_direction_perk_selection_selections_after",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "cause_direction",
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"game_character_proficiency_line_cause_direction\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, perk_selection, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 0, {NULL,NULL}, {0,NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_line_cause_direction\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "050_direction_migration_progress_after",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "cause_direction",
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"game_character_proficiency_line_cause_direction\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, migration, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d2, 0, 1, {NULL,NULL}, {NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_line_cause_direction\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "051_direction_migration_definition_revision_after",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "cause_direction",
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"game_character_proficiency_line_cause_direction\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, migration, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 0, {NULL,NULL}, {NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_line_cause_direction\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "052_line_array_selections_before_null",
+      "passed": true,
+      "expected_state": "23502",
+      "actual_state": "23502",
+      "expected_message": null,
+      "error": "ERROR:  23502: null value in column \"selections_before\" of relation \"game_character_proficiency_receipt_lines\" violates not-null constraint\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, null, null).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCOLUMN NAME:  selections_before\nLOCATION:  ExecConstraints, execMain.c:1981"
+    },
+    {
+      "name": "053_line_array_selections_before_empty",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"selections_after_canonical\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, {}, {}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  selections_after_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "054_line_array_selections_before_zero_lower",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"selections_after_canonical\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, [0:1]={NULL,NULL}, [0:1]={NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  selections_after_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "055_line_array_selections_before_two_lower",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"selections_after_canonical\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, [2:3]={NULL,NULL}, [2:3]={NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  selections_after_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "056_line_array_selections_before_two_dimensions",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"selections_after_canonical\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, {{NULL,NULL},{NULL,NULL}}, {{NULL,NULL},{NULL,NULL}}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  selections_after_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "057_line_array_selections_before_eight",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"selections_after_canonical\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL}, {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  selections_after_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "058_line_array_selections_before_invalid3",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"selections_after_canonical\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, {3,NULL}, {3,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  selections_after_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "059_line_array_selections_before_negative",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"selections_after_canonical\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, {-1,NULL}, {-1,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  selections_after_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "060_line_array_selections_after_null",
+      "passed": true,
+      "expected_state": "23502",
+      "actual_state": "23502",
+      "expected_message": null,
+      "error": "ERROR:  23502: null value in column \"selections_before\" of relation \"game_character_proficiency_receipt_lines\" violates not-null constraint\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, null, null).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCOLUMN NAME:  selections_before\nLOCATION:  ExecConstraints, execMain.c:1981"
+    },
+    {
+      "name": "061_line_array_selections_after_empty",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"selections_after_canonical\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, {}, {}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  selections_after_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "062_line_array_selections_after_zero_lower",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"selections_after_canonical\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, [0:1]={NULL,NULL}, [0:1]={NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  selections_after_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "063_line_array_selections_after_two_lower",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"selections_after_canonical\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, [2:3]={NULL,NULL}, [2:3]={NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  selections_after_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "064_line_array_selections_after_two_dimensions",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"selections_after_canonical\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, {{NULL,NULL},{NULL,NULL}}, {{NULL,NULL},{NULL,NULL}}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  selections_after_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "065_line_array_selections_after_eight",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"selections_after_canonical\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL}, {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  selections_after_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "066_line_array_selections_after_invalid3",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"selections_after_canonical\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, {3,NULL}, {3,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  selections_after_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "067_line_array_selections_after_negative",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency_receipt_lines\" violates check constraint \"selections_after_canonical\"\nDETAIL:  Failing row contains (40000000-0000-7000-8000-000000000002, 10000000-0000-7000-8000-000000000001, 2, training, oteryn:item.sword, oteryn:proficiency.sword, d1, oteryn:proficiency.sword, d1, 0, 1, {-1,NULL}, {-1,NULL}).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  selections_after_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "068_array_one_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "069_array_seven_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "070_array_choice2_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "071_first_nonzero_progress",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "first proficiency line",
+      "error": "ERROR:  23514: first proficiency line must start from zero and unfilled choices\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 32 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "072_first_prefilled_choices",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "first proficiency line",
+      "error": "ERROR:  23514: first proficiency line must start from zero and unfilled choices\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 32 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "073_line_without_row",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "row does not equal",
+      "error": "ERROR:  23514: proficiency row does not equal its latest committed track line\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 54 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "074_row_without_line",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: proficiency receipt has an invalid changed-track line count\nCONTEXT:  PL/pgSQL function game_character_proficiency_receipt_guard() line 15 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "075_row_tip_definition_key",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "row does not equal",
+      "error": "ERROR:  23514: proficiency row does not equal its latest committed track line\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 54 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "076_row_tip_definition_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "row does not equal",
+      "error": "ERROR:  23514: proficiency row does not equal its latest committed track line\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 54 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "077_row_tip_progress",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "row does not equal",
+      "error": "ERROR:  23514: proficiency row does not equal its latest committed track line\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 54 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "078_row_tip_selections",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "row does not equal",
+      "error": "ERROR:  23514: proficiency row does not equal its latest committed track line\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 54 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "079_row_tip_committed_character_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "row does not equal",
+      "error": "ERROR:  23514: proficiency row does not equal its latest committed track line\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 54 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "080_row_tip_last_proficiency_occurrence_id",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "row does not equal",
+      "error": "ERROR:  23514: proficiency row does not equal its latest committed track line\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 54 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "081_continuity_definition_key_before",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "before values do not follow",
+      "error": "ERROR:  23514: proficiency line before values do not follow its previous line\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 27 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "082_continuity_definition_revision_before",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "before values do not follow",
+      "error": "ERROR:  23514: proficiency line before values do not follow its previous line\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 27 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "083_continuity_progress_before",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "before values do not follow",
+      "error": "ERROR:  23514: proficiency line before values do not follow its previous line\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 27 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "084_continuity_selections_before",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "before values do not follow",
+      "error": "ERROR:  23514: proficiency line before values do not follow its previous line\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 27 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "085_immutable_game_character_proficiency_receipts_UPDATE",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: Character first-slice authority history is immutable\nCONTEXT:  PL/pgSQL function game_character_immutable() line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "086_immutable_game_character_proficiency_receipts_DELETE",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: Character first-slice authority history is immutable\nCONTEXT:  PL/pgSQL function game_character_immutable() line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "087_immutable_game_character_proficiency_receipts_TRUNCATE",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "NOTICE:  00000: truncate cascades to table \"game_character_proficiency_receipt_lines\"\nLOCATION:  ExecuteTruncateGuts, tablecmds.c:1958\nERROR:  23514: Character authority relations cannot be truncated\nCONTEXT:  PL/pgSQL function game_character_reject_truncate() line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "088_immutable_game_character_proficiency_receipt_lines_UPDATE",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: Character first-slice authority history is immutable\nCONTEXT:  PL/pgSQL function game_character_immutable() line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "089_immutable_game_character_proficiency_receipt_lines_DELETE",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: Character first-slice authority history is immutable\nCONTEXT:  PL/pgSQL function game_character_immutable() line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "090_immutable_game_character_proficiency_receipt_lines_TRUNCATE",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: Character authority relations cannot be truncated\nCONTEXT:  PL/pgSQL function game_character_reject_truncate() line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "091_current_delete",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: proficiency track cannot be deleted, rekeyed or lose cumulative progress\nCONTEXT:  PL/pgSQL function game_character_proficiency_row_guard() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "092_current_rekey",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: proficiency track cannot be deleted, rekeyed or lose cumulative progress\nCONTEXT:  PL/pgSQL function game_character_proficiency_row_guard() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "093_current_definition",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: proficiency track cannot be deleted, rekeyed or lose cumulative progress\nCONTEXT:  PL/pgSQL function game_character_proficiency_row_guard() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "094_current_decrease",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: proficiency track cannot be deleted, rekeyed or lose cumulative progress\nCONTEXT:  PL/pgSQL function game_character_proficiency_row_guard() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "095_current_truncate",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: Character authority relations cannot be truncated\nCONTEXT:  PL/pgSQL function game_character_reject_truncate() line 2 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "096_current_unexplained_update",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: proficiency row does not equal its latest committed track line\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 54 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "097_legacy_xp_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "098_legacy_xp_tip_context_substitution",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "099_legacy_xp_duplicate_wp_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "100_wp_then_xp_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "101_legacy_death_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "102_legacy_death_tip_context_substitution",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "103_legacy_death_duplicate_wp_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "104_wp_then_death_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "105_legacy_stance_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "106_legacy_stance_tip_context_substitution",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "107_legacy_stance_duplicate_wp_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "108_wp_then_stance_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "109_legacy_bestiary_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "110_legacy_bestiary_tip_context_substitution",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "111_legacy_bestiary_duplicate_wp_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "112_wp_then_bestiary_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "113_legacy_charm_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "114_legacy_charm_tip_context_substitution",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "115_legacy_charm_duplicate_wp_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "116_wp_then_charm_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "117_legacy_monk_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "118_legacy_monk_tip_context_substitution",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "119_legacy_monk_duplicate_wp_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "120_wp_then_monk_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "121_legacy_build_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "122_legacy_build_tip_context_substitution",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "123_legacy_build_duplicate_wp_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "124_wp_then_build_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "125_xp_then_wp_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "126_xp_then_wp_discontinuous",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "127_append_line_to_old_receipt",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "older or future receipt",
+      "error": "ERROR:  23514: proficiency line cannot be added to an older or future receipt\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 15 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "128_row_array_null",
+      "passed": true,
+      "expected_state": "23502",
+      "actual_state": "23502",
+      "expected_message": null,
+      "error": "ERROR:  23502: null value in column \"selections\" of relation \"game_character_proficiency\" violates not-null constraint\nDETAIL:  Failing row contains (10000000-0000-7000-8000-000000000001, oteryn:item.sword, oteryn:proficiency.sword, d1, 1, null, 2, 40000000-0000-7000-8000-000000000002).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency\nCOLUMN NAME:  selections\nLOCATION:  ExecConstraints, execMain.c:1981"
+    },
+    {
+      "name": "129_row_array_empty",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency\" violates check constraint \"selections_canonical\"\nDETAIL:  Failing row contains (10000000-0000-7000-8000-000000000001, oteryn:item.sword, oteryn:proficiency.sword, d1, 1, {}, 2, 40000000-0000-7000-8000-000000000002).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency\nCONSTRAINT NAME:  selections_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "130_row_array_zero_lower",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency\" violates check constraint \"selections_canonical\"\nDETAIL:  Failing row contains (10000000-0000-7000-8000-000000000001, oteryn:item.sword, oteryn:proficiency.sword, d1, 1, [0:1]={NULL,NULL}, 2, 40000000-0000-7000-8000-000000000002).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency\nCONSTRAINT NAME:  selections_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "131_row_array_two_lower",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency\" violates check constraint \"selections_canonical\"\nDETAIL:  Failing row contains (10000000-0000-7000-8000-000000000001, oteryn:item.sword, oteryn:proficiency.sword, d1, 1, [2:3]={NULL,NULL}, 2, 40000000-0000-7000-8000-000000000002).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency\nCONSTRAINT NAME:  selections_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "132_row_array_two_dimensions",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency\" violates check constraint \"selections_canonical\"\nDETAIL:  Failing row contains (10000000-0000-7000-8000-000000000001, oteryn:item.sword, oteryn:proficiency.sword, d1, 1, {{NULL,NULL},{NULL,NULL}}, 2, 40000000-0000-7000-8000-000000000002).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency\nCONSTRAINT NAME:  selections_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "133_row_array_eight",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency\" violates check constraint \"selections_canonical\"\nDETAIL:  Failing row contains (10000000-0000-7000-8000-000000000001, oteryn:item.sword, oteryn:proficiency.sword, d1, 1, {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL}, 2, 40000000-0000-7000-8000-000000000002).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency\nCONSTRAINT NAME:  selections_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "134_row_array_invalid3",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency\" violates check constraint \"selections_canonical\"\nDETAIL:  Failing row contains (10000000-0000-7000-8000-000000000001, oteryn:item.sword, oteryn:proficiency.sword, d1, 1, {3,NULL}, 2, 40000000-0000-7000-8000-000000000002).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency\nCONSTRAINT NAME:  selections_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "135_row_array_negative",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": null,
+      "error": "ERROR:  23514: new row for relation \"game_character_proficiency\" violates check constraint \"selections_canonical\"\nDETAIL:  Failing row contains (10000000-0000-7000-8000-000000000001, oteryn:item.sword, oteryn:proficiency.sword, d1, 1, {-1,NULL}, 2, 40000000-0000-7000-8000-000000000002).\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency\nCONSTRAINT NAME:  selections_canonical\nLOCATION:  ExecConstraints, execMain.c:2033"
+    },
+    {
+      "name": "136_runtime_training_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "137_runtime_selection_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "138_runtime_migration_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "139_training_two_tracks_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "140_row_only_definition_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "row does not equal",
+      "error": "ERROR:  23514: proficiency row does not equal its latest committed track line\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 54 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "141_row_only_occurrence",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "row does not equal",
+      "error": "ERROR:  23514: proficiency row does not equal its latest committed track line\nCONTEXT:  PL/pgSQL function game_character_proficiency_track_guard() line 54 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "142_death_then_wp_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "143_stance_then_wp_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "144_bestiary_then_wp_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "145_charm_then_wp_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "146_monk_then_wp_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "147_build_then_wp_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "148_wp_illegal_harmony_change",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "Harmony and the forced Serene",
+      "error": "ERROR:  23514: Harmony and the forced Serene time change only with a monk state receipt\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 399 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "149_wp_illegal_serene_change",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "Harmony and the forced Serene",
+      "error": "ERROR:  23514: Harmony and the forced Serene time change only with a monk state receipt\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 399 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "150_duplicate_item_in_receipt",
+      "passed": true,
+      "expected_state": "23505",
+      "actual_state": "23505",
+      "expected_message": null,
+      "error": "ERROR:  23505: duplicate key value violates unique constraint \"game_character_proficiency_receipt_lines_pkey\"\nDETAIL:  Key (proficiency_occurrence_id, item_key)=(40000000-0000-7000-8000-000000000002, oteryn:item.sword) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipt_lines\nCONSTRAINT NAME:  game_character_proficiency_receipt_lines_pkey\nLOCATION:  _bt_check_unique, nbtinsert.c:666"
+    },
+    {
+      "name": "151_duplicate_receipt_occurrence",
+      "passed": true,
+      "expected_state": "23505",
+      "actual_state": "23505",
+      "expected_message": null,
+      "error": "ERROR:  23505: duplicate key value violates unique constraint \"game_character_proficiency_receipts_pkey\"\nDETAIL:  Key (proficiency_occurrence_id)=(40000000-0000-7000-8000-000000000002) already exists.\nSCHEMA NAME:  public\nTABLE NAME:  game_character_proficiency_receipts\nCONSTRAINT NAME:  game_character_proficiency_receipts_pkey\nLOCATION:  _bt_check_unique, nbtinsert.c:666"
+    },
+    {
+      "name": "152_row_progress_i64_max_valid",
+      "passed": true,
+      "expected_state": null,
+      "actual_state": null,
+      "expected_message": null,
+      "error": ""
+    },
+    {
+      "name": "153_row_progress_i64_overflow",
+      "passed": true,
+      "expected_state": "22003",
+      "actual_state": "22003",
+      "expected_message": null,
+      "error": "ERROR:  22003: bigint out of range\nLOCATION:  numeric_int8_opt_error, numeric.c:4541"
+    },
+    {
+      "name": "154_header_current_context_profile_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "155_header_current_context_ruleset_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "156_header_current_context_content_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "157_header_current_context_simulation_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "158_header_current_context_evidence_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "159_header_current_context_declaration_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "160_header_current_context_policy_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    },
+    {
+      "name": "161_header_current_context_reward_revision",
+      "passed": true,
+      "expected_state": "23514",
+      "actual_state": "23514",
+      "expected_message": "revision/receipt chain",
+      "error": "ERROR:  23514: Character progression revision/receipt chain is inconsistent\nCONTEXT:  PL/pgSQL function game_character_progression_consistency_guard() line 137 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911"
+    }
+  ]
+}

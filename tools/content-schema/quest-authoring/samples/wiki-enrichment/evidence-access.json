@@ -1,0 +1,90 @@
+{
+  "schema": "OTERYN_QUEST_SOURCE_ACCESS/v1",
+  "round2": {
+    "fandom_exact_revisions": 743,
+    "br_exact_revisions": 283,
+    "method": "remote_desktop_browser",
+    "own_tab_closed": true,
+    "user_files_accessed": false,
+    "raw_narrative_published": false
+  },
+  "access_checks": [
+    {
+      "provider": "tibiawiki_br",
+      "access_method": "normal_web",
+      "status": "unavailable",
+      "reason": "Cloud host HTTP403; browser API succeeds"
+    },
+    {
+      "provider": "tibia_fandom",
+      "access_method": "normal_web",
+      "status": "unavailable",
+      "reason": "Cloud host HTTP402; browser API succeeds"
+    },
+    {
+      "provider": "tibiopedia",
+      "access_method": "remote_desktop_browser",
+      "status": "unavailable",
+      "url": "https://tibiopedia.pl/quests/Doublet_Quest",
+      "final_url": "https://tibiopedia.pl/setup",
+      "reason": "Redirected to blank Setup page"
+    },
+    {
+      "provider": "tavily",
+      "access_method": "normal_web",
+      "status": "unavailable",
+      "reason": "Quota432; not retried"
+    }
+  ],
+  "missing_page_layout_resolutions": [
+    {
+      "provider": "tibia_fandom",
+      "title": "Illuminator Outfit Quest/Spoiler",
+      "url": "https://tibia.fandom.com/wiki/Illuminator_Outfit_Quest/Spoiler",
+      "access_method": "remote_desktop_browser",
+      "reason": "missing_page",
+      "resolution_kind": "inline_spoiler",
+      "resolution_note": "The base page includes base outfit and addon sections.",
+      "resolved_source": {
+        "provider": "tibia_fandom",
+        "pageid": 108929,
+        "revid": 1111818,
+        "content_sha256": "73a5922a61b12bbe52cbef94ce983ec8ef6ac2d222c64fb60e4910c15c5b57c3",
+        "url": "https://tibia.fandom.com/index.php?curid=108929&oldid=1111818"
+      }
+    },
+    {
+      "provider": "tibia_fandom",
+      "title": "Ravenous Madness Quest/Spoiler",
+      "url": "https://tibia.fandom.com/wiki/Ravenous_Madness_Quest/Spoiler",
+      "access_method": "remote_desktop_browser",
+      "reason": "missing_page",
+      "resolution_kind": "inline_method",
+      "resolution_note": "The base page includes Method and profession-scoped rewards.",
+      "resolved_source": {
+        "provider": "tibia_fandom",
+        "pageid": 107279,
+        "revid": 1206164,
+        "content_sha256": "99209332128899c11d8499e63e19f0a1f19644c83871e83d6e3c8f392827c14d",
+        "url": "https://tibia.fandom.com/index.php?curid=107279&oldid=1206164"
+      }
+    },
+    {
+      "provider": "tibia_fandom",
+      "title": "Tibia Tales/Spoiler",
+      "url": "https://tibia.fandom.com/wiki/Tibia_Tales/Spoiler",
+      "access_method": "remote_desktop_browser",
+      "reason": "missing_page",
+      "resolution_kind": "aggregate_index",
+      "resolution_note": "The base page groups separate quests by Quest Log category; it has no single quest-wide spoiler.",
+      "resolved_source": {
+        "provider": "tibia_fandom",
+        "pageid": 22849,
+        "revid": 842968,
+        "content_sha256": "e98139093b917ed7cdb19daf4b4d78e5679a54d8e4f0f76272b43cfe2743b515",
+        "url": "https://tibia.fandom.com/index.php?curid=22849&oldid=842968"
+      }
+    }
+  ],
+  "tibiopedia_scope": "Previous public browser attempt redirected to blank /setup; no Tibiopedia quest facts fabricated; no new round2 success claimed."
+}

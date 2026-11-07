@@ -1,0 +1,190 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_SOURCE_MANIFEST/v1",
+  "task": "FORGE-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "owner_cut_override": "Owner explicitly requested fresh current data on 2026-10-18; historical 2026-09-27 programme cut is not changed repository-wide.",
+  "sources": {
+    "wiki:95592:1205481": {
+      "title": "Equipment Upgrade",
+      "url": "https://tibia.fandom.com/wiki/Equipment_Upgrade",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1205481",
+      "revid": 1205481,
+      "revision_timestamp": "2026-09-07T20:53:26Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "659e52ca9a8f175937853837226a5fc53a46347800b587d3d6f734667de346ad",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=The%20Market%20(Object)%7CTravelling%7CEquipment%20Upgrade%7CBlessings&redirects=1"
+    },
+    "community:tibia-wiki.com:forge:15.20:20261018": {
+      "title": "Exaltation Forge",
+      "url": "https://tibia-wiki.com/15.20/pl/ExaltationForge",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_REFERENCE",
+      "retained_scope": "TARGETED_SOURCE_RETRIEVAL",
+      "retained_response_sha256": "fc0bab1b297bb578aa8184a443b13ed0e188876368a5ac7507645eca7e33e705",
+      "supported_claim": "Regular tier transfers7→6,8→7,9→8,10→9 list25,35,50,60 cores respectively.",
+      "reference_version": "15.20",
+      "qualification": "Secondary Global community reference, explicitly regular transfer rows. Fandom and Wiki BR still show?; these are reference candidates, not a controlled forge observation or an equivalence to convergence transfer."
+    },
+    "official:news:8850:20261018": {
+      "title": "Weapon Proficiency Update: dust-limit change",
+      "url": "https://www.tibia.com/news/?id=8850&subtopic=newsarchive",
+      "fetched_at": "2026-10-18",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "retained_scope": "TARGETED_SOURCE_RETRIEVAL",
+      "retained_response_sha256": "dfa87ca7f6a94ab6dc3bff910d1d97985ae76656ae44ccce220b3315b244cda2",
+      "supported_claim": "Each dust-limit upgrade now grants20 instead of1; existing upgrades are converted retroactively.",
+      "retrieval_method": "SEARCH_INDEX_OF_PRIMARY_OFFICIAL_PUBLICATION",
+      "direct_fetch": "HTTP403_FROM_WEB_FETCH_AND_OWNER_PC_URL_READER",
+      "qualification": "Primary official publication indexed at fetch; direct HTTP retrieval was blocked. Claim scope is the cited announcement, corroborated against release evidence where stated; no controlled server measurement is claimed."
+    },
+    "owner:oteryn-data-completion:2026-10-19": {
+      "source_class": "OWNER_AUTHORIZED_OTERYN_WORKING_PARAMETERS",
+      "instruction": "No to uzupełnij te dane bo piszę ci to5raz",
+      "prior_instruction": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+      "parameter_document": "docs/reference/content-prep/forge-content-1/oteryn-parameters.json",
+      "selection_actor": "assistant completing owner-authorized reference/data task",
+      "scope": "Populate working Oteryn data defaults, keeping evidence limits explicit; no runtime or architectural acceptance is implied."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:forge.dust_upgrade": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/player.cpp",
+      "line": 11016,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/player.cpp#L11016",
+      "file_sha256": "61e9da9c6d14d8b243ec5230f149cbc88b9aed14b5547b96664bc6ce730cc5a0",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "cost": "L>100 ? 25+floor((L-100)/20) : 25",
+        "increment": 20,
+        "maximum_from_config": "225",
+        "cap_guard": "reject if current L>=configured maximum; no post-increment clamp in this path"
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:forge.bonus_distribution": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/utils/tools.cpp",
+      "line": 1879,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/utils/tools.cpp#L1879",
+      "file_sha256": "61f1649fce6cae87905f9619cc1b6cd8b76c3066ce349ae2f4bc92072caed070",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "draw_inclusive": [
+          0,
+          10000
+        ],
+        "outcomes": [
+          {
+            "bonus_id": 0,
+            "inclusive_range": [
+              0,
+              7399
+            ],
+            "probability_numerator": 7400,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 1,
+            "inclusive_range": [
+              7400,
+              8999
+            ],
+            "probability_numerator": 1600,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 2,
+            "inclusive_range": [
+              9000,
+              9499
+            ],
+            "probability_numerator": 500,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 3,
+            "inclusive_range": [
+              9500,
+              9524
+            ],
+            "probability_numerator": 25,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 4,
+            "inclusive_range": [
+              9525,
+              9549
+            ],
+            "probability_numerator": 25,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 5,
+            "inclusive_range": [
+              9550,
+              9949
+            ],
+            "probability_numerator": 400,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 6,
+            "inclusive_range": [
+              9950,
+              9974
+            ],
+            "probability_numerator": 25,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 7,
+            "inclusive_range": [
+              9975,
+              10000
+            ],
+            "probability_numerator": 26,
+            "probability_denominator": 10001
+          }
+        ],
+        "application": "regular fusion; convergence forces bonus 0; success/failure path further constrains effects"
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "community:tibiopedia:exaltation-forge:20261019": {
+      "title": "Exaltation Forge - Kuznia Wzniesienia",
+      "url": "https://tibiopedia.pl/articles/22,Exaltation-Forge-Kuznia-Wzniesienia",
+      "fetched_at": "2026-10-19T08:03:12.927399+00:00",
+      "source_class": "COMMUNITY_REFERENCE",
+      "retained_response_sha256": "62d8b1ac946368638cca07a19d627fdd42cdec1afd22ee2ec564925f5ce1856b",
+      "retained_scope": "TARGETED_FACT_OBSERVATIONS",
+      "retained_observations": "docs/reference/content-prep/forge-content-1/forge-dust-source-check.json",
+      "supported_claim": "Dust cap4600; start100; increment20; upgrade costs25..249; total30825.",
+      "qualification": "Secondary source corroborates these dust values. It does not provide exact fusion-bonus probabilities and is not an official or controlled-client measurement."
+    },
+    "community:tibiawatch:forge-transfer:20261019": {
+      "title": "TibiaWatch Forge calculator transfer selectors",
+      "url": "https://tibiawatch.com/calculators/forge",
+      "bundle_url": "https://tibiawatch.com/_next/static/chunks/3819-d89d3fa210dcb359.js",
+      "fetched_at": "2026-10-19T08:49:19.554087+00:00",
+      "retained_response_sha256": "05a960a6120ac8744130dc05789bc96c837e0b08edbb92147bd8c623650fc6e8",
+      "source_class": "COMMUNITY_REFERENCE",
+      "retained_observations": "docs/reference/content-prep/forge-content-1/source-correction-check.json",
+      "qualification": "Secondary calculator corroborates60 cores for both transfer steps; Tibiopedia65 remains an explicitly retained source discrepancy. Fusion resources needed to create the donor are separate.",
+      "retrieval": "Executed exported constant module60073 and actual regular/convergence route selectors with downstream total-route calculation replaced by capture. Proves selected transfer fees/resources only; no browser UI or game execution claimed."
+    },
+    "official-client:forge-ui:15.33.9d148f:20261019": {
+      "title": "Logged-in official Tibia client Forge interface",
+      "source_class": "CIPSOFT_OFFICIAL_CLIENT",
+      "evidence_role": "CONTROLLED_UI_OBSERVATION_ONLY",
+      "client_version": "15.33.9d148f",
+      "observed_at": "2026-10-19T11:35:48.685952+00:00",
+      "evidence_document": "docs/reference/content-prep/forge-content-1/live-client-forge-probe.json",
+      "retained_scope": "Paraphrased interface observations and screenshot SHA256; original screenshots retained privately by owner, not redistributed.",
+      "qualification": "No fusion, transfer, conversion or limit upgrade performed. Displayed configuration/tooltips do not prove stochastic event probabilities or completed transaction behavior."
+    }
+  }
+}

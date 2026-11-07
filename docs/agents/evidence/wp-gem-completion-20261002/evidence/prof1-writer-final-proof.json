@@ -1,0 +1,75 @@
+{
+  "private_assembly_head": "3807ef1bd90600182ac5a265d0f01293888087cd",
+  "classification": "PRIVATE_WORKING_TREE_NOT_FROZEN_NOT_PUBLISHED",
+  "native_and_test_source_sha256": {
+    "apps/game-server/migrations/0032_character_proficiency.sql": "9bde3bfcc946e18600913e295a983998321f4fdfd9dd244bf5b28a28e04142b5",
+    "apps/game-server/src/durability/character_authority.rs": "535b453ba7f4888975cc0e021d8ca2ea39ae76eefc7aaaeca77a4728ae17ac6c",
+    "apps/game-server/src/durability/character_proficiency.rs": "b2502d6244b79e3b30724f2adde06c904e8af222e831e200a366d816c4010678",
+    "apps/game-server/src/durability/character_proficiency_codec.rs": "ebc155ea12b57f02110e31a6172e240d93080a4e7c4981645a860b14155a8130",
+    "apps/game-server/tests/character_authority_postgres.rs": "a91c16af6fc099c52e021dcbf1b82bdb518f64fe8ba89ad77fa93134989e71ac",
+    "apps/game-server/tests/character_progression_postgres.rs": "f7b2fa2c82bde4e3c93964b2c6ac30056e6f3dc1bd89685dfd63f6c316c7ca5b",
+    "apps/game-server/tests/support/character_proficiency_postgres_cases.rs": "31a0b2e60c12cd2cd877843d765a11a43ac08d14419879b09c957abb0b596258"
+  },
+  "actual_postgres_17_6": {
+    "authority_selected": 11,
+    "progression_selected": 11,
+    "native_selected": 20,
+    "logs": [
+      "prof1-authority-complete-final-qualified.log",
+      "prof1-progression-complete-final-qualified.log",
+      "prof1-native-pg-final-qualified.log"
+    ]
+  },
+  "sql_candidate_cases": 161,
+  "all_cause_integrity": {
+    "red_six_independent_mutations": "prof1-binding-integrity-red.log",
+    "green": "prof1-authority-complete-final-qualified.log",
+    "sparse_track_revision": true
+  },
+  "final_clippy": "PASS_FINAL_SUPPLEMENT",
+  "final_package": {
+    "exit": 0,
+    "suites": 57,
+    "passed": 16890,
+    "failed": 0,
+    "ignored": 7,
+    "log": "prof1-writer-complete-final-package.log",
+    "postgres_environment": "ABSENT_FOR_PACKAGE; actual focused PG17.6 qualified separately"
+  },
+  "final_format": "PASS_FINAL_SUPPLEMENT",
+  "additional_source_aware_recovery_boundary": "ACTUAL_PG_BOTH11_CASES_PASS; foreign predecessor, successor rollback, exact generation2 idempotence/read",
+  "pre_supplement_package": {
+    "exit": 0,
+    "suites": 57,
+    "passed": 16888,
+    "ignored": 7,
+    "postgres_environment": "ABSENT_FOR_PACKAGE; actual focused PG17.6 qualified separately"
+  },
+  "qualified_at": "2026-10-01T23:22:04Z",
+  "governance_tests": {
+    "passed": 36,
+    "log": "prof1-writer-governance-tests.log"
+  },
+  "patch_qualification": {
+    "classification": "PRIVATE_NOT_REMOTE_NOT_FROZEN",
+    "base": "3807ef1bd90600182ac5a265d0f01293888087cd",
+    "patch_sha256": "f8995bcbae2ca6d5376a5b2f42268429426d006687378ce256877e76a9864975",
+    "patch_bytes": 192953,
+    "isolated_apply_check": "PASS",
+    "all_eight_byte_exact": "PASS",
+    "source_sha256": {
+      "apps/game-server/src/durability/character_authority.rs": "535b453ba7f4888975cc0e021d8ca2ea39ae76eefc7aaaeca77a4728ae17ac6c",
+      "apps/game-server/src/durability/character_proficiency.rs": "b2502d6244b79e3b30724f2adde06c904e8af222e831e200a366d816c4010678",
+      "apps/game-server/src/durability/character_proficiency_codec.rs": "ebc155ea12b57f02110e31a6172e240d93080a4e7c4981645a860b14155a8130",
+      "apps/game-server/tests/character_authority_postgres.rs": "a91c16af6fc099c52e021dcbf1b82bdb518f64fe8ba89ad77fa93134989e71ac",
+      "apps/game-server/tests/character_progression_postgres.rs": "f7b2fa2c82bde4e3c93964b2c6ac30056e6f3dc1bd89685dfd63f6c316c7ca5b",
+      "apps/game-server/migrations/0032_character_proficiency.sql": "9bde3bfcc946e18600913e295a983998321f4fdfd9dd244bf5b28a28e04142b5",
+      "apps/game-server/tests/support/character_proficiency_postgres_cases.rs": "31a0b2e60c12cd2cd877843d765a11a43ac08d14419879b09c957abb0b596258",
+      "docs/agents/tasks/active/OTV2-20261001-wp-prof1-writer-gate.md": "0c60080ad1233e7d43b355fa8bd8876cce40fa6c3378515406d88771080e388f"
+    }
+  },
+  "governance_validator": {
+    "result": "PASS",
+    "log": "prof1-writer-final-governance.log"
+  }
+}

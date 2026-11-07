@@ -1,0 +1,196 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "canary:ability/sorcerer_familiar/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "melee",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/sorcerer_familiar/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/sorcerer_familiar/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": true,
+      "area": {
+        "length_tiles": 2,
+        "spread_tiles": 0
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/sorcerer_familiar/attack-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/sorcerer_familiar/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": true,
+      "area": {
+        "length_tiles": 2,
+        "spread_tiles": 0
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/sorcerer_familiar/attack-3",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/sorcerer_familiar/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/sorcerer_familiar/defense-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "canary:effect/sorcerer_familiar/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/sorcerer_familiar/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "mitigated_by": [
+        "armor",
+        "shield"
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:effect/sorcerer_familiar/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "life_drain",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/sorcerer_familiar/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_red"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/sorcerer_familiar/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "energy",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/sorcerer_familiar/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/energyhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/sorcerer_familiar/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "heal",
+      "damage_type": "healing",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/sorcerer_familiar/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_green"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "canary:formula/sorcerer_familiar/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 280
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/sorcerer_familiar/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 90,
+        "maximum": 150
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/sorcerer_familiar/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 190,
+        "maximum": 210
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/sorcerer_familiar/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 600,
+        "maximum": 600
+      }
+    }
+  ],
+  "documents": [],
+  "items": [],
+  "loot_tables": []
+}

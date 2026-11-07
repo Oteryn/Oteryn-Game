@@ -1,0 +1,11 @@
+{
+  "id": 34,
+  "name": "OBSERVE_GRANT_SET",
+  "owner_decision": "SPECTATE1-OBSERVER-CONTRACT-V1; integrator option A 2026-10-22; IDs moved from 31/32 to 34/35 at the DISPATCH-WIRING-1 port (BED-1 and DAILY-1 took them on main)",
+  "capability": 33,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/spectate_v1.proto#SpectateMessageV1 (GRANT_SET: kind and audience)",
+  "result_schema": "none while DORMANT: no handler and never selected (capability 33 unoffered); SPECTATE-WIRE-1 registers the result before activation",
+  "max_payload_bytes": 4,
+  "max_result_payload_bytes": 0,
+  "status": "DORMANT"
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+  "path": "rulesets/party/shared-experience/",
+  "kind": "ruleset",
+  "owner": "Party",
+  "repository": "Oteryn/Oteryn-Game",
+  "population_state": "POPULATED",
+  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+  "notes": "Party/shared-EXP rules.",
+  "runtime_admission": "BLOCKED",
+  "runtime_switch_authorized": false,
+  "evidence_completeness": "PARTIAL_EXPLICIT_UNKNOWNS",
+  "source_snapshot_target": "current-at-fetch-2026-10-18",
+  "payloads": [
+    {
+      "path": "rulesets/party/shared-experience/reference-evidence.json",
+      "sha256": "8148c53b21ad59dcddcfe7d6fe1b84ef7935cba1640b9d0206306d345c783e82"
+    }
+  ]
+}

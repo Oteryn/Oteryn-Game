@@ -1,0 +1,1301 @@
+{
+  "dynamic_aliases": [
+    "canary.appearance:missile/weapontype"
+  ],
+  "records": [
+    {
+      "alias": "appearance:effect/avatar_appear",
+      "kind": "effect",
+      "source_enum": "CONST_ME_AVATAR_APPEAR",
+      "value": 244
+    },
+    {
+      "alias": "appearance:effect/chivalrious_challenge",
+      "kind": "effect",
+      "source_enum": "CONST_ME_CHIVALRIOUS_CHALLENGE",
+      "value": 219
+    },
+    {
+      "alias": "appearance:effect/divine_dazzle",
+      "kind": "effect",
+      "source_enum": "CONST_ME_DIVINE_DAZZLE",
+      "value": 220
+    },
+    {
+      "alias": "appearance:effect/energyarea",
+      "kind": "effect",
+      "source_enum": "CONST_ME_ENERGYAREA",
+      "value": 38
+    },
+    {
+      "alias": "appearance:effect/energyhit",
+      "kind": "effect",
+      "source_enum": "CONST_ME_ENERGYHIT",
+      "value": 12
+    },
+    {
+      "alias": "appearance:effect/hitarea",
+      "kind": "effect",
+      "source_enum": "CONST_ME_HITAREA",
+      "value": 10
+    },
+    {
+      "alias": "appearance:effect/icearea",
+      "kind": "effect",
+      "source_enum": "CONST_ME_ICEAREA",
+      "value": 42
+    },
+    {
+      "alias": "appearance:effect/iceattack",
+      "kind": "effect",
+      "source_enum": "CONST_ME_ICEATTACK",
+      "value": 44
+    },
+    {
+      "alias": "appearance:effect/magic_blue",
+      "kind": "effect",
+      "source_enum": "CONST_ME_MAGIC_BLUE",
+      "value": 13
+    },
+    {
+      "alias": "appearance:effect/poff",
+      "kind": "effect",
+      "source_enum": "CONST_ME_POFF",
+      "value": 3
+    },
+    {
+      "alias": "appearance:effect/smallplants",
+      "kind": "effect",
+      "source_enum": "CONST_ME_SMALLPLANTS",
+      "value": 46
+    },
+    {
+      "alias": "canary.appearance:effect/bigclouds",
+      "kind": "effect",
+      "source_enum": "CONST_ME_BIGCLOUDS",
+      "value": 41
+    },
+    {
+      "alias": "canary.appearance:effect/blow_blue",
+      "kind": "effect",
+      "source_enum": "CONST_ME_BLOW_BLUE",
+      "value": 287
+    },
+    {
+      "alias": "canary.appearance:effect/blow_green",
+      "kind": "effect",
+      "source_enum": "CONST_ME_BLOW_GREEN",
+      "value": 286
+    },
+    {
+      "alias": "canary.appearance:effect/blow_pink",
+      "kind": "effect",
+      "source_enum": "CONST_ME_BLOW_PINK",
+      "value": 288
+    },
+    {
+      "alias": "canary.appearance:effect/blow_white",
+      "kind": "effect",
+      "source_enum": "CONST_ME_BLOW_WHITE",
+      "value": 285
+    },
+    {
+      "alias": "canary.appearance:effect/carniphila",
+      "kind": "effect",
+      "source_enum": "CONST_ME_CARNIPHILA",
+      "value": 47
+    },
+    {
+      "alias": "canary.appearance:effect/claw_white",
+      "kind": "effect",
+      "source_enum": "CONST_ME_CLAW_WHITE",
+      "value": 282
+    },
+    {
+      "alias": "canary.appearance:effect/death_echo",
+      "kind": "effect",
+      "source_enum": "CONST_ME_DEATH_ECHO",
+      "value": 321
+    },
+    {
+      "alias": "canary.appearance:effect/divine_barrage",
+      "kind": "effect",
+      "source_enum": "CONST_ME_DIVINE_BARRAGE",
+      "value": 319
+    },
+    {
+      "alias": "canary.appearance:effect/divine_grenade",
+      "kind": "effect",
+      "source_enum": "CONST_ME_DIVINE_GRENADE",
+      "value": 245
+    },
+    {
+      "alias": "canary.appearance:effect/drawblood",
+      "kind": "effect",
+      "source_enum": "CONST_ME_DRAWBLOOD",
+      "value": 1
+    },
+    {
+      "alias": "canary.appearance:effect/energyarea",
+      "kind": "effect",
+      "source_enum": "CONST_ME_ENERGYAREA",
+      "value": 38
+    },
+    {
+      "alias": "canary.appearance:effect/energyhit",
+      "kind": "effect",
+      "source_enum": "CONST_ME_ENERGYHIT",
+      "value": 12
+    },
+    {
+      "alias": "canary.appearance:effect/ethereal_barrage",
+      "kind": "effect",
+      "source_enum": "CONST_ME_ETHEREAL_BARRAGE",
+      "value": 320
+    },
+    {
+      "alias": "canary.appearance:effect/explosionarea",
+      "kind": "effect",
+      "source_enum": "CONST_ME_EXPLOSIONAREA",
+      "value": 5
+    },
+    {
+      "alias": "canary.appearance:effect/firearea",
+      "kind": "effect",
+      "source_enum": "CONST_ME_FIREAREA",
+      "value": 7
+    },
+    {
+      "alias": "canary.appearance:effect/fireattack",
+      "kind": "effect",
+      "source_enum": "CONST_ME_FIREATTACK",
+      "value": 37
+    },
+    {
+      "alias": "canary.appearance:effect/forked_glacier",
+      "kind": "effect",
+      "source_enum": "CONST_ME_FORKED_GLACIER",
+      "value": 324
+    },
+    {
+      "alias": "canary.appearance:effect/forked_thorns",
+      "kind": "effect",
+      "source_enum": "CONST_ME_FORKED_THORNS",
+      "value": 325
+    },
+    {
+      "alias": "canary.appearance:effect/green_rings",
+      "kind": "effect",
+      "source_enum": "CONST_ME_GREEN_RINGS",
+      "value": 9
+    },
+    {
+      "alias": "canary.appearance:effect/groundshaker",
+      "kind": "effect",
+      "source_enum": "CONST_ME_GROUNDSHAKER",
+      "value": 35
+    },
+    {
+      "alias": "canary.appearance:effect/hitarea",
+      "kind": "effect",
+      "source_enum": "CONST_ME_HITAREA",
+      "value": 10
+    },
+    {
+      "alias": "canary.appearance:effect/hitbyfire",
+      "kind": "effect",
+      "source_enum": "CONST_ME_HITBYFIRE",
+      "value": 16
+    },
+    {
+      "alias": "canary.appearance:effect/holyarea",
+      "kind": "effect",
+      "source_enum": "CONST_ME_HOLYAREA",
+      "value": 50
+    },
+    {
+      "alias": "canary.appearance:effect/holydamage",
+      "kind": "effect",
+      "source_enum": "CONST_ME_HOLYDAMAGE",
+      "value": 40
+    },
+    {
+      "alias": "canary.appearance:effect/icearea",
+      "kind": "effect",
+      "source_enum": "CONST_ME_ICEAREA",
+      "value": 42
+    },
+    {
+      "alias": "canary.appearance:effect/iceattack",
+      "kind": "effect",
+      "source_enum": "CONST_ME_ICEATTACK",
+      "value": 44
+    },
+    {
+      "alias": "canary.appearance:effect/icetornado",
+      "kind": "effect",
+      "source_enum": "CONST_ME_ICETORNADO",
+      "value": 43
+    },
+    {
+      "alias": "canary.appearance:effect/magic_blue",
+      "kind": "effect",
+      "source_enum": "CONST_ME_MAGIC_BLUE",
+      "value": 13
+    },
+    {
+      "alias": "canary.appearance:effect/magic_green",
+      "kind": "effect",
+      "source_enum": "CONST_ME_MAGIC_GREEN",
+      "value": 15
+    },
+    {
+      "alias": "canary.appearance:effect/magic_red",
+      "kind": "effect",
+      "source_enum": "CONST_ME_MAGIC_RED",
+      "value": 14
+    },
+    {
+      "alias": "canary.appearance:effect/mortarea",
+      "kind": "effect",
+      "source_enum": "CONST_ME_MORTAREA",
+      "value": 18
+    },
+    {
+      "alias": "canary.appearance:effect/pink_energy_spark",
+      "kind": "effect",
+      "source_enum": "CONST_ME_PINK_ENERGY_SPARK",
+      "value": 179
+    },
+    {
+      "alias": "canary.appearance:effect/poff",
+      "kind": "effect",
+      "source_enum": "CONST_ME_POFF",
+      "value": 3
+    },
+    {
+      "alias": "canary.appearance:effect/smallclouds",
+      "kind": "effect",
+      "source_enum": "CONST_ME_SMALLCLOUDS",
+      "value": 39
+    },
+    {
+      "alias": "canary.appearance:effect/smallplants",
+      "kind": "effect",
+      "source_enum": "CONST_ME_SMALLPLANTS",
+      "value": 46
+    },
+    {
+      "alias": "canary.appearance:effect/stones",
+      "kind": "effect",
+      "source_enum": "CONST_ME_STONES",
+      "value": 45
+    },
+    {
+      "alias": "canary.appearance:effect/thousand_fist_blows",
+      "kind": "effect",
+      "source_enum": "CONST_ME_THOUSAND_FIST_BLOWS",
+      "value": 326
+    },
+    {
+      "alias": "canary.appearance:effect/whirlwind_blow_white",
+      "kind": "effect",
+      "source_enum": "CONST_ME_WHIRLWIND_BLOW_WHITE",
+      "value": 276
+    },
+    {
+      "alias": "canary.appearance:effect/white_energy_spark",
+      "kind": "effect",
+      "source_enum": "CONST_ME_WHITE_ENERGY_SPARK",
+      "value": 180
+    },
+    {
+      "alias": "canary.appearance:missile/death",
+      "kind": "projectile",
+      "source_enum": "CONST_ANI_DEATH",
+      "value": 11
+    },
+    {
+      "alias": "canary.appearance:missile/earth",
+      "kind": "projectile",
+      "source_enum": "CONST_ANI_EARTH",
+      "value": 30
+    },
+    {
+      "alias": "canary.appearance:missile/energy",
+      "kind": "projectile",
+      "source_enum": "CONST_ANI_ENERGY",
+      "value": 5
+    },
+    {
+      "alias": "canary.appearance:missile/energyball",
+      "kind": "projectile",
+      "source_enum": "CONST_ANI_ENERGYBALL",
+      "value": 36
+    },
+    {
+      "alias": "canary.appearance:missile/etherealspear",
+      "kind": "projectile",
+      "source_enum": "CONST_ANI_ETHEREALSPEAR",
+      "value": 28
+    },
+    {
+      "alias": "canary.appearance:missile/explosion",
+      "kind": "projectile",
+      "source_enum": "CONST_ANI_EXPLOSION",
+      "value": 41
+    },
+    {
+      "alias": "canary.appearance:missile/fire",
+      "kind": "projectile",
+      "source_enum": "CONST_ANI_FIRE",
+      "value": 4
+    },
+    {
+      "alias": "canary.appearance:missile/holy",
+      "kind": "projectile",
+      "source_enum": "CONST_ANI_HOLY",
+      "value": 31
+    },
+    {
+      "alias": "canary.appearance:missile/ice",
+      "kind": "projectile",
+      "source_enum": "CONST_ANI_ICE",
+      "value": 29
+    },
+    {
+      "alias": "canary.appearance:missile/poison",
+      "kind": "projectile",
+      "source_enum": "CONST_ANI_POISON",
+      "value": 15
+    },
+    {
+      "alias": "canary.appearance:missile/smallearth",
+      "kind": "projectile",
+      "source_enum": "CONST_ANI_SMALLEARTH",
+      "value": 39
+    },
+    {
+      "alias": "canary.appearance:missile/smallholy",
+      "kind": "projectile",
+      "source_enum": "CONST_ANI_SMALLHOLY",
+      "value": 38
+    },
+    {
+      "alias": "canary.appearance:missile/smallice",
+      "kind": "projectile",
+      "source_enum": "CONST_ANI_SMALLICE",
+      "value": 37
+    },
+    {
+      "alias": "canary.appearance:missile/suddendeath",
+      "kind": "projectile",
+      "source_enum": "CONST_ANI_SUDDENDEATH",
+      "value": 32
+    },
+    {
+      "alias": "canary.sound:spell_animate_dead_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_ANIMATE_DEAD_RUNE",
+      "value": 1083
+    },
+    {
+      "alias": "canary.sound:spell_annihilation",
+      "kind": "sound",
+      "source_enum": "SPELL_ANNIHILATION",
+      "value": 1062
+    },
+    {
+      "alias": "canary.sound:spell_arrow_call",
+      "kind": "sound",
+      "source_enum": "SPELL_ARROW_CALL",
+      "value": 1176
+    },
+    {
+      "alias": "canary.sound:spell_avalanche_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_AVALANCHE_RUNE",
+      "value": 1115
+    },
+    {
+      "alias": "canary.sound:spell_berserk",
+      "kind": "sound",
+      "source_enum": "SPELL_BERSERK",
+      "value": 1080
+    },
+    {
+      "alias": "canary.sound:spell_blood_rage",
+      "kind": "sound",
+      "source_enum": "SPELL_BLOOD_RAGE",
+      "value": 1133
+    },
+    {
+      "alias": "canary.sound:spell_bruise_bane",
+      "kind": "sound",
+      "source_enum": "SPELL_BRUISE_BANE",
+      "value": 1175
+    },
+    {
+      "alias": "canary.sound:spell_brutal_strike",
+      "kind": "sound",
+      "source_enum": "SPELL_BRUTAL_STRIKE",
+      "value": 1061
+    },
+    {
+      "alias": "canary.sound:spell_buzz",
+      "kind": "sound",
+      "source_enum": "SPELL_BUZZ",
+      "value": 1177
+    },
+    {
+      "alias": "canary.sound:spell_cancel_invisibility",
+      "kind": "sound",
+      "source_enum": "SPELL_CANCEL_INVISIBILITY",
+      "value": 1090
+    },
+    {
+      "alias": "canary.sound:spell_cancel_magic_shield",
+      "kind": "sound",
+      "source_enum": "SPELL_CANCEL_MAGIC_SHIELD",
+      "value": 1245
+    },
+    {
+      "alias": "canary.sound:spell_challenge",
+      "kind": "sound",
+      "source_enum": "SPELL_CHALLENGE",
+      "value": 1093
+    },
+    {
+      "alias": "canary.sound:spell_chameleon_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_CHAMELEON_RUNE",
+      "value": 1014
+    },
+    {
+      "alias": "canary.sound:spell_charge",
+      "kind": "sound",
+      "source_enum": "SPELL_CHARGE",
+      "value": 1131
+    },
+    {
+      "alias": "canary.sound:spell_chill_out",
+      "kind": "sound",
+      "source_enum": "SPELL_CHILL_OUT",
+      "value": 1173
+    },
+    {
+      "alias": "canary.sound:spell_chivalrous_challenge",
+      "kind": "sound",
+      "source_enum": "SPELL_CHIVALROUS_CHALLENGE",
+      "value": 1237
+    },
+    {
+      "alias": "canary.sound:spell_conjure_arrow",
+      "kind": "sound",
+      "source_enum": "SPELL_CONJURE_ARROW",
+      "value": 1051
+    },
+    {
+      "alias": "canary.sound:spell_conjure_explosive_arrow",
+      "kind": "sound",
+      "source_enum": "SPELL_CONJURE_EXPLOSIVE_ARROW",
+      "value": 1049
+    },
+    {
+      "alias": "canary.sound:spell_conjure_wand_of_darkness",
+      "kind": "sound",
+      "source_enum": "SPELL_CONJURE_WAND_OF_DARKNESS",
+      "value": 1092
+    },
+    {
+      "alias": "canary.sound:spell_convince_creature_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_CONVINCE_CREATURE_RUNE",
+      "value": 1012
+    },
+    {
+      "alias": "canary.sound:spell_creature_illusion",
+      "kind": "sound",
+      "source_enum": "SPELL_CREATURE_ILLUSION",
+      "value": 1038
+    },
+    {
+      "alias": "canary.sound:spell_cure_bleeding",
+      "kind": "sound",
+      "source_enum": "SPELL_CURE_BLEEDING",
+      "value": 1144
+    },
+    {
+      "alias": "canary.sound:spell_cure_burning",
+      "kind": "sound",
+      "source_enum": "SPELL_CURE_BURNING",
+      "value": 1145
+    },
+    {
+      "alias": "canary.sound:spell_cure_curse",
+      "kind": "sound",
+      "source_enum": "SPELL_CURE_CURSE",
+      "value": 1147
+    },
+    {
+      "alias": "canary.sound:spell_cure_electrification",
+      "kind": "sound",
+      "source_enum": "SPELL_CURE_ELECTRIFICATION",
+      "value": 1146
+    },
+    {
+      "alias": "canary.sound:spell_cure_poison",
+      "kind": "sound",
+      "source_enum": "SPELL_CURE_POISON",
+      "value": 1029
+    },
+    {
+      "alias": "canary.sound:spell_cure_poison_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_CURE_POISON_RUNE",
+      "value": 1031
+    },
+    {
+      "alias": "canary.sound:spell_curse",
+      "kind": "sound",
+      "source_enum": "SPELL_CURSE",
+      "value": 1139
+    },
+    {
+      "alias": "canary.sound:spell_death_strike",
+      "kind": "sound",
+      "source_enum": "SPELL_DEATH_STRIKE",
+      "value": 1087
+    },
+    {
+      "alias": "canary.sound:spell_destroy_field_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_DESTROY_FIELD_RUNE",
+      "value": 1030
+    },
+    {
+      "alias": "canary.sound:spell_disintegrate_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_DISINTEGRATE_RUNE",
+      "value": 1078
+    },
+    {
+      "alias": "canary.sound:spell_divine_caldera",
+      "kind": "sound",
+      "source_enum": "SPELL_DIVINE_CALDERA",
+      "value": 1124
+    },
+    {
+      "alias": "canary.sound:spell_divine_dazzle",
+      "kind": "sound",
+      "source_enum": "SPELL_DIVINE_DAZZLE",
+      "value": 1238
+    },
+    {
+      "alias": "canary.sound:spell_divine_healing",
+      "kind": "sound",
+      "source_enum": "SPELL_DIVINE_HEALING",
+      "value": 1125
+    },
+    {
+      "alias": "canary.sound:spell_divine_missile",
+      "kind": "sound",
+      "source_enum": "SPELL_DIVINE_MISSILE",
+      "value": 1122
+    },
+    {
+      "alias": "canary.sound:spell_edit_door",
+      "kind": "sound",
+      "source_enum": "SPELL_EDIT_DOOR",
+      "value": 1074
+    },
+    {
+      "alias": "canary.sound:spell_electrify",
+      "kind": "sound",
+      "source_enum": "SPELL_ELECTRIFY",
+      "value": 1140
+    },
+    {
+      "alias": "canary.sound:spell_enchant_party",
+      "kind": "sound",
+      "source_enum": "SPELL_ENCHANT_PARTY",
+      "value": 1129
+    },
+    {
+      "alias": "canary.sound:spell_enchant_spear",
+      "kind": "sound",
+      "source_enum": "SPELL_ENCHANT_SPEAR",
+      "value": 1110
+    },
+    {
+      "alias": "canary.sound:spell_energy_beam",
+      "kind": "sound",
+      "source_enum": "SPELL_ENERGY_BEAM",
+      "value": 1022
+    },
+    {
+      "alias": "canary.sound:spell_energy_bomb_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_ENERGY_BOMB_RUNE",
+      "value": 1055
+    },
+    {
+      "alias": "canary.sound:spell_energy_field_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_ENERGY_FIELD_RUNE",
+      "value": 1027
+    },
+    {
+      "alias": "canary.sound:spell_energy_strike",
+      "kind": "sound",
+      "source_enum": "SPELL_ENERGY_STRIKE",
+      "value": 1088
+    },
+    {
+      "alias": "canary.sound:spell_energy_wall_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_ENERGY_WALL_RUNE",
+      "value": 1033
+    },
+    {
+      "alias": "canary.sound:spell_energy_wave",
+      "kind": "sound",
+      "source_enum": "SPELL_ENERGY_WAVE",
+      "value": 1013
+    },
+    {
+      "alias": "canary.sound:spell_envenom",
+      "kind": "sound",
+      "source_enum": "SPELL_ENVENOM",
+      "value": 1142
+    },
+    {
+      "alias": "canary.sound:spell_eternal_winter",
+      "kind": "sound",
+      "source_enum": "SPELL_ETERNAL_WINTER",
+      "value": 1118
+    },
+    {
+      "alias": "canary.sound:spell_ethereal_spear",
+      "kind": "sound",
+      "source_enum": "SPELL_ETHEREAL_SPEAR",
+      "value": 1111
+    },
+    {
+      "alias": "canary.sound:spell_explosion_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_EXPLOSION_RUNE",
+      "value": 1018
+    },
+    {
+      "alias": "canary.sound:spell_expose_weakness",
+      "kind": "sound",
+      "source_enum": "SPELL_EXPOSE_WEAKNESS",
+      "value": 1243
+    },
+    {
+      "alias": "canary.sound:spell_fair_wound_cleansing",
+      "kind": "sound",
+      "source_enum": "SPELL_FAIR_WOUND_CLEANSING",
+      "value": 1239
+    },
+    {
+      "alias": "canary.sound:spell_fierce_berserk",
+      "kind": "sound",
+      "source_enum": "SPELL_FIERCE_BERSERK",
+      "value": 1105
+    },
+    {
+      "alias": "canary.sound:spell_find_person",
+      "kind": "sound",
+      "source_enum": "SPELL_FIND_PERSON",
+      "value": 1020
+    },
+    {
+      "alias": "canary.sound:spell_fire_bomb_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_FIRE_BOMB_RUNE",
+      "value": 1017
+    },
+    {
+      "alias": "canary.sound:spell_fire_field_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_FIRE_FIELD_RUNE",
+      "value": 1025
+    },
+    {
+      "alias": "canary.sound:spell_fire_wall_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_FIRE_WALL_RUNE",
+      "value": 1028
+    },
+    {
+      "alias": "canary.sound:spell_fire_wave",
+      "kind": "sound",
+      "source_enum": "SPELL_FIRE_WAVE",
+      "value": 1019
+    },
+    {
+      "alias": "canary.sound:spell_fireball_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_FIREBALL_RUNE",
+      "value": 1015
+    },
+    {
+      "alias": "canary.sound:spell_flame_strike",
+      "kind": "sound",
+      "source_enum": "SPELL_FLAME_STRIKE",
+      "value": 1089
+    },
+    {
+      "alias": "canary.sound:spell_food",
+      "kind": "sound",
+      "source_enum": "SPELL_FOOD",
+      "value": 1042
+    },
+    {
+      "alias": "canary.sound:spell_front_sweep",
+      "kind": "sound",
+      "source_enum": "SPELL_FRONT_SWEEP",
+      "value": 1059
+    },
+    {
+      "alias": "canary.sound:spell_great_energy_beam",
+      "kind": "sound",
+      "source_enum": "SPELL_GREAT_ENERGY_BEAM",
+      "value": 1023
+    },
+    {
+      "alias": "canary.sound:spell_great_fire_wave",
+      "kind": "sound",
+      "source_enum": "SPELL_GREAT_FIRE_WAVE",
+      "value": 1240
+    },
+    {
+      "alias": "canary.sound:spell_great_fireball_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_GREAT_FIREBALL_RUNE",
+      "value": 1016
+    },
+    {
+      "alias": "canary.sound:spell_great_light",
+      "kind": "sound",
+      "source_enum": "SPELL_GREAT_LIGHT",
+      "value": 1011
+    },
+    {
+      "alias": "canary.sound:spell_groundshaker",
+      "kind": "sound",
+      "source_enum": "SPELL_GROUNDSHAKER",
+      "value": 1106
+    },
+    {
+      "alias": "canary.sound:spell_haste",
+      "kind": "sound",
+      "source_enum": "SPELL_HASTE",
+      "value": 1006
+    },
+    {
+      "alias": "canary.sound:spell_heal_friend",
+      "kind": "sound",
+      "source_enum": "SPELL_HEAL_FRIEND",
+      "value": 1084
+    },
+    {
+      "alias": "canary.sound:spell_heal_party",
+      "kind": "sound",
+      "source_enum": "SPELL_HEAL_PARTY",
+      "value": 1128
+    },
+    {
+      "alias": "canary.sound:spell_heavy_magic_missile_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_HEAVY_MAGIC_MISSILE_RUNE",
+      "value": 1008
+    },
+    {
+      "alias": "canary.sound:spell_hell_score",
+      "kind": "sound",
+      "source_enum": "SPELL_HELL_SCORE",
+      "value": 1024
+    },
+    {
+      "alias": "canary.sound:spell_holy_flash",
+      "kind": "sound",
+      "source_enum": "SPELL_HOLY_FLASH",
+      "value": 1143
+    },
+    {
+      "alias": "canary.sound:spell_holy_missile_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_HOLY_MISSILE_RUNE",
+      "value": 1130
+    },
+    {
+      "alias": "canary.sound:spell_ice_strike",
+      "kind": "sound",
+      "source_enum": "SPELL_ICE_STRIKE",
+      "value": 1112
+    },
+    {
+      "alias": "canary.sound:spell_ice_wave",
+      "kind": "sound",
+      "source_enum": "SPELL_ICE_WAVE",
+      "value": 1121
+    },
+    {
+      "alias": "canary.sound:spell_icicle_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_ICICLE_RUNE",
+      "value": 1114
+    },
+    {
+      "alias": "canary.sound:spell_ignite",
+      "kind": "sound",
+      "source_enum": "SPELL_IGNITE",
+      "value": 1138
+    },
+    {
+      "alias": "canary.sound:spell_inflict_wound",
+      "kind": "sound",
+      "source_enum": "SPELL_INFLICT_WOUND",
+      "value": 1141
+    },
+    {
+      "alias": "canary.sound:spell_intense_healing",
+      "kind": "sound",
+      "source_enum": "SPELL_INTENSE_HEALING",
+      "value": 1002
+    },
+    {
+      "alias": "canary.sound:spell_intense_healing_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_INTENSE_HEALING_RUNE",
+      "value": 1004
+    },
+    {
+      "alias": "canary.sound:spell_intense_recovery",
+      "kind": "sound",
+      "source_enum": "SPELL_INTENSE_RECOVERY",
+      "value": 1160
+    },
+    {
+      "alias": "canary.sound:spell_intense_wound_cleansing",
+      "kind": "sound",
+      "source_enum": "SPELL_INTENSE_WOUND_CLEANSING",
+      "value": 1158
+    },
+    {
+      "alias": "canary.sound:spell_invisible",
+      "kind": "sound",
+      "source_enum": "SPELL_INVISIBLE",
+      "value": 1045
+    },
+    {
+      "alias": "canary.sound:spell_invite_guests",
+      "kind": "sound",
+      "source_enum": "SPELL_INVITE_GUESTS",
+      "value": 1071
+    },
+    {
+      "alias": "canary.sound:spell_invite_subowners",
+      "kind": "sound",
+      "source_enum": "SPELL_INVITE_SUBOWNERS",
+      "value": 1072
+    },
+    {
+      "alias": "canary.sound:spell_kick_guest",
+      "kind": "sound",
+      "source_enum": "SPELL_KICK_GUEST",
+      "value": 1073
+    },
+    {
+      "alias": "canary.sound:spell_levitate",
+      "kind": "sound",
+      "source_enum": "SPELL_LEVITATE",
+      "value": 1081
+    },
+    {
+      "alias": "canary.sound:spell_light",
+      "kind": "sound",
+      "source_enum": "SPELL_LIGHT",
+      "value": 1010
+    },
+    {
+      "alias": "canary.sound:spell_light_healing",
+      "kind": "sound",
+      "source_enum": "SPELL_LIGHT_HEALING",
+      "value": 1001
+    },
+    {
+      "alias": "canary.sound:spell_light_magic_missile_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_LIGHT_MAGIC_MISSILE_RUNE",
+      "value": 1007
+    },
+    {
+      "alias": "canary.sound:spell_light_stone_shower_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_LIGHT_STONE_SHOWER_RUNE",
+      "value": 1180
+    },
+    {
+      "alias": "canary.sound:spell_lightest_missile_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_LIGHTEST_MISSILE_RUNE",
+      "value": 1179
+    },
+    {
+      "alias": "canary.sound:spell_lightning",
+      "kind": "sound",
+      "source_enum": "SPELL_LIGHTNING",
+      "value": 1149
+    },
+    {
+      "alias": "canary.sound:spell_magic_patch",
+      "kind": "sound",
+      "source_enum": "SPELL_MAGIC_PATCH",
+      "value": 1174
+    },
+    {
+      "alias": "canary.sound:spell_magic_rope",
+      "kind": "sound",
+      "source_enum": "SPELL_MAGIC_ROPE",
+      "value": 1076
+    },
+    {
+      "alias": "canary.sound:spell_magic_shield",
+      "kind": "sound",
+      "source_enum": "SPELL_MAGIC_SHIELD",
+      "value": 1044
+    },
+    {
+      "alias": "canary.sound:spell_magic_wall_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_MAGIC_WALL_RUNE",
+      "value": 1086
+    },
+    {
+      "alias": "canary.sound:spell_mass_healing",
+      "kind": "sound",
+      "source_enum": "SPELL_MASS_HEALING",
+      "value": 1082
+    },
+    {
+      "alias": "canary.sound:spell_mud_attack",
+      "kind": "sound",
+      "source_enum": "SPELL_MUD_ATTACK",
+      "value": 1172
+    },
+    {
+      "alias": "canary.sound:spell_natures_embrace",
+      "kind": "sound",
+      "source_enum": "SPELL_NATURES_EMBRACE",
+      "value": 1242
+    },
+    {
+      "alias": "canary.sound:spell_or_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_OR_RUNE",
+      "value": 10
+    },
+    {
+      "alias": "canary.sound:spell_paralyse_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_PARALYSE_RUNE",
+      "value": 1054
+    },
+    {
+      "alias": "canary.sound:spell_physical_strike",
+      "kind": "sound",
+      "source_enum": "SPELL_PHYSICAL_STRIKE",
+      "value": 1148
+    },
+    {
+      "alias": "canary.sound:spell_poison_bomb_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_POISON_BOMB_RUNE",
+      "value": 1091
+    },
+    {
+      "alias": "canary.sound:spell_poison_field_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_POISON_FIELD_RUNE",
+      "value": 1026
+    },
+    {
+      "alias": "canary.sound:spell_poison_wall_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_POISON_WALL_RUNE",
+      "value": 1032
+    },
+    {
+      "alias": "canary.sound:spell_practise_magic_missile_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_PRACTISE_MAGIC_MISSILE_RUNE",
+      "value": 1168
+    },
+    {
+      "alias": "canary.sound:spell_protect_party",
+      "kind": "sound",
+      "source_enum": "SPELL_PROTECT_PARTY",
+      "value": 1127
+    },
+    {
+      "alias": "canary.sound:spell_protector",
+      "kind": "sound",
+      "source_enum": "SPELL_PROTECTOR",
+      "value": 1132
+    },
+    {
+      "alias": "canary.sound:spell_rage_of_the_skies",
+      "kind": "sound",
+      "source_enum": "SPELL_RAGE_OF_THE_SKIES",
+      "value": 1119
+    },
+    {
+      "alias": "canary.sound:spell_recovery",
+      "kind": "sound",
+      "source_enum": "SPELL_RECOVERY",
+      "value": 1159
+    },
+    {
+      "alias": "canary.sound:spell_restoration",
+      "kind": "sound",
+      "source_enum": "SPELL_RESTORATION",
+      "value": 1241
+    },
+    {
+      "alias": "canary.sound:spell_salvation",
+      "kind": "sound",
+      "source_enum": "SPELL_SALVATION",
+      "value": 1036
+    },
+    {
+      "alias": "canary.sound:spell_sap_strength",
+      "kind": "sound",
+      "source_enum": "SPELL_SAP_STRENGTH",
+      "value": 1244
+    },
+    {
+      "alias": "canary.sound:spell_scorch",
+      "kind": "sound",
+      "source_enum": "SPELL_SCORCH",
+      "value": 1178
+    },
+    {
+      "alias": "canary.sound:spell_sharpshooter",
+      "kind": "sound",
+      "source_enum": "SPELL_SHARPSHOOTER",
+      "value": 1135
+    },
+    {
+      "alias": "canary.sound:spell_soul_fire_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_SOUL_FIRE_RUNE",
+      "value": 1050
+    },
+    {
+      "alias": "canary.sound:spell_stalagmite_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_STALAGMITE_RUNE",
+      "value": 1077
+    },
+    {
+      "alias": "canary.sound:spell_stone_shower_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_STONE_SHOWER_RUNE",
+      "value": 1116
+    },
+    {
+      "alias": "canary.sound:spell_strong_energy_strike",
+      "kind": "sound",
+      "source_enum": "SPELL_STRONG_ENERGY_STRIKE",
+      "value": 1151
+    },
+    {
+      "alias": "canary.sound:spell_strong_ethereal_spear",
+      "kind": "sound",
+      "source_enum": "SPELL_STRONG_ETHEREAL_SPEAR",
+      "value": 1057
+    },
+    {
+      "alias": "canary.sound:spell_strong_flame_strike",
+      "kind": "sound",
+      "source_enum": "SPELL_STRONG_FLAME_STRIKE",
+      "value": 1150
+    },
+    {
+      "alias": "canary.sound:spell_strong_haste",
+      "kind": "sound",
+      "source_enum": "SPELL_STRONG_HASTE",
+      "value": 1039
+    },
+    {
+      "alias": "canary.sound:spell_strong_ice_strike",
+      "kind": "sound",
+      "source_enum": "SPELL_STRONG_ICE_STRIKE",
+      "value": 1152
+    },
+    {
+      "alias": "canary.sound:spell_strong_ice_wave",
+      "kind": "sound",
+      "source_enum": "SPELL_STRONG_ICE_WAVE",
+      "value": 1043
+    },
+    {
+      "alias": "canary.sound:spell_strong_terra_strike",
+      "kind": "sound",
+      "source_enum": "SPELL_STRONG_TERRA_STRIKE",
+      "value": 1153
+    },
+    {
+      "alias": "canary.sound:spell_suddendeath_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_SUDDENDEATH_RUNE",
+      "value": 1021
+    },
+    {
+      "alias": "canary.sound:spell_summon_creature",
+      "kind": "sound",
+      "source_enum": "SPELL_SUMMON_CREATURE",
+      "value": 1009
+    },
+    {
+      "alias": "canary.sound:spell_summon_druid_familiar",
+      "kind": "sound",
+      "source_enum": "SPELL_SUMMON_DRUID_FAMILIAR",
+      "value": 1197
+    },
+    {
+      "alias": "canary.sound:spell_summon_knight_familiar",
+      "kind": "sound",
+      "source_enum": "SPELL_SUMMON_KNIGHT_FAMILIAR",
+      "value": 1194
+    },
+    {
+      "alias": "canary.sound:spell_summon_paladin_familiar",
+      "kind": "sound",
+      "source_enum": "SPELL_SUMMON_PALADIN_FAMILIAR",
+      "value": 1195
+    },
+    {
+      "alias": "canary.sound:spell_summon_sorcerer_familiar",
+      "kind": "sound",
+      "source_enum": "SPELL_SUMMON_SORCERER_FAMILIAR",
+      "value": 1196
+    },
+    {
+      "alias": "canary.sound:spell_swift_foot",
+      "kind": "sound",
+      "source_enum": "SPELL_SWIFT_FOOT",
+      "value": 1134
+    },
+    {
+      "alias": "canary.sound:spell_terra_strike",
+      "kind": "sound",
+      "source_enum": "SPELL_TERRA_STRIKE",
+      "value": 1113
+    },
+    {
+      "alias": "canary.sound:spell_terra_wave",
+      "kind": "sound",
+      "source_enum": "SPELL_TERRA_WAVE",
+      "value": 1120
+    },
+    {
+      "alias": "canary.sound:spell_thunderstorm_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_THUNDERSTORM_RUNE",
+      "value": 1117
+    },
+    {
+      "alias": "canary.sound:spell_train_party",
+      "kind": "sound",
+      "source_enum": "SPELL_TRAIN_PARTY",
+      "value": 1126
+    },
+    {
+      "alias": "canary.sound:spell_ultimate_energy_strike",
+      "kind": "sound",
+      "source_enum": "SPELL_ULTIMATE_ENERGY_STRIKE",
+      "value": 1155
+    },
+    {
+      "alias": "canary.sound:spell_ultimate_flame_strike",
+      "kind": "sound",
+      "source_enum": "SPELL_ULTIMATE_FLAME_STRIKE",
+      "value": 1154
+    },
+    {
+      "alias": "canary.sound:spell_ultimate_healing",
+      "kind": "sound",
+      "source_enum": "SPELL_ULTIMATE_HEALING",
+      "value": 1003
+    },
+    {
+      "alias": "canary.sound:spell_ultimate_healing_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_ULTIMATE_HEALING_RUNE",
+      "value": 1005
+    },
+    {
+      "alias": "canary.sound:spell_ultimate_ice_strike",
+      "kind": "sound",
+      "source_enum": "SPELL_ULTIMATE_ICE_STRIKE",
+      "value": 1156
+    },
+    {
+      "alias": "canary.sound:spell_ultimate_light",
+      "kind": "sound",
+      "source_enum": "SPELL_ULTIMATE_LIGHT",
+      "value": 1075
+    },
+    {
+      "alias": "canary.sound:spell_ultimate_terra_strike",
+      "kind": "sound",
+      "source_enum": "SPELL_ULTIMATE_TERRA_STRIKE",
+      "value": 1157
+    },
+    {
+      "alias": "canary.sound:spell_whirlwind_throw",
+      "kind": "sound",
+      "source_enum": "SPELL_WHIRLWIND_THROW",
+      "value": 1107
+    },
+    {
+      "alias": "canary.sound:spell_wild_growth_rune",
+      "kind": "sound",
+      "source_enum": "SPELL_WILD_GROWTH_RUNE",
+      "value": 1094
+    },
+    {
+      "alias": "canary.sound:spell_wound_cleansing",
+      "kind": "sound",
+      "source_enum": "SPELL_WOUND_CLEANSING",
+      "value": 1123
+    },
+    {
+      "alias": "canary.sound:spell_wrath_of_nature",
+      "kind": "sound",
+      "source_enum": "SPELL_WRATH_OF_NATURE",
+      "value": 1056
+    }
+  ],
+  "schema": "OTERYN_SOURCE_SPELL_CUES/v1",
+  "source_files": [
+    {
+      "path": "src/utils/utils_definitions.hpp",
+      "sha256": "b66a1389bfecfe11d93338208f7e2e3f8efc14fb0941d6d12dc0d9e62ed4abac"
+    },
+    {
+      "path": "src/creatures/creatures_definitions.hpp",
+      "sha256": "dd403b4c2291b66bd5df49d1a59b45667698d8a916ecfb8fa87801688e1ca622"
+    },
+    {
+      "path": "src/lua/functions/core/game/lua_enums.cpp",
+      "sha256": "d1bda8dd89dab75f41dfa68d33c6221868382e10e3efdce046f84e56789b6aa1"
+    }
+  ],
+  "source_revision": "99902524e052f37574194466c2949c576e4ab269"
+}

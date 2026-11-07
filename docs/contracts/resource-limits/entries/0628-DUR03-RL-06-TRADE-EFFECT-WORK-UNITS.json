@@ -1,0 +1,18 @@
+{
+  "id": "DUR03-RL-06-TRADE-EFFECT-WORK-UNITS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PLAYER_TRADE0_DIRECT_PLAYER_TRADE_DECISION_2026-09-30.md",
+  "resource": "Two participants plus four custody effects",
+  "unit": "effect work units",
+  "hard_maximum": 6,
+  "configurable_range": {
+    "minimum": 6,
+    "maximum": 6
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "TRADE-PLAYER-1 leaf-only slice; checked before exchange writes, never truncated. No runtime activation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "player_trade_audit_roundtrip_bounds_and_mutations"
+  ],
+  "notes": "PLAYER-TRADE0 §§4–6; exactly two whole leaves, four custody lines, two participants, six effect work units, one type-2 event and zero value/transform/expansion lines. Native byte ceilings remain unchanged. Wire rate and Channel book limits wait for SESSION-INGRESS-1."
+}

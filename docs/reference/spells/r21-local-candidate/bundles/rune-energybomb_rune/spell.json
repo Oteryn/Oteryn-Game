@@ -1,0 +1,79 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/rune/energybomb_rune",
+      "revision": "spell-p2-r20"
+    },
+    "name": "energybomb rune",
+    "carrier": "rune",
+    "reference_spell_id": 55,
+    "library_text": "Another spell devised by the crafty sorcerers in Edron's magic academy, the development of the Energy Bomb was based on the trusty Energy Field spell. As with its weaker relative, using the Energy Bomb rune will create a field of deadly energy that deals damage to all who carelessly step into it. However, its area of effect has been greatly enhanced, now covering a full 9 square metres! Monsters that are caught in the middle of an Energy Bomb are frequently confused by the unexpected effect, and some may even stay in the field of deadly sparks for a while. Also, some daring adventurers are known to use the Energy Bomb onto themselves in desperate situations to keep their enemies from attacking them. However, for obvious reasons only the strongest or most desperate of adventurers should use energy bombs this way. Please note that on optional PvP game worlds this spell has no damaging effect on other characters, unless characters are war opponents.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 37,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 7,
+      "parameter": "none"
+    },
+    "pz_locks_caster": true,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_energy_bomb_rune"
+    },
+    "rune": {
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/3149",
+        "revision": "spell-p2-r21"
+      },
+      "charges": 2,
+      "magic_level": 10,
+      "allow_far_use": true,
+      "blocking": {
+        "solid": false,
+        "creature": false
+      }
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/rune/energybomb_rune",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

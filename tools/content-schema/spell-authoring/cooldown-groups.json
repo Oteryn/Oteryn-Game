@@ -1,0 +1,17 @@
+{
+  "schema": "OTERYN_SPELL_COOLDOWN_GROUPS/v1",
+  "note": "S9 (architect change accepted by the owner, #162 comment 5867161696): cooldown groups are a declared closed catalogue; a Spell may reference only a declared group in a declared role, and an unknown group fails validation. Keys are lowercase without spaces (cooldown state keys).",
+  "groups": [
+    {"key": "attack", "roles": ["primary"]},
+    {"key": "healing", "roles": ["primary"]},
+    {"key": "support", "roles": ["primary"]},
+    {"key": "special", "roles": ["primary", "secondary"]},
+    {"key": "burstsofnature", "roles": ["secondary"]},
+    {"key": "crippling", "roles": ["secondary"]},
+    {"key": "focus", "roles": ["secondary"]},
+    {"key": "greatbeams", "roles": ["secondary"]},
+    {"key": "stance", "roles": ["secondary"]},
+    {"key": "ultimatestrikes", "roles": ["secondary"]},
+    {"key": "virtue", "roles": ["secondary"]}
+  ]
+}

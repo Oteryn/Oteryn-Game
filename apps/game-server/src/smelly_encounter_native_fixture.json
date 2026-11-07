@@ -1,0 +1,656 @@
+{
+  "records": [
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.smelly_cheese.berserk_bridge",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.smelly_cheese.berserk_pulse_1",
+          "revision": "definition-r1"
+        }
+      ],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.smelly_cheese.berserk_pulse_1",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "effects": [],
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.smelly_cheese.berserk_pulse_2",
+        "revision": "definition-r1"
+      },
+      "kind": "Ability"
+    },
+    {
+      "client_projection": "ServerOnly",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.smelly_cheese",
+        "revision": "definition-r1"
+      },
+      "kind": "Generic"
+    },
+    {
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.smelly_cheese",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.smelly_cheese",
+        "revision": "definition-r1"
+      },
+      "kind": "Creature",
+      "loot": null,
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.smelly_cheese",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.smelly_cheese.berserk_pulse_1",
+        "revision": "definition-r1"
+      },
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.smelly_cheese.berserk_pulse_1",
+        "revision": "definition-r1"
+      },
+      "kind": "Effect"
+    },
+    {
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.smelly_cheese.berserk_pulse_1",
+        "revision": "definition-r1"
+      },
+      "kind": "Formula"
+    }
+  ],
+  "authoring_profiles": [
+    {
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.smelly_cheese.berserk_bridge",
+              "revision": "definition-r1"
+            }
+          ],
+          "armor": 82,
+          "details": {
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "critical_chance_ppm": 0,
+            "defense": 60,
+            "display_name": "Smelly Cheese",
+            "flags": {
+              "attackable": false,
+              "health_hidden": false,
+              "illusionable": false
+            },
+            "inspection": "Smelly Cheese",
+            "spawn_eligibility": {
+              "blocked_by_nearby_players": false,
+              "ignore_period_underground": false,
+              "period": "All"
+            },
+            "summoning": {
+              "convinceable": false,
+              "is_familiar": false,
+              "summonable": false
+            },
+            "system_eligibility": {
+              "exclusive_prey": false,
+              "forge": true,
+              "prey": true,
+              "reward_boss": false
+            }
+          },
+          "encounters": [
+            {
+              "family": "Encounter",
+              "key": "oteryn:encounter.crystal_smelly_cheese",
+              "revision": "definition-r1"
+            }
+          ],
+          "experience": 0,
+          "health": 5000,
+          "mitigation": {
+            "denominator": 100,
+            "numerator": 169
+          },
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "drowning",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "life_drain",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "mana_drain",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            },
+            {
+              "damage_type": "physical",
+              "percent": {
+                "denominator": 1,
+                "numerator": 100
+              }
+            }
+          ],
+          "speed": 0
+        }
+      },
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.smelly_cheese",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "encounter": {
+              "family": "Encounter",
+              "key": "oteryn:encounter.crystal_smelly_cheese",
+              "revision": "definition-r1"
+            },
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.smelly_cheese.berserk_bridge",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "xxx",
+                "xCx",
+                "xxx"
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.smelly_cheese.berserk_pulse_1",
+                  "revision": "definition-r1"
+                },
+                "kind": "Executable"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.smelly_cheese.berserk_pulse_1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "area": {
+              "north": [
+                "xxx",
+                "xCx",
+                "xxx"
+              ],
+              "shape": "Matrix"
+            },
+            "effects": [
+              {
+                "effect": {
+                  "key": "oteryn:effect.creature.smelly_cheese.berserk_pulse_2",
+                  "operation": {
+                    "operation": "PresentationOnly"
+                  },
+                  "presentation": {
+                    "impact_asset_binding": "canary.appearance:effect/poisonarea"
+                  }
+                },
+                "kind": "Inline"
+              }
+            ],
+            "kind": "Spell",
+            "needs_direction": false,
+            "needs_target": false,
+            "range_tiles": 0
+          }
+        }
+      },
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.smelly_cheese.berserk_pulse_2",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "affects": {
+            "excludes_caster_name": false,
+            "includes_caster": false,
+            "kind": "Players",
+            "top_creature_only": true
+          },
+          "damage_type": "earth",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/hitbypoison"
+          }
+        }
+      },
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.smelly_cheese.berserk_pulse_1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "maximum": 800,
+          "minimum": 400
+        }
+      },
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.smelly_cheese.berserk_pulse_1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.smelly_cheese.berserk_bridge",
+                "revision": "definition-r1"
+              },
+              "chance_ppm": 500000,
+              "interval_ms": 2000
+            }
+          ],
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "push_creatures": true,
+            "push_items": false,
+            "pushable": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false
+          },
+          "targeting": {
+            "can_target": true,
+            "change_target": {
+              "chance_ppm": 100000,
+              "interval_ms": 4000
+            },
+            "flee_health": 0,
+            "hostile": true,
+            "sense_invisible": true,
+            "static_attack_chance_ppm": 700000,
+            "strategy_weights": {
+              "damage": 0,
+              "health": 0,
+              "nearest": 100,
+              "random": 0
+            },
+            "target_distance_tiles": 1
+          }
+        }
+      },
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.smelly_cheese",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "data": {
+        "kind": "Encounter",
+        "profile": {
+          "details": {
+            "covers": [
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.smelly_cheese",
+                "revision": "definition-r1"
+              }
+            ],
+            "display_name": "Crystal source mechanics: smelly_cheese",
+            "participants": [
+              {
+                "creatures": [
+                  {
+                    "family": "Creature",
+                    "key": "oteryn:creature.smelly_cheese",
+                    "revision": "definition-r1"
+                  }
+                ],
+                "role": "smelly_cheese"
+              }
+            ],
+            "rules": [
+              {
+                "actions": [
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.smelly_cheese.berserk_pulse_1",
+                      "revision": "definition-r1"
+                    },
+                    "at": {
+                      "kind": "subject_position"
+                    },
+                    "kind": "cast"
+                  }
+                ],
+                "delay_ms": {
+                  "max": 500,
+                  "min": 500
+                },
+                "key": "pulse_1",
+                "trigger": {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.smelly_cheese.berserk_bridge",
+                    "revision": "definition-r1"
+                  },
+                  "kind": "ability_cast",
+                  "role": "smelly_cheese"
+                }
+              },
+              {
+                "actions": [
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.smelly_cheese.berserk_pulse_2",
+                      "revision": "definition-r1"
+                    },
+                    "at": {
+                      "kind": "subject_position"
+                    },
+                    "kind": "cast"
+                  }
+                ],
+                "delay_ms": {
+                  "max": 700,
+                  "min": 700
+                },
+                "key": "pulse_2",
+                "trigger": {
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.smelly_cheese.berserk_bridge",
+                    "revision": "definition-r1"
+                  },
+                  "kind": "ability_cast",
+                  "role": "smelly_cheese"
+                }
+              }
+            ],
+            "state": {}
+          },
+          "encounter_type": "Generic",
+          "scope": "Instance"
+        }
+      },
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.crystal_smelly_cheese",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "declarations": [
+    {
+      "fields": [],
+      "identity": {
+        "key": "oteryn:encounter.crystal_smelly_cheese",
+        "revision": "definition-r1"
+      },
+      "kind": "Encounter"
+    }
+  ],
+  "sources": [
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "g4-creature-canary-wave-a-r1",
+      "key": "oteryn:source.canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "1c54c864a5dfcd069db58719d8500a1e7c882517dd2b838759ef393b2bf35d37"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "monster-full-mechanics-portal25051-canary-20261004",
+      "key": "oteryn:source.canary",
+      "revision": "portal25051-semantics:47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "monster-full-mechanics-tentacle-items-canary-20261004",
+      "key": "oteryn:source.canary",
+      "revision": "tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "g4-npc-crystal-summer-supplement-r1",
+      "key": "oteryn:source.crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "154083cc71de6e41d73c13854307c4c2cbc134df5afdd1e1c899cfc12f5b3fb5"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "g4-creature-crystal-1530-r1",
+      "key": "oteryn:source.crystalserver",
+      "revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "1c54c864a5dfcd069db58719d8500a1e7c882517dd2b838759ef393b2bf35d37"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "cw2-b1-full-item-family-registry-r1",
+      "key": "oteryn:source.crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "sha256": "7836c78cad130a5c404f648e76e0823f53ae6a34c6952b9b88c8bed2e50d96a7"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "monster-full-mechanics-portal25051-crystal-20261004",
+      "key": "oteryn:source.crystalserver",
+      "revision": "portal25051-semantics:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "monster-full-mechanics-tentacle-items-crystal-20261004",
+      "key": "oteryn:source.crystalserver",
+      "revision": "tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-npc-prices-tibiawiki-br-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-br-npc-0773232ddd356be2",
+      "sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-item-exact-165-tibiawiki-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-item-census:389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a",
+      "sha256": "583a0b0080f3e08633c8d6cde11d9fd073b47088d84774bfdf851382569dd675"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-item-wave1-tibiawiki-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-item-wave1-snapshot:5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5",
+      "sha256": "5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-mount-252-tibiawiki-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-nonitem-g1-snapshot:0b7caf98940305a91c5384dfb828c0afcf016f087f71572ec71d7c936c6387df",
+      "sha256": "f47dbe5832e7b1accd652852303d638a4f19367bab3951f260cc39a0d93b7713"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-npc-wave-a-tibiawiki-r9",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-npc-52f87d29eddd1a4e",
+      "sha256": "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-wiki-authored-creature-d44-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-wiki-authored-creature-88d21c748283df4c",
+      "sha256": "88d21c748283df4cf059dbf1bd04cbcf7b9d00ca6cd14dc1e913e947f0242c8c"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-npc-prices-tibiopedia-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiopedia-npc-43bfc91ec7721df1",
+      "sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651"
+    }
+  ],
+  "source_identity_bindings": [
+    {
+      "disposition": "EXACT",
+      "external_id": "crystal_smelly_cheese",
+      "identity_namespace": "crystalserver/encounter",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.crystal_smelly_cheese",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/smelly_cheese.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.smelly_cheese",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "coordinate_frame": "global-target-2026-09-27"
+}

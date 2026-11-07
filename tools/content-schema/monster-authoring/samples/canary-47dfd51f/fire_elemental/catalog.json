@@ -1,0 +1,17 @@
+{
+  "definitions": [
+    {
+      "family": "Item",
+      "key": "canary:item/2118",
+      "revision": "canary-47dfd51f"
+    }
+  ],
+  "assets": [
+    "canary.appearance:effect/firearea",
+    "canary.appearance:light-color/208",
+    "canary.appearance:missile/fire",
+    "canary.appearance:object/8136",
+    "canary.appearance:object/8141",
+    "canary.appearance:outfit/49"
+  ]
+}

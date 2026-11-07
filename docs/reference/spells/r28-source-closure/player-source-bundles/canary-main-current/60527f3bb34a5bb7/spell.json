@@ -1,0 +1,63 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 200,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/canary-main-current/60527f3bb34a5bb7/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/60527f3bb34a5bb7",
+      "revision": "source-player-r28"
+    },
+    "name": "Front Sweep",
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_front_sweep"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 59,
+    "requirements": {
+      "learning_required": false,
+      "level": 70,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": true,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exori min"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-FIRST-PROD-CONTENT-KEYS",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+  "resource": "Unique canonical ContentKey definitions",
+  "unit": "definitions",
+  "hard_maximum": 1042,
+  "configurable_range": {
+    "minimum": 21,
+    "maximum": 1042
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Count with checked arithmetic before sort/set construction and lowering.",
+  "client_visible": false,
+  "boundary_tests": [
+    "1,042 accepted when all family limits pass",
+    "1,043 rejected before canonicalization growth",
+    "checked-sum overflow rejected"
+  ]
+}

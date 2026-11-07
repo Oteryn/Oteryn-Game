@@ -1,0 +1,20 @@
+{
+  "id": "DFR-PG-PARAMETER-STATUS-RAW-ENTRIES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+  "resource": "Raw heap-backed ParameterStatus key/value entries retained by the first-slice production root profile",
+  "unit": "entries",
+  "hard_maximum": 0,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 0
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Do not allocate or retain a raw ParameterStatus map entry. Parse needed data from the already bounded message; only normalized server_version_num: Option<u32> may survive. Unknown/unneeded statuses are discarded.",
+  "client_visible": false,
+  "boundary_tests": [
+    "0 raw retained entries after configured PostgreSQL 18.6 startup/status processing",
+    "An attempted first raw retained entry is prevented before heap-backed key/value allocation; the unneeded status is discarded",
+    "Repeated unknown/unneeded ParameterStatus messages do not increase retained entry count"
+  ],
+  "notes": "This is a retention ceiling, not a ban on receiving PostgreSQL ParameterStatus messages. The raw message remains subject to DFR-PG-BACKEND-MESSAGE-BYTES."
+}

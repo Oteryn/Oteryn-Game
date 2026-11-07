@@ -1,0 +1,23 @@
+{
+  "id": "RANGED0-RL-07",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md",
+  "resource": "chase backoff after a failed search",
+  "unit": "milliseconds",
+  "hard_maximum": 2000,
+  "configurable_range": {
+    "minimum": 2000,
+    "maximum": 2000
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Runtime-only: after a failed search the player holds position, keeping target and mode, and the next search waits 2,000 ms.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=2000: apps/game-server/src/combat/attack/chase.rs a_failed_search_waits_two_seconds_and_a_refused_step_drops_the_route (the search at 2,000 ms runs)",
+    "max+1: the same test holds at 1,999,999 us, inside the wait"
+  ],
+  "consumers": [
+    "apps/game-server/src/combat/attack/chase.rs CHASE_FAILED_SEARCH_WAIT_MICROS",
+    "CHASE-1 player chase (combat_attack::chase ChaseState::decide)"
+  ],
+  "notes": "RANGED-0 \u00a78 CHASE-1 (Canary's failed-path wait). Registered by LOOP-COMBAT-MODES-1."
+}

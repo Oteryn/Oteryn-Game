@@ -1,0 +1,340 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "DEATH-LOSS-EVIDENCE-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "death.experience",
+      "facts": {
+        "levels_1_23": {
+          "value": "10% of total XP",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "levels_24_plus": {
+          "value": {
+            "status": "SOURCE_CANDIDATE_GLOBAL_FORMULA_UNRESOLVED",
+            "donor_base_percent": {
+              "level_at_least_24_base_percent": "(tmpLevel+50)*50*(tmpLevel*tmpLevel-5*tmpLevel+8)/experience",
+              "tmpLevel": "level+levelPercent/100",
+              "below_24_base_percent": 10,
+              "blessing_reduction_per_bless_percent": "6.31 retro PvP, 8 otherwise",
+              "promotion_reduction_percentage_points": 30,
+              "override": "DEATH_LOSE_PERCENT != -1 selects a different formula"
+            },
+            "default_formula_units": {
+              "canary": "getLostPercent returns fraction; consumers use it directly",
+              "crystal": "getLostPercent returns percentage points; consumers divide by100"
+            },
+            "config_override_units": "Both return fraction in DEATH_LOSE_PERCENT override; Crystal consumers still divide by100. Separate branch semantics retained.",
+            "selected_for_native_runtime": false
+          },
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-19",
+          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "sources": [
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:src/config/configmanager.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/config/configmanager.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "official:death-recheck:characters:20261019",
+              "selector": "Death and reduction by blessings"
+            }
+          ],
+          "note": "Closed formula is present in both donors; it remains an unselected hypothesis under the original official/controlled-evidence requirement. Preserve return/consumer units and configuration branches instead of copying the helper alone.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/death-loss-evidence-1/tibia-source-archive.json#docs/reference/content-prep/death-loss-evidence-1/facts.json/records/0/facts/levels_24_plus",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "example_level_200": {
+          "value": "2.5 levels lost before modifiers",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "rounding": {
+          "value": {
+            "status": "GLOBAL_ROUNDING_UNRESOLVED",
+            "donor_experience_loss": "ceil before uint64 cast",
+            "donor_magic_loss": "nonnegative floating product cast to uint64 (truncate)",
+            "donor_skill_loss": "nonnegative floating product cast to uint32 (truncate)",
+            "intermediate_precision": "floating double in inspected donor paths",
+            "downstream": "XP-loss callbacks may modify award after initial rounding",
+            "selected_for_native_runtime": false
+          },
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-19",
+          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "sources": [
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:src/config/configmanager.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/config/configmanager.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            }
+          ],
+          "note": "Withdraw floor-once/rational project policy. XP and skill/magic consumers round differently in the pinned sources; exact Global rounding remains unqualified.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/death-loss-evidence-1/tibia-source-archive.json#docs/reference/content-prep/death-loss-evidence-1/facts.json/records/0/facts/rounding",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "promotion": {
+          "value": "Subtract 30% of base loss.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "regular_blessing": {
+          "value": "Subtract 8% of base loss per regular blessing.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "death.skills",
+      "facts": {
+        "magic_and_skill_loss": {
+          "value": {
+            "status": "SOURCE_CANDIDATE_GLOBAL_QUALIFICATION_UNRESOLVED",
+            "basis": "sum completed target-level costs plus current progress",
+            "donor_magic_accumulation": "sum getReqMana(i),i=1..currentMagicLevel,plus manaSpent",
+            "donor_skill_accumulation": "sum getReqSkillTries(skill,i),i=11..currentSkillLevel,plus current tries",
+            "rounding": "truncate nonnegative loss product before subtracting accumulated progress",
+            "crystal_half_loss_flags": {
+              "distributed_config": false,
+              "loader_fallback": true,
+              "scope": "Separate EXP/SKILL/MAGIC flags; do not conflate missing config with distributed config."
+            },
+            "selected_for_native_runtime": false
+          },
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-19",
+          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "sources": [
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:src/config/configmanager.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/config/configmanager.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            }
+          ],
+          "note": "Accumulation and consumers are known from source. Global algorithm, callbacks and exceptional modifiers remain unqualified; no invented common arithmetic policy is selected.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/death-loss-evidence-1/tibia-source-archive.json#docs/reference/content-prep/death-loss-evidence-1/facts.json/records/1/facts/magic_and_skill_loss",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "modifier_behaviour": {
+          "value": "Promotion and blessings reduce skill loss as they reduce XP loss.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "retro_hardcore_blessing": {
+          "value": {
+            "per_blessing_reduction_percent": 6.31,
+            "promotion_reduction_percent": 30,
+            "seven_blessings_plus_promotion_reduction_percent": 74.17,
+            "scope": "RETRO_HARDCORE_PVP",
+            "secondary_disagreement": "Retained community6.4claim is superseded by primary6.31."
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "sources": [
+            {
+              "source": "official:death-recheck:characters:20261019",
+              "selector": "Death and reduction by blessings"
+            }
+          ],
+          "note": "Primary official source establishes6.31per blessing and74.17combined reduction. This source-precedence decision does not prove the complete donor death formula or every retro world classification.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/death-loss-evidence-1/tibia-source-archive.json#docs/reference/content-prep/death-loss-evidence-1/facts.json/records/1/facts/retro_hardcore_blessing",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        }
+      }
+    },
+    {
+      "key": "death.pvp",
+      "facts": {
+        "definition": {
+          "value": "At least 5% PvP damage in last 5 minutes OR character/summon fatal hit.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "unfair_fight": {
+          "value": {
+            "status": "RATIO_AND_ROUNDING_GLOBAL_UNQUALIFIED",
+            "official_pvp_definition": "At least5%PvPdamage in last5minutes OR player/summon final blow",
+            "donor_retained_loss_percent": "max(20,floor(100*victim_level/sum_recent_player_attacker_levels+0.5))",
+            "donor_apply_when": "pvpDeath and sum recent player attacker levels > victim level",
+            "donor_timer_default_ms": 300000,
+            "source_scope": "Damage-map iteration and player lookup; do not substitute an invented all-participant list",
+            "selected_for_native_runtime": false
+          },
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-19",
+          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "sources": [
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:canary:52550d5:src/config/configmanager.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/config/configmanager.cpp",
+              "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+            },
+            {
+              "source": "official:death-recheck:characters:20261019",
+              "selector": "Death and reduction by blessings"
+            }
+          ],
+          "note": "The PvP classification criterion is primary-sourced elsewhere in these facts; the exact ratio, participant accounting and rounding remain donor/community candidates. Withdraw the project selection.",
+          "assumptions": [],
+          "global_evidence_archive": "docs/reference/content-prep/death-loss-evidence-1/tibia-source-archive.json#docs/reference/content-prep/death-loss-evidence-1/facts.json/records/2/facts/unfair_fight",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+        },
+        "red_black": {
+          "value": "All equipment and PvE blessings lost regardless of ordinary protection.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        }
+      }
+    }
+  ],
+  "evidence_scope": "SOURCE_OBSERVATIONS_WITH_EXPLICIT_OTERYN_WORKING_DEFAULTS"
+}

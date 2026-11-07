@@ -1,0 +1,11 @@
+{
+  "id": 29,
+  "name": "MAP_STATE_V1",
+  "owner_decision": "CP D1442 (#2187 ADMIT-CAP-1): next free capability number for the MAP-WIRE-1 candidate name that ADMIT0 references; CP D1083 (#2131 comment6218747873) accepts WORLD_MAP_VIEW_V1=18 as its served successor",
+  "owner": "none; superseded by capability 18 WORLD_MAP_VIEW_V1",
+  "requires": [6],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Never offered: D1083 makes 18 WORLD_MAP_VIEW_V1 the served map capability and the ADMIT0 map floor. This number exists so the superseded MAP-WIRE-1 name is never reused; it gates no command type or state domain. It requires 6 WORLD_SPATIAL_ENTITIES (the MAP-WIRE-1 candidate requirement). A client or World configuration naming 29 cannot be satisfied: no node offers it, so declaring it fails boot closed (ADMIT0 D1)."
+}

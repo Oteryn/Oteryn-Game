@@ -1,0 +1,27 @@
+{
+  "schema": "OTERYN_WEAPON_THRESHOLD_SUPPLEMENT/v1",
+  "scope": "explicit_vocation_and_mastery_only",
+  "source": {
+    "url": "https://tibiopedia.pl/items/Ink_Sword",
+    "captured_at": "2026-10-01T17:23:19.085311+00:00",
+    "html_sha256": "4e4668b92aae54cf6c29ce18125e6643da6291f67a1e3ba45bd527984e721ac0",
+    "provider": "tibiopedia",
+    "locale": "pl",
+    "revision_id": null,
+    "publication_timestamp": null
+  },
+  "observations": {
+    "path": "weapon-threshold-tibiopedia-ink-observations.json",
+    "sha256": "252190a37ebbf26f2b8846431ad04250e22910fd09a5705c53885c031c929166"
+  },
+  "client_inputs": {
+    "proficiencies_sha256": "7fea90ec1cfd472f4b5978f4456b430d3271598b4e545b7919d692641411e015",
+    "appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
+  },
+  "threshold_source": {
+    "url": "https://tibia.fandom.com/wiki/Weapon_Proficiency",
+    "revid": 1192598,
+    "fetched": "2026-09-30",
+    "acceptance": "owner decision #162 5905899852"
+  }
+}

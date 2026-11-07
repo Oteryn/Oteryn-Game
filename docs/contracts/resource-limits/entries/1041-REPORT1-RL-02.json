@@ -1,0 +1,19 @@
+{
+  "id": "REPORT1-RL-02",
+  "owner_contract": "protocol-oteryn/v1/player_report_v1.proto",
+  "resource": "Reported character name",
+  "unit": "UTF-8 bytes",
+  "hard_maximum": 29,
+  "configurable_range": {
+    "minimum": 29,
+    "maximum": 29
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Checked from the length prefix before the name is copied; equals game_character_is_name.",
+  "client_visible": true,
+  "boundary_tests": [
+    "player_report_request_codec_is_strict_and_bounded",
+    "player_report_semantic_shape_refuses_unknown_and_foreign_fields"
+  ],
+  "notes": "A name that is not character-name syntax is the typed INVALID reply."
+}

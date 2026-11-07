@@ -1,0 +1,10 @@
+{
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+  "path": "rulesets/progression/gem-atelier/",
+  "kind": "ruleset",
+  "owner": "Character progression/Item",
+  "repository": "Oteryn/Oteryn-Game",
+  "population_state": "POPULATED",
+  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+  "notes": "Imported Gem/Atelier data live in rulesets/progression/wheel-of-destiny/gems.json (GEM-R contract section4). Reference-only population; native reveal/fees/items/grades/vessels remain inactive."
+}

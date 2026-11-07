@@ -1,0 +1,22 @@
+{
+  "id": "PUSH-RL-01",
+  "owner_contract": "CREATURE_PUSH_V1.md",
+  "resource": "command bytes",
+  "unit": "bytes",
+  "hard_maximum": 64,
+  "configurable_range": {
+    "minimum": 64,
+    "maximum": 64
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounded before decode or any owner read; oversized input is rejected and moves nothing.",
+  "client_visible": true,
+  "boundary_tests": [
+    "creature_push_strict_fields_and_bounds"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/creature_push.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/creature_push.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/creature_push.rs"
+  ]
+}

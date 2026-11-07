@@ -1,0 +1,62 @@
+{
+  "authority": "SOURCE_OBSERVATIONS_ONLY; no Oteryn ProductionKeys or gameplay promotion",
+  "client_version": "15.30",
+  "family": "MapLayer",
+  "files": [
+    {
+      "path": "subareas-00000-00149.json",
+      "records": 150,
+      "sha256": "ab7d067fcc50cc14991d42ed9477cc2b55ab9db5222451ac39b98f11167b07b9"
+    },
+    {
+      "path": "subareas-00150-00299.json",
+      "records": 150,
+      "sha256": "e307de13234ccd2d80c0a8599409a085749eb067afc22b5105e9726362e29ee4"
+    },
+    {
+      "path": "subareas-00300-00449.json",
+      "records": 150,
+      "sha256": "c753af0ed61dd24f8a2c3292c201bf66a96aae605834f79a0ae5bda1374c5ac8"
+    },
+    {
+      "path": "subareas-00450-00599.json",
+      "records": 150,
+      "sha256": "ea0b72636678a4d51838cf05410a69dade15403b70644ad30047fec61c43772c"
+    },
+    {
+      "path": "subareas-00600-00749.json",
+      "records": 150,
+      "sha256": "ccdc512e96d86cb0b5043f0ec3924d28cf5563f60de6b1f84a7c307748ba3464"
+    },
+    {
+      "path": "subareas-00750-00899.json",
+      "records": 150,
+      "sha256": "e1faad301a4c430d2b2a7f3ebdb08f20cfa0554f95b511d2fca3b22e938bccc5"
+    },
+    {
+      "path": "subareas-00900-01049.json",
+      "records": 150,
+      "sha256": "9bb7242fd7292dd4e92f2698c37e6d03d62ad69daf3fe09d5240bff32710df74"
+    },
+    {
+      "path": "subareas-01050-01156.json",
+      "records": 107,
+      "sha256": "9dca64337ba425c215d78395e8e2de3bceb5c802d2d9a1b9f9fe883cc14accb1"
+    }
+  ],
+  "identity_namespace": "cipsoft/map_layer",
+  "inputs": {
+    "map": {
+      "file": "content/assets/files/map-c54dfeb8f3880e9534f1330fa547f06d99c5afa55f641b875ceee23cc04e3496.dat",
+      "sha256": "c54dfeb8f3880e9534f1330fa547f06d99c5afa55f641b875ceee23cc04e3496"
+    }
+  },
+  "layer_kind_counts": {
+    "0": 209,
+    "1": 741,
+    "2": 207
+  },
+  "record_count": 1157,
+  "schema": "OTERYN_CIPSOFT_MAPLAYER_SOURCE_MANIFEST/v1",
+  "source": "CIPSOFT_CLIENT_ASSETS"
+}

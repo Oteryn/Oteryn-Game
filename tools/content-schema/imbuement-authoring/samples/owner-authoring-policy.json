@@ -1,0 +1,375 @@
+{
+  "schema": "OTERYN_IMBUEMENT_OWNER_AUTHORING_POLICY/v1",
+  "activation": "DRAFT_NOT_RUNTIME_READY",
+  "source_snapshot_target": "global-tibia-current-2026-10-01",
+  "approved_on": "2026-10-02",
+  "approval_timezone": "Europe/Warsaw",
+  "policy_status": "OWNER_APPROVED_AUTHORING_POLICY",
+  "selection_precedence": "OWNER_SELECTED_OTERYN_POLICY_OVER_CONFLICTING_REFERENCE_BEHAVIOR",
+  "full_global_parity_proven": false,
+  "runtime_owner": "ARCHITECT_COORDINATOR_162",
+  "decisions": {
+    "etcher_consumption": {
+      "status": "OWNER_APPROVED_AUTHORING_POLICY",
+      "success_units": 1,
+      "ordinary_rejection_units": 0,
+      "success_scope": "CLEAR_ALL_ACTIVE_IMBUEMENTS_ON_ONE_TARGET_ITEM",
+      "units_independent_of_removed_slot_count": true,
+      "basis": "User explicitly adopted proposed Crystal/Canary behavior in this conversation",
+      "global_public_confirmation": false,
+      "approved_on": "2026-10-02",
+      "approval_source": "EXPLICIT_USER_DECISION_IN_CURRENT_CONVERSATION",
+      "consumption_scope": "SUCCESS_OR_ORDINARY_PRE_DEBIT_VALIDATION_REJECTION",
+      "late_internal_failure_or_crash_net_consumption": null,
+      "research_group_refs": [
+        "etcher_consumption"
+      ]
+    },
+    "filled_scroll_consumption": {
+      "status": "OWNER_APPROVED_AUTHORING_POLICY",
+      "success_units": 1,
+      "rejection_units": {
+        "full_slots": 0,
+        "incompatible_item": 0,
+        "duplicate_family": 0
+      },
+      "basis": "User explicitly adopted proposed Crystal/Canary behavior in this conversation",
+      "global_public_confirmation": false,
+      "approved_on": "2026-10-02",
+      "approval_source": "EXPLICIT_USER_DECISION_IN_CURRENT_CONVERSATION",
+      "consumption_scope": "SUCCESS_OR_ORDINARY_PRE_DEBIT_VALIDATION_REJECTION",
+      "late_internal_failure_or_crash_net_consumption": null,
+      "research_group_refs": [
+        "scroll_consumption",
+        "failed_transaction_consumption_and_rollback"
+      ]
+    },
+    "scroll_application_equipped_target": {
+      "status": "OWNER_APPROVED_AUTHORING_POLICY",
+      "allowed": true,
+      "requires_unequipping": false,
+      "normal_item_slot_and_family_validation_applies": true,
+      "basis": "User explicitly adopted proposed Crystal/Canary behavior in this conversation",
+      "global_public_confirmation": false,
+      "approved_on": "2026-10-02",
+      "approval_source": "EXPLICIT_USER_DECISION_IN_CURRENT_CONVERSATION",
+      "research_group_refs": [
+        "scroll_application_equipped_target"
+      ]
+    },
+    "etcher_npc_purchase_requires_premium": {
+      "status": "OWNER_APPROVED_AUTHORING_POLICY",
+      "premium_required": false,
+      "npc": "Albinius",
+      "price_gold": 30000,
+      "other_offer_access_requirements_preserved": true,
+      "basis": "User explicitly specified no Premium requirement for the Thais NPC purchase",
+      "global_public_confirmation": false,
+      "approved_on": "2026-10-02",
+      "approval_source": "EXPLICIT_USER_DECISION_IN_CURRENT_CONVERSATION",
+      "research_group_refs": [
+        "etcher_npc_purchase_requires_premium"
+      ]
+    },
+    "transfer_preserves_imbuement_state_and_remaining_duration": {
+      "status": "OWNER_APPROVED_AUTHORING_POLICY",
+      "preserves_imbuement_family_and_tier": true,
+      "preserves_exact_remaining_duration": true,
+      "ownership_change_resets_duration": false,
+      "ownership_change_deducts_duration": false,
+      "normal_eligible_use_timer_rules_remain_applicable": true,
+      "basis": "User explicitly confirmed exact duration preservation across ownership transfer",
+      "global_public_confirmation": false,
+      "approved_on": "2026-10-02",
+      "approval_source": "EXPLICIT_USER_DECISION_IN_CURRENT_CONVERSATION",
+      "research_group_refs": [
+        "transfer_preserves_imbuement_state_and_remaining_duration"
+      ]
+    },
+    "life_leech_damage_basis": {
+      "status": "OWNER_APPROVED_AUTHORING_POLICY",
+      "damage_basis": "ATTACK_DAMAGE_BEFORE_TARGET_REMAINING_HP_CAP",
+      "based_on_target_maximum_hp": false,
+      "overkill_damage_counts": true,
+      "healing_capped_by_caster_missing_hp": true,
+      "single_target_vampirism_share_bps": {
+        "basic": 500,
+        "intricate": 1000,
+        "powerful": 2500
+      },
+      "basis": "User instructed saving the preceding Life Leech damage-basis explanation, including overkill and missing-health cap",
+      "approval_scope": "Damage basis, overkill, single-target shares and missing-health cap; does not approve unresolved AoE zero-hit membership or a universal rounding pipeline",
+      "global_public_confirmation": false,
+      "approved_on": "2026-10-02",
+      "approval_source": "EXPLICIT_USER_DECISION_IN_CURRENT_CONVERSATION",
+      "research_group_refs": [
+        "combat_pipeline"
+      ]
+    },
+    "life_leech_aoe_zero_damage_targets": {
+      "status": "OWNER_APPROVED_AUTHORING_POLICY",
+      "zero_damage_target_generates_leech": false,
+      "zero_damage_target_counts_in_N": false,
+      "N_membership": "VALID_HIT_TARGETS_WITH_POSITIVE_ATTACK_DAMAGE_ON_SELECTED_LEECH_BASIS",
+      "positive_damage_basis": "AFTER_DAMAGE_PREVENTION_OR_IMMUNITY_BEFORE_TARGET_REMAINING_HP_CAP",
+      "empty_positive_target_set_total_healing": 0,
+      "basis": "User explicitly approved excluding zero-damage targets from leech and AoE target count",
+      "global_public_confirmation": false,
+      "approved_on": "2026-10-02",
+      "approval_source": "EXPLICIT_USER_DECISION_IN_CURRENT_CONVERSATION",
+      "research_group_refs": [
+        "combat_pipeline"
+      ]
+    },
+    "life_leech_aoe_formula_and_rounding": {
+      "status": "OWNER_APPROVED_AUTHORING_POLICY",
+      "scope": "LIFE_LEECH",
+      "formula": "sum(ceil(D_i * P * (0.9 + 0.1 * N) / N))",
+      "damage_by_target": "INDIVIDUAL_POSITIVE_ATTACK_DAMAGE_ON_APPROVED_LEECH_BASIS",
+      "N": "COUNT_OF_POSITIVE_DAMAGE_TARGETS",
+      "rounding": "CEIL_EACH_TARGET_BEFORE_SUM",
+      "healing_capped_by_caster_missing_hp": true,
+      "empty_positive_target_set_total_healing": 0,
+      "basis": "User explicitly adopted the proposed per-target Life Leech formula, unequal-target handling and per-target upward rounding",
+      "global_public_confirmation": false,
+      "approved_on": "2026-10-02",
+      "approval_source": "EXPLICIT_USER_DECISION_IN_CURRENT_CONVERSATION",
+      "integer_reference_expression": "sum(ceil_div(D_i * share_bps * (N + 9), 100000 * N))",
+      "research_group_refs": [
+        "combat_pipeline"
+      ]
+    },
+    "imbuement_timer_pz_rules": {
+      "status": "OWNER_APPROVED_AUTHORING_POLICY",
+      "combat_imbuements": {
+        "requires_equipped": true,
+        "requires_active_combat_state": true,
+        "entering_pz_immediately_pauses_timer": false,
+        "ordinary_combat_residual_seconds": 60,
+        "residual_origin": "LAST_EVENT_REFRESHING_ORDINARY_COMBAT_STATE",
+        "entering_pz_resets_residual_deadline": false,
+        "hidden_logout_icon_does_not_clear_combat_state": true,
+        "special_pvp_state_rules_not_generalized": true
+      },
+      "non_combat_imbuements": {
+        "families": [
+          "Swiftness",
+          "Featherweight",
+          "Vibrancy"
+        ],
+        "requires_equipped": true,
+        "requires_online_character": true,
+        "combat_required": false,
+        "continues_in_pz": true
+      },
+      "unequipped_use_budget_paused": true,
+      "basis": "User explicitly approved proposed combat/PZ residual and equipped utility-timer rules",
+      "global_public_confirmation": false,
+      "approved_on": "2026-10-02",
+      "approval_source": "EXPLICIT_USER_DECISION_IN_CURRENT_CONVERSATION",
+      "research_group_refs": [
+        "fine_grained_timers"
+      ]
+    },
+    "physical_armor_and_percentage_order": {
+      "status": "OWNER_APPROVED_AUTHORING_POLICY",
+      "scope": "INSPECTED_CANARY_CRYSTAL_PLAYER_BLOCK_HIT_STAGES",
+      "stage_order": [
+        "DEFENSE_AND_FLAT_ARMOR_WHEN_ENABLED",
+        "EQUIPPED_ITEM_ABSORPTION",
+        "WHEEL_RESISTANCE"
+      ],
+      "item_absorption_order": [
+        "IMBUEMENT_ABSORB",
+        "APPLICABLE_NATIVE_ITEM_ABSORB"
+      ],
+      "imbuement_reduction_rounding": "CEIL_REDUCTION_AMOUNT",
+      "native_reduction_rounding": "ROUND_REDUCTION_AMOUNT",
+      "percentage_basis": "CURRENT_REMAINING_DAMAGE_AT_EACH_STEP",
+      "equipment_percentages_summed_across_items": false,
+      "armor_applies_only_if_attack_enables_armor_check": true,
+      "unrelated_mantra_proficiency_critical_and_wheel_formulas_selected": false,
+      "basis": "User explicitly requested adopting the explained Canary and both Crystal branches order instead of the earlier resistance-before-armor proposal",
+      "global_public_confirmation": false,
+      "approved_on": "2026-10-02",
+      "approval_source": "EXPLICIT_USER_DECISION_IN_CURRENT_CONVERSATION",
+      "research_group_refs": [
+        "native_effect_composition"
+      ]
+    }
+  },
+  "counts": {
+    "owner_approved_decisions": 10
+  },
+  "reference_catalogue": "current-behavior-answers.json",
+  "armor_code_refs": [
+    {
+      "engine": "canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_ref": "canary:src/creatures/players/player.cpp",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/player.cpp#L3904"
+    },
+    {
+      "engine": "canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_ref": "canary:src/creatures/players/player.cpp",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/player.cpp#L3931"
+    },
+    {
+      "engine": "canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_ref": "canary:src/creatures/players/player.cpp",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/players/player.cpp#L3941"
+    },
+    {
+      "engine": "crystal_imbuements",
+      "revision": "15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1",
+      "source_ref": "crystal_imbuements:src/creatures/players/player.cpp",
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L3881"
+    },
+    {
+      "engine": "crystal_imbuements",
+      "revision": "15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1",
+      "source_ref": "crystal_imbuements:src/creatures/players/player.cpp",
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L3907"
+    },
+    {
+      "engine": "crystal_imbuements",
+      "revision": "15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1",
+      "source_ref": "crystal_imbuements:src/creatures/players/player.cpp",
+      "url": "https://github.com/zimbadev/crystalserver/blob/15593c28fd9adc2bb9739cf0fdb1a4289ebfe1e1/src/creatures/players/player.cpp#L3917"
+    },
+    {
+      "engine": "crystal_summer_update",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_ref": "crystal_summer_update:src/creatures/players/player.cpp",
+      "url": "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/src/creatures/players/player.cpp#L3889"
+    },
+    {
+      "engine": "crystal_summer_update",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_ref": "crystal_summer_update:src/creatures/players/player.cpp",
+      "url": "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/src/creatures/players/player.cpp#L3915"
+    },
+    {
+      "engine": "crystal_summer_update",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_ref": "crystal_summer_update:src/creatures/players/player.cpp",
+      "url": "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/src/creatures/players/player.cpp#L3925"
+    }
+  ],
+  "known_reference_differences": [
+    {
+      "id": "life_owner_vs_inspected_engines",
+      "owner_selection": "Damage before remaining-HP cap; ceil each positive-damage target; zero-damage targets excluded from N",
+      "inspected_engines": "Clip damage to target remaining HP before leech; lround rather than owner-selected per-target ceil",
+      "owner_profile_refs": [
+        "life_leech_damage_basis",
+        "life_leech_aoe_zero_damage_targets",
+        "life_leech_aoe_formula_and_rounding"
+      ],
+      "source_question": "combat_pipeline"
+    },
+    {
+      "id": "combat_pz_owner_vs_inspected_engines",
+      "owner_selection": "Ordinary combat residual continues in PZ until combat state expires, 60 seconds from its last refresh",
+      "inspected_engines": "Aggressive categories require outside-PZ as well as fight state",
+      "owner_profile_refs": [
+        "imbuement_timer_pz_rules"
+      ],
+      "source_question": "fine_grained_timers"
+    },
+    {
+      "id": "armor_owner_vs_public_scoped_reference",
+      "owner_selection": "Defense/flat armor precedes equipped-item percentages, following inspected Canary/Crystal blockHit",
+      "public_scoped_reference": "Authored resistance-before-armor tests and outgoing creature model remain a distinct scoped community reference",
+      "owner_profile_refs": [
+        "physical_armor_and_percentage_order"
+      ],
+      "public_fact": "physical_armor_stage_current_reported_test_reference"
+    }
+  ],
+  "limitations": [
+    "These are approved Oteryn authoring policies, not newly observed or publicly certified Global behavior.",
+    "No runtime implementation, activation, persistence, protocol/UI or protected integration is authorized by this packet.",
+    "Zero consumption covers only ordinary pre-debit validation rejection; late error/crash/rollback compensation stays with transaction owners.",
+    "Armor copying covers only the named blockHit stages and rounding; no arbitrary new Mantra/proficiency/Wheel formula is selected.",
+    "Vibrancy successful PvP retrigger net result remains sourced separately; future attack immunity is not invented."
+  ],
+  "life_reference_cases": [
+    {
+      "damage_by_target": [
+        438
+      ],
+      "share_bps": 2500,
+      "missing_hp": 1000,
+      "expected_heal": 110
+    },
+    {
+      "damage_by_target": [
+        387,
+        387
+      ],
+      "share_bps": 2500,
+      "missing_hp": 1000,
+      "expected_heal": 108
+    },
+    {
+      "damage_by_target": [
+        383,
+        383,
+        383
+      ],
+      "share_bps": 2500,
+      "missing_hp": 1000,
+      "expected_heal": 117
+    },
+    {
+      "damage_by_target": [
+        438,
+        438,
+        438,
+        438
+      ],
+      "share_bps": 2500,
+      "missing_hp": 1000,
+      "expected_heal": 144
+    },
+    {
+      "damage_by_target": [
+        100,
+        900
+      ],
+      "share_bps": 2500,
+      "missing_hp": 1000,
+      "expected_heal": 138
+    },
+    {
+      "damage_by_target": [
+        100,
+        0
+      ],
+      "share_bps": 2500,
+      "missing_hp": 1000,
+      "expected_heal": 25
+    },
+    {
+      "damage_by_target": [
+        0,
+        0
+      ],
+      "share_bps": 2500,
+      "missing_hp": 1000,
+      "expected_heal": 0
+    },
+    {
+      "damage_by_target": [
+        1000
+      ],
+      "share_bps": 2500,
+      "missing_hp": 30,
+      "expected_heal": 30
+    }
+  ],
+  "life_reference_cases_scope": "First four match historical equal-hit logs; remaining rows are exact arithmetic illustrations of owner policy, not Global gameplay observations."
+}

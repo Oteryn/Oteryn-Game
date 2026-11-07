@@ -1,0 +1,45 @@
+{
+  "schema": "OTERYN_SOURCE_MECHANICS_CAPTURE_RECEIPT/v1",
+  "offline": true,
+  "runtime_activation": false,
+  "lua_execution": false,
+  "new_downloads": 0,
+  "validation": {
+    "regression_tests_passed": 9,
+    "strict_evidence_schema_passed": true,
+    "population_conservation_passed": true,
+    "git_diff_check_passed": true
+  },
+  "artifacts": [
+    {
+      "path": "tools/content-schema/spell-authoring/source_mechanics_inventory.py",
+      "sha256": "00b0c373de2412b99d1b662f80b8fbfef5636af9752d78492e33bece63ab35a7",
+      "bytes": 14169
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/test_source_mechanics_inventory.py",
+      "sha256": "cad8e9c7e4ca16bbe79446566e51aefee1682f84f68e597c2b1df16b3d0a2db5",
+      "bytes": 5470
+    },
+    {
+      "path": "docs/reference/spells/r28-source-closure/source-mechanics-inventory.json.gz",
+      "sha256": "fd1b42f13ec922452646da49fb03d373b5150450720250ff9a6dcbbc4b95ec18",
+      "bytes": 2060476
+    },
+    {
+      "path": "docs/reference/spells/r28-source-closure/source-mechanics-coverage.json",
+      "sha256": "1c0b410dae47114692240d6130c9cbcf2b86dd0bc454bd6da65e01c8e5a80eb3",
+      "bytes": 733527
+    },
+    {
+      "path": "docs/reference/spells/r28-source-closure/source-mechanics-evidence.schema.json",
+      "sha256": "494fa6b22ae1ee6e3b49c3cb79298dacdea4b9b8defe794657230903e8c74993",
+      "bytes": 13691
+    },
+    {
+      "path": "docs/reference/spells/r28-source-closure/SOURCE-MECHANICS.md",
+      "sha256": "7ea0daa8024e7d88847f6d025d06bb2c8e9446f10581cf73812957f7d2800a8e",
+      "bytes": 3327
+    }
+  ]
+}

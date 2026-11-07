@@ -1,0 +1,45 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 40000,
+    "costs": {
+      "mana": 30
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Curse",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_curse"
+    },
+    "reference_spell_id": 139,
+    "requirements": {
+      "level": 75,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_target": true,
+      "range_tiles": 3
+    },
+    "words": "utori mort"
+  }
+}

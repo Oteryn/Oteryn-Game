@@ -1,0 +1,25 @@
+{
+  "id": "ATELIER-RL-EFFECT-WORK",
+  "owner_contract": "protocol-oteryn/v1/atelier-v1.md",
+  "resource": "Effect work in one Atelier transaction",
+  "unit": "work units per logical transaction",
+  "hard_maximum": 1620,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1620
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "At most 508 whole coin burns (1524), two change outputs (4), 30 material burns (90) and one stash debit (2); bank and change are mutually exclusive.",
+  "client_visible": false,
+  "boundary_tests": [
+    "1620 admitted",
+    "1621 rejected with CAPACITY_EXCEEDED"
+  ],
+  "consumers": [
+    "crates/gameplay/durability/src/durability/item_fee_burn_audit/atelier_cause.rs",
+    "crates/gameplay/durability/src/durability/item_fee_burn_audit.rs",
+    "crates/gameplay/durability/src/durability/character_atelier/custody.rs",
+    "crates/gameplay/durability/src/durability/character_atelier/outputs.rs"
+  ],
+  "notes": "P07 Gem Atelier: Crystal 201189f player.cpp:5304-5356,5821-5844, player_wheel.cpp:1514-1568 and game.cpp:2862-2969. Existing native carried-tree, depth, definition and ledger authority limits remain in force. Dismantle may split at most ten fragments across ordinary carried stacks/containers under the same bounds."
+}

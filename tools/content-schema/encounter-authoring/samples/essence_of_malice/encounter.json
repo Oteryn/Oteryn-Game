@@ -1,0 +1,585 @@
+{
+  "identity": {
+    "key": "canary:encounter/essence_of_malice",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Cults of Tibia: Essence of Malice",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "essence_of_malice",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/essence_of_malice",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "pillar_of_summoning",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/pillar_of_summoning",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "eshtaba_the_conjurer_stop",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/eshtaba_the_conjurer_stop",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "eshtaba_the_conjurer",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/eshtaba_the_conjurer",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "pillar_of_death",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/pillar_of_death",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "malkhar_deathbringer_stop",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/malkhar_deathbringer_stop",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "malkhar_deathbringer",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/malkhar_deathbringer",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "pillar_of_protection",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/pillar_of_protection",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "eliz_the_unyielding_stop",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/eliz_the_unyielding_stop",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "eliz_the_unyielding",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/eliz_the_unyielding",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "pillar_of_healing",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/pillar_of_healing",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "mezlon_the_defiler_stop",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/mezlon_the_defiler_stop",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "mezlon_the_defiler",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/mezlon_the_defiler",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "pillar_of_draining",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/pillar_of_draining",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "dorokoll_the_mystic_stop",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/dorokoll_the_mystic_stop",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "dorokoll_the_mystic",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/dorokoll_the_mystic",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "essence_spawn",
+      "kind": "point",
+      "description": "Canary (33098, 31920, 15).",
+      "location": {
+        "x": 33098,
+        "y": 31920,
+        "floor": 15
+      }
+    },
+    {
+      "key": "eshtaba_the_conjurer_spot",
+      "kind": "point",
+      "description": "The tile of Eshtaba The Conjurer Stop next to Pillar of Summoning; see data-otservbr-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua line 291.",
+      "location": {
+        "x": 33094,
+        "y": 31919,
+        "floor": 15
+      }
+    },
+    {
+      "key": "malkhar_deathbringer_spot",
+      "kind": "point",
+      "description": "The tile of Malkhar Deathbringer Stop next to Pillar of Death; see data-otservbr-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua line 294.",
+      "location": {
+        "x": 33098,
+        "y": 31916,
+        "floor": 15
+      }
+    },
+    {
+      "key": "eliz_the_unyielding_spot",
+      "kind": "point",
+      "description": "The tile of Eliz The Unyielding Stop next to Pillar of Protection; see data-otservbr-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua line 292.",
+      "location": {
+        "x": 33102,
+        "y": 31919,
+        "floor": 15
+      }
+    },
+    {
+      "key": "mezlon_the_defiler_spot",
+      "kind": "point",
+      "description": "The tile of Mezlon The Defiler Stop next to Pillar of Healing; see data-otservbr-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua line 293.",
+      "location": {
+        "x": 33101,
+        "y": 31924,
+        "floor": 15
+      }
+    },
+    {
+      "key": "dorokoll_the_mystic_spot",
+      "kind": "point",
+      "description": "The tile of Dorokoll The Mystic Stop next to Pillar of Draining; see data-otservbr-global/scripts/quests/cults_of_tibia/actions_bosses_levers.lua line 290.",
+      "location": {
+        "x": 33095,
+        "y": 31924,
+        "floor": 15
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "guardians_killed",
+        "initial": 0
+      }
+    ],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "essence_of_malice_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "essence_of_malice"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "essence_of_malice",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "essence_of_malice_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    },
+    {
+      "key": "pillar_of_summoning_destroyed",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "pillar_of_summoning"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "eshtaba_the_conjurer_stop"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/destroyed_pillar",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "destroyed_pillar",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/eshtaba_the_conjurer",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "eshtaba_the_conjurer",
+          "count": 1,
+          "at": {
+            "anchor": "eshtaba_the_conjurer_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "eshtaba_the_conjurer_killed",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "eshtaba_the_conjurer"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "guardians_killed",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "pillar_of_death_destroyed",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "pillar_of_death"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "malkhar_deathbringer_stop"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/destroyed_pillar",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "destroyed_pillar",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/malkhar_deathbringer",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "malkhar_deathbringer",
+          "count": 1,
+          "at": {
+            "anchor": "malkhar_deathbringer_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "malkhar_deathbringer_killed",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "malkhar_deathbringer"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "guardians_killed",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "pillar_of_protection_destroyed",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "pillar_of_protection"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "eliz_the_unyielding_stop"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/destroyed_pillar",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "destroyed_pillar",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/eliz_the_unyielding",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "eliz_the_unyielding",
+          "count": 1,
+          "at": {
+            "anchor": "eliz_the_unyielding_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "eliz_the_unyielding_killed",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "eliz_the_unyielding"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "guardians_killed",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "pillar_of_healing_destroyed",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "pillar_of_healing"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "mezlon_the_defiler_stop"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/destroyed_pillar",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "destroyed_pillar",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/mezlon_the_defiler",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "mezlon_the_defiler",
+          "count": 1,
+          "at": {
+            "anchor": "mezlon_the_defiler_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "mezlon_the_defiler_killed",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "mezlon_the_defiler"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "guardians_killed",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "pillar_of_draining_destroyed",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "pillar_of_draining"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "dorokoll_the_mystic_stop"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/destroyed_pillar",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "destroyed_pillar",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/dorokoll_the_mystic",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "dorokoll_the_mystic",
+          "count": 1,
+          "at": {
+            "anchor": "dorokoll_the_mystic_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "dorokoll_the_mystic_killed",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "dorokoll_the_mystic"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "guardians_killed",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "essence_of_malice_appears",
+      "trigger": {
+        "kind": "counter_reached",
+        "counter": "guardians_killed",
+        "value": 5
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/essence_of_malice",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "essence_of_malice",
+          "count": 1,
+          "at": {
+            "anchor": "essence_spawn"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "essence_of_malice_defeated"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "ANL01-PUBLISH-BATCH-BYTES",
+  "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+  "resource": "Total encoded bytes in one publication/delivery batch",
+  "unit": "bytes",
+  "hard_maximum": 8388608,
+  "configurable_range": {
+    "minimum": 262144,
+    "maximum": 8388608
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Use checked cumulative accounting and split before 8 MiB. Individual event maxima still apply.",
+  "client_visible": false,
+  "boundary_tests": [
+    "8 MiB batch accepted only if event-count limit passes",
+    "one byte over requires split/reject before send",
+    "integer overflow rejected"
+  ]
+}

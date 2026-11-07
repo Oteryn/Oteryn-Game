@@ -1,0 +1,736 @@
+{
+  "schema": "OTERYN_SPELLS_R23_CANDIDATE_STATUS/v1",
+  "created_utc": "2026-10-02T12:19:24.474962+00:00",
+  "state": "canonical_r7_bounded_local_physics_qualified_required_game_clippy_failed",
+  "publication": "Repository-owned local authoring only; Git publication not performed by report producer",
+  "historical_r22": "Unmodified; earlier qualification is historical evidence only",
+  "repository_base_commit": "ce3c8712cb089ac486ac14102bb7fad7ede9c355",
+  "runtime_activation": false,
+  "candidate_inputs": {
+    "manifest_recipe": "manifest-recipe.json",
+    "expected_manifest_sha256": "a0e824b3227996499f8b6d146bfd53a6eec8b38402375eaf5a49a5c6071acbd0",
+    "magnitude_policy": "baseline_test",
+    "training_revision": "s3b-content-1",
+    "classification": "Explicit test magnitude policy; not accepted production numerical completeness",
+    "data_generation": "canonical-r7",
+    "creature_profiles": 1508,
+    "presentation_profiles": 1508,
+    "spell_appearance_records": 268,
+    "additional_actual_illusion_bindings": 138
+  },
+  "approximate_monster_melee": {
+    "creatures": 1508,
+    "enabled": 1231,
+    "disabled": 277,
+    "execution_status": "approximate_nonlethal_physical_melee",
+    "derivation": "monster-melee-derivation.json",
+    "limitations": [
+      "No armor/shield mitigation in accepted AI-4 bite owner",
+      "Player health remains at least 1 (D54)",
+      "One selected melee slot per creature; ranged/defenses/custom disabled",
+      "No spawn or chase qualification implied",
+      "Damage distribution remains approximate; owner bounded roll differs from Canary normal_random",
+      "Secondary builtin conditions may be explicitly omitted, never claimed applied"
+    ],
+    "wild_monster_spell_dispatch_complete": false,
+    "ordinary_approximate": 1071,
+    "primary_physical_only_omits_secondary_conditions": 160,
+    "source_formula_kinds": {
+      "range": 1065,
+      "melee_attack_skill": 166
+    },
+    "melee_skill_engine": {
+      "formula": "maximum=ceil(skill*(attack*0.05)+attack*0.5); minimum=0",
+      "arithmetic": "source binary64 expression order; exact integer inputs before conversion",
+      "sources": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "99902524e052f37574194466c2949c576e4ab269",
+          "path": "src/creatures/monsters/monsters.hpp",
+          "git_blob": "74cf29a519015932002d149c4bb568bd131f1c71",
+          "sha256": "ba4b06827d1e88dd40eeb44a832e90b4ae18ad9108879a8aa997cb7702d7e022",
+          "bytes": 7570
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "99902524e052f37574194466c2949c576e4ab269",
+          "path": "src/creatures/monsters/monsters.cpp",
+          "git_blob": "a9dc6a55213ecba89244652563bd7c4995ac18c1",
+          "sha256": "a63ba89230602179f3f7a4ebbd0f6367c6453acbfcddac45e9a86fb53742f067",
+          "bytes": 13201
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "99902524e052f37574194466c2949c576e4ab269",
+          "path": "src/items/weapons/weapons.cpp",
+          "git_blob": "4094a124e42263047b81a459d93b187aeca25c7f",
+          "sha256": "faf0b2da524fd64d7c968a25a6c7a4964fe5f5206550ce810dba7b18f361c4ab",
+          "bytes": 30664
+        }
+      ],
+      "distribution": "approximate_owner_bounded_roll_not_Canary_normal_random",
+      "mitigation": "armor_shield_mitigation_not_applied"
+    }
+  },
+  "soul_war": {
+    "classification": "Source-transcribed candidate data and encounter admission only",
+    "encounter_path": "tools/content-schema/encounter-authoring/samples/soul_war_taint_zones/encounter.json",
+    "encounter_sha256": "f71af8368072fe789290349de1332d640ad167e215633a941d734149f217b75d",
+    "rules": 16,
+    "unique_participants": 17,
+    "participant_role_entries": 9,
+    "participant_references_including_duplicates": 22,
+    "positive_zone_boxes": 23,
+    "excluded_zone_boxes": 5,
+    "live_progression_access_rewards_qualified": false
+  },
+  "core_repairs_reported": [
+    "Magnitude baseline test policy",
+    "Map initialization generation SQL guard",
+    "Premium and Aleta core qualification tests"
+  ],
+  "verification": {
+    "manifest_materialization": "passed_exact_current_11_provider_byte_pins",
+    "exporter_python_tests": {
+      "passed": 14,
+      "failed": 0,
+      "scope": "3 melee exporter plus11 canonical exporter tests; no admission or actual gameplay inference",
+      "observed_exit_code": 0,
+      "receipt": "evidence/canonical-r7-exporter-test-receipt.json"
+    },
+    "current_r7_full_admission": {
+      "result": "passed_strict_compile_decode_stage",
+      "receipt": "evidence/canonical-r7-artifact-qualification.json",
+      "validation_receipt": "evidence/current-r7-validation-receipt.json",
+      "manifest_sha256": "a0e824b3227996499f8b6d146bfd53a6eec8b38402375eaf5a49a5c6071acbd0"
+    },
+    "current_r7_wildspawn": {
+      "result": "passed_actual_game_owned_qualification_rat_spawn",
+      "receipt": "evidence/physical-attempt-6-receipt.json",
+      "CreatureDamage": true,
+      "public_source_spawn": false,
+      "general_population_spawn_qualified": false
+    },
+    "current_physical_attempt": {
+      "result": "passed_bounded_local_spell_seam",
+      "attempt": 6,
+      "receipt": "evidence/physical-attempt-6-receipt.json",
+      "manifest_sha256": "a0e824b3227996499f8b6d146bfd53a6eec8b38402375eaf5a49a5c6071acbd0",
+      "observed_exit_code": 0,
+      "gameplay_complete": false
+    },
+    "required_clippy": {
+      "result": "failed",
+      "reported_error_count": 864,
+      "observed_exit_code": 101,
+      "receipt": "evidence/current-r7-validation-receipt.json",
+      "scope": "Required Game Clippy remains failed; scoped Session Clippy pass does not satisfy this gate"
+    },
+    "final_qualification": false,
+    "evidence_update_owner": "Root coordinator appends exact current r7 final receipts",
+    "library": {
+      "passed": 1593,
+      "ignored": 4,
+      "failed": 0,
+      "observed_exit_code": 0,
+      "receipt": "evidence/current-r7-validation-receipt.json"
+    },
+    "bounded_local_physics_qualified": true,
+    "merge_ready": false,
+    "authoring_independent_review": {
+      "receipt": "evidence/authoring-independent-review.json",
+      "scope": "Independent authoring source inspection, session RED/GREEN and negative cases; not final frozen-head review"
+    }
+  },
+  "research": {
+    "report": "research/source-access.json",
+    "fresh_wiki_verification": false,
+    "source_approximations_preserved": true
+  },
+  "remaining_blockers": [
+    {
+      "area": "runtime",
+      "status": "bounded_local_pass_general_completion_open",
+      "requirement": "Current r7 strict admission and disposable physical6 qualify actual Game-owned Rat spawn, measured AI wound, Energy Strike target HP, ordinary Exura healing and durable training. This does not qualify all 246 spell effects or general source population runtime."
+    },
+    {
+      "area": "monster_runtime",
+      "status": "open",
+      "requirement": "1231 melee adapters remain nonlethal approximations:1071 ordinary and160 primaryphysicalonly explicitly omit secondary conditions;277 disabled. Source166 attack/skill ceil bounds and1065 ranges do not prove armor/shield, normal_random distribution, ranged/defenses/fullschedule/spawn/chase."
+    },
+    {
+      "area": "quest",
+      "status": "open",
+      "requirement": "Soul War progression, access, rewards, live participant placement/owner state and callback composition must be qualified on the real gameplay path."
+    },
+    {
+      "area": "premium_house",
+      "status": "open",
+      "requirement": "Premium entitlement and Aleta permission core tests do not prove live Platform entitlements, current HouseInstance ACL/session behavior or production house admission."
+    },
+    {
+      "area": "content_deployment",
+      "status": "open",
+      "requirement": "New candidate content pins, accepted resource/protocol allocations, WorldInstance admission, client rendering and production deployment need exact current qualification and owning control-plane authorization."
+    },
+    {
+      "area": "required_quality_gates",
+      "status": "open",
+      "requirement": "Required Game Clippy failed with864 diagnostics and observed exit101. Final frozen-head checks and review remain required; current local physical pass is not merge qualification."
+    }
+  ],
+  "evidence_update_rule": "Append later actual receipts with exact manifest/source scope; preserve historical failures and do not relabel them as passed.",
+  "artifact_files": [
+    {
+      "path": "creature-profiles.json",
+      "sha256": "6952f81bb2e8bf15dd1eb306ea20f880ee5cc5e819bc1ef0407c7da9926f48fc",
+      "bytes": 5485871
+    },
+    {
+      "path": "presentation-profiles.json",
+      "sha256": "21dfcc27246ed2a7847fd4c80f2babfd726df5cb4468ee9148c7c5e668ff1f1c",
+      "bytes": 445238
+    },
+    {
+      "path": "spell-appearances.json",
+      "sha256": "b00197f1416cec825f3ba77f732d55a18604f0a52c50b5f59849a945ad5af905",
+      "bytes": 200975
+    },
+    {
+      "path": "monster-melee-derivation.json",
+      "sha256": "65dcad78ed82fee652e98c9235d3816fdc682a871febf53a856f07dd6094eb64",
+      "bytes": 2334200
+    },
+    {
+      "path": "canonical-profile-union-proof.json",
+      "sha256": "a3a21860540d5fa70000435ee346e3cab8344a1075e0f76d6eef9b2f25374385",
+      "bytes": 60757
+    },
+    {
+      "path": "build-training.json",
+      "sha256": "ed23a81ec9247c5808de8161e18e7bc366a7bb8709839c2256aba1c649f4d1c1",
+      "bytes": 3163
+    },
+    {
+      "path": "manifest-recipe.json",
+      "sha256": "67dcc6e0de7cc6efba3109b5b7df82bb789e0af47b35f71ba3ebba6a2a9968f8",
+      "bytes": 4953
+    },
+    {
+      "path": "materialize_manifest.py",
+      "sha256": "6c9c0738facd52b9e80b604bd30b243c64f1055d5affbc68ef716f36aec2dd51",
+      "bytes": 2211
+    },
+    {
+      "path": "research/source-access.json",
+      "sha256": "d5c9b74516a0518f77d1493709a6cb7f67178bc7b822c9331574d13b773d275f",
+      "bytes": 1479
+    },
+    {
+      "path": "evidence/canonical-r7-exporter-test-receipt.json",
+      "sha256": "e62fb64ae63f5ac6e0c268bc4e35367f5264c04351cc4fe4eabed19e631d8ca4",
+      "bytes": 1573
+    },
+    {
+      "path": "evidence/current-r7-validation-receipt.json",
+      "sha256": "ec0a6d127668257048a056290e330aa03739f9e55884d1479b22374c217e5b79",
+      "bytes": 2928
+    },
+    {
+      "path": "evidence/physical-attempt-6-receipt.json",
+      "sha256": "04e14a6e9250445ae286cf06d5a593bae8c563f81bb341a8fcd9b8a8daa5e429",
+      "bytes": 8848
+    },
+    {
+      "path": "evidence/canonical-r7-artifact-qualification.json",
+      "sha256": "eec4377ae49bea1aed5d53769f039a26b2bf0d75f0b2b23db0b8d64fca899adc",
+      "bytes": 840
+    },
+    {
+      "path": "evidence/authoring-independent-review.json",
+      "sha256": "f01b07d40a9029eda7262d5d36e8dee0210fdcd01912b48b89c2e85285324bd6",
+      "bytes": 4008
+    }
+  ],
+  "recipe_verification": {
+    "result": "passed_input_materialization_only",
+    "scope": "Exact11 provider input pins; current r7 admission and bounded physical6 have separate actual receipts.",
+    "generated_manifest_sha256": "a0e824b3227996499f8b6d146bfd53a6eec8b38402375eaf5a49a5c6071acbd0",
+    "provider_count": 11
+  },
+  "canonical_union": {
+    "proof": "canonical-profile-union-proof.json",
+    "canonical_creature_count": 1503,
+    "preserved_active_count": 162,
+    "appended_count": 1346,
+    "creature_count": 1508,
+    "identity_allocation": false,
+    "excluded_canonical_records": [
+      {
+        "identity": {
+          "family": "Creature",
+          "key": "oteryn:creature.rat",
+          "revision": "definition-r1"
+        },
+        "display_name": "Rat",
+        "reason": "disabled_duplicate_native_display_name",
+        "full_record_preserved_in": "canonical-profile-union-proof.json"
+      },
+      {
+        "identity": {
+          "family": "Creature",
+          "key": "oteryn:creature.skeleton",
+          "revision": "definition-r1"
+        },
+        "display_name": "Skeleton",
+        "reason": "disabled_duplicate_native_display_name",
+        "full_record_preserved_in": "canonical-profile-union-proof.json"
+      }
+    ],
+    "preserved_native_identity_precedence": "Existing canary:creature/rat and canary:creature/skeleton retained; duplicate canonical native display names are source-only, not reassigned or relabeled",
+    "accepted_reference_count": 10839,
+    "retained_prior_reference_count": 61,
+    "disabled_source_only_encounter_references": [
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.alptramun",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.azerus",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.cobra_bastion",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.count_vlarkorth",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.cult_soul_remains",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.dangerous_depth_makeshift_homes",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.death_priest_shargon",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.deep_terror",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.drume",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.eradicator",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.essence_of_malice",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.feroxa",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.fury_of_the_emperor",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.ghulosh",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.glooth_horror",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.gorzindel",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.goshnars_hatred",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.heart_chargers",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.heart_cracklers",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.king_zelos",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.lloyd",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.lokathmor",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.malofur_mangrinder",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.maxxenius",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.mazzinor",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.plagueroot",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.pythius_the_rotten",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.realityquake",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.replica_servants",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.rupture",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.scorn_of_the_emperor",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.shulgrax",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.sir_baeloc",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.soul_of_dragonking_zyrtarch",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.spite_of_the_emperor",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.tarbaz",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_blazing_rose",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_corruptor_of_souls",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_count_of_the_core",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_diamond_blossom",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_duke_of_the_depths",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_enraged_thorn_knight",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_false_god",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_first_dragon",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_last_lore_keeper",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_lily_of_night",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_lord_of_the_lice",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_nightmare_beast",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_ravager",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_sandking",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_shatterer",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_souldespoiler",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_unarmored_voidborn",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.the_welter",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.tirecz",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.ugly_monster",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.urmahlullu",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.white_deer",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.world_devourer",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.wrath_of_the_emperor",
+        "revision": "definition-r1"
+      },
+      {
+        "family": "Encounter",
+        "key": "oteryn:encounter.zalamon",
+        "revision": "definition-r1"
+      }
+    ]
+  },
+  "historical_verification": {
+    "library": {
+      "passed": 1586,
+      "failed": 0,
+      "ignored": 4
+    },
+    "encounter_admission": {
+      "passed": 6,
+      "failed": 0,
+      "ignored": 0
+    },
+    "postgres_guard_cases": "passed_retained_output",
+    "physical_seam": {
+      "result": "failed",
+      "representative_spell": "exori vis",
+      "after_reported_successful_self_casts": 7,
+      "cast_command_id": 10,
+      "disposition": "Rejected",
+      "target_or_numeric_root_cause": "Under active investigation; not established by this report",
+      "first_attempt_full_log_retained": false,
+      "first_attempt_excerpt": "evidence/first-physical-attempt-failure.json",
+      "second_attempt": "In progress at evidence capture; no result claim"
+    },
+    "final_qualification": false,
+    "evidence": [
+      {
+        "path": "evidence/next-all-lib-tests.log",
+        "sha256": "6d83c7b4189c18c19b07d65112b3564d4fad00bd8fee3bbcc228d1b3cc3a6c2b",
+        "bytes": 46460,
+        "result": "passed",
+        "scope": "1586 library tests passed; four ignored; excludes separately attempted physical seam",
+        "observed_exit_code": null,
+        "observation": "Retained output inspected; process exit status not newly observed by this report producer"
+      },
+      {
+        "path": "evidence/next-encounter-admission-tests.log",
+        "sha256": "b536a3da6c177244778fbd84b5b3c6ad235eda93198e16e8167e7c6ad6a925a6",
+        "bytes": 60198,
+        "result": "passed",
+        "scope": "Six encounter admission tests; no full quest gameplay claim",
+        "observed_exit_code": null,
+        "observation": "Retained output inspected; process exit status not newly observed by this report producer"
+      },
+      {
+        "path": "evidence/next-encounter-python.log",
+        "sha256": "24ceb0a150fed7ffabb0c2c76b7845d1aa80ec6b88efa2279976920d7df487ea",
+        "bytes": 156,
+        "result": "passed",
+        "scope": "Encounter authoring/schema checks; no live quest progression",
+        "observed_exit_code": null,
+        "observation": "Retained output inspected; process exit status not newly observed by this report producer"
+      },
+      {
+        "path": "evidence/next-pg-owner-tests.log",
+        "sha256": "ea284fd284ddd98ec6a169089f76e70ae0fdef22ae23d644460fb11c04913d75",
+        "bytes": 1530,
+        "result": "passed",
+        "scope": "Map initialization and committed due read predicate SQL guard qualification",
+        "observed_exit_code": null,
+        "observation": "Retained output inspected; process exit status not newly observed by this report producer"
+      },
+      {
+        "path": "evidence/second-physical-attempt-in-progress.log",
+        "sha256": "2ba7006165f32bc9988a3ee66e1edbfd517552a3c53348cb8802c66855837b71",
+        "bytes": 2894,
+        "result": "in_progress_snapshot",
+        "scope": "Partial second physical attempt, captured after coordinator reused the original log path; it does not preserve first failure and is not a completion receipt",
+        "observed_exit_code": null,
+        "observation": "Retained output inspected; process exit status not newly observed by this report producer"
+      }
+    ],
+    "scope": "Initial162/f3f candidate and earlier core code observations; not a final receipt for expanded canonical-r4"
+  },
+  "existing_node_profile_search": {
+    "evidence": "evidence/repository-connection-profile-search.json",
+    "result": "No actual long-lived target profile located in both hidden/ignored/untracked repository checkouts or bounded current GitHub searches; interface keys and disposable fixtures identified",
+    "known_live_environment_keys_present": false,
+    "existing_long_lived_node_tested": false
+  },
+  "prior_canonical_r4_verification": {
+    "manifest_materialization": "passed_exact_11_provider_input_pins",
+    "expanded_r4_admission": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 1593,
+      "log_path": "evidence/final-canonical-profile-admission.log",
+      "sha256": "947a8c558fe9b85830db969ada3751836f00571376299e211b6aa4eea1808985",
+      "bytes": 638,
+      "observed_exit_code": null,
+      "input_binding": "Coordinator selected canonical-r4 candidate; retained output names artifact/source-world digests",
+      "reported_output_pins": {
+        "server": "c7f8cfd14dcda5e90e7e9b47914d888df8af49b0e453d3100a28ccd0051d6d4a",
+        "client": "c50620c32e7ea95cb7308fb221d1b09eacd5a9ca90a409f3d3ff6e238311fe54",
+        "source_world": "44f860d20712a32e6bc22aa269d3e220d39d164b7738d3c150a406579849b5f5"
+      },
+      "scope": "Actual strict full source candidate qualification and staging test; no live spawn or full damage execution implied"
+    },
+    "current_physical_attempt": {
+      "result": "passed_bounded_spell_seam",
+      "attempt": 4,
+      "receipt": "evidence/physical-attempt-4-receipt.json",
+      "manifest_sha256": "272466bd8965a4a71566212f68fb61c2a3f35885b1adf9dab3434e31509a5fd5",
+      "observed_exit_code": 0,
+      "gameplay_complete": false,
+      "CreatureDamage": "not_evaluated"
+    },
+    "required_clippy": {
+      "result": "not_green",
+      "reported_error_count": 876,
+      "scope": "Coordinator owns required Clippy gating and repairs; no fabricated pass"
+    },
+    "final_qualification": false,
+    "evidence_update_owner": "Root coordinator must append exact current admission, physical and required gate receipts after completion",
+    "library": {
+      "passed": 1590,
+      "failed": 0,
+      "ignored": 4,
+      "log_path": "evidence/final-lib-tests.log",
+      "sha256": "44413f873ba6145f7175c85a8398de3bb88e787695af28ff603ee8604ed569ba",
+      "bytes": 46464,
+      "observed_exit_code": null,
+      "observation": "Complete passed test body independently read; no reconstructed process status"
+    },
+    "current_receipt": "evidence/current-validation-receipt.json",
+    "native_wild_spawn": {
+      "result": "underway",
+      "actual_spawned_creature_damage_qualified": false,
+      "owner": "root coordinator"
+    },
+    "scope": "Historical canonical-r4 manifest272466bd; physical attempt4 PASS does not qualify current r7 inputs."
+  },
+  "disposable_qualification": true,
+  "production_activation": false,
+  "long_lived_activation": false
+}

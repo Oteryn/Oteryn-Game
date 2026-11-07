@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-PRESENTATION-NAME-BYTES",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "One known Item presentation name",
+  "unit": "UTF-8 bytes",
+  "hard_maximum": 46,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 46
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Check declared byte length before copying or UTF-8 decoding.",
+  "client_visible": true,
+  "boundary_tests": [
+    "46-byte valid UTF-8 name accepted",
+    "47 bytes rejected before retention",
+    "invalid UTF-8 rejected"
+  ]
+}

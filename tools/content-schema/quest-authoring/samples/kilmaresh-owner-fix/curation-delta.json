@@ -1,0 +1,11 @@
+{
+  "additions": {
+    "quest/u12_20/kilmaresh_quest/sixth/favor": {
+      "quest": "canary:quest/kilmaresh_quest"
+    },
+    "quest/u12_20/kilmaresh_quest/sixth/four_masks": {
+      "quest": "canary:quest/kilmaresh_quest"
+    }
+  },
+  "original_sha256": "36a752baec9088935c14e2c4bfca04ca7c2ce0a22169ce5c0690fc49da59d09a"
+}

@@ -1,0 +1,79 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/rune/soulfire_rune",
+      "revision": "spell-p2-r20"
+    },
+    "name": "soulfire rune",
+    "carrier": "rune",
+    "library_text": "Soulfire is an immensely evil spell as it directly targets a creature's very life essence. When the rune is used on a victim its soul is temporarily moved out of its body, casting it down into the blazing fires of hell itself! Needless to say, the process is immensely painful, and the wounds that are inflicted to the target are quite real. Note that the experience and the mental strength of the caster influence the damage that is caused. In the hands of an experienced user the Soulfire rune can become a fearsome weapon indeed.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 27,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": true,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 7,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_soul_fire_rune"
+    },
+    "base_power": 120,
+    "rune": {
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/3195",
+        "revision": "spell-p2-r21"
+      },
+      "charges": 3,
+      "magic_level": 7,
+      "allow_far_use": true,
+      "blocking": {
+        "solid": true,
+        "creature": false
+      }
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/rune/soulfire_rune",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "schema": "OTERYN_MONK_SHRINE_BONUSES/v1",
+  "source": "Owner decision 2026-10-30; Canary 04b83b51 shrines.lua:4-8; Crystal ff7ede59 game.cpp:8074-8082",
+  "offensive_per_shrine_percent": 10,
+  "serene_offensive_per_shrine_percent": 20,
+  "defensive_per_shrine_percent": 2,
+  "defensive_cap_percent": 20
+}

@@ -1,0 +1,4000 @@
+{
+  "schema": "OTERYN_WHEEL_OFFICIAL_PERK_REFERENCE/v1",
+  "observed_on": "2026-10-01",
+  "runtime_admitted": false,
+  "live_global_parity_confirmed": false,
+  "sources": [
+    {
+      "url": "https://static.tibia.com/javascripts/wheelofdestiny/skillgrid.js?version=177d4b441ea1d84cf64b8bf1c116902c",
+      "sha256": "3bbb7ff4f072c34bdd3dbebe4681936c41017f9eda47621160f0899519168a9c",
+      "same_as_previous": true,
+      "status": 200
+    },
+    {
+      "url": "https://static.tibia.com/javascripts/wheelofdestiny/wheelofdestinyplanner.min.js?version=58797a22d47fb9ceb8b5cd353f96a3c1",
+      "sha256": "18cf027f722de019b942efe128d51b47b6b23c3f2690fce6a5462be75427b2c0",
+      "same_as_previous": true,
+      "status": 200
+    },
+    {
+      "url": "https://static.tibia.com/javascripts/wheelofdestiny/SkillwheelStringsJsonLibrary.json?version=8425497eb1aa03a8010468c21a5da32f",
+      "sha256": "a5a50b3cc214eae9c28d6248cd9b1a33921544b847a7d48455f4063bdee5d893",
+      "same_as_previous": true,
+      "status": 200
+    }
+  ],
+  "official_news": [
+    {
+      "id": "8833",
+      "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8833",
+      "method": "REMOTE_DESKTOP_CHROME_PLAYWRIGHT_CDP",
+      "snippets": [
+        "Dedication perks now grant 0.075% mitigation multiplier per promotion point instead of 0.03%.\nGems now provide 20/22/24/30% mitigation multiplier instead of 5/5.5/6/7.5%.\nMonster mitigation has been increased.\nPotion Management Improvements\nA new mana potion has been added: The superior mana potion. It costs 254 gold, grants 240 to 360 mana, requires level 100 and can be used by paladins, monks, sorcerers and druids.",
+        "Battle Healing has been reworked:\nNow increases the effect of your healing spells by 10%.\nThis bonus is tripled while wearing a shield.\nNo longer grants healing when challenging.\nCombat Mastery has been reworked:",
+        "Combat Mastery has been reworked:\nTake less damage the lower your life is (1% reduced damage taken per 12/10/8% missing hp). This bonus is doubled while wielding a shield.\nDeal more damage the lower your targets life is (1% increased damage per 12/10/8% missing hp). This bonus is doubled while wielding a two-handed weapon.\nJump to: General | Knight | Paladin | Sorcerer | Druid | Monk\nPaladin",
+        "Beam Mastery has been reworked:\nBeam now hits adjacent squares for 40/60/80% of the initial damage.\nStill increases damage and reduces cooldown based on the amount of targets hit by the central beam.\nLord of Destruction replaces Drain Body:\nImproves the buffs provided by the elemental stances.",
+        "Lord of Destruction replaces Drain Body:\nImproves the buffs provided by the elemental stances.\nMaster of Flames gains +2/3/4% base power for fire spells (for a total of +6/7/8% base power).\nMaster of Thunder gains +2/3/4% critical hit chance for energy spells (for a total of +6/7/8% critical hit change).\nMaster of Decay gains +15/22.5/30% critical extra damage for death spells (for a total of 45/52.5/60% critical extra damage).",
+        "Master of Decay gains +15/22.5/30% critical extra damage for death spells (for a total of 45/52.5/60% critical extra damage).\nFocus Mastery now additionally reduces the group cooldown of focus spells by 2 seconds.\nEnergy Wave augments I and II have been switched:\nI: Affected area enlarged.\nII: Now increases base damage by +10% instead of 5%.",
+        "Focus Mastery now additionally reduces the group cooldown of focus spells by 2 seconds.\nEnergy Wave augments I and II have been switched:\nI: Affected area enlarged.\nII: Now increases base damage by +10% instead of 5%.\nJump to: General | Knight | Paladin | Sorcerer | Druid | Monk",
+        "Thousand Fist Blows:\nBuilder spell that hits your target and the area around it.\n62 base power, 12 seconds cooldown, 145 mana and learned at level 120.\nAllows three targeting modes:\nWith crosshair.",
+        "Mystic Repulse: Base power has been increased from 72 to 85 and cooldown has been reduced from 20 to 12 seconds.\nChained Penance and Spiritual Outburst: Jump range has been increased by 1. Additionally, they now chain to the closest target instead of the target with the highest health percentage.\nThe monk's familiar is now better at hitting enemies with its spells.\n\nWheel of Destiny Adjustments",
+        "Thousand Fist Blows augments:\nI: +40% critical extra damage.\nII: –6 seconds cooldown.\nReplace Sweeping Takedown I/II.\nFlurry of Blows augment I enlarges the affected area instead of granting 5% life leech",
+        "Flurry of Blows augment I enlarges the affected area instead of granting 5% life leech\nGuiding Presence now shares 100% of the mantra effect instead of 50%.\nSanctuary: In addition to its current effect, it now increases the damage you deal to adjacent enemies by 10% and the healing you do to adjacent allies by 10%.\nMystic Repulse augment I now reduces the cooldown by –6 seconds instead of –4.\nMass Spirit Mend augment II now reduces the cooldown by –4 seconds instead of enlarging the affected area.",
+        "Guiding Presence now shares 100% of the mantra effect instead of 50%.\nSanctuary: In addition to its current effect, it now increases the damage you deal to adjacent enemies by 10% and the healing you do to adjacent allies by 10%.\nMystic Repulse augment I now reduces the cooldown by –6 seconds instead of –4.\nMass Spirit Mend augment II now reduces the cooldown by –4 seconds instead of enlarging the affected area.\nJump back to: General | Knight | Paladin | Sorcerer | Druid | Monk",
+        "Mystic Repulse augment I now reduces the cooldown by –6 seconds instead of –4.\nMass Spirit Mend augment II now reduces the cooldown by –4 seconds instead of enlarging the affected area.\nJump back to: General | Knight | Paladin | Sorcerer | Druid | Monk\n\nWe hope that you will approach the upcoming release with curiosity and an open mind to find out how these adjustments, the new spells and features fit best into your gameplay and how they can spice it up. Naturally, adapting or even innovating your hunting style takes time. We also know from the past that the full impact and power of such changes only unfold gradually after release. We will, of course, observe this closely. "
+      ]
+    },
+    {
+      "id": "8872",
+      "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8872",
+      "method": "REMOTE_DESKTOP_CHROME_PLAYWRIGHT_CDP",
+      "snippets": [
+        "Battle Healing\nMultiplier with shield reduced from 3 to 2\nCombat Mastery\nBonus damage and reduced damage changed from 12/10/8% to 14/12/10%\nHealing Spells",
+        "Combat Mastery\nBonus damage and reduced damage changed from 12/10/8% to 14/12/10%\nHealing Spells\nMana cost of several healing spells increased:\nWound Cleansing: from 40 to 60",
+        "Beam Mastery\nDamage bonus reduced from 40/60/80% to 25/40/70%\nGreat Death Beam and Great Energy Beam\nBase damage reduced from 170 to 155\nDeath Echo"
+      ]
+    },
+    {
+      "id": "8944",
+      "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8944",
+      "method": "REMOTE_DESKTOP_CHROME_PLAYWRIGHT_CDP",
+      "snippets": [
+        "Guiding Presence: Increases passive party bonuses by 33% in addition to its current effect\nKnight: Damage received reduced by 4% instead of 3%\nPaladin: Damage caused by auto attacks increased by 8% instead of 6%\nSorcerer: Damage caused by spells and runes increased by 8% instead of 6%\nDruid: Healing caused by spells and runes increased by 16% instead of 12%",
+        "Mystic Repulse\nCooldown reduced from 12 to 8 seconds\nWheel of Destiny Augment I: Cooldown reduced by 4 seconds instead of 6 seconds\nThousand Fist Blows\nCooldown reduced from 12 to 8 seconds",
+        "Thousand Fist Blows\nCooldown reduced from 12 to 8 seconds\nWheel of Destiny Augment II: Cooldown reduced by 4 seconds instead of 6 seconds\nDevastating Knockout\nCooldown reduced from 24 to 8 seconds"
+      ]
+    }
+  ],
+  "vocations": {
+    "knight": {
+      "slots": [
+        {
+          "state_slot": 1,
+          "tile": "QTL8",
+          "capacity": 200,
+          "conviction_id": 8,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 3
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 2,
+          "tile": "QTL7",
+          "capacity": 150,
+          "conviction_id": 5,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 3,
+          "tile": "QTL6",
+          "capacity": 100,
+          "conviction_id": 37,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 4,
+          "tile": "QTR6",
+          "capacity": 100,
+          "conviction_id": 7,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 5,
+          "tile": "QTR7",
+          "capacity": 150,
+          "conviction_id": 38,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 6,
+          "tile": "QTR8",
+          "capacity": 200,
+          "conviction_id": 12,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 3
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 7,
+          "tile": "QTL5",
+          "capacity": 150,
+          "conviction_id": 37,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 8,
+          "tile": "QTL4",
+          "capacity": 100,
+          "conviction_id": 14,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 9,
+          "tile": "QTL3",
+          "capacity": 75,
+          "conviction_id": 6,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 10,
+          "tile": "QTR3",
+          "capacity": 75,
+          "conviction_id": 38,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 5
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 11,
+          "tile": "QTR4",
+          "capacity": 100,
+          "conviction_id": 13,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 12,
+          "tile": "QTR5",
+          "capacity": 150,
+          "conviction_id": 5,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 13,
+          "tile": "QTL2",
+          "capacity": 100,
+          "conviction_id": 11,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 14,
+          "tile": "QTL1",
+          "capacity": 75,
+          "conviction_id": 7,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 15,
+          "tile": "QTL0",
+          "capacity": 50,
+          "conviction_id": 37,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 5
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 16,
+          "tile": "QTR0",
+          "capacity": 50,
+          "conviction_id": 10,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 17,
+          "tile": "QTR1",
+          "capacity": 75,
+          "conviction_id": 6,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 5
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 18,
+          "tile": "QTR2",
+          "capacity": 100,
+          "conviction_id": 38,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 19,
+          "tile": "QBL2",
+          "capacity": 100,
+          "conviction_id": 39,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 20,
+          "tile": "QBL1",
+          "capacity": 75,
+          "conviction_id": 5,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 21,
+          "tile": "QBL0",
+          "capacity": 50,
+          "conviction_id": 12,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 22,
+          "tile": "QBR0",
+          "capacity": 50,
+          "conviction_id": 40,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 23,
+          "tile": "QBR1",
+          "capacity": 75,
+          "conviction_id": 7,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 24,
+          "tile": "QBR2",
+          "capacity": 100,
+          "conviction_id": 14,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 5
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 25,
+          "tile": "QBL5",
+          "capacity": 150,
+          "conviction_id": 6,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 5
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 26,
+          "tile": "QBL4",
+          "capacity": 100,
+          "conviction_id": 13,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 27,
+          "tile": "QBL3",
+          "capacity": 75,
+          "conviction_id": 39,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 28,
+          "tile": "QBR3",
+          "capacity": 75,
+          "conviction_id": 5,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 29,
+          "tile": "QBR4",
+          "capacity": 100,
+          "conviction_id": 11,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 5
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 30,
+          "tile": "QBR5",
+          "capacity": 150,
+          "conviction_id": 40,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 31,
+          "tile": "QBL8",
+          "capacity": 200,
+          "conviction_id": 10,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 3
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 32,
+          "tile": "QBL7",
+          "capacity": 150,
+          "conviction_id": 39,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 5
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 33,
+          "tile": "QBL6",
+          "capacity": 100,
+          "conviction_id": 7,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 34,
+          "tile": "QBR6",
+          "capacity": 100,
+          "conviction_id": 40,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 5
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 35,
+          "tile": "QBR7",
+          "capacity": 150,
+          "conviction_id": 6,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 36,
+          "tile": "QBR8",
+          "capacity": 200,
+          "conviction_id": 9,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 3
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        }
+      ],
+      "augments": {
+        "augmented_front_sweep": {
+          "1": {
+            "reference_text": "+40% Base Damage",
+            "numeric_effects": [
+              {
+                "kind": "base_damage_bonus",
+                "value": 40.0,
+                "unit": "percent_points"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "Expanded Shape",
+            "numeric_effects": []
+          }
+        },
+        "augmented_shield_slam": {
+          "1": {
+            "reference_text": "Adds 15% life leech to this spell",
+            "numeric_effects": [
+              {
+                "kind": "life_leech",
+                "value": 15.0,
+                "unit": "percent_points"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "-25% damage from the next hostile auto attack",
+            "numeric_effects": [
+              {
+                "kind": "next_attack_damage_reduction",
+                "value": 25.0,
+                "unit": "percent_points"
+              }
+            ]
+          }
+        },
+        "augmented_groundshaker": {
+          "1": {
+            "reference_text": "-2s Cooldown",
+            "numeric_effects": [
+              {
+                "kind": "cooldown_reduction",
+                "value": 2.0,
+                "unit": "seconds"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "+12.5% Base Damage",
+            "numeric_effects": [
+              {
+                "kind": "base_damage_bonus",
+                "value": 12.5,
+                "unit": "percent_points"
+              }
+            ]
+          }
+        },
+        "augmented_intense_wound_cleansing": {
+          "1": {
+            "reference_text": "+125% Base Healing",
+            "numeric_effects": [
+              {
+                "kind": "base_healing_bonus",
+                "value": 125.0,
+                "unit": "percent_points"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "-60s Cooldown",
+            "numeric_effects": [
+              {
+                "kind": "cooldown_reduction",
+                "value": 60.0,
+                "unit": "seconds"
+              }
+            ]
+          }
+        },
+        "augmented_fierce_berserk": {
+          "1": {
+            "reference_text": "-30 Mana Cost",
+            "numeric_effects": [
+              {
+                "kind": "mana_cost_reduction",
+                "value": 30.0,
+                "unit": "mana"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "+10% Base Damage",
+            "numeric_effects": [
+              {
+                "kind": "base_damage_bonus",
+                "value": 10.0,
+                "unit": "percent_points"
+              }
+            ]
+          }
+        }
+      },
+      "unique": {
+        "battle_instinct": {
+          "reference_description": "Gain +6 shielding and +1 sword/axe/club fighting when 5 creatures are on adjacent squares.\nFor each additional creature, up to a maximum of 8, you get +6 shielding and +1 sword/axe/club fighting more.",
+          "numeric_effects": {
+            "adjacent_creature_threshold": 5,
+            "adjacent_creature_cap": 8,
+            "shielding_bonus_per_counted_creature": 6,
+            "melee_skill_bonus_per_counted_creature": 1
+          }
+        },
+        "battle_healing": {
+          "reference_description": "Healing Spells have 10% increased healing. This bonus is doubled when wearing a shield.",
+          "numeric_effects": {
+            "healing_spell_bonus": 10,
+            "shield_healing_multiplier": 2
+          }
+        }
+      },
+      "revelations": {
+        "gift_of_life": {
+          "reference_descriptions": {
+            "0": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
+            "1": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
+            "2": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
+            "3": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign."
+          },
+          "numeric_effects": {
+            "restored_max_health": [
+              20,
+              25,
+              30
+            ],
+            "restored_max_mana": [
+              20,
+              25,
+              30
+            ],
+            "exclusive_overkill_limit": [
+              20,
+              25,
+              30
+            ],
+            "spell_cooldown_reduction": [
+              60,
+              60,
+              60
+            ],
+            "battle_sign_cooldown": [
+              108000,
+              72000,
+              36000
+            ]
+          }
+        },
+        "executioner_s_throw": {
+          "reference_descriptions": {
+            "0": "This spell throws your weapon on your target and jumps on  2 / 3 / 4  nearby enemies. Deals  100% / 125% / 150%  additional damage to targets with less than 30% of their hit points. \nCooldown:  18 / 14 / 10  seconds",
+            "1": "This spell throws your weapon on your target and jumps on  2 / 3 / 4  nearby enemies. Deals  100% / 125% / 150%  additional damage to targets with less than 30% of their hit points. \nCooldown:  18 / 14 / 10  seconds",
+            "2": "This spell throws your weapon on your target and jumps on  2 / 3 / 4  nearby enemies. Deals  100% / 125% / 150%  additional damage to targets with less than 30% of their hit points. \nCooldown:  18 / 14 / 10  seconds",
+            "3": "This spell throws your weapon on your target and jumps on  2 / 3 / 4  nearby enemies. Deals  100% / 125% / 150%  additional damage to targets with less than 30% of their hit points. \nCooldown:  18 / 14 / 10  seconds"
+          },
+          "numeric_effects": {
+            "cooldown": [
+              18,
+              14,
+              10
+            ],
+            "additional_targets": [
+              2,
+              3,
+              4
+            ],
+            "low_health_damage_bonus": [
+              100,
+              125,
+              150
+            ],
+            "exclusive_target_health_limit": [
+              30,
+              30,
+              30
+            ]
+          }
+        },
+        "combat_mastery": {
+          "reference_descriptions": {
+            "0": "Take less damage the lower your life is (1% reduced damage taken per  14% / 12% / 10%  missing hp). This bonus is doubled while wielding a shield. \nDeal more damage the lower your targets life is (1% increased damage per  14% / 12% / 10%  missing hp). This bonus is doubled while wielding a two-handed weapon.",
+            "1": "Take less damage the lower your life is (1% reduced damage taken per  14% / 12% / 10%  missing hp). This bonus is doubled while wielding a shield. \nDeal more damage the lower your targets life is (1% increased damage per  14% / 12% / 10%  missing hp). This bonus is doubled while wielding a two-handed weapon.",
+            "2": "Take less damage the lower your life is (1% reduced damage taken per  14% / 12% / 10%  missing hp). This bonus is doubled while wielding a shield. \nDeal more damage the lower your targets life is (1% increased damage per  14% / 12% / 10%  missing hp). This bonus is doubled while wielding a two-handed weapon.",
+            "3": "Take less damage the lower your life is (1% reduced damage taken per  14% / 12% / 10%  missing hp). This bonus is doubled while wielding a shield. \nDeal more damage the lower your targets life is (1% increased damage per  14% / 12% / 10%  missing hp). This bonus is doubled while wielding a two-handed weapon."
+          },
+          "numeric_effects": {
+            "missing_health_step": [
+              14,
+              12,
+              10
+            ],
+            "damage_reduction_per_step": [
+              1,
+              1,
+              1
+            ],
+            "damage_bonus_per_step": [
+              1,
+              1,
+              1
+            ],
+            "shield_defensive_multiplier": [
+              2,
+              2,
+              2
+            ],
+            "two_handed_offensive_multiplier": [
+              2,
+              2,
+              2
+            ]
+          }
+        },
+        "avatar_of_steel": {
+          "reference_descriptions": {
+            "0": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
+            "1": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
+            "2": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
+            "3": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes"
+          },
+          "numeric_effects": {
+            "duration": [
+              15,
+              15,
+              15
+            ],
+            "cooldown": [
+              7200,
+              5400,
+              3600
+            ],
+            "damage_reduction": [
+              5,
+              10,
+              15
+            ],
+            "critical_hit_chance": [
+              100,
+              100,
+              100
+            ],
+            "critical_extra_damage": [
+              5,
+              10,
+              15
+            ]
+          }
+        }
+      }
+    },
+    "paladin": {
+      "slots": [
+        {
+          "state_slot": 1,
+          "tile": "QTL8",
+          "capacity": 200,
+          "conviction_id": 17,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 2,
+          "tile": "QTL7",
+          "capacity": 150,
+          "conviction_id": 5,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 3,
+          "tile": "QTL6",
+          "capacity": 100,
+          "conviction_id": 37,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 4,
+          "tile": "QTR6",
+          "capacity": 100,
+          "conviction_id": 15,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 5,
+          "tile": "QTR7",
+          "capacity": 150,
+          "conviction_id": 38,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 6,
+          "tile": "QTR8",
+          "capacity": 200,
+          "conviction_id": 22,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 7,
+          "tile": "QTL5",
+          "capacity": 150,
+          "conviction_id": 37,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 8,
+          "tile": "QTL4",
+          "capacity": 100,
+          "conviction_id": 21,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 9,
+          "tile": "QTL3",
+          "capacity": 75,
+          "conviction_id": 6,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 10,
+          "tile": "QTR3",
+          "capacity": 75,
+          "conviction_id": 38,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 4
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 11,
+          "tile": "QTR4",
+          "capacity": 100,
+          "conviction_id": 20,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 12,
+          "tile": "QTR5",
+          "capacity": 150,
+          "conviction_id": 5,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 13,
+          "tile": "QTL2",
+          "capacity": 100,
+          "conviction_id": 19,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 14,
+          "tile": "QTL1",
+          "capacity": 75,
+          "conviction_id": 15,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 15,
+          "tile": "QTL0",
+          "capacity": 50,
+          "conviction_id": 37,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 4
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 16,
+          "tile": "QTR0",
+          "capacity": 50,
+          "conviction_id": 18,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 17,
+          "tile": "QTR1",
+          "capacity": 75,
+          "conviction_id": 6,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 4
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 18,
+          "tile": "QTR2",
+          "capacity": 100,
+          "conviction_id": 38,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 19,
+          "tile": "QBL2",
+          "capacity": 100,
+          "conviction_id": 39,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 20,
+          "tile": "QBL1",
+          "capacity": 75,
+          "conviction_id": 5,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 21,
+          "tile": "QBL0",
+          "capacity": 50,
+          "conviction_id": 22,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 22,
+          "tile": "QBR0",
+          "capacity": 50,
+          "conviction_id": 40,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 23,
+          "tile": "QBR1",
+          "capacity": 75,
+          "conviction_id": 15,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 24,
+          "tile": "QBR2",
+          "capacity": 100,
+          "conviction_id": 21,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 4
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 25,
+          "tile": "QBL5",
+          "capacity": 150,
+          "conviction_id": 6,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 4
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 26,
+          "tile": "QBL4",
+          "capacity": 100,
+          "conviction_id": 20,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 27,
+          "tile": "QBL3",
+          "capacity": 75,
+          "conviction_id": 39,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 28,
+          "tile": "QBR3",
+          "capacity": 75,
+          "conviction_id": 5,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 29,
+          "tile": "QBR4",
+          "capacity": 100,
+          "conviction_id": 19,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 4
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 30,
+          "tile": "QBR5",
+          "capacity": 150,
+          "conviction_id": 40,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 31,
+          "tile": "QBL8",
+          "capacity": 200,
+          "conviction_id": 18,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 32,
+          "tile": "QBL7",
+          "capacity": 150,
+          "conviction_id": 39,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 4
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 33,
+          "tile": "QBL6",
+          "capacity": 100,
+          "conviction_id": 15,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 34,
+          "tile": "QBR6",
+          "capacity": 100,
+          "conviction_id": 40,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 4
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 35,
+          "tile": "QBR7",
+          "capacity": 150,
+          "conviction_id": 6,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 36,
+          "tile": "QBR8",
+          "capacity": 200,
+          "conviction_id": 16,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 3
+            }
+          ],
+          "native_value": 1
+        }
+      ],
+      "augments": {
+        "augmented_ethereal_barrage": {
+          "1": {
+            "reference_text": "Adds 10% life leech to this spell",
+            "numeric_effects": [
+              {
+                "kind": "life_leech",
+                "value": 10.0,
+                "unit": "percent_points"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "Adds 10% critical hit chance for this spell.",
+            "numeric_effects": [
+              {
+                "kind": "critical_hit_chance",
+                "value": 10.0,
+                "unit": "percent_points"
+              }
+            ]
+          }
+        },
+        "augmented_strong_ethereal_spear": {
+          "1": {
+            "reference_text": "-2s Cooldown",
+            "numeric_effects": [
+              {
+                "kind": "cooldown_reduction",
+                "value": 2.0,
+                "unit": "seconds"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "+380% Base Damage",
+            "numeric_effects": [
+              {
+                "kind": "base_damage_bonus",
+                "value": 380.0,
+                "unit": "percent_points"
+              }
+            ]
+          }
+        },
+        "augmented_divine_dazzle": {
+          "1": {
+            "reference_text": "Jumps to +2 additional targets",
+            "numeric_effects": [
+              {
+                "kind": "additional_targets",
+                "value": 2.0,
+                "unit": "targets"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "Duration increased; -8s Cooldown",
+            "numeric_effects": [
+              {
+                "kind": "cooldown_reduction",
+                "value": 8.0,
+                "unit": "seconds"
+              }
+            ]
+          }
+        },
+        "augmented_divine_barrage": {
+          "1": {
+            "reference_text": "+8% Base Damage",
+            "numeric_effects": [
+              {
+                "kind": "base_damage_bonus",
+                "value": 8.0,
+                "unit": "percent_points"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "+12% Base Damage",
+            "numeric_effects": [
+              {
+                "kind": "base_damage_bonus",
+                "value": 12.0,
+                "unit": "percent_points"
+              }
+            ]
+          }
+        },
+        "augmented_divine_caldera": {
+          "1": {
+            "reference_text": "-20 Mana Cost",
+            "numeric_effects": [
+              {
+                "kind": "mana_cost_reduction",
+                "value": 20.0,
+                "unit": "mana"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "+10% Base Damage",
+            "numeric_effects": [
+              {
+                "kind": "base_damage_bonus",
+                "value": 10.0,
+                "unit": "percent_points"
+              }
+            ]
+          }
+        }
+      },
+      "unique": {
+        "positional_tactics": {
+          "reference_description": "Gain +3 distance fighting while no monster is within 1 squares. Otherwise gain +3 holy magic level and +3 healing magic level.",
+          "numeric_effects": {
+            "monster_proximity_radius": 1,
+            "distant_distance_skill_bonus": 3,
+            "nearby_holy_magic_bonus": 3,
+            "nearby_healing_magic_bonus": 3
+          }
+        },
+        "ballistic_mastery": {
+          "reference_description": "The critical extra damage for attacks with a crossbow is increased by 10%.\nWhile wielding a bow your attacks and spells have +4% physical and holy pierce.",
+          "numeric_effects": {
+            "crossbow_critical_extra_damage": 10,
+            "bow_physical_pierce": 4,
+            "bow_holy_pierce": 4
+          }
+        }
+      },
+      "revelations": {
+        "gift_of_life": {
+          "reference_descriptions": {
+            "0": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
+            "1": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
+            "2": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
+            "3": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign."
+          },
+          "numeric_effects": {
+            "restored_max_health": [
+              20,
+              25,
+              30
+            ],
+            "restored_max_mana": [
+              20,
+              25,
+              30
+            ],
+            "exclusive_overkill_limit": [
+              20,
+              25,
+              30
+            ],
+            "spell_cooldown_reduction": [
+              60,
+              60,
+              60
+            ],
+            "battle_sign_cooldown": [
+              108000,
+              72000,
+              36000
+            ]
+          }
+        },
+        "divine_grenade": {
+          "reference_descriptions": {
+            "0": "This spell plants a marker at the feet of your target that explodes after 3 seconds, dealing holy damage. +16% base damage per additional stage.  \nCooldown:  26 / 20 / 14  seconds",
+            "1": "This spell plants a marker at the feet of your target that explodes after 3 seconds, dealing holy damage. +16% base damage per additional stage.  \nCooldown:  26 / 20 / 14  seconds",
+            "2": "This spell plants a marker at the feet of your target that explodes after 3 seconds, dealing holy damage. +16% base damage per additional stage.  \nCooldown:  26 / 20 / 14  seconds",
+            "3": "This spell plants a marker at the feet of your target that explodes after 3 seconds, dealing holy damage. +16% base damage per additional stage.  \nCooldown:  26 / 20 / 14  seconds"
+          },
+          "numeric_effects": {
+            "cooldown": [
+              26,
+              20,
+              14
+            ],
+            "explosion_delay": [
+              3,
+              3,
+              3
+            ],
+            "base_damage_bonus": [
+              0,
+              16,
+              32
+            ]
+          }
+        },
+        "divine_empowerment": {
+          "reference_descriptions": {
+            "0": "This support spell creates a field of holy energy around your feet for 5 seconds. As long as you stand in this field, your dealt damage increases by  8% / 10% / 12% .  \nCooldown:  32 / 28 / 24  seconds",
+            "1": "This support spell creates a field of holy energy around your feet for 5 seconds. As long as you stand in this field, your dealt damage increases by  8% / 10% / 12% .  \nCooldown:  32 / 28 / 24  seconds",
+            "2": "This support spell creates a field of holy energy around your feet for 5 seconds. As long as you stand in this field, your dealt damage increases by  8% / 10% / 12% .  \nCooldown:  32 / 28 / 24  seconds",
+            "3": "This support spell creates a field of holy energy around your feet for 5 seconds. As long as you stand in this field, your dealt damage increases by  8% / 10% / 12% .  \nCooldown:  32 / 28 / 24  seconds"
+          },
+          "numeric_effects": {
+            "cooldown": [
+              32,
+              28,
+              24
+            ],
+            "duration": [
+              5,
+              5,
+              5
+            ],
+            "damage_bonus": [
+              8,
+              10,
+              12
+            ]
+          }
+        },
+        "avatar_of_light": {
+          "reference_descriptions": {
+            "0": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
+            "1": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
+            "2": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
+            "3": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes"
+          },
+          "numeric_effects": {
+            "duration": [
+              15,
+              15,
+              15
+            ],
+            "cooldown": [
+              7200,
+              5400,
+              3600
+            ],
+            "damage_reduction": [
+              5,
+              10,
+              15
+            ],
+            "critical_hit_chance": [
+              100,
+              100,
+              100
+            ],
+            "critical_extra_damage": [
+              5,
+              10,
+              15
+            ]
+          }
+        }
+      }
+    },
+    "sorcerer": {
+      "slots": [
+        {
+          "state_slot": 1,
+          "tile": "QTL8",
+          "capacity": 200,
+          "conviction_id": 35,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 2,
+          "tile": "QTL7",
+          "capacity": 150,
+          "conviction_id": 5,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 3,
+          "tile": "QTL6",
+          "capacity": 100,
+          "conviction_id": 37,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 4,
+          "tile": "QTR6",
+          "capacity": 100,
+          "conviction_id": 34,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 5,
+          "tile": "QTR7",
+          "capacity": 150,
+          "conviction_id": 38,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 6,
+          "tile": "QTR8",
+          "capacity": 200,
+          "conviction_id": 27,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 7,
+          "tile": "QTL5",
+          "capacity": 150,
+          "conviction_id": 37,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 8,
+          "tile": "QTL4",
+          "capacity": 100,
+          "conviction_id": 26,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 9,
+          "tile": "QTL3",
+          "capacity": 75,
+          "conviction_id": 6,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 10,
+          "tile": "QTR3",
+          "capacity": 75,
+          "conviction_id": 38,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 11,
+          "tile": "QTR4",
+          "capacity": 100,
+          "conviction_id": 36,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 12,
+          "tile": "QTR5",
+          "capacity": 150,
+          "conviction_id": 5,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 13,
+          "tile": "QTL2",
+          "capacity": 100,
+          "conviction_id": 25,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 14,
+          "tile": "QTL1",
+          "capacity": 75,
+          "conviction_id": 34,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 15,
+          "tile": "QTL0",
+          "capacity": 50,
+          "conviction_id": 37,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 16,
+          "tile": "QTR0",
+          "capacity": 50,
+          "conviction_id": 24,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 17,
+          "tile": "QTR1",
+          "capacity": 75,
+          "conviction_id": 6,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 18,
+          "tile": "QTR2",
+          "capacity": 100,
+          "conviction_id": 38,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 19,
+          "tile": "QBL2",
+          "capacity": 100,
+          "conviction_id": 39,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 20,
+          "tile": "QBL1",
+          "capacity": 75,
+          "conviction_id": 5,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 21,
+          "tile": "QBL0",
+          "capacity": 50,
+          "conviction_id": 27,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 22,
+          "tile": "QBR0",
+          "capacity": 50,
+          "conviction_id": 40,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 23,
+          "tile": "QBR1",
+          "capacity": 75,
+          "conviction_id": 34,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 24,
+          "tile": "QBR2",
+          "capacity": 100,
+          "conviction_id": 26,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 25,
+          "tile": "QBL5",
+          "capacity": 150,
+          "conviction_id": 6,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 26,
+          "tile": "QBL4",
+          "capacity": 100,
+          "conviction_id": 36,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 27,
+          "tile": "QBL3",
+          "capacity": 75,
+          "conviction_id": 39,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 28,
+          "tile": "QBR3",
+          "capacity": 75,
+          "conviction_id": 5,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 29,
+          "tile": "QBR4",
+          "capacity": 100,
+          "conviction_id": 25,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 30,
+          "tile": "QBR5",
+          "capacity": 150,
+          "conviction_id": 40,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 31,
+          "tile": "QBL8",
+          "capacity": 200,
+          "conviction_id": 24,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 32,
+          "tile": "QBL7",
+          "capacity": 150,
+          "conviction_id": 39,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 33,
+          "tile": "QBL6",
+          "capacity": 100,
+          "conviction_id": 34,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 34,
+          "tile": "QBR6",
+          "capacity": 100,
+          "conviction_id": 40,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 35,
+          "tile": "QBR7",
+          "capacity": 150,
+          "conviction_id": 6,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 36,
+          "tile": "QBR8",
+          "capacity": 200,
+          "conviction_id": 23,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        }
+      ],
+      "augments": {
+        "augmented_focus_spells": {
+          "1": {
+            "reference_text": "+5% Base Damage for Hell's Core and Rage of the Skies",
+            "numeric_effects": [
+              {
+                "kind": "base_damage_bonus",
+                "value": 5.0,
+                "unit": "percent_points"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "-4s Cooldown; Focus secondary group cooldown -4s for Hell's Core and Rage of the Skies",
+            "numeric_effects": [
+              {
+                "kind": "cooldown_reduction",
+                "value": 4.0,
+                "unit": "seconds"
+              },
+              {
+                "kind": "secondary_cooldown_reduction",
+                "value": 4.0,
+                "unit": "seconds"
+              }
+            ]
+          }
+        },
+        "augmented_special_spells": {
+          "1": {
+            "reference_text": "-4s Cooldown for Lightning, Strong Energy Strike and Strong Flame Strike",
+            "numeric_effects": [
+              {
+                "kind": "cooldown_reduction",
+                "value": 4.0,
+                "unit": "seconds"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "+50% Base Damage for Lightning, Strong Energy Strike and Strong Flame Strike",
+            "numeric_effects": [
+              {
+                "kind": "base_damage_bonus",
+                "value": 50.0,
+                "unit": "percent_points"
+              }
+            ]
+          }
+        },
+        "augmented_death_echo": {
+          "1": {
+            "reference_text": "-2s Cooldown",
+            "numeric_effects": [
+              {
+                "kind": "cooldown_reduction",
+                "value": 2.0,
+                "unit": "seconds"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "+12% Base Damage",
+            "numeric_effects": [
+              {
+                "kind": "base_damage_bonus",
+                "value": 12.0,
+                "unit": "percent_points"
+              }
+            ]
+          }
+        },
+        "augmented_energy_wave": {
+          "1": {
+            "reference_text": "Affected area enlarged",
+            "numeric_effects": []
+          },
+          "2": {
+            "reference_text": "+10% Base Damage",
+            "numeric_effects": [
+              {
+                "kind": "base_damage_bonus",
+                "value": 10.0,
+                "unit": "percent_points"
+              }
+            ]
+          }
+        },
+        "augmented_great_fire_wave": {
+          "1": {
+            "reference_text": "Adds 15% critical extra damage for this spell.",
+            "numeric_effects": [
+              {
+                "kind": "critical_extra_damage",
+                "value": 15.0,
+                "unit": "percent_points"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "+5% Base Damage",
+            "numeric_effects": [
+              {
+                "kind": "base_damage_bonus",
+                "value": 5.0,
+                "unit": "percent_points"
+              }
+            ]
+          }
+        }
+      },
+      "unique": {
+        "runic_mastery": {
+          "reference_description": "If you use a rune, you have a 25% chance of increasing your magic level by 10%, or by 20% if you use a rune that can be created by your vocation.",
+          "numeric_effects": {
+            "rune_trigger_chance": 25,
+            "rune_magic_level_bonus": 10,
+            "own_vocation_rune_magic_level_bonus": 20
+          }
+        },
+        "focus_mastery": {
+          "reference_description": "Increases the damage of your next damage spell by 35% within 12 seconds after casting a focus spell. Reduces the group cooldown of focus spells by 2 seconds.",
+          "numeric_effects": {
+            "next_damage_spell_bonus": 35,
+            "focus_bonus_window": 12,
+            "focus_spell_group_cooldown_reduction": 2
+          }
+        }
+      },
+      "revelations": {
+        "gift_of_life": {
+          "reference_descriptions": {
+            "0": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
+            "1": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
+            "2": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
+            "3": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign."
+          },
+          "numeric_effects": {
+            "restored_max_health": [
+              20,
+              25,
+              30
+            ],
+            "restored_max_mana": [
+              20,
+              25,
+              30
+            ],
+            "exclusive_overkill_limit": [
+              20,
+              25,
+              30
+            ],
+            "spell_cooldown_reduction": [
+              60,
+              60,
+              60
+            ],
+            "battle_sign_cooldown": [
+              108000,
+              72000,
+              36000
+            ]
+          }
+        },
+        "beam_mastery": {
+          "reference_descriptions": {
+            "0": "Your beams now also hit tiles adjacent to the main beam, dealing  25% / 40% / 70%  of the initial damage. \n\nIn addition, for each target hit by a beam spell, the cooldown of all other spells is reduced by 1 sec (up to a maximum of 3 sec) and the damage of beam spells is increased by  10% / 12% / 14%  (up to a maximum of  30% / 36% / 42% ).",
+            "1": "Your beams now also hit tiles adjacent to the main beam, dealing  25% / 40% / 70%  of the initial damage. \n\nIn addition, for each target hit by a beam spell, the cooldown of all other spells is reduced by 1 sec (up to a maximum of 3 sec) and the damage of beam spells is increased by  10% / 12% / 14%  (up to a maximum of  30% / 36% / 42% ).",
+            "2": "Your beams now also hit tiles adjacent to the main beam, dealing  25% / 40% / 70%  of the initial damage. \n\nIn addition, for each target hit by a beam spell, the cooldown of all other spells is reduced by 1 sec (up to a maximum of 3 sec) and the damage of beam spells is increased by  10% / 12% / 14%  (up to a maximum of  30% / 36% / 42% ).",
+            "3": "Your beams now also hit tiles adjacent to the main beam, dealing  25% / 40% / 70%  of the initial damage. \n\nIn addition, for each target hit by a beam spell, the cooldown of all other spells is reduced by 1 sec (up to a maximum of 3 sec) and the damage of beam spells is increased by  10% / 12% / 14%  (up to a maximum of  30% / 36% / 42% )."
+          },
+          "numeric_effects": {
+            "flanking_damage": [
+              25,
+              40,
+              70
+            ],
+            "damage_bonus_per_central_target": [
+              10,
+              12,
+              14
+            ],
+            "central_target_cap": [
+              3,
+              3,
+              3
+            ],
+            "other_spell_cooldown_reduction_per_target": [
+              1,
+              1,
+              1
+            ],
+            "other_spell_cooldown_reduction_cap": [
+              3,
+              3,
+              3
+            ]
+          }
+        },
+        "lord_of_destruction": {
+          "reference_descriptions": {
+            "0": "Grants  2.00% / 3.00% / 4.00%  more fire damage for Master of Flames,  2.00% / 3.00% / 4.00%  more critical hit chance for Master of Thunder and  15.00% / 22.50% / 30.00%  more critical damage for Master of Decay.",
+            "1": "Grants  2.00% / 3.00% / 4.00%  more fire damage for Master of Flames,  2.00% / 3.00% / 4.00%  more critical hit chance for Master of Thunder and  15.00% / 22.50% / 30.00%  more critical damage for Master of Decay.",
+            "2": "Grants  2.00% / 3.00% / 4.00%  more fire damage for Master of Flames,  2.00% / 3.00% / 4.00%  more critical hit chance for Master of Thunder and  15.00% / 22.50% / 30.00%  more critical damage for Master of Decay.",
+            "3": "Grants  2.00% / 3.00% / 4.00%  more fire damage for Master of Flames,  2.00% / 3.00% / 4.00%  more critical hit chance for Master of Thunder and  15.00% / 22.50% / 30.00%  more critical damage for Master of Decay."
+          },
+          "numeric_effects": {
+            "mastery_flames_fire_damage_bonus": [
+              2,
+              3,
+              4
+            ],
+            "mastery_thunder_critical_chance": [
+              2,
+              3,
+              4
+            ],
+            "mastery_decay_critical_extra_damage": [
+              15,
+              22.5,
+              30
+            ]
+          }
+        },
+        "avatar_of_storm": {
+          "reference_descriptions": {
+            "0": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
+            "1": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
+            "2": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
+            "3": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes"
+          },
+          "numeric_effects": {
+            "duration": [
+              15,
+              15,
+              15
+            ],
+            "cooldown": [
+              7200,
+              5400,
+              3600
+            ],
+            "damage_reduction": [
+              5,
+              10,
+              15
+            ],
+            "critical_hit_chance": [
+              100,
+              100,
+              100
+            ],
+            "critical_extra_damage": [
+              5,
+              10,
+              15
+            ]
+          }
+        }
+      }
+    },
+    "druid": {
+      "slots": [
+        {
+          "state_slot": 1,
+          "tile": "QTL8",
+          "capacity": 200,
+          "conviction_id": 28,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 2,
+          "tile": "QTL7",
+          "capacity": 150,
+          "conviction_id": 5,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 3,
+          "tile": "QTL6",
+          "capacity": 100,
+          "conviction_id": 37,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 4,
+          "tile": "QTR6",
+          "capacity": 100,
+          "conviction_id": 34,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 5,
+          "tile": "QTR7",
+          "capacity": 150,
+          "conviction_id": 38,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 6,
+          "tile": "QTR8",
+          "capacity": 200,
+          "conviction_id": 29,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 7,
+          "tile": "QTL5",
+          "capacity": 150,
+          "conviction_id": 37,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 8,
+          "tile": "QTL4",
+          "capacity": 100,
+          "conviction_id": 32,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 9,
+          "tile": "QTL3",
+          "capacity": 75,
+          "conviction_id": 6,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 10,
+          "tile": "QTR3",
+          "capacity": 75,
+          "conviction_id": 38,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 11,
+          "tile": "QTR4",
+          "capacity": 100,
+          "conviction_id": 33,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 12,
+          "tile": "QTR5",
+          "capacity": 150,
+          "conviction_id": 5,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 13,
+          "tile": "QTL2",
+          "capacity": 100,
+          "conviction_id": 30,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 14,
+          "tile": "QTL1",
+          "capacity": 75,
+          "conviction_id": 34,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 15,
+          "tile": "QTL0",
+          "capacity": 50,
+          "conviction_id": 37,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 16,
+          "tile": "QTR0",
+          "capacity": 50,
+          "conviction_id": 31,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 17,
+          "tile": "QTR1",
+          "capacity": 75,
+          "conviction_id": 6,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 18,
+          "tile": "QTR2",
+          "capacity": 100,
+          "conviction_id": 38,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 19,
+          "tile": "QBL2",
+          "capacity": 100,
+          "conviction_id": 39,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 20,
+          "tile": "QBL1",
+          "capacity": 75,
+          "conviction_id": 5,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 21,
+          "tile": "QBL0",
+          "capacity": 50,
+          "conviction_id": 29,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 22,
+          "tile": "QBR0",
+          "capacity": 50,
+          "conviction_id": 40,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 23,
+          "tile": "QBR1",
+          "capacity": 75,
+          "conviction_id": 34,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 24,
+          "tile": "QBR2",
+          "capacity": 100,
+          "conviction_id": 32,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 25,
+          "tile": "QBL5",
+          "capacity": 150,
+          "conviction_id": 6,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 26,
+          "tile": "QBL4",
+          "capacity": 100,
+          "conviction_id": 33,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 27,
+          "tile": "QBL3",
+          "capacity": 75,
+          "conviction_id": 39,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 28,
+          "tile": "QBR3",
+          "capacity": 75,
+          "conviction_id": 5,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 29,
+          "tile": "QBR4",
+          "capacity": 100,
+          "conviction_id": 30,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 30,
+          "tile": "QBR5",
+          "capacity": 150,
+          "conviction_id": 40,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 31,
+          "tile": "QBL8",
+          "capacity": 200,
+          "conviction_id": 31,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 32,
+          "tile": "QBL7",
+          "capacity": 150,
+          "conviction_id": 39,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 33,
+          "tile": "QBL6",
+          "capacity": 100,
+          "conviction_id": 34,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 34,
+          "tile": "QBR6",
+          "capacity": 100,
+          "conviction_id": 40,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 35,
+          "tile": "QBR7",
+          "capacity": 150,
+          "conviction_id": 6,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 36,
+          "tile": "QBR8",
+          "capacity": 200,
+          "conviction_id": 35,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 1
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 6
+            }
+          ],
+          "native_value": 1
+        }
+      ],
+      "augments": {
+        "augmented_forked_spells": {
+          "1": {
+            "reference_text": "-2s Cooldown for Forked Thorns and Forked Glacier",
+            "numeric_effects": [
+              {
+                "kind": "cooldown_reduction",
+                "value": 2.0,
+                "unit": "seconds"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "Jumps to +1 additional target for Forked Thorns and Forked Glacier",
+            "numeric_effects": [
+              {
+                "kind": "additional_targets",
+                "value": 1.0,
+                "unit": "targets"
+              }
+            ]
+          }
+        },
+        "augmented_mass_healing": {
+          "1": {
+            "reference_text": "+4% Base Healing",
+            "numeric_effects": [
+              {
+                "kind": "base_healing_bonus",
+                "value": 4.0,
+                "unit": "percent_points"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "Affected area enlarged",
+            "numeric_effects": []
+          }
+        },
+        "augmented_heal_friend": {
+          "1": {
+            "reference_text": "+4% Base Healing",
+            "numeric_effects": [
+              {
+                "kind": "base_healing_bonus",
+                "value": 4.0,
+                "unit": "percent_points"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "+6% Base Healing",
+            "numeric_effects": [
+              {
+                "kind": "base_healing_bonus",
+                "value": 6.0,
+                "unit": "percent_points"
+              }
+            ]
+          }
+        },
+        "augmented_terra_wave": {
+          "1": {
+            "reference_text": "+6.5% Base Damage",
+            "numeric_effects": [
+              {
+                "kind": "base_damage_bonus",
+                "value": 6.5,
+                "unit": "percent_points"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "Adds 10% life leech to this spell",
+            "numeric_effects": [
+              {
+                "kind": "life_leech",
+                "value": 10.0,
+                "unit": "percent_points"
+              }
+            ]
+          }
+        },
+        "augmented_strong_ice_wave": {
+          "1": {
+            "reference_text": "+6% Base Damage",
+            "numeric_effects": [
+              {
+                "kind": "base_damage_bonus",
+                "value": 6.0,
+                "unit": "percent_points"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "Expanded Shape",
+            "numeric_effects": []
+          }
+        }
+      },
+      "unique": {
+        "healing_link": {
+          "reference_description": "If you heal someone with Nature's Embrace or Heal Friend, you also heal yourself for 25% of the applied healing.",
+          "numeric_effects": {
+            "self_healing_from_applied_target_heal": 25
+          }
+        },
+        "runic_mastery": {
+          "reference_description": "If you use a rune, you have a 25% chance of increasing your magic level by 10%, or by 20% if you use a rune that can be created by your vocation.",
+          "numeric_effects": {
+            "rune_trigger_chance": 25,
+            "rune_magic_level_bonus": 10,
+            "own_vocation_rune_magic_level_bonus": 20
+          }
+        }
+      },
+      "revelations": {
+        "gift_of_life": {
+          "reference_descriptions": {
+            "0": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
+            "1": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
+            "2": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
+            "3": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign."
+          },
+          "numeric_effects": {
+            "restored_max_health": [
+              20,
+              25,
+              30
+            ],
+            "restored_max_mana": [
+              20,
+              25,
+              30
+            ],
+            "exclusive_overkill_limit": [
+              20,
+              25,
+              30
+            ],
+            "spell_cooldown_reduction": [
+              60,
+              60,
+              60
+            ],
+            "battle_sign_cooldown": [
+              108000,
+              72000,
+              36000
+            ]
+          }
+        },
+        "blessing_of_the_grove": {
+          "reference_descriptions": {
+            "0": "Your healing spells can achieve critical hits. \nAdditionally, your healing is increased by  5% / 7.5% / 10%  against targets below 60% hit points. This effect is doubled against targets below 30% hit points..",
+            "1": "Your healing spells can achieve critical hits. \nAdditionally, your healing is increased by  5% / 7.5% / 10%  against targets below 60% hit points. This effect is doubled against targets below 30% hit points..",
+            "2": "Your healing spells can achieve critical hits. \nAdditionally, your healing is increased by  5% / 7.5% / 10%  against targets below 60% hit points. This effect is doubled against targets below 30% hit points..",
+            "3": "Your healing spells can achieve critical hits. \nAdditionally, your healing is increased by  5% / 7.5% / 10%  against targets below 60% hit points. This effect is doubled against targets below 30% hit points.."
+          },
+          "numeric_effects": {
+            "exclusive_target_health_limit": [
+              60,
+              60,
+              60
+            ],
+            "healing_bonus": [
+              5,
+              7.5,
+              10
+            ],
+            "exclusive_low_target_health_limit": [
+              30,
+              30,
+              30
+            ],
+            "low_health_healing_multiplier": [
+              2,
+              2,
+              2
+            ]
+          }
+        },
+        "twin_bursts": {
+          "reference_descriptions": {
+            "0": "Decide wisely whether you want to cast ice or earth damage in a small area around you, as these two ring spells share the same cooldown. Both spells deal  20% / 40% / 60%  additional damage to targets with more than 60% of their hit points. \nCooldown:  22 / 18 / 14  seconds",
+            "1": "Decide wisely whether you want to cast ice or earth damage in a small area around you, as these two ring spells share the same cooldown. Both spells deal  20% / 40% / 60%  additional damage to targets with more than 60% of their hit points. \nCooldown:  22 / 18 / 14  seconds",
+            "2": "Decide wisely whether you want to cast ice or earth damage in a small area around you, as these two ring spells share the same cooldown. Both spells deal  20% / 40% / 60%  additional damage to targets with more than 60% of their hit points. \nCooldown:  22 / 18 / 14  seconds",
+            "3": "Decide wisely whether you want to cast ice or earth damage in a small area around you, as these two ring spells share the same cooldown. Both spells deal  20% / 40% / 60%  additional damage to targets with more than 60% of their hit points. \nCooldown:  22 / 18 / 14  seconds"
+          },
+          "numeric_effects": {
+            "shared_cooldown": [
+              22,
+              18,
+              14
+            ],
+            "high_health_damage_bonus": [
+              20,
+              40,
+              60
+            ],
+            "exclusive_minimum_target_health": [
+              60,
+              60,
+              60
+            ]
+          }
+        },
+        "avatar_of_nature": {
+          "reference_descriptions": {
+            "0": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
+            "1": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
+            "2": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
+            "3": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes"
+          },
+          "numeric_effects": {
+            "duration": [
+              15,
+              15,
+              15
+            ],
+            "cooldown": [
+              7200,
+              5400,
+              3600
+            ],
+            "damage_reduction": [
+              5,
+              10,
+              15
+            ],
+            "critical_hit_chance": [
+              100,
+              100,
+              100
+            ],
+            "critical_extra_damage": [
+              5,
+              10,
+              15
+            ]
+          }
+        }
+      }
+    },
+    "monk": {
+      "slots": [
+        {
+          "state_slot": 1,
+          "tile": "QTL8",
+          "capacity": 200,
+          "conviction_id": 42,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 2,
+          "tile": "QTL7",
+          "capacity": 150,
+          "conviction_id": 5,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 3,
+          "tile": "QTL6",
+          "capacity": 100,
+          "conviction_id": 37,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 4,
+          "tile": "QTR6",
+          "capacity": 100,
+          "conviction_id": 43,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 5,
+          "tile": "QTR7",
+          "capacity": 150,
+          "conviction_id": 38,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 6,
+          "tile": "QTR8",
+          "capacity": 200,
+          "conviction_id": 47,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 7,
+          "tile": "QTL5",
+          "capacity": 150,
+          "conviction_id": 37,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 8,
+          "tile": "QTL4",
+          "capacity": 100,
+          "conviction_id": 45,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 9,
+          "tile": "QTL3",
+          "capacity": 75,
+          "conviction_id": 6,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 10,
+          "tile": "QTR3",
+          "capacity": 75,
+          "conviction_id": 38,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 5
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 11,
+          "tile": "QTR4",
+          "capacity": 100,
+          "conviction_id": 46,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 12,
+          "tile": "QTR5",
+          "capacity": 150,
+          "conviction_id": 5,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 13,
+          "tile": "QTL2",
+          "capacity": 100,
+          "conviction_id": 48,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 14,
+          "tile": "QTL1",
+          "capacity": 75,
+          "conviction_id": 43,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 15,
+          "tile": "QTL0",
+          "capacity": 50,
+          "conviction_id": 37,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 5
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 16,
+          "tile": "QTR0",
+          "capacity": 50,
+          "conviction_id": 44,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 17,
+          "tile": "QTR1",
+          "capacity": 75,
+          "conviction_id": 6,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 5
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 18,
+          "tile": "QTR2",
+          "capacity": 100,
+          "conviction_id": 38,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 19,
+          "tile": "QBL2",
+          "capacity": 100,
+          "conviction_id": 39,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 20,
+          "tile": "QBL1",
+          "capacity": 75,
+          "conviction_id": 5,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 21,
+          "tile": "QBL0",
+          "capacity": 50,
+          "conviction_id": 47,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 22,
+          "tile": "QBR0",
+          "capacity": 50,
+          "conviction_id": 40,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 23,
+          "tile": "QBR1",
+          "capacity": 75,
+          "conviction_id": 43,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 24,
+          "tile": "QBR2",
+          "capacity": 100,
+          "conviction_id": 45,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 5
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 25,
+          "tile": "QBL5",
+          "capacity": 150,
+          "conviction_id": 6,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 5
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 26,
+          "tile": "QBL4",
+          "capacity": 100,
+          "conviction_id": 46,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 27,
+          "tile": "QBL3",
+          "capacity": 75,
+          "conviction_id": 39,
+          "dedication_id": 0,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 28,
+          "tile": "QBR3",
+          "capacity": 75,
+          "conviction_id": 5,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 0.25
+        },
+        {
+          "state_slot": 29,
+          "tile": "QBR4",
+          "capacity": 100,
+          "conviction_id": 48,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 5
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 30,
+          "tile": "QBR5",
+          "capacity": 150,
+          "conviction_id": 40,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 31,
+          "tile": "QBL8",
+          "capacity": 200,
+          "conviction_id": 44,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 32,
+          "tile": "QBL7",
+          "capacity": 150,
+          "conviction_id": 39,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 5
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 33,
+          "tile": "QBL6",
+          "capacity": 100,
+          "conviction_id": 43,
+          "dedication_id": 4,
+          "dedication": [
+            {
+              "stat": "mitigation_multiplier",
+              "value_per_point": 0.075
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 34,
+          "tile": "QBR6",
+          "capacity": 100,
+          "conviction_id": 40,
+          "dedication_id": 3,
+          "dedication": [
+            {
+              "stat": "capacity",
+              "value_per_point": 5
+            }
+          ],
+          "native_value": 1
+        },
+        {
+          "state_slot": 35,
+          "tile": "QBR7",
+          "capacity": 150,
+          "conviction_id": 6,
+          "dedication_id": 1,
+          "dedication": [
+            {
+              "stat": "max_mana",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 0.75
+        },
+        {
+          "state_slot": 36,
+          "tile": "QBR8",
+          "capacity": 200,
+          "conviction_id": 41,
+          "dedication_id": 2,
+          "dedication": [
+            {
+              "stat": "max_health",
+              "value_per_point": 2
+            },
+            {
+              "stat": "max_mana",
+              "value_per_point": 2
+            }
+          ],
+          "native_value": 1
+        }
+      ],
+      "augments": {
+        "augmented_chained_penance": {
+          "1": {
+            "reference_text": "Jumps to +1 additional target",
+            "numeric_effects": [
+              {
+                "kind": "additional_targets",
+                "value": 1.0,
+                "unit": "targets"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "+18% Base Damage",
+            "numeric_effects": [
+              {
+                "kind": "base_damage_bonus",
+                "value": 18.0,
+                "unit": "percent_points"
+              }
+            ]
+          }
+        },
+        "augmented_mass_spirit_mend": {
+          "1": {
+            "reference_text": "+8% Base Healing",
+            "numeric_effects": [
+              {
+                "kind": "base_healing_bonus",
+                "value": 8.0,
+                "unit": "percent_points"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "-4s Cooldown",
+            "numeric_effects": [
+              {
+                "kind": "cooldown_reduction",
+                "value": 4.0,
+                "unit": "seconds"
+              }
+            ]
+          }
+        },
+        "augmented_mystic_repulse": {
+          "1": {
+            "reference_text": "-4s Cooldown",
+            "numeric_effects": [
+              {
+                "kind": "cooldown_reduction",
+                "value": 4.0,
+                "unit": "seconds"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "+60% Base Damage",
+            "numeric_effects": [
+              {
+                "kind": "base_damage_bonus",
+                "value": 60.0,
+                "unit": "percent_points"
+              }
+            ]
+          }
+        },
+        "augmented_flurry_of_blows": {
+          "1": {
+            "reference_text": "Affected area enlarged",
+            "numeric_effects": []
+          },
+          "2": {
+            "reference_text": "+15% Base Damage",
+            "numeric_effects": [
+              {
+                "kind": "base_damage_bonus",
+                "value": 15.0,
+                "unit": "percent_points"
+              }
+            ]
+          }
+        },
+        "augmented_thousand_fist_blows": {
+          "1": {
+            "reference_text": "Adds 40% critical extra damage for this spell.",
+            "numeric_effects": [
+              {
+                "kind": "critical_extra_damage",
+                "value": 40.0,
+                "unit": "percent_points"
+              }
+            ]
+          },
+          "2": {
+            "reference_text": "-4s Cooldown",
+            "numeric_effects": [
+              {
+                "kind": "cooldown_reduction",
+                "value": 4.0,
+                "unit": "seconds"
+              }
+            ]
+          }
+        }
+      },
+      "unique": {
+        "guiding_presence": {
+          "reference_description": "Gain an aura that shares your mantra with members of your group and increases your passive party bonuses by 33%.",
+          "numeric_effects": {
+            "shared_mantra_percent": 100,
+            "party_bonus_increase_source_percent": 33
+          }
+        },
+        "sanctuary": {
+          "reference_description": "Your damage and healing with attacks, spells and runes is increased by 10% when hitting adjacent targets. \nAdditionaly consuming Harmony creates a field lasting 5 seconds, increasing your damage and healing done by 2% for each Harmony consumed.",
+          "numeric_effects": {
+            "adjacent_target_damage_and_healing_bonus": 10,
+            "harmony_field_duration": 5,
+            "field_damage_and_healing_per_consumed_harmony": 2
+          }
+        }
+      },
+      "revelations": {
+        "gift_of_life": {
+          "reference_descriptions": {
+            "0": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
+            "1": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
+            "2": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign.",
+            "3": "If an attack (except with agony damage) were to kill you but the overkill damage amounts to less than  20% / 25% / 30%  of your maximum hit points, you will heal yourself for  20% / 25% / 30%  of your maximum hit points. Only after that is the damage applied. \nIn addition, all your spell cooldowns are reduced by 60 seconds, and  20% / 25% / 30%  of your maximum mana is restored.  \nCooldown:  30h / 20h / 10h  \nThe cooldown is only reduced while the character has a battle sign."
+          },
+          "numeric_effects": {
+            "restored_max_health": [
+              20,
+              25,
+              30
+            ],
+            "restored_max_mana": [
+              20,
+              25,
+              30
+            ],
+            "exclusive_overkill_limit": [
+              20,
+              25,
+              30
+            ],
+            "spell_cooldown_reduction": [
+              60,
+              60,
+              60
+            ],
+            "battle_sign_cooldown": [
+              108000,
+              72000,
+              36000
+            ]
+          }
+        },
+        "spiritual_outburst": {
+          "reference_descriptions": {
+            "0": "This spell consumes your Harmony. Releases a massive attack chaining to 7 additional enemies. When used with full Harmony, repeats after 1 second for  37.5% / 50% / 62.5%  of its original damage.\nCooldown:  24 / 20 / 16  seconds.",
+            "1": "This spell consumes your Harmony. Releases a massive attack chaining to 7 additional enemies. When used with full Harmony, repeats after 1 second for  37.5% / 50% / 62.5%  of its original damage.\nCooldown:  24 / 20 / 16  seconds.",
+            "2": "This spell consumes your Harmony. Releases a massive attack chaining to 7 additional enemies. When used with full Harmony, repeats after 1 second for  37.5% / 50% / 62.5%  of its original damage.\nCooldown:  24 / 20 / 16  seconds.",
+            "3": "This spell consumes your Harmony. Releases a massive attack chaining to 7 additional enemies. When used with full Harmony, repeats after 1 second for  37.5% / 50% / 62.5%  of its original damage.\nCooldown:  24 / 20 / 16  seconds."
+          },
+          "numeric_effects": {
+            "cooldown": [
+              24,
+              20,
+              16
+            ],
+            "additional_targets": [
+              7,
+              7,
+              7
+            ],
+            "full_harmony_repeat_delay": [
+              1,
+              1,
+              1
+            ],
+            "full_harmony_repeat_damage": [
+              37.5,
+              50,
+              62.5
+            ]
+          }
+        },
+        "ascetic": {
+          "reference_descriptions": {
+            "0": "Increases the Harmony base bonus by  1% / 2% / 3%  and your autoattacks deal additional damage equal to  100% / 200% / 300%  of your mantra.",
+            "1": "Increases the Harmony base bonus by  1% / 2% / 3%  and your autoattacks deal additional damage equal to  100% / 200% / 300%  of your mantra.",
+            "2": "Increases the Harmony base bonus by  1% / 2% / 3%  and your autoattacks deal additional damage equal to  100% / 200% / 300%  of your mantra.",
+            "3": "Increases the Harmony base bonus by  1% / 2% / 3%  and your autoattacks deal additional damage equal to  100% / 200% / 300%  of your mantra."
+          },
+          "numeric_effects": {
+            "harmony_base_bonus": [
+              1,
+              2,
+              3
+            ],
+            "autoattack_mantra_damage": [
+              100,
+              200,
+              300
+            ]
+          }
+        },
+        "avatar_of_balance": {
+          "reference_descriptions": {
+            "0": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
+            "1": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
+            "2": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes",
+            "3": "This spell transforms yourself into a powerful avatar for 15 seconds. \nWhile in this form, you benefit from  5% / 10% / 15%  damage reduction and all your attacks are critical hits with  5% / 10% / 15%  critical extra damage.  \nCooldown:  120 / 90 / 60  minutes"
+          },
+          "numeric_effects": {
+            "duration": [
+              15,
+              15,
+              15
+            ],
+            "cooldown": [
+              7200,
+              5400,
+              3600
+            ],
+            "damage_reduction": [
+              5,
+              10,
+              15
+            ],
+            "critical_hit_chance": [
+              100,
+              100,
+              100
+            ],
+            "critical_extra_damage": [
+              5,
+              10,
+              15
+            ]
+          }
+        }
+      }
+    }
+  },
+  "pre_repair_findings": [
+    {
+      "key": "battle_healing",
+      "official_source": "8872",
+      "decision": "BUG: shield multiplier must be 2, candidate has 3. June8833 is superseded by July8872."
+    },
+    {
+      "key": "augmented_mystic_repulse",
+      "stage": 2,
+      "official_source": "current public planner",
+      "decision": "CONFLICT: candidate typed40 vs planner60; official planner outranks English wiki under stated authority hierarchy."
+    },
+    {
+      "key": "lord_of_destruction",
+      "stage": 2,
+      "official_source": "8833",
+      "decision": "CORRECT selected22.5; planner25.5 is contradicted explicitly by official news. Candidate reference text remains inconsistent."
+    },
+    {
+      "key": "focus_mastery",
+      "official_source": "8833",
+      "decision": "CORRECT focus group cooldown -2s; planner wording primary cooldown is ambiguous/stale."
+    },
+    {
+      "key": "augmented_flurry_of_blows",
+      "stage": 1,
+      "official_source": "8833",
+      "decision": "CORRECT affected area enlargement; do not add cast range1 from ambiguous planner description."
+    },
+    {
+      "key": "guiding_presence",
+      "official_source": "8944",
+      "decision": "CORRECT typed100% mantra share and33% party-bonus increase, stale description omits33%; exact arithmetic remains separate runtime work."
+    },
+    {
+      "key": "augmented_mystic_repulse",
+      "stage": 1,
+      "official_source": "8944",
+      "decision": "CORRECT typed4s; stale description says6s."
+    },
+    {
+      "key": "augmented_thousand_fist_blows",
+      "stage": 2,
+      "official_source": "8944",
+      "decision": "CORRECT typed4s; stale description says6s."
+    }
+  ]
+}

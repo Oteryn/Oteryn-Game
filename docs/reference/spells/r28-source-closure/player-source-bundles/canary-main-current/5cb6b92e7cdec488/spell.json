@@ -1,0 +1,62 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 1000,
+    "costs": {
+      "mana": 5,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/canary-main-current/5cb6b92e7cdec488/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/5cb6b92e7cdec488",
+      "revision": "source-player-r28"
+    },
+    "name": "Practise Healing",
+    "needs_weapon": false,
+    "presentation": {
+      "source_cast_sound": {
+        "binding_status": "knownbound",
+        "constant": "SOUND_EFFECT_TYPE_SPELL_PRACTISE_HEALING",
+        "source_numeric_value": 1166
+      }
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 166,
+    "requirements": {
+      "learning_required": false,
+      "level": 1,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": false,
+          "vocation": "none"
+        }
+      ],
+      "vocations": [
+        "none"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "exura dis"
+  }
+}

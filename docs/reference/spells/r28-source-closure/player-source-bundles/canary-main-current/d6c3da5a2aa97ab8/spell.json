@@ -1,0 +1,64 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 30,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/canary-main-current/d6c3da5a2aa97ab8/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/d6c3da5a2aa97ab8",
+      "revision": "source-player-r28"
+    },
+    "name": "Brutal Strike",
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_brutal_strike"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 61,
+    "requirements": {
+      "learning_required": false,
+      "level": 16,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "none",
+      "range_tiles": 1,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exori ico"
+  }
+}

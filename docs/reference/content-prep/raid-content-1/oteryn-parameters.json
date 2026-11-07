@@ -1,0 +1,32 @@
+{
+  "schema": "OTERYN_WORKING_REFERENCE_PARAMETERS/v1",
+  "task": "RAID-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "SOURCE_RECONCILED_WITH_UNRESOLVED_RAID_IDENTITY_AND_SCHEDULES",
+  "owner_instruction_source": "owner:oteryn-data-completion:2026-10-19",
+  "filled_fields": 2,
+  "normalized_companion_fields": 0,
+  "remaining_unfilled_fields": 133,
+  "originating_proposals": "docs/reference/content-prep/raid-content-1/oteryn-proposals.json",
+  "source_archive": "docs/reference/content-prep/raid-content-1/tibia-source-archive.json",
+  "shared_policies": {},
+  "selection_policy": "Source-backed raid candidates are retained without runtime selection. No generic wave, schedule or announcement substitutes for an unresolved source fact; two prior boss proposals remain explicitly separate.",
+  "source_reconciled_candidate_fields": 234,
+  "remaining_unresolved_source_fields": 190,
+  "raid_source_repair": {
+    "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json",
+    "records": 122,
+    "full_broadcast_set_records": 36,
+    "full_unique_broadcast_records": 33,
+    "full_multiple_variant_records": 3,
+    "partial_only_records": 9,
+    "prior_weak_selection_records": 11,
+    "no_source_identity_records": 66,
+    "wave_defaults_reconciled": 120,
+    "generic_schedules_withdrawn": 114,
+    "generated_announcements_withdrawn": 40,
+    "unresolved_active_source_fields": 190,
+    "native_admission": false
+  }
+}

@@ -1,0 +1,614 @@
+{
+  "no_native_writes": true,
+  "raw_capture_lane_external_only": true,
+  "records": [
+    {
+      "Quest_guard_inferred": false,
+      "Services_inferred": false,
+      "actor_image_anchors": [
+        {
+          "alt": "Atui.gif",
+          "image_tag": {
+            "byte_end": 99683,
+            "byte_start": 99595,
+            "fragment_sha256": "880f3301575518f1659cbd75512555dd3dbdf487fe354f121812bcb93b62541c"
+          },
+          "image_url": "https://www.tibiawiki.com.br/images/b/b3/Atui.gif",
+          "parent_anchor_tag": {
+            "byte_end": 99595,
+            "byte_start": 99539,
+            "fragment_sha256": "7f89b71adcfecc1d8a0a625bfe11aeaeff3bd3dadbd3c6b83caf2ee78cd734ff"
+          },
+          "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Atui.gif"
+        },
+        {
+          "alt": "Atui.gif",
+          "image_tag": {
+            "byte_end": 105226,
+            "byte_start": 105138,
+            "fragment_sha256": "880f3301575518f1659cbd75512555dd3dbdf487fe354f121812bcb93b62541c"
+          },
+          "image_url": "https://www.tibiawiki.com.br/images/b/b3/Atui.gif",
+          "parent_anchor_tag": {
+            "byte_end": 105138,
+            "byte_start": 105082,
+            "fragment_sha256": "7f89b71adcfecc1d8a0a625bfe11aeaeff3bd3dadbd3c6b83caf2ee78cd734ff"
+          },
+          "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Atui.gif"
+        }
+      ],
+      "browser_version": "Chrome/154.0.8037.58",
+      "canonical_article_verification": "CURRENT_LOCATION_EQUALS_MEDIAWIKI_PAGE_NAME_AND_PARSE_TITLE",
+      "canonical_link_in_dom": null,
+      "capture_custody": {
+        "api.json": {
+          "bytes": 4811,
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/atui.api.json",
+          "sha256": "38b8a2f5c23fb27afa7c0dc070afb0f91eb55050d215e2fa72fb155f0f29c41d"
+        },
+        "dom.html": {
+          "bytes": 668789,
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/atui.dom.html",
+          "sha256": "f68b7f1310d4cd4ee76e3c445ed862c805dfe08c825ccb1700984710e11eb56e"
+        },
+        "dom.txt": {
+          "bytes": 3701,
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/atui.dom.txt",
+          "sha256": "89d73ce75c01dff3c7dc2f36b0e14d75fbfb3ec2b63d55ce67af53bbd381f2b0"
+        },
+        "wikitext.txt": {
+          "bytes": 4654,
+          "derived_from": "/parse/wikitext/*",
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/atui.wikitext.txt",
+          "sha256": "81c1a1b93bb57014d40bc6c832607bf260b1dac00d9bb8bd37a6edd8f06fc513"
+        }
+      },
+      "captured_at": "2026-10-01T20:31:04.718Z",
+      "categories": [
+        "NPCs no Tibia",
+        "NPCs de Oramond",
+        "NPCs de Podzilla Maw",
+        "NPCs Human\u00f3ides",
+        "NPCs Corym Skirmisher",
+        "NPCs Roleplay",
+        "NPCs com Transcri\u00e7\u00f5es",
+        "Adicionado na vers\u00e3o 13.40.54ea79",
+        "NPC em Revis\u00e3o"
+      ],
+      "current_public_article_url": "https://www.tibiawiki.com.br/wiki/Atui",
+      "dom_title_witness": {
+        "byte_end": 1775,
+        "byte_start": 1716,
+        "fragment_sha256": "0d425b46185d3fb52b8b354ac7c2cc0b22631e7585fad20ef3e5c5dd8aaa1360"
+      },
+      "envelope_custody": {
+        "bytes": 98443,
+        "path": "/workspace/npc-r17-research/definitions/browser-captures/atui.envelope.json",
+        "sha256": "79ef94aa48a7f5af95d9be641398ef8ead5856792f661f8c3c478e61976751de"
+      },
+      "event_category_present": false,
+      "heading": "Atui",
+      "image_capture": {
+        "bytes": 6815,
+        "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+        "path": "/workspace/npc-r17-research/definitions/browser-captures/atui.gif",
+        "sha256": "ff1561360a872545c9e11f90db3bb87dbb5e9f0289c5f7a3604eb3c80dc427e2",
+        "url": "https://www.tibiawiki.com.br/images/b/b3/Atui.gif"
+      },
+      "image_url": "https://www.tibiawiki.com.br/images/b/b3/Atui.gif",
+      "literal_name_witness": {
+        "byte_end": 73,
+        "byte_start": 53,
+        "fragment_sha256": "9c522a7ee89fd0660dbe07d2801edbaa942fcfd33440bf0d9e6e637f5544513a"
+      },
+      "method": "PUBLIC_REAL_CHROME_CDP_DOM_AND_SAME_ORIGIN_API_GET",
+      "movement_inferred": false,
+      "name": "Atui",
+      "native_admitted": false,
+      "pageid": 62162,
+      "placement_inferred": false,
+      "positive_current_npc_category": "NPCs no Tibia",
+      "removed_flag": {
+        "field_present": false,
+        "field_witness": null,
+        "raw_value": null,
+        "source_only_no_permanent_presence_inference": true,
+        "status": "NOT_MARKED_REMOVED"
+      },
+      "revid": 420233,
+      "title": "Atui - Tibia Wiki - A Enciclop\u00e9dia do Tibia",
+      "type": "NPC",
+      "type_witness": {
+        "byte_end": 13,
+        "byte_start": 0,
+        "fragment_sha256": "3d8ae95ee244fe1caac7ff455ea2f9c2e18988b86dab4987fb9c14256b750edf"
+      }
+    },
+    {
+      "Quest_guard_inferred": false,
+      "Services_inferred": false,
+      "actor_image_anchors": [
+        {
+          "alt": "Petaloid.gif",
+          "image_tag": {
+            "byte_end": 99835,
+            "byte_start": 99739,
+            "fragment_sha256": "0a174554e886c18dce389ed0e3969c3d7f9275d36d87080cdd970a8b15378d46"
+          },
+          "image_url": "https://www.tibiawiki.com.br/images/8/89/Petaloid.gif",
+          "parent_anchor_tag": {
+            "byte_end": 99739,
+            "byte_start": 99679,
+            "fragment_sha256": "50766ffe0d29e8028525a3e0ab1e4d2107bcf91bc11ce3a222bcb3c6ff6a6621"
+          },
+          "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Petaloid.gif"
+        },
+        {
+          "alt": "Petaloid.gif",
+          "image_tag": {
+            "byte_end": 101125,
+            "byte_start": 101029,
+            "fragment_sha256": "0a174554e886c18dce389ed0e3969c3d7f9275d36d87080cdd970a8b15378d46"
+          },
+          "image_url": "https://www.tibiawiki.com.br/images/8/89/Petaloid.gif",
+          "parent_anchor_tag": {
+            "byte_end": 101029,
+            "byte_start": 100969,
+            "fragment_sha256": "50766ffe0d29e8028525a3e0ab1e4d2107bcf91bc11ce3a222bcb3c6ff6a6621"
+          },
+          "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Petaloid.gif"
+        }
+      ],
+      "browser_version": "Chrome/154.0.8037.58",
+      "canonical_article_verification": "CURRENT_LOCATION_EQUALS_MEDIAWIKI_PAGE_NAME_AND_PARSE_TITLE",
+      "canonical_link_in_dom": null,
+      "capture_custody": {
+        "api.json": {
+          "bytes": 527,
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/petaloid.api.json",
+          "sha256": "8dd5f68752f3d0e0087c08fc4f609a1c578f837d791c37923d54c63decad96c0"
+        },
+        "dom.html": {
+          "bytes": 664370,
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/petaloid.dom.html",
+          "sha256": "45d8357984589e16b044f186a8f1ce58bc20e68a9dd4c21f5633bd28ad91f826"
+        },
+        "dom.txt": {
+          "bytes": 3673,
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/petaloid.dom.txt",
+          "sha256": "5a3e7113c8c0092763683a20b5df6df8877913cafcf57aa771caa0b5e20f77f2"
+        },
+        "wikitext.txt": {
+          "bytes": 418,
+          "derived_from": "/parse/wikitext/*",
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/petaloid.wikitext.txt",
+          "sha256": "6ea533983a06e88e58ca44830946edb122d1f0140ee3341bca4e40b87fab8297"
+        }
+      },
+      "captured_at": "2026-10-01T20:31:06.290Z",
+      "categories": [
+        "NPCs no Tibia",
+        "NPCs de Oramond",
+        "NPCs de Podzilla Maw",
+        "NPCs sem Sprite",
+        "NPCs Roleplay",
+        "NPCs com Transcri\u00e7\u00f5es",
+        "Adicionado na vers\u00e3o 13.40.54ea79",
+        "NPC em Revis\u00e3o"
+      ],
+      "current_public_article_url": "https://www.tibiawiki.com.br/wiki/Petaloid",
+      "dom_title_witness": {
+        "byte_end": 1883,
+        "byte_start": 1820,
+        "fragment_sha256": "76b9495e0e1ec04c3358e8b5183dc38e81d25298f42d269764f375956bc42cdc"
+      },
+      "envelope_custody": {
+        "bytes": 93322,
+        "path": "/workspace/npc-r17-research/definitions/browser-captures/petaloid.envelope.json",
+        "sha256": "cb1329a3560720683bd21b835a64b75efc1bdb76e135b48af80585896d6954dd"
+      },
+      "event_category_present": false,
+      "heading": "Petaloid",
+      "image_capture": {
+        "bytes": 20612,
+        "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+        "path": "/workspace/npc-r17-research/definitions/browser-captures/petaloid.gif",
+        "sha256": "55b57f8972438bff46b79935f78dead1b1dc86c6588d58e04123ce24c089ad26",
+        "url": "https://www.tibiawiki.com.br/images/8/89/Petaloid.gif"
+      },
+      "image_url": "https://www.tibiawiki.com.br/images/8/89/Petaloid.gif",
+      "literal_name_witness": {
+        "byte_end": 77,
+        "byte_start": 53,
+        "fragment_sha256": "726352b37d109948ae89adb4423af9f3147eaba334ad97c8cd5f9db0e69b2ab4"
+      },
+      "method": "PUBLIC_REAL_CHROME_CDP_DOM_AND_SAME_ORIGIN_API_GET",
+      "movement_inferred": false,
+      "name": "Petaloid",
+      "native_admitted": false,
+      "pageid": 62163,
+      "placement_inferred": false,
+      "positive_current_npc_category": "NPCs no Tibia",
+      "removed_flag": {
+        "field_present": false,
+        "field_witness": null,
+        "raw_value": null,
+        "source_only_no_permanent_presence_inference": true,
+        "status": "NOT_MARKED_REMOVED"
+      },
+      "revid": 419244,
+      "title": "Petaloid - Tibia Wiki - A Enciclop\u00e9dia do Tibia",
+      "type": "NPC",
+      "type_witness": {
+        "byte_end": 13,
+        "byte_start": 0,
+        "fragment_sha256": "3d8ae95ee244fe1caac7ff455ea2f9c2e18988b86dab4987fb9c14256b750edf"
+      }
+    },
+    {
+      "Quest_guard_inferred": false,
+      "Services_inferred": false,
+      "actor_image_anchors": [
+        {
+          "alt": "Sprout Sentinel.gif",
+          "image_tag": {
+            "byte_end": 228506,
+            "byte_start": 228395,
+            "fragment_sha256": "40b4743a6cb0425070487cac64a98a30a293c833caa5b3e5d14c3d29070ab5d0"
+          },
+          "image_url": "https://www.tibiawiki.com.br/images/4/42/Sprout_Sentinel.gif",
+          "parent_anchor_tag": {
+            "byte_end": 228395,
+            "byte_start": 228328,
+            "fragment_sha256": "23e485bc1273e1a41b0c5c135624fb27dd37e85e9034651c44a2de25c69bf413"
+          },
+          "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Sprout_Sentinel.gif"
+        },
+        {
+          "alt": "Sprout Sentinel.gif",
+          "image_tag": {
+            "byte_end": 229897,
+            "byte_start": 229786,
+            "fragment_sha256": "40b4743a6cb0425070487cac64a98a30a293c833caa5b3e5d14c3d29070ab5d0"
+          },
+          "image_url": "https://www.tibiawiki.com.br/images/4/42/Sprout_Sentinel.gif",
+          "parent_anchor_tag": {
+            "byte_end": 229786,
+            "byte_start": 229719,
+            "fragment_sha256": "23e485bc1273e1a41b0c5c135624fb27dd37e85e9034651c44a2de25c69bf413"
+          },
+          "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Sprout_Sentinel.gif"
+        }
+      ],
+      "browser_version": "Chrome/154.0.8037.58",
+      "canonical_article_verification": "CURRENT_LOCATION_EQUALS_MEDIAWIKI_PAGE_NAME_AND_PARSE_TITLE",
+      "canonical_link_in_dom": null,
+      "capture_custody": {
+        "api.json": {
+          "bytes": 584,
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/sprout_sentinel.api.json",
+          "sha256": "db4aa547d65156135ea62e2a61d7cd34015d95e5c0e1917a005df464778e5977"
+        },
+        "dom.html": {
+          "bytes": 816517,
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/sprout_sentinel.dom.html",
+          "sha256": "d7be66cd7258a0f518855f9fb291f381dc290cb4afcfa6034f789a94de0d5516"
+        },
+        "dom.txt": {
+          "bytes": 3692,
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/sprout_sentinel.dom.txt",
+          "sha256": "1010b045ac14a5511e82c1a05b45d9512a4886be6656d6d5374f97f5fed2c445"
+        },
+        "wikitext.txt": {
+          "bytes": 468,
+          "derived_from": "/parse/wikitext/*",
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/sprout_sentinel.wikitext.txt",
+          "sha256": "0b1cd6dcfbfa2b78d665eb52bfb2835fdd5305314ff305fddde28b683c7130ba"
+        }
+      },
+      "captured_at": "2026-10-01T20:31:07.805Z",
+      "categories": [
+        "NPCs no Tibia",
+        "NPCs de Oramond",
+        "NPCs de Podzilla Stalk",
+        "NPCs sem Sprite",
+        "NPCs Roleplay",
+        "NPCs com Transcri\u00e7\u00f5es",
+        "Adicionado na vers\u00e3o 13.40.54ea79",
+        "NPC em Revis\u00e3o"
+      ],
+      "current_public_article_url": "https://www.tibiawiki.com.br/wiki/Sprout_Sentinel",
+      "dom_title_witness": {
+        "byte_end": 1809,
+        "byte_start": 1739,
+        "fragment_sha256": "6086325a28657c81d55b372c28f27e484a6ba92e0c00437973294dd4df99970b"
+      },
+      "envelope_custody": {
+        "bytes": 161590,
+        "path": "/workspace/npc-r17-research/definitions/browser-captures/sprout_sentinel.envelope.json",
+        "sha256": "1e08694d7e99b391ab8de068e06baefdc1d2dbd51d42f3e27e606bb772d6d30a"
+      },
+      "event_category_present": false,
+      "heading": "Sprout Sentinel",
+      "image_capture": {
+        "bytes": 23760,
+        "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+        "path": "/workspace/npc-r17-research/definitions/browser-captures/sproutsentinel.gif",
+        "sha256": "878ea0836820326e405aec109abdb4b05b78de015e95306a335589522efdc965",
+        "url": "https://www.tibiawiki.com.br/images/4/42/Sprout_Sentinel.gif"
+      },
+      "image_url": "https://www.tibiawiki.com.br/images/4/42/Sprout_Sentinel.gif",
+      "literal_name_witness": {
+        "byte_end": 84,
+        "byte_start": 53,
+        "fragment_sha256": "184cacb7143c7ce78ee25b848e0460513e43abfa4eac7a06732858af9efbf88c"
+      },
+      "method": "PUBLIC_REAL_CHROME_CDP_DOM_AND_SAME_ORIGIN_API_GET",
+      "movement_inferred": false,
+      "name": "Sprout Sentinel",
+      "native_admitted": false,
+      "pageid": 62161,
+      "placement_inferred": false,
+      "positive_current_npc_category": "NPCs no Tibia",
+      "removed_flag": {
+        "field_present": false,
+        "field_witness": null,
+        "raw_value": null,
+        "source_only_no_permanent_presence_inference": true,
+        "status": "NOT_MARKED_REMOVED"
+      },
+      "revid": 419239,
+      "title": "Sprout Sentinel - Tibia Wiki - A Enciclop\u00e9dia do Tibia",
+      "type": "NPC",
+      "type_witness": {
+        "byte_end": 13,
+        "byte_start": 0,
+        "fragment_sha256": "3d8ae95ee244fe1caac7ff455ea2f9c2e18988b86dab4987fb9c14256b750edf"
+      }
+    },
+    {
+      "Quest_guard_inferred": false,
+      "Services_inferred": false,
+      "actor_image_anchors": [
+        {
+          "alt": "Two Lips.gif",
+          "image_tag": {
+            "byte_end": 228416,
+            "byte_start": 228320,
+            "fragment_sha256": "f0719472974895729ae8c37ffbd03559f97c404ad72bcd48888506491fa04c58"
+          },
+          "image_url": "https://www.tibiawiki.com.br/images/9/9f/Two_Lips.gif",
+          "parent_anchor_tag": {
+            "byte_end": 228320,
+            "byte_start": 228260,
+            "fragment_sha256": "69980b12a044bee15bee333fd5ae25a8da493da9dc6fbc859cef251e88e99c75"
+          },
+          "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Two_Lips.gif"
+        },
+        {
+          "alt": "Two Lips.gif",
+          "image_tag": {
+            "byte_end": 229778,
+            "byte_start": 229682,
+            "fragment_sha256": "f0719472974895729ae8c37ffbd03559f97c404ad72bcd48888506491fa04c58"
+          },
+          "image_url": "https://www.tibiawiki.com.br/images/9/9f/Two_Lips.gif",
+          "parent_anchor_tag": {
+            "byte_end": 229682,
+            "byte_start": 229622,
+            "fragment_sha256": "69980b12a044bee15bee333fd5ae25a8da493da9dc6fbc859cef251e88e99c75"
+          },
+          "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Two_Lips.gif"
+        }
+      ],
+      "browser_version": "Chrome/154.0.8037.58",
+      "canonical_article_verification": "CURRENT_LOCATION_EQUALS_MEDIAWIKI_PAGE_NAME_AND_PARSE_TITLE",
+      "canonical_link_in_dom": null,
+      "capture_custody": {
+        "api.json": {
+          "bytes": 570,
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/two_lips.api.json",
+          "sha256": "0de1e2516d88f4b20f1428db63ee91901bf18308b78472bebf1de14f48aae020"
+        },
+        "dom.html": {
+          "bytes": 816308,
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/two_lips.dom.html",
+          "sha256": "69f48b97afa662adc8ada7cf63e1a1cf3c51f7470f398dbefdea07d5f8a0cff1"
+        },
+        "dom.txt": {
+          "bytes": 3681,
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/two_lips.dom.txt",
+          "sha256": "aa523475cee5eba2ffaee8d3f7525d8d426622d6e000b6c2d9877dcaf9957b3e"
+        },
+        "wikitext.txt": {
+          "bytes": 460,
+          "derived_from": "/parse/wikitext/*",
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/two_lips.wikitext.txt",
+          "sha256": "d3d8b1289b80891d2d5134d2d035775985e0ac0b77c22b0cffb5c533591fede8"
+        }
+      },
+      "captured_at": "2026-10-01T20:31:09.364Z",
+      "categories": [
+        "NPCs no Tibia",
+        "NPCs de Oramond",
+        "NPCs de Podzilla Maw",
+        "NPCs sem Sprite",
+        "NPCs Roleplay",
+        "NPCs com Transcri\u00e7\u00f5es",
+        "Adicionado na vers\u00e3o 13.40.54ea79",
+        "NPC em Revis\u00e3o"
+      ],
+      "current_public_article_url": "https://www.tibiawiki.com.br/wiki/Two_Lips",
+      "dom_title_witness": {
+        "byte_end": 1802,
+        "byte_start": 1739,
+        "fragment_sha256": "cbd33f906e5d3c2bc07174cbeda2ae060cc16b021c7fa293a1a9ceea5f90816c"
+      },
+      "envelope_custody": {
+        "bytes": 161448,
+        "path": "/workspace/npc-r17-research/definitions/browser-captures/two_lips.envelope.json",
+        "sha256": "1668f8c67b774a3b98e3ea2ffa6c6ba74b89e41d7ff45ebbfaf38361b67b2c42"
+      },
+      "event_category_present": false,
+      "heading": "Two Lips",
+      "image_capture": {
+        "bytes": 22715,
+        "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+        "path": "/workspace/npc-r17-research/definitions/browser-captures/twolips.gif",
+        "sha256": "a1958fa2c585e097d1d6cf8f8aef904929278eececc6a478a9db2e0164a36055",
+        "url": "https://www.tibiawiki.com.br/images/9/9f/Two_Lips.gif"
+      },
+      "image_url": "https://www.tibiawiki.com.br/images/9/9f/Two_Lips.gif",
+      "literal_name_witness": {
+        "byte_end": 77,
+        "byte_start": 53,
+        "fragment_sha256": "f5ddca43b257d663c81e5248218c17cfa9e78c6ab35845df930856e58e8037cd"
+      },
+      "method": "PUBLIC_REAL_CHROME_CDP_DOM_AND_SAME_ORIGIN_API_GET",
+      "movement_inferred": false,
+      "name": "Two Lips",
+      "native_admitted": false,
+      "pageid": 62164,
+      "placement_inferred": false,
+      "positive_current_npc_category": "NPCs no Tibia",
+      "removed_flag": {
+        "field_present": false,
+        "field_witness": null,
+        "raw_value": null,
+        "source_only_no_permanent_presence_inference": true,
+        "status": "NOT_MARKED_REMOVED"
+      },
+      "revid": 419227,
+      "title": "Two Lips - Tibia Wiki - A Enciclop\u00e9dia do Tibia",
+      "type": "NPC",
+      "type_witness": {
+        "byte_end": 13,
+        "byte_start": 0,
+        "fragment_sha256": "3d8ae95ee244fe1caac7ff455ea2f9c2e18988b86dab4987fb9c14256b750edf"
+      }
+    },
+    {
+      "Quest_guard_inferred": false,
+      "Services_inferred": false,
+      "actor_image_anchors": [
+        {
+          "alt": "Yselda.gif",
+          "image_tag": {
+            "byte_end": 88520,
+            "byte_start": 88428,
+            "fragment_sha256": "e05238bc427c8780a68d1e88617ba84f57f92c531887d37c60e26f9325ba48eb"
+          },
+          "image_url": "https://www.tibiawiki.com.br/images/5/5f/Yselda.gif",
+          "parent_anchor_tag": {
+            "byte_end": 88428,
+            "byte_start": 88379,
+            "fragment_sha256": "c3a74b87ede4222142cf5f9dd2a70136237fad1dbae87d0418fc3f93bd0b1e8a"
+          },
+          "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Yselda.gif"
+        },
+        {
+          "alt": "Yselda.gif",
+          "image_tag": {
+            "byte_end": 89643,
+            "byte_start": 89551,
+            "fragment_sha256": "e05238bc427c8780a68d1e88617ba84f57f92c531887d37c60e26f9325ba48eb"
+          },
+          "image_url": "https://www.tibiawiki.com.br/images/5/5f/Yselda.gif",
+          "parent_anchor_tag": {
+            "byte_end": 89551,
+            "byte_start": 89502,
+            "fragment_sha256": "c3a74b87ede4222142cf5f9dd2a70136237fad1dbae87d0418fc3f93bd0b1e8a"
+          },
+          "parent_anchor_url": "https://www.tibiawiki.com.br/wiki/Arquivo:Yselda.gif"
+        }
+      ],
+      "browser_version": "Chrome/154.0.8037.58",
+      "canonical_article_verification": "CURRENT_LOCATION_EQUALS_MEDIAWIKI_PAGE_NAME_AND_PARSE_TITLE",
+      "canonical_link_in_dom": null,
+      "capture_custody": {
+        "api.json": {
+          "bytes": 732,
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/yselda.api.json",
+          "sha256": "b24c348f2e9e4daa00ea8d136fa228076b56fa5fa2b16edc0bb63ce07b342a1f"
+        },
+        "dom.html": {
+          "bytes": 173111,
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/yselda.dom.html",
+          "sha256": "c7e04506df492a6c5b98b0b4fc4ba3a5a7686ae922e1f94ea4d7b55fbffb7bce"
+        },
+        "dom.txt": {
+          "bytes": 3188,
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/yselda.dom.txt",
+          "sha256": "3c100870af5fe3cc904464adbbc2ef46277c721058021c0802e2a8d8c071b0e4"
+        },
+        "wikitext.txt": {
+          "bytes": 619,
+          "derived_from": "/parse/wikitext/*",
+          "path": "/workspace/npc-r17-research/definitions/browser-captures/yselda.wikitext.txt",
+          "sha256": "da53912b608e44dcbfc6839c2f2fd12b5dbda6b3ea5ce70e32712bb4fb7e5eb3"
+        }
+      },
+      "captured_at": "2026-10-01T20:31:03.195Z",
+      "categories": [
+        "NPCs no Tibia",
+        "NPCs de Vandura",
+        "NPCs de Forest of Life",
+        "NPCs sem Sprite",
+        "NPCs Roleplay",
+        "Adicionado na vers\u00e3o 12.70",
+        "NPC em Revis\u00e3o"
+      ],
+      "current_public_article_url": "https://www.tibiawiki.com.br/wiki/Yselda",
+      "dom_title_witness": {
+        "byte_end": 726,
+        "byte_start": 665,
+        "fragment_sha256": "5481e83232268d44f220ffb4ba183a4e6a7578e93baf37da6cb9f0d63606bf37"
+      },
+      "envelope_custody": {
+        "bytes": 64008,
+        "path": "/workspace/npc-r17-research/definitions/browser-captures/yselda.envelope.json",
+        "sha256": "b0b93f3b748d24b3c5be8af873ae2a299e1af3d32e10452989904a2428524166"
+      },
+      "event_category_present": false,
+      "heading": "Yselda",
+      "image_capture": {
+        "bytes": 8042,
+        "method": "PUBLIC_REAL_CHROME_SAME_ORIGIN_GET_GIF_FROM_CURRENT_DOM_IMAGE_URL",
+        "path": "/workspace/npc-r17-research/definitions/browser-captures/yselda.gif",
+        "sha256": "00acc9ccf2e2d5e80dbbbb962d61077f540bfbd8ed7654397678d34207a80327",
+        "url": "https://www.tibiawiki.com.br/images/5/5f/Yselda.gif"
+      },
+      "image_url": "https://www.tibiawiki.com.br/images/5/5f/Yselda.gif",
+      "literal_name_witness": {
+        "byte_end": 75,
+        "byte_start": 53,
+        "fragment_sha256": "ce9813998d8891a2803ed9dfa686136e1fe4b686f11b173786aff55ec5eecc1e"
+      },
+      "method": "PUBLIC_REAL_CHROME_CDP_DOM_AND_SAME_ORIGIN_API_GET",
+      "movement_inferred": false,
+      "name": "Yselda",
+      "native_admitted": false,
+      "pageid": 52101,
+      "placement_inferred": false,
+      "positive_current_npc_category": "NPCs no Tibia",
+      "removed_flag": {
+        "field_present": false,
+        "field_witness": null,
+        "raw_value": null,
+        "source_only_no_permanent_presence_inference": true,
+        "status": "NOT_MARKED_REMOVED"
+      },
+      "revid": 353837,
+      "title": "Yselda - Tibia Wiki - A Enciclop\u00e9dia do Tibia",
+      "type": "NPC",
+      "type_witness": {
+        "byte_end": 13,
+        "byte_start": 0,
+        "fragment_sha256": "3d8ae95ee244fe1caac7ff455ea2f9c2e18988b86dab4987fb9c14256b750edf"
+      }
+    }
+  ],
+  "row_count": 5,
+  "schema": "OTERYN_NPC_CURRENT_BR_ACTOR_IMAGE_CUSTODY/v1",
+  "source": "PUBLIC_REAL_CHROME_DOM_AND_SAME_ORIGIN_MEDIAWIKI_PARSE"
+}

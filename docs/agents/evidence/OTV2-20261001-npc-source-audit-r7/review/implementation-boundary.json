@@ -1,0 +1,114 @@
+{
+  "schema": "NPC_R7_IMPLEMENTATION_AUTHORITY_REVIEW/v1",
+  "review_main_sha": "d3cfb2468510255d2495514ec975c23c1d76f32a",
+  "references": [
+    {
+      "path": "docs/architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+      "sha256": "8c209405425479e1af397ddd689736d387d765a15b98f37d82cf4d5e30e78995"
+    },
+    {
+      "path": "docs/architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md",
+      "sha256": "a50468a3108e92b5a9b2322fdb5886c4095de5b4cd62884da9e1b03c646b6ceb"
+    },
+    {
+      "path": "docs/architecture/reviews/OTERYN_GAME_TRAVEL0_NPC_TRAVEL_DECISION_2026-09-30.md",
+      "sha256": "6a0a880736ad3735110a48b83ba2ce9dde1ba1b85a9d4a12f40478dd28f1b396"
+    },
+    {
+      "path": "docs/architecture/OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1.md",
+      "sha256": "f61ab6f5e7f5cb54c10302ede1e60f942b8aff27a9a0ff74469214bfc82be0c4"
+    },
+    {
+      "path": "docs/architecture/OTERYN_NPC_AUTHORING_SCHEMA_V1.md",
+      "sha256": "a80ef65060be6a60f8830efab0435ee93e78a037bb8b74af518810ebab57eda2"
+    },
+    {
+      "path": "apps/game-server/src/content/project/v2.rs",
+      "sha256": "b066f883bcf6925be8ea2d8df428312376fc397a73d704229be2fe5a6782752b"
+    },
+    {
+      "path": "tools/content-migration/npc_admission_stage.py",
+      "sha256": "4b1569375cb675f31fb64a00d94e97c73719b9224eff9569dd38d0ee01a362ff"
+    }
+  ],
+  "point4": {
+    "accepted_owner_semantics": [
+      "Quest format D35: only quest domain writes progress; callers request named transitions, predicates read stages; idempotent and session-generation fenced. Owner accepted proposal, while format status remains CANDIDATE/NOT_STARTED.",
+      "NPC identity D4 and admission D7 support existing candidate-only declarative NPC/Service authoring shape."
+    ],
+    "explicit_unresolved_acceptance": [
+      {
+        "path": "docs/architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+        "status": "CANDIDATE",
+        "quotes": [
+          "Acceptance needs exact-head validation, independent review (protocol, persistence and security) and protected integration.",
+          "Runtime, migration and production authority: NONE. Each child needs its own #162 allocation."
+        ]
+      },
+      {
+        "path": "docs/architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md",
+        "status": "CANDIDATE",
+        "quotes": [
+          "Runtime, migration and production authority: NONE. Each child needs its own #162 allocation."
+        ]
+      },
+      {
+        "path": "docs/architecture/reviews/OTERYN_GAME_TRAVEL0_NPC_TRAVEL_DECISION_2026-09-30.md",
+        "status": "CANDIDATE",
+        "quotes": [
+          "Runtime, migration and production authority: NONE. Each child needs its own #162 allocation."
+        ]
+      },
+      {
+        "path": "docs/architecture/OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1.md",
+        "section": "6",
+        "quotes": [
+          "Gated routes and offers are never admitted: a condition belongs to the runtime owner.",
+          "Amendment (pending on acceptance of TRAVEL-0; ... §4)."
+        ]
+      }
+    ],
+    "user_authorization_assessment": "Latest user direction authorizes continuing all requested NPC evidence, offline candidate classification, normal authoring repairs and concrete prospective patches. It does not itself supply missing domain acceptance, identity allocation, durability invariants or resource/wire reservations. Do not re-ask permission for research/offline preparation. Do not imply CANDIDATE headers prevent all useful work.",
+    "safe_now": [
+      "Complete typed source-scoped offline condition/outcome packet with exact Lua AST/source spans, source storage bindings and unresolved typed quest references; no Storage-number=>QuestID guessing.",
+      "Prepare minimal prospective owning-contract amendments with current accepted behavior unchanged and amendments explicitly pending acceptance; include typed DTO/validation proposal and exact tests in review packet.",
+      "Continue zero-dependency content fixes such as exact appearance/behavior and static-dialogue joins under existing D4/D9/D14/D15 proof rules."
+    ],
+    "qualification_path": [
+      {
+        "step": "Resolve/protect acceptance of NPC-0, QUEST-STATE-0, QUEST-GATE-0 and TRAVEL-0 exact applicable semantics, with independent reviews specified in headers. Avoid silently changing statuses based solely on merge presence.",
+        "owner": "Active control plane / supervising architecture allocation, via bounded current #162 state read."
+      },
+      {
+        "step": "Allocate smallest NPC-QUEST-CONTENT-1 and TRAVEL-CONTENT-1 slices, and QUEST-CONTENT-1 typed Quest/Interaction identities; canonical mapping owned by Quest lane, legacy storage stays source binding.",
+        "depends_on": [
+          "NPC-CONTENT-1",
+          "QUEST-CONTENT-1"
+        ]
+      },
+      {
+        "step": "Then add native ProjectV2DialogueKeyword gate/effect and ProjectV2TravelRoute keywords/gate/discounts, fail-closed reference validation, evidence classification, and regenerate supported active content. Native DTO addition is permanent schema semantics requiring the owning acceptance.",
+        "paths": [
+          "apps/game-server/src/content/project/v2.rs",
+          "tools/content-migration/npc_admission_stage.py"
+        ]
+      },
+      {
+        "step": "Runtime delivery requires allocated NPC-TALK-1 + QUEST-STATE-1 + QUEST-PRED-1; item outcomes reuse CHEST-1 + GOLD-FEE-2 and bank/transition obligations. Do not put direct progress/value writes in NPC handler.",
+        "reason": "Exact future-state semantics are §§5.1–5.4 of QUEST-GATE-0 and §§4–7 of TRAVEL-0, but not runtime authority yet."
+      }
+    ]
+  },
+  "point3": {
+    "identity_only_shell_assessment": "Current typed declaration may structurally omit presentation/behavior, but that alone does not establish promotion authority or satisfy complete NPC behavior. D4 only defines keys; D8/D15 confirm source-backed held/single-source NPCs and D6 explicitly says wiki never supplies a value except later explicit exceptions. No cited exception authorizes wholesale159 wiki-only entities with unknown appearance/movement.",
+    "existing_precedent": "NPC admission §7 defers Dragon Ancestor Spirit MOVEMENT_UNDECLARED rather than engine default; npc_admission_stage.py likewise defers missing movement and emits presentation+behavior profiles for admitted candidates.",
+    "actionable_now": [
+      "Produce evidence-only identity packet for159 exact wiki identities, deduplicate stage variants/actualnames and removed flags, record provisional slug collisions without freezing native keys.",
+      "Find and independently validate exact source-backed real presentation/behavior for each recoverable NPC; promote only those satisfying existing source/profile admission rules.",
+      "If wiki-only identity declarations are desired as a separate declarative inventory, propose explicit bounded authoring amendment with missing-profile holds and runtime=false, separate from complete NPC count; do not create empty Presentation/Behavior Generic references."
+    ],
+    "completion_truth": "159 null-profile shells cannot honestly complete point3. Held sourcebound packet is useful progress; exact proven profiles are required for full authoring qualification."
+  },
+  "additional_packet_reviews": "Await presentation and official-price packet locations; no findings inferred before reading.",
+  "tracked_files_modified": false
+}

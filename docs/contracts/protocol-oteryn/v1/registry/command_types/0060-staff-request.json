@@ -1,0 +1,10 @@
+{
+  "id": 60,
+  "name": "STAFF_REQUEST",
+  "owner_decision": "GM-1 owner 2026-10-23 option A",
+  "capability": 51,
+  "payload_schema": "crates/protocol-oteryn/src/staff.rs#SignedEnvelope",
+  "result_schema": "crates/protocol-oteryn/src/staff.rs#StaffResult",
+  "max_payload_bytes": 12364,
+  "max_result_payload_bytes": 512
+}

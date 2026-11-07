@@ -1,0 +1,27 @@
+{
+  "id": "DUR03-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+  "resource": "ItemInstances touched by one DUR-03 native one-item or B3 merge-shape logical transaction",
+  "unit": "ItemInstances per logical transaction",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 2
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked before allocation or partial mutation; never truncated. MINT, the container-slot TRANSFER and the new-entry TRANSFER touch exactly one ItemInstance (before and after are the same item); the B3 full-merge and top-up shapes touch exactly two (source A and receiver B).",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=1: MINT and the one-item TRANSFER shapes each touch exactly one ItemInstance",
+    "max=2: the full-merge and top-up TRANSFER shapes touch exactly A and B",
+    "max+1=3: a usage of three touched ItemInstances is rejected (CAPACITY_EXCEEDED)",
+    "max+1 for the one-item shapes: a TRANSFER whose before and after ItemInstance ids differ is rejected"
+  ],
+  "consumers": [
+    "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+    "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+    "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)",
+    "apps/game-server/src/durability/house_interior_audit.rs and house_interior.rs (HOUSE-RUNTIME-1a: closed one-item House place/take/tile-move, same-transaction custody/receipt/event)"
+  ],
+  "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Amended by B3-INVENTORY-DESTINATION-CAPACITY-STACKS-V1 \u00a74.5 (2 for the merge and top-up shapes, 1 otherwise); registered by OTV2-20260928-b3-1-transfer."
+}

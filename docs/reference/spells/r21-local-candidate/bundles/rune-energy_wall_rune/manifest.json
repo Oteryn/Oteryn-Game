@@ -1,0 +1,543 @@
+{
+  "sources": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Energy Wall",
+      "page_id": 1969,
+      "revision_id": 1182703,
+      "content_sha256": "6921447807270aa7b83585c98e62a47d740e6b44ad203ee5331e1db04d3d1411"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Energy Wall Rune",
+      "page_id": 23881,
+      "revision_id": 1189767,
+      "content_sha256": "108d6fbdbc89b7974cfae96dce2cbabab4891b13c74ab99411200c6e60bb2dd8"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://www.tibiawiki.com.br/api.php",
+      "title": "Energy Wall Rune",
+      "page_id": 10221,
+      "revision_id": 435689,
+      "content_sha256": "47481c4751ab21f3aa13f8733c71bf3a27fa8c45ba6b2ad0f82cb84f64af22c7"
+    },
+    {
+      "kind": "community_capture",
+      "url": "https://tibiopedia.pl/spells/Energy_Wall_Rune",
+      "title": "Energy Wall Rune",
+      "captured": "2026-09-28",
+      "content_sha256": "8f2e7ed36be9dceff8545620595dcbe6beb80d6e27a117c14b2ff0b2d39254b9"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 14,
+      "source_field": "id",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/reference_spell_id",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 14,
+      "source_field": "id",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/reference_spell_id",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Energy Wall",
+      "source_line": 1,
+      "source_field": "librarytext",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/library_text",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "Energy Wall Rune",
+      "source_line": 1,
+      "source_field": "vocrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 3,
+      "source_file": "Energy Wall Rune",
+      "source_line": 1,
+      "source_field": "levelrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/level",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 4,
+      "source_file": "Energy Wall Rune",
+      "source_line": 1,
+      "source_field": "levelrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/level",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "isPremium",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/premium",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "isPremium",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/premium",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "Energy Wall Rune",
+      "source_line": 1,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 15,
+      "source_field": "group",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/group",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 15,
+      "source_field": "group",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/group",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "Energy Wall Rune",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 5,
+      "source_file": "Energy Wall Rune",
+      "source_line": 1,
+      "source_field": "spellrange",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/range_tiles",
+      "resolution": "Owner gap-fill policy: captured tibiopedia.pl spellrange fills a missing rune cast range only; Fandom/BR/official resolution and both engine registrars state none. S13 precedence is unchanged; no area size or targeting behavior is inferred."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 21,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 21,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 17,
+      "source_field": "castSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/cast_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 17,
+      "source_field": "castSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/cast_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 18,
+      "source_field": "impactSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/impact_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 18,
+      "source_field": "impactSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/impact_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 19,
+      "source_field": "runeId",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/rune/item",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 19,
+      "source_field": "runeId",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/rune/item",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 22,
+      "source_field": "charges",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/rune/charges",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 22,
+      "source_field": "charges",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/rune/charges",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "Energy Wall Rune",
+      "source_line": 1,
+      "source_field": "mlrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/rune/magic_level",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 4,
+      "source_file": "Energy Wall Rune",
+      "source_line": 1,
+      "source_field": "mlrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/rune/magic_level",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 20,
+      "source_field": "allowFarUse",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/rune/allow_far_use",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 20,
+      "source_field": "allowFarUse",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/rune/allow_far_use",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/spell/spell/execution/ability",
+      "resolution": "Plain combat converted with the monster combat_ability rules (crystal)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "A combat type without a player formula deals no direct damage (combat.cpp Combat::getCombatDamage keeps 0); its conditions or created items apply."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/energy_wall.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "src/utils/utils_definitions.hpp ItemID_t binds ITEM_ENERGYFIELD_PVP=2122 for COMBAT_PARAM_CREATEITEM."
+    }
+  ]
+}

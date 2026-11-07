@@ -1,0 +1,21 @@
+{
+  "id": 63,
+  "name": "MARKET_V1",
+  "constant": "market::CAPABILITY_MARKET_V1",
+  "requires": [
+    37
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    80
+  ],
+  "domains": [
+    28
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

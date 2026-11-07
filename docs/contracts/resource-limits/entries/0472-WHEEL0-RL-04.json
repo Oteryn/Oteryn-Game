@@ -1,0 +1,22 @@
+{
+  "id": "WHEEL0-RL-04",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
+  "resource": "Level above which the Wheel opens",
+  "unit": "levels",
+  "hard_maximum": 50,
+  "configurable_range": {
+    "minimum": 50,
+    "maximum": 50
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "No allocation; available points are max(0, level - 50) plus extra points (0 until their owners exist), one per level.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=50: level 50 is not eligible and has 0 points",
+    "max+1=51: level 51 is eligible with 1 point"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/character_wheel.rs WHEEL_LEVEL_OFFSET, available_points, eligibility"
+  ],
+  "notes": "WHEEL-0 \u00a76.1, \u00a76.3 and \u00a78; tests: character_wheel::tests::validation_applies_each_rule, an_ineligible_or_not_current_allocation_derives_zero. Registered by WHEEL-W1."
+}

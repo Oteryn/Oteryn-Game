@@ -1,0 +1,22 @@
+{
+  "id": "DUR03-RL-06-ITEM-USE-EFFECT-WORK-UNITS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md",
+  "resource": "Effect work units of one item-use transaction: participants, one write per touched item, the TRANSFORM and the record",
+  "unit": "effect work units per logical transaction",
+  "hard_maximum": 6,
+  "configurable_range": {
+    "minimum": 6,
+    "maximum": 6
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked before any write; measured on the flask shape (2 + 2 + 1 + 1), the burn shape is 3.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=6: the flask shape is admitted",
+    "max+1=7 rejected (CAPACITY_EXCEEDED)"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/item_use_audit.rs ItemUseUsage::check and the payload gate"
+  ],
+  "notes": "ITEM-USE-0 \u00a74.4 (DUR-03 \u00a739.3 item-use amendment); item-use shapes only, the one-item DUR03-RL-01..08 rows are unchanged. Registered by OTV2-20261013-item-use-1a-contract."
+}

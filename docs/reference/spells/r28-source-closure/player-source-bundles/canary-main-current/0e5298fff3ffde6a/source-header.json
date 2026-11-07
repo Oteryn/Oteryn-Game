@@ -1,0 +1,41 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 24000,
+    "costs": {
+      "mana": 425
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "harmony_role": "spender",
+    "name": "Spiritual Outburst",
+    "reference_spell_id": 295,
+    "requirements": {
+      "learning_required": true,
+      "level": 0,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "block_walls": true
+    },
+    "words": "exori gran mas nia"
+  }
+}

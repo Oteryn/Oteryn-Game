@@ -1,0 +1,38 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.melee",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Melee Weapon",
+  "family_profile": "weapon_melee",
+  "delivery_task_eligible": false,
+  "taxonomy": {
+    "item_class": "weapon",
+    "primary": "melee",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "equipment": {
+    "slot": "right_hand",
+    "hands": 1,
+    "reserved_slots": [],
+    "groups": []
+  },
+  "weapon": {
+    "weapon_type": "sword",
+    "attack": 1,
+    "defense": 1,
+    "consumption_mode": "none"
+  },
+  "trade": {
+    "tradeable": true,
+    "marketable": true
+  }
+}

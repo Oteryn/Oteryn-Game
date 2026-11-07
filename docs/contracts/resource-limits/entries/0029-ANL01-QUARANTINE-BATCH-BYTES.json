@@ -1,0 +1,19 @@
+{
+  "id": "ANL01-QUARANTINE-BATCH-BYTES",
+  "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+  "resource": "Encoded bytes materialized in one dead-letter/quarantine batch",
+  "unit": "bytes",
+  "hard_maximum": 33554432,
+  "configurable_range": {
+    "minimum": 262144,
+    "maximum": 33554432
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Page/split operator/reprocessing transfer before 32 MiB without deleting durable source evidence.",
+  "client_visible": false,
+  "boundary_tests": [
+    "32 MiB accepted subject to entry/event bounds",
+    "one byte over split/paged",
+    "source evidence remains recoverable"
+  ]
+}

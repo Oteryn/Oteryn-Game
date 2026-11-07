@@ -1,0 +1,63 @@
+{
+  "schema": "OTERYN_CANONICAL_SPELL_FAMILY_IMPORT_EVIDENCE/v1",
+  "date_utc": "2026-10-02",
+  "source_commit": "789e88a725a9b2a0d457d6c2ebfae8bd7b1d6aaa",
+  "phase": "AUTHORING",
+  "native_manifest": "content/spells.manifest.json",
+  "qualification": {
+    "client_sha256": "c50620c32e7ea95cb7308fb221d1b09eacd5a9ca90a409f3d3ff6e238311fe54",
+    "creature_profile_count": 1508,
+    "executable_spell_count": 246,
+    "item_policy_count": 118,
+    "manifest_sha256": "35e6802ef25c72a8b2245b0a8734363d9c69c5a5c3b8da2654e5df62f97e6e82",
+    "presentation_profile_count": 1508,
+    "production_stage": "Passed; altered server and client issuance pins rejected",
+    "qualification_boundary": "Actual source-world candidate compiled, strictly decoded and staged under both exact outer pins; runtime activation not performed",
+    "runtime_activation": "Not performed",
+    "schema": "OTERYN_LOCAL_FULL_SPELL_ARTIFACT_QUALIFICATION/v1",
+    "server_sha256": "066b3fe205905c0dc3b8409339cfce0381621c3048198234aec4faeb3780182d",
+    "source_world_sha256": "44f860d20712a32e6bc22aa269d3e220d39d164b7738d3c150a406579849b5f5"
+  },
+  "full_manifest_test": {
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "duration_seconds": 53.84
+  },
+  "import_regressions": {
+    "passed": 9,
+    "failed": 0
+  },
+  "regenerator_regressions": {
+    "passed": 4
+  },
+  "formal_schema_collections_validated": 4,
+  "counts": {
+    "player_definitions": 246,
+    "selected_player_definitions": 241,
+    "inactive_aliases": 5,
+    "ability_dependencies": 128,
+    "effect_dependencies": 167,
+    "formula_dependencies": 88,
+    "native_creatures": 1508,
+    "native_presentations": 1508,
+    "item_policies": 118,
+    "appearance_bindings": 268,
+    "source_cue_bindings": 213,
+    "source_monster_slots_reference_only": 20640
+  },
+  "regeneration": {
+    "managed_and_registry_files_identical": 198,
+    "legacy_definitions_and_family_counts_unchanged": true
+  },
+  "tree_validation": "PASS 97/97 directories; existing exact legacy roundtrip and family regression pass",
+  "independent_review": "PASS; no material findings",
+  "baseline_limits": {
+    "full_content_tree_validator": "preexisting SOURCE_ID_BOUNDARY_MISSING",
+    "required_game_clippy": "859 baseline diagnostics; preservation draft not merge-qualified"
+  },
+  "activation": false,
+  "deployment": false,
+  "canonical_identity_adoption": "Native profile overlays retain source aliases; they do not mint duplicate identities or fill absent canonical targets.",
+  "reference_only": "Unsupported dispatchers and all source monster attack slots retain source flags. Canonical storage is not full runtime integration."
+}

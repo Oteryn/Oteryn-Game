@@ -1,0 +1,21 @@
+{
+  "schema": "NPC_R12_NATIVE_MATERIALIZATION/v1",
+  "only_changed_declarations": [
+    "oteryn:service.trade.alaistar",
+    "oteryn:service.trade.lyonel",
+    "oteryn:service.trade.tanaro"
+  ],
+  "offers_before": 12267,
+  "offers_after": 12234,
+  "held_offers": 33,
+  "native_NPCs": 1110,
+  "native_Dialogues": 696,
+  "other_declarations_unchanged": 2629,
+  "generic_profiles_sources_placements_unchanged": true,
+  "all_price_fields_preserved": true,
+  "canonical_empty_offer_field": "Native writer omits the empty offers field; typed semantic equality verified and exact emitted after record retained in packet.",
+  "repeat_materialization": {
+    "result": "PASS",
+    "byte_identical_documents": 11
+  }
+}

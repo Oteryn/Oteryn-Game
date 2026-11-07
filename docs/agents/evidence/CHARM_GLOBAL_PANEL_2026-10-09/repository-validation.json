@@ -1,0 +1,34 @@
+{
+  "source_base_sha": "1e77ca22b4fcb7869f8f1d169f4e12bc749b295d",
+  "status": "PASS",
+  "method": "Exact raw Git blobs from HEAD plus the three owned working-tree changes; immutable source bytes preserve all pins.",
+  "windows_checkout_observation": "Direct working-tree run failed existing TibiaPal fixture pin because checkout CRLF changes raw bytes. No fixture pins changed.",
+  "results": [
+    {
+      "check": "authoring-tests",
+      "exit_code": 0
+    },
+    {
+      "check": "build",
+      "exit_code": 0
+    },
+    {
+      "check": "validate",
+      "exit_code": 0
+    },
+    {
+      "check": "ruff",
+      "exit_code": 0
+    },
+    {
+      "check": "format",
+      "exit_code": 0
+    }
+  ],
+  "counts": {
+    "authoring_functions": 13,
+    "mechanics_tests": 27,
+    "source_evidence_tests": 9
+  },
+  "scope": "Local verification only; no GitHub CI or protected integration claim."
+}

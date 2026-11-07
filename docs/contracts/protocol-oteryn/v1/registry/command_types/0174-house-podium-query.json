@@ -1,0 +1,10 @@
+{
+  "id": 174,
+  "name": "HOUSE_PODIUM_QUERY",
+  "owner_decision": "PODIUM-WIRE-1",
+  "capability": 150,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/house-podium-v1.md#query",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/house-podium-v1.md#projection",
+  "max_payload_bytes": 16,
+  "max_result_payload_bytes": 4096
+}

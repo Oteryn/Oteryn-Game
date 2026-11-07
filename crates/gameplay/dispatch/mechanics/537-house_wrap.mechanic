@@ -1,0 +1,8 @@
+name=house_wrap
+commands=402
+transport=house_wrap
+composed=house_wrap
+authority=house_wrap
+offer=537,house_wrap::offered,house_wrap_available
+[route]
+match routing::house_wrap::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::Disconnected) }

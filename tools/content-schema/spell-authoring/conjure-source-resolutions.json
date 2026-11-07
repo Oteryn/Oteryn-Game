@@ -1,0 +1,36 @@
+{
+  "schema": "OTERYN_CONJURE_SOURCE_RESOLUTIONS/v1",
+  "reference_date": "2026-09-27",
+  "qualification": "Historical exact-revision wiki quantity resolution; preserves historical capture bytes and emulator conflicts. Evidence candidate only, no cast or runtime qualification.",
+  "spells": {
+    "arrow call": {
+      "carrier": "instant",
+      "words": "exevo infir con",
+      "reference_spell_id": 176,
+      "result_item_id": 21470,
+      "field": "count",
+      "previous": 3,
+      "value": 30,
+      "source": {
+        "kind": "mediawiki",
+        "api": "https://tibia.fandom.com/api.php",
+        "title": "Arrow Call",
+        "page_id": 68921,
+        "revision_id": 1182610,
+        "content_sha256": "59834d31906b10a9f2f90d1ff553235a74cd4d33d5c43d83c0e620f9ec488262"
+      },
+      "revision_timestamp": "2026-05-06T18:30:05Z",
+      "source_field": "effect",
+      "source_value": "Creates 30 [[Simple Arrow]]s.",
+      "current_api_corroboration": {
+        "kind": "community_capture",
+        "url": "https://api.tibiadata.com/v4/spell/arrowcall",
+        "response_timestamp": "2026-10-09T13:42:42Z",
+        "raw_response_sha256": "d476fd8d38f0d9fc431474c804a122ba8165af7bf327fd75c4ea913ca6e5a125",
+        "field": "spell.spell_information.amount",
+        "value": 30,
+        "qualification": "Current third-party TibiaData mirror; separate amount/mana fields, not a historical official capture."
+      }
+    }
+  }
+}

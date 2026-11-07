@@ -1,0 +1,21 @@
+{
+  "id": "CHARCMD-PAGE-ENTRIES",
+  "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+  "resource": "Pending entries per ListPendingCharacterCommandsV1 response",
+  "unit": "entries",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "The page is decoded from a body already bounded by CHARCMD-LIST-RESPONSE-BYTES; a 33rd entry refuses the whole page.",
+  "client_visible": false,
+  "boundary_tests": [
+    "a page of 33 entries is refused as malformed"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/character_commands.rs"
+  ],
+  "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+}

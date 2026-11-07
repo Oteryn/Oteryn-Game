@@ -1,0 +1,5 @@
+# Monster classification — 2026-10-02
+
+Source-bound authoring metadata for all 1697 Creature definitions. Roles and contexts are nonexclusive; confirmed claims refer to pinned authoring/source evidence, not live Global verification. All 399 unproven roles remain unknown. Source directories supply hints; shared display names do not establish a concrete spawned variant. Mitigation presence is independent: 1053 present, 644 unknown, none automatically not applicable.
+
+The verified archive contains the full catalogue, source-role evidence, CSV and independent reviews. The CSV is also available directly for filtering. The catalogue binds every bundle digest and 249 Encounter input hashes; the source population is preserved by parent draft #1543. No Creature/runtime schema, stats or native profile changed. Previously qualified native arena results apply only to the identical underlying stage SHA. See tools/content-migration/README-monster-classification.md for generation and integration limits.

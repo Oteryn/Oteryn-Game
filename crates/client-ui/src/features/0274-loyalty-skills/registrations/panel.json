@@ -1,0 +1,7 @@
+{
+  "mechanic": "0274-loyalty-skills",
+  "kind": "panels",
+  "id": "0274-loyalty-skills-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

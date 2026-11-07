@@ -1,0 +1,14 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/dragon_essence",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/the_first_dragon",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "id": "MOVE-RL-09",
+  "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+  "resource": "Candidates examined by one visibility query",
+  "unit": "candidates per query",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 1024
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Candidates are enumerated in canonical order and the query stops at 1,024 examined, so the selection is identical on replay; the own actor counts as one examined candidate.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=1024: 1,024 candidates are all examined",
+    "max+1=1025: the 1,025th candidate is never examined"
+  ],
+  "consumers": [
+    "movement::interest::InterestIndex::query_with",
+    "movement::interest::VISIBILITY_QUERY_CANDIDATES_MAX"
+  ],
+  "notes": "D87. Decision section 4.4; #162 comment 5875958040."
+}

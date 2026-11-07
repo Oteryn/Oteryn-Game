@@ -1,0 +1,43 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 8000,
+    "costs": {
+      "mana": 250
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "harmony_role": "spender",
+    "name": "Mass Spirit Mend",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_mass_healing"
+    },
+    "reference_spell_id": 296,
+    "requirements": {
+      "level": 150,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": false
+    },
+    "words": "exura mas nia"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": 80,
+  "name": "MARKET",
+  "owner_decision": "MARKET-1 staged settlement and wire",
+  "capability": 63,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/market_v1.proto#MarketRequestV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/market_v1.proto#MarketReplyV1",
+  "max_payload_bytes": 96,
+  "max_result_payload_bytes": 4096
+}

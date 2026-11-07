@@ -1,0 +1,23 @@
+{
+  "id": "EVENTSRAID1-RL-06",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_BOSS_RAID0_BOSSES_RAIDS_AND_BOSSTIARY_DECISION_2026-09-30.md",
+  "failure_category": "CAPACITY_EXCEEDED",
+  "client_visible": false,
+  "consumers": [
+    "crates/gameplay/encounter-rules/src/raid/mod.rs",
+    "crates/gameplay/encounter-rules/src/raid/definition.rs",
+    "crates/gameplay/encounter-rules/src/raid/schedule.rs",
+    "crates/gameplay/durability/src/durability/raid_schedule.rs"
+  ],
+  "resource": "Text of one native raid announcement (DERIVED bound for this metadata slice)",
+  "unit": "UTF-8 bytes",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 1024
+  },
+  "allocation_impact": "Bounded pure schedule metadata only. No runtime activation, content admission or channel target enumeration is authorized.",
+  "boundary_tests": [
+    "raid_definition_capacity_and_deadline_boundaries"
+  ]
+}

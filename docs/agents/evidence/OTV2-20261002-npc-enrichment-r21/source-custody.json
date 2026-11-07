@@ -1,0 +1,21 @@
+{
+  "inputs": {
+    "wiki": {
+      "sha256": "159f50c1357e2eeed817dcde396657ece1235d82b6140cc25a0fd17310edc185"
+    },
+    "dialogue": {
+      "sha256": "a020b1dd33685f61f39f84f5c09401e5f33b9b0a99b6e9d38c02dc4efe64477c"
+    },
+    "voices": {
+      "sha256": "fdb7feaf2bfc16f06dc0f7e04bc7d14f5235d7fea60492bc55b906a66794437a"
+    },
+    "appearance": {
+      "sha256": "ab5a3eabf458f4d6fd45be9fe35946db9ffc3bcc17bac9547cb84dab1a41a559"
+    }
+  },
+  "portable_facts_sha256": "4181d348abf595ed2f72cf98b06f279188570e84d2e45661beaa0ae7cab0a412",
+  "wiki_raw_bodies_verified": 133,
+  "new_appearance_bodies_verified": 1,
+  "voice_donor_bodies_verified": 7,
+  "source_access": "Cached public HTTP/API/Git captures read locally; Tavily432 limit, BR/Tibiasecrets403, Remote Desktop devices offline."
+}

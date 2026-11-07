@@ -1,0 +1,14 @@
+{
+  "id": 61,
+  "name": "ITEM_STACK_COUNT_V1",
+  "owner_decision": "PARITY-STACK-QUANTITY-1; STACK0-PARTIAL-COUNTS-AND-STACK-MERGES-V1 \u00a73 (first server slice)",
+  "owner": "Existing item loop owner; explicit counts on carried-tree moves and drops. Partial destination fits, equipment counts and partial ground/corpse pickups are follow-up slices.",
+  "requires": [
+    12,
+    14
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "STACK-QUANTITY-1: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES), matching capabilities 12 and 14; a fixture World never offers it."
+}

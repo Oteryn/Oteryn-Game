@@ -1,0 +1,16 @@
+{
+  "id": 134,
+  "name": "PARTY_SKULL_V1",
+  "owner_decision": "PARTY-SKULL-1 owner allocation 2026-10-26",
+  "owner": "World party and PvP owners",
+  "requires": [
+    6,
+    42
+  ],
+  "command_types": [
+    155
+  ],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Unoffered until the native client consumes visibility type-2 optional field 6. Server requires current scope, session, party, PvP and shared XP activity owners."
+}

@@ -1,0 +1,57 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/bruise_bane",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Bruise Bane",
+    "carrier": "instant",
+    "words": "exura infir ico",
+    "reference_spell_id": 175,
+    "library_text": "Specifically crafted for knights out on the battlefields who only need a quick patch-up before venturing back into the fray, this healing spell fills up only a little health - enough so you can finish off your enemies before heading back to safety.",
+    "requirements": {
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ],
+      "level": 1,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 10,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "healing",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_bruise_bane"
+    },
+    "base_power": 15,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/bruise_bane",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

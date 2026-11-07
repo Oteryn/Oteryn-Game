@@ -1,0 +1,32 @@
+syntax = "proto3";
+package oteryn.game.v1;
+
+// DAILY_REWARD0 §7; CP allocation: capability 32, commands 32/33, domain 24.
+// No Account, World, Channel, epoch, vocation or Premium authority is client input.
+message DailyRewardPickV1 {
+  string definition = 1; // admitted production key, 1..512 ASCII key bytes
+  uint32 count = 2; // 1..20
+}
+message DailyRewardClaimV1 {
+  repeated DailyRewardPickV1 picks = 1; // at most 20; semantic order canonicalized
+}
+message DailyRewardQueryV1 {} // view-only access from anywhere
+message DailyRewardResultV1 {
+  // 1 CLAIMED, 2 ALREADY_CLAIMED, 3 INVALID_PICK, 4 NOT_IN_REACH,
+  // 5 UNAVAILABLE, 6 BINDING_MISMATCH, 7 STALE_STATE.
+  uint32 disposition = 1;
+  bytes transaction_id = 2; // UUIDv7, exactly 16 bytes; only with CLAIMED
+}
+message DailyRewardPartV1 {
+  // 1 rune/potion picks, 2 Prey wildcard, 3 converter, 4 training weapon, 5 XP minutes.
+  uint32 kind = 1;
+  uint32 quantity = 2;
+}
+message DailyRewardWallV1 {
+  uint32 lane_day = 1; // next reward, 1..7
+  uint32 streak = 2; // 0..100000
+  uint32 jokers = 3; // 0..3
+  bool claimed = 4;
+  bool claim_enabled = 5;
+  repeated DailyRewardPartV1 rewards = 6; // exactly 7, Free column until PREM-3
+}

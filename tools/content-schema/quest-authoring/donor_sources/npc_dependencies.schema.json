@@ -1,0 +1,510 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "OTERYN_DONOR_DIALOGUE_DEPENDENCIES/v1"
+    },
+    "scope": {
+      "type": "string"
+    },
+    "input_provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "corpus_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "npc_capture_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "corpus_manifest_sha256",
+        "npc_capture_sha256"
+      ]
+    },
+    "source_profiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "canary": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "enum": [
+                  "DISTRIBUTION_DEFAULT",
+                  "DECLARED_ALTERNATIVE"
+                ]
+              },
+              "DATA_DIRECTORY": {
+                "type": "string"
+              },
+              "CORE_DIRECTORY": {
+                "type": "string"
+              },
+              "proof_refs": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "deployment_profile_verified": {
+                "const": false
+              }
+            },
+            "required": [
+              "name",
+              "DATA_DIRECTORY",
+              "CORE_DIRECTORY",
+              "proof_refs",
+              "deployment_profile_verified"
+            ]
+          }
+        },
+        "crystalserver": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "enum": [
+                  "DISTRIBUTION_DEFAULT",
+                  "DECLARED_ALTERNATIVE"
+                ]
+              },
+              "DATA_DIRECTORY": {
+                "type": "string"
+              },
+              "CORE_DIRECTORY": {
+                "type": "string"
+              },
+              "proof_refs": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "deployment_profile_verified": {
+                "const": false
+              }
+            },
+            "required": [
+              "name",
+              "DATA_DIRECTORY",
+              "CORE_DIRECTORY",
+              "proof_refs",
+              "deployment_profile_verified"
+            ]
+          }
+        }
+      },
+      "required": [
+        "canary",
+        "crystalserver"
+      ]
+    },
+    "proofs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "repository": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "path": {
+            "type": "string"
+          },
+          "blob_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "git_blob_sha1": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "line_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "line",
+                "line_sha256",
+                "text"
+              ]
+            }
+          }
+        },
+        "required": [
+          "source",
+          "repository",
+          "revision",
+          "path",
+          "blob_sha256",
+          "git_blob_sha1",
+          "lines"
+        ]
+      }
+    },
+    "includes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "repository": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "caller_path": {
+            "type": "string"
+          },
+          "caller_blob_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "include_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "offset_char": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "function_candidate": {
+            "type": "string"
+          },
+          "argument_raw": {
+            "type": "string"
+          },
+          "profiles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "source_profile": {
+                  "enum": [
+                    "DISTRIBUTION_DEFAULT",
+                    "DECLARED_ALTERNATIVE"
+                  ]
+                },
+                "profile_values": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "DATA_DIRECTORY": {
+                      "type": "string"
+                    },
+                    "CORE_DIRECTORY": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "DATA_DIRECTORY",
+                    "CORE_DIRECTORY"
+                  ]
+                },
+                "profile_proof_refs": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "caller_profile_activity": {
+                  "enum": [
+                    "SHARED_CORE_OR_SELECTED_DATAPACK",
+                    "INACTIVE_OTHER_DATAPACK"
+                  ]
+                },
+                "expected_paths": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "exact_corpus_matches": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "source": {
+                        "type": "string"
+                      },
+                      "repository": {
+                        "type": "string"
+                      },
+                      "revision": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{40}$"
+                      },
+                      "path": {
+                        "type": "string"
+                      },
+                      "git_blob_sha1": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{40}$"
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "byte_count": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": [
+                      "source",
+                      "repository",
+                      "revision",
+                      "path",
+                      "git_blob_sha1",
+                      "sha256",
+                      "byte_count"
+                    ]
+                  }
+                },
+                "helper_present_in_dialogue_capture": {
+                  "type": "boolean"
+                },
+                "holds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "status": {
+                  "enum": [
+                    "NOT_BARE_BUILTIN_LOADER",
+                    "RUNTIME_CODE_COMPILATION_NOT_FILE_DEPENDENCY",
+                    "UNRESOLVED_RUNTIME_EXPRESSION",
+                    "UNRESOLVED_EXTERNAL_OR_ESCAPING_PATH",
+                    "STATIC_DECLARED_PATH_CAPTURED",
+                    "STATIC_DECLARED_PATH_MISSING_FROM_CORPUS",
+                    "STATIC_PRELOAD_DECLARATION_CAPTURED",
+                    "STATIC_PRELOAD_DECLARATION_MISSING",
+                    "UNRESOLVED_PACKAGE_SEARCH_PATH",
+                    "UNRESOLVED_RUNTIME_MODULE_NAME",
+                    "UNRESOLVED_UNKNOWN_LOADER",
+                    "UNRESOLVED_SHADOWED_LOADER_OR_PROFILE_SYMBOL"
+                  ]
+                },
+                "why_unresolved": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "loader_proof_refs": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "candidate_only_corpus_matches": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "source": {
+                        "type": "string"
+                      },
+                      "repository": {
+                        "type": "string"
+                      },
+                      "revision": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{40}$"
+                      },
+                      "path": {
+                        "type": "string"
+                      },
+                      "git_blob_sha1": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{40}$"
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "byte_count": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": [
+                      "source",
+                      "repository",
+                      "revision",
+                      "path",
+                      "git_blob_sha1",
+                      "sha256",
+                      "byte_count"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "source_profile",
+                "profile_values",
+                "profile_proof_refs",
+                "caller_profile_activity",
+                "expected_paths",
+                "exact_corpus_matches",
+                "helper_present_in_dialogue_capture",
+                "holds",
+                "status",
+                "why_unresolved"
+              ]
+            }
+          },
+          "runtime_execution_verified": {
+            "const": false
+          }
+        },
+        "required": [
+          "source",
+          "repository",
+          "revision",
+          "caller_path",
+          "caller_blob_sha256",
+          "include_index",
+          "line",
+          "offset_char",
+          "function_candidate",
+          "argument_raw",
+          "profiles",
+          "runtime_execution_verified"
+        ]
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "active_distribution_default_status_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "lexical_include_candidates": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "profiles_per_candidate": {
+          "const": 2
+        },
+        "status_counts_per_profile": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "missing_static_active_default": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "source": {
+                "type": "string"
+              },
+              "caller_path": {
+                "type": "string"
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "expected_paths": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "source",
+              "caller_path",
+              "line",
+              "expected_paths"
+            ]
+          }
+        },
+        "runtime_execution_verified": {
+          "const": false
+        },
+        "complete_dynamic_dependency_closure": {
+          "const": false
+        }
+      },
+      "required": [
+        "active_distribution_default_status_counts",
+        "lexical_include_candidates",
+        "profiles_per_candidate",
+        "status_counts_per_profile",
+        "missing_static_active_default",
+        "runtime_execution_verified",
+        "complete_dynamic_dependency_closure"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "scope",
+    "input_provenance",
+    "source_profiles",
+    "proofs",
+    "includes",
+    "summary"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

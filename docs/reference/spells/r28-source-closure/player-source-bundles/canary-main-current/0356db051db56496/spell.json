@@ -1,0 +1,120 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "house_access",
+        "parameters": {
+          "action": "kick",
+          "caster_requires_guest_list_edit": true,
+          "destination": "target_house_entry",
+          "destination_effect": "teleport",
+          "failed_teleport_counts_as_success": true,
+          "failure_effect": "poff",
+          "parameter": "player_name",
+          "parameter_length": [
+            1,
+            29
+          ],
+          "reject_target_edit_houses_flag": true,
+          "require_caster_access_at_least_target": true,
+          "require_same_house": false,
+          "self_kick": true,
+          "self_kick_requires_access": false,
+          "self_kick_requires_house": true,
+          "source_effect": "poff"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/0356db051db56496",
+      "revision": "source-player-r28"
+    },
+    "name": "House Kick",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_kick_guest"
+    },
+    "pz_locks_caster": false,
+    "requirements": {
+      "learning_required": false,
+      "level": 8,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "player_name",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "alana sio"
+  }
+}

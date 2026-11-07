@@ -1,0 +1,20 @@
+{
+  "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+  "boundary_tests": [
+    "2 slots accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+    "3 rejected before excess allocation, retention or effect",
+    "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+  ],
+  "client_visible": false,
+  "configurable_range": {
+    "minimum": 2,
+    "maximum": 2
+  },
+  "failure_category": "UNAVAILABLE",
+  "hard_maximum": 2,
+  "id": "DFR-ACTIVE-SLOTS",
+  "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+  "resource": "End-to-end active operations",
+  "unit": "slots"
+}

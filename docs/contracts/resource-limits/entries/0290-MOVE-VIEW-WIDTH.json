@@ -1,0 +1,22 @@
+{
+  "id": "MOVE-VIEW-WIDTH",
+  "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+  "resource": "Interest area width per Channel",
+  "unit": "tiles",
+  "hard_maximum": 36,
+  "configurable_range": {
+    "minimum": 15,
+    "maximum": 36
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Fixed per Channel for its lifetime; default 18 (Reference). A width outside 15..36 is rejected at construction.",
+  "client_visible": true,
+  "boundary_tests": [
+    "min=15 and max=36 are accepted",
+    "min-1=14 and max+1=37 are rejected"
+  ],
+  "consumers": [
+    "movement::interest::VisibilitySettings"
+  ],
+  "notes": "D84. Decision section 4.4; #162 comment 5875958040."
+}

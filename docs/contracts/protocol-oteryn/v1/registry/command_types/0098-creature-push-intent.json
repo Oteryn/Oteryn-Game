@@ -1,0 +1,10 @@
+{
+  "id": 98,
+  "name": "CREATURE_PUSH_INTENT",
+  "owner_decision": "PARITY-PUSH-ROUTE-1 owner slice 2026-10-25",
+  "capability": 82,
+  "payload_schema": "creature_push_v1.proto#CreaturePushIntent",
+  "result_schema": "creature_push_v1.proto#CreaturePushResult",
+  "max_payload_bytes": 64,
+  "max_result_payload_bytes": 4
+}

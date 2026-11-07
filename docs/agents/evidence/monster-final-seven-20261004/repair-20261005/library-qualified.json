@@ -1,0 +1,19 @@
+{
+  "status": "TEST_EXECUTION_PASS",
+  "origin": {
+    "git_head": "fdf0559a3608e6720437c404c8d80853fcbf6b92",
+    "binary_path": "/dev/shm/monster-comparison-build-target-cache/debug/deps/oteryn_game_server-9494e90a1877450b",
+    "binary_sha256": "146eb52433b00bf2d559045151a99956b32abe3e0cd31d4eea1c2df1095ef7fb",
+    "manifest_sha256": "117782c12f9309a90e41a72f9b13611771b62a71f6e7348a238824a52227fa34",
+    "capture_root": "/tmp/monster-final-seven/repair-20261005/sealed11",
+    "execution": "direct frozen binary; library4threads, native/capture1thread; no Cargo or product writes",
+    "mode": "library"
+  },
+  "passed": 2395,
+  "failed": 0,
+  "ignored": 25,
+  "compiled_census": 2420,
+  "ignored_census_sha256": "06057b20ab7c434ab39ce021352a6c466978908ecff36cb3afd07f6c11e82e3a",
+  "execution_log_sha256": "03b8b011b11b99841716b4347bc4954ec27f7143f2a8c1bc50da49e32bbf32cc",
+  "driver_disposition": "Initial expected count2396 was wrong: final native test binary lists2420 tests including25 ignored. Actual execution passed2395/0/25. Original driver mismatch receipt preserved; no tests suppressed or rerun to alter result."
+}

@@ -1,0 +1,49 @@
+// OTERYN_ACHIEVEMENT_DISPLAY_CONTRACT_V1 §3 (D223-D228, #162 owner decision record 5911933242):
+// typed payloads of command type 10 ACCOUNT_ACHIEVEMENTS_QUERY, the account achievements panel.
+// The client asks for one page; the server answers with the earned facts of the session's own
+// account only. The account is never in the payload. FND-02 envelopes own CommandRef and server
+// sequence; these payloads never duplicate them. Unknown fields, repeated singular fields, a key
+// outside its grammar, invalid UTF-8, a zero or unknown grade, a field above its byte bound, more
+// than 64 rows, and `has_more` on a page that is not full all fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.account_achievements;
+
+// ClientCommand.payload of command type 10. At most 6 encoded bytes.
+message AccountAchievementsQuery {
+  // 0 for the first page. A page beyond the last returns no rows and `has_more` false.
+  uint32 page = 1;
+}
+
+// One earned fact of the account (display contract §3.2). At most 509 encoded bytes.
+message AccountAchievementRow {
+  // `oteryn:achievement/<slug>`, at most 160 bytes.
+  string key = 1;
+  // Catalogue text, at most 64 UTF-8 bytes.
+  string name = 2;
+  // Catalogue text, at most 256 UTF-8 bytes.
+  string description = 3;
+  // 1-4. Zero or any other value fails closed.
+  uint32 grade = 4;
+  // The catalogue points of the key; 0 when the record is retired.
+  uint32 points = 5;
+  // The earning time of the grant request behind the fact, in Unix milliseconds of server time.
+  int64 earned_at = 6;
+  // The catalogue `secret` flag.
+  bool secret = 7;
+}
+
+// CommandResult.payload of command type 10. At most 32788 encoded bytes: 64 worst-case rows of
+// 512 bytes each (the row, its tag and its 2-byte length) plus 20 bytes of the scalar fields.
+message AccountAchievementsResult {
+  // The sum of the catalogue points over all facts of the account; the same on every page of one
+  // read.
+  uint32 total_points = 1;
+  // The number of facts of the account at the time of the read (the watermark, §3.3).
+  uint32 fact_count = 2;
+  uint32 page = 3;
+  // True exactly when a later page holds rows; then this page holds 64 rows.
+  bool has_more = 4;
+  // At most 64, ordered by grade, then name by Unicode code point, then key (§3.4).
+  repeated AccountAchievementRow rows = 5;
+}

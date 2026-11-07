@@ -1,0 +1,80 @@
+{
+  "encounter": "canary:encounter/the_primal_menace",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "ThePrimalMenaceDeath": [
+      "canary:creature/the_primal_menace"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/primal_ordeal_quest/the_primal_menace.lua",
+      "blob_sha1": "f283f785aaa6a2bb6c405c5434d7839dc7d36798"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua",
+      "blob_sha1": "3cafb041e31f9f068b2ec118af2b5575aee6d2bc"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        67
+      ],
+      "status": "mapped",
+      "resolution": "The Primal Menace is the the_primal_menace participant; its file registers ThePrimalMenaceDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1,
+        3
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of The Primal Menace.",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        15,
+        16
+      ],
+      "status": "mapped",
+      "resolution": "Every damaging player gets PrimalOrdeal.Bosses.ThePrimalMenaceKilled = 1 (quest domain) and, when the hazard points of the fight equal the player's highest Gnomprona Gardens hazard level, that level rises by one (hazard progression domain, D27).",
+      "destination": "/encounter/rules/0/actions/0"
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "the_primal_menace_defeated",
+      "credited": "damage_contributors",
+      "quest_domain": {
+        "canary_storage": "Storage.Quest.U12_90.PrimalOrdeal.Bosses.ThePrimalMenaceKilled",
+        "raise_to_at_least": 1
+      },
+      "hazard_domain": {
+        "hazard": "hazard.gnomprona-gardens",
+        "level_up_when": "the fight hazard points (Hazard:getHazardPlayerAndPoints of the damage map) equal the player maximum hazard level"
+      }
+    }
+  ]
+}

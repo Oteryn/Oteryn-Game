@@ -1,0 +1,29 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/urmahlullu_the_immaculate",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/wildness_of_urmahlullu",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/urmahlullu_the_tamed",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/wisdom_of_urmahlullu",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/urmahlullu_the_weakened",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

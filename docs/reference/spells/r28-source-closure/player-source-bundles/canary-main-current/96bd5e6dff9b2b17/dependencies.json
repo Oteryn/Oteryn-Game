@@ -1,0 +1,259 @@
+{
+  "abilities": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/canary-main-current/96bd5e6dff9b2b17/ability/effect",
+          "revision": "source-player-r28"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/96bd5e6dff9b2b17/ability",
+        "revision": "source-player-r28"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": true,
+      "range_tiles": 5
+    }
+  ],
+  "effects": [
+    {
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:spell/source/canary-main-current/96bd5e6dff9b2b17/ability/formula-player",
+        "revision": "source-player-r28"
+      },
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/96bd5e6dff9b2b17/ability/effect",
+        "revision": "source-player-r28"
+      },
+      "mitigated_by": [
+        "armor"
+      ],
+      "operation": "damage",
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/hitarea",
+        "projectile_asset_binding": "canary.appearance:missile/weapontype"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/96bd5e6dff9b2b17/ability/formula-player",
+        "revision": "source-player-r28"
+      },
+      "inputs": "skill",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "var": "level"
+                              },
+                              {
+                                "const": "5"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "attack_skill"
+                                  },
+                                  {
+                                    "var": "attack_value"
+                                  }
+                                ],
+                                "op": "add"
+                              },
+                              {
+                                "const": "3"
+                              }
+                            ],
+                            "op": "div"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.28"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "level"
+                                  },
+                                  {
+                                    "const": "5"
+                                  }
+                                ],
+                                "op": "div"
+                              },
+                              {
+                                "var": "attack_skill"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "var": "attack_value"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.28"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "max"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "var": "level"
+                              },
+                              {
+                                "const": "5"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "attack_skill"
+                                  },
+                                  {
+                                    "var": "attack_value"
+                                  }
+                                ],
+                                "op": "add"
+                              },
+                              {
+                                "const": "3"
+                              }
+                            ],
+                            "op": "div"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.28"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "level"
+                                  },
+                                  {
+                                    "const": "5"
+                                  }
+                                ],
+                                "op": "div"
+                              },
+                              {
+                                "var": "attack_skill"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "var": "attack_value"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.28"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "min"
+      }
+    }
+  ]
+}

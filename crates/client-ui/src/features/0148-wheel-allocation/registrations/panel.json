@@ -1,0 +1,7 @@
+{
+  "mechanic": "0148-wheel-allocation",
+  "kind": "panels",
+  "id": "0148-wheel-allocation-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

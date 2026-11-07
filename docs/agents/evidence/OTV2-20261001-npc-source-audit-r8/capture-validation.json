@@ -1,0 +1,8 @@
+{
+  "schema": "NPC_R8_CAPTURE_CUSTODY_VALIDATION/v1",
+  "browser_captures_checked": 18,
+  "errors": [],
+  "result": "PASS",
+  "active_repository_modified": false,
+  "repository_head": "e9e69656dbe33ca2666248e23f7638be880f6bc9"
+}

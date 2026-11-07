@@ -1,0 +1,106 @@
+{
+  "records": [
+    {
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.egg",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.egg",
+        "revision": "definition-r1"
+      },
+      "kind": "Creature",
+      "loot": null,
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.egg",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.spawn_of_the_welter",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.spawn_of_the_welter",
+        "revision": "definition-r1"
+      },
+      "kind": "Creature",
+      "loot": null,
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.spawn_of_the_welter",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.the_welter",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_welter",
+        "revision": "definition-r1"
+      },
+      "kind": "Creature",
+      "loot": {
+        "family": "Loot",
+        "key": "oteryn:loot.creature.the_welter",
+        "revision": "definition-r1"
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.the_welter",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "disposition": "EXACT",
+      "external_id": "raids/egg_the_welter",
+      "identity_namespace": "canary/monster-file",
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.egg",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "raids/spawn_of_the_welter",
+      "identity_namespace": "canary/monster-file",
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.spawn_of_the_welter",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "raids/the_welter",
+      "identity_namespace": "canary/monster-file",
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_welter",
+        "revision": "definition-r1"
+      }
+    }
+  ]
+}

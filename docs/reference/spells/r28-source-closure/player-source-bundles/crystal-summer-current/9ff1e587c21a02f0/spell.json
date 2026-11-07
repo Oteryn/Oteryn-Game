@@ -1,0 +1,74 @@
+{
+  "spell": {
+    "base_power": 250,
+    "carrier": "instant",
+    "cooldown_ms": 1000,
+    "costs": {
+      "mana": 160,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/9ff1e587c21a02f0/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/9ff1e587c21a02f0",
+      "revision": "source-player-r28"
+    },
+    "name": "Ultimate Healing",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_ultimate_healing"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 3,
+    "requirements": {
+      "learning_required": false,
+      "level": 30,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "exura vita"
+  }
+}

@@ -1,0 +1,7 @@
+name=arena_catalogue
+commands=240
+transport=arena_catalogue
+composed=arena_catalogue
+authority=arena_catalogue
+[route]
+routing::arena_catalogue::route(authority, &session.admitted, command).await

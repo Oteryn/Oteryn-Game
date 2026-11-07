@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-CAPABILITY-TRUTH-STATES",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+  "resource": "Classification capability truth states in one Item record",
+  "unit": "fixed typed states",
+  "hard_maximum": 24,
+  "configurable_range": {
+    "minimum": 24,
+    "maximum": 24
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Require the exact closed capability shape; never allocate from an encoded arbitrary count.",
+  "client_visible": true,
+  "boundary_tests": [
+    "exactly 24 truth states accepted",
+    "23-state truncation rejected",
+    "25th state rejected"
+  ]
+}

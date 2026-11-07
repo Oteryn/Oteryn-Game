@@ -1,0 +1,317 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/ice_wave",
+        "revision": "spell-p2-r20"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": true,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/ice_wave/effect",
+          "revision": "spell-p2-r20"
+        }
+      ],
+      "area": {
+        "matrix": {
+          "north": [
+            "xxxxx",
+            ".xxx.",
+            ".xxx.",
+            "..C.."
+          ],
+          "diagonal": [
+            "....x.",
+            "...xx.",
+            "..xxx.",
+            ".xxxx.",
+            "xxxxx.",
+            ".....C"
+          ]
+        }
+      }
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/ice_wave/effect",
+        "revision": "spell-p2-r20"
+      },
+      "operation": "damage",
+      "damage_type": "ice",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:formula/spell/ice_wave/combat-1",
+        "revision": "spell-p2-r20"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/icearea"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "candidate:formula/spell/ice_wave/combat-1",
+        "revision": "spell-p2-r20"
+      },
+      "kind": "player_expression",
+      "inputs": "level_magic",
+      "minimum": {
+        "op": "add",
+        "args": [
+          {
+            "fn": "level_base_damage_healing",
+            "args": [
+              {
+                "var": "level"
+              }
+            ]
+          },
+          {
+            "op": "floor",
+            "args": [
+              {
+                "op": "sub",
+                "args": [
+                  {
+                    "op": "add",
+                    "args": [
+                      {
+                        "op": "mul",
+                        "args": [
+                          {
+                            "op": "div",
+                            "args": [
+                              {
+                                "var": "base_power"
+                              },
+                              {
+                                "const": "25"
+                              }
+                            ]
+                          },
+                          {
+                            "var": "magic_level"
+                          }
+                        ]
+                      },
+                      {
+                        "op": "div",
+                        "args": [
+                          {
+                            "var": "base_power"
+                          },
+                          {
+                            "const": "4"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "op": "div",
+                    "args": [
+                      {
+                        "op": "sub",
+                        "args": [
+                          {
+                            "op": "add",
+                            "args": [
+                              {
+                                "op": "add",
+                                "args": [
+                                  {
+                                    "const": "0"
+                                  },
+                                  {
+                                    "op": "mul",
+                                    "args": [
+                                      {
+                                        "var": "magic_level"
+                                      },
+                                      {
+                                        "const": "2"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "const": "12"
+                              }
+                            ]
+                          },
+                          {
+                            "op": "add",
+                            "args": [
+                              {
+                                "op": "add",
+                                "args": [
+                                  {
+                                    "const": "0"
+                                  },
+                                  {
+                                    "op": "mul",
+                                    "args": [
+                                      {
+                                        "var": "magic_level"
+                                      },
+                                      {
+                                        "const": "0.81"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "const": "4"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "const": "2"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "maximum": {
+        "op": "add",
+        "args": [
+          {
+            "fn": "level_base_damage_healing",
+            "args": [
+              {
+                "var": "level"
+              }
+            ]
+          },
+          {
+            "op": "floor",
+            "args": [
+              {
+                "op": "add",
+                "args": [
+                  {
+                    "op": "add",
+                    "args": [
+                      {
+                        "op": "mul",
+                        "args": [
+                          {
+                            "op": "div",
+                            "args": [
+                              {
+                                "var": "base_power"
+                              },
+                              {
+                                "const": "25"
+                              }
+                            ]
+                          },
+                          {
+                            "var": "magic_level"
+                          }
+                        ]
+                      },
+                      {
+                        "op": "div",
+                        "args": [
+                          {
+                            "var": "base_power"
+                          },
+                          {
+                            "const": "4"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "op": "div",
+                    "args": [
+                      {
+                        "op": "sub",
+                        "args": [
+                          {
+                            "op": "add",
+                            "args": [
+                              {
+                                "op": "add",
+                                "args": [
+                                  {
+                                    "const": "0"
+                                  },
+                                  {
+                                    "op": "mul",
+                                    "args": [
+                                      {
+                                        "var": "magic_level"
+                                      },
+                                      {
+                                        "const": "2"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "const": "12"
+                              }
+                            ]
+                          },
+                          {
+                            "op": "add",
+                            "args": [
+                              {
+                                "op": "add",
+                                "args": [
+                                  {
+                                    "const": "0"
+                                  },
+                                  {
+                                    "op": "mul",
+                                    "args": [
+                                      {
+                                        "var": "magic_level"
+                                      },
+                                      {
+                                        "const": "0.81"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "const": "4"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "const": "2"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

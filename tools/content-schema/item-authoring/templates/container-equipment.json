@@ -1,0 +1,37 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.container-equipment",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Container Equipment",
+  "family_profile": "container_equipment",
+  "delivery_task_eligible": false,
+  "taxonomy": {
+    "item_class": "container",
+    "primary": "container-equipment",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "equipment": {
+    "slot": "ammo",
+    "hands": 0,
+    "reserved_slots": [],
+    "groups": []
+  },
+  "container": {
+    "capacity": 20,
+    "content_kind": "items",
+    "accepts": []
+  },
+  "trade": {
+    "tradeable": true,
+    "marketable": false
+  }
+}

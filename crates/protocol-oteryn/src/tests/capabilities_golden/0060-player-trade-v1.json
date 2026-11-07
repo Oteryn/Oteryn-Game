@@ -1,0 +1,21 @@
+{
+  "id": 60,
+  "name": "PLAYER_TRADE_V1",
+  "constant": "player_trade::CAPABILITY_PLAYER_TRADE_V1",
+  "requires": [
+    4
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    78
+  ],
+  "domains": [
+    26
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

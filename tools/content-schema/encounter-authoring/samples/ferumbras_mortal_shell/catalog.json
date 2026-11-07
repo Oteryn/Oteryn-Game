@@ -1,0 +1,29 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/ferumbras_mortal_shell",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/1949",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/22761",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/ferumbras_soul_splinter",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/ferumbras_essence",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

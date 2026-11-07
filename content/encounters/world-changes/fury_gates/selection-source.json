@@ -1,0 +1,87 @@
+{
+  "schema": "OTERYN_WORLD_CHANGE_SELECTION_SOURCE/candidate-1",
+  "kind": "WORLD_CHANGE",
+  "provenance": {
+    "key": "decision:W10",
+    "kind": "decision:W10",
+    "trigger": "decision:W10/W15",
+    "variants.variant_key": "canary:gates[].mapName",
+    "variants.weight": "decision:W15",
+    "variants.reference_map": "canary:Game.loadMap"
+  },
+  "unresolved": [
+    "NATIVE_LAYER_GEOMETRY",
+    "TARGET_HOUSE_MEMBERSHIP",
+    "VALUE_SOURCE_MULTIPLICITY",
+    "SPAWN_NPC_RAID_BINDINGS",
+    "ANNOUNCEMENT_TEXT",
+    "COMPILER_BUNDLE_BINDING"
+  ],
+  "key": "fury_gates",
+  "trigger": {
+    "kind": "at_reset",
+    "chance_permille": 343
+  },
+  "variants": [
+    {
+      "variant_key": "abdendriel",
+      "weight": 1,
+      "reference_map": "data-otservbr-global/world/world_changes/fury_gates/abdendriel.otbm"
+    },
+    {
+      "variant_key": "ankrahmun",
+      "weight": 1,
+      "reference_map": "data-otservbr-global/world/world_changes/fury_gates/ankrahmun.otbm"
+    },
+    {
+      "variant_key": "carlin",
+      "weight": 1,
+      "reference_map": "data-otservbr-global/world/world_changes/fury_gates/carlin.otbm"
+    },
+    {
+      "variant_key": "darashia",
+      "weight": 1,
+      "reference_map": "data-otservbr-global/world/world_changes/fury_gates/darashia.otbm"
+    },
+    {
+      "variant_key": "edron",
+      "weight": 1,
+      "reference_map": "data-otservbr-global/world/world_changes/fury_gates/edron.otbm"
+    },
+    {
+      "variant_key": "kazordoon",
+      "weight": 1,
+      "reference_map": "data-otservbr-global/world/world_changes/fury_gates/kazordoon.otbm"
+    },
+    {
+      "variant_key": "libertybay",
+      "weight": 1,
+      "reference_map": "data-otservbr-global/world/world_changes/fury_gates/libertybay.otbm"
+    },
+    {
+      "variant_key": "porthope",
+      "weight": 1,
+      "reference_map": "data-otservbr-global/world/world_changes/fury_gates/porthope.otbm"
+    },
+    {
+      "variant_key": "thais",
+      "weight": 1,
+      "reference_map": "data-otservbr-global/world/world_changes/fury_gates/thais.otbm"
+    },
+    {
+      "variant_key": "venore",
+      "weight": 1,
+      "reference_map": "data-otservbr-global/world/world_changes/fury_gates/venore.otbm"
+    }
+  ],
+  "sources": {
+    "decision": {
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/ff400ab5319eac0209e75d7c72874b84bcfec917/docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+      "sha256": "60402e87f4e31860f93b42b37604789182a74a6eaf7bfd905348dc7b1d13b9f1"
+    },
+    "canary": {
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/world_changes/fury_gates.lua",
+      "sha256": "e8b1aa7185c34a52e11d97a0b5b7f74b170a5ab71129c7c1ad7b69a72122f37a"
+    }
+  }
+}

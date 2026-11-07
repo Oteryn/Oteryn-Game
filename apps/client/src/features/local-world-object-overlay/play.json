@@ -1,0 +1,10 @@
+{
+  "concerns": [
+    "protocol",
+    "state"
+  ],
+  "events": {
+    "WorldObjectOverlay": "overlay",
+    "WorldObjectOverlaySnapshot": "overlay_snapshot"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "SPECTATE1-RL-02",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_SPECTATE1_DECISION_2026-10-15.md",
+  "resource": "observer sessions per account on this node",
+  "unit": "observer sessions",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 2,
+    "maximum": 2
+  },
+  "failure_category": "NOT_AVAILABLE",
+  "allocation_impact": "Includes pending terminal egress slots; cross-node limit belongs to Platform O2.",
+  "client_visible": true,
+  "boundary_tests": [
+    "spectate_caps_and_overload_never_mutate_the_target"
+  ],
+  "notes": "Dormant; NET03-OUTBOUND-QUEUE-ENTRIES=64 and -BYTES=1048576 apply unchanged. RL-03 node capacity, rate-account capacity and audit-fact capacity require measured composition inputs, no activation defaults."
+}

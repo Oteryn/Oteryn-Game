@@ -1,0 +1,9 @@
+{
+  "mechanic": "0013-paced-movement",
+  "kind": "keybindings",
+  "id": "0013-paced-movement-move-north",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "ARROWUP",
+  "entry": "input.rs::default_arrow_binding"
+}

@@ -1,0 +1,129 @@
+{
+  "blockers": [],
+  "candidate_key": "candidate:spell/source/crystal-summer-current/6d475ff1daeffec5",
+  "conversion_notes": [
+    "Exact source-only native descriptor; current donor bytes equal qualified template bytes",
+    "{\"current_bytes_equal_template_bytes\": true, \"current_source_revision\": \"00ce02a57ca5a12e48f32a3476e37471167e4c3f\", \"external_value_overrides_used\": false, \"full_cast_sha256\": \"de049763deb15cba09530da93666073152e55b4b7ecd0cb2b265dca3d26c8298\", \"helper_scope\": \"house API domain, Lua bridge and editor session methods; transitive common engine services remain unqualified\", \"module\": \"native_house_movement\", \"module_sha256\": \"8fcba61ba9b32163ca116d9be5cd0e678b5ae68e94db9cd75f95d8676119664d\", \"qualified_template_revision\": \"ff7ede593c69d4c658b382c97443e8155926924a\", \"source_helper_proofs\": [{\"current_bytes_equal_template_bytes\": true, \"path\": \"src/map/house/house.cpp\", \"scope\": \"full_file\", \"sha256\": \"9f563752993a705861151f1ba4c7ea29de8d09633340ebb4a35d6db4a07f077f\"}, {\"current_bytes_equal_template_bytes\": true, \"path\": \"src/map/map_definitions.hpp\", \"scope\": \"full_file\", \"sha256\": \"9cf30f306b94d2c7eff66f5a1ccf0736de394bbb2ef59b2a2fbe579b04bc4242\"}, {\"current_bytes_equal_template_bytes\": true, \"path\": \"src/lua/functions/map/house_functions.cpp\", \"scope\": \"full_file\", \"sha256\": \"b2ee99ea69e20e0087abbc796a5e1c68e36d9613481f4ed69e2acd76be211a57\"}, {\"current_bytes_equal_template_bytes\": true, \"path\": \"src/lua/functions/map/tile_functions.cpp\", \"scope\": \"full_file\", \"sha256\": \"d8665854bde6f05effaa0daa2b2c7eb274c51bd98943c03053eb6404c8e2a877\"}, {\"current_bytes_equal_template_bytes\": true, \"path\": \"src/lua/functions/map/position_functions.cpp\", \"scope\": \"full_file\", \"sha256\": \"2e137cc7bb3a1dc8d0cccac9405c5f87c2c7d7efce52cdcb9acdedaeb0e9f937\"}, {\"current_bytes_equal_template_bytes\": true, \"current_file_sha256\": \"aadfebce904f0773782b38e9416d640e45eb04dca66708e4ce0ccada0aa65c35\", \"function_sha256\": \"9b4b40362bd8d8043513f66baa22f4cf130de269e285c0b3d524032c11455701\", \"path\": \"src/lua/functions/creatures/player/player_functions.cpp\", \"scope\": \"function\", \"symbol\": \"PlayerFunctions::luaPlayerCreate\", \"template_file_sha256\": \"37e768c6c77db1e555bcfb02de5b549a8661e4bcc94ec0cb506244035427f11e\"}, {\"current_bytes_equal_template_bytes\": true, \"current_file_sha256\": \"aadfebce904f0773782b38e9416d640e45eb04dca66708e4ce0ccada0aa65c35\", \"function_sha256\": \"e429db539d83d0abc56bd332af7f65257488ef8b0da5e0fa2f8dbb48c10a62af\", \"path\": \"src/lua/functions/creatures/player/player_functions.cpp\", \"scope\": \"function\", \"symbol\": \"PlayerFunctions::luaPlayerSetEditHouse\", \"template_file_sha256\": \"37e768c6c77db1e555bcfb02de5b549a8661e4bcc94ec0cb506244035427f11e\"}, {\"current_bytes_equal_template_bytes\": true, \"current_file_sha256\": \"aadfebce904f0773782b38e9416d640e45eb04dca66708e4ce0ccada0aa65c35\", \"function_sha256\": \"7ec2c7fb4e187d2fa00cf43ceeb37474844921bd24e8f4cd77d988d1b8d3d66b\", \"path\": \"src/lua/functions/creatures/player/player_functions.cpp\", \"scope\": \"function\", \"symbol\": \"PlayerFunctions::luaPlayerSendHouseWindow\", \"template_file_sha256\": \"37e768c6c77db1e555bcfb02de5b549a8661e4bcc94ec0cb506244035427f11e\"}, {\"current_bytes_equal_template_bytes\": true, \"current_file_sha256\": \"923b87cbf35804be52133f0e89b3cc06894e1cfab2c573b5a49226ad8c1e8bd5\", \"function_sha256\": \"72a38b7cdff72ffb14643f23c8f53a179a2410a78e37e0c1c70437af2be1e24b\", \"path\": \"src/creatures/players/player.cpp\", \"scope\": \"function\", \"symbol\": \"Player::sendHouseWindow\", \"template_file_sha256\": \"5f03562f860a19ebe623553d77f78b64e145ecc97c87788a55375d994be8aa1d\"}, {\"current_bytes_equal_template_bytes\": true, \"current_file_sha256\": \"923b87cbf35804be52133f0e89b3cc06894e1cfab2c573b5a49226ad8c1e8bd5\", \"function_sha256\": \"a58afacbd8879a07969aa01efcdbced4e774351e8842e9119509392f00015cd2\", \"path\": \"src/creatures/players/player.cpp\", \"scope\": \"function\", \"symbol\": \"Player::getEditHouse\", \"template_file_sha256\": \"5f03562f860a19ebe623553d77f78b64e145ecc97c87788a55375d994be8aa1d\"}, {\"current_bytes_equal_template_bytes\": true, \"current_file_sha256\": \"923b87cbf35804be52133f0e89b3cc06894e1cfab2c573b5a49226ad8c1e8bd5\", \"function_sha256\": \"31ea5831cd684c50f99ce0655070fb51c43170734d83e3874e6fcc58511798e8\", \"path\": \"src/creatures/players/player.cpp\", \"scope\": \"function\", \"symbol\": \"Player::setEditHouse\", \"template_file_sha256\": \"5f03562f860a19ebe623553d77f78b64e145ecc97c87788a55375d994be8aa1d\"}, {\"current_bytes_equal_template_bytes\": true, \"current_file_sha256\": \"2db122ea6a5c1916125284b4ae82508a422f9c51388051c3301f4226344bbb32\", \"function_sha256\": \"0830a7ae080332d90c0d238198ebbc5773d1a2275bd50803c8668aabcf7d8ec3\", \"path\": \"src/game/game.cpp\", \"scope\": \"function\", \"symbol\": \"Game::playerUpdateHouseWindow\", \"template_file_sha256\": \"4b26d0c5168e0907ae9044b2587a37ba647f6b6651a94e02f1c12a2e3af58d45\"}, {\"current_bytes_equal_template_bytes\": true, \"current_file_sha256\": \"2db122ea6a5c1916125284b4ae82508a422f9c51388051c3301f4226344bbb32\", \"function_sha256\": \"5ed6ec23db11a9499ec1ae56e588539f9b367558d37058ae8d73e4ae69055834\", \"path\": \"src/game/game.cpp\", \"scope\": \"function\", \"symbol\": \"Game::getPlayerByName\", \"template_file_sha256\": \"4b26d0c5168e0907ae9044b2587a37ba647f6b6651a94e02f1c12a2e3af58d45\"}]}"
+  ],
+  "dependencies": {
+    "abilities": 0,
+    "effects": 0,
+    "formulas": 0
+  },
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+    }
+  ],
+  "external_sources_used": false,
+  "item_owner_bindings_required": [],
+  "logical_key": [
+    "instant",
+    "house subowner list"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "crystal-summer-current/data/scripts/spells/house/house_subowner_list.lua#1",
+    "source_callback_scope": "cached exact source callback expressions and cast tier",
+    "source_capture": "crystal-summer-current-registered-spells.json",
+    "source_capture_sha256": "bfa49da343913ac220721208128530f1a128e99ffd9b447808489daf59043200"
+  },
+  "native_execution_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/house/house_subowner_list.lua#1",
+  "remaining_mechanics": [
+    {
+      "reason": "Source-exact house API operations represented; player/permission/network/teleport provider execution not qualified",
+      "source_field": "house.transitive_common_engine_services"
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "schema_and_semantic_validation_errors": [],
+  "source_header": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "House Subowner List",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_invite_subowners"
+    },
+    "requirements": {
+      "level": 8,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false
+    },
+    "words": "aleta som"
+  },
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "de049763deb15cba09530da93666073152e55b4b7ecd0cb2b265dca3d26c8298",
+  "status": "CANDIDATE_SCHEMA_VALID"
+}

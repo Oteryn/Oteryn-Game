@@ -1,0 +1,10 @@
+{
+  "id": 36,
+  "name": "DEPOT_INTENT",
+  "owner_decision": "Owner depot vertical wiring task 2026-10-23; DEPOT-1 continuation",
+  "capability": 37,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/depot_v1.proto#DepotIntentV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/depot_v1.proto#DepotReplyV1",
+  "max_payload_bytes": 48,
+  "max_result_payload_bytes": 1024
+}

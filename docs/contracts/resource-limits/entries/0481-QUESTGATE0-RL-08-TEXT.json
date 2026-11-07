@@ -1,0 +1,23 @@
+{
+  "id": "QUESTGATE0-RL-08-TEXT",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+  "resource": "UTF-8 bytes of one journal text in domain 16, template counters filled in",
+  "unit": "bytes",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 1024
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Measured 463. A journal entry whose worst case (each template counter as 20 bytes, the longest i64) is longer does not load; a longer text fails closed in the codec.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=1024: a 1,024-byte text encodes and decodes",
+    "max+1: a 1,026-byte text (two-byte characters) fails closed"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/quest_log.rs MAX_JOURNAL_TEXT_BYTES",
+    "apps/game-server/src/quest/log.rs"
+  ],
+  "notes": "QUEST-GATE-0 \u00a79 (QUESTGATE0-RL-08 payload bytes); the Tibia Global text itself arrives with QUEST-CONTENT-2. Measured over content/quests/definitions (58 storyline quests with missions, 529 missions) from each mission's name and the longest journal text reference length, a template counted with 20 bytes per placeholder. Test: quest_log::tests::names_and_texts_are_bounded_utf8_and_names_are_required. Registered by OTV2-20261004-quest-log-wire-1."
+}

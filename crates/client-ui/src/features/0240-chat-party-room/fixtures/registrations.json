@@ -1,0 +1,40 @@
+[
+  {
+    "mechanic": "0240-chat-party-room",
+    "kind": "keybindings",
+    "id": "0240-chat-party-room-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+SHIFT+R",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0240-chat-party-room",
+    "kind": "panels",
+    "id": "0240-chat-party-room-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0240-chat-party-room",
+    "kind": "handlers",
+    "id": "0240-chat-party-room-push",
+    "status": "supported",
+    "commands": [],
+    "direction": "server_to_client",
+    "capability": 240,
+    "entry": "protocol.rs::push_line",
+    "push_messages": [
+      "ChatRooms",
+      "ChatLine"
+    ],
+    "reducer": "protocol.rs::push_line",
+    "test": "tests/state.rs::pushed_party_line_is_visible_and_send_builds_party_intent",
+    "shared_commands": [
+      13
+    ],
+    "not_applicable": {
+      "settings": "Party membership and room access are server-owned."
+    }
+  }
+]

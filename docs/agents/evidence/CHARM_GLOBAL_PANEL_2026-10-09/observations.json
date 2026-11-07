@@ -1,0 +1,408 @@
+{
+  "date": "2026-10-09",
+  "source": "Official Tibia Global desktop client; owner-authorized inspection of an existing logged-in session",
+  "catalogue_base_sha": "1e77ca22b4fcb7869f8f1d169f4e12bc749b295d",
+  "method": "Manual reading of visible panel; no OCR or hidden client state",
+  "coverage": {
+    "first_stage": 25,
+    "major": 14,
+    "minor": 11,
+    "stages_2_and_3": 0
+  },
+  "charms": [
+    {
+      "key": "oteryn:charm.adrenaline_burst",
+      "name": "Adrenaline Burst",
+      "category": "minor",
+      "stage": 1,
+      "cost": 100,
+      "currency": "Minor Charm Echoes",
+      "displayed_value_percent": 6,
+      "description_paraphrase": "After being hit: haste, displayed speed increase 150%, 10 seconds.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "31fe955d93acf51a137e107c90659ce2f51dea5ab7e2733652ea389f36831d3a",
+      "capture_id": "adrenaline_burst.png"
+    },
+    {
+      "key": "oteryn:charm.bless",
+      "name": "Bless",
+      "category": "minor",
+      "stage": 1,
+      "cost": 100,
+      "currency": "Minor Charm Echoes",
+      "displayed_value_percent": 6,
+      "description_paraphrase": "Reduces experience and skill loss on death caused by the chosen creature.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "19be92ea4b4295b55a3b78e5f53254437d47c2198918cfdf8b3c5f8b8888e74d",
+      "capture_id": "bless.png"
+    },
+    {
+      "key": "oteryn:charm.carnage",
+      "name": "Carnage",
+      "category": "major",
+      "stage": 1,
+      "cost": 600,
+      "currency": "Charm Points",
+      "displayed_value_percent": 10,
+      "description_paraphrase": "Monster kill may deal physical damage equal to 15% of its maximum HP to monsters in a small radius.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "ad4953261b5073767ae73fe199251e097a439611b2a90ff8a738e91322863b6b",
+      "capture_id": "carnage.png"
+    },
+    {
+      "key": "oteryn:charm.cleanse",
+      "name": "Cleanse",
+      "category": "minor",
+      "stage": 1,
+      "cost": 100,
+      "currency": "Minor Charm Echoes",
+      "displayed_value_percent": 6,
+      "description_paraphrase": "After being hit: cleanse one random negative status and gain immunity to it for 11 seconds.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "10b3fe59d42db7d498983b4104bfbab50f1aad4495c093e3bdb7868b07092684",
+      "capture_id": "cleanse.png"
+    },
+    {
+      "key": "oteryn:charm.cripple",
+      "name": "Cripple",
+      "category": "minor",
+      "stage": 1,
+      "cost": 100,
+      "currency": "Minor Charm Echoes",
+      "displayed_value_percent": 6,
+      "description_paraphrase": "Attacks may paralyse the target for 10 seconds.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "66189349627fc9600149d412131ece797f9dc78699fa6a16dae56ef73fc588aa",
+      "capture_id": "cripple.png"
+    },
+    {
+      "key": "oteryn:charm.curse",
+      "name": "Curse",
+      "category": "major",
+      "stage": 1,
+      "cost": 360,
+      "currency": "Charm Points",
+      "displayed_value_percent": 5,
+      "description_paraphrase": "Attacks may deal death damage equal to 5% of target initial HP.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "7d22f6863c543943a544bbf24974f2bbe4caad91b1db38f869713730a0c9474c",
+      "capture_id": "curse.png"
+    },
+    {
+      "key": "oteryn:charm.divine_wrath",
+      "name": "Divine Wrath",
+      "category": "major",
+      "stage": 1,
+      "cost": 600,
+      "currency": "Charm Points",
+      "displayed_value_percent": 5,
+      "description_paraphrase": "Attacks may deal holy damage equal to 5% of target initial HP.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "1b55b24d50136c937dcfa5ca86fdd2eccf671752935856341f882c792704eb26",
+      "capture_id": "divine_wrath.png"
+    },
+    {
+      "key": "oteryn:charm.dodge",
+      "name": "Dodge",
+      "category": "major",
+      "stage": 1,
+      "cost": 240,
+      "currency": "Charm Points",
+      "displayed_value_percent": 5,
+      "description_paraphrase": "Chance to dodge an attack.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "f5afe96e8b0c9050d34474b257a3904a2ec31cd05cf9958cf273c802e9ef240d",
+      "capture_id": "dodge.png"
+    },
+    {
+      "key": "oteryn:charm.enflame",
+      "name": "Enflame",
+      "category": "major",
+      "stage": 1,
+      "cost": 400,
+      "currency": "Charm Points",
+      "displayed_value_percent": 5,
+      "description_paraphrase": "Attacks may deal fire damage equal to 5% of target initial HP.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "b679f792783d615b85433b634eecebd5cb2ed0758cc4cad3aa4fb298b75a89a5",
+      "capture_id": "enflame.png"
+    },
+    {
+      "key": "oteryn:charm.fatal_hold",
+      "name": "Fatal Hold",
+      "category": "minor",
+      "stage": 1,
+      "cost": 100,
+      "currency": "Minor Charm Echoes",
+      "displayed_value_percent": 30,
+      "description_paraphrase": "Attacks may prevent low-health fleeing for 30 seconds.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "e1ba324e81fb6f29a7ee5469b1db13b3582ce9c8e8cde9b1b89455fec650355e",
+      "capture_id": "fatal_hold.png"
+    },
+    {
+      "key": "oteryn:charm.freeze",
+      "name": "Freeze",
+      "category": "major",
+      "stage": 1,
+      "cost": 320,
+      "currency": "Charm Points",
+      "displayed_value_percent": 5,
+      "description_paraphrase": "Attacks may deal ice damage equal to 5% of target initial HP.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "11cb1dc6e5e891961c0955805411ac39272215f3f9042e05b3e527bd28bcd373",
+      "capture_id": "freeze.png"
+    },
+    {
+      "key": "oteryn:charm.gut",
+      "name": "Gut",
+      "category": "minor",
+      "stage": 1,
+      "cost": 100,
+      "currency": "Minor Charm Echoes",
+      "displayed_value_percent": 6,
+      "description_paraphrase": "Gutting the creature yields 6% more creature products; probability versus quantity not stated.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "a9a71734cdc90fd4f73ff05044b9966d0a684d560333e24a97844e24bbc01351",
+      "capture_id": "gut.png"
+    },
+    {
+      "key": "oteryn:charm.low_blow",
+      "name": "Low Blow",
+      "category": "major",
+      "stage": 1,
+      "cost": 800,
+      "currency": "Charm Points",
+      "displayed_value_percent": 4,
+      "description_paraphrase": "Adds 4% critical-hit chance; equipment prerequisites and probability formula not stated.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "3fecf47284a000dc2f63fbeabe2d44134511c011e0db4051675d3843d4ee9550",
+      "capture_id": "low_blow.png"
+    },
+    {
+      "key": "oteryn:charm.numb",
+      "name": "Numb",
+      "category": "minor",
+      "stage": 1,
+      "cost": 100,
+      "currency": "Minor Charm Echoes",
+      "displayed_value_percent": 6,
+      "description_paraphrase": "After being attacked: may paralyse the aggressor for 10 seconds.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "1279b7d5a7bfa3c20cc08d1edb0362402547f9ae75fbc663e5e0785e44ee2919",
+      "capture_id": "numb.png"
+    },
+    {
+      "key": "oteryn:charm.overflux",
+      "name": "Overflux",
+      "category": "major",
+      "stage": 1,
+      "cost": 600,
+      "currency": "Charm Points",
+      "displayed_value_percent": 5,
+      "description_paraphrase": "Attacks may deal damage equal to 2.5% of player maximum mana.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "3b1ce5f984f9e5a30268fd93ddd2d43b7ab641a22fa4d6b8d9a135ccb1dd9261",
+      "capture_id": "overflux.png"
+    },
+    {
+      "key": "oteryn:charm.overpower",
+      "name": "Overpower",
+      "category": "major",
+      "stage": 1,
+      "cost": 600,
+      "currency": "Charm Points",
+      "displayed_value_percent": 5,
+      "description_paraphrase": "Attacks may deal damage equal to 5% of player maximum HP.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "11b4b7027383fe177cee9b6c2b6af40a99aac1a0a8cc238e04e8958d90c0802d",
+      "capture_id": "overpower.png"
+    },
+    {
+      "key": "oteryn:charm.parry",
+      "name": "Parry",
+      "category": "major",
+      "stage": 1,
+      "cost": 400,
+      "currency": "Charm Points",
+      "displayed_value_percent": 5,
+      "description_paraphrase": "On taking damage: chance to reflect it back to the aggressor.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "3a54f0487df5386454c527fa69d1817e8acc30fc6a23ff7592c72441a3d7112d",
+      "capture_id": "parry.png"
+    },
+    {
+      "key": "oteryn:charm.poison",
+      "name": "Poison",
+      "category": "major",
+      "stage": 1,
+      "cost": 240,
+      "currency": "Charm Points",
+      "displayed_value_percent": 5,
+      "description_paraphrase": "Attacks may deal earth damage equal to 5% of target initial HP.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "051f57c57fa86dc1427c5199b9a29040943e55b9d7798e8fc8a92615636b8a59",
+      "capture_id": "poison.png"
+    },
+    {
+      "key": "oteryn:charm.savage_blow",
+      "name": "Savage Blow",
+      "category": "major",
+      "stage": 1,
+      "cost": 800,
+      "currency": "Charm Points",
+      "displayed_value_percent": 20,
+      "description_paraphrase": "Adds 20% critical extra damage.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "046e62a42de36dd059d677d7959f5feceb8643e3f545712dbc2382a78ef78aa7",
+      "capture_id": "savage_blow.png"
+    },
+    {
+      "key": "oteryn:charm.scavenge",
+      "name": "Scavenge",
+      "category": "minor",
+      "stage": 1,
+      "cost": 100,
+      "currency": "Minor Charm Echoes",
+      "displayed_value_percent": 60,
+      "description_paraphrase": "Increases skinning/dusting success chance by 60%; precise formula not stated.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "85a3118d9708b5ebc3ed875424797111b2483977f5ecc33cea933a1c5eb0ae85",
+      "capture_id": "scavenge.png"
+    },
+    {
+      "key": "oteryn:charm.vampiric_embrace",
+      "name": "Vampiric Embrace",
+      "category": "minor",
+      "stage": 1,
+      "cost": 100,
+      "currency": "Minor Charm Echoes",
+      "displayed_value_percent": 1.6,
+      "description_paraphrase": "Increases current life leech by 1.6%; exact formula not stated.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "3200953a02317b1af544cc8855f28d398e85dcb65f558f1223de1c46503af30a",
+      "capture_id": "vampiric_embrace.png"
+    },
+    {
+      "key": "oteryn:charm.void_inversion",
+      "name": "Void Inversion",
+      "category": "minor",
+      "stage": 1,
+      "cost": 100,
+      "currency": "Minor Charm Echoes",
+      "displayed_value_percent": 20,
+      "description_paraphrase": "Chance to gain mana instead of losing it when taking mana-drain damage.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "e99833cc3f22d09d256f88d371f6c0143a8a152926bb7732dd2eb65981182790",
+      "capture_id": "void_inversion.png"
+    },
+    {
+      "key": "oteryn:charm.voids_call",
+      "name": "Void's Call",
+      "category": "minor",
+      "stage": 1,
+      "cost": 100,
+      "currency": "Minor Charm Echoes",
+      "displayed_value_percent": 0.8,
+      "description_paraphrase": "Increases current mana leech by 0.8%; exact formula not stated.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "c39a177f34111205ea8ee7e86774559bd09aa379dd70b1559256f2f4bfb2333a",
+      "capture_id": "voids_call.png"
+    },
+    {
+      "key": "oteryn:charm.wound",
+      "name": "Wound",
+      "category": "major",
+      "stage": 1,
+      "cost": 240,
+      "currency": "Charm Points",
+      "displayed_value_percent": 5,
+      "description_paraphrase": "Attacks may deal physical damage equal to 5% of target initial HP.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "a69149469826144dd4f744eff295af336e9795786c8df388a13d68a6b966e7a1",
+      "capture_id": "wound.png"
+    },
+    {
+      "key": "oteryn:charm.zap",
+      "name": "Zap",
+      "category": "major",
+      "stage": 1,
+      "cost": 320,
+      "currency": "Charm Points",
+      "displayed_value_percent": 5,
+      "description_paraphrase": "Attacks may deal energy damage equal to 5% of target initial HP.",
+      "category_cost_value_match": true,
+      "screenshot_sha256": "6935f10bebdd1736593e7bc84a3ea79b64fdbc9511944e020701351935e24d05",
+      "capture_id": "zap.png"
+    }
+  ],
+  "additional_observations": {
+    "adrenaline_burst": {
+      "displayed_speed_increase_percent": 150,
+      "duration_seconds": 10,
+      "underlying_speed_formula": "UNVERIFIED"
+    },
+    "cleanse": {
+      "immunity_seconds": 11,
+      "selection": "one random negative status effect",
+      "eligible_types": "UNVERIFIED"
+    },
+    "cripple": {
+      "duration_seconds": 10
+    },
+    "numb": {
+      "duration_seconds": 10
+    },
+    "fatal_hold": {
+      "duration_seconds": 30
+    },
+    "charm_expansion": {
+      "price_tibia_coins": 450,
+      "unlimited_unlocked_charm_assignments": true,
+      "unassign_discount_percent": 25,
+      "purchasing_character_only": true,
+      "purchasable_once": true,
+      "capture_id": "charm-expansion.png",
+      "capture_sha256": "cdb99c3223823a4cddbf689c16e6a0a091130a8acac3d154a5b0a552357a3798"
+    },
+    "current_character": {
+      "remaining_assignment_slots": 2,
+      "balances_changed": false
+    },
+    "clear_reset_controls": {
+      "enabled": false,
+      "displayed_gold": 0,
+      "interpretation": "Disabled controls with no unlocked/assigned charms; does not prove real fee is zero."
+    },
+    "bestiary_dragon": {
+      "total_kills": 30,
+      "list_stage": "0/3",
+      "assign_charm_enabled": false,
+      "empty_charm_placeholders": 2,
+      "interpretation": "Incomplete race blocks assigning here; does not establish the complete eligibility or per-race category contract.",
+      "capture_id": "bestiary-dragon-detail.png",
+      "capture_sha256": "4cbc9fea1b2c6b418399170fef6e090f11e30eca908153066fc4631cd0f46f77"
+    }
+  },
+  "limitations": [
+    "No stage 2/3 preview available on this character with locked charms.",
+    "No assignment operation: Select Creature disabled for locked charms.",
+    "Premium six-slot limit and one-major-plus-one-minor-per-race not independently established by this panel.",
+    "No real unassign/reset price observation; no operations performed.",
+    "No armor/resistance/caps/AoE geometry/critical/leech formula or combat verification."
+  ],
+  "writes": {
+    "repository": false,
+    "unlock": false,
+    "upgrade": false,
+    "assign": false,
+    "unassign": false,
+    "reset": false,
+    "purchase": false
+  },
+  "capture_retention": {
+    "location": "Original offline audit workspace",
+    "repository_assets_included": false,
+    "reason": "LICENSE-ASSETS.md: redistribution permission for proprietary UI artwork is not established; retain capture names and SHA256 only."
+  }
+}

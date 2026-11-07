@@ -1,0 +1,41 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 8000,
+    "costs": {
+      "mana": 170
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Strong Ice Wave",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_strong_ice_wave"
+    },
+    "reference_spell_id": 43,
+    "requirements": {
+      "level": 40,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "needs_direction": true
+    },
+    "words": "exevo gran frigo hur"
+  }
+}

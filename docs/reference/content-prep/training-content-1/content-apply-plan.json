@@ -1,0 +1,26 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_APPLY_PLAN/v1",
+  "task": "TRAINING-CONTENT-1",
+  "status": "STAGED_FOR_COORDINATOR",
+  "reason": "Tracked content/ files participate in content-tree validation and World Bundle inputs. This packet is staged as docs-only reference evidence; the coordinator applies it to the target paths together with any separately qualified pin or seal regeneration.",
+  "target_files": [
+    {
+      "target_path": "content/items/exercise-weapon-evidence/evidence-00000-00031.json",
+      "staged_path": "docs/reference/content-prep/training-content-1/admission-evidence/evidence-00000-00031.json",
+      "sha256": "cff6cfae3a8e141f8f3b00204ca5e2891a4ec19f52ffabc22d5d0d07bb11beb6"
+    },
+    {
+      "target_path": "content/items/exercise-weapon-evidence/index.json",
+      "staged_path": "docs/reference/content-prep/training-content-1/admission-evidence/index.json",
+      "sha256": "9849f50b60c2cbd695e0d46fa786aa85ad972be2159390d4c94c96195bc5f835"
+    }
+  ],
+  "runtime_switch_authorized": false,
+  "coordinator_must_verify": [
+    "current task target ownership",
+    "target-source conflicts and UNKNOWN fields",
+    "approved native/runtime schema wiring",
+    "World Bundle pins and deterministic bundle",
+    "required exact-head validators"
+  ]
+}

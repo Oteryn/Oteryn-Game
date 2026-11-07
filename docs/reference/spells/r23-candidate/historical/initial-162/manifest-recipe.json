@@ -1,0 +1,114 @@
+{
+  "schema": "OTERYN_R23_CANDIDATE_MANIFEST_RECIPE/v1",
+  "classification": "Local test candidate inputs; no runtime admission or final qualification",
+  "base_provider_root": "../r21-local-candidate/active-artifact",
+  "expected_generated_manifest_sha256": "f3f1fac9cb6dd473824938c4c7a24f8de01e86e3160403a78bf3c5e7a653d2d6",
+  "native_manifest": {
+    "schema": "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v5",
+    "native_map_profile": "accepted-entry-r1",
+    "catalog": {
+      "path": "catalog.json",
+      "sha256": "1f83c0131e2106c2f6b9c3fd70a0bd801c4724d620524ca03fb70b1fcbaad678"
+    },
+    "source_selection": {
+      "path": "source_selection.json",
+      "sha256": "ea841c727c6a26004283f9f81298d57e51eda045059f48fb7aef7998f43bc45a"
+    },
+    "creature_profiles": {
+      "path": "creature_profiles.json",
+      "sha256": "928bce647fb62907a510926745ab6335ba0f17e01c8448ebe667fba442490691"
+    },
+    "presentation_profiles": {
+      "path": "presentation_profiles.json",
+      "sha256": "b2f7dba5d93ecb44d30dd4dec30ee91a29d0e2ef0001be486b1e577e82edd2f8"
+    },
+    "item_profiles": {
+      "path": "item_profiles.json",
+      "sha256": "50f89d14b6a02ffd0eaefdc22254517715c983567543f09114e5da027a06b9c7"
+    },
+    "spell_appearances": {
+      "path": "spell_appearances.json",
+      "sha256": "6cf9e3394969d29cf3e6e88c1958125c951abf36851133342ba5f66c39f27ece"
+    },
+    "build_training": {
+      "path": "build_training.json",
+      "sha256": "ed23a81ec9247c5808de8161e18e7bc366a7bb8709839c2256aba1c649f4d1c1",
+      "content_revision": "s3b-content-1",
+      "magnitude_policy": "baseline_test"
+    },
+    "familiar_config": {
+      "path": "familiar_config.json",
+      "sha256": "fe7e1f4f333588eaaf612bee734bb0d2da43ae9722207cca4bfcfeb394cbe76e"
+    },
+    "familiar_defenses": {
+      "path": "familiar_defenses.json",
+      "sha256": "07cd3a597f1b46877be8a1458607d2e2af2ae53bfc8202695603ea26f1e3a120"
+    },
+    "wheel_profile": {
+      "path": "wheel_profile.json",
+      "sha256": "6daabc530ae7fc296358a4810706844e2b709a1f38d458bd63bb4a49f6a47beb"
+    },
+    "source_world": {
+      "path": "source_world.json",
+      "sha256": "44f860d20712a32e6bc22aa269d3e220d39d164b7738d3c150a406579849b5f5"
+    }
+  },
+  "providers": {
+    "catalog": {
+      "source": "../r21-local-candidate/active-artifact/catalog.json",
+      "output": "catalog.json",
+      "sha256": "1f83c0131e2106c2f6b9c3fd70a0bd801c4724d620524ca03fb70b1fcbaad678"
+    },
+    "source_selection": {
+      "source": "../r21-local-candidate/active-artifact/source-selection.json",
+      "output": "source_selection.json",
+      "sha256": "ea841c727c6a26004283f9f81298d57e51eda045059f48fb7aef7998f43bc45a"
+    },
+    "creature_profiles": {
+      "source": "creature-profiles.json",
+      "output": "creature_profiles.json",
+      "sha256": "928bce647fb62907a510926745ab6335ba0f17e01c8448ebe667fba442490691"
+    },
+    "presentation_profiles": {
+      "source": "../r21-local-candidate/active-artifact/presentation-profiles.json",
+      "output": "presentation_profiles.json",
+      "sha256": "b2f7dba5d93ecb44d30dd4dec30ee91a29d0e2ef0001be486b1e577e82edd2f8"
+    },
+    "item_profiles": {
+      "source": "../r21-local-candidate/active-artifact/item-profiles.json",
+      "output": "item_profiles.json",
+      "sha256": "50f89d14b6a02ffd0eaefdc22254517715c983567543f09114e5da027a06b9c7"
+    },
+    "spell_appearances": {
+      "source": "../r21-local-candidate/active-artifact/spell-appearances.json",
+      "output": "spell_appearances.json",
+      "sha256": "6cf9e3394969d29cf3e6e88c1958125c951abf36851133342ba5f66c39f27ece"
+    },
+    "build_training": {
+      "source": "build-training.json",
+      "output": "build_training.json",
+      "sha256": "ed23a81ec9247c5808de8161e18e7bc366a7bb8709839c2256aba1c649f4d1c1"
+    },
+    "familiar_config": {
+      "source": "../r21-local-candidate/active-artifact/familiar-config.json",
+      "output": "familiar_config.json",
+      "sha256": "fe7e1f4f333588eaaf612bee734bb0d2da43ae9722207cca4bfcfeb394cbe76e"
+    },
+    "familiar_defenses": {
+      "source": "../r21-local-candidate/active-artifact/familiar-defenses.json",
+      "output": "familiar_defenses.json",
+      "sha256": "07cd3a597f1b46877be8a1458607d2e2af2ae53bfc8202695603ea26f1e3a120"
+    },
+    "wheel_profile": {
+      "source": "../r21-local-candidate/active-artifact/wheel-profile.json",
+      "output": "wheel_profile.json",
+      "sha256": "6daabc530ae7fc296358a4810706844e2b709a1f38d458bd63bb4a49f6a47beb"
+    },
+    "source_world": {
+      "source": "../r21-local-candidate/active-artifact/source-world.json",
+      "output": "source_world.json",
+      "sha256": "44f860d20712a32e6bc22aa269d3e220d39d164b7738d3c150a406579849b5f5"
+    }
+  },
+  "instructions": "Run python materialize_manifest.py --out <new-local-output-directory>. Every copied normalized provider must match its SHA256. Paths resolve relative to this recipe, never a host workspace. The resulting manifest is for current candidate validation only."
+}

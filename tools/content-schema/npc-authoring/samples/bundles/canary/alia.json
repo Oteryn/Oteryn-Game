@@ -1,0 +1,850 @@
+{
+ "definition": {
+  "description": {
+   "length": 4,
+   "links": [],
+   "placeholders": [],
+   "sha256": "4aebf9bb0d3e32dbc28e11ce8af926310a90f3d05be94365ba969c6fcffb6d42"
+  },
+  "display_name": "Alia",
+  "movement": {
+   "floor_change": false,
+   "walk_interval_ms": 2000,
+   "walk_radius": 2
+  },
+  "name": "Alia",
+  "presentation": {
+   "light": null,
+   "outfit": {
+    "addons": 0,
+    "body": 95,
+    "feet": 95,
+    "head": 96,
+    "legs": 0,
+    "look_type": 138,
+    "mount": null
+   },
+   "speech_bubble": "BANKER"
+  },
+  "profession": "banker",
+  "respawn": null,
+  "vitals": {
+   "health": 100,
+   "max_health": 100
+  }
+ },
+ "dialogue": {
+  "dialog_option_calls": 0,
+  "keywords": [
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "bless",
+      "text": {
+       "length": 56,
+       "links": [],
+       "placeholders": [],
+       "sha256": "d24525b0ebb093847930f8ed0578a2f6bc4bacbacfdba8cf3e0cd6c0b37c84e1"
+      }
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "reset": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       ""
+      ],
+      "kind": "say",
+      "text": {
+       "length": 39,
+       "links": [],
+       "placeholders": [],
+       "sha256": "c1005b5d28afc0da9923009c58bfe3f7c74cd9efdd9b108c0acd154b8d034417"
+      }
+     }
+    ],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "twist of fate"
+    ],
+    "kind": "say",
+    "text": {
+     "parts": [
+      {
+       "length": 150,
+       "links": [],
+       "placeholders": [],
+       "sha256": "179cd7ef1a043cb50b4550ecb4022cc202a19db7d7cc91a1aa12d8f21d96cc3c"
+      },
+      {
+       "length": 183,
+       "links": [],
+       "placeholders": [],
+       "sha256": "1eeb116bc321ce789dc144e19e037798e979660cb91e44af13b3695e880d3828"
+      },
+      {
+       "length": 234,
+       "links": [
+        "twist of fate"
+       ],
+       "placeholders": [],
+       "sha256": "0202f10e10b81d996fef26cf8914793c0114137dfca74a5346ffdd9c7201c065"
+      },
+      {
+       "length": 88,
+       "links": [],
+       "placeholders": [
+        "|PVPBLESSCOST|"
+       ],
+       "sha256": "d1951c0d7a5682857bf7e6fed68d790f3478eb48f508c12a600aae8dee33e108"
+      }
+     ]
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "adventurer stone"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 34,
+     "links": [],
+     "placeholders": [],
+     "sha256": "c8b95e4ef2761dc2c761ff9d53f2121506d24b0d57e335484107bf4b69f5ad1e"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "LUA_ACTION",
+      "flags": {
+       "reset": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 24,
+       "links": [],
+       "placeholders": [],
+       "sha256": "4748f89d4465ac44f50f5497e6e2a3673631dc960a0e66462a2bd41892d8d91c"
+      }
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "reset": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       ""
+      ],
+      "kind": "say",
+      "text": {
+       "length": 11,
+       "links": [],
+       "placeholders": [],
+       "sha256": "082cb158de32f2d90ad813145d491221d8719732f1f65a7f6f385692b99ab159"
+      }
+     }
+    ],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "adventurer stone"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 57,
+     "links": [],
+     "placeholders": [],
+     "sha256": "c44f6045beb226e70040a164354f6568e43812ad3ca22d5080777d3fc7c28f40"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "LUA_ACTION",
+      "flags": {
+       "reset": true
+      },
+      "gate": "LUA_PREDICATE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 24,
+       "links": [],
+       "placeholders": [],
+       "sha256": "4748f89d4465ac44f50f5497e6e2a3673631dc960a0e66462a2bd41892d8d91c"
+      }
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "reset": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 35,
+       "links": [],
+       "placeholders": [],
+       "sha256": "881fe60d8c8b785f9a4df89996c0bee2dbceaff78cb68571716b7c1783dad4d6"
+      }
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "reset": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       ""
+      ],
+      "kind": "say",
+      "text": {
+       "length": 11,
+       "links": [],
+       "placeholders": [],
+       "sha256": "082cb158de32f2d90ad813145d491221d8719732f1f65a7f6f385692b99ab159"
+      }
+     }
+    ],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "adventurer stone"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 60,
+     "links": [],
+     "placeholders": [],
+     "sha256": "048f19ef9647c061da2bae9a18db0106b6015a59a30b0ab7b1f8e29bcf7c009e"
+    }
+   },
+   {
+    "children": [],
+    "effect": "LUA_ACTION",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "heal"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 44,
+     "links": [],
+     "placeholders": [],
+     "sha256": "614284ec918251ae9430999aae8daedd28b997bf9647c0bc980e6675431c3dca"
+    }
+   },
+   {
+    "children": [],
+    "effect": "LUA_ACTION",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "heal"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 42,
+     "links": [],
+     "placeholders": [],
+     "sha256": "1b3eadb7ad7f5f43221180cf40af10dd7bb530f9ceb66d9450a99334b5306da1"
+    }
+   },
+   {
+    "children": [],
+    "effect": "LUA_ACTION",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "heal"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 65,
+     "links": [],
+     "placeholders": [],
+     "sha256": "c90c9cc1349ff0c2a872976cdaafb4e9e4a4d01a18955bad11a974fba8e912ab"
+    }
+   },
+   {
+    "children": [],
+    "effect": "LUA_ACTION",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "heal"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 48,
+     "links": [],
+     "placeholders": [],
+     "sha256": "bc2f291a99c584314a7fd90f92bbaa14df81d5810a9dd38e2b950b68cfd0b4fd"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "heal"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 196,
+     "links": [
+      "pilgrimage",
+      "twist of fate"
+     ],
+     "placeholders": [],
+     "sha256": "26550cf10dccf75f9897cedbfa8ab5cadf627bf52f6f82b3f8a243b612afec9d"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "pilgrimage"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 224,
+     "links": [
+      "blessings"
+     ],
+     "placeholders": [],
+     "sha256": "9c640477f2a748cc0fa5bd857576c978a0207d4fba6c4ed8ff3038c288d06a4c"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "blessings"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 245,
+     "links": [
+      "embrace",
+      "phoenix",
+      "solitude",
+      "spiritual",
+      "suns",
+      "twist of fate"
+     ],
+     "placeholders": [],
+     "sha256": "b0f5e3950a16c62b5aec06cb90602507c940a0ea11a246299a63563758cca509"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "spiritual"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 84,
+     "links": [],
+     "placeholders": [],
+     "sha256": "91aa24e37afe2c9ca5059ba35c03f1d765574d64fdff745319f4943dfc7f3814"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "shield"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 84,
+     "links": [],
+     "placeholders": [],
+     "sha256": "91aa24e37afe2c9ca5059ba35c03f1d765574d64fdff745319f4943dfc7f3814"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "embrace"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 88,
+     "links": [],
+     "placeholders": [],
+     "sha256": "8aa51bb780150ecdeb8b10425dfdafa5cce16585732a6c3b3bbb1a71a8a95d43"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "suns"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 85,
+     "links": [],
+     "placeholders": [],
+     "sha256": "e365c248f969fa500ccfea33270064b88617f1a577aa81be028fc7d8994dbfff"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "fire"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 85,
+     "links": [],
+     "placeholders": [],
+     "sha256": "e365c248f969fa500ccfea33270064b88617f1a577aa81be028fc7d8994dbfff"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "phoenix"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 121,
+     "links": [],
+     "placeholders": [],
+     "sha256": "94a6e08188a497db6ff1f40ace9e66ae6528a9c2fab9594ac416b5fca15f971d"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "spark"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 121,
+     "links": [],
+     "placeholders": [],
+     "sha256": "94a6e08188a497db6ff1f40ace9e66ae6528a9c2fab9594ac416b5fca15f971d"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "solitude"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 101,
+     "links": [],
+     "placeholders": [],
+     "sha256": "06a09b5c9629e4d18230d4d97c66dce09b36b44639069121115f1b09d601a819"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "LUA_PREDICATE",
+    "keywords": [
+     "wisdom"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 101,
+     "links": [],
+     "placeholders": [],
+     "sha256": "06a09b5c9629e4d18230d4d97c66dce09b36b44639069121115f1b09d601a819"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "spiritual"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 93,
+     "links": [],
+     "placeholders": [],
+     "sha256": "10522f50da463b25cdbe296607e253cdff6a5097f4c5cb8c5e7e3ad1d985be65"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "shield"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 93,
+     "links": [],
+     "placeholders": [],
+     "sha256": "10522f50da463b25cdbe296607e253cdff6a5097f4c5cb8c5e7e3ad1d985be65"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "embrace"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 70,
+     "links": [],
+     "placeholders": [],
+     "sha256": "ff0ed10ab936bd726f9deacfeb4423ec25f682e6b6d99420c7229c5154853ca0"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "suns"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 78,
+     "links": [],
+     "placeholders": [],
+     "sha256": "d495d4865e1f86bcb83f21f490299d25077d22dc654600576734062446ce32fe"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "fire"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 78,
+     "links": [],
+     "placeholders": [],
+     "sha256": "d495d4865e1f86bcb83f21f490299d25077d22dc654600576734062446ce32fe"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "phoenix"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 88,
+     "links": [],
+     "placeholders": [],
+     "sha256": "8da692ec24cbb2d117df80e5e22adf0184a8e10165e8892658a9b01df0cdcccc"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "spark"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 88,
+     "links": [],
+     "placeholders": [],
+     "sha256": "8da692ec24cbb2d117df80e5e22adf0184a8e10165e8892658a9b01df0cdcccc"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "solitude"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 68,
+     "links": [],
+     "placeholders": [],
+     "sha256": "3079eb0468df53d0f1b4122e85a86afc69902d55b18564069d487f7ec17f54ce"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {},
+    "gate": "NONE",
+    "keywords": [
+     "wisdom"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 68,
+     "links": [],
+     "placeholders": [],
+     "sha256": "3079eb0468df53d0f1b4122e85a86afc69902d55b18564069d487f7ec17f54ce"
+    }
+   }
+  ],
+  "messages": {
+   "farewell": {
+    "length": 37,
+    "links": [],
+    "placeholders": [
+     "|PLAYERNAME|"
+    ],
+    "sha256": "87d3ff71d1bf606ffe33d36ea7cca80fd56a6fcda70d92157b9ffdd6fcb92c23"
+   },
+   "greet": {
+    "length": 95,
+    "links": [
+     "heal"
+    ],
+    "placeholders": [
+     "|PLAYERNAME|"
+    ],
+    "sha256": "4c3f7711fb5e262383dc6a66cf59990676fab90f9cd4d3cba074d6a390ef92d7"
+   },
+   "walkaway": {
+    "length": 74,
+    "links": [],
+    "placeholders": [],
+    "sha256": "112ced2f13ae051f285ba0780a012e0a795da7e7b16e5ed5780bcf56cddab6b2"
+   }
+  },
+  "scripted_handlers": []
+ },
+ "evidence": "OTS_HYPOTHESIS_ONLY",
+ "key": "canary:npc/alia",
+ "placements": [
+  {
+   "direction": "NORTH",
+   "engine_spawns": true,
+   "placement_file": "data-otservbr-global/world/otservbr-npc.xml",
+   "position": {
+    "x": 32361,
+    "y": 31782,
+    "z": 7
+   },
+   "spawn_interval_s": 60,
+   "spawn_radius": 1
+  }
+ ],
+ "schema": "OTERYN_NPC_AUTHORING_CANDIDATE/v1",
+ "services": {
+  "blessings": [
+   {
+    "blessing": 1,
+    "dialogue_path": "dialogue.keywords[0].children[0]",
+    "gate": "NONE",
+    "keyword": "twist of fate",
+    "price": "|PVPBLESSCOST|"
+   }
+  ],
+  "kick": [],
+  "promotion": [],
+  "spells": [],
+  "trade": null,
+  "travel": []
+ },
+ "source": {
+  "path": "data-otservbr-global/npc/alia.lua",
+  "repository": "opentibiabr/canary",
+  "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "sha256": "b31f3b75e0ad4da3e5ad66fd38bbd7ec6d7f9d0df6e6d83ff0b378f245bacc5f"
+ },
+ "status": "PARTIAL",
+ "unresolved": [
+  {
+   "detail": "adventurer stone",
+   "path": "dialogue.keywords[1].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "adventurer stone",
+   "path": "dialogue.keywords[2].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "yes",
+   "path": "dialogue.keywords[2].children[0].effect",
+   "reason": "LUA_ACTION"
+  },
+  {
+   "detail": "yes",
+   "path": "dialogue.keywords[3].children[0].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "yes",
+   "path": "dialogue.keywords[3].children[0].effect",
+   "reason": "LUA_ACTION"
+  },
+  {
+   "detail": "heal",
+   "path": "dialogue.keywords[4].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "heal",
+   "path": "dialogue.keywords[4].effect",
+   "reason": "LUA_ACTION"
+  },
+  {
+   "detail": "heal",
+   "path": "dialogue.keywords[5].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "heal",
+   "path": "dialogue.keywords[5].effect",
+   "reason": "LUA_ACTION"
+  },
+  {
+   "detail": "heal",
+   "path": "dialogue.keywords[6].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "heal",
+   "path": "dialogue.keywords[6].effect",
+   "reason": "LUA_ACTION"
+  },
+  {
+   "detail": "heal",
+   "path": "dialogue.keywords[7].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "heal",
+   "path": "dialogue.keywords[7].effect",
+   "reason": "LUA_ACTION"
+  },
+  {
+   "detail": "spiritual",
+   "path": "dialogue.keywords[11].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "shield",
+   "path": "dialogue.keywords[12].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "embrace",
+   "path": "dialogue.keywords[13].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "suns",
+   "path": "dialogue.keywords[14].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "fire",
+   "path": "dialogue.keywords[15].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "phoenix",
+   "path": "dialogue.keywords[16].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "spark",
+   "path": "dialogue.keywords[17].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "solitude",
+   "path": "dialogue.keywords[18].gate",
+   "reason": "LUA_PREDICATE"
+  },
+  {
+   "detail": "wisdom",
+   "path": "dialogue.keywords[19].gate",
+   "reason": "LUA_PREDICATE"
+  }
+ ],
+ "voices": null
+}

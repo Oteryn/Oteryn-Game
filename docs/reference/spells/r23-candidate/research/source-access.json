@@ -1,0 +1,36 @@
+{
+  "schema": "OTERYN_R23_SOURCE_ACCESS_OBSERVATIONS/v1",
+  "raw_record_sha256": "34f08157d501b4aa3a127d6b02674c45928e9d7e1759193256d21ef17d48f566",
+  "fresh_wiki_verification": false,
+  "http_observations": [
+    {
+      "url": "https://tibiopedia.pl/quests/Soul_War_Quest",
+      "method": "ordinary HTTPS",
+      "status": 200,
+      "final_url": "https://tibiopedia.pl/setup",
+      "sha256": "d10ade501028db6e79bb87c696ae303906ce9d471f37040c22f3c500d948a72e",
+      "characters": 31,
+      "usable_content": false,
+      "limitation": "Redirected to /setup; no quest/wiki content read; not a fresh wiki verification",
+      "capture_reference": "tibiopedia.pl.txt",
+      "capture_included": false
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Soul_War_Quest",
+      "method": "ordinary HTTPS",
+      "status": 403,
+      "fallback": "Remote Desktop browser unavailable: all devices offline; data not freshly verified"
+    },
+    {
+      "url": "https://tibia.fandom.com/wiki/Soul_War_Quest",
+      "method": "ordinary HTTPS",
+      "status": 402,
+      "fallback": "Remote Desktop browser unavailable: all devices offline; data not freshly verified"
+    }
+  ],
+  "coordinator_observations": {
+    "tavily": "Unauthorized; no usable research result",
+    "remote_desktop": "All devices offline; no browser verification"
+  },
+  "scope": "Transport/status observations only. HTTP200 setup redirect is unusable quest evidence; no fresh wiki truth is claimed."
+}

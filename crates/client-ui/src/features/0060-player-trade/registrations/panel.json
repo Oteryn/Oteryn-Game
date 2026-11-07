@@ -1,0 +1,7 @@
+{
+  "mechanic": "0060-player-trade",
+  "kind": "panels",
+  "id": "0060-player-trade-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

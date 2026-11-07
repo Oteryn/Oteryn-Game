@@ -1,0 +1,596 @@
+//! Always-on player health/mana regeneration. Food selects the faster clocks;
+//! the effective vocation supplies the percentage credited per completed period.
+//! Protection zones hold progress without credits for both hungry and fed actors.
+use super::Vocation;
+use super::cast::PlayerSpellState;
+
+pub use oteryn_gameplay_progression::regeneration::{
+    FOOD_TICK_MS, RegenerationRate, RegenerationState, effective, rate,
+};
+
+/// Every condition consumer advances the same clock before consuming due conditions.
+pub(super) fn step_due(state: &mut PlayerSpellState, now: u64, in_protection_zone: bool) {
+    if state.regeneration_next_tick_us.unwrap_or(now) > now {
+        return;
+    }
+    let fed = state
+        .conditions
+        .active_at(
+            oteryn_gameplay_domain::domain::condition::ConflictKey::FoodRegeneration,
+            now.saturating_sub(1),
+        )
+        .is_some();
+    if in_protection_zone && state.resting_streak >= 2 {
+        credit_resting_second(state, state.resting_streak, fed);
+    } else if in_protection_zone {
+        hold_fed_second(state, fed);
+    } else {
+        credit_second(state, fed);
+    }
+    credit_equipment(state, in_protection_zone);
+    state.regeneration_next_tick_us = Some(now.saturating_add(u64::from(FOOD_TICK_MS) * 1_000));
+}
+
+fn credit_equipment(state: &mut PlayerSpellState, in_protection_zone: bool) {
+    let mut regeneration = RegenerationState {
+        health: state.health,
+        mana: state.mana,
+        regen_health_ms: state.regen_health_ms,
+        regen_mana_ms: state.regen_mana_ms,
+        regen_health_carry: state.regen_health_carry,
+        regen_mana_carry: state.regen_mana_carry,
+    };
+    let streak = if state.premium_current {
+        state.resting_streak
+    } else {
+        state.resting_streak.min(3)
+    };
+    let mut clocks = std::mem::take(&mut state.equipped_regeneration);
+    oteryn_gameplay_progression::regeneration::credit_equipment_second(
+        &mut regeneration,
+        &mut clocks,
+        state.facts.max_health,
+        state.facts.max_mana,
+        in_protection_zone,
+        streak,
+    );
+    state.equipped_regeneration = clocks;
+    state.health = regeneration.health;
+    state.mana = regeneration.mana;
+}
+
+/// Credits one fed tick to a living actor. Dead actors neither accumulate nor gain.
+pub fn credit_fed_second(state: &mut PlayerSpellState) {
+    apply(
+        state,
+        |regeneration, vocation, rate, max_health, max_mana| {
+            oteryn_gameplay_progression::regeneration::credit_fed_second(
+                regeneration,
+                vocation,
+                rate,
+                max_health,
+                max_mana,
+            );
+        },
+    );
+}
+
+/// Credits the always-on native clock, using the saturation state selected by the condition
+/// owner for this occurrence.
+pub fn credit_second(state: &mut PlayerSpellState, fed: bool) {
+    apply(
+        state,
+        |regeneration, vocation, rate, max_health, max_mana| {
+            oteryn_gameplay_progression::regeneration::credit_second(
+                regeneration,
+                vocation,
+                rate,
+                max_health,
+                max_mana,
+                fed,
+            );
+        },
+    );
+}
+
+/// Credit the daily-reward resting-area clocks. The streak unlocks health at two,
+/// mana at three, and doubles the credited health/mana amounts at five/six.
+fn credit_resting_second(state: &mut PlayerSpellState, streak: u32, fed: bool) {
+    // Global: Free accounts keep the health/mana unlocks, but tiers 4-7 need Premium.
+    let streak = if state.premium_current {
+        streak
+    } else {
+        streak.min(3)
+    };
+    if streak < 2 || state.health == 0 {
+        return;
+    }
+    let health_before = state.health;
+    let mana_before = (state.mana, state.regen_mana_ms, state.regen_mana_carry);
+    credit_second(state, fed);
+    if streak < 3 {
+        (state.mana, state.regen_mana_ms, state.regen_mana_carry) = mana_before;
+        let health = (state.health, state.regen_health_ms);
+        hold_fed_second(state, fed);
+        (state.health, state.regen_health_ms) = health;
+    }
+    if streak >= 5 {
+        state.health = state
+            .health
+            .saturating_add(state.health - health_before)
+            .min(state.facts.max_health);
+    }
+    if streak >= 6 {
+        state.mana = state
+            .mana
+            .saturating_add(state.mana - mana_before.0)
+            .min(state.facts.max_mana);
+    }
+}
+
+/// Holds one native tick in a protection zone. The historical helper also serves hungry actors.
+pub fn hold_fed_second(state: &mut PlayerSpellState, fed: bool) {
+    apply(state, |regeneration, _, mut rate, _, _| {
+        use oteryn_gameplay_progression::regeneration::{
+            FED_HEALTH_PERIOD_MS, FED_MANA_PERIOD_MS, UNFED_HEALTH_PERIOD_MS, UNFED_MANA_PERIOD_MS,
+        };
+        (rate.health_period_ms, rate.mana_period_ms) = if fed {
+            (FED_HEALTH_PERIOD_MS, FED_MANA_PERIOD_MS)
+        } else {
+            (UNFED_HEALTH_PERIOD_MS, UNFED_MANA_PERIOD_MS)
+        };
+        oteryn_gameplay_progression::regeneration::hold_fed_second(regeneration, rate);
+    });
+}
+
+fn apply(
+    state: &mut PlayerSpellState,
+    step: impl FnOnce(&mut RegenerationState, Vocation, RegenerationRate, u32, u32),
+) {
+    let mut regeneration = RegenerationState {
+        health: state.health,
+        mana: state.mana,
+        regen_health_ms: state.regen_health_ms,
+        regen_mana_ms: state.regen_mana_ms,
+        regen_health_carry: state.regen_health_carry,
+        regen_mana_carry: state.regen_mana_carry,
+    };
+    let vocation = effective(state.facts.vocation, state.premium_current);
+    step(
+        &mut regeneration,
+        vocation,
+        rate(vocation),
+        state.facts.max_health,
+        state.facts.max_mana,
+    );
+    state.health = regeneration.health;
+    state.mana = regeneration.mana;
+    state.regen_health_ms = regeneration.regen_health_ms;
+    state.regen_mana_ms = regeneration.regen_mana_ms;
+    state.regen_health_carry = regeneration.regen_health_carry;
+    state.regen_mana_carry = regeneration.regen_mana_carry;
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used, clippy::unwrap_used)]
+mod tests {
+    use super::super::actor_conditions::{eat_food, tick};
+    use super::super::cast::CharacterCastFacts;
+    use super::*;
+    use oteryn_gameplay_foundation::foundation::condition::TickFacts;
+
+    fn actor(vocation: Vocation) -> PlayerSpellState {
+        let mut state = PlayerSpellState::new(
+            CharacterCastFacts {
+                vocation,
+                level: 100,
+                magic_level: 10,
+                max_health: 1000,
+                max_mana: 500,
+                max_soul: 100,
+            },
+            0,
+            0,
+        )
+        .expect("actor");
+        state.health = 100;
+        state.mana = 100;
+        state
+    }
+
+    #[test]
+    fn equipped_regeneration_runs_on_the_native_tick_and_survives_reinstall() {
+        use oteryn_gameplay_progression::regeneration::EquipmentRegeneration;
+
+        let ring = EquipmentRegeneration {
+            health_gain: 6,
+            health_ticks_ms: 6_000,
+            mana_gain: 24,
+            mana_ticks_ms: 6_000,
+        };
+        let mut with_ring = actor(Vocation::Knight);
+        let mut without_ring = actor(Vocation::Knight);
+        with_ring.install_equipped_regeneration(vec![(8, ring)]);
+        for second in 1..=6 {
+            step_due(&mut with_ring, second * 1_000_000, false);
+            step_due(&mut without_ring, second * 1_000_000, false);
+            assert_eq!(
+                (with_ring.regen_health_carry, with_ring.regen_mana_carry),
+                (
+                    without_ring.regen_health_carry,
+                    without_ring.regen_mana_carry
+                ),
+                "equipment preserves the native percentage carries"
+            );
+        }
+        assert_eq!(with_ring.health - without_ring.health, 6);
+        assert_eq!(with_ring.mana - without_ring.mana, 24);
+
+        let mut reinstalled = actor(Vocation::Knight);
+        reinstalled.install_equipped_regeneration(vec![(8, ring)]);
+        for second in 1..=3 {
+            step_due(&mut reinstalled, second * 1_000_000, false);
+        }
+        reinstalled.install_equipped_regeneration(vec![(8, ring)]);
+        assert_eq!(reinstalled.equipped_regeneration()[0].health_ms, 3_000);
+        reinstalled.install_equipped_regeneration(vec![(
+            8,
+            EquipmentRegeneration {
+                health_gain: 2,
+                ..ring
+            },
+        )]);
+        assert_eq!(reinstalled.equipped_regeneration()[0].health_ms, 0);
+        reinstalled.install_equipped_regeneration(vec![]);
+        assert!(reinstalled.equipped_regeneration().is_empty());
+    }
+
+    #[test]
+    fn daily_resting_health_and_mana_below_at_and_above_every_threshold() {
+        for streak in 0..=8 {
+            for premium in [false, true] {
+                let mut state = actor(Vocation::Druid);
+                state.premium_current = premium;
+                state.set_resting_streak(streak);
+                for second in 1..=120 {
+                    step_due(&mut state, second * 1_000_000, true);
+                    let before = state.clone();
+                    step_due(&mut state, second * 1_000_000, true);
+                    assert_eq!(
+                        state, before,
+                        "a repeated owner observation cannot credit again"
+                    );
+                }
+                let health = if streak < 2 {
+                    0
+                } else if premium && streak >= 5 {
+                    48
+                } else {
+                    24
+                };
+                let mana = if streak < 3 {
+                    0
+                } else if premium && streak >= 6 {
+                    80
+                } else {
+                    40
+                };
+                assert_eq!(
+                    (state.health, state.mana),
+                    (100 + health, 100 + mana),
+                    "streak={streak}, premium={premium}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn daily_resting_double_tiers_multiply_amounts_without_accelerating_the_clocks() {
+        for (streak, expected_at_six) in [
+            (4, (100, 102)),
+            (5, (100, 102)),
+            (6, (100, 104)),
+            (7, (100, 104)),
+        ] {
+            let mut state = actor(Vocation::Druid);
+            state.premium_current = true;
+            state.set_resting_streak(streak);
+            for second in 1..=3 {
+                step_due(&mut state, second * 1_000_000, true);
+                assert_eq!((state.health, state.mana), (100, 100));
+            }
+            step_due(&mut state, 4_000_000, true);
+            assert_eq!((state.health, state.mana), (100, 100));
+            step_due(&mut state, 5_000_000, true);
+            assert_eq!((state.health, state.mana), (100, 100));
+            step_due(&mut state, 6_000_000, true);
+            assert_eq!((state.health, state.mana), expected_at_six);
+        }
+    }
+
+    #[test]
+    fn daily_resting_streak_does_not_accelerate_regeneration_outside_the_area() {
+        for streak in 0..=8 {
+            let mut state = actor(Vocation::Druid);
+            state.premium_current = true;
+            state.set_resting_streak(streak);
+            for second in 1..=120 {
+                step_due(&mut state, second * 1_000_000, false);
+            }
+            assert_eq!((state.health, state.mana), (124, 140));
+        }
+    }
+
+    #[test]
+    fn resting_streak_tiers_unlock_and_double_only_the_named_pool() {
+        let mut tier_one = actor(Vocation::Druid);
+        let before = tier_one.clone();
+        credit_resting_second(&mut tier_one, 1, false);
+        assert_eq!(tier_one, before);
+
+        let mut tier_two = actor(Vocation::Druid);
+        tier_two.premium_current = true;
+        let mut tier_three = tier_two.clone();
+        let mut tier_five = tier_two.clone();
+        let mut tier_six = tier_two.clone();
+        for _ in 0..12 {
+            credit_resting_second(&mut tier_two, 2, false);
+            credit_resting_second(&mut tier_three, 3, false);
+            credit_resting_second(&mut tier_five, 5, false);
+            credit_resting_second(&mut tier_six, 6, false);
+        }
+        assert_eq!(tier_two.mana, 100, "tier 2 has no mana bonus");
+        assert!(tier_three.mana > tier_two.mana);
+        assert!(tier_five.health > tier_three.health);
+        assert!(tier_six.mana > tier_five.mana);
+    }
+
+    /// Ticks seconds `from + 1 ..= to` (time stays monotonic across calls).
+    fn run(state: &mut PlayerSpellState, from: u64, to: u64, facts: TickFacts) {
+        for second in from + 1..=to {
+            tick(state, second * 1_000, facts).expect("tick");
+        }
+    }
+
+    #[test]
+    fn fed_then_unfed_knight_uses_the_respective_native_periods() {
+        let mut state = actor(Vocation::Knight);
+        eat_food(&mut state, 10, 0).expect("eat");
+        run(&mut state, 0, 5, TickFacts::default());
+        assert_eq!((state.health, state.mana), (101, 101));
+        run(&mut state, 5, 15, TickFacts::default());
+        // Ten fed seconds followed by five unfed seconds retain one credit per due clock.
+        assert_eq!((state.health, state.mana), (104, 104));
+        assert!(state.conditions.instances().is_empty());
+        run(&mut state, 15, 18, TickFacts::default());
+        assert_eq!((state.health, state.mana), (105, 104));
+    }
+
+    #[test]
+    fn expired_premium_regenerates_at_the_base_vocation_rate() {
+        for (promoted, base) in [
+            (Vocation::ElderDruid, Vocation::Druid),
+            (Vocation::MasterSorcerer, Vocation::Sorcerer),
+            (Vocation::EliteKnight, Vocation::Knight),
+            (Vocation::RoyalPaladin, Vocation::Paladin),
+            (Vocation::ExaltedMonk, Vocation::Monk),
+        ] {
+            assert_eq!(effective(promoted, false), base);
+            assert_eq!(effective(promoted, true), promoted);
+            assert_eq!(effective(base, false), base);
+        }
+        let mut lapsed = actor(Vocation::EliteKnight);
+        lapsed.premium_current = false;
+        eat_food(&mut lapsed, 6, 0).expect("eat");
+        run(&mut lapsed, 0, 6, TickFacts::default());
+        assert_eq!(lapsed.health, 102);
+        assert_eq!(lapsed.regen_health_ms, 0);
+        let mut current = actor(Vocation::EliteKnight);
+        current.premium_current = true;
+        eat_food(&mut current, 4, 0).expect("eat");
+        run(&mut current, 0, 4, TickFacts::default());
+        assert_eq!(current.health, 101);
+    }
+
+    #[test]
+    fn lifecycle_clearing_drops_regeneration_progress() {
+        let mut state = actor(Vocation::Knight);
+        eat_food(&mut state, 10, 0).expect("eat");
+        run(&mut state, 0, 5, TickFacts::default());
+        assert_eq!(state.regen_health_ms, 2_000);
+        super::super::actor_conditions::clear_on_lifecycle(&mut state);
+        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (0, 0));
+        assert_eq!(state.regeneration_next_tick_us, None);
+    }
+
+    #[test]
+    fn fed_and_unfed_actors_regenerate_on_their_native_clocks() {
+        let mut druid = actor(Vocation::Druid);
+        let mut unfed = actor(Vocation::Druid);
+        eat_food(&mut druid, 12, 0).expect("eat");
+        run(&mut druid, 0, 12, TickFacts::default());
+        run(&mut unfed, 0, 12, TickFacts::default());
+        assert_eq!((druid.health, druid.mana), (103, 108));
+        assert_eq!((unfed.health, unfed.mana), (102, 104));
+    }
+
+    #[test]
+    fn real_periodic_dispatch_path_ticks_fed_and_unfed_actors() {
+        fn dispatch(state: &mut PlayerSpellState, seconds: u64) {
+            for second in 1..=seconds {
+                let cycle = super::super::actor_conditions::stage_source_owner_cycle(
+                    state,
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(
+                        second * 1_000_000,
+                    ),
+                    Some(TickFacts::default()),
+                    None,
+                )
+                .expect("periodic dispatch")
+                .expect("clock successor");
+                assert!(cycle.combat_ticks.is_empty());
+                *state = cycle.next;
+            }
+        }
+
+        let mut fed = actor(Vocation::Knight);
+        let mut unfed = actor(Vocation::Knight);
+        eat_food(&mut fed, 6, 0).expect("eat");
+        dispatch(&mut fed, 6);
+        dispatch(&mut unfed, 6);
+        assert_eq!((fed.health, fed.mana), (102, 102));
+        assert_eq!((unfed.health, unfed.mana), (101, 101));
+    }
+
+    #[test]
+    fn protection_zone_suppresses_regeneration_but_food_is_consumed() {
+        let mut state = actor(Vocation::EliteKnight);
+        state.premium_current = true;
+        eat_food(&mut state, 6, 0).expect("eat");
+        let pz = TickFacts {
+            in_protection_zone: true,
+            standing_on_field: None,
+        };
+        run(&mut state, 0, 6, pz);
+        assert_eq!((state.health, state.mana), (100, 100));
+        assert!(state.conditions.instances().is_empty());
+    }
+
+    #[test]
+    fn a_protection_zone_holds_the_due_period_until_the_first_tick_outside() {
+        let mut state = actor(Vocation::Knight);
+        eat_food(&mut state, 30, 0).expect("eat");
+        let pz = TickFacts {
+            in_protection_zone: true,
+            standing_on_field: None,
+        };
+        // Fed clocks hold one second short of the shared 3 s period.
+        run(&mut state, 0, 10, pz);
+        assert_eq!((state.health, state.mana), (100, 100));
+        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (2_000, 2_000));
+        // The first tick outside credits once and starts the next period from zero.
+        run(&mut state, 10, 11, TickFacts::default());
+        assert_eq!((state.health, state.mana), (101, 101));
+        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (0, 0));
+        run(&mut state, 11, 16, TickFacts::default());
+        assert_eq!((state.health, state.mana), (102, 102));
+        run(&mut state, 16, 17, TickFacts::default());
+        assert_eq!((state.health, state.mana), (103, 103));
+    }
+
+    #[test]
+    fn a_short_protection_zone_stay_keeps_the_fed_time() {
+        let mut state = actor(Vocation::Knight);
+        eat_food(&mut state, 30, 0).expect("eat");
+        let pz = TickFacts {
+            in_protection_zone: true,
+            standing_on_field: None,
+        };
+        run(&mut state, 0, 2, TickFacts::default());
+        run(&mut state, 2, 4, pz);
+        assert_eq!(state.regen_health_ms, 2_000);
+        run(&mut state, 4, 5, TickFacts::default());
+        assert_eq!(state.health, 101);
+        run(&mut state, 5, 6, TickFacts::default());
+        assert_eq!(state.health, 101);
+    }
+
+    #[test]
+    fn credits_clamp_at_the_maxima_and_dead_actors_gain_nothing() {
+        let mut full = actor(Vocation::Sorcerer);
+        full.health = full.facts.max_health;
+        full.mana = full.facts.max_mana;
+        eat_food(&mut full, 30, 0).expect("eat");
+        run(&mut full, 0, 30, TickFacts::default());
+        assert_eq!((full.health, full.mana), (1000, 500));
+        let mut dead = actor(Vocation::Sorcerer);
+        dead.health = 0;
+        credit_fed_second(&mut dead);
+        hold_fed_second(&mut dead, true);
+        assert_eq!((dead.health, dead.regen_health_ms), (0, 0));
+    }
+
+    #[test]
+    fn hungry_protection_zone_ticks_hold_progress_without_credits() {
+        let mut state = actor(Vocation::Knight);
+        let pz = TickFacts {
+            in_protection_zone: true,
+            standing_on_field: None,
+        };
+        run(&mut state, 0, 10, pz);
+        assert_eq!((state.health, state.mana), (100, 100));
+        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (3_000, 5_000));
+        run(&mut state, 10, 11, TickFacts::default());
+        assert_eq!((state.health, state.mana), (101, 101));
+        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (0, 0));
+    }
+
+    #[test]
+    fn source_condition_clock_is_idempotent_at_the_same_now() {
+        use oteryn_simulation_determinism::SemanticTimeMicros;
+
+        for fed in [false, true] {
+            for in_protection_zone in [false, true] {
+                let mut state = actor(Vocation::Knight);
+                state
+                    .make_playable(SemanticTimeMicros::from_micros(0))
+                    .expect("playable actor");
+                if fed {
+                    eat_food(&mut state, 120, 0).expect("eat");
+                }
+                let facts = TickFacts {
+                    in_protection_zone,
+                    standing_on_field: None,
+                };
+                for now in [1_000_000, 60_000_000] {
+                    let _ = state.source_take_due(now, facts);
+                    assert_eq!(state.regeneration_next_tick_us, Some(now + 1_000_000));
+                    let expected_progress = if now == 1_000_000 { 1_000 } else { 2_000 };
+                    assert_eq!(state.regen_health_ms, expected_progress);
+                    assert_eq!(state.regen_mana_ms, expected_progress);
+                    let before = state.clone();
+                    assert!(state.source_take_due(now, facts).is_empty());
+                    assert_eq!(state, before);
+                    assert!(
+                        super::super::actor_conditions::stage_source_owner_cycle(
+                            &state,
+                            SemanticTimeMicros::from_micros(now),
+                            Some(facts),
+                            None,
+                        )
+                        .expect("same-time environment cycle")
+                        .is_none()
+                    );
+                    assert_eq!(state, before);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn delayed_clock_pass_cannot_be_replayed_to_credit_extra_seconds() {
+        let mut state = actor(Vocation::Knight);
+        run(&mut state, 0, 1, TickFacts::default());
+        tick(&mut state, 60_000, TickFacts::default()).expect("delayed pass");
+        let before = state.clone();
+        for now_ms in [
+            60_000, 60_000, 60_000, 60_100, 60_200, 60_300, 60_400, 60_500,
+        ] {
+            tick(&mut state, now_ms, TickFacts::default()).expect("repeated or subsecond pass");
+            assert_eq!((state.health, state.mana), (before.health, before.mana));
+            assert_eq!(state.regen_health_ms, before.regen_health_ms);
+            assert_eq!(state.regen_mana_ms, before.regen_mana_ms);
+        }
+    }
+
+    #[test]
+    fn food_time_adds_up_to_the_cap_then_refuses_without_change() {
+        let mut state = actor(Vocation::Knight);
+        eat_food(&mut state, 1_000, 0).expect("eat");
+        let before = state.clone();
+        assert!(eat_food(&mut state, 200, 0).is_err());
+        assert_eq!(state, before);
+        assert!(eat_food(&mut state, 0, 0).is_err());
+        assert_eq!(state, before);
+    }
+}

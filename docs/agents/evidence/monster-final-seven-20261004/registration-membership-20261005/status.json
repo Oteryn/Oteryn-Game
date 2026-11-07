@@ -1,0 +1,25 @@
+{
+  "source_sha": "05b01e485e6efb31689de5d758f998eb009275c9",
+  "parent_remote_sha": "ec15a486bb82589d7beaa9a4738ba095b9f2314f",
+  "accepted_review_comment": 4181989524,
+  "finding_disposition": "ACCEPTED_AND_REPAIRED",
+  "whole_library": {
+    "passed": 2413,
+    "failed": 0,
+    "ignored": 26
+  },
+  "additional_native_executions": 20,
+  "registration_negative_cases": 8,
+  "condition_input_negative_cases": 8,
+  "strict_all_target_clippy": "PASS",
+  "native_records_preserved": 1870,
+  "immutable_adopted_overlay": "UNCHANGED",
+  "item_fx_audio_tests": 7,
+  "definition_binding_producer_tests": 2,
+  "adopted_overlay_tests": 8,
+  "item_key_reference_check": "PASS",
+  "runtime_activation": false,
+  "new_source_downloads": false,
+  "raw_log_index": "raw-log-index.json",
+  "historical_sql_scope": "a2c9e9145dba045971aff6060fa4228d5c2b8c1c; not rerun in this repair"
+}

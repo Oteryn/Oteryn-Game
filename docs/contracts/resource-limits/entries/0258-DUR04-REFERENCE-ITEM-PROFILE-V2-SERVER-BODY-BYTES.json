@@ -1,0 +1,19 @@
+{
+  "id": "DUR04-REFERENCE-ITEM-PROFILE-V2-SERVER-BODY-BYTES",
+  "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2.md",
+  "resource": "Artifact v5 server-authoritative Item body section",
+  "unit": "bytes",
+  "hard_maximum": 136487589,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 136487589
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Use checked multiplication and addition; reject the section length before body allocation.",
+  "client_visible": false,
+  "boundary_tests": [
+    "136,487,589 bytes accepted",
+    "136,487,590 bytes rejected before allocation",
+    "checked arithmetic overflow rejected"
+  ]
+}

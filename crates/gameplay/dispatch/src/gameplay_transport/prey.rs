@@ -1,0 +1,349 @@
+//! Native Prey command and admission boundary. No client supplies payment or clock facts.
+use super::{
+    ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession,
+    guild_intent::GuildReply,
+};
+use crate::durability::character_progression::CharacterProgressionError as Error;
+use crate::durability::prey::{PreyCatalogue, PreyMutation};
+use crate::durability::{DurabilityError, character_wheel::WheelPremiumGate};
+use oteryn_protocol_oteryn::prey as wire;
+
+#[path = "prey/kill.rs"]
+mod kill;
+#[path = "prey/live.rs"]
+mod live;
+pub(super) use live::{LivePrey, PreyActivity};
+
+pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
+    let mut offers: Vec<_> = base
+        .iter()
+        .copied()
+        .filter(|c| c.id != wire::CAPABILITY_PREY_V1)
+        .collect();
+    if available {
+        let at = offers.partition_point(|c| c.id < wire::CAPABILITY_PREY_V1);
+        offers.insert(
+            at,
+            OfferedCapability {
+                id: wire::CAPABILITY_PREY_V1,
+                requires: &[],
+            },
+        );
+    }
+    offers
+}
+struct Premium<'a>(Option<&'a super::spell_premium_coordinator::SpellPremiumCoordinator>);
+impl WheelPremiumGate for Premium<'_> {
+    async fn allocation_permitted(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        account: [u8; 16],
+    ) -> Result<bool, DurabilityError> {
+        match self.0 {
+            Some(gate) => {
+                gate.transaction_permission(tx, account, |s| s.gate().premium_current())
+                    .await
+            }
+            None => Ok(false),
+        }
+    }
+}
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Observe existing native slots for the actual current House admission.
+    /// Initialization remains the genuine source Channel's separate owner.
+    pub(super) async fn read_house_admission_prey(
+        &self, admitted: &AdmittedSession,
+    ) -> Result<Option<(wire::Reply, [bool; 3])>, Error> {
+        let Some(catalogue) = self.prey_catalogue() else { return Ok(None); };
+        let fence = admitted.item_fence.ok_or(Error::AuthorityRejected)?;
+        self.root.read_house_prey_state(self.character, self.holder, fence,
+            admitted.channel_id, &catalogue, &Premium(self.premium_coordinator)).await.map(Some)
+    }
+
+    pub(super) fn prey_catalogue(&self) -> Option<PreyCatalogue> {
+        PreyCatalogue::try_from(self.active_generation?.native_gameplay()?).ok()
+    }
+    pub(super) async fn prey_wire(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        payload: &[u8],
+    ) -> GuildReply {
+        if !admitted
+            .continuity
+            .selected_capabilities
+            .contains(wire::CAPABILITY_PREY_V1)
+        {
+            return GuildReply::Rejected;
+        }
+        let Ok(request) = wire::decode_request(payload) else {
+            return GuildReply::Rejected;
+        };
+        if self.drain_kill_rewards(admitted.game_session_id).await
+            != super::kill_reward::DrainOutcome::Drained
+        {
+            return GuildReply::Rejected;
+        }
+        let Some(permit) = self.spell_lane_permit().await else {
+            return GuildReply::Rejected;
+        };
+        if !self
+            .flush_prey_under_lane(admitted.game_session_id, &permit)
+            .await
+        {
+            return GuildReply::Rejected;
+        }
+        let occurrence =
+            super::npc_trade_command::derived(b"prey:command:v1", admitted.game_session_id, id);
+        match self
+            .prey_commit(admitted, occurrence, PreyMutation::Command(request))
+            .await
+        {
+            Ok((reply, _)) => {
+                let current = match self
+                    .prey_commit(
+                        admitted,
+                        occurrence,
+                        PreyMutation::Command(wire::Request::Query),
+                    )
+                    .await
+                {
+                    Ok(current) => current,
+                    Err(_) => {
+                        self.states
+                            .spell_states
+                            .lock()
+                            .await
+                            .clear_prey(admitted.game_session_id);
+                        // The command already committed. Preserve its immutable reply while
+                        // leaving unavailable live boosts disabled until the next reload.
+                        return wire::encode_reply(&reply)
+                            .map_or(GuildReply::Unavailable, GuildReply::Payload);
+                    }
+                };
+                if let Some(actor) = admitted.runtime_actor {
+                    let Some(catalogue) = self.prey_catalogue() else {
+                        return GuildReply::Unavailable;
+                    };
+                    let runtime = self.runtime.lock().await;
+                    self.states.spell_states.lock().await.load_prey(
+                        &runtime,
+                        actor,
+                        admitted.game_session_id,
+                        current.0,
+                        current.1,
+                        catalogue.rules().defense_mode,
+                    );
+                }
+                match wire::encode_reply(&reply) {
+                    Ok(bytes) => GuildReply::Payload(bytes),
+                    Err(_) => GuildReply::Unavailable,
+                }
+            }
+            Err(Error::Unavailable(DurabilityError::RootUnavailable)) => GuildReply::Rejected,
+            Err(Error::Unavailable(_)) => GuildReply::Unavailable,
+            Err(_) => GuildReply::Rejected,
+        }
+    }
+    async fn prey_commit(
+        &self,
+        admitted: AdmittedSession,
+        occurrence: [u8; 16],
+        mutation: PreyMutation,
+    ) -> Result<(wire::Reply, [bool; 3]), Error> {
+        let catalogue = self.prey_catalogue().ok_or(Error::InvalidInput)?;
+        let expected = admitted.item_fence.ok_or(Error::AuthorityRejected)?;
+        let mut slot = self.revision_sequencer.acquire(expected.character_id).await;
+        let fence = super::character_gameplay_fence::current(self, admitted.game_session_id, true)
+            .await
+            .ok_or(Error::AuthorityRejected)?;
+        if fence.connection_generation != expected.connection_generation
+            || fence.character_lease_generation != expected.character_lease_generation
+            || fence.scope_ownership_generation != expected.scope_ownership_generation
+            || fence.runtime_scope != expected.runtime_scope
+            || fence.character_id != expected.character_id
+        {
+            return Err(Error::AuthorityRejected);
+        }
+        let coins = {
+            let runtime = self.runtime.lock().await;
+            super::charm_progression::fee_change(
+                self,
+                &runtime,
+                None,
+                [
+                    super::npc_trade_command::derived(
+                        b"prey:change:gold",
+                        admitted.game_session_id,
+                        u64::from_be_bytes(
+                            occurrence[..8]
+                                .try_into()
+                                .map_err(|_| Error::InvalidInput)?,
+                        ),
+                    ),
+                    super::npc_trade_command::derived(
+                        b"prey:change:platinum",
+                        admitted.game_session_id,
+                        u64::from_be_bytes(
+                            occurrence[..8]
+                                .try_into()
+                                .map_err(|_| Error::InvalidInput)?,
+                        ),
+                    ),
+                ],
+            )
+        };
+        let result = self
+            .root
+            .commit_prey_command(
+                self.character,
+                self.holder,
+                fence,
+                occurrence,
+                mutation,
+                &catalogue,
+                coins,
+                &Premium(self.premium_coordinator),
+            )
+            .await;
+        slot.observe_loop_training();
+        #[cfg(test)]
+        if let Err(e) = &result {
+            eprintln!("PREY command: {e:?}");
+        }
+        result
+    }
+
+    /// Store supplies an already authenticated immutable Platform delivery intent.
+    /// No Prey command can enter this grant boundary.
+    pub(super) async fn deliver_prey_expansion(
+        &self,
+        admitted: AdmittedSession,
+        delivery: crate::durability::prey::PreyStoreDelivery,
+    ) -> Option<crate::durability::store::DeliveryReceipt> {
+        let catalogue = self.prey_catalogue()?;
+        let expected = admitted.item_fence?;
+        let mut slot = self.revision_sequencer.acquire(expected.character_id).await;
+        let mut fence = super::character_gameplay_fence::current(self, admitted.game_session_id, true).await?;
+        if fence.connection_generation != expected.connection_generation
+            || fence.character_lease_generation != expected.character_lease_generation
+            || fence.scope_ownership_generation != expected.scope_ownership_generation
+            || fence.runtime_scope != expected.runtime_scope
+            || fence.character_id != expected.character_id
+        { return None; }
+        fence.expected_character_revision = slot.cursor(self.root, self.character).await.ok()?;
+        let result = self.root.grant_prey_list_expansion(
+            self.character, self.holder, fence, delivery, &catalogue, &Premium(self.premium_coordinator)
+        ).await;
+        slot.observe_loop_training();
+        result.ok()
+    }
+
+    /// Native admission initialization is independent from physical placement.
+    /// The fresh House path uses its genuine pre-handoff Channel session here;
+    /// the same owner checks its current durable fence and unique slot rows.
+    pub(super) async fn prepare_admission_prey(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<Option<(wire::Reply, [bool; 3])>, ()> {
+        if self.prey_catalogue().is_none() {
+            return Ok(None);
+        }
+        // Each admission may initialize newly unlocked slots. Existing typed rows are never
+        // redrawn; their unique Character+slot key serializes retry and concurrent admission.
+        let Some(mut occurrence) = super::SecureIdentifiers::random::<16>() else {
+            return Err(());
+        };
+        occurrence[6] = (occurrence[6] & 15) | 0x70;
+        occurrence[8] = (occurrence[8] & 63) | 0x80;
+        if self
+            .prey_commit(admitted, occurrence, PreyMutation::Initialize)
+            .await
+            .is_err()
+        {
+            return Err(());
+        }
+        // A receipt replay returns its original bytes; admission needs the current projection.
+        let Ok((reply, permanent)) = self
+            .prey_commit(
+                admitted,
+                occurrence,
+                PreyMutation::Command(wire::Request::Query),
+            )
+            .await
+        else {
+            return Err(());
+        };
+        Ok(Some((reply, permanent)))
+    }
+
+    pub(super) async fn admit_prey(&self, admitted: AdmittedSession) -> bool {
+        let Ok(prepared) = self.prepare_admission_prey(admitted).await else {
+            return false;
+        };
+        let Some((reply, permanent)) = prepared else {
+            return true;
+        };
+        if let Some(actor) = admitted.runtime_actor {
+            let Some(catalogue) = self.prey_catalogue() else { return false; };
+            let runtime = self.runtime.lock().await;
+            self.states.spell_states.lock().await.load_prey(
+                &runtime,
+                actor,
+                admitted.game_session_id,
+                reply,
+                permanent,
+                catalogue.rules().defense_mode,
+            );
+        }
+        true
+    }
+}
+macro_rules! authority_methods {
+    () => {
+        fn prey_available(&self) -> bool {
+            false
+        }
+        fn prey_command(
+            &self,
+            _: $crate::gameplay_transport::connection::AdmittedSession,
+            _: u64,
+            _: &[u8],
+        ) -> impl std::future::Future<Output = $crate::gameplay_transport::guild_intent::GuildReply>
+        {
+            async { $crate::gameplay_transport::guild_intent::GuildReply::Rejected }
+        }
+    };
+}
+pub(super) use authority_methods;
+macro_rules! composed_methods {
+    () => {
+        fn prey_available(&self) -> bool {
+            self.prey_catalogue().is_some()
+        }
+        async fn prey_command(
+            &self,
+            admitted: connection::AdmittedSession,
+            id: u64,
+            payload: &[u8],
+        ) -> guild_intent::GuildReply {
+            self.prey_wire(admitted, id, payload).await
+        }
+    };
+}
+pub(super) use composed_methods;
+
+/// PREY-0 §7: the typed positive damage contribution rounds up.
+pub(super) fn damage(amount: i64, percent: u8) -> i64 {
+    amount.saturating_add(amount.saturating_mul(i64::from(percent)).saturating_add(99) / 100)
+}
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn prey_damage_boost_preserves_integer_rounding() {
+        assert_eq!(super::damage(100, 25), 125);
+        assert_eq!(super::damage(5, 25), 7);
+        assert_eq!(super::damage(3, 25), 4);
+        assert_eq!(super::damage(100, 0), 100);
+    }
+}

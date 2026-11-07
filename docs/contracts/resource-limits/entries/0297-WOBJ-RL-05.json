@@ -1,0 +1,23 @@
+{
+  "id": "WOBJ-RL-05",
+  "owner_contract": "../architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md",
+  "resource": "Due timed-revert records one scope revert-driver wake admits",
+  "unit": "records per driver wake",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "A wake fires at most this many due records in (deadline, scheduling ordinal, sequence) order and then returns to the scope owner; the remainder is neither dropped nor fired in the same wake and is reported as still due for a later wake.",
+  "client_visible": false,
+  "boundary_tests": [
+    "configured batch B (tested at B=1): B due records fire in one wake",
+    "B+1: the next due record stays PENDING and the wake reports more_due; a later wake fires it",
+    "a configured batch above 32 is refused when the driver limits are built"
+  ],
+  "consumers": [
+    "apps/game-server/src/world_object_revert.rs (ScopeRevertDriver::wake; not yet wired into a live Channel or Instance owner)"
+  ],
+  "notes": "Section 7 bounded due-work admission (FND-03 sections 7 and 14), same shape as MovementOwnerTurn's bounded max_inputs. Registered by OTV2-20260928-cw1-timed-revert-runtime (issue #162): a lane policy value, not a measurement."
+}

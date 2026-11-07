@@ -1,0 +1,124 @@
+{
+  "identity": {
+    "key": "canary:encounter/the_blazing_rose",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "The Secret Library: The Blazing Rose",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "the_blazing_rose",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_blazing_rose",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "the_blazing_rose_ignores_damage_taken_from_unprepared_players",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "the_blazing_rose",
+        "source": "player"
+      },
+      "conditions": [
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/28494",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "right_hand"
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_blazing_rose",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "the_blazing_rose_ignores_damage_taken_from_creatures",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "the_blazing_rose",
+        "source": "non_player"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_blazing_rose",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "the_blazing_rose_ignores_heal_received_from_unprepared_players",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "the_blazing_rose",
+        "source": "player"
+      },
+      "conditions": [
+        {
+          "kind": "attacker_wears",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/28494",
+            "revision": "canary-47dfd51f"
+          },
+          "wears": false,
+          "slot": "right_hand"
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_blazing_rose",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "the_blazing_rose_ignores_heal_received_from_creatures",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "the_blazing_rose",
+        "source": "non_player"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_blazing_rose",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

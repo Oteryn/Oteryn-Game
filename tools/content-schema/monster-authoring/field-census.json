@@ -1,0 +1,1378 @@
+{
+  "scope": "static register_monster_type + MonsterType API; not arbitrary Lua execution",
+  "sources": {
+    "canary": {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "register_path": "data/scripts/lib/register_monster_type.lua",
+      "mask_paths_with_lines": {
+        "mask.Bestiary": [
+          47
+        ],
+        "mask.Bestiary.CharmsPoints": [
+          63,
+          64
+        ],
+        "mask.Bestiary.FirstUnlock": [
+          57,
+          58
+        ],
+        "mask.Bestiary.Locations": [
+          72,
+          73
+        ],
+        "mask.Bestiary.Occurrence": [
+          69,
+          70
+        ],
+        "mask.Bestiary.SecondUnlock": [
+          60,
+          61
+        ],
+        "mask.Bestiary.Stars": [
+          66,
+          67
+        ],
+        "mask.Bestiary.class": [
+          51,
+          52
+        ],
+        "mask.Bestiary.race": [
+          48,
+          49
+        ],
+        "mask.Bestiary.toKill": [
+          54,
+          55
+        ],
+        "mask.attacks": [
+          501,
+          502
+        ],
+        "mask.bosstiary": [
+          79
+        ],
+        "mask.bosstiary.bossRace": [
+          80,
+          81,
+          83,
+          85,
+          98
+        ],
+        "mask.bosstiary.bossRaceId": [
+          93,
+          94
+        ],
+        "mask.changeTarget": [
+          255
+        ],
+        "mask.changeTarget.chance": [
+          256,
+          257
+        ],
+        "mask.changeTarget.interval": [
+          259,
+          260
+        ],
+        "mask.corpse": [
+          137,
+          138
+        ],
+        "mask.defenses": [
+          509,
+          519
+        ],
+        "mask.defenses.armor": [
+          513,
+          514
+        ],
+        "mask.defenses.defense": [
+          510,
+          511
+        ],
+        "mask.defenses.mitigation": [
+          516,
+          517
+        ],
+        "mask.description": [
+          27,
+          28
+        ],
+        "mask.elements": [
+          446,
+          449,
+          458
+        ],
+        "mask.enemyFactions": [
+          157,
+          158
+        ],
+        "mask.events": [
+          333,
+          334
+        ],
+        "mask.experience": [
+          37,
+          38
+        ],
+        "mask.faction": [
+          142,
+          143
+        ],
+        "mask.flags": [
+          168
+        ],
+        "mask.flags.attackable": [
+          169,
+          170
+        ],
+        "mask.flags.canPushCreatures": [
+          211,
+          212
+        ],
+        "mask.flags.canPushItems": [
+          196,
+          197
+        ],
+        "mask.flags.canWalkOnEnergy": [
+          226,
+          227
+        ],
+        "mask.flags.canWalkOnFire": [
+          229,
+          230
+        ],
+        "mask.flags.canWalkOnPoison": [
+          232,
+          233
+        ],
+        "mask.flags.convinceable": [
+          172,
+          173
+        ],
+        "mask.flags.critChance": [
+          214,
+          215
+        ],
+        "mask.flags.familiar": [
+          205,
+          206
+        ],
+        "mask.flags.healthHidden": [
+          190,
+          191
+        ],
+        "mask.flags.hostile": [
+          187,
+          188
+        ],
+        "mask.flags.illusionable": [
+          184,
+          185
+        ],
+        "mask.flags.isBlockable": [
+          235,
+          236
+        ],
+        "mask.flags.isForgeCreature": [
+          238,
+          239
+        ],
+        "mask.flags.isPreyExclusive": [
+          181,
+          182
+        ],
+        "mask.flags.isPreyable": [
+          178,
+          179
+        ],
+        "mask.flags.pushable": [
+          193,
+          194
+        ],
+        "mask.flags.respawnType": [
+          208
+        ],
+        "mask.flags.respawntype": [
+          208
+        ],
+        "mask.flags.rewardBoss": [
+          199,
+          200
+        ],
+        "mask.flags.runHealth": [
+          220,
+          221
+        ],
+        "mask.flags.staticAttackChance": [
+          223,
+          224
+        ],
+        "mask.flags.summonable": [
+          175,
+          176
+        ],
+        "mask.flags.targetDistance": [
+          217,
+          218
+        ],
+        "mask.heals": [
+          480,
+          481
+        ],
+        "mask.health": [
+          117,
+          118
+        ],
+        "mask.immunities": [
+          489,
+          490
+        ],
+        "mask.light": [
+          244
+        ],
+        "mask.light.color": [
+          246,
+          247
+        ],
+        "mask.light.level": [
+          249,
+          250
+        ],
+        "mask.loot": [
+          436,
+          437
+        ],
+        "mask.manaCost": [
+          127,
+          128
+        ],
+        "mask.maxHealth": [
+          112,
+          113
+        ],
+        "mask.name": [
+          18,
+          19
+        ],
+        "mask.outfit": [
+          107,
+          108
+        ],
+        "mask.race": [
+          122,
+          123
+        ],
+        "mask.raceId": [
+          42,
+          43
+        ],
+        "mask.reflects": [
+          471,
+          472
+        ],
+        "mask.respawnType": [
+          281
+        ],
+        "mask.respawnType.period": [
+          282,
+          283
+        ],
+        "mask.respawnType.underground": [
+          285,
+          286
+        ],
+        "mask.skull": [
+          102,
+          103
+        ],
+        "mask.sounds": [
+          291
+        ],
+        "mask.sounds.chance": [
+          295,
+          297
+        ],
+        "mask.sounds.death": [
+          292,
+          293
+        ],
+        "mask.sounds.ids": [
+          295,
+          295,
+          295,
+          298
+        ],
+        "mask.sounds.ticks": [
+          295,
+          296
+        ],
+        "mask.speed": [
+          132,
+          133
+        ],
+        "mask.strategiesTarget": [
+          265
+        ],
+        "mask.strategiesTarget.damage": [
+          272,
+          273
+        ],
+        "mask.strategiesTarget.health": [
+          269,
+          270
+        ],
+        "mask.strategiesTarget.nearest": [
+          266,
+          267
+        ],
+        "mask.strategiesTarget.random": [
+          275,
+          276
+        ],
+        "mask.summon": [
+          321
+        ],
+        "mask.summon.maxSummons": [
+          322,
+          323
+        ],
+        "mask.summon.summons": [
+          325,
+          326
+        ],
+        "mask.targetPreferMaster": [
+          152,
+          153
+        ],
+        "mask.targetPreferPlayer": [
+          147,
+          148
+        ],
+        "mask.variant": [
+          32,
+          33
+        ],
+        "mask.voices": [
+          305,
+          313
+        ],
+        "mask.voices.chance": [
+          310,
+          311
+        ],
+        "mask.voices.interval": [
+          307,
+          308
+        ]
+      },
+      "spell_paths_with_lines": {
+        "incomingLua.attack": [
+          817,
+          818
+        ],
+        "incomingLua.chance": [
+          851,
+          852,
+          933,
+          934
+        ],
+        "incomingLua.condition": [
+          910
+        ],
+        "incomingLua.condition.duration": [
+          914,
+          915
+        ],
+        "incomingLua.condition.interval": [
+          917,
+          918
+        ],
+        "incomingLua.condition.totalDamage": [
+          921,
+          921
+        ],
+        "incomingLua.condition.type": [
+          911,
+          912
+        ],
+        "incomingLua.duration": [
+          643,
+          643,
+          857,
+          858
+        ],
+        "incomingLua.effect": [
+          826,
+          827,
+          900,
+          901,
+          924
+        ],
+        "incomingLua.impactCast": [
+          833,
+          834,
+          885,
+          886,
+          946,
+          947
+        ],
+        "incomingLua.interval": [
+          823,
+          824,
+          848,
+          849,
+          930,
+          931
+        ],
+        "incomingLua.length": [
+          664,
+          866,
+          867,
+          923
+        ],
+        "incomingLua.maxDamage": [
+          820,
+          821,
+          889,
+          891,
+          897,
+          936,
+          937
+        ],
+        "incomingLua.minDamage": [
+          820,
+          821,
+          889,
+          891,
+          897,
+          936,
+          937
+        ],
+        "incomingLua.name": [
+          598,
+          616,
+          642,
+          647,
+          649,
+          651,
+          653,
+          655,
+          657,
+          657,
+          659,
+          814,
+          815,
+          838,
+          840,
+          842,
+          845,
+          890,
+          890,
+          924,
+          925
+        ],
+        "incomingLua.outfitItem": [
+          878,
+          879
+        ],
+        "incomingLua.outfitMonster": [
+          875,
+          876
+        ],
+        "incomingLua.radius": [
+          692,
+          694,
+          700,
+          706,
+          712,
+          718,
+          724,
+          730,
+          736,
+          742,
+          748,
+          754,
+          760,
+          872,
+          873,
+          923,
+          923
+        ],
+        "incomingLua.range": [
+          854,
+          855
+        ],
+        "incomingLua.script": [
+          928,
+          929
+        ],
+        "incomingLua.shootEffect": [
+          803,
+          804,
+          903,
+          904
+        ],
+        "incomingLua.shooteffect": [
+          903,
+          904
+        ],
+        "incomingLua.skill": [
+          817,
+          818
+        ],
+        "incomingLua.soundCast": [
+          829,
+          830,
+          881,
+          882,
+          942,
+          943
+        ],
+        "incomingLua.speedChange": [
+          860,
+          861
+        ],
+        "incomingLua.spread": [
+          664,
+          869,
+          870,
+          923
+        ],
+        "incomingLua.startDamage": [
+          894,
+          895
+        ],
+        "incomingLua.target": [
+          863,
+          864,
+          939,
+          940
+        ],
+        "incomingLua.type": [
+          617,
+          619,
+          621,
+          623,
+          625,
+          627,
+          629,
+          631,
+          633,
+          635,
+          637,
+          639,
+          839,
+          841,
+          843
+        ]
+      },
+      "api_path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+      "api_methods_with_lines": {
+        "BestiaryCharmsPoints": 69,
+        "BestiaryFirstUnlock": 71,
+        "BestiaryLocations": 67,
+        "BestiaryOccurrence": 66,
+        "BestiarySecondUnlock": 70,
+        "BestiaryStars": 68,
+        "Bestiaryclass": 65,
+        "Bestiaryrace": 73,
+        "BestiarytoKill": 72,
+        "addAttack": 79,
+        "addDefense": 82,
+        "addElement": 87,
+        "addHealing": 90,
+        "addLoot": 96,
+        "addReflect": 89,
+        "addSound": 184,
+        "addSummon": 146,
+        "addVoice": 93,
+        "armor": 150,
+        "baseSpeed": 157,
+        "bossRace": 179,
+        "bossRaceId": 180,
+        "canPushCreatures": 44,
+        "canPushItems": 43,
+        "canSpawn": 41,
+        "canWalkOnEnergy": 167,
+        "canWalkOnFire": 168,
+        "canWalkOnPoison": 169,
+        "changeTargetChance": 164,
+        "changeTargetSpeed": 165,
+        "combatImmunities": 75,
+        "conditionImmunities": 76,
+        "corpseId": 155,
+        "critChance": 46,
+        "deathSound": 186,
+        "defense": 152,
+        "enemyFactions": 60,
+        "eventType": 101,
+        "experience": 57,
+        "faction": 59,
+        "familiar": 38,
+        "getAttackList": 78,
+        "getCorpseId": 52,
+        "getCreatureEvents": 98,
+        "getDefenseList": 81,
+        "getElementList": 86,
+        "getLoot": 95,
+        "getMonstersByBestiaryStars": 190,
+        "getMonstersByRace": 189,
+        "getSounds": 185,
+        "getSummonList": 145,
+        "getTypeName": 84,
+        "getVoices": 92,
+        "health": 54,
+        "isAttackable": 26,
+        "isBlockable": 35,
+        "isConvinceable": 27,
+        "isForgeCreature": 36,
+        "isHealthHidden": 34,
+        "isHostile": 32,
+        "isIllusionable": 31,
+        "isPreyExclusive": 30,
+        "isPreyable": 29,
+        "isPushable": 33,
+        "isRewardBoss": 39,
+        "isSummonable": 28,
+        "light": 158,
+        "manaCost": 156,
+        "maxHealth": 55,
+        "maxSummons": 148,
+        "mitigation": 151,
+        "name": 48,
+        "nameDescription": 50,
+        "onAppear": 113,
+        "onDisappear": 119,
+        "onMove": 125,
+        "onPlayerAttack": 137,
+        "onSay": 131,
+        "onSpawn": 143,
+        "onThink": 107,
+        "outfit": 153,
+        "race": 154,
+        "raceId": 64,
+        "registerEvent": 99,
+        "respawnTypeIsUnderground": 177,
+        "respawnTypePeriod": 176,
+        "runHealth": 56,
+        "soundChance": 182,
+        "soundSpeedTicks": 183,
+        "staticAttackChance": 160,
+        "strategiesTargetDamage": 173,
+        "strategiesTargetHealth": 172,
+        "strategiesTargetNearest": 171,
+        "strategiesTargetRandom": 174,
+        "targetDistance": 161,
+        "targetPreferMaster": 62,
+        "targetPreferPlayer": 61,
+        "variant": 188,
+        "yellChance": 162,
+        "yellSpeedTicks": 163
+      }
+    },
+    "crystal": {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ac447fef0935e6df52dc6b6376ae4c1534ecd73f",
+      "register_path": "data/scripts/lib/register_monster_type.lua",
+      "mask_paths_with_lines": {
+        "mask.Bestiary": [
+          43
+        ],
+        "mask.Bestiary.CharmsPoints": [
+          59,
+          60
+        ],
+        "mask.Bestiary.FirstUnlock": [
+          53,
+          54
+        ],
+        "mask.Bestiary.Locations": [
+          68,
+          69
+        ],
+        "mask.Bestiary.Occurrence": [
+          65,
+          66
+        ],
+        "mask.Bestiary.SecondUnlock": [
+          56,
+          57
+        ],
+        "mask.Bestiary.Stars": [
+          62,
+          63
+        ],
+        "mask.Bestiary.class": [
+          47,
+          48
+        ],
+        "mask.Bestiary.race": [
+          44,
+          45
+        ],
+        "mask.Bestiary.toKill": [
+          50,
+          51
+        ],
+        "mask.attacks": [
+          550,
+          551
+        ],
+        "mask.bosstiary": [
+          75
+        ],
+        "mask.bosstiary.bossRace": [
+          76,
+          77,
+          79,
+          81,
+          94
+        ],
+        "mask.bosstiary.bossRaceId": [
+          89,
+          90
+        ],
+        "mask.changeTarget": [
+          257
+        ],
+        "mask.changeTarget.chance": [
+          258,
+          259
+        ],
+        "mask.changeTarget.interval": [
+          261,
+          262
+        ],
+        "mask.corpse": [
+          133,
+          134
+        ],
+        "mask.defenses": [
+          558,
+          568
+        ],
+        "mask.defenses.armor": [
+          562,
+          563
+        ],
+        "mask.defenses.defense": [
+          559,
+          560
+        ],
+        "mask.defenses.mitigation": [
+          565,
+          566
+        ],
+        "mask.description": [
+          23,
+          24
+        ],
+        "mask.elements": [
+          495,
+          498,
+          507
+        ],
+        "mask.enemyFactions": [
+          153,
+          154
+        ],
+        "mask.events": [
+          335,
+          336
+        ],
+        "mask.experience": [
+          33,
+          34
+        ],
+        "mask.faction": [
+          138,
+          139
+        ],
+        "mask.flags": [
+          164
+        ],
+        "mask.flags.attackable": [
+          165,
+          166
+        ],
+        "mask.flags.canPushCreatures": [
+          207,
+          208
+        ],
+        "mask.flags.canPushItems": [
+          192,
+          193
+        ],
+        "mask.flags.canTarget": [
+          237,
+          238
+        ],
+        "mask.flags.canWalk": [
+          240,
+          241
+        ],
+        "mask.flags.canWalkOnEnergy": [
+          222,
+          223
+        ],
+        "mask.flags.canWalkOnFire": [
+          225,
+          226
+        ],
+        "mask.flags.canWalkOnPoison": [
+          228,
+          229
+        ],
+        "mask.flags.convinceable": [
+          168,
+          169
+        ],
+        "mask.flags.critChance": [
+          210,
+          211
+        ],
+        "mask.flags.familiar": [
+          201,
+          202
+        ],
+        "mask.flags.healthHidden": [
+          186,
+          187
+        ],
+        "mask.flags.hostile": [
+          183,
+          184
+        ],
+        "mask.flags.illusionable": [
+          180,
+          181
+        ],
+        "mask.flags.isBlockable": [
+          231,
+          232
+        ],
+        "mask.flags.isForgeCreature": [
+          234,
+          235
+        ],
+        "mask.flags.isPreyExclusive": [
+          177,
+          178
+        ],
+        "mask.flags.isPreyable": [
+          174,
+          175
+        ],
+        "mask.flags.pushable": [
+          189,
+          190
+        ],
+        "mask.flags.respawnType": [
+          204
+        ],
+        "mask.flags.respawntype": [
+          204
+        ],
+        "mask.flags.rewardBoss": [
+          195,
+          196
+        ],
+        "mask.flags.runHealth": [
+          216,
+          217
+        ],
+        "mask.flags.staticAttackChance": [
+          219,
+          220
+        ],
+        "mask.flags.summonable": [
+          171,
+          172
+        ],
+        "mask.flags.targetDistance": [
+          213,
+          214
+        ],
+        "mask.heals": [
+          529,
+          530
+        ],
+        "mask.health": [
+          113,
+          114
+        ],
+        "mask.immunities": [
+          538,
+          539
+        ],
+        "mask.light": [
+          246
+        ],
+        "mask.light.color": [
+          248,
+          249
+        ],
+        "mask.light.level": [
+          251,
+          252
+        ],
+        "mask.loot": [
+          357,
+          358,
+          360
+        ],
+        "mask.manaCost": [
+          123,
+          124
+        ],
+        "mask.maxHealth": [
+          108,
+          109
+        ],
+        "mask.name": [
+          18,
+          19
+        ],
+        "mask.outfit": [
+          103,
+          104
+        ],
+        "mask.race": [
+          118,
+          119
+        ],
+        "mask.raceId": [
+          38,
+          39
+        ],
+        "mask.reflects": [
+          520,
+          521
+        ],
+        "mask.respawnType": [
+          283
+        ],
+        "mask.respawnType.period": [
+          284,
+          285
+        ],
+        "mask.respawnType.underground": [
+          287,
+          288
+        ],
+        "mask.skull": [
+          98,
+          99
+        ],
+        "mask.sounds": [
+          293
+        ],
+        "mask.sounds.chance": [
+          297,
+          299
+        ],
+        "mask.sounds.death": [
+          294,
+          295
+        ],
+        "mask.sounds.ids": [
+          297,
+          297,
+          297,
+          300
+        ],
+        "mask.sounds.ticks": [
+          297,
+          298
+        ],
+        "mask.speed": [
+          128,
+          129
+        ],
+        "mask.strategiesTarget": [
+          267
+        ],
+        "mask.strategiesTarget.damage": [
+          274,
+          275
+        ],
+        "mask.strategiesTarget.health": [
+          271,
+          272
+        ],
+        "mask.strategiesTarget.nearest": [
+          268,
+          269
+        ],
+        "mask.strategiesTarget.random": [
+          277,
+          278
+        ],
+        "mask.summon": [
+          323
+        ],
+        "mask.summon.maxSummons": [
+          324,
+          325
+        ],
+        "mask.summon.summons": [
+          327,
+          328
+        ],
+        "mask.targetPreferMaster": [
+          148,
+          149
+        ],
+        "mask.targetPreferPlayer": [
+          143,
+          144
+        ],
+        "mask.variant": [
+          28,
+          29
+        ],
+        "mask.voices": [
+          307,
+          315
+        ],
+        "mask.voices.chance": [
+          312,
+          313
+        ],
+        "mask.voices.interval": [
+          309,
+          310
+        ]
+      },
+      "spell_paths_with_lines": {
+        "incomingLua.attack": [
+          866,
+          867
+        ],
+        "incomingLua.chance": [
+          900,
+          901,
+          982,
+          983
+        ],
+        "incomingLua.condition": [
+          959
+        ],
+        "incomingLua.condition.duration": [
+          963,
+          964
+        ],
+        "incomingLua.condition.interval": [
+          966,
+          967
+        ],
+        "incomingLua.condition.totalDamage": [
+          970,
+          970
+        ],
+        "incomingLua.condition.type": [
+          960,
+          961
+        ],
+        "incomingLua.duration": [
+          692,
+          692,
+          906,
+          907
+        ],
+        "incomingLua.effect": [
+          875,
+          876,
+          949,
+          950,
+          973
+        ],
+        "incomingLua.impactCast": [
+          882,
+          883,
+          934,
+          935,
+          995,
+          996
+        ],
+        "incomingLua.interval": [
+          872,
+          873,
+          897,
+          898,
+          979,
+          980
+        ],
+        "incomingLua.length": [
+          713,
+          915,
+          916,
+          972
+        ],
+        "incomingLua.maxDamage": [
+          869,
+          870,
+          938,
+          940,
+          946,
+          985,
+          986
+        ],
+        "incomingLua.minDamage": [
+          869,
+          870,
+          938,
+          940,
+          946,
+          985,
+          986
+        ],
+        "incomingLua.name": [
+          647,
+          665,
+          691,
+          696,
+          698,
+          700,
+          702,
+          704,
+          706,
+          706,
+          708,
+          863,
+          864,
+          887,
+          889,
+          891,
+          894,
+          939,
+          939,
+          973,
+          974
+        ],
+        "incomingLua.outfitItem": [
+          927,
+          928
+        ],
+        "incomingLua.outfitMonster": [
+          924,
+          925
+        ],
+        "incomingLua.radius": [
+          741,
+          743,
+          749,
+          755,
+          761,
+          767,
+          773,
+          779,
+          785,
+          791,
+          797,
+          803,
+          809,
+          921,
+          922,
+          972,
+          972
+        ],
+        "incomingLua.range": [
+          903,
+          904
+        ],
+        "incomingLua.script": [
+          977,
+          978
+        ],
+        "incomingLua.shootEffect": [
+          852,
+          853,
+          952,
+          953
+        ],
+        "incomingLua.shooteffect": [
+          952,
+          953
+        ],
+        "incomingLua.skill": [
+          866,
+          867
+        ],
+        "incomingLua.soundCast": [
+          878,
+          879,
+          930,
+          931,
+          991,
+          992
+        ],
+        "incomingLua.speedChange": [
+          909,
+          910
+        ],
+        "incomingLua.spread": [
+          713,
+          918,
+          919,
+          972
+        ],
+        "incomingLua.startDamage": [
+          943,
+          944
+        ],
+        "incomingLua.target": [
+          912,
+          913,
+          988,
+          989
+        ],
+        "incomingLua.type": [
+          666,
+          668,
+          670,
+          672,
+          674,
+          676,
+          678,
+          680,
+          682,
+          684,
+          686,
+          688,
+          888,
+          890,
+          892
+        ]
+      },
+      "api_path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+      "api_methods_with_lines": {
+        "BestiaryCharmsPoints": 79,
+        "BestiaryFirstUnlock": 81,
+        "BestiaryLocations": 77,
+        "BestiaryOccurrence": 76,
+        "BestiarySecondUnlock": 80,
+        "BestiaryStars": 78,
+        "Bestiaryclass": 75,
+        "Bestiaryrace": 83,
+        "BestiarytoKill": 82,
+        "addAttack": 89,
+        "addDefense": 92,
+        "addElement": 97,
+        "addHealing": 100,
+        "addLoot": 106,
+        "addReflect": 99,
+        "addSound": 160,
+        "addSummon": 122,
+        "addVoice": 103,
+        "armor": 126,
+        "baseSpeed": 133,
+        "bossRace": 155,
+        "bossRaceId": 156,
+        "canPushCreatures": 53,
+        "canPushItems": 52,
+        "canSpawn": 50,
+        "canTarget": 169,
+        "canWalk": 168,
+        "canWalkOnEnergy": 143,
+        "canWalkOnFire": 144,
+        "canWalkOnPoison": 145,
+        "changeTargetChance": 140,
+        "changeTargetSpeed": 141,
+        "combatImmunities": 85,
+        "conditionImmunities": 86,
+        "corpseId": 131,
+        "critChance": 55,
+        "deathSound": 162,
+        "defense": 128,
+        "enemyFactions": 70,
+        "eventType": 112,
+        "experience": 66,
+        "faction": 69,
+        "familiar": 47,
+        "getAttackList": 88,
+        "getCorpseId": 61,
+        "getCreatureEvents": 109,
+        "getDefenseList": 91,
+        "getElementList": 96,
+        "getLoot": 105,
+        "getMonstersByBestiaryStars": 166,
+        "getMonstersByRace": 165,
+        "getSounds": 161,
+        "getSummonList": 121,
+        "getSurpriseBagLoot": 107,
+        "getTypeName": 94,
+        "getVoices": 102,
+        "health": 63,
+        "isAttackable": 35,
+        "isBlockable": 44,
+        "isConvinceable": 36,
+        "isForgeCreature": 45,
+        "isHealthHidden": 43,
+        "isHostile": 41,
+        "isIllusionable": 40,
+        "isPreyExclusive": 39,
+        "isPreyable": 38,
+        "isPushable": 42,
+        "isRewardBoss": 48,
+        "isSummonable": 37,
+        "light": 134,
+        "manaCost": 132,
+        "maxHealth": 64,
+        "maxSummons": 124,
+        "mitigation": 127,
+        "name": 57,
+        "nameDescription": 59,
+        "onAppear": 114,
+        "onDisappear": 115,
+        "onMove": 116,
+        "onPlayerAttack": 118,
+        "onSay": 117,
+        "onSpawn": 119,
+        "onThink": 113,
+        "outfit": 129,
+        "race": 130,
+        "raceId": 74,
+        "registerEvent": 110,
+        "respawnTypeIsUnderground": 153,
+        "respawnTypePeriod": 152,
+        "runHealth": 65,
+        "skull": 67,
+        "soundChance": 158,
+        "soundSpeedTicks": 159,
+        "staticAttackChance": 136,
+        "strategiesTargetDamage": 149,
+        "strategiesTargetHealth": 148,
+        "strategiesTargetNearest": 147,
+        "strategiesTargetRandom": 150,
+        "targetDistance": 137,
+        "targetPreferMaster": 72,
+        "targetPreferPlayer": 71,
+        "variant": 164,
+        "yellChance": 138,
+        "yellSpeedTicks": 139
+      }
+    }
+  },
+  "differences": {
+    "crystal_only_mask_paths": [
+      "mask.flags.canTarget",
+      "mask.flags.canWalk"
+    ],
+    "canary_only_mask_paths": [],
+    "crystal_only_api_methods": [
+      "canTarget",
+      "canWalk",
+      "getSurpriseBagLoot",
+      "skull"
+    ],
+    "canary_only_api_methods": []
+  },
+  "notes": [
+    "Paths include containers, aliases and deprecated-warning paths; counts are not counts of executable features.",
+    "Canary registrar references mtype:skull, but skull is not registered in the inspected MonsterType API file.",
+    "C++ soulCore member/function does not imply standard mask registration.",
+    "Loot hitChance setter exists separately from the standard mask registration."
+  ]
+}

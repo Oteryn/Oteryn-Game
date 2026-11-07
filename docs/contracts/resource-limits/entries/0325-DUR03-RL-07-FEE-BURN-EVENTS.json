@@ -1,0 +1,23 @@
+{
+  "id": "DUR03-RL-07-FEE-BURN-EVENTS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
+  "resource": "Audit events for one DUR-03 fee BURN transaction",
+  "unit": "events per logical transaction",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Exactly one event; the shape is never split into several events or truncated.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=1: TransactionEventRef ordinal 1 of count 1",
+    "max+1=2 rejected (CAPACITY_EXCEEDED)"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/item_fee_burn_audit.rs",
+    "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)"
+  ],
+  "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1a burns gold coins only (no change output yet); GOLD-FEE-1b adds platinum/crystal and the change MINTs within these rows and re-measures the RL-07 byte rows."
+}

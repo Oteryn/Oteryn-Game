@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package oteryn.events.candidate.v1;
+
+// UNREGISTERED OFFLINE CANDIDATE ONLY. DUR-03 §39.1 semantic measurement.
+// No event_type_id, accepted retention profile, production admission or runtime API.
+// Common correlation/durability/membership remains in foundation.EventEnvelope.
+// An omitted oneof, unsupported revision or any other operation rejects.
+message OneItemTransactionCandidate {
+  uint32 interpretation_revision = 1; // exactly 1 in this offline candidate
+  oneof operation {
+    OneItemMint mint = 2;
+    OneItemTransfer transfer = 3;
+  }
+}
+
+// Exactly one live item; absence before MINT is the Mint variant's semantics,
+// never a nil identity or a zero-quantity live state.
+message CandidateItemState {
+  bytes item_instance_id = 1; // 16-byte non-nil UUIDv7
+  bytes world_id = 2;         // 16-byte non-nil UUIDv7
+  uint32 definition_key = 3;  // private fixture key, not Content acceptance
+  uint32 definition_revision = 4;
+  uint32 quantity = 5;        // >0; fixture uses 1, no production ceiling
+  uint32 lifecycle = 6;       // exactly 1 = LIVE, candidate-local closed value
+}
+
+message CandidateGround {
+  bytes world_id = 1;
+  bytes channel_id = 2;        // concrete world-scoped Channel fixture
+  bytes corpse_occurrence_id = 3; // provenance association, not location authority
+  uint64 corpse_revision = 4;
+  uint32 x = 5; // deliberately bounded nonnegative fixture coordinates
+  uint32 y = 6;
+  uint32 z = 7;
+}
+
+message CandidateInventory {
+  bytes character_id = 1;
+  uint64 session_generation = 2; // expected binding only, not current authority
+  uint32 direct_root_slot = 3;   // no container family
+}
+
+message CandidateProvenance {
+  uint32 source_kind = 1; // exactly 1 = corpse loot; no arbitrary metadata
+  bytes occurrence_id = 2;
+  bytes cause_id = 3; // accepted source/cause fixture binding; not CommandRef
+}
+
+message OneItemMint {
+  CandidateItemState after = 1;
+  CandidateGround destination = 2;
+  CandidateProvenance source = 3;
+}
+
+message OneItemTransfer {
+  CandidateItemState before = 1;
+  CandidateItemState after = 2;
+  CandidateGround source = 3;
+  CandidateInventory destination = 4;
+  CandidateProvenance cause = 5;
+}

@@ -1,0 +1,67 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 40000,
+    "costs": {
+      "mana": 600,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/canary-main-current/c421140c68b6f8da/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 4000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 40000,
+        "group": "focus"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/c421140c68b6f8da",
+      "revision": "source-player-r28"
+    },
+    "name": "Rage of the Skies",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_rage_of_the_skies"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 119,
+    "requirements": {
+      "learning_required": false,
+      "level": 55,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "exevo gran mas vis"
+  }
+}

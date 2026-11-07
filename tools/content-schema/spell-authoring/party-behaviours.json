@@ -1,0 +1,93 @@
+{
+  "schema": "oteryn.spell-party-behaviours.v1",
+  "note": "Candidate party_buff parameters (owner S27; OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md C.3). The area is the radius-3 circle of 37 tiles on the caster's floor; min_affected 2 counts the caster. Train, Protect, Heal and Enchant use ceil(base x 0.9^(X-1) x X), rounded up; Enlighten uses fixed mana 75. Each member gets one condition for 120 s. Enlighten's values are confirmed by the live readback of owner decision #162 comment 5914941038. A 'blocked' entry stays blocked.",
+  "area": [
+    "..xxx..",
+    ".xxxxx.",
+    "xxxxxxx",
+    "xxxCxxx",
+    "xxxxxxx",
+    ".xxxxx.",
+    "..xxx.."
+  ],
+  "spells": {
+    "heal party": {
+      "base_mana": 120,
+      "condition": {
+        "type": "regeneration",
+        "regeneration": {
+          "health_gain": 20,
+          "health_interval_ms": 2000
+        }
+      },
+      "sources": "F1182737 (formula, base 120, 20 HP every 2 s for 120 s), BR, Canary 99902524 heal_party.lua (baseMana 120, CONDITION_REGENERATION HEALTHGAIN 20, HEALTHTICKS 2000, TICKS 120000, BUFF_SPELL)."
+    },
+    "protect party": {
+      "base_mana": 90,
+      "condition": {
+        "type": "attributes",
+        "attribute_modifiers": [
+          {
+            "attribute": "skill_shield",
+            "mode": "add",
+            "value": 3
+          }
+        ]
+      },
+      "sources": "F1182881 and BR (shielding +3 for 120 s); base mana 90 from Canary 99902524 protect_party.lua only (C.3 Q16: the wikis state 'varies'; S3 lets the source supply what the wiki does not state)."
+    },
+    "enchant party": {
+      "base_mana": 120,
+      "condition": {
+        "type": "attributes",
+        "attribute_modifiers": [
+          {
+            "attribute": "stat_magicpoints",
+            "mode": "add",
+            "value": 1
+          }
+        ]
+      },
+      "sources": "F1182666 and BR (magic level +1 for 120 s); base mana 120 from Canary 99902524 enchant_party.lua only (C.3 Q16)."
+    },
+    "train party": {
+      "base_mana": 60,
+      "condition": {
+        "type": "attributes",
+        "attribute_modifiers": [
+          {
+            "attribute": "skill_distance",
+            "mode": "add",
+            "value": 3
+          },
+          {
+            "attribute": "skill_fist",
+            "mode": "add",
+            "value": 3
+          },
+          {
+            "attribute": "skill_melee",
+            "mode": "add",
+            "value": 3
+          }
+        ]
+      },
+      "sources": "D213 (owner, 2026-09-30, C.3 Q15 answer b): +3 sword, axe, club, distance and fist per Fandom F1182927 over BR and Canary (no fist). skill_melee is Canary CONDITION_PARAM_SKILL_MELEE (club, axe, sword; condition.cpp); base mana 60 from Canary 99902524 train_party.lua only (C.3 Q16)."
+    },
+    "enlighten party": {
+      "mana": {"mode": "fixed", "base": 75},
+      "duration_ms": 120000,
+      "condition": {
+        "type": "regeneration",
+        "regeneration": {"mana_gain": 2, "mana_interval_ms": 2000}
+      },
+      "sources": "Owner handover supplied in this task, referring to #162 comments 5914928258 and 5914941038 (live readback unavailable): 2 mana every 2 s for 120 s. Fixed mana 75, cooldown 300 s and support group 2 s are corroborated by F1182676, BR434658 and the owner's official spell list capture. Canary/Crystal regeneration values are superseded in this candidate.",
+      "owner_decision_readback": {
+        "url": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5914941038",
+        "decision_date": "2026-09-30",
+        "readback_date": "2026-10-09",
+        "confirmed": "Fixed mana 75, cooldown 300 s, support group 2 s, and 2 mana every 2 s for 120 s (120 mana total). The sources string above is the historical converter evidence retained for existing exact C.3 bindings; its live-readback-unavailable qualification is superseded by this receipt. These parameters do not by themselves establish runtime composition."
+      }
+    }
+  }
+}

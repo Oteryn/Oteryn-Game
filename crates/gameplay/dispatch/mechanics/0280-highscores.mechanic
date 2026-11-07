@@ -1,0 +1,4 @@
+name=highscores
+commands=14
+[route]
+routing::highscores::route(authority, &session.admitted, command).await

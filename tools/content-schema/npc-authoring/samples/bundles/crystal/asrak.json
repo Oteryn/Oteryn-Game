@@ -1,0 +1,1650 @@
+{
+ "definition": {
+  "description": {
+   "length": 5,
+   "links": [],
+   "placeholders": [],
+   "sha256": "10ab6ecc7972d7b7aacc56a1eb3929aaff5e9384005af70e3caa7c85a58046d5"
+  },
+  "display_name": "Asrak",
+  "movement": {
+   "floor_change": false,
+   "walk_interval_ms": 2000,
+   "walk_radius": 2
+  },
+  "name": "Asrak",
+  "presentation": {
+   "light": null,
+   "outfit": {
+    "addons": 0,
+    "body": 20,
+    "feet": 40,
+    "head": 10,
+    "legs": 30,
+    "look_type": 29,
+    "mount": null
+   },
+   "speech_bubble": null
+  },
+  "profession": null,
+  "respawn": null,
+  "vitals": {
+   "health": 100,
+   "max_health": 100
+  }
+ },
+ "dialogue": {
+  "dialog_option_calls": 0,
+  "keywords": [
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "learn_spell",
+      "text": null
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "arrow call"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 58,
+     "links": [
+      "arrow call"
+     ],
+     "placeholders": [],
+     "sha256": "2774c319ffd00c3ba895f21b0de18a9d4312d3f9e8d32356eabb3de7f9cae5b5"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "learn_spell",
+      "text": null
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "bruise bane"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 59,
+     "links": [
+      "bruise bane"
+     ],
+     "placeholders": [],
+     "sha256": "b0c871604d5e90acd232b598d520aa4aa426ae50abde62025f632a519f5ac266"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "learn_spell",
+      "text": null
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "conjure explosive arrow"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 76,
+     "links": [
+      "conjure explosive arrow"
+     ],
+     "placeholders": [],
+     "sha256": "7cc6e63e005421ae277d116dd711f290c318f1bd142d5a408daa00859732f852"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "learn_spell",
+      "text": null
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "conjure arrow"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 65,
+     "links": [
+      "conjure arrow"
+     ],
+     "placeholders": [],
+     "sha256": "0d6cb670f3848ea69b05cc19b38d710b2b2981ef1214fb5c128ee6ced9776612"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "learn_spell",
+      "text": null
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "cure poison"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 63,
+     "links": [
+      "cure poison"
+     ],
+     "placeholders": [],
+     "sha256": "1931136cb8bae433b3e97d78e338ef7707ba0aa0b5bcf4abfb880ee096811223"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "learn_spell",
+      "text": null
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "destroy field"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 64,
+     "links": [
+      "destroy field"
+     ],
+     "placeholders": [],
+     "sha256": "8eb3d25e27a5c42232b41c04b918b6bd3654e032236c35bee58d6eaf864da047"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "learn_spell",
+      "text": null
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "divine healing"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 67,
+     "links": [
+      "divine healing"
+     ],
+     "placeholders": [],
+     "sha256": "ea61358710d45b41ab44f6904239fcf74c6673b880f80b7a20d55667283d52de"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "learn_spell",
+      "text": null
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "find fiend"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 63,
+     "links": [
+      "find fiend"
+     ],
+     "placeholders": [],
+     "sha256": "c6285604685b047901b1cbbe6ce760015ef4ac0b47fde38ffafdc6a3c7dad34f"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "learn_spell",
+      "text": null
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "find person"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 62,
+     "links": [
+      "find person"
+     ],
+     "placeholders": [],
+     "sha256": "a4752c85be69c22a0d2d9d0c9922b7f4933615408f9580ca209212d0a445771a"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "learn_spell",
+      "text": null
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "great light"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 63,
+     "links": [
+      "great light"
+     ],
+     "placeholders": [],
+     "sha256": "b91aa46bdbd1a9730a2dbedb76e306b081b2ee8037423ca4899462b0ca082c21"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "learn_spell",
+      "text": null
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "intense healing"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 67,
+     "links": [
+      "intense healing"
+     ],
+     "placeholders": [],
+     "sha256": "3b6d88b9e9faee8180a447e23e8ce6dd50ee9cfcb27566813df85e6221194602"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "learn_spell",
+      "text": null
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "lesser ethereal spear"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 69,
+     "links": [
+      "lesser ethereal spear"
+     ],
+     "placeholders": [],
+     "sha256": "e9e0f98f9b4ea503a4c6f663ceb289c9f9cc88f5491ff602307ceaabe88aa535"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "learn_spell",
+      "text": null
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "lesser front sweep"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 66,
+     "links": [
+      "lesser front sweep"
+     ],
+     "placeholders": [],
+     "sha256": "09da003db6601f9fa73d3108dc10a7fb51a85e8173e420eb0db192770f1e6803"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "learn_spell",
+      "text": null
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "light healing"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 61,
+     "links": [
+      "light healing"
+     ],
+     "placeholders": [],
+     "sha256": "3c509b3a7a7c1bec910153460a4c794faed986502feeae97fe02bd179fecd1e9"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "learn_spell",
+      "text": null
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "light"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 53,
+     "links": [
+      "light"
+     ],
+     "placeholders": [],
+     "sha256": "277abd3fc3fdfa77aaf8bb747604239ccc80a7270065d3448c9d72f8d88c5571"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "learn_spell",
+      "text": null
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "magic patch"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 59,
+     "links": [
+      "magic patch"
+     ],
+     "placeholders": [],
+     "sha256": "7831a842240bd97e1c96463152b4f0afe37b9a254166aa874de484bb6fb44c60"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {},
+      "gate": "NONE",
+      "keywords": [
+       "yes"
+      ],
+      "kind": "learn_spell",
+      "text": null
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "wound cleansing"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 63,
+     "links": [
+      "wound cleansing"
+     ],
+     "placeholders": [],
+     "sha256": "d289f407191e780ac9c45a4ac8e8d7e1ab5144796cede3630af8e0282f45edfd"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "job"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 87,
+     "links": [],
+     "placeholders": [],
+     "sha256": "f9045f5ebb56bf7f70a1e0ed47960ffd8af7bf403b0ee5d5eecfa5d28cc76661"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "gladiators"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 109,
+     "links": [],
+     "placeholders": [],
+     "sha256": "f6b1c4eba6cf72174518f8fee4ee487abaef6535cd68646a1a125719b6199cab"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "help"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 46,
+     "links": [],
+     "placeholders": [],
+     "sha256": "002c7b42c16dddae0b4ba58bd98c02ceff19d505dfb493bcd4d3d60977e6ba40"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "name"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 32,
+     "links": [],
+     "placeholders": [],
+     "sha256": "6081e193f173738770eda22148a2c55cea00d6f4e1271b056b1c03d9e2b34ab0"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "king",
+     "tibianus"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 63,
+     "links": [],
+     "placeholders": [],
+     "sha256": "75dc05ff1791b8ee93a9bd823e17ae8d9445a60c5cce25bc7b8a2d4226d41160"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "army"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 95,
+     "links": [],
+     "placeholders": [],
+     "sha256": "212ccc8bc3686acb30c527df8009ccf3f915c03eb459caaba4ca739a36d44ad0"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "general"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 84,
+     "links": [],
+     "placeholders": [],
+     "sha256": "a206c51bf01201db32708f6f6e53639cf546dbeaa4ab0cf721e4f8be0402184e"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "dungeon"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 128,
+     "links": [],
+     "placeholders": [],
+     "sha256": "c1d419e2f20551c9ff4462f0a44bb1ee2a7d4318441776e2b6be11080950d6c1"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "gods"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 111,
+     "links": [],
+     "placeholders": [],
+     "sha256": "29d484b99831c87017e4cffbb5e5289fc1287ed9e6e98db99cbf558a87eda597"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "monsters"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 103,
+     "links": [],
+     "placeholders": [],
+     "sha256": "710254e91dffe434dec2f9e586af6930f818edfbcd32cc84d33e608e9bb4f8f1"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "ferumbras"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 108,
+     "links": [],
+     "placeholders": [],
+     "sha256": "2d2885f65f5508d686fb62f30813cd4c5c3c460a0cb22d2aef69c69b3a3d4ed4"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "excalibug"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 72,
+     "links": [],
+     "placeholders": [],
+     "sha256": "6f2824eb99e8a290c950defcb8d38dda7a77919cfe69603a5ec3f68eb6788616"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "venore"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 91,
+     "links": [],
+     "placeholders": [],
+     "sha256": "59b2b90870a3ac66d685aa3180b64ee8058b401a1d72a20aabb89eb1cf8ee175"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "mintwallin"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 119,
+     "links": [],
+     "placeholders": [],
+     "sha256": "5d5baa45eda7580c892d294aac11cce0753ad65240ede5519b94df60fd7fa40a"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "minotaur"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 120,
+     "links": [],
+     "placeholders": [],
+     "sha256": "34e5fb1a5c6933b8d34171208b07025759859c4607ce1ad6e6824b98e72df05b"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "mooh'tah"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 111,
+     "links": [],
+     "placeholders": [],
+     "sha256": "5d794ac89d6d5d9b1dd0b0309711e28dbb4c292b1b0c35406f1ff4c20d53d8b8"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "rage"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 143,
+     "links": [],
+     "placeholders": [],
+     "sha256": "f3aae877cdf0acb593998bb6a4ac2f54224174d2c49da67abc2d736047c10374"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "harmony"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 115,
+     "links": [],
+     "placeholders": [],
+     "sha256": "96f32aaaf8faed418998f5a0700e98aad6d261866c887480f651ba362f0fb8ad"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "song",
+     "sing"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 148,
+     "links": [],
+     "placeholders": [],
+     "sha256": "ba07f1c2f65eb9b1b70efd3dd3efb779171831aa8302403043df12d8eff470e9"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "battlesongs"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 145,
+     "links": [],
+     "placeholders": [],
+     "sha256": "644d9a2ee29a19d7829c74bed58480554868d701e53347675f8a3d69c6c87963"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "weapon"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 57,
+     "links": [],
+     "placeholders": [],
+     "sha256": "78c2b6f152de33677a910c92fcad0692badc0fc8c330d62617eedf35a30ab1ef"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "armor"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 102,
+     "links": [],
+     "placeholders": [],
+     "sha256": "6ad520246e6882274dc82cb08d985388402efb05b1f11fa538f4deabdc00c890"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "shield"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 73,
+     "links": [],
+     "placeholders": [],
+     "sha256": "372c1af86ebd86088f1dd44d798ada65ad776f4f3704befa2424519b7f6e8a2c"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "spells"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 131,
+     "links": [
+      "conjure",
+      "healing",
+      "level",
+      "runes",
+      "support"
+     ],
+     "placeholders": [],
+     "sha256": "3f71e8dcdbc429e3d2b8e4f2edc3e9bd51abc24246110d5c058e89c7159ff0f2"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "healing"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 133,
+     "links": [
+      "bruise bane",
+      "cure poison",
+      "divine healing",
+      "intense healing",
+      "light healing",
+      "magic patch",
+      "wound cleansing"
+     ],
+     "placeholders": [],
+     "sha256": "a19284ee74606d36e4b3d839855c04854d02772eb12c286aba048bac1d690731"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "support"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 129,
+     "links": [
+      "arrow call",
+      "find fiend",
+      "find person",
+      "great light",
+      "lesser ethereal spear",
+      "lesser front sweep",
+      "light"
+     ],
+     "placeholders": [],
+     "sha256": "4ef884c6b7886c338ca492fd3427106ab8b83f6eba385e22a0112076f65adb2b"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "conjure"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 59,
+     "links": [
+      "conjure arrow",
+      "conjure explosive arrow"
+     ],
+     "placeholders": [],
+     "sha256": "b2de121eb77285fb20c7735e01db1dc404077bd00955f3f7290a9924b7dd5bca"
+    }
+   },
+   {
+    "children": [],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "runes"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 34,
+     "links": [
+      "destroy field"
+     ],
+     "placeholders": [],
+     "sha256": "94bd9a58b567d216048f25b1de7a23947c4395a996a71b3f30f7c611e838491c"
+    }
+   },
+   {
+    "children": [
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "only_focus": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "1"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 157,
+       "links": [
+        "arrow call",
+        "bruise bane",
+        "lesser ethereal spear",
+        "lesser front sweep",
+        "magic patch"
+       ],
+       "placeholders": [],
+       "sha256": "490dbe7300acd9dd10e81118caf286dcdb22cb8e8d9c532e30c633e0c5b9357e"
+      }
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "only_focus": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "8"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 120,
+       "links": [
+        "find person",
+        "light",
+        "light healing",
+        "wound cleansing"
+       ],
+       "placeholders": [],
+       "sha256": "e0b4d348985e714fa343b770c009662d893b88bac0e191316070902172e294b3"
+      }
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "only_focus": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "10"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 47,
+       "links": [
+        "cure poison"
+       ],
+       "placeholders": [],
+       "sha256": "3cf403aa54d16c6155cb78e0a1ee19118b280ed272b24caf0bc7592d537ed39e"
+      }
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "only_focus": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "13"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 80,
+       "links": [
+        "conjure arrow",
+        "great light"
+       ],
+       "placeholders": [],
+       "sha256": "6bca721e32a1fd3de8d23c312a69afd6fea27040e2e6671267878a986ce6655f"
+      }
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "only_focus": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "17"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 54,
+       "links": [
+        "destroy field"
+       ],
+       "placeholders": [],
+       "sha256": "939d86a7849b35b37a0561647028485785201d81dfd0a193e86c755d69eca861"
+      }
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "only_focus": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "20"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 51,
+       "links": [
+        "intense healing"
+       ],
+       "placeholders": [],
+       "sha256": "6b5a42504d4b0e935e6f25296cd09a3010f2eccd65e4105b241b8ac0776420b9"
+      }
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "only_focus": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "25"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 91,
+       "links": [
+        "conjure explosive arrow",
+        "find fiend"
+       ],
+       "placeholders": [],
+       "sha256": "69372ec198106f7ca0661c16f2bd8fe87c91d8721cea62c9d1310a86e6816fe6"
+      }
+     },
+     {
+      "children": [],
+      "effect": "NONE",
+      "flags": {
+       "only_focus": true
+      },
+      "gate": "NONE",
+      "keywords": [
+       "35"
+      ],
+      "kind": "say",
+      "text": {
+       "length": 51,
+       "links": [
+        "divine healing"
+       ],
+       "placeholders": [],
+       "sha256": "8e255fb0b64b612c2cd59ac2dca3e1a87ab906f268e7b36da889cf35684fbdb1"
+      }
+     }
+    ],
+    "effect": "NONE",
+    "flags": {
+     "only_focus": true
+    },
+    "gate": "NONE",
+    "keywords": [
+     "level"
+    ],
+    "kind": "say",
+    "text": {
+     "length": 72,
+     "links": [
+      "1",
+      "10",
+      "13",
+      "17",
+      "20",
+      "25",
+      "35",
+      "8"
+     ],
+     "placeholders": [],
+     "sha256": "fc4b355e6b21406179bded63ccaef58aabf19e8e9daf581a70aa8d331a380fe7"
+    }
+   }
+  ],
+  "messages": {
+   "farewell": {
+    "length": 41,
+    "links": [],
+    "placeholders": [],
+    "sha256": "89febc4d04ad1f8229aea65b546de8f6b39b1d0d360f14358ad02612218f7b69"
+   },
+   "greet": {
+    "length": 98,
+    "links": [],
+    "placeholders": [
+     "|PLAYERNAME|"
+    ],
+    "sha256": "7dd28d05a2682fd18c307491c61ccc736dbe2980ddc6a43dbd53d75f8fa3a5f9"
+   }
+  },
+  "scripted_handlers": []
+ },
+ "evidence": "OTS_HYPOTHESIS_ONLY",
+ "key": "crystal:npc/asrak",
+ "placements": [
+  {
+   "direction": "NORTH",
+   "engine_spawns": true,
+   "placement_file": "data-global/world/world-npc.xml",
+   "position": {
+    "x": 32931,
+    "y": 32075,
+    "z": 11
+   },
+   "spawn_interval_s": 60,
+   "spawn_radius": 1
+  }
+ ],
+ "schema": "OTERYN_NPC_AUTHORING_CANDIDATE/v1",
+ "services": {
+  "blessings": [],
+  "kick": [],
+  "promotion": [],
+  "spells": [
+   {
+    "dialogue_path": "dialogue.keywords[0].children[0]",
+    "gate": "NONE",
+    "keyword": "arrow call",
+    "min_level": 1,
+    "premium": false,
+    "price": 0,
+    "spell_name": "arrow call",
+    "vocations": [
+     3,
+     7
+    ]
+   },
+   {
+    "dialogue_path": "dialogue.keywords[1].children[0]",
+    "gate": "NONE",
+    "keyword": "bruise bane",
+    "min_level": 1,
+    "premium": false,
+    "price": 0,
+    "spell_name": "bruise bane",
+    "vocations": [
+     4,
+     8
+    ]
+   },
+   {
+    "dialogue_path": "dialogue.keywords[2].children[0]",
+    "gate": "NONE",
+    "keyword": "conjure explosive arrow",
+    "min_level": 25,
+    "premium": false,
+    "price": 1000,
+    "spell_name": "conjure explosive arrow",
+    "vocations": [
+     3,
+     7
+    ]
+   },
+   {
+    "dialogue_path": "dialogue.keywords[3].children[0]",
+    "gate": "NONE",
+    "keyword": "conjure arrow",
+    "min_level": 13,
+    "premium": false,
+    "price": 450,
+    "spell_name": "conjure arrow",
+    "vocations": [
+     3,
+     7
+    ]
+   },
+   {
+    "dialogue_path": "dialogue.keywords[4].children[0]",
+    "gate": "NONE",
+    "keyword": "cure poison",
+    "min_level": 10,
+    "premium": false,
+    "price": 150,
+    "spell_name": "cure poison",
+    "vocations": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ]
+   },
+   {
+    "dialogue_path": "dialogue.keywords[5].children[0]",
+    "gate": "NONE",
+    "keyword": "destroy field",
+    "min_level": 17,
+    "premium": false,
+    "price": 700,
+    "spell_name": "destroy field rune",
+    "vocations": [
+     1,
+     2,
+     3,
+     5,
+     6,
+     7,
+     9,
+     10
+    ]
+   },
+   {
+    "dialogue_path": "dialogue.keywords[6].children[0]",
+    "gate": "NONE",
+    "keyword": "divine healing",
+    "min_level": 35,
+    "premium": false,
+    "price": 3000,
+    "spell_name": "divine healing",
+    "vocations": [
+     3,
+     7
+    ]
+   },
+   {
+    "dialogue_path": "dialogue.keywords[7].children[0]",
+    "gate": "NONE",
+    "keyword": "find fiend",
+    "min_level": 25,
+    "premium": false,
+    "price": 1000,
+    "spell_name": "find fiend",
+    "vocations": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ]
+   },
+   {
+    "dialogue_path": "dialogue.keywords[8].children[0]",
+    "gate": "NONE",
+    "keyword": "find person",
+    "min_level": 8,
+    "premium": false,
+    "price": 80,
+    "spell_name": "find person",
+    "vocations": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ]
+   },
+   {
+    "dialogue_path": "dialogue.keywords[9].children[0]",
+    "gate": "NONE",
+    "keyword": "great light",
+    "min_level": 13,
+    "premium": false,
+    "price": 500,
+    "spell_name": "great light",
+    "vocations": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ]
+   },
+   {
+    "dialogue_path": "dialogue.keywords[10].children[0]",
+    "gate": "NONE",
+    "keyword": "intense healing",
+    "min_level": 20,
+    "premium": false,
+    "price": 350,
+    "spell_name": "intense healing",
+    "vocations": [
+     1,
+     2,
+     3,
+     5,
+     6,
+     7,
+     9,
+     10
+    ]
+   },
+   {
+    "dialogue_path": "dialogue.keywords[11].children[0]",
+    "gate": "NONE",
+    "keyword": "lesser ethereal spear",
+    "min_level": 1,
+    "premium": false,
+    "price": 0,
+    "spell_name": "lesser ethereal spear",
+    "vocations": [
+     3,
+     7
+    ]
+   },
+   {
+    "dialogue_path": "dialogue.keywords[12].children[0]",
+    "gate": "NONE",
+    "keyword": "lesser front sweep",
+    "min_level": 1,
+    "premium": false,
+    "price": 0,
+    "spell_name": "lesser front sweep",
+    "vocations": [
+     4,
+     8
+    ]
+   },
+   {
+    "dialogue_path": "dialogue.keywords[13].children[0]",
+    "gate": "NONE",
+    "keyword": "light healing",
+    "min_level": 8,
+    "premium": false,
+    "price": 0,
+    "spell_name": "light healing",
+    "vocations": [
+     1,
+     2,
+     3,
+     5,
+     6,
+     7,
+     9,
+     10
+    ]
+   },
+   {
+    "dialogue_path": "dialogue.keywords[14].children[0]",
+    "gate": "NONE",
+    "keyword": "light",
+    "min_level": 8,
+    "premium": false,
+    "price": 0,
+    "spell_name": "light",
+    "vocations": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ]
+   },
+   {
+    "dialogue_path": "dialogue.keywords[15].children[0]",
+    "gate": "NONE",
+    "keyword": "magic patch",
+    "min_level": 1,
+    "premium": false,
+    "price": 0,
+    "spell_name": "magic patch",
+    "vocations": [
+     1,
+     2,
+     3,
+     5,
+     6,
+     7
+    ]
+   },
+   {
+    "dialogue_path": "dialogue.keywords[16].children[0]",
+    "gate": "NONE",
+    "keyword": "wound cleansing",
+    "min_level": 8,
+    "premium": false,
+    "price": 0,
+    "spell_name": "wound cleansing",
+    "vocations": [
+     4,
+     8
+    ]
+   }
+  ],
+  "trade": null,
+  "travel": []
+ },
+ "source": {
+  "path": "data-global/npc/asrak.lua",
+  "repository": "zimbadev/crystalserver",
+  "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+  "sha256": "c4465146dc27b2b8df92109a41892801be7235b32448e143bc94c8d77dfd82f5"
+ },
+ "status": "RESOLVED",
+ "unresolved": [],
+ "voices": null
+}

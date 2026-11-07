@@ -1,0 +1,23 @@
+{
+  "id": "RANGED0-RL-05",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md",
+  "resource": "chase search radius around the chaser (Chebyshev)",
+  "unit": "tiles",
+  "hard_maximum": 12,
+  "configurable_range": {
+    "minimum": 12,
+    "maximum": 12
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Runtime-only: tiles beyond 12 from the chaser are never read; a target with no goal within the radius fails the search and starts the RANGED0-RL-07 wait. Not a route-length cap (AI01-ROUTE-STEPS stays 128).",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=12: apps/game-server/src/combat/attack/chase.rs a_chase_searches_within_twelve_tiles_and_a_target_beyond_fails_the_search (a goal 12 tiles away is routed)",
+    "max+1=13: the same test fails a target whose goal lies 13 tiles away, and a wall spanning the 12-tile radius leaves no route"
+  ],
+  "consumers": [
+    "apps/game-server/src/movement/path_search.rs CHASE_SEARCH_DISTANCE",
+    "CHASE-1 player chase (combat_attack::chase ChaseState::decide)"
+  ],
+  "notes": "RANGED-0 \u00a78 CHASE-1. Registered by LOOP-COMBAT-MODES-1."
+}

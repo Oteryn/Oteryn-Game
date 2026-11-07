@@ -1,0 +1,10 @@
+{
+  "id": 470,
+  "name": "HIRELING_MANAGEMENT",
+  "owner_decision": "OTV2-20261031-hireling",
+  "capability": 250,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/hireling-management-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/hireling-management-v1.md#reply",
+  "max_payload_bytes": 23,
+  "max_result_payload_bytes": 512
+}

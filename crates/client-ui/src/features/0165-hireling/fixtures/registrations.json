@@ -1,0 +1,33 @@
+[
+  {
+    "mechanic": "0165-hireling",
+    "kind": "handlers",
+    "id": "0165-hireling-command",
+    "status": "supported",
+    "commands": [
+      220
+    ],
+    "direction": "client_to_server",
+    "capability": 165,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "Hireling state is persisted by the server."
+    }
+  },
+  {
+    "mechanic": "0165-hireling",
+    "kind": "keybindings",
+    "id": "0165-hireling-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+SHIFT+H",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0165-hireling",
+    "kind": "panels",
+    "id": "0165-hireling-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  }
+]

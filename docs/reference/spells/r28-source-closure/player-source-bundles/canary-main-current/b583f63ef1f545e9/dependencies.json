@@ -1,0 +1,43 @@
+{
+  "abilities": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/canary-main-current/b583f63ef1f545e9/ability/effect-condition-1",
+          "revision": "source-player-r28"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/b583f63ef1f545e9/ability",
+        "revision": "source-player-r28"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": false,
+      "range_tiles": 0
+    }
+  ],
+  "effects": [
+    {
+      "condition": {
+        "lifetime": "fixed_duration",
+        "light": {
+          "color": 215,
+          "level": 6
+        },
+        "type": "light"
+      },
+      "duration_ms": 370000,
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/b583f63ef1f545e9/ability/effect-condition-1",
+        "revision": "source-player-r28"
+      },
+      "operation": "condition",
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  ],
+  "formulas": []
+}

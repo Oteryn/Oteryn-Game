@@ -1,0 +1,34 @@
+{
+  "spell": {
+    "name": "test rune",
+    "reference_rune_item_id": 3162,
+    "reference_spell_id": 220,
+    "requirements": {
+      "level": 20,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "rune": {
+      "allow_far_use": true,
+      "charges": 25,
+      "magic_level": 5
+    },
+    "source_carrier_symbol": "@spell_rune",
+    "targeting": {
+      "aggressive": false,
+      "needs_target": true
+    }
+  }
+}

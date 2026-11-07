@@ -1,0 +1,23 @@
+{
+  "id": "MAPW-RL-01",
+  "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+  "resource": "Item entries of one MapTileV1 (the cut of a composed tile stack)",
+  "unit": "entries per tile",
+  "hard_maximum": 10,
+  "configurable_range": {
+    "minimum": 10,
+    "maximum": 10
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The bottom entry and the 9 topmost of the composed stack; a stack of more than 10 entries sets more. Each entry is at most 32 bytes, a tile at most 360 bytes in its field.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=10: a 10-entry tile with the largest values encodes within 360 bytes and decodes",
+    "max+1=11: a tile with 11 items fails closed"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/world_map.rs MAX_TILE_ITEMS",
+    "apps/game-server/src/map/view.rs"
+  ],
+  "notes": "MAP-WIRE-1 \u00a72 and \u00a73. Tests: world_map::tests::encoded_sizes_stay_within_the_bounds, world_map::tests::every_malformed_tile_and_snapshot_fails_closed. Registered by OTV2-20261004-map-wire-2."
+}

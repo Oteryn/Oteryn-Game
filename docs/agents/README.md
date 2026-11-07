@@ -1,0 +1,53 @@
+# Oteryn Game agent governance
+
+This directory contains routed procedures and retained coordination evidence for `Oteryn/Oteryn-Game`. The preserved `blakinio/Oteryn-v2` repository is legacy/migration provenance and is read-only by default.
+
+## Procedure catalog
+
+This list is an index, not a mandatory reading bundle. Start with root and nearest instructions, then load only entries whose operation or domain applies.
+
+Shared execution, authority/trust, recovery, checkpoint/handoff and communication semantics come from the bound META policy plus root and nearest `AGENTS.md`. They are intentionally not copied into Game-local procedure files.
+
+- `AGENTS.md` — rules for this directory and task records.
+- `REPOSITORY_MAP.md` — current physical repository layout and source-of-truth boundaries.
+- `CONTEXT_ROUTING.md` — which documents to load for each task class.
+- `BUILD_TEST_MATRIX.md` — validation selection.
+- `ANTI_STALL_AND_EXECUTION_BUDGET.md` — bounded autonomous execution.
+- `AUTONOMOUS_PROGRAM_CONTINUATION.md` — programme/coordinator continuation.
+- `DELIVERY_COMPLETENESS_AND_CLOSEOUT.md` — completion and merge gate.
+- `GITHUB_ONLY_EXECUTION.md` — GitHub/Actions fallback execution.
+- `PROMPTING_STANDARD.md`, `PROMPTING_HANDOVER.md`, `PROMPT_EVAL_STANDARD.md` — prompt quality and handover.
+- `END_TO_END_FEATURE_COMPLETENESS.md` — end-to-end feature acceptance.
+- `CROSS_REPO_CONTRACTS.md` — Oteryn Platform/Otheryn/otclient migration boundaries.
+- `GOVERNANCE_CONTRACT.json`, `PROJECT_LANES.json` — machine-readable policy.
+- `OWNER_FUNDED_AI_POLICY.md` — owner-funded AI usage rules (mandatory per root `AGENTS.md`).
+- `DECISION_INDEX.md` — index of owner decisions by PR; find a decision here first.
+- `JIRA_PROGRAMME_COORDINATION.md` — the programme coordinator's Jira batch rules.
+- `CLOSURE_CONVERGENCE_PROTOCOL.md` — late-stage closure protocol, used only when `CONVERGENCE_MODE` is recorded.
+- `tasks/MECHANICS_STATUS.md` — pointer to the mechanic progress ledger.
+- `.claude/skills/` — current practice skills, loaded on demand (see root `AGENTS.md`).
+
+## Reusable programme prompts
+
+- `prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md` — autonomous coordinator prompt for continuing the staged global architecture decision programme from the canonical foundation checkpoint and global decision register.
+- `prompts/OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md` — independent read-only programme and architecture audit prompt for exact-SHA, phase-aware review of Game direction, active workstreams, evidence, legacy contamination and the next evidence-producing milestone; short invocation: `Oteryn: audyt`.
+
+Reusable prompts are task deltas, not project state. Apply current authority, task checkpoints, ADRs/contracts and live PR/CI state when they are material to the requested operation.
+
+## Task lifecycle
+
+Before writing a mechanic card or starting a mechanic, check [mechanics status on main](tasks/MECHANICS_STATUS.md) and the [archive](tasks/archive/) for existing implementations and completed cards so nothing is reimplemented. Scope the card to the remaining work.
+
+Every mechanic card must declare `type: mechanic` and contain a `## Reference parity` section with the table `Behaviour | Reference value/source (Tibia wiki, TibiaData, Canary/Crystal path) | Oteryn | Test`. Each behaviour row must cite its reference and be backed by a table-driven test; use the [task template](tasks/TASK_TEMPLATE.md). The progress ledger is the file `tasks/MECHANICS_STATUS.md` points to (the Crystal re-audit, `docs/architecture/reviews/OTERYN_GAME_CRYSTAL_REAUDIT_2026-10-28.md`). Mechanic PRs do not edit the ledger; one docs PR per wave updates its rows with file:line evidence. The governance validator requires the parity heading on `type: mechanic` cards with `status: DONE` or lifecycle `status: completed`, and checks the index's local file links.
+
+Substantial work uses:
+
+- `tasks/active/OTV2-YYYYMMDD-short-slug.md` while active;
+- `tasks/archive/` after terminal completion; a task that ends with one PR moves its record there in that PR's final authoring commit (see `tasks/archive/README.md`);
+- `tasks/TASK_TEMPLATE.md` as the required template.
+
+Do not use chat history as project state. A replacement agent must be able to continue from Git, the task checkpoint and live PR/CI state.
+
+## Bootstrap note
+
+The repository contains active implementation. Plans remain non-authoritative for physical paths; inspect the exact tree and live lifecycle state before selecting commands or claiming implementation status.

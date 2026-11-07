@@ -1,0 +1,23 @@
+{
+  "id": "MOVE-RL-10",
+  "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+  "resource": "Results returned by one visibility query",
+  "unit": "results per query",
+  "hard_maximum": 256,
+  "configurable_range": {
+    "minimum": 256,
+    "maximum": 256
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The query returns the nearest 256 in canonical order and never allocates beyond it; the own actor is always one of them.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=256: 256 visible entities are all returned",
+    "max+1=257: the farthest visible entity in canonical order is excluded"
+  ],
+  "consumers": [
+    "movement::interest::InterestIndex::query_with",
+    "movement::interest::VISIBILITY_QUERY_RESULTS_MAX"
+  ],
+  "notes": "Equals the future MOVE-RL-11 value (D87). Decision section 4.4; #162 comment 5875958040. Wire consumer: VIS-2 WORLD_SPATIAL type 2 (capability 6)."
+}

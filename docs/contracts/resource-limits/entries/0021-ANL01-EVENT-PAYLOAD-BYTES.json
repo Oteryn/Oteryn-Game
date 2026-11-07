@@ -1,0 +1,19 @@
+{
+  "id": "ANL01-EVENT-PAYLOAD-BYTES",
+  "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+  "resource": "EventEnvelope.payload registered protobuf bytes",
+  "unit": "bytes",
+  "hard_maximum": 196608,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 196608
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject payload length before family-specific decode or copy; total envelope limit also applies.",
+  "client_visible": false,
+  "boundary_tests": [
+    "196,608-byte payload accepted if total envelope remains within bound",
+    "196,609 rejected",
+    "payload cannot bypass total envelope bound"
+  ]
+}

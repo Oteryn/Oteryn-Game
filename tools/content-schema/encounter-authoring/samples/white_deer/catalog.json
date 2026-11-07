@@ -1,0 +1,24 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/white_deer",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/enraged_white_deer",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/desperate_white_deer",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/elf_scout",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

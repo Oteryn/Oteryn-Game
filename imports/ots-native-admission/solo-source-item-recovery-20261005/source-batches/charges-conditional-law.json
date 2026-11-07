@@ -1,0 +1,60 @@
+{
+  "schema": "OWN_CHARGES_LEVELDOOR_CONDITIONAL_PARSER_CLOSURE/v2",
+  "files": [
+    {
+      "cut": "canary-47df",
+      "path": "/dev/shm/oteryn-source-charges-leveldoor-extension/cpp-closure/canary-47df/pugicast.cpp",
+      "sha256": "934e4c55fc808a2aa297106bbbfef619f3514ab3782812376c507d8e197dca0f"
+    },
+    {
+      "cut": "canary-47df",
+      "path": "/dev/shm/oteryn-source-charges-leveldoor-extension/cpp-closure/canary-47df/pugicast.hpp",
+      "sha256": "f474ef00522c557903e0de18ed3136c06df5d90501809a9bf651caa257881f8c"
+    },
+    {
+      "cut": "canary-47df",
+      "path": "/dev/shm/oteryn-source-charges-leveldoor-extension/cpp-closure/canary-47df/weapons.cpp",
+      "sha256": "faf0b2da524fd64d7c968a25a6c7a4964fe5f5206550ce810dba7b18f361c4ab"
+    },
+    {
+      "cut": "crystal-ff7",
+      "path": "/dev/shm/oteryn-source-charges-leveldoor-extension/cpp-closure/crystal-ff7/pugicast.cpp",
+      "sha256": "6637b3d4238c8ba757f8df909b651c47f858c5cd5cfd2be5119c0458f50362de"
+    },
+    {
+      "cut": "crystal-ff7",
+      "path": "/dev/shm/oteryn-source-charges-leveldoor-extension/cpp-closure/crystal-ff7/pugicast.hpp",
+      "sha256": "6394ad75753a32fd5bac2cf6a50fb6a097ecd736a0bb690695ae13f8abe1da17"
+    },
+    {
+      "cut": "crystal-ff7",
+      "path": "/dev/shm/oteryn-source-charges-leveldoor-extension/cpp-closure/crystal-ff7/weapons.cpp",
+      "sha256": "b4b5dae27ffad1f0699a483aeb50799b42162ca3cab90b7c081a3b28884463cb"
+    },
+    {
+      "cut": "crystal-00ce",
+      "path": "/dev/shm/oteryn-source-charges-leveldoor-extension/cpp-closure/crystal-00ce/pugicast.cpp",
+      "sha256": "6637b3d4238c8ba757f8df909b651c47f858c5cd5cfd2be5119c0458f50362de"
+    },
+    {
+      "cut": "crystal-00ce",
+      "path": "/dev/shm/oteryn-source-charges-leveldoor-extension/cpp-closure/crystal-00ce/pugicast.hpp",
+      "sha256": "6394ad75753a32fd5bac2cf6a50fb6a097ecd736a0bb690695ae13f8abe1da17"
+    },
+    {
+      "cut": "crystal-00ce",
+      "path": "/dev/shm/oteryn-source-charges-leveldoor-extension/cpp-closure/crystal-00ce/weapons.cpp",
+      "sha256": "eacb2b64a7f1acfefb2ac6e233d3bb7814fa876af6f6b218cd2c9a1cb3d4bc1b"
+    }
+  ],
+  "original_law_sha256": "9c8cb3e70dfd9d166a1e1bd93917f730f72124a6934fca52e79c1ffe40daa69b",
+  "conditional_normal_return": true,
+  "actual_cpp_execution": "UNKNOWN",
+  "logger": "Own pugi::logError only invokes logger.error; fallback T{} qualified conditional on normal return.",
+  "integral_parser": "Canary std::from_chars and Crystal detail::fromChars integral branch std::from_chars; full consumption and uint32 range else T{} on normal return.",
+  "loader": "Every direct node having key and value; recognized dispatch lowercases ASCII; tag name and nested children do not prohibit charges/levelDoor assignment.",
+  "callback_scope": "registerLuaEvent registers/stores events, does not invoke them. configureWeapon takes const ItemType; Lua charges writers are later-phase and remain runtime Unknown.",
+  "raw_xml_contract": "Reuses exact qualified Flags lexical tree/attribute decoder. Raw attribute lexemes preserved, XML member/record SHA and tuple/prototype joins mandatory.",
+  "all_unrelated_callbacks_closed": "NOT_REQUIRED_FOR_CONDITIONAL_ASSIGNMENT_OBSERVATIONS",
+  "original_scan_sha256": "3b8401b42f0fc5d5f7bc30aa803157507f71748d69a006fe0c64ba5c6462ad58"
+}

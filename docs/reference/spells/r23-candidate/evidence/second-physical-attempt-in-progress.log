@@ -1,0 +1,61 @@
+S3B_EVIDENCE pins platform=5d4883acf7079e26fd51e03f460166730de1ada0 topology=wp5-s3b-v2 game=ce3c8712cb089ac486ac14102bb7fad7ede9c355
+S3B_EVIDENCE spell_input=full_manifest manifest_sha256=f3f1fac9cb6dd473824938c4c7a24f8de01e86e3160403a78bf3c5e7a653d2d6
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 1 warning
+warning: `tokio` (lib) generated 1 warning (1 duplicate)
+   Compiling oteryn-game-server v0.1.0 (/workspace/spell-pr-publication/worktree/apps/game-server)
+warning: unused import: `QualifiedSourceStepTile`
+   --> apps/game-server/src/content/mod.rs:111:26
+    |
+111 | pub(crate) use project::{QualifiedSourceStepTile, SourceFloorChange};
+    |                          ^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `PreparedFamiliarDefense`
+    --> apps/game-server/src/foundation/mod.rs:1497:29
+     |
+1497 |     FamiliarDefenseReceipt, PreparedFamiliarDefense,
+     |                             ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `PartyCommand` and `PartyReceipt`
+    --> apps/game-server/src/foundation/mod.rs:1500:18
+     |
+1500 |     PartyAction, PartyCommand, PartyMemberSnapshot, PartyPresence, PartyReceipt, PartySnapshot,
+     |                  ^^^^^^^^^^^^                                      ^^^^^^^^^^^^
+
+warning: unused import: `FamiliarOwnerEvent`
+  --> apps/game-server/src/gameplay_transport/actor_spell.rs:14:75
+   |
+14 | pub(in crate::gameplay_transport) use familiar_cast::{FamiliarLogoutSave, FamiliarOwnerEvent};
+   |                                                                           ^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `pacing_available` and `step_in_channel`
+  --> apps/game-server/src/gameplay_transport/actor_spell.rs:39:48
+   |
+39 | pub(crate) use actor_movement::{StepInChannel, pacing_available, step_in_channel};
+   |                                                ^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^
+
+warning: unused imports: `CandidateCooldownPublisher` and `CooldownRead`
+   --> apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs:541:28
+    |
+541 | pub(crate) use cooldowns::{CandidateCooldownPublisher, CooldownRead};
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^
+
+warning: unused import: `SourcePartyWorld`
+    --> apps/game-server/src/gameplay_transport/mod.rs:3463:36
+     |
+3463 | pub(crate) use party_spell_owner::{SourcePartyWorld, read_source_party_world_in_transaction};
+     |                                    ^^^^^^^^^^^^^^^^
+

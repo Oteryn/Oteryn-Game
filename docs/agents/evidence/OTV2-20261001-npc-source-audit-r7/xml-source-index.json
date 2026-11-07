@@ -1,0 +1,22 @@
+[
+  {
+    "source": "canary",
+    "repository": "opentibiabr/canary",
+    "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "path": "data/items/items.xml",
+    "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml",
+    "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+    "blob_sha1": "a3f0a44db14bf020029e4e09a319cbda320bd799",
+    "local_capture": "canary-items.xml"
+  },
+  {
+    "source": "crystal",
+    "repository": "zimbadev/crystalserver",
+    "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "path": "data/items/items.xml",
+    "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/items/items.xml",
+    "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+    "blob_sha1": "5530bb76d896d31fb75d6cad23969e1cc463b1c5",
+    "local_capture": "crystal-items.xml"
+  }
+]

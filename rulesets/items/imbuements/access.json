@@ -1,0 +1,5565 @@
+{
+  "as_of": "2026-10-01",
+  "by_name": {
+    "Bash": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Bash"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_enraged_thorn_knight"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Bash"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Blockade": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Blockade"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_melting_frozen_horror"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Blockade"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Chop": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Chop"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_enraged_thorn_knight"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Chop"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Cloud Fabric": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Cloud Fabric"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_lloyd"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Cloud Fabric"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Demon Presence": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Demon Presence"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_time_guardian"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Demon Presence"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Dragon Hide": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Dragon Hide"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_soul_of_dragonking_zyrtarch"
+          },
+          {
+            "predicate_ref": "heart_of_destruction"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Dragon Hide"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Electrify": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Electrify"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_lloyd"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Electrify"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Epiphany": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Epiphany"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_last_lore_keeper"
+          },
+          {
+            "predicate_ref": "heart_of_destruction"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Epiphany"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Featherweight": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Featherweight"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "dangerous_depths"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Featherweight"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Frost": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Frost"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_melting_frozen_horror"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Frost"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Lich Shroud": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Lich Shroud"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_lady_tenebris"
+          },
+          {
+            "predicate_ref": "heart_of_destruction"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Lich Shroud"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Precision": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Precision"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_time_guardian"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Precision"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Punch": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Punch"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_lloyd"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Punch"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Quara Scale": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Quara Scale"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_melting_frozen_horror"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Quara Scale"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Reap": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Reap"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_lady_tenebris"
+          },
+          {
+            "predicate_ref": "heart_of_destruction"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Reap"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Scorch": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Scorch"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_soul_of_dragonking_zyrtarch"
+          },
+          {
+            "predicate_ref": "heart_of_destruction"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Scorch"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Slash": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Slash"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_enraged_thorn_knight"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Slash"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Snake Skin": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Snake Skin"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_enraged_thorn_knight"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Snake Skin"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Strike": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Strike"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_last_lore_keeper"
+          },
+          {
+            "predicate_ref": "heart_of_destruction"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Strike"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Swiftness": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Swiftness"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_lloyd"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Swiftness"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Vampirism": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Vampirism"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_lady_tenebris"
+          },
+          {
+            "predicate_ref": "heart_of_destruction"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Vampirism"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Venom": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Venom"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_the_enraged_thorn_knight"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Venom"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Vibrancy": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Vibrancy"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "dream_courts"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Vibrancy"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    },
+    "Void": {
+      "direct_shrine": {
+        "basic": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Void"
+            },
+            {
+              "predicate_ref": "compatible_item"
+            },
+            {
+              "predicate_ref": "unequipped_shrine_target"
+            }
+          ]
+        }
+      },
+      "powerful_unlock": {
+        "any_of": [
+          {
+            "predicate_ref": "forgotten_soul_of_dragonking_zyrtarch"
+          },
+          {
+            "predicate_ref": "heart_of_destruction"
+          }
+        ]
+      },
+      "scroll_apply": {
+        "all_of": [
+          {
+            "type": "matching_imbuement_scroll_owned"
+          },
+          {
+            "predicate_ref": "compatible_item"
+          }
+        ],
+        "basic_support": "Accepted client 15.30 includes Basic scrolls and the official Echo Wardens announcement describes them as similar to higher-tier scrolls. Applying their Premium/quest exemptions is a source-backed inference, not an explicit Basic-specific sentence in the manual.",
+        "current_behavior_profile": {
+          "catalogue": "current-behavior-answers.json",
+          "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+          "question_ids": [
+            "scroll_consumption",
+            "scroll_application_equipped_target"
+          ]
+        },
+        "equipped_target_permission": {
+          "engine_profile": "current-behavior-answers.json#scroll_application_equipped_target",
+          "evidence_status": "GLOBAL_PUBLIC_UNCONFIRMED",
+          "notes": "No shrine-only unequipped requirement is inherited; absence is not proof of equipped permission.",
+          "value": null
+        },
+        "evidence_strength_by_tier": {
+          "basic": "DERIVED_FROM_PRIMARY_AND_CLIENT",
+          "intricate": "PRIMARY_OFFICIAL",
+          "powerful": "PRIMARY_OFFICIAL"
+        },
+        "exempt_from": [
+          "premium",
+          "shrine_access",
+          "powerful_unlock"
+        ],
+        "source_refs": [
+          "official_manual",
+          "official_echo_wardens",
+          "tibiopedia_completed_scroll_loot",
+          "echo_wardens_dated_mirror",
+          "official_echo_raids_live_release"
+        ],
+        "tiers": [
+          "basic",
+          "intricate",
+          "powerful"
+        ]
+      },
+      "scroll_inscription": {
+        "basic": {
+          "allowed": false,
+          "evidence_status": "NO_SOURCE_AUTHORIZED_INSCRIPTION_ROUTE",
+          "reason": "This authoring packet does not authorize Basic scroll inscription: the official manual names Intricate and Powerful inscription, while Basic is evidenced as loot. This is a conservative source-evidence decision, not an independently observed server rejection."
+        },
+        "intricate": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "intricate",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        },
+        "powerful": {
+          "all_of": [
+            {
+              "predicate_ref": "shrine_access"
+            },
+            {
+              "predicate_ref": "premium"
+            },
+            {
+              "unlock_ref": "Void"
+            },
+            {
+              "type": "blank_imbuement_scroll_owned"
+            },
+            {
+              "tier": "powerful",
+              "type": "imbuement_gold_and_materials_available"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "captured_on": "2026-10-01",
+  "counts": {
+    "direct_shrine_tier_routes": 72,
+    "imbuement_families": 24,
+    "powerful_alternative_families": 8,
+    "scroll_apply_tier_routes": 72,
+    "scroll_inscription_tier_routes": 48
+  },
+  "integration_gaps": [
+    {
+      "affected": "World/character events, boss completion, room shrine activation, NPC reward claims and Lava Pump destruction.",
+      "canonical_index": "content/quests/definitions/index.json",
+      "kind": "CANONICAL_QUEST_STATE_BINDING_UNAVAILABLE",
+      "reported_index_status": "READY_UNPOPULATED",
+      "required_work": "Bind typed source predicates to accepted Game quest/event state when runtime quest definitions exist; client quest-line source_id is only a provenance locator.",
+      "source_definition_status": "COMPLETE"
+    }
+  ],
+  "material_acquisition": {
+    "yana_gold_token_exchange": {
+      "bundle_semantics": "Each selected tier supplies the full cumulative creature-product recipe for that tier. Tokens acquire materials; shrine gold payment and imbuing are separate subsequent operations.",
+      "exchange_imbues_item": false,
+      "exchange_pays_shrine_fee": false,
+      "inventory_delivery_note": "The BR reference warns that insufficient carrying capacity or backpack space can place received materials on the ground; this is a delivery behavior, not a Powerful unlock prerequisite.",
+      "location_source_name": "Adventurers' Guild",
+      "npc_source_name": "Yana",
+      "recipe_binding_catalogue": "imbuement-bindings.json",
+      "recipes": [
+        {
+          "dialogue_keywords": [
+            "hi",
+            "trade",
+            "strike",
+            "basic",
+            "yes"
+          ],
+          "family_name": "Strike",
+          "inputs": [
+            {
+              "count": 2,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22721",
+                "revision": "definition-r1"
+              },
+              "source_name": "Gold Token"
+            }
+          ],
+          "outputs": [
+            {
+              "count": 20,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11444",
+                "revision": "definition-r1"
+              },
+              "source_name": "Protective Charm"
+            }
+          ],
+          "source_refs": [
+            "tibiopedia_yana",
+            "tibiopedia_gold_token",
+            "br_imbuements"
+          ],
+          "tier": "basic"
+        },
+        {
+          "dialogue_keywords": [
+            "hi",
+            "trade",
+            "strike",
+            "intricate",
+            "yes"
+          ],
+          "family_name": "Strike",
+          "inputs": [
+            {
+              "count": 4,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22721",
+                "revision": "definition-r1"
+              },
+              "source_name": "Gold Token"
+            }
+          ],
+          "outputs": [
+            {
+              "count": 20,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11444",
+                "revision": "definition-r1"
+              },
+              "source_name": "Protective Charm"
+            },
+            {
+              "count": 25,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10311",
+                "revision": "definition-r1"
+              },
+              "source_name": "Sabretooth (Item)"
+            }
+          ],
+          "source_refs": [
+            "tibiopedia_yana",
+            "tibiopedia_gold_token",
+            "br_imbuements"
+          ],
+          "tier": "intricate"
+        },
+        {
+          "dialogue_keywords": [
+            "hi",
+            "trade",
+            "strike",
+            "powerful",
+            "yes"
+          ],
+          "family_name": "Strike",
+          "inputs": [
+            {
+              "count": 6,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22721",
+                "revision": "definition-r1"
+              },
+              "source_name": "Gold Token"
+            }
+          ],
+          "outputs": [
+            {
+              "count": 20,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11444",
+                "revision": "definition-r1"
+              },
+              "source_name": "Protective Charm"
+            },
+            {
+              "count": 25,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10311",
+                "revision": "definition-r1"
+              },
+              "source_name": "Sabretooth (Item)"
+            },
+            {
+              "count": 5,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22728",
+                "revision": "definition-r1"
+              },
+              "source_name": "Vexclaw Talon"
+            }
+          ],
+          "source_refs": [
+            "tibiopedia_yana",
+            "tibiopedia_gold_token",
+            "br_imbuements"
+          ],
+          "tier": "powerful"
+        },
+        {
+          "dialogue_keywords": [
+            "hi",
+            "trade",
+            "vampirism",
+            "basic",
+            "yes"
+          ],
+          "family_name": "Vampirism",
+          "inputs": [
+            {
+              "count": 2,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22721",
+                "revision": "definition-r1"
+              },
+              "source_name": "Gold Token"
+            }
+          ],
+          "outputs": [
+            {
+              "count": 25,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9685",
+                "revision": "definition-r1"
+              },
+              "source_name": "Vampire Teeth"
+            }
+          ],
+          "source_refs": [
+            "tibiopedia_yana",
+            "tibiopedia_gold_token",
+            "br_imbuements"
+          ],
+          "tier": "basic"
+        },
+        {
+          "dialogue_keywords": [
+            "hi",
+            "trade",
+            "vampirism",
+            "intricate",
+            "yes"
+          ],
+          "family_name": "Vampirism",
+          "inputs": [
+            {
+              "count": 4,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22721",
+                "revision": "definition-r1"
+              },
+              "source_name": "Gold Token"
+            }
+          ],
+          "outputs": [
+            {
+              "count": 25,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9685",
+                "revision": "definition-r1"
+              },
+              "source_name": "Vampire Teeth"
+            },
+            {
+              "count": 15,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9633",
+                "revision": "definition-r1"
+              },
+              "source_name": "Bloody Pincers"
+            }
+          ],
+          "source_refs": [
+            "tibiopedia_yana",
+            "tibiopedia_gold_token",
+            "br_imbuements"
+          ],
+          "tier": "intricate"
+        },
+        {
+          "dialogue_keywords": [
+            "hi",
+            "trade",
+            "vampirism",
+            "powerful",
+            "yes"
+          ],
+          "family_name": "Vampirism",
+          "inputs": [
+            {
+              "count": 6,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22721",
+                "revision": "definition-r1"
+              },
+              "source_name": "Gold Token"
+            }
+          ],
+          "outputs": [
+            {
+              "count": 25,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9685",
+                "revision": "definition-r1"
+              },
+              "source_name": "Vampire Teeth"
+            },
+            {
+              "count": 15,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9633",
+                "revision": "definition-r1"
+              },
+              "source_name": "Bloody Pincers"
+            },
+            {
+              "count": 5,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9663",
+                "revision": "definition-r1"
+              },
+              "source_name": "Piece of Dead Brain"
+            }
+          ],
+          "source_refs": [
+            "tibiopedia_yana",
+            "tibiopedia_gold_token",
+            "br_imbuements"
+          ],
+          "tier": "powerful"
+        },
+        {
+          "dialogue_keywords": [
+            "hi",
+            "trade",
+            "void",
+            "basic",
+            "yes"
+          ],
+          "family_name": "Void",
+          "inputs": [
+            {
+              "count": 2,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22721",
+                "revision": "definition-r1"
+              },
+              "source_name": "Gold Token"
+            }
+          ],
+          "outputs": [
+            {
+              "count": 25,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11492",
+                "revision": "definition-r1"
+              },
+              "source_name": "Rope Belt"
+            }
+          ],
+          "source_refs": [
+            "tibiopedia_yana",
+            "tibiopedia_gold_token",
+            "br_imbuements"
+          ],
+          "tier": "basic"
+        },
+        {
+          "dialogue_keywords": [
+            "hi",
+            "trade",
+            "void",
+            "intricate",
+            "yes"
+          ],
+          "family_name": "Void",
+          "inputs": [
+            {
+              "count": 4,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22721",
+                "revision": "definition-r1"
+              },
+              "source_name": "Gold Token"
+            }
+          ],
+          "outputs": [
+            {
+              "count": 25,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11492",
+                "revision": "definition-r1"
+              },
+              "source_name": "Rope Belt"
+            },
+            {
+              "count": 25,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i20200",
+                "revision": "definition-r1"
+              },
+              "source_name": "Silencer Claws"
+            }
+          ],
+          "source_refs": [
+            "tibiopedia_yana",
+            "tibiopedia_gold_token",
+            "br_imbuements"
+          ],
+          "tier": "intricate"
+        },
+        {
+          "dialogue_keywords": [
+            "hi",
+            "trade",
+            "void",
+            "powerful",
+            "yes"
+          ],
+          "family_name": "Void",
+          "inputs": [
+            {
+              "count": 6,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22721",
+                "revision": "definition-r1"
+              },
+              "source_name": "Gold Token"
+            }
+          ],
+          "outputs": [
+            {
+              "count": 25,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i11492",
+                "revision": "definition-r1"
+              },
+              "source_name": "Rope Belt"
+            },
+            {
+              "count": 25,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i20200",
+                "revision": "definition-r1"
+              },
+              "source_name": "Silencer Claws"
+            },
+            {
+              "count": 5,
+              "item_ref": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22730",
+                "revision": "definition-r1"
+              },
+              "source_name": "Some Grimeleech Wings"
+            }
+          ],
+          "source_refs": [
+            "tibiopedia_yana",
+            "tibiopedia_gold_token",
+            "br_imbuements"
+          ],
+          "tier": "powerful"
+        }
+      ],
+      "route_kind": "NPC_MATERIAL_BUNDLE_EXCHANGE",
+      "source_refs": [
+        "tibiopedia_yana",
+        "br_imbuements"
+      ],
+      "supported_families": [
+        "Strike",
+        "Vampirism",
+        "Void"
+      ]
+    }
+  },
+  "notes": [
+    "All 24 Powerful unlock definitions are populated from quest-specific Global reference pages. The summary Imbuements page omits several post-boss reward actions; these are included here.",
+    "A Premium or quest requirement applies to shrine crafting/scroll inscription, not wearing an already imbued item or applying a valid scroll.",
+    "No entire quest completion is required for a Forgotten Knowledge branch unlock. Boss defeat and the correct branch shrine activation are required; the ice branch additionally reports to A Dragon Mother and enters the opened shrine area. All previous portals are access prerequisites for the final Lore Keeper boss; they are not duplicated as separate imprint gates.",
+    "The world temple construction consists of an earlier collective quest event. The character contributes five Heavy Old Tomes once; world contribution quantities are not charged per imbue.",
+    "These records are authoring facts, not a runtime quest implementation or an assertion that source client quest-line IDs are canonical Game quest identities.",
+    "The accepted source manifest identifies client version 15.30 but contains no dated snapshot field; this packet does not infer a client capture date from version or file metadata. External access sources were retrieved on captured_on. Current behavior targets October1,2026 independently of the unavailable client capture date.",
+    "Completed Intricate/Powerful monster loot is resolved as empty in all 48 separately inspected Tibiopedia item records. This does not infer absence from the manual, blank-scroll drops or Basic Echo Warden drops, and does not claim official universal server proof.",
+    "All 72 direct-shrine and completed-scroll tier routes share compatible_item, including the revision-qualified five-elemental-conversion group exclusion. This is independent of the same-family duplicate restriction and does not promote general architectural categories to Global exclusion rules.",
+    "All72 direct-shrine and72 completed-scroll family/tier routes additionally require requested numeric tier1..3 not exceeding the selected item allowed_types family cap in imbuement-eligibility.json. This source-qualified limit is independent of shrine/quest/Premium exemptions and is not full Global server certification.",
+    "Current behavior questions have concrete pinned Canary/Crystal answers in current-behavior-answers.json. Their source qualifications remain separate from the selected Global account/quest semantics in this access packet."
+  ],
+  "predicate_definitions": {
+    "compatible_item": {
+      "all_of": [
+        {
+          "type": "item_has_empty_imbuement_slot"
+        },
+        {
+          "type": "item_accepts_imbuement_family"
+        },
+        {
+          "comparison": "requested_tier <= selected_item_family_max_tier",
+          "eligibility_profile": "imbuement-eligibility.json#items",
+          "item_match_field": "item_ref.key",
+          "max_tier_path": "items[].allowed_types[requested_family_key]",
+          "missing_or_invalid_limit": "DO_NOT_GRANT_FROM_THIS_EVIDENCE",
+          "requested_family_key_normalization": "Definition name lowercased with spaces replaced by underscores.",
+          "requested_tier_domain": [
+            1,
+            2,
+            3
+          ],
+          "scope": "The requested family must have a selected item limit of integer1..3, and the requested numeric tier must be integer1..3 within that family limit. Preserve the selected item evidence_status, target_time_status and amendment qualifications; unknown eligibility is not proof of a Global prohibition.",
+          "source_refs": [
+            "item_eligibility_catalogue"
+          ],
+          "tier_name_to_number": {
+            "basic": 1,
+            "intricate": 2,
+            "powerful": 3
+          },
+          "type": "item_accepts_requested_imbuement_tier"
+        },
+        {
+          "type": "item_has_no_duplicate_imbuement_family"
+        },
+        {
+          "conflicting_existing_families": [
+            "Scorch",
+            "Venom",
+            "Frost",
+            "Electrify",
+            "Reap"
+          ],
+          "rule_profile": "global-rules-evidence.json#shared_category_compatibility",
+          "scope": "Only when the selected imbuement is one of the five elemental damage conversions; it requires absence of any other conversion on the same item. Distinct skill, resistance and utility families do not inherit broad category exclusion.",
+          "selected_family_scope": [
+            "Scorch",
+            "Venom",
+            "Frost",
+            "Electrify",
+            "Reap"
+          ],
+          "source_refs": [
+            "fandom_imbuing_revision_1194750"
+          ],
+          "type": "item_has_no_conflicting_elemental_conversion"
+        }
+      ],
+      "source_refs": [
+        "official_tradeable_imbuements",
+        "br_imbuements",
+        "fandom_imbuing_revision_1194750",
+        "item_eligibility_catalogue"
+      ]
+    },
+    "dangerous_depths": {
+      "all_of": [
+        {
+          "boss_source_name": "The Baron from Below",
+          "quest_source_name": "Dangerous Depths",
+          "source_refs": [
+            "br_dangerous_depths",
+            "tibiopedia_dangerous_depths"
+          ],
+          "type": "quest_boss_defeated",
+          "warzone": 4
+        },
+        {
+          "boss_source_name": "The Baron from Below",
+          "interaction_source_action": "use post-boss pump; BR describes destroying it",
+          "object_source_name": "Lava Pump",
+          "quest_source_name": "Dangerous Depths",
+          "source_refs": [
+            "br_dangerous_depths",
+            "tibiopedia_dangerous_depths"
+          ],
+          "type": "quest_object_destroyed_after_boss",
+          "warzone": 4
+        },
+        {
+          "boss_source_name": "The Count of the Core",
+          "quest_source_name": "Dangerous Depths",
+          "source_refs": [
+            "br_dangerous_depths",
+            "tibiopedia_dangerous_depths"
+          ],
+          "type": "quest_boss_defeated",
+          "warzone": 5
+        },
+        {
+          "boss_source_name": "The Count of the Core",
+          "interaction_source_action": "use post-boss pump; BR describes destroying it",
+          "object_source_name": "Lava Pump",
+          "quest_source_name": "Dangerous Depths",
+          "source_refs": [
+            "br_dangerous_depths",
+            "tibiopedia_dangerous_depths"
+          ],
+          "type": "quest_object_destroyed_after_boss",
+          "warzone": 5
+        },
+        {
+          "boss_source_name": "The Duke of the Depths",
+          "quest_source_name": "Dangerous Depths",
+          "source_refs": [
+            "br_dangerous_depths",
+            "tibiopedia_dangerous_depths"
+          ],
+          "type": "quest_boss_defeated",
+          "warzone": 6
+        },
+        {
+          "boss_source_name": "The Duke of the Depths",
+          "interaction_source_action": "use post-boss pump; BR describes destroying it",
+          "object_source_name": "Lava Pump",
+          "quest_source_name": "Dangerous Depths",
+          "source_refs": [
+            "br_dangerous_depths",
+            "tibiopedia_dangerous_depths"
+          ],
+          "type": "quest_object_destroyed_after_boss",
+          "warzone": 6
+        }
+      ],
+      "quest_line_source_locator": {
+        "name": "Dangerous Depths",
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID",
+        "source_id": 136,
+        "source_index": 71,
+        "staticdata_sha256": "6af0b9fc9520179bb3ed44bad99709353680086efd75deea5cf5c0c815c05dde"
+      },
+      "source_qualification": "BR supports destruction; the native guide independently supports using each post-boss pump. Native corroboration is not represented as an independent destruction statement."
+    },
+    "dream_courts": {
+      "all_of": [
+        {
+          "boss_source_name": "The Nightmare Beast",
+          "quest_source_name": "The Dream Courts",
+          "source_refs": [
+            "br_dream_courts",
+            "tibiopedia_dream_courts"
+          ],
+          "type": "quest_boss_defeated"
+        },
+        {
+          "any_of": [
+            {
+              "dialogue_keywords": [
+                "hi",
+                "talk",
+                "task"
+              ],
+              "npc_source_name": "Vanys",
+              "quest_source_name": "The Dream Courts",
+              "source_refs": [
+                "br_dream_courts",
+                "tibiopedia_dream_courts"
+              ],
+              "task_source_name": "The Nightmare Beast",
+              "type": "npc_task_reward_reported"
+            },
+            {
+              "dialogue_keywords": [
+                "hi",
+                "talk",
+                "task"
+              ],
+              "npc_source_name": "Undal",
+              "quest_source_name": "The Dream Courts",
+              "source_refs": [
+                "br_dream_courts",
+                "tibiopedia_dream_courts"
+              ],
+              "task_source_name": "The Nightmare Beast",
+              "type": "npc_task_reward_reported"
+            }
+          ]
+        }
+      ],
+      "quest_line_source_locator": {
+        "name": "The Dream Courts",
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID",
+        "source_id": 142,
+        "source_index": 74,
+        "staticdata_sha256": "ce63974efc1fb6bc83446a8ea22e4f950ed9596f4b2584463e9b82d93abee1d4"
+      }
+    },
+    "forgotten_lady_tenebris": {
+      "all_of": [
+        {
+          "boss_source_name": "Lady Tenebris",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "type": "quest_boss_defeated"
+        },
+        {
+          "boss_source_name": "Lady Tenebris",
+          "location_source_name": "Lady Tenebris reward room",
+          "object_source_name": "Abandoned Imbuing Shrine",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "type": "quest_object_used_after_boss"
+        }
+      ],
+      "quest_line_source_locator": {
+        "name": "Forgotten Knowledge",
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID",
+        "source_id": 125,
+        "source_index": 67,
+        "staticdata_sha256": "fc81a3bbf9cf168485c5938747d7f8300ed73a8fa960017e0f8a6f0f9d9df775"
+      }
+    },
+    "forgotten_lloyd": {
+      "all_of": [
+        {
+          "boss_source_name": "Lloyd",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "type": "quest_boss_defeated"
+        },
+        {
+          "boss_source_name": "Lloyd",
+          "location_source_name": "Lloyd reward room",
+          "object_source_name": "Abandoned Imbuing Shrine",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "type": "quest_object_used_after_boss"
+        }
+      ],
+      "quest_line_source_locator": {
+        "name": "Forgotten Knowledge",
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID",
+        "source_id": 125,
+        "source_index": 67,
+        "staticdata_sha256": "fc81a3bbf9cf168485c5938747d7f8300ed73a8fa960017e0f8a6f0f9d9df775"
+      }
+    },
+    "forgotten_melting_frozen_horror": {
+      "all_of": [
+        {
+          "boss_source_name": "Melting Frozen Horror",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "type": "quest_boss_defeated"
+        },
+        {
+          "dialogue_keywords": [
+            "hi"
+          ],
+          "npc_source_name": "A Dragon Mother",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "task_source_name": "Dragon in Distress",
+          "type": "npc_task_reward_reported"
+        },
+        {
+          "npc_source_name": "A Dragon Mother",
+          "object_source_name": "Ice wall beyond portal at 32247,31030,12",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_action": "NPC melts ice wall",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "type": "quest_path_opened_after_npc_report"
+        },
+        {
+          "access_portal_source_position": {
+            "x": 32247,
+            "y": 31030,
+            "z": 12
+          },
+          "boss_source_name": "Melting Frozen Horror",
+          "location_source_name": "Formerly inaccessible shrine area beyond the ice wall after the portal at 32247,31030,12",
+          "object_source_name": "Abandoned Imbuing Shrine",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "type": "quest_object_used_after_boss"
+        }
+      ],
+      "quest_line_source_locator": {
+        "name": "Forgotten Knowledge",
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID",
+        "source_id": 125,
+        "source_index": 67,
+        "staticdata_sha256": "fc81a3bbf9cf168485c5938747d7f8300ed73a8fa960017e0f8a6f0f9d9df775"
+      },
+      "source_qualification": "Boss defeat is followed by reporting to A Dragon Mother; she opens the ice-wall route into a separate shrine area. The portal position locates access, not the shrine object itself."
+    },
+    "forgotten_soul_of_dragonking_zyrtarch": {
+      "all_of": [
+        {
+          "boss_source_name": "Soul of Dragonking Zyrtarch",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "type": "quest_boss_defeated"
+        },
+        {
+          "boss_source_name": "Soul of Dragonking Zyrtarch",
+          "location_source_name": "Soul of Dragonking Zyrtarch reward room",
+          "object_source_name": "Abandoned Imbuing Shrine",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "type": "quest_object_used_after_boss"
+        }
+      ],
+      "quest_line_source_locator": {
+        "name": "Forgotten Knowledge",
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID",
+        "source_id": 125,
+        "source_index": 67,
+        "staticdata_sha256": "fc81a3bbf9cf168485c5938747d7f8300ed73a8fa960017e0f8a6f0f9d9df775"
+      }
+    },
+    "forgotten_the_enraged_thorn_knight": {
+      "all_of": [
+        {
+          "boss_source_name": "The Enraged Thorn Knight",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "type": "quest_boss_defeated"
+        },
+        {
+          "boss_source_name": "The Enraged Thorn Knight",
+          "location_source_name": "The Enraged Thorn Knight reward room",
+          "object_source_name": "Abandoned Imbuing Shrine",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "type": "quest_object_used_after_boss"
+        }
+      ],
+      "quest_line_source_locator": {
+        "name": "Forgotten Knowledge",
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID",
+        "source_id": 125,
+        "source_index": 67,
+        "staticdata_sha256": "fc81a3bbf9cf168485c5938747d7f8300ed73a8fa960017e0f8a6f0f9d9df775"
+      }
+    },
+    "forgotten_the_last_lore_keeper": {
+      "all_of": [
+        {
+          "boss_source_name": "The Last Lore Keeper",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "type": "quest_boss_defeated"
+        },
+        {
+          "boss_source_name": "The Last Lore Keeper",
+          "location_source_name": "The Last Lore Keeper reward room",
+          "object_source_name": "Abandoned Imbuing Shrine",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "type": "quest_object_used_after_boss"
+        }
+      ],
+      "quest_line_source_locator": {
+        "name": "Forgotten Knowledge",
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID",
+        "source_id": 125,
+        "source_index": 67,
+        "staticdata_sha256": "fc81a3bbf9cf168485c5938747d7f8300ed73a8fa960017e0f8a6f0f9d9df775"
+      }
+    },
+    "forgotten_the_time_guardian": {
+      "all_of": [
+        {
+          "boss_source_name": "The Time Guardian",
+          "quest_source_name": "Forgotten Knowledge",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "type": "quest_boss_defeated"
+        },
+        {
+          "boss_source_name": "The Time Guardian",
+          "location_source_name": "The Time Guardian reward room",
+          "object_source_name": "Abandoned Imbuing Shrine",
+          "quest_source_name": "Forgotten Knowledge",
+          "required_item_source_name": "Imbuing Crystal",
+          "source_refs": [
+            "br_forgotten_knowledge"
+          ],
+          "type": "quest_object_used_after_boss"
+        }
+      ],
+      "quest_line_source_locator": {
+        "name": "Forgotten Knowledge",
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID",
+        "source_id": 125,
+        "source_index": 67,
+        "staticdata_sha256": "fc81a3bbf9cf168485c5938747d7f8300ed73a8fa960017e0f8a6f0f9d9df775"
+      }
+    },
+    "heart_of_destruction": {
+      "all_of": [
+        {
+          "boss_source_name": "World Devourer",
+          "quest_source_name": "Heart of Destruction",
+          "source_refs": [
+            "br_heart_of_destruction",
+            "tibiopedia_heart_of_destruction",
+            "br_imbuements"
+          ],
+          "type": "quest_boss_defeated"
+        },
+        {
+          "dialogue_keyword": "worth",
+          "npc_source_name": "Yana",
+          "quest_source_name": "Heart of Destruction",
+          "source_refs": [
+            "br_heart_of_destruction",
+            "tibiopedia_heart_of_destruction",
+            "br_imbuements"
+          ],
+          "type": "npc_dialogue_reward_claimed"
+        }
+      ],
+      "quest_line_source_locator": {
+        "name": "Heart of Destruction",
+        "path": "imports/cipsoft-staticdata/quest-lines/quest-lines-00000-00101.json",
+        "role": "SOURCE_LOCATOR_NOT_RUNTIME_QUEST_ID",
+        "source_id": 124,
+        "source_index": 66,
+        "staticdata_sha256": "178642cf4a29a708791cc63924c2bf16dad8301e882b83d333879fb5db578871"
+      },
+      "source_qualification": "Native Heart of Destruction guide independently confirms the Yana worth claim route but lists only three older reward families. The eight-family coverage remains sourced from the separate current BR Imbuements/reference claims."
+    },
+    "premium": {
+      "source_refs": [
+        "official_manual",
+        "br_imbuements"
+      ],
+      "type": "account_premium_active"
+    },
+    "shrine_access": {
+      "all_of": [
+        {
+          "event_source_name": "The Temple of the Forgotten Knowledge built",
+          "scope": "world",
+          "source_refs": [
+            "official_tradeable_imbuements"
+          ],
+          "type": "world_event_completed"
+        },
+        {
+          "item_source_name": "Heavy Old Tome",
+          "npc_source_name": "Albinius",
+          "quantity": 5,
+          "scope": "character",
+          "source_refs": [
+            "official_tradeable_imbuements",
+            "br_forgotten_knowledge"
+          ],
+          "type": "npc_item_handover_completed"
+        }
+      ],
+      "notes": "The world construction gate and the individual five-tome contribution are separate. These are completed events, not an ongoing inventory requirement."
+    },
+    "unequipped_shrine_target": {
+      "notes": "Official manual: you can only imbue items when they are not equipped. Direct shrine only; completed-scroll equipped permission remains unconfirmed.",
+      "source_refs": [
+        "official_manual"
+      ],
+      "type": "item_is_not_equipped"
+    },
+    "worthy_character": {
+      "all_of": [
+        {
+          "predicate_ref": "shrine_access"
+        }
+      ],
+      "notes": "Completed historical qualification: the world temple construction event and character five-tome contribution. No current temple-open interaction or present inventory of tomes is added."
+    }
+  },
+  "research_attempts": [
+    {
+      "kind": "BOUNDED_INDEXED_SEARCH",
+      "providers": [
+        "Tavily",
+        "Wiki BR",
+        "Fandom",
+        "Tibiopedia"
+      ],
+      "scope": "Completed Intricate/Powerful scroll drops, Blank scroll drops and NPC purchase. Indexed Wiki BR Powerful Void independently says no drop; four Tibiopedia Powerful pages also say no drop. One search and one seven-page extraction were rate-limited; not repeatedly retried."
+    },
+    {
+      "kind": "DIRECT_PUBLIC_HTTP",
+      "provider": "Wiki BR",
+      "result": "403 response for Intricate Void page; no bypass attempted."
+    },
+    {
+      "kind": "DIRECT_PUBLIC_HTTP",
+      "provider": "Tibiopedia",
+      "result": "48 successful matching-title pages with explicit empty monster-loot sections; all also explicitly allow Free account application.",
+      "scope": "All 24 names x Intricate/Powerful = 48 exact item pages"
+    },
+    {
+      "kind": "DIRECT_PUBLIC_HTTP",
+      "provider": "Tibiopedia",
+      "result": "Both200; NPC page independently confirms 3families x3tiers,2/4/6GoldToken costs and trade dialogue. Exact outputs joined to accepted cumulative BR recipes and canonical item binding catalogue; all9routes populated.",
+      "scope": "NPCYana and GoldToken exact-title pages"
+    },
+    {
+      "kind": "CROSS_AUDIT_REPAIR_FROM_CACHED_PUBLIC_SOURCES",
+      "result": "Added snapshot hashes and bounded supporting quotes; corrected Frozen Horror shrine location and report/wall-opening predicates; separated Etcher worthy NPC acquisition from Free Account application.",
+      "scope": "Three native quest guides, Albinius shop and revision445526 Forgotten Knowledge"
+    }
+  ],
+  "schema": "OTERYN_IMBUEMENT_ACCESS_FACTS/v1",
+  "scroll_acquisition": {
+    "blank_npc_purchase": {
+      "all_of": [
+        {
+          "predicate_ref": "shrine_access"
+        },
+        {
+          "predicate_ref": "premium"
+        }
+      ],
+      "gold": 25000,
+      "npc_source_name": "Albinius",
+      "source_refs": [
+        "official_manual",
+        "official_tradeable_imbuements",
+        "br_blank_scroll"
+      ]
+    },
+    "loot": {
+      "basic_origin_source_name": "Echo Wardens",
+      "basic_scroll": true,
+      "blank_named_monster_drop_sources": {
+        "capture_profile": "sources.br_blank_scroll",
+        "evidence_status": "COMMUNITY_EXPLICIT_FULL_ARTICLE_REVISION",
+        "names": [
+          "Headwalker",
+          "Inkwing",
+          "Shell Drake",
+          "Sir Leonard",
+          "Sir Leopold",
+          "Wrathful Archivist"
+        ],
+        "scope": "Six explicit named drops from the community article read on October1,2026; this current-reference capture is not an official exhaustive server drop table.",
+        "source_refs": [
+          "br_blank_scroll"
+        ],
+        "source_revision_id": 428617
+      },
+      "blank_scroll": true,
+      "completed_scroll_item_observations": [
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Bash",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Bash Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "15281cef777402615c8f4dbde29f9773b86febe322983ab145297969b1d8968a",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Bash_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Bash",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Bash Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "fcccf790ee30ee2cb74e3966c6ff2878dd7e92bd093bc959363b6e6542c91b1b",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Bash_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Blockade",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Blockade Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "5fd9d32da55a24af30c93c49de14d45b7e124ba5af04cad30a8a9317470f06a6",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Blockade_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Blockade",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Blockade Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "543cbac2227594e960036bf6d99f892ca3612f87dab1ffb319309e77e2779cf0",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Blockade_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Chop",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Chop Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "0d71f1d3a63b61e994831cb993118f58bd5f424db49eb9759e59feb112325004",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Chop_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Chop",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Chop Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "41018ef6023cf1bd4c2c2f75903289db98b864201ee80d3efd7fa401dc89b379",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Chop_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Cloud Fabric",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Cloud Fabric Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "44e7ff2bcd0eab3c94f68a59276a821b9aec49b2d37de7d15a2bb4d4d5aa0056",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Cloud_Fabric_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Cloud Fabric",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Cloud Fabric Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "198cd201bec3bf16956703e2139762f32c997e57989db8b20a344250da289807",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Cloud_Fabric_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Demon Presence",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Demon Presence Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "6c1c37a408dedb9bc99edd3b2cc25aef0e5e7c0cfeaa8ab0f31a7012d9251f83",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Demon_Presence_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Demon Presence",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Demon Presence Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "02c63d7116bb33dc96c6184ecaee210486a3668cc3243b07515a827e256a76e4",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Demon_Presence_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Dragon Hide",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Dragon Hide Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "181d131ffeada398ee343a386ccf8fa06e3a96ca5466af44afc15223d7907739",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Dragon_Hide_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Dragon Hide",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Dragon Hide Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "b780151938348fbc4e2a87d4676be16f6af1ff965b5282db8ac72c6d4df1387c",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Dragon_Hide_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Electrify",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Electrify Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "38b630300b9069799cd753597a162be1e75360070f34b22eb3580f418873ed0a",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Electrify_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Electrify",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Electrify Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "78324eb70ec81bec4987041c1b0c98dc6ad2963f227ef94a7f9c68c01660335e",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Electrify_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Epiphany",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Epiphany Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "94939a07b4e8e2697be81983022f19f02846b1ecd124ca59386d13aade2820ff",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Epiphany_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Epiphany",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Epiphany Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "0cd581e757897648200636c6ef818be673731cc1f28c399141af9905ec73500e",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Epiphany_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Featherweight",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Featherweight Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "4107b0b01685ee1baef59e02888559bb0307a276f3b4939aa047c66b07f4e317",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Featherweight_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Featherweight",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Featherweight Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "95f3282be275bbd725f00cce3c4ac82e76419944a31fae60c3774d6520c1210e",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Featherweight_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Frost",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Frost Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "b68c4e6be1cc7f4e0b9a0b8131ed68e15889d2eef2ab2c44ebf30fde2d66b3db",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Frost_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Frost",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Frost Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "9f073eda91843ea6e12f3e390062553368a67351122e6180e027e232245c0e2f",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Frost_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Lich Shroud",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Lich Shroud Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "c62fe834491525d612c8e9581fa4c1633ef630519cea843b02a344e7fad00f44",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Lich_Shroud_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Lich Shroud",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Lich Shroud Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "4e33010397493bbcc1fe4436e4c75115560769aa21b9df8d7ac48c23e811a2a0",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Lich_Shroud_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Precision",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Precision Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "c0a7326fea28b718d7fecaee5a12c1e0ba33cb92982b32d8867df4983e05bb3d",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Precision_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Precision",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Precision Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "526384405ed367a75dea9a3e909087a9f149bd145a9b68b453447aa126415903",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Precision_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Punch",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Punch Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "b8864f007b380ed224d0f5d02b3cf623829739a28729af04fd6dd65f6970e051",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Punch_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Punch",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Punch Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "54826dd4871a834e2f8784aaf7fd73526115b3a13318c897501d39bdd41e78fd",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Punch_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Quara Scale",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Quara Scale Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "ad808844dc8064138a6fc38bb4306a6c936635d1eaeb8eaeb1dd57ea68353779",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Quara_Scale_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Quara Scale",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Quara Scale Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "896563eef9bbbdc7810a8f981c2ee88fa528e3a6913d0cb18ede9fcdc73766cd",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Quara_Scale_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Reap",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Reap Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "1471c4604f459d374365a35ab3a0d2b384e7d16ace76efe14b5869132692d2eb",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Reap_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Reap",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Reap Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "0aaff8104cf48f82a925edd0579673e51a003e1b1ba84f7f24f8e30e181ea12d",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Reap_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Scorch",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Scorch Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "b3cc2a2252d6988c8f064e1f8a54d47a050573e0218adc97ea49dede5a4958b9",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Scorch_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Scorch",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Scorch Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "047cd8310d75d8ecb8baa259362ac3c4799294510075dd9b463ec34c962d2220",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Scorch_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Slash",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Slash Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "67b7ba2bcb59428d7b283df324738ca9ddce76d01130622b7f981710593c6121",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Slash_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Slash",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Slash Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "38c1642c4f4611d9df1da38f80eed2356cfe3262a6bd4448a5ed5f15a67a1336",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Slash_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Snake Skin",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Snake Skin Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "90a65f826e7757c3279b52c08995eb4ac2ffd147bde89c3e3212d6c60ccf0196",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Snake_Skin_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Snake Skin",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Snake Skin Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "61f4a341859fe252b64ccca515bd6e6c57d4287ab542ad452e55c8d613ab1632",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Snake_Skin_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Strike",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Strike Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "53a6397ea1c8c6fb787fe54f796901bbcc77c7204557cf8342d26f5f9b37b3bf",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Strike_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Strike",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Strike Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "c44028920693e2efece8de974c9e8b33e0584ab079814a1ed6904e9159f1dced",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Strike_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Swiftness",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Swiftness Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "bd683bb93dac8b6a09e5740da8b9a4507be7c1d44080f97be1821e804a59d00d",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Swiftness_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Swiftness",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Swiftness Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "9c36c4c96ab3468aee11609c1402ecc1c96d6170212f8a161b616bf7a998f993",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Swiftness_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Vampirism",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Vampirism Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "f0d4e0bf35c48ef03fad1e96b133260a2cfbed4928e0d03d12d6dcc8700b1c70",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Vampirism_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Vampirism",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Vampirism Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "2e112cceef3d31a3504472ff542852e05f85a922d844e9d8e83391713c25a6e3",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Vampirism_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Venom",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Venom Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "39340db1578c4b8ea8913bd4ac37c877adc15b7df02fcaaf8231d21fe76f4bd6",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Venom_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Venom",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Venom Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "4ba01076bc3bf33979363723cb86ee86dfdc3fa21bcf84bb08e6101fbb2763f3",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Venom_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Vibrancy",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Vibrancy Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "76bfc706002f00b3410a1ba2d6b333e26eecab9f46cd00e90d7275805afa3e6a",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Vibrancy_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Vibrancy",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Vibrancy Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "9b9541c898b1ebc31f5caea4b2091cb1c9fb6df346ae327d37fe728e4cd78fa7",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Vibrancy_Scroll",
+          "tier": "powerful"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Void",
+          "free_account_application_explicit": true,
+          "item_source_name": "Intricate Void Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "d1e1ef72089cfb24d2a9e646a769d165e6eea1131f91ffcfa04f021d94f43566",
+          "source_url": "https://tibiopedia.pl/items/Intricate_Void_Scroll",
+          "tier": "intricate"
+        },
+        {
+          "digest_scope": "Exact HTML bytes after ordinary public locale/layout setup.",
+          "evidence_status": "COMMUNITY_EXPLICIT_ITEM_PAGE",
+          "family_name": "Void",
+          "free_account_application_explicit": true,
+          "item_source_name": "Powerful Void Scroll",
+          "named_monster_drop_sources": [],
+          "source_sha256": "a1761b699b98c8556225ead050d56ae61681038251af0dc46b5c091520fea0b3",
+          "source_url": "https://tibiopedia.pl/items/Powerful_Void_Scroll",
+          "tier": "powerful"
+        }
+      ],
+      "evidence_status_by_item": {
+        "basic_scroll": "PRIMARY_OFFICIAL_EXPLICIT",
+        "blank_scroll": "PRIMARY_OFFICIAL_EXPLICIT",
+        "intricate_scroll": "COMMUNITY_EXPLICIT_ALL_24_ITEM_PAGES",
+        "powerful_scroll": "COMMUNITY_EXPLICIT_ALL_24_ITEM_PAGES"
+      },
+      "interpretation": "All 48 individually inspected completed Intricate/Powerful item records explicitly list no monster drop. Their supported acquisition routes are shrine crafting and player trade. This is community item evidence; no primary official complete drop table was obtained.",
+      "intricate_scroll": false,
+      "powerful_scroll": false,
+      "scope": "MONSTER_DROPS_IN_EXPLICIT_COMMUNITY_ITEM_RECORDS",
+      "source_refs": [
+        "official_tradeable_imbuements",
+        "official_echo_wardens",
+        "tibiopedia_completed_scroll_loot",
+        "echo_wardens_dated_mirror",
+        "br_blank_scroll",
+        "official_echo_raids_live_release"
+      ]
+    },
+    "player_trade": {
+      "all_tiers": true,
+      "requires_powerful_unlock": false,
+      "requires_premium": false,
+      "requires_shrine_access": false,
+      "source_refs": [
+        "official_manual",
+        "official_tradeable_imbuements"
+      ]
+    }
+  },
+  "source_claims": [
+    {
+      "claim": "Albinius sells Etcher to worthy characters; this is NPC acquisition, not a Premium application condition.",
+      "evidence_status": "PRIMARY_OFFICIAL_EXPLICIT",
+      "quote": "an etcher, which is also sold by Albinius to worthy characters.",
+      "source_line": 188,
+      "source_refs": [
+        "official_manual"
+      ]
+    },
+    {
+      "claim": "Frozen Horror path requires reporting to A Dragon Mother, who melts the wall before the shrine area.",
+      "evidence_status": "REVISIONED_COMMUNITY_EXPLICIT",
+      "quote": "I melted the ice for you, you can pass now.",
+      "source_lines": [
+        675,
+        680,
+        682
+      ],
+      "source_refs": [
+        "br_forgotten_knowledge"
+      ]
+    },
+    {
+      "claim": "World Devourer and Yana hi > worth; page lists older three reward families only; current BR Imbuements supports eight",
+      "evidence_status": "COMMUNITY_EXPLICIT_SNAPSHOT",
+      "quote": "Należy udać się do NPC Yana i napisać hi > worth.",
+      "source_refs": [
+        "tibiopedia_heart_of_destruction"
+      ]
+    },
+    {
+      "claim": "All three Warzone bosses then use each post-boss pump; Powerful Featherweight",
+      "evidence_status": "COMMUNITY_EXPLICIT_SNAPSHOT",
+      "quote": "Po zabiciu bossa i po wejściu w zielony teleport znajdziemy się w pokoju z pompą, której należy użyć.",
+      "source_refs": [
+        "tibiopedia_dangerous_depths"
+      ]
+    },
+    {
+      "claim": "Nightmare Beast followed by NPC hi/talk/task reward report, either Vanys or Undal; Powerful Vibrancy",
+      "evidence_status": "COMMUNITY_EXPLICIT_SNAPSHOT",
+      "quote": "Undal: The Nightmare Beast is slain. You have done well.",
+      "source_refs": [
+        "tibiopedia_dream_courts"
+      ]
+    },
+    {
+      "claim": "Albinius sells Blank Imbuement Scroll25000 and Etcher30000",
+      "evidence_status": "COMMUNITY_EXPLICIT_SNAPSHOT",
+      "quote": "Etcher\n(30000gp)",
+      "source_refs": [
+        "tibiopedia_albinius"
+      ]
+    }
+  ],
+  "sources": {
+    "br_blank_scroll": {
+      "access_status": "FULL_ARTICLE_BROWSER_READ",
+      "captured_on": "2026-10-01",
+      "digest_scope": "Complete UTF-8 .mw-parser-output innerText, including category navigation.",
+      "method": "Remote Desktop + Chrome/CDP",
+      "page_id": 64771,
+      "revision_id": 428617,
+      "revision_metadata_method": "Public MediaWiki API read in Chrome/CDP",
+      "revision_metadata_url": "https://www.tibiawiki.com.br/api.php?action=query&prop=revisions&revids=428617&rvprop=timestamp%7Cids&format=json",
+      "revision_parent_id": 428528,
+      "revision_timestamp": "2025-08-23T10:16:39Z",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Blank_Imbuement_Scroll&oldid=428617",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "scope": "Full article explicitly lists six named Blank Scroll monster drops, Albinius25000gold sale subject to built world temple and five submitted tomes, and blank conversion to Intricate/Powerful. Historical revision428617 timestamp is retained; the article read on October1,2026 may incorporate current rendered templates and is a current community reference, not official server telemetry.",
+      "selected_quote": "Loot de:\tHeadwalker, Inkwing, Shell Drake, Sir Leonard, Sir Leopold, Wrathful Archivist.",
+      "source_sha256": "1a34e6109d176c756ff1c070a40c384453f4fb97fc1b5a8356ce5dbe1ad35166",
+      "target_continuity": "CURRENT_COMMUNITY_REFERENCE_RENDERED_TEMPLATES_CURRENT_NOT_SERVER_TELEMETRY",
+      "url": "https://www.tibiawiki.com.br/wiki/Blank_Imbuement_Scroll"
+    },
+    "br_dangerous_depths": {
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "url": "https://www.tibiawiki.com.br/wiki/Dangerous_Depths_Quest"
+    },
+    "br_dream_courts": {
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "url": "https://www.tibiawiki.com.br/wiki/The_Dream_Courts_Quest"
+    },
+    "br_forgotten_knowledge": {
+      "captured_on": "2026-10-01",
+      "digest_scope": "Exact UTF-8 extracted markdown retained from full Forgotten Knowledge page, revision445526.",
+      "revision_id": 445526,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Forgotten_Knowledge_Quest&oldid=445526",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "source_sha256": "860c07104e1d01d86226c820ec66e0c823ea7ba7f55f555bbc1cdb1c125bb01d",
+      "target_continuity": "CURRENT_PUBLIC_REFERENCE_CAPTURE_NOT_SERVER_TELEMETRY",
+      "url": "https://www.tibiawiki.com.br/wiki/Forgotten_Knowledge_Quest"
+    },
+    "br_heart_of_destruction": {
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "url": "https://www.tibiawiki.com.br/wiki/Heart_of_Destruction_Quest"
+    },
+    "br_imbuements": {
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "url": "https://www.tibiawiki.com.br/wiki/Imbuements"
+    },
+    "current_behavior_answers": {
+      "as_of": "2026-10-01",
+      "path": "current-behavior-answers.json",
+      "role": "SOURCE_QUALIFIED_CURRENT_ENGINE_AND_PUBLIC_REFERENCE_ANSWERS",
+      "scope": "Concrete answers for inspected Canary and Crystal versions, with public Global corroboration and limits stated per question. A pinned engine result is not automatically promoted to an observed Global server transaction."
+    },
+    "echo_wardens_dated_mirror": {
+      "digest_scope": "Tavily extracted full UTF-8 markdown of third-party official-news mirror.",
+      "published_on": "2026-06-11",
+      "role": "DERIVED_OFFICIAL_NEWS_MIRROR",
+      "scope": "Dated third-party mirror of official announcement8834; Echo Wardens drop all24 Basic scroll types. Historical publication date is preserved, while the current-reference target is October1,2026. Mirror date is not represented as direct primary-page extraction.",
+      "source_sha256": "aafbf01fcd1905e72a987d011efd9a7e39707c34a508eaa92078e5cb32ade1f9",
+      "url": "https://tibiaroute.com/news/Echo-Raids-and-Discovery-System-8834-aS71"
+    },
+    "fandom_imbuing_revision_1194750": {
+      "digest_scope": "Complete UTF-8 .mw-parser-output innerText in owned research tab; excerpts below are selected, not full page.",
+      "revision_id": 1194750,
+      "revision_timestamp": "2026-07-07T01:22:16Z",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "scope": "Distinct elemental-damage conversion imbuements on one item mutually exclude; no blanket rule for other categories is inferred.",
+      "source_sha256": "e07d4be8d37844eeaf4f078ad7de1242047e18466cc999a6686c22c05657c82b",
+      "target_continuity": "CURRENT_REFERENCE_HISTORICAL_COMMUNITY_REVISION_NOT_SERVER_TELEMETRY",
+      "url": "https://tibia.fandom.com/wiki/Imbuing?oldid=1194750"
+    },
+    "item_eligibility_catalogue": {
+      "path": "imbuement-eligibility.json",
+      "role": "DERIVED_CLIENT_IDENTITY_AND_COMMUNITY_ELIGIBILITY",
+      "scope": "Primary client establishes item identity and static slot count. Selected per-family maximum tiers are source-qualified community observations and amendments in the eligibility catalogue; neither this reference nor the guard certifies full current Global server parity."
+    },
+    "official_echo_raids_live_release": {
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "digest_scope": "Exact complete UTF-8 browser document.body.innerText, including page chrome",
+      "method": "Remote Desktop + Chrome/CDP",
+      "published_on": "2026-07-13",
+      "role": "PRIMARY_OFFICIAL",
+      "scope": "Actual SummerUpdate2026 liveEchoRaids; does not explicitly quantify Basic scroll drop count.",
+      "selected_quote": "With Echo Raids, creatures may turn into echoes and trigger optional encounters. Rare Echo Wardens empower nearby enemies and offer new challenges and rewards during your hunts.",
+      "source_sha256": "a3746466045af1fa9e86a70805675debe7d13f645bb0d54422f7db5185a214ca",
+      "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8845"
+    },
+    "official_echo_wardens": {
+      "access_status": "FULL_BROWSER_TEXT_EXTRACTED",
+      "digest_scope": "Exact complete UTF-8 browser document.body.innerText, including page chrome; full official teaser read",
+      "method": "Remote Desktop + Chrome/CDP",
+      "published_on": "2026-06-11",
+      "role": "PRIMARY_OFFICIAL",
+      "scope": "Full primary teaser announces Basic scrolls for all families; live EchoRaids confirmed by primary8845, qualitative release only.",
+      "selected_quote": "In addition, Echo Wardens will always drop one of the new basic imbuement scrolls. These scrolls work similarly to intricate and powerful imbuement scrolls and will be available for all imbuements.",
+      "source_sha256": "71e4a5d45aa5de27f9a9e8238dbeff8dde415fffd1e0b1290904d99054cdd11f",
+      "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8834"
+    },
+    "official_manual": {
+      "captured_on": "2026-10-01",
+      "digest_scope": "Exact UTF-8 Tavily extracted markdown retained as page-0.md.",
+      "revision": null,
+      "role": "PRIMARY_OFFICIAL",
+      "source_sha256": "0276d5193551ed7614de6f68822c55b72932fb580d289320f7e5cbb7f534bb3f",
+      "target_continuity": "CURRENT_PUBLIC_REFERENCE_CAPTURE_NOT_SERVER_TELEMETRY",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=characters"
+    },
+    "official_tradeable_imbuements": {
+      "mirror_url": "https://tibiaroute.com/news/Tradeable-Imbuements-8396-KVB7",
+      "published_on": "2025-06-12",
+      "role": "PRIMARY_OFFICIAL_TEXT_MIRROR",
+      "scope": "World construction, five tomes, NPC blank purchase, Powerful inscription and Free scroll use; final July2025 feature/manual supersede teaser for Intricate.",
+      "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8396"
+    },
+    "tibiopedia_albinius": {
+      "captured_at": "2026-10-01T12:17:36.659641+00:00",
+      "digest_scope": "Exact native public HTML bytes after ordinary locale/layout selection.",
+      "revision": null,
+      "revision_status": "NO_PER_PAGE_REVISION_IDENTIFIER_AVAILABLE",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "source_sha256": "ea5063d733bc58b3b1c02c15f0972c123c810370b0ea96acaf6921617d7293a3",
+      "target_continuity": "CURRENT_PUBLIC_REFERENCE_CAPTURE_NOT_SERVER_TELEMETRY",
+      "url": "https://tibiopedia.pl/npcs/Albinius",
+      "verified_page_title": "NPC: Albinius - Tibia ~ Tibiopedia.pl"
+    },
+    "tibiopedia_completed_scroll_loot": {
+      "access_method": "Ordinary public HTTP after normal Polish/library locale selection; no authentication.",
+      "captured_on": "2026-10-01",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "scope": "48 individually identified Intricate and Powerful item pages; exact titles and explicit monster loot sections verified, with full-HTML digest per item. Empty named monster-drop lists describe these pages, not an official server assertion that no other acquisition channel can exist.",
+      "url": "https://tibiopedia.pl/items"
+    },
+    "tibiopedia_dangerous_depths": {
+      "captured_at": "2026-10-01T12:17:35.085738+00:00",
+      "digest_scope": "Exact native public HTML bytes after ordinary locale/layout selection.",
+      "revision": null,
+      "revision_status": "NO_PER_PAGE_REVISION_IDENTIFIER_AVAILABLE",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "source_sha256": "0f2fbfe75361c0b4b06b743adf9636417d6e4d2ee51cd09576ae06a435b4ecb4",
+      "target_continuity": "CURRENT_PUBLIC_REFERENCE_CAPTURE_NOT_SERVER_TELEMETRY",
+      "url": "https://tibiopedia.pl/quests/Dangerous_Depths_Quest",
+      "verified_page_title": "Questy: Dangerous Depths Quest - Tibia ~ Tibiopedia.pl"
+    },
+    "tibiopedia_dream_courts": {
+      "captured_at": "2026-10-01T12:17:36.268827+00:00",
+      "digest_scope": "Exact native public HTML bytes after ordinary locale/layout selection.",
+      "revision": null,
+      "revision_status": "NO_PER_PAGE_REVISION_IDENTIFIER_AVAILABLE",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "source_sha256": "90d98657cbee4581e3be252f192853731aec9fd73883ed82bf933b8ce9a5239d",
+      "target_continuity": "CURRENT_PUBLIC_REFERENCE_CAPTURE_NOT_SERVER_TELEMETRY",
+      "url": "https://tibiopedia.pl/quests/The_Dream_Courts_Quest",
+      "verified_page_title": "Questy: The Dream Courts Quest - Tibia ~ Tibiopedia.pl"
+    },
+    "tibiopedia_etcher": {
+      "digest_scope": "Exact public HTML bytes retrieved after ordinary locale/layout setup; item page title and facts inspected; no revision identifier supplied",
+      "revision": null,
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "scope": "Explicit Free Account application allowance; this does not prove a Free Account NPC-purchase allowance.",
+      "source_sha256": "ec035f6c43b88badcc309cdd7f1bacbfb622f9d8562b8549f41910d93789b3bf",
+      "target_continuity": "CURRENT_PUBLIC_REFERENCE_CAPTURE_NOT_SERVER_TELEMETRY",
+      "url": "https://tibiopedia.pl/items/Etcher"
+    },
+    "tibiopedia_gold_token": {
+      "digest_scope": "Exact public HTML bytes after ordinary locale/layout selection.",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "scope": "Yana material-exchange family eligibility, token prices and dialogue; this evidence does not replace the separately sourced Powerful crafting reward predicates.",
+      "source_sha256": "feae93c3c91424d98ede72fc22dfa0252515d63444322417daed2c123191ef2b",
+      "url": "https://tibiopedia.pl/items/Gold_Token",
+      "verified_page_title": "Przedmioty: Gold Token - Tibia ~ Tibiopedia.pl"
+    },
+    "tibiopedia_heart_of_destruction": {
+      "captured_at": "2026-10-01T12:17:34.718068+00:00",
+      "digest_scope": "Exact native public HTML bytes after ordinary locale/layout selection.",
+      "revision": null,
+      "revision_status": "NO_PER_PAGE_REVISION_IDENTIFIER_AVAILABLE",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "source_sha256": "5c815416160361dc998ff3a10639e74fe6e6cb16d560820de783a4367ced181e",
+      "target_continuity": "CURRENT_PUBLIC_REFERENCE_CAPTURE_NOT_SERVER_TELEMETRY",
+      "url": "https://tibiopedia.pl/quests/Heart_of_Destruction_Quest",
+      "verified_page_title": "Questy: Heart of Destruction Quest - Tibia ~ Tibiopedia.pl"
+    },
+    "tibiopedia_yana": {
+      "digest_scope": "Exact public HTML bytes after ordinary locale/layout selection.",
+      "role": "COMMUNITY_GLOBAL_REFERENCE",
+      "scope": "Yana material-exchange family eligibility, token prices and dialogue; this evidence does not replace the separately sourced Powerful crafting reward predicates.",
+      "source_sha256": "5d2cd889df030f557fae23d5aee1ee72ec1f39587447196b35101d26c543e93a",
+      "url": "https://tibiopedia.pl/npcs/Yana",
+      "verified_page_title": "NPC: Yana - Tibia ~ Tibiopedia.pl"
+    }
+  },
+  "status": "SOURCE_SEMANTICS_COMPLETE_RUNTIME_BINDING_REQUIRED",
+  "status_scope": "Source access and crafting predicate definitions; scroll acquisition has separate item-specific evidence statuses.",
+  "target": "global-tibia-current-2026-10-01",
+  "target_client_manifest": "imports/cipsoft-staticdata/quest-lines/manifest.json",
+  "target_client_version": "15.30",
+  "utility_acquisition": {
+    "etcher_npc_purchase": {
+      "all_of": [
+        {
+          "predicate_ref": "worthy_character"
+        }
+      ],
+      "current_behavior_profile": {
+        "catalogue": "current-behavior-answers.json",
+        "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+        "question_ids": [
+          "etcher_npc_purchase_requires_premium"
+        ]
+      },
+      "gold": 30000,
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i51443",
+        "revision": "definition-r1"
+      },
+      "item_source_name": "Etcher",
+      "npc_source_name": "Albinius",
+      "premium_requirement": {
+        "evidence_status": "PARITY_PENDING_NO_EXPLICIT_PREMIUM_PURCHASE_CONDITION",
+        "value": null
+      },
+      "qualification_scope": "NPC purchase requires the completed worthy qualification. Free Account application permission is a separate claim and cannot resolve the NPC purchase Premium question.",
+      "source_refs": [
+        "official_manual",
+        "tibiopedia_albinius"
+      ]
+    }
+  },
+  "utility_application": {
+    "etcher": {
+      "current_behavior_profile": {
+        "catalogue": "current-behavior-answers.json",
+        "qualification": "ENGINE_ANSWERS_WITH_SEPARATE_GLOBAL_SOURCE_QUALIFICATION",
+        "question_ids": [
+          "etcher_consumption"
+        ]
+      },
+      "item_ref": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i51443",
+        "revision": "definition-r1"
+      },
+      "item_source_name": "Etcher",
+      "premium_required": false,
+      "qualification_note": "The worthy NPC-purchase predicate is not automatically propagated to using an already acquired Etcher.",
+      "scope": "Account access is recorded here; clearing, target validation and source-qualified transaction answers are linked through global-rules-evidence.json and current-behavior-answers.json.",
+      "source_refs": [
+        "tibiopedia_etcher"
+      ]
+    }
+  }
+}

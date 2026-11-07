@@ -1,0 +1,13 @@
+{
+  "repository": ".",
+  "read_only_inputs": {
+    "index": "monster-lab-data/evidence/population-bundles-canary-47dfd51f.json",
+    "stage": "monster-lab-data/evidence/creature-admission-stage.json",
+    "bundles": "monster-lab-data/evidence/bundles",
+    "item_map": "monster-lab-data/evidence/native-item-map-rust.json"
+  },
+  "shared_rust_target": "target",
+  "arena": {
+    "maximum_cells": 32
+  }
+}

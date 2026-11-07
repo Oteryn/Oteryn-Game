@@ -1,0 +1,22 @@
+{
+  "id": "CHARCMD-INTENT-TTL",
+  "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+  "resource": "Lifetime of a command intent (expires_at_source - issued_at_source)",
+  "unit": "seconds",
+  "hard_maximum": 300,
+  "configurable_range": {
+    "minimum": 300,
+    "maximum": 300
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "A wider window is classified CHAR_CMD_INTENT_INVALID; an intent at or past expiry is rejected CHAR_CMD_EXPIRED, which bounds every transient retry.",
+  "client_visible": false,
+  "boundary_tests": [
+    "a 301 s window is invalid",
+    "expires equal to issued is invalid"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/character_command.rs"
+  ],
+  "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+}

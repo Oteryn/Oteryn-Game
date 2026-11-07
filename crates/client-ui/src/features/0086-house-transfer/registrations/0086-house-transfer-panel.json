@@ -1,0 +1,7 @@
+{
+  "mechanic": "0086-house-transfer",
+  "kind": "panels",
+  "id": "0086-house-transfer-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

@@ -1,0 +1,5 @@
+Healing paralysis removal is already present in both ordinary effect resolution and the native combat owner path. Two additional owner-commit regressions check actual paralysis removal with healing, exact replay, and refusal without partial HP, condition, or payment changes. They do not constitute an end-to-end Exura client test.
+
+The ten missing dispatchers remain individually listed in existing-mechanic-owner-audit.json. Their data/components cannot be activated by inventing actor, equipment, map, fiend, or timer authority. No runtime change was warranted by this audit.
+
+Fresh r25 research is referenced by its exact SHA in the audit. Death Echo (wiki150%/larger area versus accepted source50%/same area), Divine Grenade (buff snapshot timing), and Spiritual Outburst (chain distance and root-target counting) remain explicit parity flags. Divine Empowerment stage cooldowns32/28/24s are resolved by native Wheel rules; this does not supply its missing owned-field Channel dispatcher. The ten dispatcher gaps are independent of source-data completeness. No conflicting formulas were blended and no production mechanics changed.

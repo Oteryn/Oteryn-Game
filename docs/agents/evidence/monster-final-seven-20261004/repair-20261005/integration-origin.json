@@ -1,0 +1,21 @@
+{
+  "code_head": "a2c9e9145dba045971aff6060fa4228d5c2b8c1c",
+  "binaries": [
+    {
+      "name": "content_world_project_repository",
+      "binary": "/tmp/monster-comparison-build-target-cache/debug/deps/content_world_project_repository-35d3a8917434c528",
+      "sha256": "9d9a6a84898eb100e26d63dc78e94295e5db5f948467b96a89b24fedd5efd24b"
+    },
+    {
+      "name": "world_reward_claims_binding",
+      "binary": "/tmp/monster-comparison-build-target-cache/debug/deps/world_reward_claims_binding-7ec7fa10d3c727b8",
+      "sha256": "ebceb454e53f393b78286aa9911795eaad418e8a3812f1de4e9cf7c3df906cdd"
+    },
+    {
+      "name": "map_item_mint_postgres",
+      "binary": "/tmp/monster-comparison-build-target-cache/debug/deps/map_item_mint_postgres-4f1791327849b582",
+      "sha256": "095e1053b769c7957b46778611a6ae5216c2e23bea218ead66e5f0f549f485a2"
+    }
+  ],
+  "build_log": "repository-a2c.log"
+}

@@ -1,0 +1,85 @@
+{
+  "encounter": "canary:encounter/heart_chargers",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "ChargerSpawn": [
+      "canary:creature/charger"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/heart_of_destruction/charger.lua",
+      "blob_sha1": "76a3e8d2dd6c4ee7898d7c97764fd24678d9aadd"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_charger_spawn.lua",
+      "blob_sha1": "d39d5ef0227b747aad08fc5ad9f0d3c2663eb852"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        56
+      ],
+      "status": "mapped",
+      "resolution": "Charger is the charger participant; its file registers ChargerSpawn.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        7,
+        8,
+        23,
+        25,
+        26
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of a charger schedules chargerSpawn 6000 ms later, once per death (delay_ms).",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1,
+        2,
+        4,
+        5,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22
+      ],
+      "status": "mapped",
+      "resolution": "Game.createMonster(\"charger\", one of the ten positions picked uniformly, false, true): a full-health charger on a uniformly random tile of the charger_spots anchor.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        3,
+        24
+      ],
+      "status": "approved_omission",
+      "resolution": "spawningCharge marks a pending respawn for actions_charges_lever.lua line 65, which keeps the shared room locked; an instance per party (D26) replaces the lock."
+    }
+  ],
+  "outcome_evidence": []
+}

@@ -1,0 +1,23 @@
+{
+  "id": "FND02-CAPABILITY-COUNT",
+  "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+  "resource": "supported_capability_id or selected_capability_id collection",
+  "unit": "entries",
+  "hard_maximum": 128,
+  "configurable_range": {
+    "minimum": 128,
+    "maximum": 128
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bound repeated field count before sorting, uniqueness checks or set intersection.",
+  "client_visible": true,
+  "boundary_tests": [
+    "128 sorted unique IDs accepted",
+    "129 rejected",
+    "duplicates or unsorted IDs rejected as INVALID_CAPABILITY_SET"
+  ],
+  "consumers": [
+    "bootstrap/resume negotiation"
+  ],
+  "notes": "Core v1 behavior is not capability-optional; this fixed decoder bound protects future additive extensions."
+}

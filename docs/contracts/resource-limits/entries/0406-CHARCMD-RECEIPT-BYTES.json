@@ -1,0 +1,23 @@
+{
+  "id": "CHARCMD-RECEIPT-BYTES",
+  "owner_contract": "OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
+  "resource": "Encoded PublishCharacterCommandReceiptV1 request body (stored receipt)",
+  "unit": "bytes",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 1024
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Receipts are built from bounded fields; the worst-case committed create is below 1024 bytes and the store column is checked at 1..1024.",
+  "client_visible": false,
+  "boundary_tests": [
+    "worst-case committed and rejected receipts fit 1024 bytes"
+  ],
+  "consumers": [
+    "apps/game-server/src/native_admission_source/character_commands.rs",
+    "apps/game-server/src/durability/character_command.rs",
+    "apps/game-server/migrations/0087_character_commands.sql"
+  ],
+  "notes": "Contract sections 3, 5 and 12. Internal Game-to-Platform boundary; no client wire. A refused or failed exchange stores nothing and publishes nothing: the intent stays PENDING and is retried until it expires. The consumer is disabled unless [platform.character_commands] is configured. Registered by CHAR-CMD-CONSUMER-1."
+}

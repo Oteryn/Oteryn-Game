@@ -1,0 +1,65 @@
+{
+  "base_sha": "dbc7fe950fa2eb5188e51860bac02e8889463261",
+  "first_hosted_validation": {
+    "artifact_expires_at": "2026-10-08T09:33:24Z",
+    "artifact_id": 10800232468,
+    "artifact_name": "global-source-overlap-efb92ddc9f47a162c20f5eacc3c0a5244e58829a",
+    "artifact_zip_sha256": "5347c5dff35125f698fa42c7d3ec6ee08bb808b0ae0487e8e78d1fb7732e6b20",
+    "conclusion": "success",
+    "counts": {
+      "cross_lane_title_divergence_pages": 0,
+      "exact_id_overlap_pages": 504,
+      "g1_live_unique_pages": 9373,
+      "global_unique_pages": 15787,
+      "protected_item_pages": 6918
+    },
+    "global_source_universe_sha256": "59b6c85e18a6e55b65491f53fa701b9596009228e6e06ea7a3b0b6d493d47d6c",
+    "head_sha": "efb92ddc9f47a162c20f5eacc3c0a5244e58829a",
+    "pr": 825,
+    "run_id": 35981916741,
+    "workflow": "Global Source Overlap"
+  },
+  "inputs": [
+    {
+      "artifact_id": 10798668295,
+      "artifact_zip_sha256": "bf08a2715891d138b5db4ed4be0a69034770315e8d67f3e83867f22b9afc9863",
+      "full_output_sha256": "3291bf4ac148a3c28921be34ccec2db977e8ebf5dde82928263b93ddfc1a2ae5",
+      "hard_exclusions_absent": true,
+      "head_sha": "f1d7dbd6577b033c53545d8650ffba05aafc9480",
+      "lane": "G1_LIVE_NON_ITEM",
+      "run_id": 35977349690,
+      "source_snapshot_sha256": "29bfa1fb1b7fd2c8b29104fe90a20c4e6f3952cbc079b1c66c011856034c4b96",
+      "stable_without_retrieval_timestamp_sha256": "17f72a8f63861244b3193e639c3e33a530b641b77a7539653cc066a70c093c6c",
+      "unique_pages": 9373
+    },
+    {
+      "artifact_id": 10778892407,
+      "artifact_zip_sha256": "834c10d3dfb24b8857ffd666046743c96ee4093e7e09ef170dcd477ffea91b43",
+      "crosswalk_manifest_output_sha256": "f5bb9724bff51b99c35789dea986635e73fa9bdc6df77bc7f4e4a105768bed80",
+      "embedded_classification_sha256": "004948eeda07afb20d5560ec583eaa2a32397f19f891a7d8749962bc32fa0f8d",
+      "embedded_crystal_items_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+      "embedded_crystal_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "head_sha": "61d051a13329c51ae04d8a011655e279664c334c",
+      "item_revision": "UNKNOWN",
+      "lane": "PROTECTED_ITEM_CROSSWALK_EVIDENCE_ONLY",
+      "pages": 6918,
+      "protected_item_stable_sha256": "389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a",
+      "run_id": 35925860576
+    }
+  ],
+  "offline_reproduction": {
+    "canonical_identity_selection": false,
+    "global_source_universe_sha256": "59b6c85e18a6e55b65491f53fa701b9596009228e6e06ea7a3b0b6d493d47d6c",
+    "global_unique_pages": 15787,
+    "identity_basis": "EXACT_MEDIAWIKI_PAGE_ID",
+    "overlap_exact_page_ids": 504,
+    "semantic_promotion": false,
+    "title_divergences": 0
+  },
+  "retention": {
+    "committed_corpus": false,
+    "hosted_output": "GitHub Actions artifact only; 14-day retention; final exact-run evidence is external artifact metadata"
+  },
+  "schema": "OTERYN_G2_PINNED_INPUT_EVIDENCE/v1",
+  "task_id": "OTV2-20260924-global-source-overlap"
+}

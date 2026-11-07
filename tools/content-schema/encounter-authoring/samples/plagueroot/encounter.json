@@ -1,0 +1,130 @@
+{
+  "identity": {
+    "key": "canary:encounter/plagueroot",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Dream Courts: Plagueroot",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "plagueroot",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/plagueroot",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "plant_abomination",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/plant_abomination",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "plagueroot_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "plagueroot"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "plagueroot",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "plagueroot_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    },
+    {
+      "key": "plant_abomination_attendant",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "plant_abomination"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "plant_abomination",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/plant_attendant",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "plant_attendant",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "plagueroot_absorbs_earth_on_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "plagueroot",
+        "source": "any"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "convert_damage_to_heal",
+          "role": "plagueroot",
+          "damage_types": [
+            "earth"
+          ],
+          "component": "primary"
+        }
+      ]
+    },
+    {
+      "key": "plagueroot_absorbs_earth_on_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "plagueroot",
+        "source": "any"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "convert_damage_to_heal",
+          "role": "plagueroot",
+          "damage_types": [
+            "earth"
+          ],
+          "component": "primary"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "plagueroot_defeated"
+  ]
+}

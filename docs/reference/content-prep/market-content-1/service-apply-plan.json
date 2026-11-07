@@ -1,0 +1,61 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_APPLY_PLAN/v1",
+  "task": "MARKET-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "status": "STAGED_FOR_COORDINATOR",
+  "reason": "Every tracked content/services/ file participates in the World Bundle input fingerprint. Owner forbids content/world/pins/* mutation and regeneration; coordinator applies these data packets together with separately qualified pin regeneration.",
+  "target_files": [
+    {
+      "target_path": "content/services/trade/market-evidence/evidence-00000-00499.json",
+      "staged_path": "docs/reference/content-prep/market-content-1/admission-evidence/evidence-00000-00499.json",
+      "sha256": "48398dd51ff9eaf87a6ae79f7d1f4c0ea812253e83c4aa79eeef3ffe2d5081c7"
+    },
+    {
+      "target_path": "content/services/trade/market-evidence/evidence-00500-00999.json",
+      "staged_path": "docs/reference/content-prep/market-content-1/admission-evidence/evidence-00500-00999.json",
+      "sha256": "1c5076bd9dc73e553d06fdc7e6847472c802988a4f8d2d6e928edd90b4ce8d93"
+    },
+    {
+      "target_path": "content/services/trade/market-evidence/evidence-01000-01499.json",
+      "staged_path": "docs/reference/content-prep/market-content-1/admission-evidence/evidence-01000-01499.json",
+      "sha256": "00cb88b8631d79261054aacf67bce5255d6204c2ab281d9a1c31710874f8f359"
+    },
+    {
+      "target_path": "content/services/trade/market-evidence/evidence-01500-01999.json",
+      "staged_path": "docs/reference/content-prep/market-content-1/admission-evidence/evidence-01500-01999.json",
+      "sha256": "b2f7131f1840c4148b05bfe5fe49db54637832a496392eecdcef65af0e60a642"
+    },
+    {
+      "target_path": "content/services/trade/market-evidence/evidence-02000-02075.json",
+      "staged_path": "docs/reference/content-prep/market-content-1/admission-evidence/evidence-02000-02075.json",
+      "sha256": "ba08f4819e193203d5935f668918cb6af716c178836e2687aa51360bf0f04734"
+    },
+    {
+      "target_path": "content/services/trade/market-evidence/index.json",
+      "staged_path": "docs/reference/content-prep/market-content-1/admission-evidence/market-evidence-index.json",
+      "sha256": "606d1495134fc4686f50512694d5c222c7b45affe14705eb35043174e5fe28b0"
+    },
+    {
+      "target_path": "content/services/trade/market-evidence/services/evidence-00000-00323.json",
+      "staged_path": "docs/reference/content-prep/market-content-1/admission-evidence/evidence-00000-00323.json",
+      "sha256": "962d4b509a9a34753bd45b3daf50606728495a98688a60eba67a92e8fe32f2c2"
+    },
+    {
+      "target_path": "content/services/trade/market-evidence/services/index.json",
+      "staged_path": "docs/reference/content-prep/market-content-1/admission-evidence/services-index.json",
+      "sha256": "cb8e0a9ed663afd43ac3238c015f23ab1b415f5f42726e95be7ce83535c3730e"
+    }
+  ],
+  "generated_service_declarations_changed": false,
+  "runtime_switch_authorized": false,
+  "coordinator_must_verify": [
+    "current task target ownership",
+    "target-source conflicts and UNKNOWN fields",
+    "approved native/runtime schema wiring",
+    "generated catalogue equivalence",
+    "World Bundle pins and deterministic bundle",
+    "required exact-head validators"
+  ],
+  "data_completeness": "SOURCE_RECONCILED_WITH_EXPLICIT_VARIANT_AND_TAXONOMY_GAPS",
+  "market_source_check": "docs/reference/content-prep/market-content-1/market-source-reconciliation.json"
+}

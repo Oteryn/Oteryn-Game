@@ -1,0 +1,88 @@
+{
+  "blockers": [
+    "player cast contains unrepresented custom guard/branch semantics: {\"body\": \"creature:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE) local result = combat:execute(creature, variant) shareConservationHeal(creature:getPlayer(), variant:getNumber()) return result\", \"executed_combats\": [1], \"patterns\": [\"other\"], \"player_calls\": [\"getPlayer\", \"getPosition\"], \"stub_run\": \"failed\", \"tier\": \"custom\"}"
+  ],
+  "candidate_key": "candidate:spell/source/crystal-summer-current/e2405397903bf9e3",
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+    }
+  ],
+  "external_sources_used": false,
+  "logical_key": [
+    "instant",
+    "heal friend"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "crystal-summer-current/data/scripts/spells/healing/heal_friend.lua#1",
+    "source_callback_scope": "cached exact source callback expressions and cast tier",
+    "source_capture": "crystal-summer-current-registered-spells.json",
+    "source_capture_sha256": "bfa49da343913ac220721208128530f1a128e99ffd9b447808489daf59043200"
+  },
+  "registration_key": "crystal-summer-current/data/scripts/spells/healing/heal_friend.lua#1",
+  "remaining_mechanics": [
+    {
+      "reason": "player cast contains unrepresented custom guard/branch semantics: {\"body\": \"creature:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE) local result = combat:execute(creature, variant) shareConservationHeal(creature:getPlayer(), variant:getNumber()) return result\", \"executed_combats\": [1], \"patterns\": [\"other\"], \"player_calls\": [\"getPlayer\", \"getPosition\"], \"stub_run\": \"failed\", \"tier\": \"custom\"}",
+      "source_field": "source.cast_or_dependency"
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "source_header": {
+    "base_power": 260,
+    "carrier": "instant",
+    "cooldown_ms": 1000,
+    "costs": {
+      "mana": 120
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "name": "Heal Friend",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_heal_friend"
+    },
+    "reference_spell_id": 84,
+    "requirements": {
+      "level": 18,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": false,
+      "needs_target": true,
+      "parameter": "player_name"
+    },
+    "words": "exura sio"
+  },
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "bd5daf081c3475ac9096d8debe43c447e3fd284088c992d0b347e11f37c4b466",
+  "status": "BLOCKED"
+}

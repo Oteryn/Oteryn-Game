@@ -1,0 +1,75 @@
+{
+  "schema": "OTERYN_FINITE_SOURCE_COMPONENT_JOIN_PROOF/v1",
+  "baseline_head": "1caddc0d9e65ff502c8137264391cd43d06911b6",
+  "canonical_key": "oteryn:quest.serpentine_tower_quest",
+  "interaction_key": "canary:interaction/white_pearl/movements_white_pearl",
+  "proof": [
+    {
+      "kind": "pot_conditioned_tower_entry_and_return",
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/white_pearl/movements_white_pearl.lua",
+        "line": 15,
+        "blob_sha1": "65f3719a60663e1b3d322dea10e8f0ae7abaa9e6",
+        "blob_sha256": "216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
+        "role": "executable",
+        "classification": "OTS_HYPOTHESIS_ONLY",
+        "interaction_key": "canary:interaction/white_pearl/movements_white_pearl"
+      },
+      "sha256": "216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
+      "line_start": 1,
+      "line_end": 46,
+      "span_sha256": "216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/white_pearl/movements_white_pearl.lua"
+    },
+    {
+      "kind": "pot_conditioned_tower_entry_and_return",
+      "source": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/white_pearl/movements_white_pearl.lua",
+        "line": 15,
+        "blob_sha1": "65f3719a60663e1b3d322dea10e8f0ae7abaa9e6",
+        "blob_sha256": "216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
+        "role": "executable",
+        "classification": "OTS_HYPOTHESIS_ONLY",
+        "interaction_key": "canary:interaction/white_pearl/movements_white_pearl"
+      },
+      "sha256": "216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
+      "line_start": 1,
+      "line_end": 46,
+      "span_sha256": "216b2d0a1111217874c28c31ef14501df70f96c9bf5e2f48975b56da5995d66f",
+      "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/white_pearl/movements_white_pearl.lua"
+    },
+    {
+      "kind": "source_wiki_white_pearl_section_of_serpentine_tower",
+      "provider": "tibia_fandom",
+      "pageid": 11241,
+      "revision": 855106,
+      "sha256": "8b1f3cd992f3e9306d001b4dc13f6440337b284297a082c5528526b2b6110d79",
+      "line_start": 5,
+      "line_end": 10,
+      "span_sha256": "8599dd916f29d44cc1500aa39cf1907577113eb2a6c0f0ef8a08503b2bac8a14",
+      "url": "https://tibia.fandom.com/index.php?curid=11241&oldid=855106"
+    },
+    {
+      "kind": "exact_donor_item3465_name_pot_not_native_admission",
+      "provider": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "line_start": 10854,
+      "line_end": 10854,
+      "span_sha256": "7a70e9862c0c60b2800d14688735752eb94e607fbd2c1f0546ecc02c2b02c6c4",
+      "url": "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml#L10854"
+    }
+  ],
+  "coverage_scope": "partial_executable_component",
+  "coverage_gap": "The unsolved/full tower quest, global puzzle ordering and map/runtime bindings remain UNKNOWN.",
+  "source_holds_resolved": false,
+  "runtime_enabled": false,
+  "classification": "PINNED_LOCAL_SOURCE_CHECKED_NOT_LIVE_GAMEPLAY",
+  "graph_sha256": "6e6903b7f7bcab9033738dbd9245b42bf11a8bbaace3751b39ed021eeadd3c89"
+}

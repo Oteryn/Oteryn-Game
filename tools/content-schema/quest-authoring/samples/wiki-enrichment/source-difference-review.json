@@ -1,0 +1,2491 @@
+{
+  "schema": "OTERYN_SOURCE_DIFFERENCE_REVIEW/v1",
+  "count": 74,
+  "fields": {
+    "level": 65,
+    "premium": 9
+  },
+  "entries": [
+    {
+      "wiki_title": "25 Years of Tibia Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "20",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 95773,
+          "revid": 1065598,
+          "content_sha256": "bbac8af636051156df0f97730d84848ae5bd80399d2f60b4bcfdbd7a56258605",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=95773&oldid=1065598"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 53542,
+          "revid": 406180,
+          "content_sha256": "ee42b893f294f7c1cdb61d711d2617d96672d86c5d5f99b02ebdbaadab8d33fc",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=53542&oldid=406180"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "A Pirate's Tail Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "200",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 92766,
+          "revid": 1108681,
+          "content_sha256": "52ed047da628670c675a6b997d0d2a4119db583a32b87a3d3c6690dba90a50b0",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=92766&oldid=1108681"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 50514,
+          "revid": 429385,
+          "content_sha256": "088bb94918c58dab04cdeb8c1545300e6a5c3f424b1b15a87a25134a1ae6157b",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=50514&oldid=429385"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Adventures of Galthen Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "250",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 94718,
+          "revid": 1085045,
+          "content_sha256": "3c01565d120562456726b16350407ab031e866e39137265c9bfa42318841b165",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=94718&oldid=1085045"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 51823,
+          "revid": 417131,
+          "content_sha256": "7529616d292c7ac16b44ad5e93c6d483874d29ccee6fbe5bd5f5c238dbf38ef9",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=51823&oldid=417131"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Against the Spider Cult Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "42?",
+      "br_value": "40",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 20036,
+          "revid": 842642,
+          "content_sha256": "df3065c1edc2f7905378420b7009d9ea3cf126d0c191371e1ca823b372779511",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=20036&oldid=842642"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 3083,
+          "revid": 405069,
+          "content_sha256": "4887d28e054391dbe53e452b20e55ead20153c75639f35a8869051e19f2a2857",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=3083&oldid=405069"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "uncertain",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "An Interest In Botany Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "50+",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 46758,
+          "revid": 844034,
+          "content_sha256": "53d81d1df6a15b0c565f01f3924a83dbc515175948877b751d335cac30a8a9e5",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=46758&oldid=844034"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 3140,
+          "revid": 428720,
+          "content_sha256": "29bd28657c851f5b10d4d9646fd162a791bb4576e7a73da4020cb9c24ff8fed1",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=3140&oldid=428720"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "scoped_or_range"
+      }
+    },
+    {
+      "wiki_title": "An Uneasy Alliance Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0?",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 41956,
+          "revid": 683776,
+          "content_sha256": "a2bf9f3b74118ddf9f43ac754e473997d2a905878c1e1590b3f1574409b7b23a",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=41956&oldid=683776"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 3159,
+          "revid": 397665,
+          "content_sha256": "af5ba8679b1009c280caf8c82e79379058b73a3877f0041078aa031fa514c3eb",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=3159&oldid=397665"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "uncertain",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Ancient Aucar Outfits Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "200",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 101462,
+          "revid": 1045730,
+          "content_sha256": "91881b8de45024abf48dda1c8079d66d81bb8f3819848bd9e948cbcc60a371ed",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=101462&oldid=1045730"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 58011,
+          "revid": 409735,
+          "content_sha256": "6a3960d2f6f11c16f17067773d7f99828960d29639372e2bd349877f8c2be0cf",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=58011&oldid=409735"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Bear Room Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "2",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 3158,
+          "revid": 1044894,
+          "content_sha256": "659cce494b25111c69621da1f76e05a00adaa0f4627357367a0151bf7c8a7815",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=3158&oldid=1044894"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 80,
+          "revid": 372512,
+          "content_sha256": "d97c193dfbf92dd4d2bcb42e8bfa93b807ea9d8a7431edb808114992639d0811",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=80&oldid=372512"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Bigfoot's Burden Quest",
+      "kind": "structured_source_difference",
+      "field": "premium",
+      "fandom_value": "partial",
+      "br_value": "simnão",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 59903,
+          "revid": 900153,
+          "content_sha256": "83cebdbad5dccf9f51735c43255e4ef3bc9ffcb0ac71d3f9cb033779e16abe21",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=59903&oldid=900153"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 25499,
+          "revid": 416182,
+          "content_sha256": "44a17a0e39742a78d327fb3c02a78a79b924391b9d3f39897172b60ecf2c43fb",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=25499&oldid=416182"
+        }
+      ],
+      "field_resolution": "UNKNOWN"
+    },
+    {
+      "wiki_title": "Captain Iglues Treasure Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "2",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 3215,
+          "revid": 1044895,
+          "content_sha256": "f983fe66d965c63f1d7df5b4efbf83c55fe61a1da12d3263a7f3dc3db2dab3bc",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=3215&oldid=1044895"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 89,
+          "revid": 310525,
+          "content_sha256": "018d63a52f705974b7a4f2fada1d849ca6c5ff5ed70086e3796562a28a8a627a",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=89&oldid=310525"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Cave Explorer Outfits Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "80",
+      "br_value": "25",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 65476,
+          "revid": 846116,
+          "content_sha256": "41629dc33c8726199990ba86364c4900429e53bf96ecfdab50adbab9f70eca24",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=65476&oldid=846116"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 45933,
+          "revid": 417253,
+          "content_sha256": "e28b7e3b222788982f6081626f3779444092d193dfa2538a89e14836a77e3df0",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=45933&oldid=417253"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Child of Destiny Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "8",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 67082,
+          "revid": 845727,
+          "content_sha256": "37af9ab965d3531778fd958a1f08adebfafed6a366c542e7095ff04806fe59b2",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=67082&oldid=845727"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 28219,
+          "revid": 443296,
+          "content_sha256": "ea398cb5091682358a3ccce6f5a010cb4e381d66b7e464ee908b3a774a7d5471",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=28219&oldid=443296"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Citizen Outfits Quest on Rook",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "2",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 9741,
+          "revid": 683811,
+          "content_sha256": "948dfbe25ad8aa58fa9a6ed85d911b92313ad7f685362a25aefc0ced0b33532c",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=9741&oldid=683811"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 248,
+          "revid": 319878,
+          "content_sha256": "12bd5425b221f0564b813119ccb345547e086cd743ec03158c193526838e0a07",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=248&oldid=319878"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Citizen of Issavi Outfits Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "250",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 95000,
+          "revid": 869594,
+          "content_sha256": "e10987e69f2853666a4eaa2e15bf3ad2d07efa4078688d8f8494091105b1b517",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=95000&oldid=869594"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 51708,
+          "revid": 408815,
+          "content_sha256": "cf329e48a8b61ba7006711da802fdc8c3b666148e2adc132fe1ccbadadf1ee8d",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=51708&oldid=408815"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Combat Knife Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "2",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 3178,
+          "revid": 1043837,
+          "content_sha256": "273100a123ce414cca8c1004b1e9089461e7c2ec8aa8b25eacc4157d45a35260",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=3178&oldid=1043837"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 104,
+          "revid": 372513,
+          "content_sha256": "dd4cc7760d64aa6e983fe7a13859e2fb5ad97423ee583708bc6585555d2b5327",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=104&oldid=372513"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Cults of Tibia Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "8",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 81510,
+          "revid": 1098561,
+          "content_sha256": "833512943d302c3686a7ef3d79620bac61c5dc4079cc84699c2b18d6e40633ff",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=81510&oldid=1098561"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 40964,
+          "revid": 423919,
+          "content_sha256": "686d793cd773f2f0a2783c15ac51ccf083857702e385eb4d7b74b3993f3d61eb",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=40964&oldid=423919"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Dark Trails Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "?",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 67961,
+          "revid": 846469,
+          "content_sha256": "e17f0f9aec2c8ea42c7b237be01391ff8aa05e4367d569dfabe96ab01b385ad4",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=67961&oldid=846469"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 33630,
+          "revid": 405324,
+          "content_sha256": "3e95b507019ad5badba72ff3cb5e34fdea1b021d96d0eac998ba9c5abe99cb11",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=33630&oldid=405324"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "uncertain",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Dawnport Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "2 - 20",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 68640,
+          "revid": 683819,
+          "content_sha256": "1d6763776297dcfb722619efc4e7d194cf7f508856ddd198c3018e9c65bcdfa1",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=68640&oldid=683819"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 34280,
+          "revid": 404989,
+          "content_sha256": "bbba3cf26d6115f94029cf9dd54d57447cb51310efb41648017be6892450d65d",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=34280&oldid=404989"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "scoped_or_range",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Demon Outfits Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "100",
+      "br_value": "100 (120 para o Addon 2)",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 62985,
+          "revid": 845741,
+          "content_sha256": "ebf2b8136721ab21091b296992e79f51d7864b7ae87c71bf9d4214bd4bcef24b",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=62985&oldid=845741"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 27759,
+          "revid": 331122,
+          "content_sha256": "83253d475f759c6673cc7ed113d141da95b7a3c0b7e1a24e5b44ac708e020cb7",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=27759&oldid=331122"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "scoped_or_range"
+      }
+    },
+    {
+      "wiki_title": "Doublet Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "2",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 3553,
+          "revid": 683831,
+          "content_sha256": "380425f1c21da4123b6a84ebc2864b8289eb5c3e664cfc99c65e603407542a3e",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=3553&oldid=683831"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 108,
+          "revid": 300653,
+          "content_sha256": "81d6091b84b3820f216108cd5f31593dd43e8da6fd0fee2fb83cd9516ddb4dd6",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=108&oldid=300653"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Dragon Corpse Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "2",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 2481,
+          "revid": 1044896,
+          "content_sha256": "ce38c58dc3619478c4cb8ad9f3d69a32338a8aae06542e262709a00c579a57c7",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=2481&oldid=1044896"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 180,
+          "revid": 372514,
+          "content_sha256": "380d7d4a2a032f106ae1a8e6e986796da3b534b1ef5d363058f1c12a9ab956c1",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=180&oldid=372514"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Dragon Slayer Outfits Quest",
+      "kind": "structured_source_difference",
+      "field": "premium",
+      "fandom_value": "yes",
+      "br_value": "no",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 103992,
+          "revid": 1041575,
+          "content_sha256": "dcc91225944734694df240f09aa03be0d533074caaf884a6632ffa5583356b48",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=103992&oldid=1041575"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 61047,
+          "revid": 408914,
+          "content_sha256": "5c510703fd449afdc0b9dfb2ce794978ca6c70bed0114709a929e0a376170361",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=61047&oldid=408914"
+        }
+      ],
+      "field_resolution": "UNKNOWN"
+    },
+    {
+      "wiki_title": "Druid Outfits Quest on Rook",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "2",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 9744,
+          "revid": 683839,
+          "content_sha256": "629d0347949a0ce8e6c181eb9750c7942b6d20adcb04ddf9c2a4d57864e4da30",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=9744&oldid=683839"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 256,
+          "revid": 408770,
+          "content_sha256": "bcf0fbe794b88969728c520f9087d06a048e15538b2f57cd867ba4e0291fd4d9",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=256&oldid=408770"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Elementalist Outfits Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "8",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 54199,
+          "revid": 844737,
+          "content_sha256": "c51914468b58d1f55395feb39f04f7cebb535baf6b7a72899101ec16eabd467c",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=54199&oldid=844737"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 17266,
+          "revid": 333005,
+          "content_sha256": "839944e0539c4347bbf744a8293caa865be11b5393d0f0bf2fab9e4ced5c2212",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=17266&oldid=333005"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Exchange Quests",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0-35",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 9667,
+          "revid": 692497,
+          "content_sha256": "54b45a16de6fed198974864e77e959c89677a8e4a5412750bb1e88936c225c9e",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=9667&oldid=692497"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 260,
+          "revid": 408214,
+          "content_sha256": "e1f874f6fef26778c02e6b4931084e23c476695891a2d9f636851f7db6f9f357",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=260&oldid=408214"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "scoped_or_range",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Exchange Quests",
+      "kind": "structured_source_difference",
+      "field": "premium",
+      "fandom_value": "?",
+      "br_value": "simnão",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 9667,
+          "revid": 692497,
+          "content_sha256": "54b45a16de6fed198974864e77e959c89677a8e4a5412750bb1e88936c225c9e",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=9667&oldid=692497"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 260,
+          "revid": 408214,
+          "content_sha256": "e1f874f6fef26778c02e6b4931084e23c476695891a2d9f636851f7db6f9f357",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=260&oldid=408214"
+        }
+      ],
+      "field_resolution": "UNKNOWN"
+    },
+    {
+      "wiki_title": "Falconer Outfits Quest",
+      "kind": "structured_source_difference",
+      "field": "premium",
+      "fandom_value": "no",
+      "br_value": "yes",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 96699,
+          "revid": 909040,
+          "content_sha256": "183b1ec27d1f8687afb9ca6e7639215f87e8f065720492b4d06faecefb9c5f3a",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=96699&oldid=909040"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 48322,
+          "revid": 385716,
+          "content_sha256": "8504e37672edd347807ef5d6e3358a1e66b8ae0e3465e2cc8beb6ede2c23fcf4",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=48322&oldid=385716"
+        }
+      ],
+      "field_resolution": "UNKNOWN"
+    },
+    {
+      "wiki_title": "Fiend Slayer Outfits Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "250",
+      "br_value": "250+",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 107656,
+          "revid": 1177418,
+          "content_sha256": "1863334fcfe4b7e2725e10b2fc0a8f4f6b13d467210c4614ec34d838a988f80f",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=107656&oldid=1177418"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 63434,
+          "revid": 419052,
+          "content_sha256": "0b4b9982d9919ceaebd412d59073ab24a7c826d1563ea12e45b641a952acf4bf",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=63434&oldid=419052"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "scoped_or_range"
+      }
+    },
+    {
+      "wiki_title": "Fire-Fighter Outfits Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "250",
+      "br_value": "500",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 98824,
+          "revid": 938141,
+          "content_sha256": "9074de18a077f2e2ac09068afce440c982a855b2e615ac729085ce33549aaf2d",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=98824&oldid=938141"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 55563,
+          "revid": 396884,
+          "content_sha256": "25c4704650da90b7107393ffb83c5177b047e8724b878f9f517d1a3aad92c4c3",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=55563&oldid=396884"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Formal Dress Outfits Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "20",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 96197,
+          "revid": 898654,
+          "content_sha256": "3a986ff2bfb64c555f6ac83ab241cff95d83bc202e9eab54393bc15562bf7959",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=96197&oldid=898654"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 53557,
+          "revid": 390973,
+          "content_sha256": "376b62e748bce17588c1ebf8e82d4f0c350a5d09cd2941a496ec077ad4bfd45e",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=53557&oldid=390973"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Goblin Temple Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "2",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 3574,
+          "revid": 683865,
+          "content_sha256": "9f2924b2f7263cd8a1f27fd334b812ec5c54a4cd5dfec41043430b3335d1685d",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=3574&oldid=683865"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 186,
+          "revid": 372515,
+          "content_sha256": "888950eda3242b91573ac20552a76a40fb5237d6c676463bb990090b461e5e2a",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=186&oldid=372515"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Hero of Rathleton Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "?",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 69694,
+          "revid": 1078130,
+          "content_sha256": "5a8f6404b76038962a263babb56421c56127736342f81d955f5d7c8760cfe87d",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=69694&oldid=1078130"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 35229,
+          "revid": 398690,
+          "content_sha256": "8b9341f3e56b2639722691901ca5a96c90bd6a09d7de13d20ff4d3ec78ae6a2b",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=35229&oldid=398690"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "uncertain",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Illuminator Outfits Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "200",
+      "br_value": "200+",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 109146,
+          "revid": 1119520,
+          "content_sha256": "88a6233e41990ccd505a653a233eb6b6ce5eeef058554ed35558e4c2f8da3ba8",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=109146&oldid=1119520"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 65007,
+          "revid": 427849,
+          "content_sha256": "96408ae8cb647d817dd6fcae7b4a92ebf3f1ff826c68bd58cc98855b2df761ea",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=65007&oldid=427849"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "scoped_or_range"
+      }
+    },
+    {
+      "wiki_title": "In Service of Yalahar Quest",
+      "kind": "structured_source_difference",
+      "field": "premium",
+      "fandom_value": "yes",
+      "br_value": "no",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 30601,
+          "revid": 1178479,
+          "content_sha256": "b5f61eef59f6afdfd1bfe8258bc801daa0cdbb8699c5ec8fca6c0d50a42b5e4c",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=30601&oldid=1178479"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 4464,
+          "revid": 431713,
+          "content_sha256": "b96b5b4c8a6aea8f48947d6459a8ea9cf9f5f518572342a744233e6e2f888b92",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4464&oldid=431713"
+        }
+      ],
+      "field_resolution": "UNKNOWN"
+    },
+    {
+      "wiki_title": "Into The Bone Pit Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "35",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 20027,
+          "revid": 1091432,
+          "content_sha256": "8639212bd36863f1f7fb4023ac83f9bb023f2e85d9f0925d7718c4cc88f9d8dc",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=20027&oldid=1091432"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 4465,
+          "revid": 393489,
+          "content_sha256": "324835c7c834d503ec3df984128453e6a67b2f15dc0e0ce2b1900cf36c6650d5",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4465&oldid=393489"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Jack to the Future Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "8",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 50739,
+          "revid": 844537,
+          "content_sha256": "78fae117bb8e0edbac5cf2b73c02bb1b7cb12e773dd9d83c7684b17167b2da19",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=50739&oldid=844537"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 4470,
+          "revid": 429366,
+          "content_sha256": "f8d0a7efad3958e097e650c2223f6051612bafe623e9b56c3dd16e5b24503b36",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4470&oldid=429366"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Katana Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "2",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 3179,
+          "revid": 1044887,
+          "content_sha256": "9cc5e33003a03616117fc6c239309a46e934a66d8f73688adda31605b5c165f0",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=3179&oldid=1044887"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 197,
+          "revid": 442914,
+          "content_sha256": "770619bf6bc38c524558cab84ba61141348c0b2b7c7538cf01e43c4108bdc887",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=197&oldid=442914"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Minotaur Hell Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "2",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 3212,
+          "revid": 1044888,
+          "content_sha256": "09b5cb577412bf834581f6ef1d96d00f730405be72b282310d06749384269701",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=3212&oldid=1044888"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 209,
+          "revid": 300658,
+          "content_sha256": "96402f55a1d288f87fb0b637f6587f10a1c129210573ee9377230324566d3059",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=209&oldid=300658"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "No Rest for the Wicked Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "250",
+      "br_value": "250+",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 107633,
+          "revid": 1177414,
+          "content_sha256": "6ad66fe2bebb2836ac1f7b7219726d39ba9e83e828d9b8f6bddc17f9c6d65e22",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=107633&oldid=1177414"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 63211,
+          "revid": 423914,
+          "content_sha256": "baf4333b4810cf981b2b519515090abab24da8db3a7f59d87fccec7539f1ae65",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=63211&oldid=423914"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "scoped_or_range"
+      }
+    },
+    {
+      "wiki_title": "Opticording Sphere Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "100",
+      "br_value": "200",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 65056,
+          "revid": 1035096,
+          "content_sha256": "90b6460be787702544c756e3104805bbc72c72601c8d475c4d8db8e30bbf1059",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=65056&oldid=1035096"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 30715,
+          "revid": 432007,
+          "content_sha256": "bb0eeabe0fd33c529f22bd1f4e841e6654d426f7707edfe2977f0cc2c89003cd",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=30715&oldid=432007"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Pick Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "2",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 3180,
+          "revid": 1044889,
+          "content_sha256": "722373a5bc98ec4d097c0a37205aea798295abd25e6b1be0a873a050870105b3",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=3180&oldid=1044889"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 229,
+          "revid": 442915,
+          "content_sha256": "eac09b1516a30a70d8b8777e646c472e1f97c50ac69ae9c0c729b60d730dc29c",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=229&oldid=442915"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Poltergeist Outfits Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "250",
+      "br_value": "100",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 89705,
+          "revid": 848011,
+          "content_sha256": "e30f51f2a90fc62d60955ce23047d3b635b31a0c5e1ad7fcd03f601434d92603",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=89705&oldid=848011"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 48279,
+          "revid": 396883,
+          "content_sha256": "7ccf9aae423e70f1e74c6cc04178f5ca3142ce5de3ab6639b30d58b617bb460a",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=48279&oldid=396883"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Present Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "2",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 3214,
+          "revid": 1044890,
+          "content_sha256": "8b20973a9efae67a66d1dac136579639f479ca1f37022479be3bb5fc06104acd",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=3214&oldid=1044890"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 233,
+          "revid": 301001,
+          "content_sha256": "c3e943963155ad44af9bf0005626381cfa06aac57f6c69ddaa4a8d60df53d3f1",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=233&oldid=301001"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Primal Ordeal Quest",
+      "kind": "structured_source_difference",
+      "field": "premium",
+      "fandom_value": "yes",
+      "br_value": "Sim",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 98587,
+          "revid": 1197351,
+          "content_sha256": "1a85ea6d6e1a4c8c22e5c004cde2a97a85b500a56e6d976412348035f1091809",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=98587&oldid=1197351"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 55669,
+          "revid": 429264,
+          "content_sha256": "a5c510debc89f45027ef7d00a933e745533d87e53c409d41e141a68f49cd8183",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=55669&oldid=429264"
+        }
+      ],
+      "field_resolution": "UNKNOWN"
+    },
+    {
+      "wiki_title": "Rapier Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "2",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 3334,
+          "revid": 1043841,
+          "content_sha256": "63f43d7766c67ad68ddd1ec6ad68fdc2e7adb9eacae69734c9da155631cbf76c",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=3334&oldid=1043841"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 213,
+          "revid": 372519,
+          "content_sha256": "7e4ba0ed880151bdf2b50902c71173dcfa13a5964d72fc8682da254d4e11724e",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=213&oldid=372519"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Rascoohan Outfits Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "?",
+      "br_value": "200+",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 93016,
+          "revid": 895793,
+          "content_sha256": "cf4aead7ec2d8e268d17f1df4248e871e670d640c14c6bea78f87641fbe82590",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=93016&oldid=895793"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 50613,
+          "revid": 385731,
+          "content_sha256": "1ff802c186d44a7980d4053aae6c14c776106a5e406f6df3d8c3a8421e8a2f5d",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=50613&oldid=385731"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "uncertain",
+        "crosscheck": "scoped_or_range"
+      }
+    },
+    {
+      "wiki_title": "Ravenous Madness Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "8",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 107279,
+          "revid": 1206164,
+          "content_sha256": "99209332128899c11d8499e63e19f0a1f19644c83871e83d6e3c8f392827c14d",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=107279&oldid=1206164"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 61710,
+          "revid": 423912,
+          "content_sha256": "e8f142bb3cf47b8d0f097073d204bffb597e2c410a46dfa0c541accddcd86f85",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=61710&oldid=423912"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Revenant Outfits Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "250",
+      "br_value": "300",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 92416,
+          "revid": 1008240,
+          "content_sha256": "cb4c03926658a2a0e89adadda16c33bc8c707f6f389666d44d742f77180f5197",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=92416&oldid=1008240"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 50090,
+          "revid": 396885,
+          "content_sha256": "9ae7e3599948e92b5ee20addb2b84d9a4e62a2f3e88af72ec857357ddbb796c8",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=50090&oldid=396885"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Rift Warrior Outfits Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "150",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 77049,
+          "revid": 683954,
+          "content_sha256": "462a42086907e8b424d5ca0a48e19bb229bbec3ac218be65eab24dd13fd5244a",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=77049&oldid=683954"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 39132,
+          "revid": 396392,
+          "content_sha256": "09afd7a3d129a9339be08f8bdc026855bd481a5718dffcb65df6497d89c813fd",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=39132&oldid=396392"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Rootwalker Outfits Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "300",
+      "br_value": "300+",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 107080,
+          "revid": 1066862,
+          "content_sha256": "c4f8d00712ce96710668cabee4ee7e41ccaff57895e0c1586701f4046549768c",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=107080&oldid=1066862"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 62056,
+          "revid": 427613,
+          "content_sha256": "4a8e315a778b3c3a1c22e7ceb4774c6c8be7b1f5a8c3bcfbd88a59567a91df7d",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=62056&oldid=427613"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "scoped_or_range"
+      }
+    },
+    {
+      "wiki_title": "Sanctuary of the Lizard God Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "2 - 20",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 68839,
+          "revid": 1198612,
+          "content_sha256": "fe8e2d3b054078252c7436ab7641612a69f3299d6cf076626c835d06aa497c93",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=68839&oldid=1198612"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 34496,
+          "revid": 429454,
+          "content_sha256": "67915812fcde66a2a65d930531bbd54f872f0c2d280e7620727968fd8196677e",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=34496&oldid=429454"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "scoped_or_range",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Sea of Light Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "8",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 41820,
+          "revid": 791161,
+          "content_sha256": "18c0af7fd440590a7dd8cf73ab09187548e3f7c61c8dde39791b56d25ca1aa20",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=41820&oldid=791161"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 4504,
+          "revid": 433487,
+          "content_sha256": "649841f969428bf17e2e6c029f7ba25aa94850bff84a3a80cc315865b72251b9",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4504&oldid=433487"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Shards of a Broken Moon Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "?",
+      "br_value": "250",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 110935,
+          "revid": 1195699,
+          "content_sha256": "333ec7e473249ac458b5ed7d1ae5e0b6e97846646ef6943a53cabdec9cc3a09a",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=110935&oldid=1195699"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 67381,
+          "revid": 440686,
+          "content_sha256": "633af18b76d44556c4aeabd77f654c16cd007c1e96430014c30eb3d838170176",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=67381&oldid=440686"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "uncertain",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Short Sword Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "2",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 2729,
+          "revid": 1044891,
+          "content_sha256": "2604dda2b5aa23981a56f7333e4eccc0794bf953366ce58dcc9730a8afdc7911",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=2729&oldid=1044891"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 236,
+          "revid": 301000,
+          "content_sha256": "e5dd86913b904c056cfd231c8478229480ddc8c15cfeb716725de68d54ef62ee",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=236&oldid=301000"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Small Health Potion Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "2",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 3154,
+          "revid": 1043985,
+          "content_sha256": "d3587d2a43ae82c281c2867610c182842f179c0385a1e292bfaae334728826a9",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=3154&oldid=1043985"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 240,
+          "revid": 300980,
+          "content_sha256": "95ad50422ef71bdc606e9f3df0a9d9f58bbefd18f1377dbd2bc419526534c150",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=240&oldid=300980"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Spirithunters Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "8",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 50764,
+          "revid": 844628,
+          "content_sha256": "31be9f4b53c8a0ffe7687c80086bde0891f864f5c2eeb34f6a1bef62cb3f7f46",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=50764&oldid=844628"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 4515,
+          "revid": 393509,
+          "content_sha256": "4033b2d4c311321cec4a6e45c566ce08248e7f79577f83f890b05b56d006230d",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4515&oldid=393509"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Studded Legs Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "2",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 3225,
+          "revid": 1044892,
+          "content_sha256": "143ef69f9003c8c9d643d95437d0629c67d0a5edb93ef3412e20502e0758f2cb",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=3225&oldid=1044892"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 242,
+          "revid": 300999,
+          "content_sha256": "c858a98ddfea9a6d59cb4f27136f3f52f4436be73e9de32064d577e058d57c26",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=242&oldid=300999"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Studded Shield Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "2",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 3213,
+          "revid": 1044893,
+          "content_sha256": "25c66097e073f7e903538157bb8a886574385a6265c8f582ecbd7f234eb8ae54",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=3213&oldid=1044893"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 245,
+          "revid": 391821,
+          "content_sha256": "b0dc9869acc61bb9f7714ab85638920695d157257a15a7933f68e55e1f017375",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=245&oldid=391821"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Targuna Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "10 / 12",
+      "br_value": "8",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 110219,
+          "revid": 1172822,
+          "content_sha256": "387c062c52abf97d29309117b07224255820e5ae31fae999dac1cb5bc568bbb2",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=110219&oldid=1172822"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 66819,
+          "revid": 440768,
+          "content_sha256": "7b99481568cfb3fc7481f87c1f7e1d14ec4466d70cf91aabdf131f70eac364b5",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=66819&oldid=440768"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "scoped_or_range",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "The Beginning Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "1",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 25540,
+          "revid": 843247,
+          "content_sha256": "903f94fe28a38f0875fbce8bf4c611854dc7858efeb5878e2b7427bcabeaf98a",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=25540&oldid=843247"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 217,
+          "revid": 372520,
+          "content_sha256": "face1bd0582ef80cd6ebfea2c76c6c9fa7e5f75b4ef679aee640864413b804b7",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=217&oldid=372520"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "The Hidden City of Beregar Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0 (100 For The Firewalker Boots Part)",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 30690,
+          "revid": 843688,
+          "content_sha256": "201ff2d1c0b680e1bd925e0f1193fa4e1e443068af6e1fe11cff50d7975ef508",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=30690&oldid=843688"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 4532,
+          "revid": 431615,
+          "content_sha256": "f2aebb5cd99f4392aaba1c42796ec2ceecf460db1200c3ff843c8ba2db6c4591",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4532&oldid=431615"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "scoped_or_range",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "The New Frontier Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "77*(for the last mission only)",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 41754,
+          "revid": 1058656,
+          "content_sha256": "a010f22744255ac717e2bbc18d46a2e329cc63ab0b2272c07e3778845ee6ec5e",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=41754&oldid=1058656"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 4536,
+          "revid": 437241,
+          "content_sha256": "4acb9a937bc33bb64c5b8e897ad5ed55fb9d5d7ca217f8c63a91d8396607da5d",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4536&oldid=437241"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "scoped_or_range",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "The Repenters Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0?",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 64474,
+          "revid": 846070,
+          "content_sha256": "a70b0ccb36e9e9e26ec5e60e4bbeac1d3b965d06ba6a3b9535eaaab929f97581",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=64474&oldid=846070"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 30240,
+          "revid": 434244,
+          "content_sha256": "d69d9ef543febecb79348717a49ce62a1224943d8ed1f68faeaa624468f269fa",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=30240&oldid=434244"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "uncertain",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "The Rookie Guard Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0 - 5",
+      "br_value": "2-5",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 53931,
+          "revid": 891816,
+          "content_sha256": "96f3268be16e7faf36153fd7d3f3fcb381e508043ab442397f861d1fef6bdc4f",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=53931&oldid=891816"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 16993,
+          "revid": 433575,
+          "content_sha256": "9420ae711c8a602634294c00bbf35dcd296f2f56e1313c8073db3105a1c06c6b",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=16993&oldid=433575"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "scoped_or_range",
+        "crosscheck": "scoped_or_range"
+      }
+    },
+    {
+      "wiki_title": "The Tainted Souls Quest",
+      "kind": "structured_source_difference",
+      "field": "premium",
+      "fandom_value": "no",
+      "br_value": "yes",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 75168,
+          "revid": 847155,
+          "content_sha256": "e780c5abb83495d6a56756b40caf579943d5d13df1c6f4ef2e66a3a5dd30479f",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=75168&oldid=847155"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 36275,
+          "revid": 393526,
+          "content_sha256": "e1b3578ca5c891f983a758ce62850a0530812aaa80661d65b40db74ee3d7f274",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=36275&oldid=393526"
+        }
+      ],
+      "field_resolution": "UNKNOWN"
+    },
+    {
+      "wiki_title": "The Way of the Monk Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "275",
+      "br_value": "2+",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 108376,
+          "revid": 1169052,
+          "content_sha256": "185cf25556b5b5db245e7fced3a61fe74963717249a140ffe0b770c9013ebebb",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=108376&oldid=1169052"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 64189,
+          "revid": 435873,
+          "content_sha256": "540c10ea7b080b26e8c4a9eff0a79688692ea4fbec92710c4e0bcfe529567664",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=64189&oldid=435873"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "scoped_or_range"
+      }
+    },
+    {
+      "wiki_title": "Threatened Dreams Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "30",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 81362,
+          "revid": 1070008,
+          "content_sha256": "06421a22f9eaa9cbafaf07e09fa7d12ebf49603d49187da3dbb40a7ead416dd1",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=81362&oldid=1070008"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 40987,
+          "revid": 432696,
+          "content_sha256": "093088673e80ed5954b5d3c11dbec13500d0497e5e409582fc2ec9d6b5be494f",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=40987&oldid=432696"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Threatened Dreams Quest",
+      "kind": "structured_source_difference",
+      "field": "premium",
+      "fandom_value": "yes",
+      "br_value": "simnão",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 81362,
+          "revid": 1070008,
+          "content_sha256": "06421a22f9eaa9cbafaf07e09fa7d12ebf49603d49187da3dbb40a7ead416dd1",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=81362&oldid=1070008"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 40987,
+          "revid": 432696,
+          "content_sha256": "093088673e80ed5954b5d3c11dbec13500d0497e5e409582fc2ec9d6b5be494f",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=40987&oldid=432696"
+        }
+      ],
+      "field_resolution": "UNKNOWN"
+    },
+    {
+      "wiki_title": "Treasure Hunt Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "35 (The Shattered Isles Quest)",
+      "br_value": "35",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 37108,
+          "revid": 843992,
+          "content_sha256": "9ce76d941f223b0b9ca4fccc6c1e8399cc0c6c35853a3f5a235bc08648b0ff15",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=37108&oldid=843992"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 4558,
+          "revid": 431833,
+          "content_sha256": "2ee71acc465aa386a903b6d1dc385f898bad79d5f1d4cdc4bfc557096e2a49c8",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4558&oldid=431833"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "scoped_or_range",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Troll Sabotage Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "0",
+      "br_value": "8",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 25544,
+          "revid": 1095877,
+          "content_sha256": "cbcfe5d892493569aa354e95a7773fdff516b10e83146b825c722e4e6e1b141d",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=25544&oldid=1095877"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 4562,
+          "revid": 393505,
+          "content_sha256": "feb2f67f5cdd90618060d1244c05c8e7d45b39c1d31547bfd760d0e22ed79174",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4562&oldid=393505"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Vampire Hunter Quest",
+      "kind": "structured_source_difference",
+      "field": "premium",
+      "fandom_value": "no",
+      "br_value": "simnão",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 26840,
+          "revid": 843291,
+          "content_sha256": "784240411451528ab5edb75f1f7a801dff023dce6531861a590e64d03dc94821",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=26840&oldid=843291"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 4564,
+          "revid": 416234,
+          "content_sha256": "edf20133bb18184a905fef94743477b6580da937d6697206fc11031f26d74fb1",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4564&oldid=416234"
+        }
+      ],
+      "field_resolution": "UNKNOWN"
+    },
+    {
+      "wiki_title": "What a Foolish Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "40*",
+      "br_value": "40",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 19799,
+          "revid": 1094085,
+          "content_sha256": "a3cb611718f4424d441dbed82f121360ca72739c4958a1dd4132b79fd9f9cc04",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=19799&oldid=1094085"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 2309,
+          "revid": 428356,
+          "content_sha256": "0deab44aa93b4863f8a9fc963f062f21c238526310d151638bfd21dc684f5182",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=2309&oldid=428356"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "scoped_or_range",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Wrath of the Emperor Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "80 (Expertise door during mission 8)",
+      "br_value": "80",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 46607,
+          "revid": 1103764,
+          "content_sha256": "f4a98930a436bca9559764bb048375c4e19052a9f9ecd7f77752086bf7f24a5d",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=46607&oldid=1103764"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 4572,
+          "revid": 435773,
+          "content_sha256": "0d83c5b70cc71609804c97ff04517cdab5bca7ac7e6f7971fc2f21bc54beb92b",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=4572&oldid=435773"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "scoped_or_range",
+        "crosscheck": "plain_integer"
+      }
+    },
+    {
+      "wiki_title": "Yalaharian Outfits Quest",
+      "kind": "structured_source_difference",
+      "field": "level",
+      "fandom_value": "80",
+      "br_value": "0",
+      "fandom_target_cut": "2026-09-27",
+      "br_target_cut": "2026-10-01",
+      "classification": "CONFLICT",
+      "resolution": "Preserve scoped fields; align dates and meanings before promotion",
+      "sources": [
+        {
+          "provider": "tibia_fandom",
+          "pageid": 68910,
+          "revid": 843726,
+          "content_sha256": "8aec416e1981fd4bc4717a20d3999653bbacdf8911b2f147e2d440d267c93511",
+          "target_cut": "2026-09-27",
+          "url": "https://tibia.fandom.com/index.php?curid=68910&oldid=843726"
+        },
+        {
+          "provider": "tibiawiki_br",
+          "pageid": 45930,
+          "revid": 387291,
+          "content_sha256": "cb28a38b5a72195028b7a8557f63a30319e6c3c2ab40dc84fc206bb45edf7f00",
+          "target_cut": "2026-10-01",
+          "url": "https://www.tibiawiki.com.br/index.php?curid=45930&oldid=387291"
+        }
+      ],
+      "field_resolution": "UNKNOWN",
+      "source_level_kinds": {
+        "base": "plain_integer",
+        "crosscheck": "plain_integer"
+      }
+    }
+  ],
+  "canonical_updates": []
+}

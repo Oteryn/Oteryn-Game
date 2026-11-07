@@ -1,0 +1,11 @@
+{
+  "id": 200,
+  "name": "TEAM_FINDER_LEADER_V1",
+  "owner_decision": "S14a",
+  "owner": "Game Team Finder owner",
+  "requires": [],
+  "command_types": [390, 391],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "S14a: only bundle-world nodes offer through BUNDLE_WORLD_OFFERED_CAPABILITIES."
+}

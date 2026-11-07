@@ -1,0 +1,26 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_APPLY_PLAN/v1",
+  "task": "FORGE-CONTENT-1",
+  "status": "STAGED_FOR_COORDINATOR",
+  "reason": "Tracked content/ files participate in content-tree validation and World Bundle inputs. This packet is staged as docs-only reference evidence; the coordinator applies it to the target paths together with any separately qualified pin or seal regeneration.",
+  "target_files": [
+    {
+      "target_path": "rulesets/items/exaltation-forge/index.json",
+      "staged_path": "docs/reference/content-prep/forge-content-1/admission-evidence/index.json",
+      "sha256": "e285420395b3df1f93bbeb207658e6cc07eece41e07acc0b4f286f969a099a40"
+    },
+    {
+      "target_path": "rulesets/items/exaltation-forge/reference-evidence.json",
+      "staged_path": "docs/reference/content-prep/forge-content-1/admission-evidence/reference-evidence.json",
+      "sha256": "2dab16a8adec85755ab95ae6dbc0f991352af51d2cb50a41165267ecd4f44462"
+    }
+  ],
+  "runtime_switch_authorized": false,
+  "coordinator_must_verify": [
+    "current task target ownership",
+    "target-source conflicts and UNKNOWN fields",
+    "approved native/runtime schema wiring",
+    "World Bundle pins and deterministic bundle",
+    "required exact-head validators"
+  ]
+}

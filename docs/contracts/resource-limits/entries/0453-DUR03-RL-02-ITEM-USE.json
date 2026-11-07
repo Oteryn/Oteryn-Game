@@ -1,0 +1,22 @@
+{
+  "id": "DUR03-RL-02-ITEM-USE",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md",
+  "resource": "Location lines of one item-use transaction (the retired used stack's entry and a fresh flask's new entry)",
+  "unit": "location lines per logical transaction",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 2,
+    "maximum": 2
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked before any write; the stack adjustments of a used stack and of a compatible flask stack are item state, not lines.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=2: the last potion unit with a fresh flask is admitted",
+    "max+1=3 rejected (CAPACITY_EXCEEDED)"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/item_use_audit.rs ItemUseUsage::check and the payload gate"
+  ],
+  "notes": "ITEM-USE-0 \u00a74.4 (DUR-03 \u00a739.3 item-use amendment); item-use shapes only, the one-item DUR03-RL-01..08 rows are unchanged. Registered by OTV2-20261013-item-use-1a-contract."
+}

@@ -1,0 +1,13 @@
+{
+  "mechanic": "local-minimap",
+  "kind": "panels",
+  "id": "local-minimap-panel",
+  "status": "supported",
+  "entry": "view.rs::view",
+  "not_applicable": {
+    "state": "Projects the existing live map and spatial state without independent storage.",
+    "protocol": "Uses existing world-map input and capability-64 target-move dispatch.",
+    "input": "Native app routes primary pointer clicks through the panel projection.",
+    "settings": "Visibility uses the existing local reference preferences."
+  }
+}

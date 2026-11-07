@@ -1,0 +1,25 @@
+{
+  "id": "DUR03-RL-02",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+  "resource": "Location/custody lines in one DUR-03 native one-item logical transaction",
+  "unit": "location/custody lines per logical transaction",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 2,
+    "maximum": 2
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked before allocation or partial mutation; never truncated. MINT has one Ground destination; TRANSFER has one Ground source and at most one destination line (the container slot or a new main-backpack entry; a B3 full merge has only the Ground removal).",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=2: a TRANSFER with one source and one destination line is accepted",
+    "max+1=3: an additional or duplicated location line is rejected"
+  ],
+  "consumers": [
+    "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
+    "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
+    "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)",
+    "apps/game-server/src/durability/house_interior_audit.rs and house_interior.rs (HOUSE-RUNTIME-1a: closed one-item House place/take/tile-move, same-transaction custody/receipt/event)"
+  ],
+  "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+}

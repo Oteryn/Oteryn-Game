@@ -1,0 +1,26 @@
+{
+  "abilities": [],
+  "effects": [
+    {
+      "identity": {
+        "key": "candidate:spell/protect_party/effect-attributes",
+        "revision": "spell-p2-r20"
+      },
+      "operation": "condition",
+      "duration_ms": 120000,
+      "condition": {
+        "type": "attributes",
+        "attribute_modifiers": [
+          {
+            "attribute": "skill_shield",
+            "mode": "add",
+            "value": 3
+          }
+        ],
+        "lifetime": "fixed_duration",
+        "buff_spell": true
+      }
+    }
+  ],
+  "formulas": []
+}

@@ -1,0 +1,110 @@
+[
+  {
+    "file": "data-otservbr-global/lib/quests/the_primal_ordeal.lua",
+    "git_blob": "24324e1147b4c66deca468cbedfb9f8987428272",
+    "sha256": "18e68a281c1b1245dd1f01fd70fe2947c2ae5ac7011c39be686fe027bc4bda0a",
+    "error": "no monster registered"
+  },
+  {
+    "file": "data-otservbr-global/monster/birds/headpecker.lua",
+    "git_blob": "c5a686633be1b65cea96e710ef27d55ca11c4be5",
+    "sha256": "28caf9d20a1840628a76956cbce90ba419dee13643c74b89c3a988ea64162f66",
+    "error_after_registered": "[string \"<python>\"]:125: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-otservbr-global/monster/giants/hulking_prehemoth.lua",
+    "git_blob": "aa9ed9b1774811917763e7dc6d319aeb23353713",
+    "sha256": "b0d2b338f90da2cf1a51775401649738fab35a43deeb1ae83ed71228c78a5ab8",
+    "error_after_registered": "[string \"<python>\"]:123: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-otservbr-global/monster/mammals/gore_horn.lua",
+    "git_blob": "37ca6c70b2be22bc76461984cf15a59ba86aab77",
+    "sha256": "36f482853f1ea10dd0c71a3a496ccae03e16408bd00711ba880baed9fd911081",
+    "error_after_registered": "[string \"<python>\"]:124: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-otservbr-global/monster/mammals/gorerilla.lua",
+    "git_blob": "58b8758208f52f5755e6bebbf503b709080fd779",
+    "sha256": "0ad2157738dcfd6f8b318826207982685a3059ca6a090a5fd288084eaf73f708",
+    "error_after_registered": "[string \"<python>\"]:125: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-otservbr-global/monster/mammals/nighthunter.lua",
+    "git_blob": "c83d387c30acb079ab52af3d2f2a257a1205567d",
+    "sha256": "03577ddf3ba283e603c1b1dde90a8bc788c97d606530afa72106afe11d2cd10b",
+    "error_after_registered": "[string \"<python>\"]:124: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-otservbr-global/monster/mammals/sabretooth.lua",
+    "git_blob": "91fe11516539b6b17880489672d7d7cb39dc1297",
+    "sha256": "8676c074285d98345683399a494e05dcf5f45f690c336a43112c98c8590f402c",
+    "error_after_registered": "[string \"<python>\"]:123: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-otservbr-global/monster/plants/stalking_stalk.lua",
+    "git_blob": "2415168d0a6ee623c9ed7e728e76086aa945ae9a",
+    "sha256": "3356abb6a040cb1c91a3ba920c4ae76e97e032a04bb593ec83a1c648a5b4d295",
+    "error_after_registered": "[string \"<python>\"]:124: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_blue.lua",
+    "git_blob": "cf81168aa00b063ba9ce379e48b7254a4522e160",
+    "sha256": "d1ba4b9e8303d804ceaa75b0c4d24f9bf3181ed7ad6736861ba5ff67b7a64848",
+    "error": "[string \"<python>\"]:132: attempt to call field 'getByName' (a nil value)"
+  },
+  {
+    "file": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_green.lua",
+    "git_blob": "787ab94b6627f5785fc9a574e6192f679e933235",
+    "sha256": "073de955c173424a484e50885c2538749725fd437e3499382d3dc6c5199761f0",
+    "error": "[string \"<python>\"]:112: attempt to perform arithmetic on field 'goshnarsCrueltyWaveInterval' (a nil value)"
+  },
+  {
+    "file": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_purple.lua",
+    "git_blob": "7781c66516d83abbe905496cff7c3caf44902bf9",
+    "sha256": "cd2cae8c72c72a46064ec084c5db1684a4223e4150d3670f154a88bcb2589b2b",
+    "error": "[string \"<python>\"]:71: attempt to perform arithmetic on field 'goshnarsCrueltyWaveInterval' (a nil value)"
+  },
+  {
+    "file": "data-otservbr-global/monster/quests/soul_war/goshnars_cruelty.lua",
+    "git_blob": "3510180e27ac2d4f267dbba735629a0f98066e37",
+    "sha256": "48d1bd74d7ee0edd5fbb174eb43aa7b3dff1c0373c362c4e122f204cb6787948",
+    "error": "[string \"<python>\"]:107: attempt to perform arithmetic on field 'goshnarsCrueltyWaveInterval' (a nil value)"
+  },
+  {
+    "file": "data-otservbr-global/monster/quests/soul_war/goshnars_malice.lua",
+    "git_blob": "509b057c9741d2870119796397862a2c75854350",
+    "sha256": "936aa629c1eeded271da0cab5f82655027ab7ab1aa81d59fe5bc566566a86289",
+    "error": "[string \"<python>\"]:137: attempt to call field 'getByName' (a nil value)"
+  },
+  {
+    "file": "data-otservbr-global/monster/reptiles/emerald_tortoise.lua",
+    "git_blob": "d2b1a88246d93af8a8fcda7d926dfefe1dede1b8",
+    "sha256": "3210ec7842476b50e243e894933ebda4fd81b89ffc16869cda77e2ca70e92455",
+    "error_after_registered": "[string \"<python>\"]:132: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-otservbr-global/monster/reptiles/mantosaurus.lua",
+    "git_blob": "96a24cbaf067015f209f79cfbfde5cc204a0f8fa",
+    "sha256": "082e48a40a11c8806028ed64b5b0a4cf553687bb55a86672c37623ba603a84a9",
+    "error_after_registered": "[string \"<python>\"]:125: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-otservbr-global/monster/reptiles/noxious_ripptor.lua",
+    "git_blob": "2a7031598b58e0f5f051aad0d6fcad55c23e14ff",
+    "sha256": "dc3ae2ff334bbe922e202a88b4ecb6ff2c015130a88a2d3d6728fc5dcd221a30",
+    "error_after_registered": "[string \"<python>\"]:122: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-otservbr-global/monster/vermins/sulphider.lua",
+    "git_blob": "ad42af1cda759640fd5ef030654db183f8730161",
+    "sha256": "b63d416d3f1e13b7dd9529ddcf54468770df5ce9008c786462b052897d67baa6",
+    "error_after_registered": "[string \"<python>\"]:123: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "docs/lua-api/lua_api.d.lua",
+    "git_blob": "df39984a5588dd8fa7fd774f6ee0427d8dca72c7",
+    "sha256": "3738a4c474fd898c9ee8d4c33228a60388092be228295152195fc9402a3eb8de",
+    "error": "no monster registered"
+  }
+]

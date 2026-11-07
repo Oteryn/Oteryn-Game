@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/holy_flash",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Holy Flash",
+    "carrier": "instant",
+    "words": "utori san",
+    "reference_spell_id": 143,
+    "library_text": "The spell combines the power sources of the more powerful healing spells with a forceful manifestation of holy might. This empowers the holy damage of the spell significantly, often giving the caster the decided advantage against the forces of evil.",
+    "requirements": {
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ],
+      "level": 70,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 30,
+      "soul": 0
+    },
+    "cooldown_ms": 40000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": true,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 3,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_holy_flash"
+    },
+    "base_power": 200,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/holy_flash",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

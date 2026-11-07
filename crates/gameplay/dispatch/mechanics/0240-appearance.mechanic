@@ -1,0 +1,8 @@
+name=appearance
+commands=25
+transport=pub appearance_change
+composed=appearance_change
+authority=appearance_change
+offer=10,appearance_change::offer::offered,appearance_available
+[route]
+routing::appearance::route(authority, session.actor, &session.admitted, command).await

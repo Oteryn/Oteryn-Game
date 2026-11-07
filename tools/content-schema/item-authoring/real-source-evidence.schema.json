@@ -1,0 +1,466 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:item-real-source-evidence:candidate:4",
+  "title": "Oteryn real Item source evidence candidate v4",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3"
+    },
+    "item_key": {
+      "$ref": "urn:oteryn:item-authoring:candidate:4#/$defs/key"
+    },
+    "source_identity": {
+      "$ref": "#/$defs/sourceIdentity"
+    },
+    "engine_sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/engineSource"
+      },
+      "minItems": 2,
+      "uniqueItems": true,
+      "maxItems": 2
+    },
+    "definition_sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/definitionSource"
+      },
+      "minItems": 2,
+      "uniqueItems": true,
+      "maxItems": 2
+    },
+    "wiki_sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/wikiSource"
+      },
+      "minItems": 2,
+      "uniqueItems": true,
+      "maxItems": 2
+    },
+    "source_observations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "br": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        },
+        "fandom": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        },
+        "engine_items_xml": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        },
+        "engine_appearance": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        },
+        "canary_appearance": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        },
+        "crystal_appearance": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        }
+      },
+      "required": [
+        "br",
+        "fandom",
+        "engine_items_xml"
+      ]
+    },
+    "field_evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fieldEvidence"
+      },
+      "minItems": 1
+    },
+    "non_source_defaults": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/nonSourceDefault"
+      },
+      "minItems": 0,
+      "uniqueItems": true
+    },
+    "readiness": {
+      "$ref": "#/$defs/readiness"
+    }
+  },
+  "required": [
+    "schema",
+    "item_key",
+    "source_identity",
+    "engine_sources",
+    "definition_sources",
+    "wiki_sources",
+    "source_observations",
+    "field_evidence",
+    "non_source_defaults",
+    "readiness"
+  ],
+  "$defs": {
+    "sourceIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity_namespace": {
+          "const": "client/appearance_id"
+        },
+        "external_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[1-9][0-9]*$"
+        },
+        "target": {
+          "$ref": "urn:oteryn:item-authoring:candidate:4#/$defs/PresentationRef"
+        }
+      },
+      "required": [
+        "identity_namespace",
+        "external_id",
+        "target"
+      ]
+    },
+    "engineSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_profile": {
+          "enum": [
+            "canary_47dfd51_item_definition_v1",
+            "crystal_ff7ede5_item_definition_v1"
+          ]
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "const": "data/items/appearances.dat"
+        },
+        "digest_sha256": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "item_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "appearance_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sprite_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "source_profile",
+        "repository",
+        "revision",
+        "path",
+        "digest_sha256",
+        "item_id",
+        "appearance_id",
+        "sprite_ids"
+      ]
+    },
+    "definitionSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_profile": {
+          "enum": [
+            "canary_47dfd51_item_definition_v1",
+            "crystal_ff7ede5_item_definition_v1"
+          ]
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "const": "data/items/items.xml"
+        },
+        "digest_sha256": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_locator": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^item\\[@id='[1-9][0-9]*'\\]$"
+        }
+      },
+      "required": [
+        "source_profile",
+        "repository",
+        "revision",
+        "path",
+        "digest_sha256",
+        "source_locator"
+      ]
+    },
+    "wikiSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "enum": [
+            "br",
+            "fandom"
+          ]
+        },
+        "page_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^https?://"
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[1-9][0-9]*$"
+        },
+        "revision_timestamp": {
+          "type": "string",
+          "minLength": 1,
+          "format": "date-time"
+        },
+        "captured_at": {
+          "type": "string",
+          "minLength": 1,
+          "format": "date-time"
+        },
+        "revision_sha1": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "content_sha256": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "raw_fields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "source_id",
+        "page_id",
+        "title",
+        "url",
+        "revision",
+        "revision_timestamp",
+        "captured_at",
+        "revision_sha1",
+        "content_sha256",
+        "raw_fields"
+      ]
+    },
+    "fieldObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "enum": [
+            "br",
+            "fandom",
+            "engine_items_xml",
+            "engine_appearance",
+            "canary_appearance",
+            "crystal_appearance"
+          ]
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "catalog_field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "raw_value": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ]
+        }
+      },
+      "required": [
+        "source",
+        "field",
+        "catalog_field",
+        "raw_value"
+      ]
+    },
+    "fieldEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "destination": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^/item(?:/.*)?$"
+        },
+        "route_destination": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^/item(?:/.*)?$"
+        },
+        "normalized_value": {},
+        "normalization": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fieldObservation"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "destination",
+        "route_destination",
+        "normalized_value",
+        "normalization",
+        "observations"
+      ]
+    },
+    "nonSourceDefault": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "destination": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^/item(?:/.*)?$"
+        },
+        "state": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "destination",
+        "state"
+      ]
+    },
+    "readiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "const": "AUTHORING_EVIDENCE_COMPLETE_RUNTIME_BLOCKED"
+        },
+        "blockers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 2,
+          "uniqueItems": true
+        },
+        "non_claims": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "state",
+        "blockers",
+        "non_claims"
+      ]
+    }
+  }
+}

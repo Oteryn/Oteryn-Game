@@ -1,0 +1,21 @@
+{
+  "id": 3,
+  "name": "NPC_SERVICE_V1",
+  "constant": "npc_service::CAPABILITY_NPC_SERVICE_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    7,
+    8
+  ],
+  "domains": [
+    7,
+    8
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

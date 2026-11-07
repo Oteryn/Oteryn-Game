@@ -1,0 +1,57 @@
+{
+  "schema": {
+    "cases": 74,
+    "tests": 222,
+    "status": "PASS",
+    "log": "ci-schema-final.log"
+  },
+  "source_pins": {
+    "canary": "99902524e052f37574194466c2949c576e4ab269",
+    "crystal": "ff7ede593c69d4c658b382c97443e8155926924a"
+  },
+  "python_requirements": "existing pinned requirements including Lupa2.8",
+  "changed_files": {
+    ".github/workflows/spell-wiki-capture.yml": "18a428fce4a570c8f09864f115c2316156ae343fee9b58550070bbe0d52c4e00",
+    "tools/content-schema/spell-authoring/build_field_profiles.py": "7eb54d0829950410662da028b523e547098c3528cb99efac63d66286bc495d95",
+    "tools/content-schema/spell-authoring/retrieve_completion_fixtures.py": "2af3fcd4a24bfa09d0ff8a1f7223b681c1615209b036ed0abf334739899c3888",
+    "tools/content-schema/spell-authoring/test_retrieve_completion_fixtures.py": "edf0e3fb3da63d1c94af0b96c0f5c85c66f54943df055bbbed1c5259dbdc19c1",
+    "tools/content-schema/spell-authoring/test_native_catalog.py": "0714b827cb4547861a35cc7c87debe5dca398db9ec77aa113aa151025b7ec8b9",
+    "tools/content-schema/spell-authoring/test_native_actor_states.py": "6d8d51d528d73b1f2ac72993bc888042f62e67676df5c0c28c8afdcf78211d8b",
+    "tools/content-schema/spell-authoring/samples/spell-readiness-p2.json": "3be31f618bc53bc5e48246a7db2f752babbbb0ffcda7e72ecb6e3428714af73b",
+    "tools/content-schema/spell-authoring/samples/starter-bundles/instant-great_fireball_rune/catalog.json": "0f349dc82ab08a83e653660f51fff77fd251b986049146be5426a2fbedd0fdd5",
+    "tools/content-schema/spell-authoring/samples/starter-bundles/instant-great_fireball_rune/spell.json": "3c9f66698b1407211c0c1933bf977a4ba9d16b75038999b8fb278a6d6c7c7c75",
+    "tools/content-schema/spell-authoring/samples/starter-bundles/instant-sudden_death_rune/catalog.json": "09d1f3dd5c64e734f2bac3dff6e2110319107c57ceac4e2371d3665afd436e42",
+    "tools/content-schema/spell-authoring/samples/starter-bundles/instant-sudden_death_rune/spell.json": "711dae041037625771df4934347f3e9c8cf18411b3fedc5a021d834f61860e58",
+    "tools/content-schema/spell-authoring/samples/starter-bundles/rune-great_fireball_rune/catalog.json": "adccda1253f4a9f3a3d310d51acce485e9cac4aca5965366afb7cb226010ccec",
+    "tools/content-schema/spell-authoring/samples/starter-bundles/rune-great_fireball_rune/spell.json": "8a7776ac50fa61407e347d8b1179f12164bc83896a3da2e63d5e48b4fc4b40aa",
+    "tools/content-schema/spell-authoring/samples/starter-bundles/rune-sudden_death_rune/catalog.json": "3b6e71bc915192c849305a9de94189d75f1744bbfc9777c9446e32e44e19a613",
+    "tools/content-schema/spell-authoring/samples/starter-bundles/rune-sudden_death_rune/spell.json": "ffeaab147bf3055f4ee9f4eb93f8bf6516bf3e0172f4b8ee20019844921d7007"
+  },
+  "isolated_sparse_sources": "/workspace/spell-r22-ci-sources",
+  "fixture_retrieval": {
+    "count": 6,
+    "checks": [
+      "revision",
+      "repository",
+      "URL",
+      "local_path",
+      "bytes",
+      "SHA256",
+      "git_blob"
+    ]
+  },
+  "reproduction": {
+    "census": "byte-identical",
+    "readiness252": "byte-identical",
+    "verification252": "byte-identical",
+    "starter9bundles": "byte-identical"
+  },
+  "regenerated_output_changes": "Item references revision20 to21; readiness89bundleSHA2errorstrings and8starterfiles; source semantics unchanged",
+  "observed_final_command_exit_code": 0,
+  "BR_fallback": "Only public factual JSON after existing rawcontent rejection;gzip<=1MiB;roundtripassert;16000characterchunklines;existingartifactretained",
+  "limitations": [
+    "Does not prove gameplay integration",
+    "Old test_executable_catalog optional externalcandidate checks retain pre-existing skips; no skips introduced",
+    "No original third-party Lua newly committed"
+  ]
+}

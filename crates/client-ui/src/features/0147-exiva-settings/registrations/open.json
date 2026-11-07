@@ -1,0 +1,9 @@
+{
+  "mechanic": "0147-exiva-settings",
+  "kind": "keybindings",
+  "id": "0147-exiva-settings-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+E",
+  "entry": "input.rs::open_key"
+}

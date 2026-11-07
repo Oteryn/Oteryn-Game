@@ -1,0 +1,21 @@
+{
+  "id": "HOUSEWIRE1-RL-PAGE",
+  "owner_contract": "protocol-oteryn/v1/house_v1.proto",
+  "resource": "Houses per keyset page",
+  "unit": "entries",
+  "hard_maximum": 20,
+  "configurable_range": {
+    "minimum": 20,
+    "maximum": 20
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bound before allocation or mutation; refuse excess.",
+  "client_visible": true,
+  "boundary_tests": [
+    "at limit accepted",
+    "above limit rejected"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/house.rs"
+  ]
+}

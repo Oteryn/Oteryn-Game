@@ -1,0 +1,19 @@
+{
+  "id": "ANL01-QUERY-PAGE-ROWS",
+  "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+  "resource": "Rows/events returned in one investigation/analytics query page",
+  "unit": "rows",
+  "hard_maximum": 10000,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 10000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Require pagination/cursor before materializing a larger result set.",
+  "client_visible": false,
+  "boundary_tests": [
+    "10,000 rows accepted subject to byte/access policy",
+    "10,001 requires pagination",
+    "pagination preserves authorization/filter scope"
+  ]
+}

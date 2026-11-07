@@ -1,0 +1,999 @@
+{
+  "capture_method": "Public anonymous MediaWiki API read through Chrome/CDP; normal HTTP blocked",
+  "full_article_sha256_role": "Collector-declared full article digest retained from selected public revision; this compact projection does not recompute the full article digest.",
+  "global_own_itemid_index_sha256": "ca5cf161016da4530c249ca49022cbea44342e2fbd78623fbb99fee92dde8190",
+  "pages": [
+    {
+      "box_index": 0,
+      "capture_sha256": "9394aa0b329de38a0cb64b30ffc446b8b4c3dc22ef0612f40233231d70840b36",
+      "content_sha256": "09673341a1dc55927de3383871b2c5264b6f6b90be4a13ae2e0adb53e2d92119",
+      "page_id": 13676,
+      "parameter_values": {
+        "actualname": [
+          "jungle grass"
+        ],
+        "getvalue": [
+          "{{{GetValue|}}}"
+        ],
+        "immobile": [
+          ""
+        ],
+        "implemented": [
+          "7.5"
+        ],
+        "itemid": [
+          "1019"
+        ],
+        "list": [
+          "{{{1|}}}"
+        ],
+        "location": [
+          "Areas like [[Tiquanda]]."
+        ],
+        "name": [
+          "Jungle Grass (Tile)"
+        ],
+        "notes": [
+          "Looks different from regular [[grass]]."
+        ],
+        "notes2": [
+          "<br />Jungle Grass is found in the following pattern:\n:[[File:Jungle Grass Pattern.gif]]"
+        ],
+        "objectclass": [
+          "Flooring"
+        ],
+        "pickupable": [
+          "no"
+        ],
+        "primarytype": [
+          "Natural Tiles"
+        ],
+        "walkable": [
+          "yes"
+        ],
+        "walkingspeed": [
+          "150"
+        ]
+      },
+      "raw_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Jungle Grass (Tile)\n| actualname    = jungle grass\n| itemid        = 1019\n| objectclass   = Flooring\n| primarytype   = Natural Tiles\n| implemented   = 7.5\n| immobile      = \n| walkable      = yes\n| walkingspeed  = 150\n| pickupable    = no\n| location      = Areas like [[Tiquanda]].\n| notes         = Looks different from regular [[grass]].\n| notes2        = <br />Jungle Grass is found in the following pattern:\n:[[File:Jungle Grass Pattern.gif]]\n}}",
+      "raw_infobox_sha256": "09673341a1dc55927de3383871b2c5264b6f6b90be4a13ae2e0adb53e2d92119",
+      "revision_id": 1042949,
+      "revision_timestamp": "2023-10-22T05:47:46Z",
+      "revision_url": "https://tibia.fandom.com/index.php?title=Special:Redirect/page/13676&oldid=1042949",
+      "title": "Jungle Grass (Tile)"
+    },
+    {
+      "box_index": 0,
+      "capture_sha256": "9394aa0b329de38a0cb64b30ffc446b8b4c3dc22ef0612f40233231d70840b36",
+      "content_sha256": "d7f65d125de71849d56e2751678dba0b2723592f4a2ac11a646389a1ed746cf4",
+      "page_id": 13695,
+      "parameter_values": {
+        "getvalue": [
+          "{{{GetValue|}}}"
+        ],
+        "immobile": [
+          "yes"
+        ],
+        "implemented": [
+          "3.1"
+        ],
+        "itemid": [
+          "1127, 1128"
+        ],
+        "list": [
+          "{{{1|}}}"
+        ],
+        "location": [
+          "Rock is found in certain underground caves and on [[mountain]]s all over [[Tibia]]."
+        ],
+        "mapcolor": [
+          "86"
+        ],
+        "name": [
+          "Rock"
+        ],
+        "notes": [
+          "Rocky surface of [[Mountain]]s."
+        ],
+        "objectclass": [
+          "Flooring"
+        ],
+        "pickupable": [
+          "no"
+        ],
+        "primarytype": [
+          "Natural Tiles"
+        ],
+        "walkable": [
+          "no"
+        ]
+      },
+      "raw_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Rock\n| itemid        = 1127, 1128\n| objectclass   = Flooring\n| primarytype   = Natural Tiles\n| implemented   = 3.1\n| immobile      = yes\n| walkable      = no\n| pickupable    = no\n| mapcolor      = 86\n| location      = Rock is found in certain underground caves and on [[mountain]]s all over [[Tibia]].\n| notes         = Rocky surface of [[Mountain]]s.\n}}",
+      "raw_infobox_sha256": "d7f65d125de71849d56e2751678dba0b2723592f4a2ac11a646389a1ed746cf4",
+      "revision_id": 1043647,
+      "revision_timestamp": "2023-10-25T12:58:57Z",
+      "revision_url": "https://tibia.fandom.com/index.php?title=Special:Redirect/page/13695&oldid=1043647",
+      "title": "Rock"
+    },
+    {
+      "box_index": 0,
+      "capture_sha256": "013a1d244cb3d428047e3eb57b780b9dd9df6310452d87bf48625ea49920ae95",
+      "content_sha256": "f48bd8cf079e1479f5a3087465570e8bd575f90a137387c130225599f7cdec63",
+      "page_id": 64513,
+      "parameter_values": {
+        "actualname": [
+          "mossy wall"
+        ],
+        "article": [
+          "a"
+        ],
+        "attrib": [
+          ""
+        ],
+        "getvalue": [
+          "{{{GetValue|}}}"
+        ],
+        "immobile": [
+          "yes"
+        ],
+        "implemented": [
+          "7.8"
+        ],
+        "itemid": [
+          "5556, 5557, 5558, 5559"
+        ],
+        "list": [
+          "{{{1|}}}"
+        ],
+        "name": [
+          "Mossy Wall (Cave)"
+        ],
+        "notes": [
+          "Moss that has grown on [[Dirt Wall]]s."
+        ],
+        "notes2": [
+          ""
+        ],
+        "objectclass": [
+          "Constructions"
+        ],
+        "pickupable": [
+          "no"
+        ],
+        "primarytype": [
+          "Walls"
+        ],
+        "secondarytype": [
+          ""
+        ],
+        "walkable": [
+          "yes"
+        ],
+        "walkingspeed": [
+          ""
+        ]
+      },
+      "raw_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Mossy Wall (Cave)\n| article       = a\n| actualname    = mossy wall\n| itemid        = 5556, 5557, 5558, 5559\n| objectclass   = Constructions\n| primarytype   = Walls\n| secondarytype =  \n| implemented   = 7.8\n| immobile      = yes\n| walkable      = yes\n| walkingspeed  =  \n| pickupable    = no\n| attrib        =  \n| notes         = Moss that has grown on [[Dirt Wall]]s.\n| notes2        =  \n}}",
+      "raw_infobox_sha256": "f48bd8cf079e1479f5a3087465570e8bd575f90a137387c130225599f7cdec63",
+      "revision_id": 1042989,
+      "revision_timestamp": "2023-10-22T07:00:54Z",
+      "revision_url": "https://tibia.fandom.com/index.php?title=Special:Redirect/page/64513&oldid=1042989",
+      "title": "Mossy Wall (Cave)"
+    },
+    {
+      "box_index": 0,
+      "capture_sha256": "6fd57f7a39eb5944b8db70523ead87e6df0f7238c83f14ced70ea283b2fbb7ce",
+      "content_sha256": "ef56bac257a25a01635731ee121f8826bc355f4d89210bf21b41db8c65e5e585",
+      "page_id": 22504,
+      "parameter_values": {
+        "getvalue": [
+          "{{{GetValue|}}}"
+        ],
+        "immobile": [
+          ""
+        ],
+        "implemented": [
+          "7.9"
+        ],
+        "itemid": [
+          "6270, 6271, 6272, 6273"
+        ],
+        "list": [
+          "{{{1|}}}"
+        ],
+        "location": [
+          "[[Zao Mountain]], [[Meriana]], [[Meluna]]."
+        ],
+        "name": [
+          "Leaves"
+        ],
+        "notes": [
+          "Cut off some plant."
+        ],
+        "objectclass": [
+          "Magical Effects"
+        ],
+        "pickupable": [
+          "no"
+        ],
+        "primarytype": [
+          "Fields"
+        ],
+        "walkable": [
+          "yes"
+        ],
+        "walkingspeed": [
+          ""
+        ]
+      },
+      "raw_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Leaves\n| itemid        = 6270, 6271, 6272, 6273\n| objectclass   = Magical Effects\n| primarytype   = Fields\n| implemented   = 7.9\n| immobile      = \n| walkable      = yes\n| walkingspeed  =  \n| pickupable    = no\n| location      = [[Zao Mountain]], [[Meriana]], [[Meluna]].\n| notes         = Cut off some plant.\n}}",
+      "raw_infobox_sha256": "ef56bac257a25a01635731ee121f8826bc355f4d89210bf21b41db8c65e5e585",
+      "revision_id": 1044329,
+      "revision_timestamp": "2023-11-04T23:49:35Z",
+      "revision_url": "https://tibia.fandom.com/index.php?title=Special:Redirect/page/22504&oldid=1044329",
+      "title": "Leaves"
+    },
+    {
+      "box_index": 0,
+      "capture_sha256": "7f2e37d2f708d72ce9623785d9302ca18ceeafb35ef5808f6beccf63c8201870",
+      "content_sha256": "dbf9942f15e43215cda21555dfa17b251badc8df5380d6fe403b03c599b90683",
+      "page_id": 75229,
+      "parameter_values": {
+        "actualname": [
+          "mud"
+        ],
+        "getvalue": [
+          "{{{GetValue|}}}"
+        ],
+        "immobile": [
+          ""
+        ],
+        "implemented": [
+          "8.60"
+        ],
+        "itemid": [
+          "10605"
+        ],
+        "list": [
+          "{{{1|}}}"
+        ],
+        "location": [
+          "[[Gnarlhound Caves]], [[Killer Caiman Cave]], [[Gnomegate]] and its subareas, [[Gray Beach]]."
+        ],
+        "mapcolor": [
+          "121"
+        ],
+        "name": [
+          "Mud (Tile)"
+        ],
+        "notes": [
+          "It is lighter than [[Muddy Floor]]."
+        ],
+        "objectclass": [
+          "Flooring"
+        ],
+        "pickupable": [
+          "no"
+        ],
+        "primarytype": [
+          "Natural Tiles"
+        ],
+        "walkable": [
+          "yes"
+        ],
+        "walkingspeed": [
+          "140"
+        ]
+      },
+      "raw_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Mud (Tile)\n| actualname    = mud\n| itemid        = 10605\n| objectclass   = Flooring\n| primarytype   = Natural Tiles\n| implemented   = 8.60\n| immobile      = \n| walkable      = yes\n| walkingspeed  = 140\n| pickupable    = no\n| mapcolor      = 121\n| location      = [[Gnarlhound Caves]], [[Killer Caiman Cave]], [[Gnomegate]] and its subareas, [[Gray Beach]]. \n| notes         = It is lighter than [[Muddy Floor]].\n}}",
+      "raw_infobox_sha256": "dbf9942f15e43215cda21555dfa17b251badc8df5380d6fe403b03c599b90683",
+      "revision_id": 1044183,
+      "revision_timestamp": "2023-11-04T17:12:48Z",
+      "revision_url": "https://tibia.fandom.com/index.php?title=Special:Redirect/page/75229&oldid=1044183",
+      "title": "Mud (Tile)"
+    },
+    {
+      "box_index": 0,
+      "capture_sha256": "6906d3c7f06247938141ae1aca987cf9239fc0b5024406d6eba397457091e2a4",
+      "content_sha256": "992b1d419bf955fc3190a7d37129d819446b09353748851a537e08ead23ff474",
+      "page_id": 75547,
+      "parameter_values": {
+        "actualname": [
+          "marble floor"
+        ],
+        "getvalue": [
+          "{{{GetValue|}}}"
+        ],
+        "immobile": [
+          "yes"
+        ],
+        "implemented": [
+          "9.10"
+        ],
+        "itemid": [
+          "10986 , 10987 , 10988 , 10989 , 10990 , 10991 , 10992 , 10993 , 10994 , 10995 , 10996 , 10997 , 10998 , 10999 , 11000 , 11001 , 11002"
+        ],
+        "list": [
+          "{{{1|}}}"
+        ],
+        "location": [
+          "[[Yielothax Dimension]]."
+        ],
+        "mapcolor": [
+          "121"
+        ],
+        "name": [
+          "Marble Floor (Yielothax Dimension)"
+        ],
+        "notes": [
+          "It is blue marble."
+        ],
+        "objectclass": [
+          "Flooring"
+        ],
+        "pickupable": [
+          "no"
+        ],
+        "primarytype": [
+          "Artificial Tiles"
+        ],
+        "walkable": [
+          "yes"
+        ],
+        "walkingspeed": [
+          "100"
+        ]
+      },
+      "raw_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Marble Floor (Yielothax Dimension)\n| actualname    = marble floor\n| itemid        = 10986 , 10987 , 10988 , 10989 , 10990 , 10991 , 10992 , 10993 , 10994 , 10995 , 10996 , 10997 , 10998 , 10999 , 11000 , 11001 , 11002\n| objectclass   = Flooring\n| primarytype   = Artificial Tiles\n| implemented   = 9.10\n| immobile      = yes\n| walkable      = yes\n| walkingspeed  = 100\n| pickupable    = no\n| mapcolor      = 121\n| location      = [[Yielothax Dimension]].\n| notes         = It is blue marble.\n}}",
+      "raw_infobox_sha256": "33e3e0138b15e95963fcf1c38b051c0190e140434c1421e02a797c642bc848d2",
+      "revision_id": 1113573,
+      "revision_timestamp": "2025-07-25T07:55:55Z",
+      "revision_url": "https://tibia.fandom.com/index.php?title=Special:Redirect/page/75547&oldid=1113573",
+      "title": "Marble Floor (Yielothax Dimension)"
+    },
+    {
+      "box_index": 0,
+      "capture_sha256": "ab90ebdbd7d5037dff7f7c04138b67fe8db3f3cfb2d2f2c0fb88c32f41e6de54",
+      "content_sha256": "ff9b8b09e8110ecc4f610bb38babee3a22b8cf601dc9406382a83d12c31af0c6",
+      "page_id": 76437,
+      "parameter_values": {
+        "actualname": [
+          ""
+        ],
+        "article": [
+          "a"
+        ],
+        "getvalue": [
+          "{{{GetValue|}}}"
+        ],
+        "immobile": [
+          "yes"
+        ],
+        "implemented": [
+          "8.61"
+        ],
+        "itemid": [
+          "11553, 11554"
+        ],
+        "lightcolor": [
+          "113"
+        ],
+        "lightradius": [
+          "4"
+        ],
+        "list": [
+          "{{{1|}}}"
+        ],
+        "location": [
+          "The reward section of [[Devovorga]]'s lair and several areas of the [[Cults of Tibia Quest]]."
+        ],
+        "name": [
+          "Gate of Deathstruction"
+        ],
+        "notes": [
+          "In Devovorga's reward room, its purpose is to keep out levels lower than the threshold. The first set is meant to keep out everyone below level 40, whereas the second also prohibits all people between 40-70 from passing it.<br>\nOn other places it works like a [[Magic Forcefield]] and [[teleport]]s the player between different areas."
+        ],
+        "objectclass": [
+          "Constructions"
+        ],
+        "pickupable": [
+          "no"
+        ],
+        "primarytype": [
+          "Walls"
+        ],
+        "walkable": [
+          "yes"
+        ]
+      },
+      "raw_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Gate of Deathstruction\n| article       = a\n| actualname    =  \n| itemid        = 11553, 11554\n| objectclass   = Constructions\n| primarytype   = Walls\n| implemented   = 8.61\n| lightradius   = 4\n| lightcolor    = 113\n| immobile      = yes\n| walkable      = yes\n| pickupable    = no\n| location      = The reward section of [[Devovorga]]'s lair and several areas of the [[Cults of Tibia Quest]].\n| notes         = In Devovorga's reward room, its purpose is to keep out levels lower than the threshold. The first set is meant to keep out everyone below level 40, whereas the second also prohibits all people between 40-70 from passing it.<br>\nOn other places it works like a [[Magic Forcefield]] and [[teleport]]s the player between different areas.\n}}",
+      "raw_infobox_sha256": "ff9b8b09e8110ecc4f610bb38babee3a22b8cf601dc9406382a83d12c31af0c6",
+      "revision_id": 1015741,
+      "revision_timestamp": "2023-07-16T01:49:38Z",
+      "revision_url": "https://tibia.fandom.com/index.php?title=Special:Redirect/page/76437&oldid=1015741",
+      "title": "Gate of Deathstruction"
+    },
+    {
+      "box_index": 0,
+      "capture_sha256": "c45634b74b27a0d50e69a1fcbee3106891d2e000f9433a1e05bf789d3cebf9a6",
+      "content_sha256": "67a3b99c82898363cc5c68847729e6b7d7446be06c66c0bcbfe0515ac71b921f",
+      "page_id": 104113,
+      "parameter_values": {
+        "actualname": [
+          "slime fungus"
+        ],
+        "getvalue": [
+          "{{{GetValue|}}}"
+        ],
+        "immobile": [
+          ""
+        ],
+        "implemented": [
+          "9.10"
+        ],
+        "itemid": [
+          "12355"
+        ],
+        "list": [
+          "{{{1|}}}"
+        ],
+        "location": [
+          "[[The Spike]] surroundings."
+        ],
+        "mapcolor": [
+          "210"
+        ],
+        "name": [
+          "Slime Fungus (Tile)"
+        ],
+        "notes": [
+          ""
+        ],
+        "objectclass": [
+          "Flooring"
+        ],
+        "pickupable": [
+          "no"
+        ],
+        "primarytype": [
+          "Natural Tiles"
+        ],
+        "walkable": [
+          "yes"
+        ],
+        "walkingspeed": [
+          "100"
+        ]
+      },
+      "raw_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Slime Fungus (Tile)\n| actualname    = slime fungus\n| itemid        = 12355\n| objectclass   = Flooring\n| primarytype   = Natural Tiles\n| implemented   = 9.10\n| immobile      = \n| walkable      = yes\n| walkingspeed  = 100\n| pickupable    = no\n| mapcolor      = 210\n| location      = [[The Spike]] surroundings.\n| notes         =  \n}}",
+      "raw_infobox_sha256": "67a3b99c82898363cc5c68847729e6b7d7446be06c66c0bcbfe0515ac71b921f",
+      "revision_id": 1044174,
+      "revision_timestamp": "2023-11-04T15:48:30Z",
+      "revision_url": "https://tibia.fandom.com/index.php?title=Special:Redirect/page/104113&oldid=1044174",
+      "title": "Slime Fungus (Tile)"
+    },
+    {
+      "box_index": 0,
+      "capture_sha256": "96fb1bb318bd1f7cb650f4a26e31a40711bc2ecb46f616d7714a9bcbcb9f95e5",
+      "content_sha256": "b792991d49223cd0618e0e9a896f1de558d4ec619127745eb689c36044d4583b",
+      "page_id": 77831,
+      "parameter_values": {
+        "actualname": [
+          "table"
+        ],
+        "article": [
+          "a"
+        ],
+        "getvalue": [
+          "{{{GetValue|}}}"
+        ],
+        "immobile": [
+          "yes"
+        ],
+        "implemented": [
+          "9.40"
+        ],
+        "itemid": [
+          "13883, 13884, 13885"
+        ],
+        "list": [
+          "{{{1|}}}"
+        ],
+        "location": [
+          "Around [[Thais]] when the [[Kingsday Mini World Change]] is active. It could also be seen during [[Tibia's 20th Anniversary]]."
+        ],
+        "name": [
+          "Table (Bench)"
+        ],
+        "notes": [
+          "Not actually a table, but a bench instead. Two of these can be found on the sides of every [[Table (Picnic)]]."
+        ],
+        "objectclass": [
+          "Constructions"
+        ],
+        "pickupable": [
+          "no"
+        ],
+        "primarytype": [
+          "Constructions"
+        ],
+        "status": [
+          "event"
+        ],
+        "walkable": [
+          "yes"
+        ]
+      },
+      "raw_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Table (Bench)\n| article       = a\n| actualname    = table\n| itemid        = 13883, 13884, 13885\n| objectclass   = Constructions\n| primarytype   = Constructions\n| implemented   = 9.40\n| immobile      = yes\n| walkable      = yes\n| pickupable    = no\n| location      = Around [[Thais]] when the [[Kingsday Mini World Change]] is active. It could also be seen during [[Tibia's 20th Anniversary]].\n| notes         = Not actually a table, but a bench instead. Two of these can be found on the sides of every [[Table (Picnic)]].\n| status        = event\n}}",
+      "raw_infobox_sha256": "b792991d49223cd0618e0e9a896f1de558d4ec619127745eb689c36044d4583b",
+      "revision_id": 1016828,
+      "revision_timestamp": "2023-07-16T02:32:47Z",
+      "revision_url": "https://tibia.fandom.com/index.php?title=Special:Redirect/page/77831&oldid=1016828",
+      "title": "Table (Bench)"
+    },
+    {
+      "box_index": 0,
+      "capture_sha256": "479b8fb78518727873b30abbf26f8b528cf7388fc6780c87062900878cab4801",
+      "content_sha256": "4221100e7a5af7c9c9d5456a2b9052a32d003cb43149e61daf2726fd91b04212",
+      "page_id": 71100,
+      "parameter_values": {
+        "actualname": [
+          "blood"
+        ],
+        "getvalue": [
+          "{{{GetValue|}}}"
+        ],
+        "immobile": [
+          ""
+        ],
+        "implemented": [
+          "10.10"
+        ],
+        "itemid": [
+          "18615, 18616, 18617, 18618, 18619, 18620"
+        ],
+        "list": [
+          "{{{1|}}}"
+        ],
+        "location": [
+          "[[Drefia]]."
+        ],
+        "mapcolor": [
+          "40"
+        ],
+        "name": [
+          "Blood (Tile)"
+        ],
+        "notes": [
+          "These can be found in large basins of blood."
+        ],
+        "objectclass": [
+          "Flooring"
+        ],
+        "pickupable": [
+          "no"
+        ],
+        "primarytype": [
+          "Artificial Tiles"
+        ],
+        "walkable": [
+          "no"
+        ]
+      },
+      "raw_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Blood (Tile)\n| actualname    = blood\n| itemid        = 18615, 18616, 18617, 18618, 18619, 18620\n| objectclass   = Flooring\n| primarytype   = Artificial Tiles\n| implemented   = 10.10\n| immobile      = \n| walkable      = no\n| pickupable    = no\n| mapcolor      = 40\n| location      = [[Drefia]].\n| notes         = These can be found in large basins of blood.\n}}",
+      "raw_infobox_sha256": "4221100e7a5af7c9c9d5456a2b9052a32d003cb43149e61daf2726fd91b04212",
+      "revision_id": 1044842,
+      "revision_timestamp": "2023-11-10T20:23:09Z",
+      "revision_url": "https://tibia.fandom.com/index.php?title=Special:Redirect/page/71100&oldid=1044842",
+      "title": "Blood (Tile)"
+    },
+    {
+      "box_index": 0,
+      "capture_sha256": "64d1fcc3e859c9d5e578a53564770f1274209e4c37924b5cfac465dd8bf9ae40",
+      "content_sha256": "10d859a5dd7545b0ee4737e420f73278141316db3535c1768f46f21bcd036646",
+      "page_id": 66536,
+      "parameter_values": {
+        "actualname": [
+          "cormo dementi"
+        ],
+        "article": [
+          "a"
+        ],
+        "attrib": [
+          ""
+        ],
+        "flavortext": [
+          "It looks as if it swallowed something."
+        ],
+        "getvalue": [
+          "{{{GetValue|}}}"
+        ],
+        "immobile": [
+          "yes"
+        ],
+        "implemented": [
+          "10.30"
+        ],
+        "itemid": [
+          "20107"
+        ],
+        "list": [
+          "{{{1|}}}"
+        ],
+        "location": [
+          "[[Upper Roshamuul]]"
+        ],
+        "mapcolor": [
+          "12"
+        ],
+        "name": [
+          "Cormo Dementi"
+        ],
+        "notes": [
+          "It's a special type of [[Cormo Dementi]].\n\nUse it for a chance to obtain a [[Broken Dream]], which is used in the {{Spoiler Section|Roshamuul Quest|Mend What's Broken}}."
+        ],
+        "objectclass": [
+          "Constructions"
+        ],
+        "pickupable": [
+          "no"
+        ],
+        "primarytype": [
+          "Constructions"
+        ],
+        "usable": [
+          "yes"
+        ],
+        "walkable": [
+          "no"
+        ]
+      },
+      "raw_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Cormo Dementi\n| article       = a\n| actualname    = cormo dementi\n| itemid        = 20107\n| objectclass   = Constructions\n| primarytype   = Constructions\n| flavortext    = It looks as if it swallowed something.\n| implemented   = 10.30\n| immobile      = yes\n| walkable      = no\n| pickupable    = no\n| usable        = yes\n| attrib        =  \n| mapcolor      = 12\n| location      = [[Upper Roshamuul]]\n| notes         = It's a special type of [[Cormo Dementi]].\n\nUse it for a chance to obtain a [[Broken Dream]], which is used in the {{Spoiler Section|Roshamuul Quest|Mend What's Broken}}.\n}}",
+      "raw_infobox_sha256": "10d859a5dd7545b0ee4737e420f73278141316db3535c1768f46f21bcd036646",
+      "revision_id": 1115333,
+      "revision_timestamp": "2025-07-26T11:43:30Z",
+      "revision_url": "https://tibia.fandom.com/index.php?title=Special:Redirect/page/66536&oldid=1115333",
+      "title": "Cormo Dementi (Broken Dream)"
+    },
+    {
+      "box_index": 0,
+      "capture_sha256": "86a6a8c2a648ca59715df0d9c1cd726f156869704dc7f70f52f6c74377504ec1",
+      "content_sha256": "7d5e332b7956c89ceabb2660dd8317dd83075256eea76993484fb690170dcbe7",
+      "page_id": 82975,
+      "parameter_values": {
+        "actualname": [
+          "marble floor"
+        ],
+        "article": [
+          ""
+        ],
+        "getvalue": [
+          "{{{GetValue|}}}"
+        ],
+        "immobile": [
+          "yes"
+        ],
+        "implemented": [
+          "10.50"
+        ],
+        "itemid": [
+          "20888"
+        ],
+        "list": [
+          "{{{1|}}}"
+        ],
+        "location": [
+          "[[Rathleton]]."
+        ],
+        "mapcolor": [
+          "129"
+        ],
+        "name": [
+          "Marble Floor (Rathleton)"
+        ],
+        "notes": [
+          "This light-colored marble floor is the only known [[Tiles|Artificial Tile]] that has a design with alternating tiles:<br />\n[[File:Marble Floor (Rathleton) 2.gif]]."
+        ],
+        "objectclass": [
+          "Flooring"
+        ],
+        "pickupable": [
+          "no"
+        ],
+        "primarytype": [
+          "Artificial Tiles"
+        ],
+        "walkable": [
+          "yes"
+        ],
+        "walkingspeed": [
+          "100"
+        ]
+      },
+      "raw_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Marble Floor (Rathleton)\n| article       =  \n| actualname    = marble floor\n| itemid        = 20888\n| objectclass   = Flooring\n| primarytype   = Artificial Tiles\n| implemented   = 10.50\n| immobile      = yes\n| walkable      = yes\n| walkingspeed  = 100\n| pickupable    = no\n| mapcolor      = 129\n| location      = [[Rathleton]].\n| notes         = This light-colored marble floor is the only known [[Tiles|Artificial Tile]] that has a design with alternating tiles:<br />\n[[File:Marble Floor (Rathleton) 2.gif]].\n}}",
+      "raw_infobox_sha256": "06281dd3e2d465a043ffc3ff0e7cc5ebafef9b8c7c29f8ac089f1ff37c740498",
+      "revision_id": 1013774,
+      "revision_timestamp": "2023-07-15T20:54:28Z",
+      "revision_url": "https://tibia.fandom.com/index.php?title=Special:Redirect/page/82975&oldid=1013774",
+      "title": "Marble Floor (Rathleton)"
+    },
+    {
+      "box_index": 0,
+      "capture_sha256": "e37c4d690195fed2981ddb51c7a3b7469e1f5d0b05596afbf8568f8c98098d43",
+      "content_sha256": "4fa94b540a122035027d9d49bfd1fd84d91e11afb7c77cdb4d4688b19ca5adae",
+      "page_id": 84375,
+      "parameter_values": {
+        "actualname": [
+          "chimney"
+        ],
+        "article": [
+          "a"
+        ],
+        "flavortext": [
+          ""
+        ],
+        "getvalue": [
+          "{{{GetValue|}}}"
+        ],
+        "history": [
+          ""
+        ],
+        "immobile": [
+          "yes"
+        ],
+        "implemented": [
+          "10.70"
+        ],
+        "itemid": [
+          "20890, 20891, 20892, 20893, 20894"
+        ],
+        "lightcolor": [
+          ""
+        ],
+        "lightradius": [
+          ""
+        ],
+        "list": [
+          "{{{1|}}}"
+        ],
+        "location": [
+          "[[Rathleton]], [[Underground Glooth Factory]]"
+        ],
+        "mapcolor": [
+          ""
+        ],
+        "name": [
+          "Chimney (Oramond)"
+        ],
+        "notes": [
+          ""
+        ],
+        "notes2": [
+          ""
+        ],
+        "objectclass": [
+          "Functional Objects"
+        ],
+        "pickupable": [
+          "no"
+        ],
+        "primarytype": [
+          "Machines (Objects)"
+        ],
+        "secondarytype": [
+          ""
+        ],
+        "status": [
+          ""
+        ],
+        "tertiarytype": [
+          ""
+        ],
+        "usable": [
+          "yes"
+        ],
+        "walkable": [
+          "no"
+        ]
+      },
+      "raw_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Chimney (Oramond)\n| article       = a\n| actualname    = chimney\n| itemid        = 20890, 20891, 20892, 20893, 20894\n| objectclass   = Functional Objects\n| primarytype   = Machines (Objects)\n| secondarytype =  \n| tertiarytype  =  \n| flavortext    =  \n| implemented   = 10.70\n| lightradius   =  \n| lightcolor    =  \n| immobile      = yes\n| walkable      = no\n| pickupable    = no\n| usable        = yes\n| mapcolor      =  \n| location      = [[Rathleton]], [[Underground Glooth Factory]]\n| notes         =  \n| notes2        =  \n| history       =  \n| status        =  \n}}",
+      "raw_infobox_sha256": "4fa94b540a122035027d9d49bfd1fd84d91e11afb7c77cdb4d4688b19ca5adae",
+      "revision_id": 1009503,
+      "revision_timestamp": "2023-07-07T21:22:55Z",
+      "revision_url": "https://tibia.fandom.com/index.php?title=Special:Redirect/page/84375&oldid=1009503",
+      "title": "Chimney (Oramond)"
+    },
+    {
+      "box_index": 0,
+      "capture_sha256": "86a6a8c2a648ca59715df0d9c1cd726f156869704dc7f70f52f6c74377504ec1",
+      "content_sha256": "64cf76b684eadce0911defdb032d8894f7f295019cc5063baf4370942cc4dfb0",
+      "page_id": 82985,
+      "parameter_values": {
+        "actualname": [
+          "slime"
+        ],
+        "getvalue": [
+          "{{{GetValue|}}}"
+        ],
+        "immobile": [
+          "yes"
+        ],
+        "implemented": [
+          "10.70"
+        ],
+        "itemid": [
+          "21772, 21773, 21774"
+        ],
+        "lightcolor": [
+          "116"
+        ],
+        "lightradius": [
+          "8"
+        ],
+        "list": [
+          "{{{1|}}}"
+        ],
+        "location": [
+          "East caves of the [[Underground Glooth Factory]]."
+        ],
+        "mapcolor": [
+          "140"
+        ],
+        "name": [
+          "Slime (Purple)"
+        ],
+        "notes": [
+          "Purple deposits of [[Slime (Object)|slime]] have pooled here."
+        ],
+        "objectclass": [
+          "Flooring"
+        ],
+        "pickupable": [
+          "no"
+        ],
+        "primarytype": [
+          "Natural Tiles"
+        ],
+        "walkable": [
+          "no"
+        ]
+      },
+      "raw_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Slime (Purple)\n| actualname    = slime\n| itemid        = 21772, 21773, 21774\n| objectclass   = Flooring\n| primarytype   = Natural Tiles\n| implemented   = 10.70\n| lightradius   = 8\n| lightcolor    = 116\n| immobile      = yes\n| walkable      = no\n| pickupable    = no\n| mapcolor      = 140\n| location      = East caves of the [[Underground Glooth Factory]].\n| notes         = Purple deposits of [[Slime (Object)|slime]] have pooled here.\n}}",
+      "raw_infobox_sha256": "64cf76b684eadce0911defdb032d8894f7f295019cc5063baf4370942cc4dfb0",
+      "revision_id": 1016136,
+      "revision_timestamp": "2023-07-16T02:31:28Z",
+      "revision_url": "https://tibia.fandom.com/index.php?title=Special:Redirect/page/82985&oldid=1016136",
+      "title": "Slime (Purple)"
+    },
+    {
+      "box_index": 0,
+      "capture_sha256": "eeb7e63a9dcb85910483e1070e1f2ac5d08783a84586d632cab97678a22c4154",
+      "content_sha256": "ffd9aa1bf9cd35511f50a1e63c3810172aa15d870fc299dec782a2ab70876db8",
+      "page_id": 77072,
+      "parameter_values": {
+        "actualname": [
+          "chimney"
+        ],
+        "article": [
+          "a"
+        ],
+        "getvalue": [
+          "{{{GetValue|}}}"
+        ],
+        "immobile": [
+          "yes"
+        ],
+        "implemented": [
+          "10.90"
+        ],
+        "itemid": [
+          "22338"
+        ],
+        "list": [
+          "{{{1|}}}"
+        ],
+        "location": [
+          "[[Krailos]]."
+        ],
+        "name": [
+          "Chimney (Clay Hut)"
+        ],
+        "notes": [
+          "It was built by the [[Ogres]] on top of a [[Clay Hut]] to serve as a primitive ventilation system."
+        ],
+        "objectclass": [
+          "Constructions"
+        ],
+        "pickupable": [
+          "no"
+        ],
+        "primarytype": [
+          "Constructions"
+        ],
+        "walkable": [
+          "no"
+        ]
+      },
+      "raw_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Chimney (Clay Hut)\n| article       = a\n| actualname    = chimney\n| itemid        = 22338\n| objectclass   = Constructions\n| primarytype   = Constructions\n| implemented   = 10.90\n| immobile      = yes\n| walkable      = no\n| pickupable    = no\n| location      = [[Krailos]].\n| notes         = It was built by the [[Ogres]] on top of a [[Clay Hut]] to serve as a primitive ventilation system.\n}}",
+      "raw_infobox_sha256": "ffd9aa1bf9cd35511f50a1e63c3810172aa15d870fc299dec782a2ab70876db8",
+      "revision_id": 1009499,
+      "revision_timestamp": "2023-07-07T21:22:55Z",
+      "revision_url": "https://tibia.fandom.com/index.php?title=Special:Redirect/page/77072&oldid=1009499",
+      "title": "Chimney (Clay Hut)"
+    },
+    {
+      "box_index": 0,
+      "capture_sha256": "2d3519a7079942ad50473cd16763bcdbb8e71673a7892ab23343eec193f33155",
+      "content_sha256": "9fbfb5e52bb856bb06303e2643fdb4003d55e198ead280ccef9594826c0e7030",
+      "page_id": 79607,
+      "parameter_values": {
+        "actualname": [
+          "abandoned imbuing shrine"
+        ],
+        "article": [
+          "an"
+        ],
+        "attrib": [
+          ""
+        ],
+        "flavortext": [
+          "Something is missing from this shrine."
+        ],
+        "getvalue": [
+          "{{{GetValue|}}}"
+        ],
+        "immobile": [
+          "yes"
+        ],
+        "implemented": [
+          "11.02.4128"
+        ],
+        "itemid": [
+          "25101, 25102"
+        ],
+        "list": [
+          "{{{1|}}}"
+        ],
+        "location": [
+          "[[Zao]] ([[Dragonking Zyrtarch]]'s room), [[Astral Shaper Dungeon]]."
+        ],
+        "mapcolor": [
+          "186"
+        ],
+        "name": [
+          "Abandoned Imbuing Shrine"
+        ],
+        "notes": [
+          "It is an [[Imbuing Shrine]] which has been abandoned. When using it, it will say: {{Message|type=server|It seems this old device is missing a kind of energy source. It clearly shows signs of use and probably had a specific purpose}}."
+        ],
+        "objectclass": [
+          "Constructions"
+        ],
+        "pickupable": [
+          "no"
+        ],
+        "primarytype": [
+          "Constructions"
+        ],
+        "secondarytype": [
+          ""
+        ],
+        "usable": [
+          "yes"
+        ],
+        "walkable": [
+          "no"
+        ]
+      },
+      "raw_infobox": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Abandoned Imbuing Shrine\n| article       = an\n| actualname    = abandoned imbuing shrine\n| itemid        = 25101, 25102\n| objectclass   = Constructions\n| primarytype   = Constructions\n| secondarytype =  \n| flavortext    = Something is missing from this shrine.\n| implemented   = 11.02.4128\n| immobile      = yes\n| walkable      = no\n| pickupable    = no\n| usable        = yes\n| attrib        =  \n| mapcolor      = 186\n| location      = [[Zao]] ([[Dragonking Zyrtarch]]'s room), [[Astral Shaper Dungeon]].\n| notes         = It is an [[Imbuing Shrine]] which has been abandoned. When using it, it will say: {{Message|type=server|It seems this old device is missing a kind of energy source. It clearly shows signs of use and probably had a specific purpose}}.\n}}",
+      "raw_infobox_sha256": "9fbfb5e52bb856bb06303e2643fdb4003d55e198ead280ccef9594826c0e7030",
+      "revision_id": 1015561,
+      "revision_timestamp": "2023-07-16T01:49:18Z",
+      "revision_url": "https://tibia.fandom.com/index.php?title=Special:Redirect/page/79607&oldid=1015561",
+      "title": "Abandoned Imbuing Shrine"
+    }
+  ],
+  "qualification_cutoff": "2026-09-27T23:59:59Z",
+  "schema": "OTERYN_OWN_WIKI_WORLD_SOURCE/v1",
+  "source_url": "https://tibia.fandom.com/api.php"
+}

@@ -1,0 +1,99 @@
+{
+  "valid": true,
+  "physical_files": 4,
+  "canonical_graphs": 2,
+  "deltas": [
+    {
+      "graph": "canary:interaction/bigfoot_burden/actions_rewards",
+      "source": "opentibiabr/canary",
+      "changed_pointer": "/rules/0/branch/1/when",
+      "new_equalities": 3,
+      "effect_count": 10,
+      "effects_unchanged": true,
+      "old_opaque_conditions": 6,
+      "new_opaque_conditions": 5
+    },
+    {
+      "graph": "crystalserver:interaction/bigfoot_burden/actions_rewards",
+      "source": "zimbadev/crystalserver",
+      "changed_pointer": "/rules/0/branch/1/when",
+      "new_equalities": 3,
+      "effect_count": 10,
+      "effects_unchanged": true,
+      "old_opaque_conditions": 6,
+      "new_opaque_conditions": 5
+    },
+    {
+      "graph": "canary:interaction/the_pits_of_inferno_quest/actions_levers",
+      "source": "opentibiabr/canary",
+      "changed_pointer": "/rules/0/otherwise/0/branch/0/when",
+      "new_equalities": 15,
+      "effect_count": 6,
+      "effects_unchanged": true,
+      "old_opaque_conditions": 3,
+      "new_opaque_conditions": 2
+    },
+    {
+      "graph": "crystalserver:interaction/the_pits_of_inferno_quest/actions_levers",
+      "source": "zimbadev/crystalserver",
+      "changed_pointer": "/rules/0/otherwise/0/branch/0/when",
+      "new_equalities": 15,
+      "effect_count": 6,
+      "effects_unchanged": true,
+      "old_opaque_conditions": 3,
+      "new_opaque_conditions": 2
+    }
+  ],
+  "old_committed_comparisons": [
+    {
+      "graph": "canary:interaction/bigfoot_burden/actions_rewards",
+      "generated_old_equal_committed": true
+    },
+    {
+      "graph": "canary:interaction/the_pits_of_inferno_quest/actions_levers",
+      "generated_old_equal_committed": true
+    }
+  ],
+  "affected_canonical_quests": [
+    {
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "graphs": [
+        "canary:interaction/bigfoot_burden/actions_rewards"
+      ]
+    }
+  ],
+  "affected_canonical_quest_count": 1,
+  "new_source_predicates_per_canonical_graph": 18,
+  "source_core_projection_approval": "NOT_GRANTED",
+  "runtime_admission": "NOT_ASSESSED",
+  "source_receiver_proof": {
+    "method": "callback roles SourceItem + existing builtin_binding_is_pristine over every callback body line; reject opaque scope, reflection, shadow, assignment, root escape",
+    "tests": "6 PASS including renamed/other receiver and negative fences",
+    "physical_sources": [
+      {
+        "source": "canary and crystalserver",
+        "graph": "bigfoot_burden/actions_rewards",
+        "onUse_line": 45,
+        "condition_line": 54,
+        "predicate": "item.uid > 3147 and item.uid < 3151"
+      },
+      {
+        "source": "canary and crystalserver",
+        "graph": "the_pits_of_inferno_quest/actions_levers",
+        "onUse_line": 43,
+        "condition_line": 49,
+        "predicate": "item.uid > 2049 and item.uid < 2065"
+      }
+    ]
+  },
+  "handwritten_patch_added_lines": 18,
+  "handwritten_tests_passed": 6,
+  "patch_sha256": "9e7d12d171b2f45dcddd4ac8a6976fcf25b2b7787c37de15831194c259433686",
+  "existing_regression_tests_passed": 38,
+  "existing_regression_modules": [
+    "test_multiline_conditions",
+    "test_guarded_target_predicates",
+    "test_reward_lookup",
+    "test_scoped_interaction_storage"
+  ]
+}

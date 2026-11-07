@@ -1,0 +1,12 @@
+syntax = "proto3";
+package oteryn.events.v1;
+// The closed signed request holds action/target/reason/scope/operation identity.
+// Audit payloads never contain player text; immutable result bytes bind the outcome.
+message StaffActionV1 {
+  bytes canonical_request = 1;
+  string principal = 2;
+  string key_fingerprint = 3;
+  bytes detached_signature = 4;
+  string roster_sha256 = 5;
+  bytes outcome = 6;
+}

@@ -1,0 +1,34 @@
+syntax = "proto3";
+package oteryn.protocol.candidate.v2;
+// Candidate additive command/capability. This file allocates no numeric ID.
+// Nested bytes must decode under the unchanged strict WorldActorSpellCastIntentV1.
+message WorldActorSpellCastParametersV2 {
+  uint32 revision = 1; // required semantic value: 2
+  bytes intent_v1 = 2; // required, <=32 bytes, strict v1 codec
+  optional string parameter = 3; // <=128 UTF-8 bytes, no control characters
+}
+// Complete message <=192 bytes; unknown/repeated fields reject. Absent and
+// explicitly empty parameters differ. Result uses WorldActorSpellCastResultV1.
+
+message WorldActorSpellCastParametersResultV2 {
+  uint32 revision = 1; // required semantic value 2
+  bytes result_v1 = 2; // required strict WorldActorSpellCastResultV1 bytes
+  PrivateSpellFeedbackV2 feedback = 3;
+  SpellHouseEditorV2 editor = 4; // allowed only for CAST disposition
+}
+message PrivateSpellFeedbackV2 {
+  string text = 1; // required nonempty UTF8, <=1024 bytes, no controls
+  uint32 effect = 2; // required closed enum: 1 none, 2 poff, 3 magic-blue, 4 teleport
+}
+message SpellHouseEditorV2 {
+  bytes editor_id = 1; // required UUIDv7, 16 bytes; server-issued one-use token
+  string house_key = 2; // required native House key, <=512 bytes
+  uint32 list = 3; // required: 1 guest, 2 subowner, 3 door
+  uint32 door = 4; // positive; present exactly for door list
+  uint64 ownership_revision = 5; // required positive
+  uint64 acl_revision = 6; // omitted zero is the explicit uninitialized list
+  optional string text = 7; // semantic presence required even empty, <=4096 UTF8 bytes;
+                    // newline is the only permitted control character
+}
+// Complete result <=8192 bytes. Every submessage is strict; unknown/repeated
+// fields fail closed. It is private to the commanding actor's admitted transport.

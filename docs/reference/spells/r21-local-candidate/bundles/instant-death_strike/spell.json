@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/death_strike",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Death Strike",
+    "carrier": "instant",
+    "words": "exori mort",
+    "reference_spell_id": 87,
+    "library_text": "Death Strike belongs to a series of strike attack spells that combine low mana cost with reliable, instantaneous performance. When this spell is cast, the aimed character is struck by a blow of magical force that causes considerable death damage. The extent of the wounds that are inflicted is largely determined by the caster's skill, making this an impressive spell when used by an experienced sorcerer or druid.",
+    "requirements": {
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 16,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 20,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": true,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 3,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_death_strike"
+    },
+    "base_power": 45,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/death_strike",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

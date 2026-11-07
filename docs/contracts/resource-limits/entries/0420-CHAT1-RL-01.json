@@ -1,0 +1,22 @@
+{
+  "id": "CHAT1-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md",
+  "resource": "A character name on the chat wire: a line's speaker or a private message's recipient",
+  "unit": "bytes of UTF-8 text",
+  "hard_maximum": 120,
+  "configurable_range": {
+    "minimum": 120,
+    "maximum": 120
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The decoder refuses a name above 120 bytes before copying it; it is part of the 1,148-byte intent and 1,194-byte line bounds.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=120: a private intent and a room line with a 120-byte name round-trip",
+    "max+1=121: a 121-byte name is refused in both directions"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/chat.rs MAX_CHAT_NAME_BYTES"
+  ],
+  "notes": "The sender name bound of the CHAT-0 \u00a75 relay payload; revision 1 names are at most 29 ASCII letters (CHARACTER_AUTHORITY_PLATFORM_BOUNDARY \u00a76.1). Registered by OTV2-20261001-chat-1b-1."
+}

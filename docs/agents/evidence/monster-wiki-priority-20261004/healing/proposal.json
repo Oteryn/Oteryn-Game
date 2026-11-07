@@ -1,0 +1,588 @@
+{
+  "schema": "OTERYN_WIKI_PRIORITY_HEALING_FROM_DAMAGE_CORRECTION/v1",
+  "rows": [
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.security_golem",
+        "revision": "definition-r1"
+      },
+      "field": "details.healing_from_damage",
+      "provenance": "WIKI_CONFIRMED",
+      "locations": [
+        {
+          "path": "content/creatures/definitions/creatures-01000-01499.json",
+          "expected_file_sha256": "7995231dec787284aa5652f53f268322fdc649211d300341c7c5d4d2e8f0d80e",
+          "pointer": "/records/387/authoring/profile/details/healing_from_damage",
+          "old_present": false,
+          "old": null,
+          "new_present": true,
+          "new": [
+            {
+              "damage_type": "energy",
+              "percent": {
+                "numerator": 100,
+                "denominator": 1
+              }
+            }
+          ]
+        },
+        {
+          "path": "content/creatures/definitions/spell-native-profiles.json",
+          "expected_file_sha256": "3e02b3d26f86d7e772f4b059aef0130b0c3eb5cc09ae33182f8dab022278b2e8",
+          "pointer": "/records/1152/profile/data/profile/details/healing_from_damage",
+          "old_present": false,
+          "old": null,
+          "new_present": true,
+          "new": [
+            {
+              "damage_type": "energy",
+              "percent": {
+                "numerator": 100,
+                "denominator": 1
+              }
+            }
+          ]
+        },
+        {
+          "path": "content/world/definitions/declarations.json",
+          "expected_file_sha256": "55b64129c363d83a9bb5795c29142a7fab36b1bb8763d4535bca97aef8934fd5",
+          "pointer": "/authoring_profiles/4360/data/profile/details/healing_from_damage",
+          "old_present": false,
+          "old": null,
+          "new_present": true,
+          "new": [
+            {
+              "damage_type": "energy",
+              "percent": {
+                "numerator": 100,
+                "denominator": 1
+              }
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          },
+          "provenance": "WIKI_CONFIRMED",
+          "wiki_damage_taken": "-100%",
+          "wiki_field": "energyDmgMod",
+          "wiki_line": 48,
+          "wiki_title": "Security Golem",
+          "wiki_url": "https://tibiawiki.com.br/wiki/Security_Golem",
+          "wiki_revision_id": 440024,
+          "wiki_content_sha256": "c730cee210c3a83d4164ad7317c5bb8a5433986917c7226db8984b2f0cf2a3ed",
+          "wiki_cache": "/workspace/monster-field-audit-20261002/wiki/pages.json.gz",
+          "identity_binding_manifest": "/workspace/monster-completion-output/bundles/security_golem/manifest.json",
+          "retrieval_method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API"
+        }
+      ],
+      "current_native_resistances": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        }
+      ],
+      "current_native_immunities": null,
+      "other_fields_unchanged": true
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.sir_baeloc",
+        "revision": "definition-r1"
+      },
+      "field": "details.healing_from_damage",
+      "provenance": "WIKI_CONFIRMED",
+      "locations": [
+        {
+          "path": "content/creatures/definitions/creatures-01000-01499.json",
+          "expected_file_sha256": "7995231dec787284aa5652f53f268322fdc649211d300341c7c5d4d2e8f0d80e",
+          "pointer": "/records/422/authoring/profile/details/healing_from_damage",
+          "old_present": false,
+          "old": null,
+          "new_present": true,
+          "new": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "numerator": 300,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "numerator": 20,
+                "denominator": 1
+              }
+            }
+          ]
+        },
+        {
+          "path": "content/creatures/definitions/spell-native-profiles.json",
+          "expected_file_sha256": "3e02b3d26f86d7e772f4b059aef0130b0c3eb5cc09ae33182f8dab022278b2e8",
+          "pointer": "/records/1180/profile/data/profile/details/healing_from_damage",
+          "old_present": false,
+          "old": null,
+          "new_present": true,
+          "new": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "numerator": 300,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "numerator": 20,
+                "denominator": 1
+              }
+            }
+          ]
+        },
+        {
+          "path": "content/world/definitions/declarations.json",
+          "expected_file_sha256": "55b64129c363d83a9bb5795c29142a7fab36b1bb8763d4535bca97aef8934fd5",
+          "pointer": "/authoring_profiles/4395/data/profile/details/healing_from_damage",
+          "old_present": false,
+          "old": null,
+          "new_present": true,
+          "new": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "numerator": 300,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "numerator": 20,
+                "denominator": 1
+              }
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          },
+          "provenance": "WIKI_CONFIRMED",
+          "wiki_damage_taken": "-20%",
+          "wiki_field": "earthDmgMod",
+          "wiki_line": 45,
+          "wiki_title": "Sir Baeloc",
+          "wiki_url": "https://tibiawiki.com.br/wiki/Sir_Baeloc",
+          "wiki_revision_id": 445229,
+          "wiki_content_sha256": "6c3acd0c6479f5de995cfa77fed1fc450f25a340287a0e921c9ba89d0a2eed89",
+          "wiki_cache": "/workspace/monster-field-audit-20261002/wiki/pages.json.gz",
+          "identity_binding_manifest": "/workspace/monster-completion-output/bundles/sir_baeloc/manifest.json",
+          "retrieval_method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API"
+        },
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 300,
+            "denominator": 1
+          },
+          "provenance": "WIKI_CONFIRMED",
+          "wiki_damage_taken": "-300%",
+          "wiki_field": "deathDmgMod",
+          "wiki_line": 47,
+          "wiki_title": "Sir Baeloc",
+          "wiki_url": "https://tibiawiki.com.br/wiki/Sir_Baeloc",
+          "wiki_revision_id": 445229,
+          "wiki_content_sha256": "6c3acd0c6479f5de995cfa77fed1fc450f25a340287a0e921c9ba89d0a2eed89",
+          "wiki_cache": "/workspace/monster-field-audit-20261002/wiki/pages.json.gz",
+          "identity_binding_manifest": "/workspace/monster-completion-output/bundles/sir_baeloc/manifest.json",
+          "retrieval_method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API"
+        }
+      ],
+      "current_native_resistances": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 70
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 35
+          }
+        }
+      ],
+      "current_native_immunities": null,
+      "other_fields_unchanged": true
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.sir_nictros",
+        "revision": "definition-r1"
+      },
+      "field": "details.healing_from_damage",
+      "provenance": "WIKI_CONFIRMED",
+      "locations": [
+        {
+          "path": "content/creatures/definitions/creatures-01000-01499.json",
+          "expected_file_sha256": "7995231dec787284aa5652f53f268322fdc649211d300341c7c5d4d2e8f0d80e",
+          "pointer": "/records/425/authoring/profile/details/healing_from_damage",
+          "old_present": false,
+          "old": null,
+          "new_present": true,
+          "new": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "numerator": 300,
+                "denominator": 1
+              }
+            }
+          ]
+        },
+        {
+          "path": "content/creatures/definitions/spell-native-profiles.json",
+          "expected_file_sha256": "3e02b3d26f86d7e772f4b059aef0130b0c3eb5cc09ae33182f8dab022278b2e8",
+          "pointer": "/records/1181/profile/data/profile/details/healing_from_damage",
+          "old_present": false,
+          "old": null,
+          "new_present": true,
+          "new": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "numerator": 300,
+                "denominator": 1
+              }
+            }
+          ]
+        },
+        {
+          "path": "content/world/definitions/declarations.json",
+          "expected_file_sha256": "55b64129c363d83a9bb5795c29142a7fab36b1bb8763d4535bca97aef8934fd5",
+          "pointer": "/authoring_profiles/4398/data/profile/details/healing_from_damage",
+          "old_present": false,
+          "old": null,
+          "new_present": true,
+          "new": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "numerator": 300,
+                "denominator": 1
+              }
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 300,
+            "denominator": 1
+          },
+          "provenance": "WIKI_CONFIRMED",
+          "wiki_damage_taken": "-300%",
+          "wiki_field": "deathDmgMod",
+          "wiki_line": 47,
+          "wiki_title": "Sir Nictros",
+          "wiki_url": "https://tibiawiki.com.br/wiki/Sir_Nictros",
+          "wiki_revision_id": 445231,
+          "wiki_content_sha256": "ec4beb30b40db33e4ca01dcb8933cc89888ddc520a5dfc927f0ef289eca32e58",
+          "wiki_cache": "/workspace/monster-field-audit-20261002/wiki/pages.json.gz",
+          "identity_binding_manifest": "/workspace/monster-completion-output/bundles/sir_nictros/manifest.json",
+          "retrieval_method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API"
+        }
+      ],
+      "current_native_resistances": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 80
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 35
+          }
+        }
+      ],
+      "current_native_immunities": null,
+      "other_fields_unchanged": true
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_percht_queen",
+        "revision": "definition-r1"
+      },
+      "field": "details.healing_from_damage",
+      "provenance": "WIKI_CONFIRMED",
+      "locations": [
+        {
+          "path": "content/creatures/definitions/creatures-01500-01862.json",
+          "expected_file_sha256": "c5cd11979f67aed21c9fcef0a894e3c27737bf0c643b57a950d6781058fe8cb8",
+          "pointer": "/records/132/authoring/profile/details/healing_from_damage",
+          "old_present": false,
+          "old": null,
+          "new_present": true,
+          "new": [
+            {
+              "damage_type": "ice",
+              "percent": {
+                "numerator": 100,
+                "denominator": 1
+              }
+            }
+          ]
+        },
+        {
+          "path": "content/creatures/definitions/spell-native-profiles.json",
+          "expected_file_sha256": "3e02b3d26f86d7e772f4b059aef0130b0c3eb5cc09ae33182f8dab022278b2e8",
+          "pointer": "/records/1333/profile/data/profile/details/healing_from_damage",
+          "old_present": false,
+          "old": null,
+          "new_present": true,
+          "new": [
+            {
+              "damage_type": "ice",
+              "percent": {
+                "numerator": 100,
+                "denominator": 1
+              }
+            }
+          ]
+        },
+        {
+          "path": "content/world/definitions/declarations.json",
+          "expected_file_sha256": "55b64129c363d83a9bb5795c29142a7fab36b1bb8763d4535bca97aef8934fd5",
+          "pointer": "/authoring_profiles/4605/data/profile/details/healing_from_damage",
+          "old_present": false,
+          "old": null,
+          "new_present": true,
+          "new": [
+            {
+              "damage_type": "ice",
+              "percent": {
+                "numerator": 100,
+                "denominator": 1
+              }
+            }
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          },
+          "provenance": "WIKI_CONFIRMED",
+          "wiki_damage_taken": "-100%",
+          "wiki_field": "iceDmgMod",
+          "wiki_line": 50,
+          "wiki_title": "The Percht Queen",
+          "wiki_url": "https://tibiawiki.com.br/wiki/The_Percht_Queen",
+          "wiki_revision_id": 445344,
+          "wiki_content_sha256": "f45dc868ae418a75ee6a02aa93c5ca4929de71f247238553699b525f971e6e3a",
+          "wiki_cache": "/workspace/monster-field-audit-20261002/wiki/pages.json.gz",
+          "identity_binding_manifest": "/workspace/monster-completion-output/bundles/the_percht_queen/manifest.json",
+          "retrieval_method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API"
+        }
+      ],
+      "current_native_resistances": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 90
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 80
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 80
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 70
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 80
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 90
+          }
+        }
+      ],
+      "current_native_immunities": null,
+      "other_fields_unchanged": true
+    }
+  ],
+  "counts": {
+    "actors": 4,
+    "healing_entries": 5,
+    "guarded_locations": 12,
+    "wiki_confirmed_entries": 5
+  },
+  "inputs": {
+    "/tmp/monster-wiki-priority-20261004/resistance_b/proposal.json": {
+      "sha256": "d93c01da9f49db22ebf40f6769025028d017ebfae75356f33cd1cb9fc0f13bb6",
+      "bytes": 1883670
+    },
+    "/workspace/monster-field-audit-20261002/wiki/pages.json.gz": {
+      "sha256": "785509ec404bbd47b9e799711546cff8a2389168d419eae7f61927338863854a",
+      "bytes": 986260
+    },
+    "/workspace/monster-main-reconciliation-20261004/content/creatures/definitions/spell-native-profiles.json": {
+      "sha256": "3e02b3d26f86d7e772f4b059aef0130b0c3eb5cc09ae33182f8dab022278b2e8",
+      "bytes": 6700449
+    },
+    "/workspace/monster-main-reconciliation-20261004/content/world/definitions/declarations.json": {
+      "sha256": "55b64129c363d83a9bb5795c29142a7fab36b1bb8763d4535bca97aef8934fd5",
+      "bytes": 20699851
+    },
+    "/workspace/monster-main-reconciliation-20261004/content/creatures/definitions/creatures-01000-01499.json": {
+      "sha256": "7995231dec787284aa5652f53f268322fdc649211d300341c7c5d4d2e8f0d80e",
+      "bytes": 1301090
+    },
+    "/workspace/monster-completion-output/bundles/security_golem/manifest.json": {
+      "sha256": "f220080c1bb793075f73cb6d779710fd8aca7ea14200595656dc3ca6ab25dfa7",
+      "bytes": 9626
+    },
+    "/workspace/monster-completion-output/bundles/sir_baeloc/manifest.json": {
+      "sha256": "58fd2d4f696550d237462229aafe305d2255f9463bc4f76027656e7ac0bc23c5",
+      "bytes": 72892
+    },
+    "/workspace/monster-completion-output/bundles/sir_nictros/manifest.json": {
+      "sha256": "579d98a4c88b9d1ecc5025d89efe15f209f4cfe1caec17c1712ee8d32faa71ff",
+      "bytes": 13405
+    },
+    "/workspace/monster-main-reconciliation-20261004/content/creatures/definitions/creatures-01500-01862.json": {
+      "sha256": "c5cd11979f67aed21c9fcef0a894e3c27737bf0c643b57a950d6781058fe8cb8",
+      "bytes": 954021
+    },
+    "/workspace/monster-completion-output/bundles/the_percht_queen/manifest.json": {
+      "sha256": "abc625e78f51b3423660000d830779825c89dfece4c2578aebaeed27a2b976be",
+      "bytes": 52756
+    }
+  },
+  "code_sha256": {
+    "apps/game-server/src/content/project/v2/creature.rs": "7176ac3a13b6f6de9e2ad4131a9412ea78f1534324212dae5f01628cb4eb69da",
+    "apps/game-server/src/content/native_gameplay.rs": "7bea21ec9e14b698807e1f15df17147c06068139d5a52530be458862ac7f93d4",
+    "apps/game-server/src/foundation/runtime_actor_companion.rs": "4b24774611d3f8a7b1e794ceb0913f8ff98e4542be8b1775ca07977c11350c8d"
+  },
+  "schema_support": {
+    "percent_above100_allowed": true,
+    "witness": "apps/game-server/src/content/project/v2/creature.rs:814-840 damage_responses: sortedunique snake damage_type; exact ratio; nonnegative; no100 ceiling"
+  },
+  "runtime_qualification": {
+    "native_authoring_retention": "SUPPORTED_BY_EXISTING_TYPED_PROFILE_DECODER",
+    "elemental_heal_consumer": "NOT_FOUND_IN_BOUNDED_RUST_APPS_CRATES_VENDOR_SWEEP",
+    "healing_vs_immunity_resistance_order": "UNCONFIRMED_EXISTING_OWNER_CONSUMER_DEPENDENCY",
+    "physical_300_percent_heal_executed": false
+  },
+  "policy": "Negative wiki damage-taken cells become positive healing_from_damage; never resistance above100. Preserve source/current immunity/resistance pending owner ordering qualification. Source-field data import is independent from runtime activation.",
+  "product_writes": false,
+  "network_used": false,
+  "native_tests": "PENDING_ROOT"
+}

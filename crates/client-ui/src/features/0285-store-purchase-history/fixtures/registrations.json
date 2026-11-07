@@ -1,0 +1,33 @@
+[
+  {
+    "mechanic": "0285-store-purchase-history",
+    "kind": "handlers",
+    "id": "0285-store-purchase-history-commands",
+    "status": "supported",
+    "commands": [
+      501
+    ],
+    "direction": "client_to_server",
+    "capability": 285,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "State is owned by the server; no local settings."
+    }
+  },
+  {
+    "mechanic": "0285-store-purchase-history",
+    "status": "supported",
+    "kind": "keybindings",
+    "id": "0285-store-purchase-history-open",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+H",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0285-store-purchase-history",
+    "status": "supported",
+    "kind": "panels",
+    "id": "0285-store-purchase-history-panel",
+    "entry": "view.rs::panel_text"
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "id": "GAMECAT-V1-STRING-BYTES",
+  "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+  "resource": "One UTF-8 string or object key in the schema-v1 envelope/record data",
+  "unit": "UTF-8 bytes",
+  "hard_maximum": 2048,
+  "configurable_range": {
+    "minimum": 2048,
+    "maximum": 2048
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Measure encoded UTF-8 bytes before retaining, sorting or emitting the string.",
+  "client_visible": false,
+  "boundary_tests": [
+    "2,048 UTF-8 bytes accepted where grammar permits",
+    "2,049 UTF-8 bytes rejected"
+  ]
+}

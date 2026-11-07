@@ -1,0 +1,39 @@
+// ARCH-KILL-REWARD-LOGOUT-1 §1.6 (docs/architecture/reviews/OTERYN_GAME_ARCH_KILL_REWARD_LOGOUT_PACKETS_2026-10-04.md,
+// with ATTACK-0 §4 and DISCONNECT_REENTRY_PVE_PROTECTION_OWNER_DECISION): typed payloads of
+// capability 21 LOGOUT_V1 (no requirement) and command type 23 LOGOUT_INTENT. The packet's
+// proposed capability 19 was already registered as WORLD_LIGHT_V1 and 20 is leased to
+// CONNECTION_TRACE_V1 (D770), so LOGOUT-WIRE-1 takes the next free capability, 21, and the
+// proposed command type 23. FND-02 envelopes own CommandRef, server sequence and the command
+// status; these payloads never duplicate them. Unknown fields, repeated fields, zero and unknown
+// enum values and values outside the declared bounds all fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.logout;
+
+// Append-only. A later decision (PARTY-PVP-0: the protection-zone and the PvP kill block)
+// appends its own codes.
+enum LogoutResultCode {
+  LOGOUT_RESULT_CODE_UNSPECIFIED = 0;
+  // The terminal release has committed (session_state = 3). The server closes the transport
+  // cleanly after this result; the client returns to the character list without a reconnect.
+  LOGOUT_RESULT_CODE_ACCEPTED = 1;
+  // The actor is in fight (ATTACK-0 §5). Nothing changed; retry_after_ms is set.
+  LOGOUT_RESULT_CODE_IN_FIGHT = 2;
+  // A durable spell commit or an own kill settlement is pending, or the terminal release
+  // failed retryably before it committed. Nothing changed; the client may retry.
+  LOGOUT_RESULT_CODE_BUSY = 3;
+}
+
+// ClientCommand.payload of command type 23: always empty. A non-empty payload is REJECTED with
+// an empty result payload. LOGOUT-RL-01: at most one logout command is outstanding per
+// GameSession; a second one before the first result is a protocol error.
+message LogoutIntentV1 {}
+
+// CommandResult.payload of command type 23, with status ACCEPTED for code ACCEPTED and REJECTED
+// for IN_FIGHT and BUSY. retry_after_ms is the remaining in-fight time, rounded up to a whole
+// millisecond, in 1..=60000 (ATTACK0-RL-03); it is present with IN_FIGHT only and absent with
+// every other code. At most 6 bytes.
+message LogoutResultV1 {
+  LogoutResultCode code = 1;
+  uint32 retry_after_ms = 2;
+}

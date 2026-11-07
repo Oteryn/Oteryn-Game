@@ -1,0 +1,67 @@
+{
+  "records": [
+    {
+      "track": "canary:quest-progress/quest/u8_2/the_thieves_guild_quest/steal_from_thieves",
+      "old_owners": [
+        "canary:quest/the_thieves_guild_quest"
+      ],
+      "new_owner": "canary:quest/steal_from_thieves_quest",
+      "writes": {
+        "canary": 3,
+        "crystalserver": 3
+      },
+      "source_occurrences": 6,
+      "transition_effects_unchanged": true,
+      "runtime_readiness": "UNKNOWN",
+      "initial_or_bounds_added": false
+    },
+    {
+      "track": "canary:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission05",
+      "old_owners": [],
+      "new_owner": "canary:quest/the_gravedigger_of_drefia_quest",
+      "writes": {
+        "canary": 1,
+        "crystalserver": 1
+      },
+      "source_occurrences": 2,
+      "transition_effects_unchanged": true,
+      "runtime_readiness": "UNKNOWN",
+      "initial_or_bounds_added": false
+    }
+  ],
+  "all_donor_blob_and_line_sha_checked": true,
+  "count": 2,
+  "write_occurrences": 8,
+  "wiki_identity_corroboration": [
+    {
+      "title": "Steal From Thieves Quest",
+      "provider": "tibia_fandom",
+      "pageid": 22844,
+      "revid": 1057227,
+      "content_sha256": "0aeb0b7170fb1bed9bd68575e58c856905fdfcf629078bfb9c396b457f026c92",
+      "line_start": 4,
+      "line_end": 14,
+      "span_sha256": "228dae2cb6857cde663e8aaed6642ad53e4cdd0bf6be2a07b44d25e450ee176b",
+      "url": "https://tibia.fandom.com/index.php?curid=22844&oldid=1057227",
+      "access_method": "offline_pinned_capture",
+      "supports": "named NPC and side-quest activity identity; source namespace is not native authority",
+      "raw_body_rechecked": false,
+      "classification": "HISTORICAL_CAPTURE_CORROBORATION"
+    },
+    {
+      "title": "The Gravedigger of Drefia Quest",
+      "provider": "tibia_fandom",
+      "pageid": 64410,
+      "revid": 1201632,
+      "content_sha256": "194d83cba151444ae121dd99b59f9749d262506fccc32a615bb5637f8d6c49f1",
+      "line_start": 29,
+      "line_end": 34,
+      "span_sha256": "9825f0fa843a063617bbb2d01954ff232db52950966ac09caec293d5daf35411",
+      "url": "https://tibia.fandom.com/index.php?curid=64410&oldid=1201632",
+      "access_method": "offline_pinned_capture",
+      "supports": "named NPC and side-quest activity identity; source namespace is not native authority",
+      "raw_body_rechecked": false,
+      "classification": "HISTORICAL_CAPTURE_CORROBORATION"
+    }
+  ]
+}

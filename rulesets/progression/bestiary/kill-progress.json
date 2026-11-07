@@ -1,0 +1,24 @@
+{
+  "schema": "OTERYN_GAME_BESTIARY_KILL_PROGRESS/v1",
+  "ruleset_key": "oteryn:ruleset.bestiary.kill-progress",
+  "revision": "bestiary-kill-progress-r1",
+  "owner": "Character progression",
+  "contract": "docs/architecture/reviews/OTERYN_GAME_CHARM0_BESTIARY_CHARM_PROGRESSION_DECISION_PACKET_2026-09-29.md",
+  "race_key": "The Creature definition key of a definition that carries authoring.profile.bestiary. A creature whose definition has no bestiary block is not a Bestiary race and is never counted.",
+  "credit": {
+    "rule": "A kill is credited to a character that damaged the creature at most window_ms before the creature's death.",
+    "window_ms": 300000,
+    "principals": "The single reward principal of the death (COMBAT01-REWARD-PRINCIPALS). Multi-principal credit waits for the multi-principal reward contract.",
+    "source": "CHARM-0 owner answer 6a (2026-09-29)"
+  },
+  "counter": {
+    "stored": "kill_count per (CharacterId, race_key)",
+    "increment": 1,
+    "saturates_at": "The last value of the race's kill_thresholds. A kill at the bound is not recorded and advances no CharacterRevision."
+  },
+  "stages": {
+    "stored": false,
+    "derived": "The number of the race's kill_thresholds that are less than or equal to kill_count. The entry is complete when kill_count reaches the last threshold.",
+    "source": "CHARM-0 owner answer 2a (2026-09-29)"
+  }
+}

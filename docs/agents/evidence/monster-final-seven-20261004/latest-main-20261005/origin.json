@@ -1,0 +1,9 @@
+{
+  "git_head": "2081af9b92c7316e069e7a7a86265b3019bd9f75",
+  "binary_path": "/dev/shm/monster-comparison-build-target-cache/debug/deps/oteryn_game_server-9494e90a1877450b",
+  "binary_sha256": "375c780a649c357636ef14897bd93a67887cf5bb795acf5907ddccaa17f72940",
+  "manifest_sha256": "117782c12f9309a90e41a72f9b13611771b62a71f6e7348a238824a52227fa34",
+  "capture_root": "/tmp/monster-final-seven/repair-20261005/sealed11",
+  "execution": "direct frozen binary; library4threads, native/capture1thread; no Cargo or product writes",
+  "mode": "all"
+}

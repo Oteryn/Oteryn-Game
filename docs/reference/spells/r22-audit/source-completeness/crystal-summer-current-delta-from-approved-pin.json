@@ -1,0 +1,1350 @@
+{
+  "approved": "ff7ede593c69d4c658b382c97443e8155926924a",
+  "observed_current": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "changed_lua_files": [
+    {
+      "file": "data-global/lib/core/echo_warden.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/lib/core/echo_warden.lua",
+        "git_blob": "2bc150f358591bc60a9d199d2e9d102e9a8b0928",
+        "sha256": "fb49bc44724a56295a4ffb963b3fd7ec0391a1e1558873c90a6a16fa197c57d2",
+        "bytes": 9050,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/lib/core/load.lua",
+      "change": "modified",
+      "before": {
+        "file": "data-global/lib/core/load.lua",
+        "git_blob": "bf9b37a52f6bfa0a2170037c5d239ea9f18fe4be",
+        "sha256": "f9eb4ae5bb61dc8c40b89b3e0054aa424c5e4c78f48c4462a627ca04010d0666",
+        "bytes": 152,
+        "present_in_original_worktree": false
+      },
+      "after": {
+        "file": "data-global/lib/core/load.lua",
+        "git_blob": "2988fa676c606d726ada25fe469424ecd8eeefb6",
+        "sha256": "af037d93fe1e5d0321ef1e68d8dc5835eee526b60bac1a6fd312a6ad15afe79a",
+        "bytes": 206,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/bosses/maior_domus.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/bosses/maior_domus.lua",
+        "git_blob": "535b13ed93fe6a402e0da4d945d72466fa895fa2",
+        "sha256": "4c8eb8cdc9229a518503ae34fcd3cfe92df6eae4469bf2ffa4c75974b4dbf6e0",
+        "bytes": 4453,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/bosses/maior_domus_final.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/bosses/maior_domus_final.lua",
+        "git_blob": "5dd5b9e32db77e525b0641733afcc05f8316d890",
+        "sha256": "c9c1d0d12efe2ab6b0a13cd0540942305b54a10f9ef73a14fee015c2dedc8114",
+        "bytes": 2652,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/bosses/mimar_haffar.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/bosses/mimar_haffar.lua",
+        "git_blob": "ce70e21b4fb61377ff90237431ddb886f5e3180b",
+        "sha256": "81f309cdcb0b8aacf0eb2f891fec73213090d5ba823001bcfe99edc02ad1eb39",
+        "bytes": 4741,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/bosses/mimar_haffar_final.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/bosses/mimar_haffar_final.lua",
+        "git_blob": "37c27a7c3aa767456a87cfb5a781e6c68356f40f",
+        "sha256": "38d56bec07a17c70d2437b41f166d3ff695ac95d5c516ddc4eb51d58fb75b168",
+        "bytes": 2646,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/bosses/phosphorus.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/bosses/phosphorus.lua",
+        "git_blob": "1c4ef0e0a0e356903e3accb46392551bb425d27a",
+        "sha256": "d375b689750a49fe9c96fef1a3eea846bdc53ea02fdd7133360afe10049a2e43",
+        "bytes": 2615,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/bosses/phosphorus_final.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/bosses/phosphorus_final.lua",
+        "git_blob": "07465c5d78756f5abf4b42fd7de2d5e0bd12bc54",
+        "sha256": "23511b2488d62dd81b597552bb270479020f81b7ad61c5b7d4e7539a0ac1b9d4",
+        "bytes": 2944,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/bosses/rakesh_moonfang.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/bosses/rakesh_moonfang.lua",
+        "git_blob": "8356e042b1f004fe7e7c28fa3806fc7e2a326a18",
+        "sha256": "eaa0c4c38a68422e12dd16059061767e129b1cfd071a4b5c659e065f0f24bab6",
+        "bytes": 4424,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/bosses/the_moonsnow_magnolia.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/bosses/the_moonsnow_magnolia.lua",
+        "git_blob": "b812aafd6ff2cba1f90bcfcf53efb2c193d1bf3b",
+        "sha256": "aae1c55aad1328c02d4220f0e06dccfb6027510d02262d997000aead96f7abae",
+        "bytes": 5772,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/cult_initiate.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/cult_initiate.lua",
+        "git_blob": "98912baa706805b0dce776d549efa9a636ae4b8d",
+        "sha256": "025a848d602cf3ab8a1db896e28c7811bcc261ada3f82d516eb7947a7b1abfae",
+        "bytes": 3053,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/devoted_radiant_acolyte.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/devoted_radiant_acolyte.lua",
+        "git_blob": "49f837597cddb665e1035b8bc6821386c98ad598",
+        "sha256": "488a4a2c60a80bf0be5f61a63c2f937b617cf9cc06a7a9fffd9dadb7a1fec360",
+        "bytes": 2787,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/devoted_radiant_inquisitor.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/devoted_radiant_inquisitor.lua",
+        "git_blob": "a03f19612ea0fc6fbbfce340fac471b8d98de1dc",
+        "sha256": "8636c8d046d08a874e3e1a0644457aa1ce871f46d53f23e3a918674cad67912d",
+        "bytes": 3050,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/devoted_radiant_paragon.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/devoted_radiant_paragon.lua",
+        "git_blob": "fc62eca77b057fdb191cfe4aae05f24f72ffc30f",
+        "sha256": "46988645d3fc2e7677c8932979a54c4928380f0ccc75ee8037fa45d34c869325",
+        "bytes": 2588,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/devoted_radiant_templar.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/devoted_radiant_templar.lua",
+        "git_blob": "e9f0514eb71216b0d439aae085cb9e204e136dd0",
+        "sha256": "336e25f4b92d577fcc88ffc5161d4b19e9dda70bc65490a98a1f7d36c4716d92",
+        "bytes": 2880,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/devoted_radiant_warden.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/devoted_radiant_warden.lua",
+        "git_blob": "4284a55dfc5806ba819111212535e56a26672d92",
+        "sha256": "0627ddc94d8b57741201514683c960268c0b2e4289798cdc53f932d4628fff50",
+        "bytes": 2810,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/devoted_radiant_zealot.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/devoted_radiant_zealot.lua",
+        "git_blob": "562211644fa194366c27e7356a6896bcfd3e96c9",
+        "sha256": "d5deec0db924b2a34db44901c3a9fcbaac0d92fa298b07584346dfe61ae369d2",
+        "bytes": 2987,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/druid_rival.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/druid_rival.lua",
+        "git_blob": "c7dfe30c7a03456e62d66a53425d7ee0cb239779",
+        "sha256": "f0e451cb57ec570ee03135c20511d7abcb26b18a6b692008036366847dceaa22",
+        "bytes": 1813,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/elite_fanatic.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/elite_fanatic.lua",
+        "git_blob": "efc0481f8e560b8f3a03b1fede2859c8d486eaf6",
+        "sha256": "65163fd3fa9f4826f306480dc0522ec47f36ee9ca8486b37b8392a5d88580b64",
+        "bytes": 2923,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/energy_cannon.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/energy_cannon.lua",
+        "git_blob": "7a1830540e42e58a3f90b931c6bcce39b3d68f93",
+        "sha256": "8368fffaf2f068e1333a042bd5a92ff6973df5c10a924eb6d5eaaf43f0a21a0a",
+        "bytes": 1211,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/energy_cannon_right.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/energy_cannon_right.lua",
+        "git_blob": "884eceb4438f4d07ea784e83f93b613d4dcdb985",
+        "sha256": "de1a23a25ffc80d02a2b51713ce5b412f1ef96590ca5a713a9af1e4b37b7dc83",
+        "bytes": 1218,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/furious_jaracal.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/furious_jaracal.lua",
+        "git_blob": "34912d1a50b7e19756d81e7ee503349f7ca784d4",
+        "sha256": "5d3c6cf0075d6ca806bcdbf9b423879d029598122e734f0e78be73d06bb18e44",
+        "bytes": 2932,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/iceplume_strider.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/iceplume_strider.lua",
+        "git_blob": "fbe410847eb5d9b9b33efa3818b211e62081ac01",
+        "sha256": "feb62cd51c00bdda4e557aa5655499751eae52a2e07460f21353e3499630ad58",
+        "bytes": 3245,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/jaracal.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/jaracal.lua",
+        "git_blob": "282a1e83255c842f7dba222fa92c1cb87855931e",
+        "sha256": "a7760034cc5ba4ec33b8cbd86e0c5cd20725a899433c3fb009faa1b4631439aa",
+        "bytes": 2704,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/knight_rival.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/knight_rival.lua",
+        "git_blob": "125a9de3fb88173d53b7b19d9290caeb7ea7904a",
+        "sha256": "90fa5c5152d9a33cdcc6136961cc43315a334a9bd974227eb497222c8a9c074e",
+        "bytes": 1814,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/monk_rival.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/monk_rival.lua",
+        "git_blob": "95bb60f30a67b01db8c836b74cd3472091b54400",
+        "sha256": "6ace41aace6d2dd8eb7827c4b6cc03f4cb566584bcdef845931c4e2da56ddb0b",
+        "bytes": 2227,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/moonsilver_augur.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/moonsilver_augur.lua",
+        "git_blob": "79c6021e03bcabebc5a1d270b394456fa9f8f460",
+        "sha256": "a5b73c4fed927fc1ea43d4c4e4fdd1e6bbf11c216024eebb51f7a8bd16b0cb29",
+        "bytes": 1369,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/moonsilver_custodian.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/moonsilver_custodian.lua",
+        "git_blob": "641e073fc47cbdf93b9f1565208817d7f327c0b7",
+        "sha256": "908b7e3cd261a3b0d57c009f113974762bef66bf301e553db300797979438d66",
+        "bytes": 3385,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/moonsilver_guardian.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/moonsilver_guardian.lua",
+        "git_blob": "a17c900f2fa1e6fe3795f7b9e5a3912b6057f8ca",
+        "sha256": "5b6a931a79c38f3065d27168774ec417909e88935b48a068249dff48b6a4c404",
+        "bytes": 3158,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/moonsilver_protector.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/moonsilver_protector.lua",
+        "git_blob": "3900cba887eeb121db28302998bb3800499ba5b2",
+        "sha256": "b9a494a3aac0ab67d5e1aae496dcf20ae1e94efdd4ba67612e1bf99baa06685c",
+        "bytes": 3068,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/moonsilver_sentinel.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/moonsilver_sentinel.lua",
+        "git_blob": "fe675bdd9b4bcd699932b5101714595bcd4022d7",
+        "sha256": "12a55dd121ca8b0955c505788327192eb80b4a64a11e5b0a03baa24f49b52571",
+        "bytes": 3228,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/moonsilver_storm.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/moonsilver_storm.lua",
+        "git_blob": "6d418891575748eaba22a2fb048a723f1f337f56",
+        "sha256": "d32e18b5884593829d68b97bf135052d334cbb181719a425ac84d5bf26ad92b6",
+        "bytes": 1901,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/moonspawn_blightspitter.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/moonspawn_blightspitter.lua",
+        "git_blob": "7137e7db7b0f97d7dba35c32e4b7a4fc1a3dc0a8",
+        "sha256": "a5dfac62aa3155897545bd4bc363a52405f4d22a16661ee9ace0fabea9201954",
+        "bytes": 3433,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/moonspawn_juggernaut.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/moonspawn_juggernaut.lua",
+        "git_blob": "ec6b6e411cb2ab1780426a77bc0512b9fbe5fda8",
+        "sha256": "d5975211ab16bd13c257dbb2eb2bb2aa5f8ae3b560d5414eda92613649643686",
+        "bytes": 3592,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/moonspawn_oozecrown.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/moonspawn_oozecrown.lua",
+        "git_blob": "d3ed42ccd43d8656b4ccc3d1d294eab418dc9eff",
+        "sha256": "3f5bb42c4eff936fd7e84053ebd092803d2fcaf3975bc3eac27d6de33a3bc08f",
+        "bytes": 3416,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/moonstone_excavator.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/moonstone_excavator.lua",
+        "git_blob": "30f924e02e1e83a3659aa8a716c9e9af2370b241",
+        "sha256": "9dde13c32d40f2fb4b3d8b25b02a5dbd19d03c71d4f06e281f177f589ca6b446",
+        "bytes": 3284,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/moonstone_miner.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/moonstone_miner.lua",
+        "git_blob": "b6a71659f76ceb4b65363fc5908ed125f85cc013",
+        "sha256": "cdd6d5c010f63b0e07df8bf889ce8d195ed6e6c7a3b0549682b675f6304b9bf8",
+        "bytes": 3379,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/moonstone_overseer.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/moonstone_overseer.lua",
+        "git_blob": "e569aeec2cf85d4976323581ad5397c9841eda6f",
+        "sha256": "2d7f4827ec26a3bc6f45993f543dc0f5b1c5119fd3063a8fe345dd2cd4157c15",
+        "bytes": 3648,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/paladin_rival.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/paladin_rival.lua",
+        "git_blob": "9cfa02209581475f5166bcac79ce95e360d25e9b",
+        "sha256": "4cea2dc633233ab5dff7d8a03168a841a570159c010dfa9092e6b914cf40dee7",
+        "bytes": 1768,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/petrified_fanatic.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/petrified_fanatic.lua",
+        "git_blob": "955eff2a90303807792221879d92a49ddb0805ed",
+        "sha256": "1dcadcf6a6dade5ed29f997ba9c139718a4149dd12ed578cd6c2b2746247b98c",
+        "bytes": 1296,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/radiant_acolyte.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/radiant_acolyte.lua",
+        "git_blob": "836694d5a73a3cd1d63bad53e50bc7115cedb067",
+        "sha256": "91249bdc22676aa763bddf3d39f969c8c5134ec39ec4aa69eb3961597349e75e",
+        "bytes": 2940,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/radiant_inquisitor.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/radiant_inquisitor.lua",
+        "git_blob": "32a24abe919b925f550f24d2aefc1c558ae438f1",
+        "sha256": "4f2322a464960e912678f202cf4bb5e85956ab7c05bcd3201597ee4eb5580912",
+        "bytes": 2528,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/radiant_paragon.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/radiant_paragon.lua",
+        "git_blob": "54a4cebac06ecda2b1c1ff20bcb2f773c925143b",
+        "sha256": "22f7b06ee14e51ef3a24406080e0bba167b16d8bd50c297f8d03d86b554cf6ca",
+        "bytes": 2849,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/radiant_templar.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/radiant_templar.lua",
+        "git_blob": "dc3af07e1c43c678db752aa1797973e06ce001d8",
+        "sha256": "474f73259395a49cd864b459e75ce555830cd206a8066ec85ad95b45c69719a6",
+        "bytes": 3067,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/radiant_warden.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/radiant_warden.lua",
+        "git_blob": "d3876fe61404e0d47b080658f4b9f23462d59477",
+        "sha256": "475758dd0bcd5e158bf187fcf85c3ece75c3c5e45dada8b33aa952aad319233f",
+        "bytes": 3082,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/radiant_zealot.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/radiant_zealot.lua",
+        "git_blob": "30d855bbd616f50c3bee7f28a45f905427d47c69",
+        "sha256": "50c798cd64a710ccd54023efb01e2277e0f271c7d7fe403497383e85a553b895",
+        "bytes": 3254,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/silverfrost_sentinel.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/silverfrost_sentinel.lua",
+        "git_blob": "f1ad539d3af59900aa05f920321b5362a736f511",
+        "sha256": "d50af341f42ceac14c9dfa018f274a9fb5e21be30b2acb0a09b081b585dcf193",
+        "bytes": 3309,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/sorcerer_rival.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/sorcerer_rival.lua",
+        "git_blob": "699aeb3e30c653c13495e5f35c6ba3c7eec3919f",
+        "sha256": "6062873b8722c125ebfb4777c1a984021cf5ea967078c3c64f492659631edbdf",
+        "bytes": 2495,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/trapped_soul.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/trapped_soul.lua",
+        "git_blob": "8d4ad3c4406c813ef60da3e641645fae097c37c7",
+        "sha256": "732eb9eff90a71f53c2cd091dee3e6b5ecfaccd3fd34dbbffa0ab8e76f00dfad",
+        "bytes": 2697,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/true_feverbloom_asura.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/true_feverbloom_asura.lua",
+        "git_blob": "ca72adfdf16abd56dd6d2139449dfa1db7c12d6f",
+        "sha256": "ed855da4943abe6500e60eb55d06bce02e664d6da97d934df95e3243411554db",
+        "bytes": 3406,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/monster/summer_update_2026/winged_jaracal.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/monster/summer_update_2026/winged_jaracal.lua",
+        "git_blob": "6987eb7204191687503ea563c51a3e4ab6ea4596",
+        "sha256": "fcf20bdce28282026eeed56ef9b54e3827b83107dd2a1fed64487d3e1bb56b99",
+        "bytes": 3125,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/captain_corsarah.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/captain_corsarah.lua",
+        "git_blob": "bb3364b5ae8d8667753d7ae5d7d97921c93c9907",
+        "sha256": "2010a7bb0d69b06a70a08256496e6df75af918b0c1c8253496128292b9c15ace",
+        "bytes": 3276,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/dhira.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/dhira.lua",
+        "git_blob": "b65532573905bf3c5faabe569df2ef90cb3ababd",
+        "sha256": "35bbf0455fb53facaa870e8ed9bb5bf8b3b8cb3a648f9f0f4dc74bec941102b9",
+        "bytes": 3989,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/doctor_marrow.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/doctor_marrow.lua",
+        "git_blob": "b05652ff8499da22c377b9acd106d28ee70dba6d",
+        "sha256": "af1ff19264525f2b0726211c05f54ec4e244eee797d4fa919ed8dfd82a874135",
+        "bytes": 7218,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/g_ezkho.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/g_ezkho.lua",
+        "git_blob": "23adebcf476200ede5320eeb7badc2a526898d2e",
+        "sha256": "65af518e4e139cfe9b7f8bfa1787556e3ea65241a57d63d8dc34e7c4f01846f4",
+        "bytes": 2722,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/goldro.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/goldro.lua",
+        "git_blob": "4e964332940257232e004951462815273ee064df",
+        "sha256": "394da3c41a2e81fb8b2cb5ee637a95e4bb50393de1069a338452a1ab89ab15f8",
+        "bytes": 2698,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/javala.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/javala.lua",
+        "git_blob": "3260bde1419366557d8aeb252aeeb145bbe5dd72",
+        "sha256": "62604261c37494c80a574e2975ba265a1b1851f86cbcbe8ad5a6857bd05fe304",
+        "bytes": 4260,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/mayor_pocaro.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/mayor_pocaro.lua",
+        "git_blob": "65521fd1d9dc036abd23958351762242202813fb",
+        "sha256": "26c02f928e72aef3e684028c5cf03128481478ff87f96095674a5141aeae2618",
+        "bytes": 10497,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/nekaret.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/nekaret.lua",
+        "git_blob": "12e28ebeb91d89f7334bff8b2a2cbdde3e1510c6",
+        "sha256": "3c083ca7ceda9801fba9b8e5e0de1b5a3658a54adc45eecb95372ca8061e71fd",
+        "bytes": 2702,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/nilavarna.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/nilavarna.lua",
+        "git_blob": "e29d1ef6d661e82b5fede27cfc58e1f2116e58d5",
+        "sha256": "ed7dcc976d2adfecbf3c448658b183a5640bcd1b68da0e948b6f738833fca979",
+        "bytes": 5031,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/niral.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/niral.lua",
+        "git_blob": "753c9a0c2aeb204e432adadfd8a6f2d7f709f848",
+        "sha256": "25f412f5a36794dea68e6dccea7cd48a18cdafe4f07b825b67db5047e7640d86",
+        "bytes": 5971,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/omar.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/omar.lua",
+        "git_blob": "b050266b75ffe7f1b0c7979e99790fc957fedbbd",
+        "sha256": "b087adaf777afe3cc341ffb76055b8823a21170b2611bf92c37ff63f9f321ccb",
+        "bytes": 2723,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/pescadu.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/pescadu.lua",
+        "git_blob": "86bbb8f767703d08be99b796d2cfe4f45d160d8f",
+        "sha256": "6fe10a1bddc2e0618da306d56fe492050bada96fa0370eeb8a4cb31bd80d833b",
+        "bytes": 2143,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/saraki.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/saraki.lua",
+        "git_blob": "4ba853b86ac3f5275a2e824138ac4fbdbe08d21a",
+        "sha256": "fcf063c5c09372a0f0cbd084333c2d4f3db2f4b6751ab4f4c5fb5cfd0fa11659",
+        "bytes": 4981,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/sharai.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/sharai.lua",
+        "git_blob": "5b99390ce90e4b5727a2699183c452d9e1f16778",
+        "sha256": "174801a816260342c28a9610dedffd3b8bc4829cf76fd23ba3e9207e3b81977a",
+        "bytes": 4737,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/tarisu.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/tarisu.lua",
+        "git_blob": "415de19235468f4f5e81a6f5983e1b4bb4c69412",
+        "sha256": "fe9e882c2bbe4aaa80c1e406649d39da6e244ce0e3b3d0024af1216ed210874e",
+        "bytes": 3293,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/thorim.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/thorim.lua",
+        "git_blob": "3591d6bef9a36df1102fbe73720a69dc344b7703",
+        "sha256": "4d115361698f751a54daee60eb7284d377a50f194412609f572b4313bce66135",
+        "bytes": 2067,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/udu.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/udu.lua",
+        "git_blob": "b0fde760e3b1ebc73d7173a6d26b8fb6f19e7cb7",
+        "sha256": "bcacbe43bc26a515c4dee8195c8a6972dafdce9697649f2ab72287c9252a63a7",
+        "bytes": 3879,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/uzon_back.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/uzon_back.lua",
+        "git_blob": "fc49444d3f8b21f359290397f0c873200abb3752",
+        "sha256": "b9d4cf8db310b790d2351d7219c838984238df1296794654e398e8aba38d1aa4",
+        "bytes": 3351,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/wayland_smythers.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/wayland_smythers.lua",
+        "git_blob": "ce25ef72fbbc15e557d9be581d53eb667c4d9fd0",
+        "sha256": "9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851",
+        "bytes": 8779,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/npc/zofia_bolter.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/npc/zofia_bolter.lua",
+        "git_blob": "4ec30763f04bafda887e7205e8f0883d2b8c6740",
+        "sha256": "44433a3d799bb8f6669477876b4215e303d0e643a1d927eadaacb98ac0ee37b1",
+        "bytes": 2702,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/scripts/custom/echo_warden/echo_warden_portal.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/scripts/custom/echo_warden/echo_warden_portal.lua",
+        "git_blob": "60cc68700c8e246592c053594db323674256fa91",
+        "sha256": "5c7308b5535b38d4e05176bafd22ef1cb0b0211a9e41252cb0bbd208d521883b",
+        "bytes": 891,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/scripts/custom/echo_warden/echo_warden_trigger.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/scripts/custom/echo_warden/echo_warden_trigger.lua",
+        "git_blob": "b4ea154d33b9d5a5fd56b45f660d82aa6df9db48",
+        "sha256": "362491466c549a6d0a8c6e8c2b86aea6e4c8a219f463370e654c3807be60083a",
+        "bytes": 3629,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/scripts/custom/echo_warden/ondroploot_echo_warden.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/scripts/custom/echo_warden/ondroploot_echo_warden.lua",
+        "git_blob": "2886adf3d3ca32a9a4ca7086f29d1fd838f1c797",
+        "sha256": "b0be17f17b5476ee7165aa4a1f824e94ad401339d7c8b6d2676977df7b1745c3",
+        "bytes": 1369,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/scripts/spells/monster/spells_phosphorus_curse.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data-global/scripts/spells/monster/spells_phosphorus_curse.lua",
+        "git_blob": "ed7e0be5989d497f14c21a6abec348228d825bdd",
+        "sha256": "8aedfdaa94aafb4a52276f3a28f69063d2c4d5e2d42ddc8bb238630aa9158135",
+        "bytes": 738,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data-global/startup/tables/item.lua",
+      "change": "modified",
+      "before": {
+        "file": "data-global/startup/tables/item.lua",
+        "git_blob": "2fc7af8495a2fd5166ef2fb6ebfa9d04b8c27654",
+        "sha256": "677bffd2482d16a5c73633e3f7324c4dc16cf1e00fbb5368e56ce4b6d60402fd",
+        "bytes": 121248,
+        "present_in_original_worktree": false
+      },
+      "after": {
+        "file": "data-global/startup/tables/item.lua",
+        "git_blob": "5d5323401d243df8416a38aba33c3d6e738b2d1a",
+        "sha256": "7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad",
+        "bytes": 121248,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data/libs/systems/blessing.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/libs/systems/blessing.lua",
+        "git_blob": "795c9343f205df210407ee5dfca1efa29b729916",
+        "sha256": "63993516009e87cf5501213c6cd87aaa1c0b916277ab3a928f582834de5e43d7",
+        "bytes": 10064,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/libs/systems/blessing.lua",
+        "git_blob": "00eef2beff40b3280bac5e51ff36e3b4d7de6684",
+        "sha256": "8a04d7aee4657e005242e6a053d5bc393e2ab2bfd7b69baf14b3e0891db37a83",
+        "bytes": 10036,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/migrations/67.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data/migrations/67.lua",
+        "git_blob": "72c287efe84677b9bb57b0b1ea6f32ead2c880c9",
+        "sha256": "fd489ede6e06f67856624a631393ad06dc0dfa27bff083cbf5e7e1f87c63af7c",
+        "bytes": 1499,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data/scripts/actions/items/imbuement_scrolls.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/actions/items/imbuement_scrolls.lua",
+        "git_blob": "597b4218acaaea2bf5fa2f843f27654d49968244",
+        "sha256": "e5fe4eb9ddcd88806865d8041c0f398b8b444477cb0f82420243d90f09d41554",
+        "bytes": 677,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/actions/items/imbuement_scrolls.lua",
+        "git_blob": "942f7c60c5ba323763db84984f14d883229f34ad",
+        "sha256": "bbc46a024824ae05828c82280b65a2b34fc1080920b1c04f53b730696623b4d2",
+        "bytes": 919,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/discovery_geometry.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data/scripts/discovery_geometry.lua",
+        "git_blob": "0c91a992c1038c3c8df66b079b7f69758277f153",
+        "sha256": "b64960ec0c270591c5605791d525eb358368c2c8cb2203c0cea764641aa9becd",
+        "bytes": 1049376,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data/scripts/discovery_system.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data/scripts/discovery_system.lua",
+        "git_blob": "a2ae9330dcb4902ff65db73b7e94655dd2b3402b",
+        "sha256": "db42b499100a096954251f3796493702689800e84efa921a2625ab5a5e8ba11b",
+        "bytes": 24884,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data/scripts/globalevents/global_server_save.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/globalevents/global_server_save.lua",
+        "git_blob": "c68c3dedc887c4536e485640af2f84061175f9f6",
+        "sha256": "03999f2d5a0e385345af45011a640a235dadf6940690b4f03b368994a7a20cbc",
+        "bytes": 2112,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/globalevents/global_server_save.lua",
+        "git_blob": "da432e23121a119553cfbdde1538682208ea1a3b",
+        "sha256": "195ad0634436070a6aac2f37be8051f13f4e507cf950ce88930fae547ae19e3c",
+        "bytes": 2294,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/spells/attack/buzz.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/spells/attack/buzz.lua",
+        "git_blob": "13e5a594c18c3da3277b66f346229e9e8b5a46d4",
+        "sha256": "5689064be7eb78c12ef13d09b2ec019764457a1f611aaf3e2e3a583c13b12f57",
+        "bytes": 2514,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/spells/attack/buzz.lua",
+        "git_blob": "fdd15035b0c9921c96199246ea2af83ce31fc758",
+        "sha256": "d603cacede4043bc5cebc20159bbbc530e302d1a988739ce3e796ed936fdbd8f",
+        "bytes": 2507,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/spells/attack/death_echo.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/spells/attack/death_echo.lua",
+        "git_blob": "d62430fc5d30a0e420c458d7d6e0d0590a2f9a4c",
+        "sha256": "4d541cf3c4db8af260d1659ae38e93f25a8e6c88b6a57ec12887cf9f0c026682",
+        "bytes": 4426,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/spells/attack/death_echo.lua",
+        "git_blob": "da3ea66a6fb80cfc1367270df054c49d7ba9300f",
+        "sha256": "118996cee8fb2438f683b613e10345825a09e44bcdec80a27cbbdd18a142e088",
+        "bytes": 4427,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/spells/attack/death_strike.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/spells/attack/death_strike.lua",
+        "git_blob": "155fa3a2af4365e6f55eb19f66cb88f323f13759",
+        "sha256": "16ee942315f96f3b071b13e30a9b974c9e27022f7800b8938f8a0910e9684fc8",
+        "bytes": 2536,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/spells/attack/death_strike.lua",
+        "git_blob": "559b10312e53d4de78b5c817ae521ddf529d2fd9",
+        "sha256": "44eb08a574fdd25f02f82023fa80751b31fd1987d8ff4d219393e1a8dfed01f2",
+        "bytes": 2529,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/spells/attack/divine_barrage.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/spells/attack/divine_barrage.lua",
+        "git_blob": "c69b9edeb54ec1bb031394127e1508a7df8ee7ca",
+        "sha256": "d14a6199df7f20fe9664aa0c383c5c0f54d05f0f8c59ef1f54d12b9c3d2bd3ee",
+        "bytes": 1083,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/spells/attack/divine_barrage.lua",
+        "git_blob": "cbcd8e6368345ac60c2d1b07e214b05f97ef4e62",
+        "sha256": "25aea3579343c438246202a3f29015598b6c46311f9bd42da5ab20fc99821f83",
+        "bytes": 1084,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/spells/attack/energy_wave.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/spells/attack/energy_wave.lua",
+        "git_blob": "3ff932fc08a5f50b613d4737fa9ca3c869dc1ae3",
+        "sha256": "638b2c9738ac996532d84b6a5105b036938cf9312140cf73510bb9b8c041ddc8",
+        "bytes": 3683,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/spells/attack/energy_wave.lua",
+        "git_blob": "d3fd8e9da5ddbe4688ff3653ada448d92381b2fc",
+        "sha256": "43f226d790449c52c713b2b529adca58b50f10588f61a106766e5be2334a48b8",
+        "bytes": 3676,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/spells/attack/fire_wave.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/spells/attack/fire_wave.lua",
+        "git_blob": "b9e879d04907f0afcd7a95158abbf57b93955649",
+        "sha256": "246237944ea5bcc0d63db97cd2297737dbe9c5331839930cfd7a10990626eae8",
+        "bytes": 2354,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/spells/attack/fire_wave.lua",
+        "git_blob": "b8f28f706f8da828d6d20e1f89fc14a2b01f69ba",
+        "sha256": "61b605526b884080ba04f67d23bb886325cf60432c8cd6e583cd7395f21efdfb",
+        "bytes": 2347,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/spells/attack/flame_strike.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/spells/attack/flame_strike.lua",
+        "git_blob": "15d8e97a9845e50f879e253f6fc7fd68d50c649d",
+        "sha256": "548e852a247ff961d1820b52baed9299066b74884b5de43c6494b65b0e13703c",
+        "bytes": 3450,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/spells/attack/flame_strike.lua",
+        "git_blob": "d0de18ade8a669edcf4a827ddff4e26311dc7363",
+        "sha256": "b32d4300bc4486415ad1d1ef057e6188a33d449c9449aa9f9c36f173d14ed370",
+        "bytes": 3443,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/spells/attack/forked_glacier.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/spells/attack/forked_glacier.lua",
+        "git_blob": "b1bcfe93a541d448e5701a65f6c9183686acf803",
+        "sha256": "eb9c436906fe2cdc5a24d628cd45b57ae053d59c4aa6a10cc0123b30a894ebdb",
+        "bytes": 1787,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/spells/attack/forked_glacier.lua",
+        "git_blob": "549e358acc5df4507e39b008fa53db8b497f0ede",
+        "sha256": "e5506efeb1d1f45971cb8a39429856f1c6768edbefdda6bce301928f9ba41bc9",
+        "bytes": 1788,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/spells/attack/forked_thorns.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/spells/attack/forked_thorns.lua",
+        "git_blob": "e24fcf205294236d3d3307ef691e61609c63f65a",
+        "sha256": "c55d62693b2dd76dd72e55b0609ca9681070ecff43f2c891d87c4c50584f52bc",
+        "bytes": 1795,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/spells/attack/forked_thorns.lua",
+        "git_blob": "1937505ce0c94170c516ce1e965f08aedcafe848",
+        "sha256": "ed98eb45ff7916a48e18db328bb46896fbaeb45457c599293f8e771dcb9d63d0",
+        "bytes": 1796,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/spells/attack/great_death_beam.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/spells/attack/great_death_beam.lua",
+        "git_blob": "82fc1476af3fef11b6851fad7022787fb845971d",
+        "sha256": "4e236cf0911e840bfbbcbc8762ae52cf83964a20a55ce216a3dae2b32ac06b7a",
+        "bytes": 4806,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/spells/attack/great_death_beam.lua",
+        "git_blob": "c2b34ffee5e14c270c063127fbf350bf9ccb6f9f",
+        "sha256": "4d9ad383d47551c6deca53c22f016f121c9d15d103eff3fad36a06039e0d685e",
+        "bytes": 4799,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/spells/attack/great_fire_wave.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/spells/attack/great_fire_wave.lua",
+        "git_blob": "17a41bfc18c3b572363d836dcbcdef08b6d67765",
+        "sha256": "af99240cff38630af9476c4935d5bd12cb5afd278976afc65c6a4ad7080226d2",
+        "bytes": 2460,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/spells/attack/great_fire_wave.lua",
+        "git_blob": "7067dab596ec8ee00f8baceee750347bc66cfb0e",
+        "sha256": "1e9ebd577623e29c8ef276775282c53798bb102bb09f5b8a67b142655a655b52",
+        "bytes": 2453,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/spells/attack/hells_core.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/spells/attack/hells_core.lua",
+        "git_blob": "7996377c6791b22e43c702fd8c58cb83d715f713",
+        "sha256": "66058447a054d261da052270b1b39f6a5146bdf839269c158d92bd8c99ac2c07",
+        "bytes": 2360,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/spells/attack/hells_core.lua",
+        "git_blob": "a50facae07aad35b5555753f06d494a9beabe903",
+        "sha256": "89a21aee7558a317e932c7ec626c76f5c2c7d3fc781b820a2f974ff7d7282a02",
+        "bytes": 2353,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/spells/attack/rage_of_the_skies.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/spells/attack/rage_of_the_skies.lua",
+        "git_blob": "2c0fa414237b8fd23f41b975e6e3d81453bc26f8",
+        "sha256": "0df4426161a7e4b0421fdb1e6f8f2e5199cdf27464a3998e29e49f91ebde0af3",
+        "bytes": 2335,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/spells/attack/rage_of_the_skies.lua",
+        "git_blob": "c016da4cd4762fc2496eb4fdc6f546b7abc02e40",
+        "sha256": "7fb8cacc3a4f8fc06ad9cada80ae3a3daae0070ec512f7f3b4fefaea6704b8ad",
+        "bytes": 2328,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/spells/attack/scorch.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/spells/attack/scorch.lua",
+        "git_blob": "7457c286d558ffa27e534f2c9f165ee0463a4b52",
+        "sha256": "e3c1aec6af9365843a2711c1913085e0ebb7716025b63c89f6309905e3fd08e7",
+        "bytes": 2333,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/spells/attack/scorch.lua",
+        "git_blob": "e08a3bd17046c9f527c4eae5778329ca950b9e3c",
+        "sha256": "2e72ccf1408a0f54a920318fc59bac7e53c34852349433d57bee269704d54427",
+        "bytes": 2326,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/spells/attack/shield_bash.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/spells/attack/shield_bash.lua",
+        "git_blob": "11544f9f7fc9f5dae0ca446a06885e25d401f21e",
+        "sha256": "832390523bfdbdd7776b8358b324f098f75f918b192e6888b6d9a9a9d6cdf593",
+        "bytes": 3726,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/spells/attack/shield_bash.lua",
+        "git_blob": "c5a4628044cbe1dbf0318789b94b62cd4415a69c",
+        "sha256": "d548fc45bc83fc62d915b15c6b3ffd642d7b53a5304809e14fab90564c40fe2d",
+        "bytes": 3727,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/spells/attack/shield_slam.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/spells/attack/shield_slam.lua",
+        "git_blob": "a89d44d72c2b1097494264d4a90b4a6bdc5a16db",
+        "sha256": "3584e929e6e3687426ab35323928067cfca028c370c462a6674b5175d3bd2dcf",
+        "bytes": 3998,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/spells/attack/shield_slam.lua",
+        "git_blob": "06835d023b53603ac19552307d7cf8bed5624ae2",
+        "sha256": "22e50b4f309a5bfe500d89576a7546d4598b2dfa16633ecace9531be2b767955",
+        "bytes": 3999,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/spells/attack/thousand_fist_blows.lua",
+      "change": "modified",
+      "before": {
+        "file": "data/scripts/spells/attack/thousand_fist_blows.lua",
+        "git_blob": "43398c659a719a4e9a7d9bc21a7b1a43b617169c",
+        "sha256": "e801c5137c2db2db0b418c11df56e9b3ed8a14f3d7fbb45444dca5037f323346",
+        "bytes": 3128,
+        "present_in_original_worktree": true
+      },
+      "after": {
+        "file": "data/scripts/spells/attack/thousand_fist_blows.lua",
+        "git_blob": "6817b0d15ec168473624fb397a98eae562598f8b",
+        "sha256": "73fee65072864fa8bfdbcaf8de93e077fe7c2f90b88b0a44489519192bf49b02",
+        "bytes": 3129,
+        "present_in_original_worktree": true
+      }
+    },
+    {
+      "file": "data/scripts/talkactions/god/boss_difficulty_test.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data/scripts/talkactions/god/boss_difficulty_test.lua",
+        "git_blob": "53625617d7d12c4873d16a9457d51c96836ddbd4",
+        "sha256": "e04653c7f1cd43d51b3b2d48e5d284df8cd423286d78a3a4c0f5d0782ce36dcb",
+        "bytes": 2036,
+        "present_in_original_worktree": false
+      }
+    },
+    {
+      "file": "data/scripts/talkactions/god/discovery_test.lua",
+      "change": "added",
+      "before": null,
+      "after": {
+        "file": "data/scripts/talkactions/god/discovery_test.lua",
+        "git_blob": "a3192feaecb5a125e17a4b4976553a48c4f986ed",
+        "sha256": "464e5422ef45db6493f3afa1ee622346c37d69583a449b8ad7d3694ea809ec36",
+        "bytes": 4250,
+        "present_in_original_worktree": false
+      }
+    }
+  ]
+}

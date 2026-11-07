@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:closed-source-helper-operands:v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "records",
+    "summary",
+    "native_admission"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "OTERYN_CLOSED_SOURCE_HELPER_OPERANDS/v1"
+    },
+    "native_admission": {
+      "const": false
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "operand_records",
+        "conditions",
+        "execution_proven"
+      ],
+      "properties": {
+        "execution_proven": {
+          "const": 0
+        }
+      }
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_component_id",
+          "condition_ast_pointer",
+          "atom_ast_pointer",
+          "source_ref",
+          "lowered",
+          "dependencies",
+          "binding_witness",
+          "status",
+          "prior_partial_status_retained",
+          "native_admission",
+          "canonical_gap_replaced",
+          "runtime_activation"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "source_component_id": {
+            "type": "string"
+          },
+          "condition_ast_pointer": {
+            "type": "string"
+          },
+          "atom_ast_pointer": {
+            "type": "string"
+          },
+          "source_ref": {
+            "type": "object",
+            "required": [
+              "provenance",
+              "ast_pointer",
+              "byte_start",
+              "byte_end_exclusive",
+              "expression",
+              "slice_sha256"
+            ]
+          },
+          "lowered": {
+            "type": "object",
+            "required": [
+              "operation"
+            ],
+            "properties": {
+              "operation": {
+                "enum": [
+                  "SOURCE_LUA_TYPE_QUERY",
+                  "SOURCE_LUA_OS_TIME_NOW",
+                  "SOURCE_PINNED_HELPER_CALL"
+                ]
+              }
+            }
+          },
+          "dependencies": {
+            "type": "array",
+            "minItems": 1
+          },
+          "binding_witness": {
+            "type": "object",
+            "required": [
+              "execution_binding_proven"
+            ],
+            "properties": {
+              "execution_binding_proven": {
+                "const": false
+              }
+            }
+          },
+          "status": {
+            "const": "SOURCE_SPEC_COMPLETE_EXECUTION_UNPROVEN"
+          },
+          "prior_partial_status_retained": {
+            "const": true
+          },
+          "native_admission": {
+            "const": false
+          },
+          "canonical_gap_replaced": {
+            "const": false
+          },
+          "runtime_activation": {
+            "const": false
+          }
+        }
+      }
+    }
+  }
+}

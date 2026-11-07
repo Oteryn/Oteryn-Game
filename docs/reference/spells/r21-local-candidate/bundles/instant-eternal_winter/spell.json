@@ -1,0 +1,62 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/eternal_winter",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Eternal Winter",
+    "carrier": "instant",
+    "words": "exevo gran mas frigo",
+    "reference_spell_id": 118,
+    "library_text": "Freezing, enormous and painful - all those words describe perfectly the most powerful spell a druid can have at his disposal. It took a long time to develop the Eternal Winter spell, and only recently the dominators of the element ice have successfully mastered this mighty spell. The effects of this spell are so vastly that a single druid is able to bring down a whole army of strong opponents by himself. Murmuring the formula of this deathly cold spell lets up to 37 blizzards appear that wind around everybody who is unlucky enough to stand in its range. As beautiful the sparkling blizzards appear from a distance, as gruesome are the effects for the druid's opponents. Particularly creatures with an affiliation to fire seldom stand the grim pain that iciness can cause. As the magic potential of a druid is only strong enough to master one such powerful spell, Wrath of Nature and Eternal Winter share the same cooldown, before either of them can be cast again.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ],
+      "level": 60,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 1050,
+      "soul": 0
+    },
+    "cooldown_ms": 40000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 4000
+      },
+      {
+        "group": "focus",
+        "cooldown_ms": 40000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 6,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_eternal_winter"
+    },
+    "base_power": 200,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/eternal_winter",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": 259,
+  "name": "CHAT_PUBLIC_CHANNELS_V1",
+  "owner_decision": "S04c chat-vip lane allocation 2026-10-31; PR #2780 comment 6547489522 authorizes Control-issued chat role projection",
+  "owner": "World communication / existing CHAT owner",
+  "requires": [
+    7,
+    80
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Extends CHAT_INTENT command 13 and domain 12 with room ids 5..8 and room bits 4..7; peers without 259 retain ids 1..4 and bits 0..3. Donor access rules and Help moderation are enforced by the current Control-issued role projection and existing session-fenced CHAT owner. See docs/contracts/protocol-oteryn/v1/chat-public-channels-v1.md."
+}

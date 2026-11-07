@@ -1,0 +1,7 @@
+name=container_sort
+commands=168
+transport=container_sort
+composed=container_sort
+authority=container_sort
+[route]
+match routing::container_sort::route(authority, &mut session.admitted, command, &mut session.item_view, &mut session.container_views).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::Disconnected) }

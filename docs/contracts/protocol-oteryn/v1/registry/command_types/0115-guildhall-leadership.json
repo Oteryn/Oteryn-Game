@@ -1,0 +1,10 @@
+{
+  "id": 115,
+  "name": "GUILDHALL_LEADERSHIP",
+  "owner_decision": "GUILDHALL-1 command 115 allocation; GUILD0 leader transfer",
+  "capability": 99,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/house_v1.proto#GuildhallLeadershipV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/guild_v1.proto#GuildIntentResultV1",
+  "max_payload_bytes": 64,
+  "max_result_payload_bytes": 128
+}

@@ -1,0 +1,18 @@
+{
+  "id": "DUR04-FIRST-PROD-LOOT-TABLES",
+  "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+  "resource": "Loot table definitions",
+  "unit": "definitions",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject excess loot tables before lowering.",
+  "client_visible": false,
+  "boundary_tests": [
+    "1 loot table accepted",
+    "2 loot tables rejected"
+  ]
+}

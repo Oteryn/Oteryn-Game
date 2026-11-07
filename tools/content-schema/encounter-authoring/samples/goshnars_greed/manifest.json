@@ -1,0 +1,329 @@
+{
+  "encounter": "canary:encounter/goshnars_greed",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "GreedMonsterDeath": [
+      "canary:creature/greedbeast",
+      "canary:creature/soulsnatcher",
+      "canary:creature/weak_soul",
+      "canary:creature/strong_soul",
+      "canary:creature/powerful_soul"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/lib/quests/soul_war.lua",
+      "blob_sha1": "f551347bd4fb09d47ca1ec5a868812a5147fac48"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/greedbeast.lua",
+      "blob_sha1": "db7076d57104de6d16127771ff08edabba9b4102"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/soulsnatcher.lua",
+      "blob_sha1": "faa819dec6e1b6905f87b5642e454468667dde8f"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/weak_soul.lua",
+      "blob_sha1": "b7150efa00f3340240944ffd8233d3e81e2d7a6a"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/strong_soul.lua",
+      "blob_sha1": "ae3615b6eb4937947e5601477a0d8514225bddd7"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/powerful_soul.lua",
+      "blob_sha1": "0ece602eab5b0592925c70b1c96e632c7857154f"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        885
+      ],
+      "status": "mapped",
+      "resolution": "GreedbeastKills starts at 0; goshnars_greed.lua reads and resets it (transcribed with Goshnar's Greed).",
+      "destination": "/encounter/state/counters/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        23
+      ],
+      "status": "mapped",
+      "resolution": "Greedbeast is the greedbeast participant; its file registers GreedMonsterDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        196,
+        198,
+        200,
+        201,
+        202,
+        205,
+        207
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of a greedbeast raises GreedbeastKills.",
+      "destination": "/encounter/rules/0"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        196,
+        198,
+        199,
+        204,
+        205,
+        207
+      ],
+      "status": "mapped",
+      "resolution": "onDeath: CreateGoshnarsGreedMonster brings a new greedbeast to its fixed tile 10 s later.",
+      "destination": "/encounter/rules/1"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        905,
+        906,
+        907,
+        908,
+        909,
+        910,
+        911,
+        913,
+        918,
+        919,
+        920,
+        921,
+        927,
+        928
+      ],
+      "status": "mapped",
+      "resolution": "GreedMonsters places the greedbeast on (33744, 31666, 14); createMonster(name, position, true, false) is extended, not forced.",
+      "destination": "/encounter/rules/1/actions/0"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        24
+      ],
+      "status": "mapped",
+      "resolution": "Soulsnatcher is the soulsnatcher participant; its file registers GreedMonsterDeath.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        196,
+        198,
+        199,
+        204,
+        205,
+        207
+      ],
+      "status": "mapped",
+      "resolution": "onDeath: CreateGoshnarsGreedMonster brings a new soulsnatcher to its fixed tile 10 s later.",
+      "destination": "/encounter/rules/2"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        905,
+        906,
+        907,
+        908,
+        909,
+        910,
+        911,
+        913,
+        918,
+        919,
+        920,
+        921,
+        927,
+        928
+      ],
+      "status": "mapped",
+      "resolution": "GreedMonsters places the soulsnatcher on (33747, 31668, 14); createMonster(name, position, true, false) is extended, not forced.",
+      "destination": "/encounter/rules/2/actions/0"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        24
+      ],
+      "status": "mapped",
+      "resolution": "Weak Soul is the weak_soul participant; its file registers GreedMonsterDeath.",
+      "destination": "/encounter/participants/2/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        196,
+        198,
+        199,
+        204,
+        205,
+        207
+      ],
+      "status": "mapped",
+      "resolution": "onDeath: CreateGoshnarsGreedMonster brings a new weak soul to its fixed tile 10 s later.",
+      "destination": "/encounter/rules/3"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        905,
+        906,
+        907,
+        908,
+        909,
+        910,
+        911,
+        913,
+        918,
+        919,
+        920,
+        921,
+        927,
+        928
+      ],
+      "status": "mapped",
+      "resolution": "GreedMonsters places the weak soul on (33750, 31666, 14); createMonster(name, position, true, false) is extended, not forced.",
+      "destination": "/encounter/rules/3/actions/0"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        24
+      ],
+      "status": "mapped",
+      "resolution": "Strong Soul is the strong_soul participant; its file registers GreedMonsterDeath.",
+      "destination": "/encounter/participants/3/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        196,
+        198,
+        199,
+        204,
+        205,
+        207
+      ],
+      "status": "mapped",
+      "resolution": "onDeath: CreateGoshnarsGreedMonster brings a new strong soul to its fixed tile 10 s later.",
+      "destination": "/encounter/rules/4"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        905,
+        906,
+        907,
+        908,
+        909,
+        910,
+        911,
+        913,
+        918,
+        919,
+        920,
+        921,
+        927,
+        928
+      ],
+      "status": "mapped",
+      "resolution": "GreedMonsters places the strong soul on (33750, 31666, 14); createMonster(name, position, true, false) is extended, not forced.",
+      "destination": "/encounter/rules/4/actions/0"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        24
+      ],
+      "status": "mapped",
+      "resolution": "Powerful Soul is the powerful_soul participant; its file registers GreedMonsterDeath.",
+      "destination": "/encounter/participants/4/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        196,
+        198,
+        199,
+        204,
+        205,
+        207
+      ],
+      "status": "mapped",
+      "resolution": "onDeath: CreateGoshnarsGreedMonster brings a new powerful soul to its fixed tile 10 s later.",
+      "destination": "/encounter/rules/5"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        905,
+        906,
+        907,
+        908,
+        909,
+        910,
+        911,
+        913,
+        918,
+        919,
+        920,
+        921,
+        927,
+        928
+      ],
+      "status": "mapped",
+      "resolution": "GreedMonsters places the powerful soul on (33750, 31666, 14); createMonster(name, position, true, false) is extended, not forced.",
+      "destination": "/encounter/rules/5/actions/0"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        914,
+        915,
+        916,
+        923,
+        924,
+        925
+      ],
+      "status": "approved_omission",
+      "resolution": "The teleport effects at 7, 8 and 9 s are cosmetic."
+    }
+  ],
+  "outcome_evidence": []
+}

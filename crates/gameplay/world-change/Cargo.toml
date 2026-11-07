@@ -1,0 +1,21 @@
+[package]
+name = "oteryn-gameplay-world-change"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[package.metadata.oteryn]
+category = "gameplay"
+release-role = "production"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

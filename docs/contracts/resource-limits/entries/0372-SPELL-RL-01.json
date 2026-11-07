@@ -1,0 +1,22 @@
+{
+  "id": "SPELL-RL-01",
+  "owner_contract": "../architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md",
+  "resource": "Spell cast inputs applied for one actor in one Channel owner work cycle",
+  "unit": "spell cast inputs per actor per work cycle",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "At most one spell cast input is applied per actor per Channel owner work cycle; further inputs remain outstanding FND-02 commands bounded by FND02-OUTSTANDING-COMMANDS, processed FIFO per session and round-robin across actors.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=1: one spell cast input for an actor is applied in a work cycle",
+    "max+1=2: a second spell cast input for the same actor is not applied in the same work cycle; it stays outstanding and the 65th outstanding command is refused under the existing FND-02 rule"
+  ],
+  "consumers": [
+    "WORLD_ACTOR_SPELL_CAST_INTENT command type 3 (crates/protocol-oteryn/src/actor_spell.rs; composition is section 9 step 2)"
+  ],
+  "notes": "SPELL-D6 (RL-01 = 1), #162 owner acceptance 5867161696; contract section 7. Registered by OTV2-20260929-spell-cast-wire-w1 (#162 allocation 5894588548)."
+}

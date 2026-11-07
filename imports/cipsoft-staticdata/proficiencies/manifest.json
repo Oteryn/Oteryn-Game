@@ -1,0 +1,32 @@
+{
+  "authority": "SOURCE_OBSERVATIONS_ONLY; no Oteryn ProductionKeys or gameplay promotion",
+  "client_version": "15.30",
+  "family": "Proficiency",
+  "files": [
+    {
+      "path": "proficiencies-00000-00149.json",
+      "records": 150,
+      "sha256": "821ef167065e5d270290bf0493b28507cb2a6bfa2bc79ed2fd00833be1135df5"
+    },
+    {
+      "path": "proficiencies-00150-00299.json",
+      "records": 150,
+      "sha256": "23c462bf5fdc6d841e657a79d72c64c16100e8e2c21bc0cca3dd1e1bed473c76"
+    },
+    {
+      "path": "proficiencies-00300-00442.json",
+      "records": 143,
+      "sha256": "cbdf675e28a57d2ee0548a3181aa3d9142ceeb293021147af30cf089f9de9cb8"
+    }
+  ],
+  "identity_namespace": "cipsoft/proficiency_id",
+  "inputs": {
+    "proficiencies": {
+      "file": "content/assets/files/proficiencies-7fea90ec1cfd472f4b5978f4456b430d3271598b4e545b7919d692641411e015.json",
+      "sha256": "7fea90ec1cfd472f4b5978f4456b430d3271598b4e545b7919d692641411e015"
+    }
+  },
+  "record_count": 443,
+  "schema": "OTERYN_CIPSOFT_PROFICIENCY_SOURCE_MANIFEST/v1",
+  "source": "CIPSOFT_CLIENT_ASSETS"
+}

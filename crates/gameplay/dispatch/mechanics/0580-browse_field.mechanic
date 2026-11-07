@@ -1,0 +1,8 @@
+name=browse_field
+commands=440
+transport=browse_field
+[route]
+match routing::browse_field::route(authority, session.actor, &mut session.admitted, command, &mut session.container_views, &mut session.item_view).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

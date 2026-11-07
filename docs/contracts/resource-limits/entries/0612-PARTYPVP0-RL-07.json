@@ -1,0 +1,21 @@
+{
+  "id": "PARTYPVP0-RL-07",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md",
+  "resource": "Shared-XP vocation bonus before the equal split",
+  "unit": "percent bonus",
+  "hard_maximum": 100,
+  "configurable_range": {
+    "minimum": 100,
+    "maximum": 100
+  },
+  "failure_category": "SHARED_EXPERIENCE_DISABLED",
+  "allocation_impact": "One normalized vocation gives +20% for creatures worth at least 20 XP; two, three, four or more give +30%, +60%, +100%. Summon deduction precedes equal ceiling shares; individual Prey and stamina follow.",
+  "client_visible": false,
+  "boundary_tests": [
+    "1 through 5 vocations, below-20 threshold and summon deduction: shared_experience_vocation_bonus_ceiling_and_summon_deduction; i64::MAX oracle: shared_experience_bound_and_wide_integer_oracle"
+  ],
+  "consumers": [
+    "crates/gameplay/social-rules/src/shared_experience_split.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/party_xp.rs"
+  ]
+}
