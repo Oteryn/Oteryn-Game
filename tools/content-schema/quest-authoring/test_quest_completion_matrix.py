@@ -24,7 +24,7 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         self.assertEqual(21, len(packet["cases"]))
         from quest_reward_use_proofs import load
         qualified = load(self.root, matrix.load_reward_claims(self.root))
-        self.assertEqual(12, sum(row["wiki_title"] in titles and row["implementation_state"] == "REWARD_CLAIM_USE_VERIFIED"
+        self.assertEqual(17, sum(row["wiki_title"] in titles and row["implementation_state"] == "REWARD_CLAIM_USE_VERIFIED"
                                 for row in self.result["records"]))
         for row in self.result["records"]:
             if row["wiki_title"] in titles and set(row["reward_claim_owner"]["claim_keys"]) <= qualified:
