@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import importlib.util
 import json
@@ -191,6 +192,16 @@ def main() -> int:
     apply_admissions(item_records, ROOT)
     apply_summer_item_admissions(item_records)
     apply_primal_item_admissions(item_records)
+    from amber_item_semantics import apply_container_fact
+    apply_container_fact(item_records, ROOT)
+    from enchanting_item_profiles import apply_admissions as apply_enchanting_admissions
+    apply_enchanting_admissions(item_records)
+    from itemhold_q import apply_admissions as apply_quest_item_holds
+    apply_quest_item_holds(item_records, ROOT)
+    # NAV qualification describes the pre-admission source facts. Preserve those
+    # receipts while the separately verified WVAR owner admits native semantics.
+    taxonomy_definitions = {target_id(row["identity"]): copy.deepcopy(row)
+                            for row in reference["records"]}
     spec = importlib.util.spec_from_file_location(
         "wvar_corpse_items", ROOT / "tools/content-schema/native-gameplay/wvar_corpse_items.py")
     wvar_corpses = importlib.util.module_from_spec(spec)
@@ -198,12 +209,6 @@ def main() -> int:
     wvar_corpses.apply_admissions(item_records, ROOT)
     import wvar_item_profiles
     wvar_item_profiles.apply_canonical_admissions(item_records, ROOT)
-    from amber_item_semantics import apply_container_fact
-    apply_container_fact(item_records, ROOT)
-    from enchanting_item_profiles import apply_admissions as apply_enchanting_admissions
-    apply_enchanting_admissions(item_records)
-    from itemhold_q import apply_admissions as apply_quest_item_holds
-    apply_quest_item_holds(item_records, ROOT)
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []
@@ -260,7 +265,7 @@ def main() -> int:
 
     definitions_by_target = {target_id(row["identity"]): row for row in reference["records"]}
     taxonomy_rows = build_taxonomy(
-        definitions_by_target, authoring_by_target, family_assignments, *taxonomy_inputs(ROOT)
+        taxonomy_definitions, authoring_by_target, family_assignments, *taxonomy_inputs(ROOT)
     )
     relation_rows = []
     for key, definition in sorted(definitions_by_target.items()):
@@ -686,16 +691,21 @@ def main() -> int:
             ["Quest", "Achievement", "Outfit", "Area", "House", "WorldObject"]
             if family not in quest_families],
     })
-    # ITEMHOLD-Q changes shared shards, but no selected shop/potion record.
-    # Repin only after proving the old digest and every selected row against
-    # the exact pre-change base; ordinary source-capture validation stays strict.
+    # WVAR admits source-backed reward leaves shared with shop/potion packets.
+    # Repin only exact outputs of its verified qualifier applied to the pinned
+    # main baseline; ordinary source-capture validation stays strict.
     from grizzly_shop_profiles import refresh_canonical_input_pins
-    refresh_canonical_input_pins(ROOT, 'ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb')
+    refresh_canonical_input_pins(
+        ROOT, '9668e0a04',
+        qualify_selected=lambda definitions: wvar_item_profiles.apply_canonical_admissions(
+            definitions, ROOT, selected_only=True))
     import condition_potion_profiles
     refresh_canonical_input_pins(
-        ROOT, 'ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb',
+        ROOT, '9668e0a04',
         packet_path=condition_potion_profiles.PATH,
-        keys={f'oteryn:item.tibia.i{i}' for i in condition_potion_profiles.IDS})
+        keys={f'oteryn:item.tibia.i{i}' for i in condition_potion_profiles.IDS},
+        qualify_selected=lambda definitions: wvar_item_profiles.apply_canonical_admissions(
+            definitions, ROOT, selected_only=True))
     # Model against the source shards just written, then register the same fresh
     # native provider with its generated Prey rules and value table.
     import prey_difficulty

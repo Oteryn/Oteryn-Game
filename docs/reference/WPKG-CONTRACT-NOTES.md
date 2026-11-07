@@ -724,3 +724,16 @@ cargo check passed175.240s; all six focused owner PostgreSQL cases executed and
 passed (12.37s test time,157.583s command). Tool-driven pin-refresh136.989s and
 pin-check152.670s passed; digest remains7d31c6eb0395cafda888178a0d5e204bad469be754430172a2f396c5e330daaa.
 The repository duplicate-migration check on HEAD returned no duplicate versions.
+
+### WVAR compiling checkpoint: reset ownership and source materialization
+
+The merged server/dispatch all-target/all-feature check passed (247.817s).
+WORLD fixtures now explicitly commit only their current intended reset through
+`record_reset_fixture`; future histories and boot/lazy reads remain inactive.
+The main Furyosa regression chooses an actual Thais reset and retains stale,
+exit-only, undated, firing and replay assertions. WVAR corpse import accepts
+unadmitted legacy records without semantics while rejecting admitted conflicts
+(five tests,0.526s). NAV keeps sealed pre-admission evidence (seven tests,24.406s).
+Shared shop/potion input repinning permits only exact verified WVAR source
+qualifier outputs from main9668; all other selected changes remain errors.
+Generated content and focused PostgreSQL validation remain pending here.

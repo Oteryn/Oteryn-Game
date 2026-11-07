@@ -32,6 +32,9 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         .bind(world.as_bytes().as_slice())
         .execute(&h.pool)
         .await?;
+    let mut reset_tx = h.pool.begin().await?;
+    crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, world, 1).await?;
+    reset_tx.commit().await?;
     let _day = h.root.world_changes(world, 1).await?.ok_or("current day")?;
     // Fixture is already in the awake phase; physical phase producer is covered separately.
     sqlx::query("UPDATE game_world_change_counters SET state=jsonb_set(state,'{stage}','3') WHERE world_id=encode($1,'hex')::uuid AND change_key='the_fire_feathered_serpent'")

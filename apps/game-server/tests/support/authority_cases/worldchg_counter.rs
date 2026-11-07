@@ -33,6 +33,9 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         .bind(world.as_bytes().as_slice())
         .execute(&h.pool)
         .await?;
+    let mut reset_tx = h.pool.begin().await?;
+    crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, world, 1).await?;
+    reset_tx.commit().await?;
     let day = h
         .root
         .world_changes(world, 1)
@@ -269,6 +272,9 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
     .bind(world.as_bytes().as_slice())
     .execute(&h.pool)
     .await?;
+    let mut reset_tx = h.pool.begin().await?;
+    crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, world, 2).await?;
+    reset_tx.commit().await?;
     let next = h.root.world_changes(world, 2).await?.ok_or("next day")?;
     assert_eq!(next.counter_stages[K::DemonWars.index()], 4);
     assert_eq!(count().await?, 0);

@@ -21,10 +21,10 @@ class EngineNavigationTests(unittest.TestCase):
             (nav.ROOT / f"content/assets/files/appearances-{pin}.dat").read_bytes()
         )
         cls.definitions = {}
-        for path in (nav.ROOT / "content/items/definitions").glob("items-*.json"):
-            for row in json.loads(path.read_bytes())["records"]:
-                definition = row["definition"]
-                cls.definitions[definition["identity"]["key"]] = definition
+        # The sealed NAV batch qualifies original source facts; later native
+        # owners can admit those identities without rewriting NAV evidence.
+        for definition in json.loads((nav.ROOT / "content/world/definitions/reference.json").read_bytes())["records"]:
+            cls.definitions[definition["identity"]["key"]] = definition
 
     def args(self, entry=None):
         entry = entry or self.entries[0]

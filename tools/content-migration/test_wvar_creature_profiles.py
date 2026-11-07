@@ -13,7 +13,8 @@ ROOT = Path(__file__).resolve().parents[2]
 class WvarCreatureProfilesTests(unittest.TestCase):
     def inputs(self):
         return {path: (ROOT / path).read_bytes()
-                for path in (wvar.CREATURES, wvar.PRESENTATIONS, wvar.MANIFEST)}
+                for path in (wvar.CREATURES, wvar.PRESENTATIONS, wvar.MANIFEST,
+                             'content/items/definitions/spell-native-profiles.json')}
 
     def test_mamma_uses_observed_stats_and_appearance_and_shared_source_combat(self):
         generated = self.inputs()
@@ -49,7 +50,7 @@ class WvarCreatureProfilesTests(unittest.TestCase):
         self.assertEqual(generated, once)
         new_manifest = json.loads(generated[wvar.MANIFEST])
         for section in old_manifest:
-            if section not in ('creature_profiles', 'presentation_profiles'):
+            if section not in ('creature_profiles', 'presentation_profiles', 'item_profiles'):
                 self.assertEqual(old_manifest[section], new_manifest[section])
 
     def test_changed_source_revision_is_rejected_before_provider_mutation(self):

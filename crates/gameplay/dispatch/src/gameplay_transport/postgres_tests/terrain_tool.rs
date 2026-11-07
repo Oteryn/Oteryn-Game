@@ -350,6 +350,9 @@ fn scenario_with_voice(
                 .bind(deps.admitted.world_id.as_bytes().as_slice()).bind(epoch.to_string()).bind([7u8;32].as_slice()).execute(&harness.pool).await?;
             sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,$2::text::numeric)")
                 .bind(deps.admitted.world_id.as_bytes().as_slice()).bind(epoch.to_string()).execute(&harness.pool).await?;
+            let mut reset_tx = harness.pool.begin().await?;
+            crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, deps.admitted.world_id, epoch).await?;
+            reset_tx.commit().await?;
             let day = harness
                 .root
                 .world_changes(deps.admitted.world_id, epoch)

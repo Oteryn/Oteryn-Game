@@ -172,6 +172,9 @@ fn scenario() -> TestResult {
             .bind(world_id.as_bytes().as_slice())
             .execute(&h.pool)
             .await?;
+        let mut reset_tx = h.pool.begin().await?;
+        crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, world_id, 0).await?;
+        reset_tx.commit().await?;
         let inactive = h
             .root
             .world_changes(world_id, 0)

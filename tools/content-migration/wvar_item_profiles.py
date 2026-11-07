@@ -157,11 +157,13 @@ def recipe_reward_overlay(root=ROOT):
 
 
 
-def apply_recipe_reward_canonical(definitions,root=ROOT):
+def apply_recipe_reward_canonical(definitions,root=ROOT, *, selected_only=False):
     value=recipe_reward_overlay(root);indexed={d['identity']['key']:d for d in definitions};prepared=[]
     legacy={5977:30,4038:30,4039:20}
     for row in value['records']:
-        key=row['production_definition']['production_key'];definition=indexed[key]
+        key=row['production_definition']['production_key']
+        if selected_only and key not in indexed: continue
+        definition=indexed[key]
         if definition['identity']!=row['production_binding']['target']:raise ValueError('WVAR_REWARD_BINDING')
         semantics=copy.deepcopy(definition.get('semantics',{field:{'state':'UNKNOWN'} for field in row['semantics']}))
         # Correct only our earlier16-slot corpse projection; it was not a donor fact.
@@ -299,12 +301,12 @@ def overlay(root):
     return value
 
 
-def apply_canonical_admissions(definitions,root):
+def apply_canonical_admissions(definitions,root, *, selected_only=False):
     indexed={d['identity']['key']:d for d in definitions}
     replacements=[]
     for row in overlay(root)['records']:
         key=row['production_definition']['production_key']
-        if key==KEY: continue
+        if key==KEY or (selected_only and key not in indexed): continue
         definition=indexed[key]
         if definition['identity']!=row['production_binding']['target']:
             raise ValueError('WVAR_REWARD_CANONICAL_IDENTITY')
@@ -317,7 +319,7 @@ def apply_canonical_admissions(definitions,root):
         replacements.append((definition,replacement))
     for definition,replacement in replacements:
         definition.clear();definition.update(replacement)
-    if (root/REWARD_PATH).is_file():apply_recipe_reward_canonical(definitions,root)
+    if (root/REWARD_PATH).is_file():apply_recipe_reward_canonical(definitions,root,selected_only=selected_only)
 
 
 def canonical_outputs(root):

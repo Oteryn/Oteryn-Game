@@ -58,6 +58,9 @@ async fn run(h: &fixture::Harness) -> fixture::TestResult {
         .bind(world.as_bytes().as_slice())
         .execute(&h.pool)
         .await?;
+    let mut reset_tx = h.pool.begin().await?;
+    crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, world, 0).await?;
+    reset_tx.commit().await?;
     let first = h.root.world_changes(world, 0).await?.ok_or("decision")?;
     assert!(first.flower_month && first.grimvale_full_moon);
     assert_eq!(h.root.world_changes(world, 0).await?, Some(first));
@@ -192,6 +195,9 @@ async fn run(h: &fixture::Harness) -> fixture::TestResult {
     .bind(world.as_bytes().as_slice())
     .execute(&h.pool)
     .await?;
+    let mut reset_tx = h.pool.begin().await?;
+    crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, world, 1).await?;
+    reset_tx.commit().await?;
     let next = h
         .root
         .world_changes(world, 1)

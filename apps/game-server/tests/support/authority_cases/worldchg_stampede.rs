@@ -44,6 +44,9 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
     .bind(inactive.to_string())
     .execute(&h.pool)
     .await?;
+    let mut reset_tx = h.pool.begin().await?;
+    crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, world, inactive).await?;
+    reset_tx.commit().await?;
     let day = h
         .root
         .world_changes(world, inactive)
@@ -149,6 +152,9 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
     );
     sqlx::query("UPDATE game_world_reset_active SET reset_epoch=$2::text::numeric WHERE world_id=encode($1,'hex')::uuid")
         .bind(world.as_bytes().as_slice()).bind(active.to_string()).execute(&h.pool).await?;
+    let mut reset_tx = h.pool.begin().await?;
+    crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, world, active).await?;
+    reset_tx.commit().await?;
     let day = h
         .root
         .world_changes(world, active)

@@ -29,6 +29,9 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         .bind(world.as_bytes().as_slice())
         .execute(&h.pool)
         .await?;
+    let mut reset_tx = h.pool.begin().await?;
+    crate::durability::world_event::changes::record_reset_fixture(&mut reset_tx, world, 1).await?;
+    reset_tx.commit().await?;
     let _day = h.root.world_changes(world, 1).await?.ok_or("current day")?;
     let binding = &shared_world_progress::BINDINGS[0];
     let mut catalogue = std::sync::Arc::new(
