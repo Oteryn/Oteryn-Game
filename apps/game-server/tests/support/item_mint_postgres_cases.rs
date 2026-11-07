@@ -2837,69 +2837,41 @@ async fn run_forged_entry(harness: &Harness, statements: Vec<String>) -> TestRes
     Ok(())
 }
 
-/// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` = 30 (SUMMER owner decision 20): the
-/// 30th loot entry is admitted, the 31st is rejected by the database, and the
-/// parent-live-receipt check (the corpse must carry a live
-/// CORPSE_MATERIALIZATION receipt for the same death) is proven throughout.
+/// WVAR extends the existing source corpse owner to 44 without replacing any receipt guard.
 #[test]
 fn corpse_container_entry_enforces_the_capacity_ceiling() -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
     };
     runtime()?.block_on(async move {
-        let harness = Harness::create(admin, "corpseentries").await?;
-        let seal = harness.recovery.seal_current().map_err(debug)?;
-        let authority = harness
-            .root
-            .open_character_authority(&seal)
-            .await
-            .map_err(debug)?;
-
-        let corpse = mint_corpse(&harness, &authority, 1).await?;
-
+        let started=Instant::now();
+        let harness=Harness::create(admin,"corpseentries").await?;
+        let seal=harness.recovery.seal_current().map_err(debug)?;
+        let authority=harness.root.open_character_authority(&seal).await.map_err(debug)?;
+        let corpse=mint_corpse(&harness,&authority,1).await?;
+        // Reproduce the exact prior30 ceiling in this isolated schema. Existing receipt,
+        // lifecycle, nested proof and concurrency guards remain byte-for-byte unchanged.
+        let installed:String=sqlx::query_scalar("SELECT pg_get_functiondef('game_item_corpse_container_entry_proven()'::regprocedure)").fetch_one(&harness.pool).await?;
+        assert_eq!(installed.matches(") > 44 THEN").count(),2);
+        let baseline=installed.replace(") > 44 THEN",") > 30 THEN");
+        sqlx::query(sqlx::AssertSqlSafe(baseline)).execute(&harness.pool).await?;
         for ordinal in 1..=30_u64 {
-            let seed = 20 + (ordinal as u8) * 4;
-            let statements = forge_corpse_loot_entry_statements(
-                id(WORLD),
-                id(CHANNEL),
-                1,
-                corpse.item_instance_id,
-                ordinal,
-                seed,
-            );
-            run_forged_entry(&harness, statements).await?;
+            run_forged_entry(&harness,forge_corpse_loot_entry_statements(id(WORLD),id(CHANNEL),1,corpse.item_instance_id,ordinal,20+(ordinal as u8)*4)).await?;
         }
-        assert_eq!(
-            harness.count("game_item_corpse_container_entries").await?,
-            30
-        );
-
-        let seed31 = 20 + 31 * 4;
-        let statements31 = forge_corpse_loot_entry_statements(
-            id(WORLD),
-            id(CHANNEL),
-            1,
-            corpse.item_instance_id,
-            31,
-            seed31,
-        );
-        let rejected = run_forged_entry(&harness, statements31)
-            .await
-            .expect_err("the 31st corpse container entry must be rejected");
-        assert!(
-            rejected
-                .to_string()
-                .contains("corpse container entry ceiling exceeded"),
-            "the database capacity guard must reject entry 31: {rejected}"
-        );
-        assert_eq!(
-            harness.count("game_item_corpse_container_entries").await?,
-            30
-        );
-
-        drop(authority);
-        drop(seal);
-        harness.cleanup().await
+        let old_rejection=run_forged_entry(&harness,forge_corpse_loot_entry_statements(id(WORLD),id(CHANNEL),1,corpse.item_instance_id,31,144)).await.expect_err("baseline30 refuses31");
+        assert!(old_rejection.to_string().contains("corpse container entry ceiling exceeded"));
+        assert_eq!(harness.count("game_item_corpse_container_entries").await?,30);
+        // Execute the actual migration, then prove its newly admitted interval and next bound.
+        sqlx::raw_sql(include_str!("../../migrations/1102_world_change_corpse_capacity.sql")).execute(&harness.pool).await?;
+        for ordinal in 31..=44_u64 {
+            run_forged_entry(&harness,forge_corpse_loot_entry_statements(id(WORLD),id(CHANNEL),1,corpse.item_instance_id,ordinal,20+(ordinal as u8)*4)).await?;
+        }
+        let rejected=run_forged_entry(&harness,forge_corpse_loot_entry_statements(id(WORLD),id(CHANNEL),1,corpse.item_instance_id,45,200)).await.expect_err("source ceiling44 refuses45");
+        assert!(rejected.to_string().contains("corpse container entry ceiling exceeded"));
+        assert_eq!(harness.count("game_item_corpse_container_entries").await?,44);
+        drop(authority);drop(seal);harness.cleanup().await?;
+        eprintln!("WVAR_CAPACITY44_POSTGRES_EXECUTED baseline30-refuses31,source44-accepts31-through44,refuses45,parent-receipt-guards; duration={:?}",started.elapsed());
+        Ok(())
     })
 }
 

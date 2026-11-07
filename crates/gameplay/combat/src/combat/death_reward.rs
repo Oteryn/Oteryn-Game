@@ -1154,14 +1154,14 @@ mod tests {
     #[test]
     fn corpse_container_capacity_limits_direct_entries() {
         // W22a's total plan includes descendants. Direct corpse entries still
-        // obey SUMMER decision 20's capacity, independently of that plan ceiling.
+        // obey the source-backed corpse capacity bound, independently of that plan ceiling.
         assert_eq!(
             check_corpse_container_capacity(
                 oteryn_gameplay_items::loot_plan::COMBAT01_LOOT_PLAN_ITEMS_MAX
             ),
             Err(CombatResourceLimitError::CorpseContainerEntriesExceeded)
         );
-        assert_eq!(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, 30);
+        assert_eq!(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, 44);
         assert!(check_corpse_container_capacity(0).is_ok());
         assert!(check_corpse_container_capacity(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX).is_ok());
         assert_eq!(
