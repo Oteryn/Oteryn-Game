@@ -1,3 +1,30 @@
+# Main669 integration green20:20UTC
+
+Resolved all22 JSON conflicts and regenerated affected binding/completion outputs
+with repository tools. cargo check --workspace --all-targets PASS3m31s, fmt PASS.
+Commit/push merge immediately under owner HARD RULE. Qualified count remains21/23
+including3 elsewhere; all five previous native PG proof records are retained.
+Two QENGINE2 requests still absent on e5850715e; async ownership/upstream-head
+question sent while completing this independent merge. No large engine feature
+is implemented locally. Keep using only own branch; wpkg collects, no PR.
+
+# Main refresh20:17UTC
+
+AUTHORING: merge origin/main669d5af52 (CATALOG#3025, CLCAST#3028). All22 JSON
+conflicts resolved without changing authored quest semantics:16 were format-only;
+remaining files preserve lane materializability and current file pins. Repository
+quest_binding_authoring.py and quest_completion_import.py regenerated affected
+binding/completion outputs successfully. Workspacealltargets+fmt in progress,
+log/tmp/questpc8-main-669-workspace-check.log and main-669-results.log.
+Commit this merge with required identity/trailers and push immediately after gates.
+No conflicts remain. Current published headf0bf18a7c.
+
+Checked latest QENGINE2e5850715e after fetch: neither item-look disguise nor live
+peer quest-state predicate/carried outputs is present. Existing ENGINE-REQUESTS
+remain assigned to qengine2 under the latest owner boundary. No replacement engine
+or fabricated crate creature/player-colour binding is added. Old ownership list
+still containsColours/Wrath; no transfer notification has arrived.
+
 # Published batch and remaining engine handoffs
 
 Pushed0fd3f01d61745a07677bdc7c0960f7bdde015a94, then generated topology follow-up

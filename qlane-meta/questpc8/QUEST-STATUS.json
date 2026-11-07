@@ -1429,7 +1429,12 @@
         "crates/gameplay/durability"
       ],
       "proof": "ENGINE-REQUESTS.md",
-      "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest."
+      "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
+      "last_upstream_check": {
+        "main": "669d5af52",
+        "qengine2": "e5850715e",
+        "result": "Requested capability not present; awaiting owning engine implementation or coordinator transfer."
+      }
     }
   },
   {
@@ -1673,7 +1678,12 @@
         "crates/gameplay/dispatch"
       ],
       "proof": "ENGINE-REQUESTS.md",
-      "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest."
+      "boundary": "Latest owner rule reserves large shared features to qengine2; ownership reassignment may move this not-started quest.",
+      "last_upstream_check": {
+        "main": "669d5af52",
+        "qengine2": "e5850715e",
+        "result": "Requested capability not present; awaiting owning engine implementation or coordinator transfer."
+      }
     }
   },
   {
