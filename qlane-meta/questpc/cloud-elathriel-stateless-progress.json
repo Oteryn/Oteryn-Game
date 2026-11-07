@@ -1,0 +1,15 @@
+{
+  "scope": "same-transaction zero-effect paid receipt proof and per-command repurchase integration",
+  "postgres": "18.6",
+  "log": "qlane-meta/questpc/cloud-elathriel-stateless-progress.log",
+  "sha256": "241a74ca21bb409819bd652b27eb951d20eeeede16920da2039b5209e7e5c79a",
+  "harness_seconds": 254.1,
+  "passed": 1,
+  "failed": 2,
+  "actual_schema1097_confirmed": 3,
+  "runtime_orphan_zero_receipt_rejected_23514": 3,
+  "positive_progress": "First purchase and literal replay passed in both cash/bank cases; the assertion fails on the second purchase. Full-backpack refusal passed.",
+  "remaining_fix": "Reuse qengine2 1004 stable per-command MINT claim hashing and exact SQL expected-claim helper for repeatable monetary sales. Existing MINT once-only guards remain unchanged.",
+  "whole_title_promoted": false,
+  "boundary": "Progress evidence only. New per-command claim fix remains uncommitted and awaits PG."
+}

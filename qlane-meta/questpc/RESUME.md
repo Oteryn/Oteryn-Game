@@ -1,3 +1,27 @@
+## Elathriel guarded-receipt/repurchase checkpoint — 2026-11-07
+Current-schema actualPG3=254.10s,1pass/2fail. Schema1097 asserted and runtime-role
+unpaired zero receipt rejected23514 in all3. Initial purchase and literal replay
+pass forcoins/bank; second sale fails because MINT claim key was once-only.
+Full-backpack refusalPASS. New fix now reusesqengine2's stable per-command hash
+and SQL helper1004; added local1098 selector for repeatable positive monetary fee.
+Do NOT drop the second-sale assertions. Keep existing MINT once-only guard.
+Fresh finalPG must include1097+1098 (explicit test query updated).
+
+Uncommitted feature includes1097 boundedzero proof plus durability/build.rs
+migration-folder watcher; GAME_MIGRATOR's prior SQL-only cache was stale. Embedded
+migration identity unitPASS. Final source-form SQL1097 was genuinely exercised.
+Refined2970 knownKEY via pinned importer; ordinary knownfacts/identity preserved.
+25NPC/history3/reward3/profile3 units green. StrictClippy/check latestPASS before
+1098. Current schema logs/tmp/questpc-elathriel-current-schema-{green,clippy,check}.log.
+Need cargo migration unit, full3salePG, strictClippy/check/fmt and source checks
+on final1098 tree. Pins174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62.
+Retained affected PG regressions Dragonlord/Corym/Father already green; core Rust
+unchanged since those except repeatable claim helper, so repeat relevant ifneeded.
+Push feature immediately once all3 sales green; then shared skeletonstock3001.
+
+CRITICAL beforepush: fetch exacttarget then merge FETCH_HEAD, trackingref maystale.
+No forcepush/rebase/main/PR. Backupstash0 alreadyapplied; retainuntilfeaturecommit.
+
 ## Elathriel profile/proof checkpoint — 2026-11-07
 Engine/source admission authored; intermediate actualPG3=254.19s gives1pass/2fail:
 correct key guard rejects materializable-but-UNKNOWN copper2970. Full-capacity

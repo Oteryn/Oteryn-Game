@@ -479,3 +479,16 @@ The incoming qualified Corym commit9ff93aede supplies reusable additive catalogu
 history; use it rather than a duplicate predecessor map. Source-history guards
 still reject edits/removals of old tracks and transitions. Static/source validation
 is separate from the pending final paid-sale PG qualification.
+
+Stateless receipt follow-up: reuse QENGINE1003's bounded zero-effect receipt arm
+with a deferred exact source+fee+MINT proof. General eight-effect and historical
+completion arms remain intact; Father's separate atomic programme is unchanged.
+Add a durability build watcher for the shared migrations directory: SQL-only
+additions must refresh GAME_MIGRATOR. Existing embedded/filesystem migration
+identity unit passes; actualPG now asserts1097 and rejects an unpaired zero-effect
+receipt with23514 under the runtime role in all three probes.
+Repurchases must retain the existing once-only MINT claim owner. Reuse QENGINE
+1004 stable per-command exchange claim hashing and its SQL expected-claim proof,
+extending the selector to positive repeatable monetary fees. Each new exact paid
+CommandRef is a distinct claim; replay stays the same claim. Do not replace this
+with a free repeatable quest reward or waive the MINT claim ledger.

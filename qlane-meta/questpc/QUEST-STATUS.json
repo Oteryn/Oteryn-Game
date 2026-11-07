@@ -10360,8 +10360,8 @@
     "evidence": "qlane-meta/questpc/cloud-hidden-level-integration-validation.json"
   },
   "cloud_elathriel_progress": {
-    "phase": "copper KEY refinement generated; pending fresh sale PG; affected regressions GREEN",
-    "validation": "qlane-meta/questpc/cloud-elathriel-profile-progress.json",
+    "phase": "actual zero-effect SQL proof and first purchase/replay verified; per-command repurchase fix awaiting final PG",
+    "validation": "qlane-meta/questpc/cloud-elathriel-stateless-progress.json",
     "whole_title_promoted": false
   }
 }
