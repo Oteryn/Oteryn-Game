@@ -110,7 +110,10 @@ impl CastService {
                 operation,
                 reply,
             })
-            .map_err(|_| Error::Full)?;
+            .map_err(|error| match error {
+                mpsc::error::TrySendError::Full(_) => Error::Full,
+                mpsc::error::TrySendError::Closed(_) => Error::Unavailable,
+            })?;
         rx.await.map_err(|_| Error::Unavailable)?
     }
 }
@@ -122,11 +125,28 @@ async fn run(
     mut rx: mpsc::Receiver<Request>,
     clock: std::time::Instant,
 ) {
-    let Ok(mut privacy) = root
-        .register_cast_consent_worker(&node, owner.audit.incarnation)
-        .await
-    else {
-        return;
+    // Canary livestream.cpp:249 starts the live service explicitly. S17 additionally
+    // requires a consent-worker lease: retry only a busy durable holder, never
+    // process a queued Start before registration or after the bounded deadline.
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
+    let mut privacy = loop {
+        match root
+            .register_cast_consent_worker(&node, owner.audit.incarnation)
+            .await
+        {
+            Ok(worker) => break worker,
+            Err(oteryn_gameplay_durability::durability::DurabilityError::RootUnavailable)
+                if tokio::time::Instant::now() < deadline =>
+            {
+                let now = tokio::time::Instant::now();
+                root.wait_holder_retry(
+                    now + std::time::Duration::from_millis(2),
+                    (now + std::time::Duration::from_millis(50)).min(deadline),
+                )
+                .await;
+            }
+            Err(_) => return,
+        }
     };
     let mut privacy_pulse = std::time::Instant::now();
     let mut accounts = std::collections::HashMap::new();
