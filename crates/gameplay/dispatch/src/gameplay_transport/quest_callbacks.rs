@@ -380,7 +380,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(permit) = self.spell_lane_permit().await else {
                 return UseDisposition::Rejected;
             };
-            let fence = if callback.storage.is_empty() {
+            let fence = if callback.storage.is_empty() && oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key).is_none() {
                 None
             } else {
                 self.current_quest_fence(command.game_session_id)
@@ -536,7 +536,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let cause = QuestCause::Step(command);
         let operation = async {
-            let fence = if callback.storage.is_empty() {
+            let fence = if callback.storage.is_empty()
+                && oteryn_gameplay_quests::quest::carried_step::recipe(&callback.key).is_none()
+            {
                 None
             } else {
                 self.current_quest_fence(session).await.ok().flatten()

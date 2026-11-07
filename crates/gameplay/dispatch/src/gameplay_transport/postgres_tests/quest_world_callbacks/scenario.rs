@@ -23,9 +23,21 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let small_ruby = name.starts_with("l6-small-ruby");
+    let carried_step = name.starts_with("l6-tomb-carried-");
     let mead = name == "l6/waterskin-of-mead";
     let native_crop = small_ruby || mead;
-    let start = if mead { Position { x: trigger.x, y: trigger.y + 1, ..trigger } } else { Position { x: trigger.x - 1, ..trigger } };
+    let start = if mead {
+        Position {
+            x: trigger.x,
+            y: trigger.y + 1,
+            ..trigger
+        }
+    } else {
+        Position {
+            x: trigger.x - 1,
+            ..trigger
+        }
+    };
     let reward_fluids = name == "l6-reward-fluids";
     let ancient_instruments = name == "l6-ancient-instruments";
     let floor_profiles = name == "l6-floor-profiles" || name == "l6-ruby-profile";
@@ -53,11 +65,29 @@ fn scenario_case(
         "rotten-blood/sacrifice"
     } else if monk {
         "monk-guidance"
-    } else if target_swap || reusable_tool || floor_profiles || floor_assembly {
+    } else if target_swap || reusable_tool || floor_profiles || floor_assembly || carried_step {
         "fish-napping-key"
     } else {
         name.strip_suffix("-expiry").unwrap_or(name)
     })?;
+    if carried_step {
+        // Geometry supplies the exact source UID and both floor endpoints only.
+        // Production callback selection and physical branch ownership are unchanged.
+        let unique = name.rsplit('-').next().ok_or("tomb UID")?.parse::<u16>()?;
+        callback.key = "oteryn:quest-callback/l6-carried-step-fixture".into();
+        callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::StepIn;
+        callback.selector.position = Some(trigger);
+        callback.selector.unique = Some(unique);
+        callback.selector.action = None;
+        callback.selector.appearance = Some(100);
+        callback.item_on_target = None;
+        callback.storage.clear();
+        callback.passages.clear();
+        callback.offerings.clear();
+        callback.lever = None;
+        callback.effects = Default::default();
+        callback.teleport = stateless_destination;
+    }
     if name.ends_with("-expiry") {
         callback
             .effects
@@ -118,11 +148,15 @@ fn scenario_case(
             Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false).await
         }
         .map_err(|e| format!("callback harness: {e}"))?;
-        if small_ruby {
+        if small_ruby || carried_step {
             let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
                 .fetch_one(&h.pool)
                 .await?;
-            eprintln!("POSTGRES_DATABASE_READY l6_small_ruby_native_pickup version={version}");
+            if carried_step {
+                eprintln!("POSTGRES_DATABASE_READY l6_carried_step version={version}");
+            } else {
+                eprintln!("POSTGRES_DATABASE_READY l6_small_ruby_native_pickup version={version}");
+            }
         }
         prepare_current_session(&h)
             .await
@@ -147,7 +181,9 @@ fn scenario_case(
                     .ok_or("native pickup policies")?,
             )?
         } else if mead {
-            super::super::l6_mead::world(generation.native_gameplay().ok_or("native Mead policies")?)?
+            super::super::l6_mead::world(
+                generation.native_gameplay().ok_or("native Mead policies")?,
+            )?
         } else {
             world
         };
@@ -220,13 +256,29 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let (consumer, clock, activation, _) = crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
+        let (consumer, clock, activation, _) =
+            crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
         if mead {
-            h.root.latch_premium_activation(&activation.activation_id, activation.switch_over_us, activation.switch_over_us + 60_000_000).await.map_err(debug)?;
+            h.root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    activation.switch_over_us + 60_000_000,
+                )
+                .await
+                .map_err(debug)?;
         }
-        let premium = crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(consumer, Some(clock), Some(activation), Some(h.root.clone()));
+        let premium =
+            crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+                consumer,
+                Some(clock),
+                Some(activation),
+                Some(h.root.clone()),
+            );
         let mut owner = deps.owner(&h, &authority);
-        if mead { owner.premium_coordinator = Some(&premium); }
+        if mead {
+            owner.premium_coordinator = Some(&premium);
+        }
         owner.active_generation = Some(generation);
         owner.movement_cells = &cells;
         if let Some(room) = bundle_room.as_ref() {
@@ -239,7 +291,10 @@ fn scenario_case(
                 .clone(),
         ));
         if mead {
-            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::l6_mead::catalogue(owner.quest_catalogue.as_ref().ok_or("Mead catalogue")?, &callback)?));
+            owner.quest_catalogue = Some(std::sync::Arc::new(super::super::l6_mead::catalogue(
+                owner.quest_catalogue.as_ref().ok_or("Mead catalogue")?,
+                &callback,
+            )?));
         }
         if lever_fixture
             || target_swap
@@ -300,10 +355,13 @@ fn scenario_case(
             .map_err(|e| format!("callback starter items: {e:?}"))?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
-        if mead { owner.admit_premium(id(40), admitted.game_session_id); }
+        if mead {
+            owner.admit_premium(id(40), admitted.game_session_id);
+        }
         owner.admit_quest_session(&admitted).await;
         if mead {
-            super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback).await?;
+            super::super::l6_mead::exercise(&mut owner, &mut admitted, &h, fence, &callback)
+                .await?;
         } else if reward_fluids {
             super::super::l6_reward_fluids::exercise(&owner, admitted, &h, &authority).await?;
         } else if small_ruby {
@@ -398,6 +456,44 @@ fn scenario_case(
         } else if floor_assembly {
             super::super::l6_floor_assembly::exercise(&mut owner, &mut admitted, &h, fence, name)
                 .await?;
+        } else if carried_step {
+            if name.contains("-present-") {
+                let recipe = oteryn_gameplay_quests::quest::carried_step::RECIPES
+                    .iter()
+                    .find(|r| Some(r.unique) == callback.selector.unique)
+                    .ok_or("source key recipe")?;
+                super::input_item(
+                    &owner,
+                    fence.item_fence(),
+                    &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                        position: trigger,
+                        item: recipe.item.into(),
+                        count: 1,
+                    },
+                    71,
+                    true,
+                )
+                .await?;
+            }
+            super::stateless::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                &callback,
+                stateless_destination.ok_or("source branch destination")?,
+            )
+            .await?;
+            super::super::l6_carried_step::verify(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                name.contains("-present-"),
+            )
+            .await?;
         } else if ancient_instruments {
             super::super::l6_ancient_tombs::exercise(
                 &mut owner,

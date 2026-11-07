@@ -1,0 +1,87 @@
+//! Exact source carried-item STEP branches, with no invented Quest progress.
+use super::world_callbacks::{Callback, Position, Selector, Trigger};
+
+#[derive(Clone, Copy, Debug)]
+pub struct Recipe {
+    pub key: &'static str,
+    pub unique: u16,
+    pub item: &'static str,
+    pub count: u16,
+    pub success: Position,
+    pub missing: Position,
+    pub source_line: u16,
+}
+
+// Crystal201189f movements_tomb_teleport.lua:3-20; repository source evidence
+// docs/agents/evidence/OTV2-20261102-quests-5-20261102/the_ancient_tombs.json:2090-2205.
+pub const RECIPES: &[Recipe] = &[
+    Recipe {
+        key: "oteryn:quest-callback/ancient-tombs-key-3950",
+        unique: 3950,
+        item: "oteryn:item.tibia.i3237",
+        count: 1,
+        success: Position {
+            x: 33182,
+            y: 32714,
+            floor: -14,
+        },
+        missing: Position {
+            x: 33231,
+            y: 32705,
+            floor: -8,
+        },
+        source_line: 3,
+    },
+    Recipe {
+        key: "oteryn:quest-callback/ancient-tombs-key-3951",
+        unique: 3951,
+        item: "oteryn:item.tibia.i3238",
+        count: 1,
+        success: Position {
+            x: 33174,
+            y: 32934,
+            floor: -15,
+        },
+        missing: Position {
+            x: 33282,
+            y: 32744,
+            floor: -8,
+        },
+        source_line: 9,
+    },
+    Recipe {
+        key: "oteryn:quest-callback/ancient-tombs-key-3952",
+        unique: 3952,
+        item: "oteryn:item.tibia.i3240",
+        count: 1,
+        success: Position {
+            x: 33126,
+            y: 32591,
+            floor: -15,
+        },
+        missing: Position {
+            x: 33250,
+            y: 32832,
+            floor: -8,
+        },
+        source_line: 15,
+    },
+];
+
+pub fn recipe(key: &str) -> Option<&'static Recipe> {
+    RECIPES.iter().find(|recipe| recipe.key == key)
+}
+
+pub(super) fn callbacks() -> impl Iterator<Item = Callback> {
+    RECIPES.iter().map(|recipe| Callback {
+        key: recipe.key.into(), quest: "oteryn:quest.the_ancient_tombs_quest".into(),
+        trigger: Trigger::StepIn,
+        selector: Selector { position: None, unique: Some(recipe.unique), action: None, appearance: None },
+        lever: None, reversible: false, passages: Vec::new(),
+        teleport: Some(recipe.missing), facing: None, effects: Default::default(),
+        storage: Vec::new(), minimum_level: None, experience: None, monk_reward: None,
+        offerings: Vec::new(), item_on_target: None, return_on_failure: true,
+        failure_message: None, success_message: None, native_rule: None,
+        sources: vec![format!("crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/movements_tomb_teleport.lua:{}", recipe.source_line)],
+    })
+}

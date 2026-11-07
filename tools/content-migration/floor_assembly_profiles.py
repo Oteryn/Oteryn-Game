@@ -1,4 +1,4 @@
-"""Native custody profiles for the finite source floor-assembly operands."""
+"""Native custody profiles for finite source Tombs floor and carried operands."""
 from __future__ import annotations
 
 import argparse
@@ -10,7 +10,7 @@ import grizzly_shop_profiles as source
 
 ROOT = Path(__file__).resolve().parents[2]
 PATH = 'tools/content-schema/native-gameplay/floor-assembly-item-profiles.json'
-IDS = set(range(3222, 3231))
+IDS = set(range(3222, 3231)) | {3237, 3238, 3240}
 XML_SHA = '8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509'
 CLIENT = 'content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat'
 
