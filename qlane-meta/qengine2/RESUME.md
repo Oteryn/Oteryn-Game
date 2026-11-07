@@ -329,3 +329,59 @@ source;generalizetestexpectedfinalmask/factcount,neverinventsecondreward.
 Sourceexplicitpremiumguardsneednativeeligibilityaudit(e.gHugo,Simon,Irmana),
 reuseexistingGrizzlyPremiumGate/binding;donotassumeappearance-selectionpremium
 isthesameasrewardauthorization. No code/factdecisionyet;inspectfirst.
+
+L1-05followonsCOMPLETE:123content2.22s,5world47.04s,pincheck24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25.
+Pushe45e8f8a9confirmed. L1-05archivedcomplete.15/66qual,51remaining.
+L1-06 DruidRook/CitizenRook/Beggar. DruidRookfirstrequiresnonewengine:Tom
+addonworddirectstage0->1;paws/yes takes50bearpaws5896+50wolfpaws5897,
+stage1->2,addon1only. Generalizestoryharness expectedfinalmask/facts based
+onindependent step expectations;explicitdruid-rook->druid assetalias. Addtest
+thenactualPGRED beforeproductiondata. ActorTomalreadyplaced.
+Citizen/Beggar:bounded extra state operations canreuseexistingcoreAdd,SetNow,
+ElapsedAtLeast;inspectcorebeforechoosingDTO. Normalize source deadlines to
+start+exactwait ifneeded;testnotreadythenownedtimer-onlytimeadvance,never
+seedqueststages. Ref source hasmath.minbug;documentconservativerule.
+Actualeligibilityaudit:IrmanadoesNOTcheckpremium(nofinishedNoblemanbug).
+Hugo/Simon do;existingGrizzlyPremiumGate.task_permitted andSpellCoordinator
+transaction_permission requirepremium_current,notpreactivationallow. Reuse
+viaexistinggenericwritercontext insteadofduplicatingpremiumtruth.
+
+DruidRookactualPGRED43.490976609s missingl6-druid-rook-start. Production
+2TomcallbacksAPPLIED;sourceBodyOwnerDruidRook(notGeneral),existingmaterials
+5896/5897andTomplacementreused. SourceSHA5079fd40c677dcee45941eac3eb4961c1260c5889635585d9d3441829de800b4.
+Harnessfinalmask/factcountnowfromindependentstep expectations;unearnedother
+addonappearanceattemptrefuses. Both50-iteminputsconsumed;firstonlyrefuses
+withoutpartialloss. Sourcegen/19Python/check/unit/clippy/pin/PGGREENnext.
+
+DruidRook19Python6.657s/check15.28s/3Rust1.17s/clippy38.97s/fmt/repro
+PASS. SourceTomgreetingmultipleconditionalvariants initiallyrejected;generic
+neutralNPCHandlerfallback now used whenever no unique static message exists,
+withsourcehandlercitations.33682 pinrefreshthenPGGREEN in
+/tmp/qengine2-batch6-druid-rook-{pins,green}.log. No qualificationuntilmarker.
+Nativefixturemale supportalreadyexists:Harness::create_quest_reward(...,female).
+Scenario currently passes!name.ends_with(pirate);forfutureBeggar male testcase
+extendselector to -male- names ratherthanmutatingimmutablecreationsex.
+PremiumexistingCoordinator ctor takesArc<PremiumConsumer>,optionalregistered
+clock,activation,latch;GrizzlyPremiumGate.task_permitted(tx,account)delegates
+transaction_permission(...premium_current). Genericquestwriter alreadytakesG
+butrewardwrapperpassesNoGrizzlyPremium;reusegenericwith-gate wrapper/default
+failclosed fornewrequires_premium callbacks. Irmana hasno premiumguard.
+
+Prepared(unapplied)boundedstate-opDTOprototype /tmp/qengine2-state-ops-prototype.rs.
+Preferredminimalreuse:StateCondition Any/Between/ElapsedAtLeast;StateMutation
+Add/SetNow (existingcore;no new corevariant). Optionalstate_ops oncallback AND
+participant;countallcombinedeffects<=8,uniquetracks,strictowner. Participant
+SQL1001currentlyvalidatesonlystorage,soaddexactopproofarm(newmigration)before
+usingforeignRefAdd. Writabledeclarationsneedexplicitflag(defaultreadonly)for
+missingcommonRef;ownerGeneral assumptiondocumented. Timerdeadline normalizes
+tostart+exactwait(Amber7201/Hugo86401strict;Simon432000>=). No published
+writerfortheseunqualifiedtimers;fixedcatalogueincludesownedtimer-onlyclock
+advancefixture;proveimmediaterefusalbeforeadvance,neverseedoutfitstages.
+Notimplementedyet;readotherbranchesforreusebeforematerialcode.
+
+DruidRookL1-06A QUALIFIED actualPG78.473462376s,1passed0failed0ignored.
+Exact50+50,partialrecipeatomicrefusal,replay,exact2accountfacts,normalmask1
+succeeds/unearnedmask3refuses. No outfitstagesseeded,no secondrewardinvented.
+16/66qualified,50remaining. Commit/pushimmediately.19Python6.657s,check15.28s,
+3Rust1.17s,clippy38.97s,fmt,repro,pinrefreshpass. Content/world/pinpending
+afterpush;continueCitizenRook+Beggar genericops/premium support.

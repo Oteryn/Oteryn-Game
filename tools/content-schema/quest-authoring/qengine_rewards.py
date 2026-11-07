@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -414,6 +414,12 @@ def build():
             [storage(ice+'questline',before+1,before+2)],outfit=('norseman',bit),next_topic=topic)
         callbacks[-1]['participants']=[{'quest':'oteryn:quest.outfit_and_addon_quests',
             'storage':[storage(norseman,0,bit+1,3)]}]
+    rook_body=prefix+'u7_8/druid_outfits_rook/druid_body_addon_rook'
+    add('l6-druid-rook-start','druid_outfits_quest_on_rook','tom',['addon'],[storage(rook_body,-1,1,0)])
+    add('l6-druid-rook-body','druid_outfits_quest_on_rook','tom',['yes'],[storage(rook_body,1,2)],
+        take=[(5896,50),(5897,50)],outfit=('druid',1),topic=1)
+    offers.append({'npc':'oteryn:npc.tom','keywords':['paws','bear paws'],'topic':0,'next_topic':1,
+        'storage':[storage(rook_body,1,2)],'reply':['Have you brought 50 bear paws and 50 wolf paws?']})
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
@@ -433,7 +439,9 @@ def build():
         for field,constant in [('greet','GREET'),('farewell','FAREWELL'),('walkaway','WALKAWAY')]:
             matches=list(re.finditer(r'npcHandler:setMessage\(MESSAGE_'+constant+r',\s*"([^"\n]*)"\)',inputs[path].decode()))
             origin=path
-            if not matches:
+            # Conditional NPC messages belong to their functional selectors.
+            # Use the source handler's neutral default when no unique static message exists.
+            if len(matches)!=1:
                 origin='data/npclib/npc_system/npc_handler.lua'
                 matches=list(re.finditer(r'\[MESSAGE_'+constant+r'\]\s*=\s*"([^"\n]*)"',inputs[origin].decode()))
             if len(matches)!=1: raise ValueError('ambiguous NPC greeting '+npc+field)

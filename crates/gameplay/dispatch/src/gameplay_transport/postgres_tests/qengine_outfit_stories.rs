@@ -71,6 +71,11 @@ fn qengine_l5_norseman_and_formorgar_complete_outfit_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l5-norseman-story")
 }
 
+#[test]
+fn qengine_l6_druid_rook_complete_available_body_outfit_story() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-l6-druid-rook-story")
+}
+
 const ICE_ISLANDS: &str = "oteryn:quest-progress/quest/u8_0/the_ice_islands/";
 
 const ORC_POWDER: &str = "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder";
@@ -396,12 +401,32 @@ pub(super) async fn exercise(
             ],
             252,
         ),
+        "qengine-rewards-l6-druid-rook-story" => (
+            "druid-rook",
+            &[
+                ("start", None, None, None),
+                ("body", Some((5896, 50)), Some((5897, 50)), Some(1)),
+            ],
+            148,
+        ),
         _ => return Err("unknown outfit story".into()),
     };
+    let outfit_family = if family == "druid-rook" {
+        "druid".to_owned()
+    } else {
+        family.replace('-', "_")
+    };
+    // Independent story expectations determine earned bits, not the production callbacks.
+    let expected_addons = steps
+        .iter()
+        .filter_map(|(_, _, _, addon)| *addon)
+        .fold(0, |mask, addon| mask | addon);
     let all = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     let mut callbacks = Vec::new();
     for (suffix, take, present, addon) in steps {
-        let batch = if name.starts_with("qengine-rewards-l5-") {
+        let batch = if name.starts_with("qengine-rewards-l6-") {
+            "l6"
+        } else if name.starts_with("qengine-rewards-l5-") {
             "l5"
         } else if name.starts_with("qengine-rewards-l4-") {
             "l4"
@@ -432,13 +457,13 @@ pub(super) async fn exercise(
                 .map(amount)
                 .collect();
         }
-        if family == "royal-costume" {
+        if matches!(family, "royal-costume" | "druid-rook") {
             expected_take.extend(present.iter().map(amount));
         }
         assert_eq!(callback.take, expected_take);
         assert_eq!(
             callback.present,
-            if family == "royal-costume" {
+            if matches!(family, "royal-costume" | "druid-rook") {
                 vec![]
             } else {
                 present.iter().map(amount).collect::<Vec<_>>()
@@ -986,7 +1011,8 @@ pub(super) async fn exercise(
             if quantity(h, &item.item).await? < i64::from(item.count) {
                 supply(owner, admitted, h, item, &mut bags, &mut occurrence).await?;
             }
-            if (family == "royal-costume" || (family == "pirate" && callback.key.ends_with("-hat")))
+            if (matches!(family, "royal-costume" | "druid-rook")
+                || (family == "pirate" && callback.key.ends_with("-hat")))
                 && index == 0
             {
                 let before = counts(h).await?;
@@ -1213,7 +1239,8 @@ pub(super) async fn exercise(
     }
     assert_eq!(
         checked_stale,
-        !matches!(family, "elementalist" | "nobleman" | "royal-costume")
+        readonly.is_some(),
+        "every independently verified source prerequisite has a stale-snapshot refusal proof"
     );
     if family == "nobleman" {
         let paid:(i64,i64,i64)=sqlx::query_as("SELECT count(*),coalesce(sum(fee_gold_units),0)::bigint,coalesce(sum(bank_debit_gold_units),0)::bigint FROM game_item_fee_burns WHERE cause_kind=18").fetch_one(&h.pool).await?;
@@ -1231,7 +1258,7 @@ pub(super) async fn exercise(
         )
         .await
         .ok_or("appearance")?;
-    let key = format!("oteryn:outfit.{}", family.replace('-', "_"));
+    let key = format!("oteryn:outfit.{outfit_family}");
     let option = observed
         .catalogue
         .outfits
@@ -1240,16 +1267,16 @@ pub(super) async fn exercise(
         .ok_or("whole outfit absent")?;
     assert_eq!(
         (option.look_type, option.permitted_addons),
-        (u32::from(look), 3)
+        (u32::from(look), expected_addons)
     );
-    let change = oteryn_protocol_oteryn::appearance::Change {
+    let mut change = oteryn_protocol_oteryn::appearance::Change {
         context: observed.catalogue.context,
         expected_root_revision: observed.catalogue.root_revision,
         prior: observed.catalogue.selected,
         selection: oteryn_protocol_oteryn::appearance::Selection {
             outfit_key: key,
             colours: [0; 4],
-            addons: 3,
+            addons: expected_addons,
             mount_key: None,
         },
         content_revision: owner
@@ -1259,6 +1286,27 @@ pub(super) async fn exercise(
             .content_revision()
             .into(),
     };
+    if expected_addons != 3 {
+        change.selection.addons = 3;
+        let command = admitted.continuity.next_command_id;
+        let refused = super::quest_world_callbacks::wire(
+            owner,
+            admitted,
+            command,
+            25,
+            change.encode().map_err(debug)?,
+        )
+        .await?;
+        assert!(
+            matches!(
+                oteryn_protocol_oteryn::appearance::ChangeResult::decode(&refused)
+                    .map_err(debug)?,
+                oteryn_protocol_oteryn::appearance::ChangeResult::Rejected
+            ),
+            "unearned source addon must remain unavailable"
+        );
+        change.selection.addons = expected_addons;
+    }
     let command = admitted.continuity.next_command_id;
     let reply = super::quest_world_callbacks::wire(
         owner,
@@ -1272,8 +1320,13 @@ pub(super) async fn exercise(
         oteryn_protocol_oteryn::appearance::ChangeResult::decode(&reply).map_err(debug)?,
         oteryn_protocol_oteryn::appearance::ChangeResult::Committed(_)
     ));
-    let root: (i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_account_appearance_unlocks WHERE unlock_key LIKE $1),(SELECT count(*) FROM game_account_appearance_unlock_receipts WHERE unlock_key LIKE $1)").bind(format!("oteryn:outfit.{}/quest-grant/%",family.replace('-',"_"))).fetch_one(&h.pool).await?;
-    assert_eq!(root, (3, 3), "one base and two immutable addon facts");
+    let root: (i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_account_appearance_unlocks WHERE unlock_key LIKE $1),(SELECT count(*) FROM game_account_appearance_unlock_receipts WHERE unlock_key LIKE $1)").bind(format!("oteryn:outfit.{outfit_family}/quest-grant/%")).fetch_one(&h.pool).await?;
+    let facts = 1 + i64::from(expected_addons.count_ones());
+    assert_eq!(
+        root,
+        (facts, facts),
+        "one base plus exactly the source-earned immutable addon facts"
+    );
     if family == "norseman" {
         let (stage,stage_owner): (i64,String) = sqlx::query_as("SELECT value,quest_key FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_0/the_ice_islands/norseman_outfit'").fetch_one(&h.pool).await?;
         assert_eq!(stage, 3);

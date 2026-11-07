@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 15,
-    "unfinished": 51,
+    "qualified": 16,
+    "unfinished": 50,
     "blocked": 0
   },
   "quests": [
@@ -480,7 +480,7 @@
     {
       "canonical": "oteryn:quest.druid_outfits_quest_on_rook",
       "title": "Druid Outfits Quest on Rook",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -497,7 +497,13 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral.",
+      "qualification": {
+        "batch": "L1-06A",
+        "scope": "Complete available Rook Druid source path:literal Tom addon introduction,50bearpaws5896+50wolfpaws5897,paws/yes hand-in,bodyStage1->2,addon1. Partial funding retains first ingredient,replay cannot consume/grant again,exact2immutable account facts,normalmask1appearance succeeds and unearnedmask3refuses. No source stage seeded and no fabricated second reward.",
+        "native_owner_canonical": "oteryn:quest.druid_outfits_quest_on_rook",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-druid-rook-story duration=78.473462376s success=true"
+      }
     },
     {
       "canonical": "oteryn:quest.elementalist_outfits_quest",
@@ -1722,6 +1728,96 @@
         "cargo fmt --all --check;check59.16s;2 unit tests1.14s;strict clippy1m23s",
         "repo pin-refresh passed;actual PostgreSQL GREEN81.775046751s"
       ]
+    },
+    {
+      "id": "L1-05",
+      "entries": [
+        "unresolved:questpc2:oriental_outfits_quest",
+        "unresolved:questpc2:norseman_outfits_quest",
+        "oteryn:quest.the_ice_islands_quest"
+      ],
+      "phase": "COMPLETE:all3L1entries and Hjaern continuous flow qualified,pushed;allfollow-onchecks passed.",
+      "reuse_audit": "Refreshed questpc2..8 primary branches; no current matched entry QUALIFIED; no newer reward sex guard found. Existing immutable Character sex reader reused. Audit /tmp/qengine2-batch5-status-audit.log.",
+      "red_command": "cargo test --locked -p oteryn-gameplay-dispatch qengine_l5_oriental -- --nocapture",
+      "red_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-oriental-story duration=45.088365726s success=false",
+      "mechanism": "Bounded participant writes retain original quest owner/pin/hash;single Character revision and source receipt;SQL exact effects/same transaction and immutable proof. No standalone participant commit. Creation sex read through existing fenced appearance owner before any value.",
+      "assumptions": [
+        "Source dialogue offers remain advisory;native immutable sex guard authorizes all source writes. No gender is inferred from selected appearance."
+      ],
+      "next_slice": "Norseman+Formorgar L1 outfit reward paths share Hjaern source. New atomic participant support retains General ownership of NorsemanOutfit/DefaultStart and IceIslands questline/mission/door ownership. Source facts settled;no production edits before PG RED.",
+      "debug_evidence": [
+        "Actual PostgreSQL attempt2.554788608s failed executing SQL1001:syntax error at CASE expression. Parenthesized CASE expression;no assertion/proof weakened. Same focused test retry70137 /tmp/qengine2-batch5-oriental-green2.log;build41.52s completed.",
+        "PostgreSQL79.793748713s exercised source but first-stage receipt assertion failed0vs1. Dialogue eligibility used hardcoded absent=-1 for an existing Door track with declared initial0;selector now uses admitted catalogue initial and refuses unknown tracks. All source/receipt assertions retained.",
+        "PostgreSQL77.366610395s reached native foreign write but rejected ambiguous e reference in participant proof aggregate;renamed JSON alias declared_storage. Same proof/test retained;retry51680 green4.log."
+      ],
+      "slices": [
+        {
+          "id": "L1-05A",
+          "status": "QUALIFIED",
+          "entries": [
+            "unresolved:questpc2:oriental_outfits_quest"
+          ],
+          "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-oriental-story duration=45.088365726s success=false",
+          "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-oriental-story duration=79.80126811s success=true",
+          "result": "1passed;0failed;0ignored;79.80s;actualPostgreSQL18.6",
+          "scope": "Complete female source introductions and all exact hand-ins;both gender paths authored. Wrong-sex direct native commit and standalone participant bypass refuse;foreign Oriental door retains owner/pin and same primary revision;forged late participant rejected by PostgreSQL;replay,3 immutable account facts and ordinary final appearance selection pass. Only external Explorer Society prerequisite arranged.",
+          "checks": [
+            "cargo fmt --all --check;explicit mounted leaf rustfmt",
+            "quests/durability/dispatch all-feature check1m02s;final selector dispatch check54.94s",
+            "3 Rust reward-callback unit tests1.17s",
+            "strict three-crate clippy2m55s;final selector dispatch clippy1m16s",
+            "18authoring tests6.122s;callback/placement reproduction",
+            "repo pin-refresh81deec82ff426ee357fa1c79a01d4730c8a566cc70123136bb45c685080bb5d7"
+          ],
+          "follow_on_verification": "COMPLETE:123content tests2.15s;5world tests45.22s;pin-check81deec82ff426ee357fa1c79a01d4730c8a566cc70123136bb45c685080bb5d7",
+          "commit": "6ad33a4b1",
+          "push": "fast-forward confirmed"
+        },
+        {
+          "id": "L1-05B",
+          "status": "QUALIFIED",
+          "entries": [
+            "unresolved:questpc2:norseman_outfits_quest",
+            "oteryn:quest.the_ice_islands_quest"
+          ],
+          "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=45.551056868s success=false",
+          "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=79.824440352s success=true",
+          "result": "1passed;0failed;0ignored;79.82s;actualPostgreSQL18.6",
+          "scope": "Complete shared Norseman/Formorgar L1 outfit path:base exact frost charm7289x1 with four parentObelisks5/Questline39;5+10shards7290 and both reward conversations;no internal outfit-stage seeding;late missing item rolls back foreign stages;all3 foreign proofs share primary revisions/original owners;replay,3immutable account facts and ordinary final appearance pass.",
+          "checks": [
+            "18authoring tests6.272s;reproducers",
+            "fmt;check19.63s;3Rusttests1.24s",
+            "strict clippy44.94s",
+            "repo pin-refresh24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25"
+          ],
+          "follow_on_verification": "COMPLETE:123content2.22s;5world47.04s;pin-check24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25",
+          "commit": "b51b5d358",
+          "push": "fast-forward confirmed"
+        }
+      ],
+      "norseman_source": "Hjaern.lua:107-155,189-197 sha2564e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466;7289 is frost charm (pinned Canary XML),not spirit container;exact take1 then5+10frostheartshards7290.",
+      "norseman_red": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=45.551056868s success=false",
+      "norseman_reuse_audit": "Primary questpc2..8 refreshed02:00UTC;no matched current entry QUALIFIED. Existing own-branch native participant engine6ad33a4b1 reused unchanged. Audit /tmp/qengine2-batch5-norseman-status-audit.log.",
+      "norseman_checks": [
+        "18authoring tests6.272s;source generation passed",
+        "cargo fmt --all --check;check19.63s;3Rust reward-callback unit tests",
+        "strict clippy44.94s passed;disk-only sandbox launch recovered by removing obsolete compiler snapshots",
+        "callback/placement reproduction;repo pin-refresh then PG GREEN60154 running"
+      ],
+      "flow_followup": {
+        "red": "Python published-source-flow test1failed5.622s:next shard offer unreachable from published first-reward topic3",
+        "change": "Root shard keyword admitted at reachable topics0/3/4 with disjoint Questline40/42 guards;source reward next topics and exact-cost native stage guards retained.",
+        "status": "QUALIFIED",
+        "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=79.174554547s success=true",
+        "checks": [
+          "19authoring tests6.380s",
+          "fmt;dispatch check15.17s;strict clippy37.50s",
+          "repo pin-refresh passed;world digest24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25"
+        ],
+        "result": "1passed;0failed;0ignored;79.17s;actualPostgreSQL18.6",
+        "commit": "e45e8f8a9",
+        "push": "fast-forward confirmed"
+      }
     }
   ],
   "owner_rule": "This lane implements missing generic engine, reward/binding, world, NPC, item and callback features after checking/reusing related branches; dependency-only inherited blockers are superseded.",
@@ -2051,91 +2147,41 @@
   },
   "delivery_rule": "Push every finished green quest/mechanism slice immediately and at least every30minutes while green work exists. Bound each investigation/missing-fact search to10minutes; record conservative decisions in CONTRACT-NOTES.md and implement. No full workspace/PG suite.",
   "active_batch": {
-    "id": "L1-05",
+    "id": "L1-06",
     "entries": [
-      "unresolved:questpc2:oriental_outfits_quest",
-      "unresolved:questpc2:norseman_outfits_quest",
-      "oteryn:quest.the_ice_islands_quest"
+      "oteryn:quest.druid_outfits_quest_on_rook",
+      "oteryn:quest.citizen_outfits_quest_on_rook",
+      "oteryn:quest.beggar_outfits_quest"
     ],
-    "phase": "All3 entries and continuous Hjaern source flow QUALIFIED;immediate follow-up push,then content/world/pin verification. Next group investigate bounded time/counter operations and source eligibility using existing owners.",
-    "reuse_audit": "Refreshed questpc2..8 primary branches; no current matched entry QUALIFIED; no newer reward sex guard found. Existing immutable Character sex reader reused. Audit /tmp/qengine2-batch5-status-audit.log.",
-    "red_command": "cargo test --locked -p oteryn-gameplay-dispatch qengine_l5_oriental -- --nocapture",
-    "red_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-oriental-story duration=45.088365726s success=false",
-    "mechanism": "Bounded participant writes retain original quest owner/pin/hash;single Character revision and source receipt;SQL exact effects/same transaction and immutable proof. No standalone participant commit. Creation sex read through existing fenced appearance owner before any value.",
-    "assumptions": [
-      "Source dialogue offers remain advisory;native immutable sex guard authorizes all source writes. No gender is inferred from selected appearance."
+    "phase": "DruidRook QUALIFIED;immediate slice commit/push. Follow-on content/world/pin next,then CitizenRook bounded time/counter operations.",
+    "facts": "Tom.lua:230-250:direct addon introduction bodyStage<1->1;paws/yes takes5896x50+5897x50,stage1->2,bodyaddon1. No source second addon on Rook;testmustassertmask1,notinventmask2. Hugo needs24hdeadline,Amber2hdeadline and Ref counter;Simon male5daytimer/femaleimmediate path with source stage bug.",
+    "eligibility_audit": "Readactualsource:IrmanahasNOisPremiumguard;do not reopenfinishedNobleman. Hugo/Simon explicitlyrequirepremium;reuseexistingGrizzlyPremiumGate Current native authority for those new paths.",
+    "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-druid-rook-story duration=43.490976609s success=false",
+    "source": "Crystal9f5a72c data-global/npc/tom.lua:230-250 sha2565079fd40c677dcee45941eac3eb4961c1260c5889635585d9d3441829de800b4",
+    "checks": [
+      "19authoring tests6.657s",
+      "check15.28s;3Rustrewardcallbacks1.17s;strictclippy38.97s",
+      "fmt;sourcecallback/placement reproduction"
     ],
-    "next_slice": "Norseman+Formorgar L1 outfit reward paths share Hjaern source. New atomic participant support retains General ownership of NorsemanOutfit/DefaultStart and IceIslands questline/mission/door ownership. Source facts settled;no production edits before PG RED.",
-    "debug_evidence": [
-      "Actual PostgreSQL attempt2.554788608s failed executing SQL1001:syntax error at CASE expression. Parenthesized CASE expression;no assertion/proof weakened. Same focused test retry70137 /tmp/qengine2-batch5-oriental-green2.log;build41.52s completed.",
-      "PostgreSQL79.793748713s exercised source but first-stage receipt assertion failed0vs1. Dialogue eligibility used hardcoded absent=-1 for an existing Door track with declared initial0;selector now uses admitted catalogue initial and refuses unknown tracks. All source/receipt assertions retained.",
-      "PostgreSQL77.366610395s reached native foreign write but rejected ambiguous e reference in participant proof aggregate;renamed JSON alias declared_storage. Same proof/test retained;retry51680 green4.log."
-    ],
+    "greeting_rule": "SourceNPC multiple conditional variants use uniquely pinned NPCHandler neutral defaults;Tom ambiguous-static-greeting authoring error corrected generically.",
     "slices": [
       {
-        "id": "L1-05A",
+        "id": "L1-06A",
         "status": "QUALIFIED",
         "entries": [
-          "unresolved:questpc2:oriental_outfits_quest"
+          "oteryn:quest.druid_outfits_quest_on_rook"
         ],
-        "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-oriental-story duration=45.088365726s success=false",
-        "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-oriental-story duration=79.80126811s success=true",
-        "result": "1passed;0failed;0ignored;79.80s;actualPostgreSQL18.6",
-        "scope": "Complete female source introductions and all exact hand-ins;both gender paths authored. Wrong-sex direct native commit and standalone participant bypass refuse;foreign Oriental door retains owner/pin and same primary revision;forged late participant rejected by PostgreSQL;replay,3 immutable account facts and ordinary final appearance selection pass. Only external Explorer Society prerequisite arranged.",
+        "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-druid-rook-story duration=43.490976609s success=false",
+        "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-druid-rook-story duration=78.473462376s success=true",
+        "result": "1passed;0failed;0ignored;78.47s;actualPostgreSQL18.6",
+        "scope": "Complete available Rook Druid source path:literal Tom addon introduction,50bearpaws5896+50wolfpaws5897,paws/yes hand-in,bodyStage1->2,addon1. Partial funding retains first ingredient,replay cannot consume/grant again,exact2immutable account facts,normalmask1appearance succeeds and unearnedmask3refuses. No source stage seeded and no fabricated second reward.",
         "checks": [
-          "cargo fmt --all --check;explicit mounted leaf rustfmt",
-          "quests/durability/dispatch all-feature check1m02s;final selector dispatch check54.94s",
-          "3 Rust reward-callback unit tests1.17s",
-          "strict three-crate clippy2m55s;final selector dispatch clippy1m16s",
-          "18authoring tests6.122s;callback/placement reproduction",
-          "repo pin-refresh81deec82ff426ee357fa1c79a01d4730c8a566cc70123136bb45c685080bb5d7"
+          "19authoring6.657s;reproducers",
+          "fmt;check15.28s;3Rustunit1.17s;strictclippy38.97s",
+          "repo pin-refresh passed"
         ],
-        "follow_on_verification": "COMPLETE:123content tests2.15s;5world tests45.22s;pin-check81deec82ff426ee357fa1c79a01d4730c8a566cc70123136bb45c685080bb5d7",
-        "commit": "6ad33a4b1",
-        "push": "fast-forward confirmed"
-      },
-      {
-        "id": "L1-05B",
-        "status": "QUALIFIED",
-        "entries": [
-          "unresolved:questpc2:norseman_outfits_quest",
-          "oteryn:quest.the_ice_islands_quest"
-        ],
-        "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=45.551056868s success=false",
-        "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=79.824440352s success=true",
-        "result": "1passed;0failed;0ignored;79.82s;actualPostgreSQL18.6",
-        "scope": "Complete shared Norseman/Formorgar L1 outfit path:base exact frost charm7289x1 with four parentObelisks5/Questline39;5+10shards7290 and both reward conversations;no internal outfit-stage seeding;late missing item rolls back foreign stages;all3 foreign proofs share primary revisions/original owners;replay,3immutable account facts and ordinary final appearance pass.",
-        "checks": [
-          "18authoring tests6.272s;reproducers",
-          "fmt;check19.63s;3Rusttests1.24s",
-          "strict clippy44.94s",
-          "repo pin-refresh24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25"
-        ],
-        "follow_on_verification": "Pending content/world/pin after immediate green slice push.",
-        "commit": "b51b5d358",
-        "push": "fast-forward confirmed"
+        "follow_on_verification": "pending after immediate green source push"
       }
-    ],
-    "norseman_source": "Hjaern.lua:107-155,189-197 sha2564e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466;7289 is frost charm (pinned Canary XML),not spirit container;exact take1 then5+10frostheartshards7290.",
-    "norseman_red": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=45.551056868s success=false",
-    "norseman_reuse_audit": "Primary questpc2..8 refreshed02:00UTC;no matched current entry QUALIFIED. Existing own-branch native participant engine6ad33a4b1 reused unchanged. Audit /tmp/qengine2-batch5-norseman-status-audit.log.",
-    "norseman_checks": [
-      "18authoring tests6.272s;source generation passed",
-      "cargo fmt --all --check;check19.63s;3Rust reward-callback unit tests",
-      "strict clippy44.94s passed;disk-only sandbox launch recovered by removing obsolete compiler snapshots",
-      "callback/placement reproduction;repo pin-refresh then PG GREEN60154 running"
-    ],
-    "flow_followup": {
-      "red": "Python published-source-flow test1failed5.622s:next shard offer unreachable from published first-reward topic3",
-      "change": "Root shard keyword admitted at reachable topics0/3/4 with disjoint Questline40/42 guards;source reward next topics and exact-cost native stage guards retained.",
-      "status": "QUALIFIED",
-      "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=79.174554547s success=true",
-      "checks": [
-        "19authoring tests6.380s",
-        "fmt;dispatch check15.17s;strict clippy37.50s",
-        "repo pin-refresh passed;world digest24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25"
-      ],
-      "result": "1passed;0failed;0ignored;79.17s;actualPostgreSQL18.6"
-    }
+    ]
   }
 }
