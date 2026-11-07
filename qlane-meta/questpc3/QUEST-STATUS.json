@@ -4652,7 +4652,7 @@
     },
     "current_batch": {
       "batch": "threatened_presents_16",
-      "phase": "Active: author native three-bed delivery PG RED before mechanism/data changes",
+      "phase": "RED: real PostgreSQL native three-bed test reached zero callbacks; implement selected BURN + world MINT composition next",
       "entries": [
         "present delivery Thais32391/32220/z6",
         "present delivery Venore33001/32060/z5",
@@ -4666,7 +4666,14 @@
       "requirements": "ToothFairy1 and PresentsPlaced<3; exact three target positions/distinct once flags; consume selected25302x1/give25303x1; increment shared counter atomically",
       "reuse": "existing carried-on-target BURN, complete world MINT and bounded relative world storage; implement any missing composition generically",
       "facts": "canonical25302/25303 both materializable StackCapable max100; weights1000/300; no guesses or reference copies",
-      "previous_qualified": "threatened_fairies_15"
+      "previous_qualified": "threatened_fairies_15",
+      "pg_red_ms": 66867,
+      "red_proof": {
+        "log": "/tmp/questpc3-presents-red.log",
+        "sha256": "4629f50111d71c803023bbddf4f5fec3a20350e48bb9ef50ce49d1f7650e0a8d",
+        "result": "completed0 receipts0 presents3 teeth0 counter0; native owner and PG reached",
+        "compile": "cargo test compiled normal profile4m53; fmt PASS"
+      }
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
