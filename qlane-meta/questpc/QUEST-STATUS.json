@@ -8664,7 +8664,13 @@
       "world_pin": "174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62",
       "intermediate": "Three refusal cases pass; replay still flag0 because row-less fallback omitted damage shares; active stopped on invalid synthetic occurrence. Both corrections applied; final PG pending."
     },
-    "multi_player_proof": "cloud-source-death-multi-validation.json"
+    "multi_player_proof": "cloud-source-death-multi-validation.json",
+    "curos_baseline": {
+      "status": "SOURCE_VERIFIED_CORRECTED_PG_BASELINE_PENDING",
+      "proof": "cloud-uneasy-curos-progress.json",
+      "excluded_error": "format: floor outside -15..0 (pre-PG fixture only)",
+      "runtime_change": false
+    }
   },
   "engine_progress": {
     "stateless_departure": {

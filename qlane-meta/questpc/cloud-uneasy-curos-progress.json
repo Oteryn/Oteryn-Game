@@ -1,0 +1,29 @@
+{
+  "status": "SOURCE_VERIFIED_CORRECTED_PG_BASELINE_PENDING",
+  "runtime_change": false,
+  "source_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/curos.lua",
+  "source_sha256": "6feee8de2475788bca144210fd47cbf857b5dce3a16215ff2647e971bcd3a42e",
+  "source_git_blob": "4fdffd8e90b8de6d2f17ce5c38c45020397c48c9",
+  "source_bytes": 7139,
+  "test_compile": "PASS 4m56s before fixture floor correction",
+  "excluded_failure": {
+    "error": "format: floor outside -15..0",
+    "postgres_marker_observed": false,
+    "reason": "Scene fixture used +7 instead of required -7. Not callback RED or PG evidence.",
+    "fix": "Signed floor literal corrected; rerun building.",
+    "raw_sha256": "e93dddef958125e9b1522c9eb581b822789351fea13b0dcff0c2ddfb53a1780d",
+    "stored_sha256": "e93dddef958125e9b1522c9eb581b822789351fea13b0dcff0c2ddfb53a1780d"
+  },
+  "tests": [
+    "Missing prerequisite denies quest flags.",
+    "Completed prerequisite accepts two flags in one receipt, exact command replay once.",
+    "Preceding New Frontier branch suppresses Uneasy start."
+  ],
+  "published_code": "Source-death core/two-player qualification at7172d246e remains green. New Curos tests/runtime are not published by this documentation checkpoint.",
+  "reuse_checked": {
+    "npcfix": "c6caad19153b23400d6f750d208ff7cffa5f006b",
+    "qnpcfx": "51d175bfbf23c25f7b8371fb2c6a841b1a609fd7",
+    "qworld": "b06d40852060966d9d530d07cce0a062cba276aa"
+  },
+  "next": "Actual PG RED for absent source placement, then enable Curos native placement, source-bound acceptance and greeting."
+}

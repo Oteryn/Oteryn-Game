@@ -1,3 +1,21 @@
+## Curos source / corrected baseline checkpoint — 2026-11-07
+No new runtime changes beyondgreen7172d246e. Three Curos probes authored:
+prerequisite refusal, atomic twoflagstart/replay, precedingFrontierbranch.
+Initialtesttarget compiled4m56s but fixture+7 floor rejectedbeforePG:
+exacterror "format: floor outside -15..0", duration~0.06s. Excluded from
+PG evidence, no Postgresmarker. Corrected floor-7 nowbuilding actualbaseline.
+Proof cloud-uneasy-curos-progress.json, excludedrawlogretained. Thischeckpoint
+publishesdocs only; newNPCtests/runtime stillunpublished. Source201189Curos
+SHA6fee/Gitblob4fdff verifiedidenticalto9fcorpus; no rawsourcecopies.
+NEXT awaitactualPGRED then/tmp/questpc-uneasy-curos-generator.py ->production
+source-generator; addscopeCuros+convertplacements, sourceprogramstart-only,
+literalgreet118. Newgreeting parsermustretainfrozenbase23, be reusable/source-
+bound; checkotherlanes alreadyfetched npcfix/qnpcfx/qworld(no equivalentfound).
+IfNPCcrate greetingrevision changes, REBUILDworld-bundle-compiler beforepinrefresh;
+oldbinary embedsoldNPCrevision material. Then finalfocusedPG/check/strict/fmt/pins.
+Max15minpush, fetch exacttarget/mergeFETCH_HEAD. Keep wholeUneasy unqualified
+until nativekill/door/world/crystal10srevert/exact10217 rewardroute completes.
+
 ## Source death two-player selection GREEN — 2026-11-07
 ActualPG18.6: both48.26729805s,lesser48.208601423s,observer48.263174457s.
 Realcharacters41/101,sessions/fences/leases1+2. Bothdamagers credit; lesser
