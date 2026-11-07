@@ -21,7 +21,9 @@ and a `carried_use` object:
 
 Regions include both edges and use native negative floors. Time windows
 include the start and exclude the end, wrapping midnight when the start is
-later than the end. Endpoints must be distinct and below 1440. CLOCK-1 uses
+later than the end. Endpoints must be distinct; the start is below 1440 and
+the end may equal 1440. `[0, 1440)` explicitly admits every minute of the day,
+while a start of 1440 and observed minutes outside the day remain invalid. CLOCK-1 uses
 2500 real milliseconds per Tibian minute and the default UTC epoch. The
 server records the World clock fact; the client supplies no time or position.
 
@@ -75,3 +77,7 @@ expression language: counter5->4 through1->0, with a distinct per-player flag
 for each target. `questpc3_threatened_barriers.py` uses this shape for all fifteen
 source positions. Repeated targets, changed-target replay and wrong periods
 must grant no additional progress or value.
+
+`questpc3_threatened_rakes.py` uses identity replacement with an all-day
+window for five once-only scratching flags. The source instance UUID and
+quantity stay unchanged; the existing transaction owner records the interaction.
