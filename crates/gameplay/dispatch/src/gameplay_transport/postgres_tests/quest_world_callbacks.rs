@@ -265,6 +265,7 @@ pub(super) fn world(
     }
     if let Some(presence) = &callback.effects.item_presence {
         let p = presence.position;
+        cells.entry((p.floor, p.x, p.y)).or_default();
         cells.entry((p.floor + 1,p.x,p.y + 1)).or_default();
     }
     let mut effect_positions = Vec::new();

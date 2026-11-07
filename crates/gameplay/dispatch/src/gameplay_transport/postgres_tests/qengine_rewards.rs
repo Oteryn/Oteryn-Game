@@ -23,11 +23,9 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
-            Position {
-                x: 33294,
-                y: 31677,
-                floor: -15,
-            },
+            if name.starts_with("qengine-rewards-questpc4-admission-") {
+                super::l6_world_admission::trigger(name)
+            } else { Position {x:33294,y:31677,floor:-15} },
             false,
         )
     });
@@ -637,6 +635,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-questpc4-admission-") {
+        return super::l6_world_admission::exercise(owner,admitted,h,authority,name).await;
+    }
     if name.starts_with("qengine-rewards-questpc4-puzzle-") {
         return super::l6_world_puzzles::exercise(owner, admitted, h, name).await;
     }

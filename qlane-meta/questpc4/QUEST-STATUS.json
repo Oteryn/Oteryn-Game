@@ -7215,7 +7215,7 @@
     }
   },
   "generic_puzzle_batch": {
-    "status": "MERGED_GREEN_READY_TO_FF_PUSH",
+    "status": "PUSHED",
     "whole_entry_status": "Paradox IN_PROGRESS; counts4QUALIFIED/17active/2external exclusions unchanged",
     "postgres_components": {
       "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
@@ -7326,6 +7326,236 @@
       },
       "compatibility": "Incoming carried_step Callback constructor defaults ActorKind::Player and empty readonly requirements. Serialization omits both defaults; source branches and all old profiles preserved.",
       "reuse_next": "Incoming native_scene multi-crop/teleport-attested helper already solves Paradox multifloor scene assembly; extend only for missing projection palette entries, preserving all old single-crop bytes."
+    },
+    "pushed_head": "bd8716ce21a5f51abd45377dfa82cfe26c50ae1b",
+    "remote_verified": true
+  },
+  "world_admission_batch": {
+    "status": "GREEN_LOCAL_COMMIT_READY_REMOTE_MERGE_REQUIRED",
+    "previous_pushed_head": "bd8716ce21a5f51abd45377dfa82cfe26c50ae1b",
+    "scope": [
+      "exact reusable food debit when opening, free close",
+      "physical-only world checkpoint binding",
+      "registered protected-track ownership prevents renamed and stripped binding bypass"
+    ],
+    "test_log": "/tmp/questpc4-world-admission-red.log",
+    "session": 29823,
+    "test_count": 3,
+    "implementation_started": true,
+    "whole_entry": "Paradox IN_PROGRESS; no qualification change",
+    "planned_reuse": [
+      "existing WorldCallback durable offering owner and prepared projections",
+      "PC3 SetWithBinding tag7 plus a checked bound addition effect for repeated input callbacks",
+      "PC6 Ground movement projection delegation already pushed",
+      "incoming native_scene multifloor helper already merged; do not duplicate it"
+    ],
+    "rule": "Capture actual PG RED before implementation; extend probes into meaningful exact-debit/close/physical source tests before any GREEN claim.",
+    "red": {
+      "log": "/tmp/questpc4-world-admission-red.log",
+      "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "cases": {
+        "opening_only_unknown_field": 52.588568529,
+        "requires_world_admission_unknown_field": 51.489982592,
+        "renamed_stripped_binding_committed_protected_story": 89.599955017
+      },
+      "shadow_actual": "Ok(Committed), story-1\u21921 and character revision1\u21922 through weaker generic API; this is the concrete gap, not a hypothetical"
+    },
+    "implemented": [
+      "opening_only durable work only on opening, restricted value-free close",
+      "requires_world_admission binding and exact world primary transition",
+      "checked AddWithBinding encodingtag8, legacy bytes unchanged",
+      "shared exact primary transition builder for NPC lowering/admission",
+      "cached registered protected-track ownership; renamed+stripped writes refused",
+      "bound-source admission for prepared ladder/input projections; monster/read-only exclusions retained"
+    ],
+    "contract": "qlane-meta/questpc4/WORLD-ADMISSION-CONTRACT.md",
+    "component_green": {
+      "shadow_pg": {
+        "log": "/tmp/questpc4-admission-shadow-green.log",
+        "seconds": 91.484554563,
+        "postgres": "18.6",
+        "passed": 1
+      },
+      "units": {
+        "log": "/tmp/questpc4-admission-units1.log",
+        "passed": 10,
+        "seconds": 1.47,
+        "frozen_hashes": "unchanged Outfits/IceIslands/Spirit"
+      }
+    },
+    "real_flow_tests": {
+      "status": "GREEN",
+      "log": "/tmp/questpc4-world-admission-flow1.log",
+      "session": 86646,
+      "cases": [
+        "six exact food debits/open/transaction/free close/reopen",
+        "two exact mushroom debits/open/free close/reopen",
+        "generic writer refusal then real STEP progress"
+      ],
+      "physical_green": {
+        "postgres": "18.6",
+        "seconds": 53.862482693,
+        "log": "/tmp/questpc4-world-admission-flow1.log"
+      },
+      "food_red": {
+        "four_seconds": 53.554437775,
+        "five_seconds": 54.113960692,
+        "error": "DefinitionNotFound for exact native inputs; no substitute definitions used"
+      },
+      "rerun": {
+        "session": 76050,
+        "log": "/tmp/questpc4-world-admission-flow3.log",
+        "cargo_build_jobs": 1,
+        "reason": "prior compiler SIGKILL under concurrent7.5GiB pin check; no PG result from that failed build"
+      },
+      "latest": {
+        "log": "/tmp/questpc4-world-admission-flow3.log",
+        "passed": 3,
+        "failed": 1,
+        "seconds": 144.37,
+        "postgres": "18.6",
+        "green_seconds": {
+          "fifth_food_pair": 55.091661985,
+          "renamed_stripped_binding": 92.034091377,
+          "physical_checkpoint": 52.333423145
+        },
+        "failure": "six inputs: completed set USE returned Rejected; durable state unchanged on earlier missing/wrong inputs",
+        "diagnostic_log": "/tmp/questpc4-admission-six-diagnostic.log"
+      },
+      "fixture_repair": {
+        "root_cause": "quest_world_callbacks::world creates the ladder landing but omitted presence.position itself when outside the default rectangle; food4 target32476,31904,-4 is absent, so production prepare_quest_projection correctly rejects before SQL admission",
+        "diagnostic_log": "/tmp/questpc4-admission-six-diagnostic.log",
+        "seconds": 54.144996832,
+        "repair": "add declared item_presence source tile to composed fixture; preserve production projection guard and all exact input/free-close/reopen assertions",
+        "rerun_log": "/tmp/questpc4-world-admission-final-pg.log",
+        "rerun_session": 6828,
+        "scope": "four admission cases plus original NPC level, whole Mead and whole Spirit regressions"
+      }
+    },
+    "native_profiles": {
+      "producer": "tools/content-migration/register_spell_families.py",
+      "log": "/tmp/questpc4-admission-native-generate.log",
+      "files": 42,
+      "old": 3631,
+      "new": 3637,
+      "changed_old": 0,
+      "added": [
+        3537,
+        3543,
+        3587,
+        3589,
+        3590,
+        3593
+      ],
+      "audit": "/tmp/questpc4-admission-profile-audit.json"
+    },
+    "further_binding_guard": "Unknown no-op aliases touching protected tracks are also refused: ADD0 is a state writer operation, not the read-only predicate API.",
+    "pin_refresh": {
+      "producer": "oteryn-world-bundle-compiler pin-refresh",
+      "log": "/tmp/questpc4-admission-pin-refresh.log",
+      "previous": "7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37",
+      "new": "a36ca9460fcf4aa15127bfcf164b5d984629c2c38040db554c75eade9386ff01",
+      "note": "Six newly admitted input definitions are also placed in the World; owning tool changed pin. Do not restore old pin manually."
+    },
+    "verification_resource_retry": {
+      "log": "/tmp/questpc4-world-admission-flow2.log",
+      "error": "rustc lib test exited signal9 SIGKILL, no PG cases started",
+      "observed_memory": "World pin-check process RSS7493728KiB concurrently with compiler in17GiB/no-swap container",
+      "action": "Wait for owning pin check; retry Cargo with CARGO_BUILD_JOBS=1, no pin compilation in parallel. No tests skipped or weakened."
+    },
+    "checks": {
+      "units": {
+        "passed": 11,
+        "seconds": 2.51,
+        "log": "/tmp/questpc4-admission-units2.log"
+      },
+      "check": {
+        "status": "PASS",
+        "duration": "4m32s",
+        "log": "/tmp/questpc4-admission-check-final.log"
+      },
+      "clippy": {
+        "status": "PASS",
+        "duration": "3m12s",
+        "all_targets": true,
+        "all_features": true,
+        "deny_warnings": true,
+        "log": "/tmp/questpc4-admission-clippy.log"
+      },
+      "producer_freshness": {
+        "status": "PASS",
+        "files": 42,
+        "log": "/tmp/questpc4-admission-native-check.log"
+      },
+      "pin": {
+        "status": "PASS",
+        "digest": "a36ca9460fcf4aa15127bfcf164b5d984629c2c38040db554c75eade9386ff01",
+        "bytes": 31102612,
+        "log": "/tmp/questpc4-admission-pin-check.log"
+      },
+      "final_fmt": {
+        "status": "PASS",
+        "log": "/tmp/questpc4-admission-final-fmt.log"
+      },
+      "ladder_catalogue": {
+        "status": "PASS",
+        "log": "/tmp/questpc4-admission-ladder-check.log"
+      },
+      "final_check": {
+        "status": "PASS",
+        "duration": "4m 51s",
+        "log": "/tmp/questpc4-admission-final-check.log",
+        "all_targets": true,
+        "all_features": true,
+        "crates": [
+          "content",
+          "quests",
+          "durability",
+          "dispatch"
+        ]
+      },
+      "final_clippy": {
+        "status": "PASS",
+        "duration": "2m 41s",
+        "log": "/tmp/questpc4-admission-final-clippy.log",
+        "all_targets": true,
+        "all_features": true,
+        "crates": [
+          "content",
+          "quests",
+          "durability",
+          "dispatch"
+        ],
+        "deny_warnings": true
+      }
+    },
+    "green": {
+      "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "log": "/tmp/questpc4-world-admission-final-pg.log",
+      "passed": 7,
+      "failed": 0,
+      "ignored": 0,
+      "seconds": 259.44,
+      "cases": {
+        "l6/waterskin-of-mead": 59.77322741,
+        "qengine-rewards-questpc4-paradox-shadow": 92.161026278,
+        "qengine-rewards-questpc4-paradox-level": 91.087838506,
+        "qengine-rewards-questpc4-spirit": 98.68731128,
+        "qengine-rewards-questpc4-admission-opening-five": 55.21071128,
+        "qengine-rewards-questpc4-admission-opening": 56.101003139,
+        "qengine-rewards-questpc4-admission-physical": 53.366528385
+      },
+      "scope": "Owned mechanism components and existing whole-entry regressions; whole Paradox remains IN_PROGRESS"
+    },
+    "remote_advancement": {
+      "head": "bd42f09bb",
+      "scope": "Shared switch leases1071 and source Tomb gates",
+      "action": "Commit local green batch, merge/reuse incoming, validate integration, push FF"
+    },
+    "qengine2_refresh": {
+      "head": "97cb9db79",
+      "reusable_later": "Carried document USE and repeatable source exchanges; no duplicate implementation",
+      "no_unrelated_content_merge": true
     }
   }
 }

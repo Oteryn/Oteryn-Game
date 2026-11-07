@@ -234,7 +234,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
     if effects.item_presence.as_ref().is_some_and(|presence| {
         !pos(presence.position)
             || presence.appearance == 0
-            || !callback.storage.is_empty()
+            || (!callback.storage.is_empty()
+                && !callback.requires_world_admission
+                && !callback.opening_only)
             || effects.portals.is_some()
             || effects.item_cycle.is_some()
             || effects.encounter.is_some()

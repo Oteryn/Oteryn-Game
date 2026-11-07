@@ -445,12 +445,6 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
     let callbacks = document.callbacks;
     let requires: Vec<_> = callbacks.iter().flat_map(|c| &c.requires).collect();
     for callback in &callbacks {
-        let binding = gated_binding(callback)?;
-        let bound_effect = callback
-            .storage
-            .iter()
-            .position(|s| !s.preserve)
-            .ok_or("reward needs a changed state")?;
         for operation in &callback.state_ops {
             if tracks
                 .iter()
@@ -530,32 +524,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                 });
             }
         }
-        transitions.push(QuestTransition {
-            key: callback.key.clone(),
-            quest: callback.quest.clone(),
-            effects: callback
-                .storage
-                .iter()
-                .enumerate()
-                .map(|(index, s)| QuestEffect {
-                    track: s.track.clone(),
-                    from: QuestComparison::Between(s.minimum, s.maximum),
-                    effect: if s.preserve {
-                        QuestEffectKind::Add(0)
-                    } else if let Some(binding) = binding.filter(|_| index == bound_effect) {
-                        QuestEffectKind::SetWithBinding {
-                            value: s.set,
-                            binding,
-                        }
-                    } else {
-                        QuestEffectKind::Set(s.set)
-                    },
-                })
-                .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
-                .collect(),
-            completes: callback.completes,
-            experience: None,
-        });
+        transitions.push(primary_transition(callback)?);
     }
     if let Some(required) = requires
         .iter()
@@ -565,6 +534,42 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
     }
     QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|e| format!("{e:?}"))
+}
+
+/// Exact primary state operation shared by lowering and bound admission validation.
+pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, String> {
+    let binding = gated_binding(callback)?;
+    let bound_effect = callback
+        .storage
+        .iter()
+        .position(|state| !state.preserve)
+        .ok_or("reward needs a changed state")?;
+    Ok(QuestTransition {
+        key: callback.key.clone(),
+        quest: callback.quest.clone(),
+        effects: callback
+            .storage
+            .iter()
+            .enumerate()
+            .map(|(index, state)| QuestEffect {
+                track: state.track.clone(),
+                from: QuestComparison::Between(state.minimum, state.maximum),
+                effect: if state.preserve {
+                    QuestEffectKind::Add(0)
+                } else if let Some(binding) = binding.filter(|_| index == bound_effect) {
+                    QuestEffectKind::SetWithBinding {
+                        value: state.set,
+                        binding,
+                    }
+                } else {
+                    QuestEffectKind::Set(state.set)
+                },
+            })
+            .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
+            .collect(),
+        completes: callback.completes,
+        experience: None,
+    })
 }
 
 #[cfg(test)]

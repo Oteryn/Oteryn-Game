@@ -16,6 +16,8 @@
 //!
 //! This module depends on `std` and `sha2` only, and [`loader`] on `serde` and `serde_json`.
 
+pub mod admission_binding;
+
 // Source qualification only: the coordinator retained new NPC execution in
 // Left out. These evaluators are not a second production conversation adapter.
 #[cfg(test)]
@@ -169,6 +171,11 @@ pub enum QuestEffectKind {
     },
     /// Checked `i64` addition.
     Add(i64),
+    /// Checked addition while pinning physical admission terms.
+    AddWithBinding {
+        delta: i64,
+        binding: [u8; 32],
+    },
     /// The database transaction time, in Unix seconds.
     SetNow,
     /// A source `computed: expression` effect with no closed kind yet: its transition is
@@ -193,6 +200,11 @@ impl QuestEffectKind {
             Self::Add(value) => {
                 out.push(2);
                 out.extend_from_slice(&value.to_be_bytes());
+            }
+            Self::AddWithBinding { delta, binding } => {
+                out.push(8);
+                out.extend_from_slice(&delta.to_be_bytes());
+                out.extend_from_slice(&binding);
             }
             Self::SetNow => out.push(3),
             Self::Computed => out.push(4),
@@ -500,7 +512,9 @@ impl QuestStateCatalogue {
                     QuestEffectKind::Set(value) | QuestEffectKind::SetWithBinding { value, .. } => {
                         Some(value)
                     }
-                    QuestEffectKind::Add(delta) => before.checked_add(delta),
+                    QuestEffectKind::Add(delta) | QuestEffectKind::AddWithBinding { delta, .. } => {
+                        before.checked_add(delta)
+                    }
                     QuestEffectKind::SetNow => Some(now),
                     QuestEffectKind::Computed => None,
                     QuestEffectKind::Native(_) => native_after

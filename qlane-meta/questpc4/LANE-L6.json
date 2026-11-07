@@ -236,6 +236,16 @@
           "/tmp/questpc4-puzzle-map-use-pg.log"
         ],
         "checks": "fmt/check5crates/clippy5crates alltargets allfeatures -Dwarnings,9pureunits,pin-check and generated ladder check PASS"
+      },
+      "world_admission_component": {
+        "status": "GREEN_LOCAL_COMMIT_READY",
+        "proof": "QUEST-STATUS.json#/world_admission_batch",
+        "whole_entry": "IN_PROGRESS",
+        "scopes": [
+          "exact food4/food5 open/debit/free close/reopen",
+          "physical STEP admission",
+          "renamed+stripped protected-track refusal"
+        ]
       }
     },
     {

@@ -1,0 +1,212 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/l6/paradox-food-four",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32479,
+          "y": 31905,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/paradox-food-four-openings",
+          "minimum": -1,
+          "maximum": 65534,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [
+        {
+          "position": {
+            "x": 32476,
+            "y": 31900,
+            "floor": -4
+          },
+          "item": "oteryn:item.tibia.i3593",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32477,
+            "y": 31900,
+            "floor": -4
+          },
+          "item": "oteryn:item.tibia.i3587",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32478,
+            "y": 31900,
+            "floor": -4
+          },
+          "item": "oteryn:item.tibia.i3590",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32479,
+            "y": 31900,
+            "floor": -4
+          },
+          "item": "oteryn:item.tibia.i3585",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32480,
+            "y": 31900,
+            "floor": -4
+          },
+          "item": "oteryn:item.tibia.i3592",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32481,
+            "y": 31900,
+            "floor": -4
+          },
+          "item": "oteryn:item.tibia.i3589",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/action_four_floor_lever.lua:1-49"
+      ],
+      "opening_only": true,
+      "effects": {
+        "item_presence": {
+          "position": {
+            "x": 32476,
+            "y": 31904,
+            "floor": -4
+          },
+          "appearance": 1948
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-food-five",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32478,
+          "y": 31904,
+          "floor": -3
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/paradox-food-five-openings",
+          "minimum": -1,
+          "maximum": 65534,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [
+        {
+          "position": {
+            "x": 32478,
+            "y": 31903,
+            "floor": -3
+          },
+          "item": "oteryn:item.tibia.i3537",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32479,
+            "y": 31903,
+            "floor": -3
+          },
+          "item": "oteryn:item.tibia.i3543",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/action_fifth_floor_lever.lua:1-41"
+      ],
+      "opening_only": true,
+      "effects": {
+        "item_presence": {
+          "position": {
+            "x": 32479,
+            "y": 31904,
+            "floor": -3
+          },
+          "appearance": 1948
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/l6/paradox-floor-four-arrived",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32478,
+          "y": 31905,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 409
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/paradox/floor-four-arrived",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "content/quests/authoring/paradox-tower.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/action_four_floor_lever.lua:19-37"
+      ],
+      "requires_world_admission": true
+    }
+  ]
+}

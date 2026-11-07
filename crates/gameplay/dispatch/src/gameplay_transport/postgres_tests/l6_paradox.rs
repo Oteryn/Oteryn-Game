@@ -5,6 +5,15 @@ use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 
 #[test]
+fn l6_npc_minimum_level_renamed_stripped_binding_cannot_use_generic_writer() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    eprintln!("POSTGRES_CASE_STARTED l6_npc_minimum_level_shadow");
+    super::qengine_rewards::scenario("qengine-rewards-questpc4-paradox-shadow")
+}
+
+#[test]
 fn l6_npc_minimum_level_uses_locked_progression_and_bound_terms() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -67,6 +76,17 @@ pub(super) async fn exercise(
     let transition = canonical.transition(&accepted.key).ok_or("transition")?;
     let mut alias = transition.clone();
     alias.key = "oteryn:quest-transition/fixture-level-renamed".into();
+    if name.ends_with("-shadow") {
+        for effect in &mut alias.effects {
+            if let oteryn_gameplay_quests::quest::QuestEffectKind::SetWithBinding {
+                value, ..
+            } = effect.effect
+            {
+                effect.effect = oteryn_gameplay_quests::quest::QuestEffectKind::Set(value);
+            }
+        }
+    }
+
     let catalogue = oteryn_gameplay_quests::quest::QuestStateCatalogue::new(
         canonical.content_revision(),
         transition
@@ -101,10 +121,13 @@ pub(super) async fn exercise(
             std::sync::Arc::new(catalogue),
         )
         .await;
-    assert!(matches!(
-        bypass,
-        Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)
-    ));
+    assert!(
+        matches!(
+            bypass,
+            Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)
+        ),
+        "weaker generic writer result: {bypass:?}"
+    );
     drop(slot);
     assert_eq!(
         counts(h).await?,
@@ -128,7 +151,7 @@ pub(super) async fn exercise(
         .await?,
         1
     );
-    if name.ends_with("-level") {
+    if name.ends_with("-level") || name.ends_with("-shadow") {
         return Ok(());
     }
     let route = oteryn_gameplay_quests::quest::world_callbacks::load()?;

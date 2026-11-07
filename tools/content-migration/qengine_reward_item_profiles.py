@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
 import grizzly_shop_profiles as accepted
 
-IDS = {133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
+IDS = {133, 139, 875, 3537, 3543, 3587, 3589, 3590, 3593, 3244, 9041, 10198, 10199, 11700, 11701,
        11544, 5921, 6107, 5945, 7289, 6099, 6100, 6101, 6102, 6126, 12599, 12601, 12803, 22516, 22721, 28792, 28793}
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'

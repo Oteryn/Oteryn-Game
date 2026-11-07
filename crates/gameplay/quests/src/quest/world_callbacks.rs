@@ -150,6 +150,12 @@ pub struct Callback {
     /// Both lever appearances. None for a step tile. One-way levers refuse their second use.
     pub lever: Option<[u16; 2]>,
     pub reversible: bool,
+    /// Durable requirements and inputs apply on opening; closing is a value-free map action.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub opening_only: bool,
+    /// A personal progress write must carry the registered native world occurrence.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub requires_world_admission: bool,
     pub passages: Vec<Passage>,
     pub teleport: Option<Position>,
     /// Source cardinal direction (north/east/south/west = 0/1/2/3) after teleport.
@@ -198,6 +204,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/l6-tools.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/l6-world-puzzles.json"
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-access-callbacks.json"
@@ -269,6 +278,23 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.effects.portals.is_some()
                     || callback.effects.item_cycle.is_some()
                     || !callback.passages.is_empty()))
+            || ((callback.requires_world_admission || callback.opening_only)
+                && (callback.storage.iter().all(|state| state.preserve)
+                    || callback.native_rule.is_some()))
+            || (callback.opening_only
+                && (callback.trigger != Trigger::Use
+                    || callback.lever.is_none()
+                    || !callback.reversible
+                    || callback.storage.is_empty()
+                    || callback.offerings.is_empty()
+                    || callback.experience.is_some()
+                    || callback.monk_reward.is_some()
+                    || callback.item_on_target.is_some()
+                    || callback.native_rule.is_some()
+                    || callback.effects.item_reward.is_some()
+                    || callback.effects.outfit_reward.is_some()
+                    || callback.teleport.is_some()
+                    || callback.effects.encounter.is_some()))
             || callback.world_requirements.len() > MAX_EFFECTS
             || callback
                 .world_requirements
@@ -453,29 +479,65 @@ fn extend_callbacks(
                 });
             }
         }
-        transitions.push(QuestTransition {
-            key: callback.key.clone(),
-            quest: callback.quest.clone(),
-            effects: callback
-                .storage
-                .iter()
-                .map(|s| QuestEffect {
-                    track: s.track.clone(),
-                    from: QuestComparison::Between(s.minimum, s.maximum),
-                    effect: match callback.native_rule {
-                        Some(rule) => QuestEffectKind::Native(rule),
-                        None if s.preserve => QuestEffectKind::Add(0),
-                        None if s.increment => QuestEffectKind::Add(s.set),
-                        None => QuestEffectKind::Set(s.set),
-                    },
-                })
-                .collect(),
-            completes: false,
-            experience: callback.experience,
-        });
+        transitions.push(primary_transition(callback)?);
     }
     QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|e| format!("{e:?}"))
+}
+
+/// Exact canonical state operation used by both lowering and the mutation boundary.
+pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String> {
+    let binding = gated_binding(callback)?;
+    let bound_index = callback.storage.iter().position(|state| !state.preserve);
+    Ok(QuestTransition {
+        key: callback.key.clone(),
+        quest: callback.quest.clone(),
+        effects: callback
+            .storage
+            .iter()
+            .enumerate()
+            .map(|(index, state)| QuestEffect {
+                track: state.track.clone(),
+                from: QuestComparison::Between(state.minimum, state.maximum),
+                effect: match callback.native_rule {
+                    Some(rule) => QuestEffectKind::Native(rule),
+                    None if state.preserve => QuestEffectKind::Add(0),
+                    None if state.increment => match binding.filter(|_| Some(index) == bound_index)
+                    {
+                        Some(binding) => QuestEffectKind::AddWithBinding {
+                            delta: state.set,
+                            binding,
+                        },
+                        None => QuestEffectKind::Add(state.set),
+                    },
+                    None => match binding.filter(|_| Some(index) == bound_index) {
+                        Some(binding) => QuestEffectKind::SetWithBinding {
+                            value: state.set,
+                            binding,
+                        },
+                        None => QuestEffectKind::Set(state.set),
+                    },
+                },
+            })
+            .collect(),
+        completes: false,
+        experience: callback.experience,
+    })
+}
+
+/// New physical bindings omit display/citation fields and leave every legacy hash unchanged.
+pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
+    if !callback.requires_world_admission && !callback.opening_only {
+        return Ok(None);
+    }
+    use sha2::{Digest, Sha256};
+    let mut value = serde_json::to_value(callback).map_err(|error| error.to_string())?;
+    let fields = value.as_object_mut().ok_or("world callback object")?;
+    fields.remove("sources");
+    fields.remove("success_message");
+    fields.remove("failure_message");
+    let bytes = serde_json::to_vec(&value).map_err(|error| error.to_string())?;
+    Ok(Some(Sha256::digest(bytes).into()))
 }
 
 #[cfg(test)]

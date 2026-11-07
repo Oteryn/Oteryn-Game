@@ -194,16 +194,10 @@ impl DurabilityRoot {
         }
         let reward_callback = reward_callbacks.into_iter()
             .find(|c| c.key == request.transition_key);
-        // A bound admission effect cannot be renamed into the weaker generic
-        // writer, stripped from its registered callback, or given altered terms.
-        if let Some(transition)=catalogue.transition(&request.transition_key) {
-            let mut bindings=transition.effects.iter().filter_map(|effect| {
-                if let oteryn_gameplay_quests::quest::QuestEffectKind::SetWithBinding {binding,..}=effect.effect {Some(binding)} else {None}
-            });
-            let actual=bindings.next();
-            let expected=reward_callback.as_ref().map(oteryn_gameplay_quests::quest::reward_callbacks::gated_binding)
-                .transpose().map_err(|_|CharacterProgressionError::InvalidInput)?.flatten();
-            if bindings.next().is_some() || actual!=expected {return Err(CharacterProgressionError::InvalidInput);}
+        // Ownership survives a caller removing or renaming a bound effect.
+        if let Some(transition) = catalogue.transition(&request.transition_key) {
+            oteryn_gameplay_quests::quest::admission_binding::validate(transition,context.is_some())
+                .map_err(|_| CharacterProgressionError::InvalidInput)?;
         }
         let reward_achievement =
             super::super::reward_claim_mint::quest::prepare_achievement(reward_callback.as_ref())

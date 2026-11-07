@@ -157,6 +157,9 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
+    if name.starts_with("qengine-rewards-questpc4-admission-") {
+        callback = super::super::l6_world_admission::callback(name)?;
+    }
     if name.starts_with("qengine-rewards-questpc4-puzzle-predicate") {
         callback = super::super::l6_world_puzzles::predicate_fixture(
             callback,
@@ -369,7 +372,8 @@ fn scenario_case(
                 &callback,
             )?));
         }
-        if name.starts_with("qengine-rewards-questpc4-puzzle-predicate")
+        if name.starts_with("qengine-rewards-questpc4-admission-")
+            || name.starts_with("qengine-rewards-questpc4-puzzle-predicate")
             || lever_fixture
             || target_swap
             || name.ends_with("-expiry")
