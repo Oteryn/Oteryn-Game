@@ -1,3 +1,7 @@
+Pin companion follow-up: the same successful repo pin-refresh also updated
+preprod-topology.toml map_revision/world_bundle.digest. Both equal the checked
+8d0063eb...d2c762 pin; this generated companion is committed separately.
+
 # Golden QUALIFIED and payment owner GREEN — 2026-11-07
 
 Golden's whole selected route is QUALIFIED. GOLDEN-PG-PROOF.json contains

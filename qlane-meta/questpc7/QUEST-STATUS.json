@@ -953,7 +953,8 @@
         "content/dialogues/quests/shared-reward-greetings.json",
         "content/world/npc-placements/index.json"
       ],
-      "source_contract": "qlane-meta/questpc7/CONTRACT-NOTES.md"
+      "source_contract": "qlane-meta/questpc7/CONTRACT-NOTES.md",
+      "generated_pin_companion": "deploy/synology-game/preprod-topology.toml:46; pin-refresh updated both map_revision and world_bundle.digest to the checked world pin"
     }
   },
   {
