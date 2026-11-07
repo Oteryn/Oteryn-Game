@@ -1357,3 +1357,8 @@ Continue with SRV9; regenerate and validate final bundle pins after composition.
 ## SRV9 merge checkpoint — qualification pending
 
 Source17d0a9f83 merges after the explicit WVAR/WCONTRIB/WEVENTS reverts. Preserve WORLDCHG Yeo admission and source-name templates while adding S10 healing/travel/blessings, fluid subtypes, full charges and reciprocal marriage. The Yeo request explicitly retains None subtype/charge defaults. Migrations1082/1083 are combined in1345;1084,1085,1086 become1346,1347,1348 using git mv and updated filename references. All324 migrations replayed on PostgreSQL18.6 in4.597s actual with the WORLDCHG proof arms preserved. All changed libraries pass all-feature Cargo check; full legacy/native regeneration, pins, strict all-target checks and focused PostgreSQL are pending. No new qualification is claimed from compilation alone.
+
+
+### SRV9 all-target checkpoint
+
+All changed crates passed strict Clippy for all targets/features in266.089s. The all-feature library check passed185s including queued build time. Format check passed. Legacy regeneration is preserving the main corpse, cheese, consumable and ranged-source custody phases; native/tree generation, pins, focused PostgreSQL and final integration checks remain pending. No tracked qlane-meta/ or .qengine/ bookkeeping remains.

@@ -459,10 +459,10 @@ impl NpcTalkBook {
                     greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
                     greeting_reply,
                     farewell_reply,
-                    source_name_templates: bank || reference.key == "oteryn:npc.lynda" || matches!(
-                        reference.key.as_str(),
-                        YASIR | OROCKLE | DEEP_SEAS_GUARDIAN
-                    ) || dark_messages.is_some()
+                    source_name_templates: bank
+                        || reference.key == "oteryn:npc.lynda"
+                        || matches!(reference.key.as_str(), YASIR | OROCKLE | DEEP_SEAS_GUARDIAN)
+                        || dark_messages.is_some()
                         || isle_messages.is_some(),
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
