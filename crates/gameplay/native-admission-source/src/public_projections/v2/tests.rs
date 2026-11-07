@@ -200,3 +200,35 @@ fn v2_family_collection_limits_are_inclusive_and_never_truncated() {
     rows[0].ranks.pop();
     assert!(encode(AUTHORITY, &guild).is_ok());
 }
+
+#[test]
+fn extension_publication_flags_default_off_independently() {
+    for family in Family::ALL {
+        let expected = matches!(
+            family,
+            Family::CharacterDeaths | Family::Guild | Family::House
+        );
+        assert_eq!(family.enabled(Activation::default()), expected);
+    }
+    let enabled = Activation {
+        character_online_sessions: true,
+        ..Activation::default()
+    };
+    assert!(Family::CharacterOnlineSessions.enabled(enabled));
+    assert!(!Family::WorldDailyKills.enabled(enabled));
+}
+
+#[test]
+fn creature_wire_identity_cannot_use_reserved_analytics_buckets() {
+    for reserved in ["player", "unknown"] {
+        let (_, mut snapshot) = fixture("character_deaths_creature");
+        let Body::Deaths(rows) = &mut snapshot.body else {
+            panic!("deaths")
+        };
+        rows[0].killers[0] = Killer::Creature {
+            creature_key: reserved.into(),
+            name: "Dragon".into(),
+        };
+        assert!(encode(AUTHORITY, &snapshot).is_err());
+    }
+}

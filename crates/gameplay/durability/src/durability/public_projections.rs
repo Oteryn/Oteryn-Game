@@ -5,7 +5,9 @@
 //! Every read runs under the reconciled Character authority, so a restored or
 //! unreconciled store never publishes. Each call is one semantic transaction.
 
+pub mod daily_kills;
 pub mod house_catalogue;
+mod online_sessions;
 mod v2;
 mod world_totals;
 

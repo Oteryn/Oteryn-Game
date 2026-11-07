@@ -377,6 +377,7 @@ fn the_channel_order_is_due_then_actor_then_sequence() {
         },
         provenance: ConditionProvenance::<u32> {
             source: None,
+            historical_source: None,
             source_kind: ConditionSourceKind::SelfUse,
             definition_key: "cond.recovery".to_owned(),
             definition_revision: 1,

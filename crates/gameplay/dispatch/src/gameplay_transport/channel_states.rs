@@ -42,6 +42,7 @@ pub struct ChannelSessionStates {
     pub(super) gameplay_idle_presence: super::gameplay_idle_presence::GameplayIdlePresence,
     pub(super) grizzly_boss: super::grizzly_boss::GrizzlyBossSessions,
     /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.
+    pub(super) kill_source_owner: super::public_kill_statistics::ActivityKillSourceOwner,
     pub input_gate: std::sync::Arc<input_gate::InputGate>,
     pub(super) inspection_permissions: super::inspection::Permissions,
     /// CHAR-POSITION-1: the sessions whose last position this owner writes, and the write

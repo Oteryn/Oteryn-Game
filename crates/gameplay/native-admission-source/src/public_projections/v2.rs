@@ -1,4 +1,7 @@
 //! Owner-accepted G-4 V2 wire; V1 families and watermark remain closed.
+pub mod daily_kills;
+pub mod online_sessions;
+
 use super::*;
 use serde::{Deserialize, ser::SerializeMap};
 
@@ -8,14 +11,24 @@ pub enum Family {
     CharacterDeaths,
     Guild,
     House,
+    CharacterOnlineSessions,
+    WorldDailyKills,
 }
 impl Family {
-    pub const ALL: [Self; 3] = [Self::CharacterDeaths, Self::Guild, Self::House];
+    pub const ALL: [Self; 5] = [
+        Self::CharacterDeaths,
+        Self::Guild,
+        Self::House,
+        Self::CharacterOnlineSessions,
+        Self::WorldDailyKills,
+    ];
     pub const fn wire(self) -> &'static str {
         match self {
             Self::CharacterDeaths => "character_deaths",
             Self::Guild => "guild",
             Self::House => "house",
+            Self::CharacterOnlineSessions => "character_online_sessions",
+            Self::WorldDailyKills => "world_daily_kills",
         }
     }
     pub const fn operation(self) -> Operation {
@@ -23,6 +36,24 @@ impl Family {
             Self::CharacterDeaths => Operation::PublishCharacterDeathsV2,
             Self::Guild => Operation::PublishGuildV2,
             Self::House => Operation::PublishHouseV2,
+            Self::CharacterOnlineSessions => Operation::PublishCharacterOnlineSessionV2,
+            Self::WorldDailyKills => Operation::PublishWorldDailyKillsV2,
+        }
+    }
+}
+
+/// Publication flags are independent of durable source capture and retention.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Activation {
+    pub character_online_sessions: bool,
+    pub world_daily_kills: bool,
+}
+impl Family {
+    pub const fn enabled(self, activation: Activation) -> bool {
+        match self {
+            Self::CharacterDeaths | Self::Guild | Self::House => true,
+            Self::CharacterOnlineSessions => activation.character_online_sessions,
+            Self::WorldDailyKills => activation.world_daily_kills,
         }
     }
 }
@@ -38,7 +69,9 @@ impl Killer {
         match self {
             Self::Player { character_id, name } => id(character_id) && projection_name_valid(name),
             Self::Creature { creature_key, name } => {
-                key(creature_key) && projection_name_valid(name)
+                key(creature_key)
+                    && !matches!(creature_key.as_str(), "player" | "unknown")
+                    && projection_name_valid(name)
             }
         }
     }
@@ -137,6 +170,8 @@ pub enum Body {
     Deaths(Vec<Death>),
     Guild(Vec<Guild>),
     House(Vec<House>),
+    OnlineSessions(Vec<online_sessions::Session>),
+    DailyKills(Vec<daily_kills::Day>),
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Snapshot {
@@ -172,10 +207,21 @@ impl Snapshot {
             Body::Deaths(_) => Family::CharacterDeaths,
             Body::Guild(_) => Family::Guild,
             Body::House(_) => Family::House,
+            Body::OnlineSessions(_) => Family::CharacterOnlineSessions,
+            Body::DailyKills(_) => Family::WorldDailyKills,
         }
     }
     fn valid(&self) -> bool {
         match &self.body {
+            Body::DailyKills(rows) => {
+                id(&self.world_id)
+                    && daily_kills::valid(&self.subject, self.source_observed_at, rows)
+            }
+            Body::OnlineSessions(rows) => {
+                id(&self.subject)
+                    && id(&self.world_id)
+                    && online_sessions::valid(rows, self.source_observed_at)
+            }
             Body::Deaths(rows) => {
                 id(&self.subject)
                     && self.world_id.is_empty()
@@ -286,10 +332,20 @@ impl Serialize for Wire<'_> {
             Family::CharacterDeaths => "PublishCharacterDeathsV2",
             Family::Guild => "PublishGuildV2",
             Family::House => "PublishHouseV2",
+            Family::CharacterOnlineSessions => "PublishCharacterOnlineSessionV2",
+            Family::WorldDailyKills => "PublishWorldDailyKillsV2",
         };
         map.serialize_entry("operation", op)?;
         map.serialize_entry("source_authority", self.authority)?;
         match s.family() {
+            Family::WorldDailyKills => {
+                map.serialize_entry("world_id", &s.world_id)?;
+                map.serialize_entry("day_start", &s.subject)?;
+            }
+            Family::CharacterOnlineSessions => {
+                map.serialize_entry("character_id", &s.world_id)?;
+                map.serialize_entry("statistics_id", &s.subject)?;
+            }
             Family::CharacterDeaths => map.serialize_entry("character_id", &s.subject)?,
             Family::Guild => map.serialize_entry("guild_id", &s.subject)?,
             Family::House => {
@@ -304,6 +360,8 @@ impl Serialize for Wire<'_> {
             Body::Deaths(v) => map.serialize_entry("deaths", v)?,
             Body::Guild(v) => map.serialize_entry("guild", v)?,
             Body::House(v) => map.serialize_entry("house", v)?,
+            Body::OnlineSessions(v) => map.serialize_entry("sessions", v)?,
+            Body::DailyKills(v) => map.serialize_entry("days", v)?,
         }
         map.end()
     }
@@ -397,6 +455,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         let _ = join_all(
             Family::ALL
                 .into_iter()
+                .filter(|family| family.enabled(self.v2_activation))
                 .map(|family| self.v2_family_loop(family))
                 .collect(),
         )

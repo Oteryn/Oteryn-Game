@@ -111,6 +111,26 @@ The two previously red Guild/house PG cases now pass:2 passed,0 failed,0 ignored
 revision, explicit catalogue withdrawal, unknown-source freshness and operator
 resync were exercised. Other B validation and C/D implementation remain pending.
 
+### C and online-source integration checkpoint
+
+C and character_online_sessions are integrated into the V2 typed codec, durable
+reader, operator family allowlist and purpose-separated V2 ACK path. Their
+publication flags default false beneath the disabled master flag. Online source
+capture/retention remains active independently; a bounded32-row/1-second node
+maintenance loop purges source payloads even while publication is disabled.
+
+Server check passed (2m57s); native-source suite passed159 tests,0 failures,
+0 ignored (0.22s). C/online PG cases and complete changed-crate qualification
+remain pending. Resources10077–10082 cover C;10083–10086 cover online intervals.
+Migrations1353 and1354 are reserved/implemented;1355 and10087–10092 remain for
+physical-creature kill statistics. No additional command/capability ids exist.
+
+B now carries frozen native cause through canonical bounded condition lifetime,
+including source disappearance, with logout/restore scrubbing. Private primary
+killer_key supports future admin aggregation without exposing CharacterIds in
+that feed; player and unknown are reserved creature-key exclusions. This source
+change compiles, but its focused PG/source tests still require execution.
+
 ### B historical-window recovery checkpoint
 
 An indexed32-subject maintenance pass rechecks unavailable death snapshots only
@@ -118,3 +138,56 @@ after the actual source window changes; it cannot invent old PvE classification.
 Known/hidden subjects clear their pending deadline. Resource10093 is allocated.
 The production house metadata parser now has a995-record source-shape test.
 The combined server check passed (2m54s); the new expiry PG proof remains pending.
+
+### C compiling checkpoint
+
+World daily source capture, V2 wire, default-off publication flag and operator
+family are implemented under migration1353. Reset intervals derive from the
+persisted Europe/Berlin06:00 calendar, including23h/25h DST days; historical
+coverage and committed fixed-slot classification remain explicit. Resources
+10077–10082 are allocated. Server compilation and native golden tests pass;
+C PostgreSQL execution is pending after fixing test-only facade type imports.
+No activation or completed C qualification is claimed.
+
+### Owner routing decision 2026-11-07
+
+G-12 World daily is removed from PUBPROJ in 7a8a04358 and preserved in the separate owner-managed lane. Prior C notes are superseded. Migration 1353 and resource ids 10077–10082 remain free on this branch. D migrations 1354/1355 retain their numbers.
+
+### Statistics durability and lifecycle evidence
+
+Migration 1354 captures authoritative committed ONLINE transitions as durable,
+owner-only intervals with statistics_id. Deferred triggers observe final committed
+state. Unknown starts and unsafe clocks withhold coverage; crash/lease closure
+uses authoritative boundaries. Payload retention is 30 days; bounded maintenance
+runs independently of publication. Source metadata fences survive payload erasure.
+
+Migration 1355 records physical creature death occurrences, deduplicated across
+Channels before transactional aggregate/revision/outbox updates. Combat enqueues
+in memory; autonomous batches contain at most 256 occurrences and the buffer holds
+4096. Flush cadence is 1000 ms. Durable aggregates retain World, UTC day, creature
+content key and disjoint boss classification for later admin analytics; the public
+wire exposes only totals. Retention is 400 days after UTC day end.
+
+Shutdown drains listeners and source owners before closing the kill source.
+Instance retirement joins its local owners and flushes before unregistering native
+state. Final replay accepts only immutable already-recorded facts under current
+authority and preserves the original endpoint; new facts cannot reopen a clean
+source. Retained actor pruning is bounded to 32 actors per background pass.
+
+Player-death admin keys are a native creature content key, literal player for any
+player killer, or unknown for no attributable killer. The native creature loader
+rejects player and unknown, with a guard test for both. Public player-killer identity
+remains CharacterId under the existing PvP/privacy rules. No admin producer is added.
+
+Resource ordinals 10083–10086 cover online request bytes, retention, maintenance
+batch and cadence. Ordinals 10087–10092 cover kill request bytes, retention, batch,
+pending buffer, cadence and creature key bytes. No command/capability IDs are added.
+
+Donor evidence: Canary 99902524e052f37574194466c2949c576e4ab269,
+src/creatures/creature.cpp:579–600 provides one physical onDeath boundary;
+657–669 separately iterates credited killers. Credited-character multiplicity
+therefore cannot count physical deaths. Canary src/io/functions/iologindata_save_player.cpp:
+320,359–360 and Crystal ff7ede src/io/functions/iologindata_save_player.cpp:
+200–206,364–378 provide persisted login/logout evidence. Authoritative intervals,
+UTC buckets, retention, source gaps and reserved keys follow the owner-approved
+Platform statistics rev 2 contract rather than inferred donor behavior.

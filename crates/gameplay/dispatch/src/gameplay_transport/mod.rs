@@ -144,6 +144,7 @@ mod private_channel_world;
 mod proficiency_checkpoint;
 mod promotion_death;
 mod promotion_login;
+mod public_kill_statistics;
 mod pvp_death;
 mod pvp_expert;
 mod pvp_live;
