@@ -207,18 +207,16 @@ impl ActivityHandoffOwnerRuntime for Owner {
             Ok(())
         })
     }
-    fn return_participants(
+    async fn return_participants(
         &mut self,
         phase: EncounterPhase,
-    ) -> impl Future<Output = Result<(), SoulpitRuntimeError>> {
-        async move {
-            self.returns.push(phase);
-            if self.fail_return {
-                self.fail_return = false;
-                Err(SoulpitRuntimeError::AdapterUnavailable)
-            } else {
-                Ok(())
-            }
+    ) -> Result<(), SoulpitRuntimeError> {
+        self.returns.push(phase);
+        if self.fail_return {
+            self.fail_return = false;
+            Err(SoulpitRuntimeError::AdapterUnavailable)
+        } else {
+            Ok(())
         }
     }
 }

@@ -38,9 +38,9 @@ fn soulpit_shared_entry_debits_core_and_commits_real_instance_session_postgres()
             let h = Harness::create_with_admission_seed(admin, "soulpit_shared_entry", true, false)
                 .await?;
             super::reset();
-            let _evidence = prepare_source(&h).await?;
+            let evidence = prepare_source(&h).await?;
             let deps = Dependencies::new()?;
-            admit(&h, &deps).await?;
+            admit(&h, &deps, &evidence).await?;
             h.cleanup().await
         })
     })
@@ -62,9 +62,9 @@ fn soulpit_terminal_return_requires_checkpoint_and_interrupt_never_grants_master
                 Harness::create_with_admission_seed(admin, "soulpit_terminal_return", true, false)
                     .await?;
             super::reset();
-            let _evidence = prepare_source(&h).await?;
+            let evidence = prepare_source(&h).await?;
             let deps = Dependencies::new()?;
-            let admitted = admit(&h, &deps).await?;
+            let admitted = admit(&h, &deps, &evidence).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -183,7 +183,11 @@ pub(super) async fn prepare_source(
     Ok(evidence)
 }
 
-pub(super) async fn admit(h: &Harness, deps: &Dependencies) -> TestResult<AdmittedSoulpit> {
+pub(super) async fn admit(
+    h: &Harness,
+    deps: &Dependencies,
+    evidence: &super::house_transfer::RecoverySource,
+) -> TestResult<AdmittedSoulpit> {
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -419,14 +423,25 @@ pub(super) async fn admit(h: &Harness, deps: &Dependencies) -> TestResult<Admitt
     sqlx::query("DROP SEQUENCE soulpit_test_after_debit")
         .execute(&h.pool)
         .await?;
-    let receipt = match owner
-        .enter_soulpit(&authority, &h.node, &permit, group.clone(), &entry, native)
+    // Native entry refreshes and holds current Account evidence immediately
+    // before transfer. Content qualification above can outlive its five-second
+    // admission freshness window, so the durable fixture must do the same.
+    let account:String=sqlx::query_scalar("SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(source.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    let held = evidence
+        .evidence
+        .refresh_account_held(&h.root, &h.node, &account)
         .await
-        .map_err(|error| format!("Soulpit shared successful entry: {error:?}"))?
-    {
-        ActivityEnterOutcome::Entered(receipt) => receipt,
-        other => return Err(format!("shared Soulpit entry refused: {other:?}").into()),
-    };
+        .map_err(debug)?;
+    let entered = owner
+        .enter_soulpit(&authority, &h.node, &permit, group.clone(), &entry, native)
+        .await;
+    held.release().await.map_err(debug)?;
+    let receipt =
+        match entered.map_err(|error| format!("Soulpit shared successful entry: {error:?}"))? {
+            ActivityEnterOutcome::Entered(receipt) => receipt,
+            other => return Err(format!("shared Soulpit entry refused: {other:?}").into()),
+        };
     assert_eq!(receipt.handoff_id, entry.handoff_id);
     assert_eq!(entry_counts(h).await?, (1, 1, 1, 1));
     assert!(matches!(
