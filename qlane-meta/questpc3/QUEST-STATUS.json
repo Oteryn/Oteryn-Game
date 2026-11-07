@@ -20,7 +20,7 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Implement Santiago/Carlos/Zirella progression, native source occurrence conditions, physical leg/wood hand-ins and coupled rewards. Author all required bindings here. Deaths alone cannot substitute for physical hand-in."
+      "next_actions": "Initial Santiago greeting now source-bound with PG proof. Implement remaining tutorial dialogue/chest stages, physical three-leg hand-in plus 100 XP, health/food teaching and Zirella/Carlos operations through reusable native mechanisms."
     },
     {
       "canonical": "oteryn:quest.the_first_dragon_quest",
@@ -838,13 +838,14 @@
       }
     ],
     "current_batch": {
-      "id": "sum-guards-01",
-      "status": "PG and cargo check GREEN; publishing immediately under current owner instruction; Clippy still running",
+      "id": "beginning-greet-01",
+      "status": "PG, unit and cargo check GREEN; immediate publication with Clippy running under owner cadence",
       "entries": [
-        "oteryn:quest.threatened_dreams_quest"
+        "oteryn:quest.the_beginning_quest"
       ],
-      "mechanism": "Reusable bounded sum guard; atomic Maelyrra kill report through existing quest writer and NPC selector",
-      "whole_entry_qualifications": 0
+      "mechanism": "Native Santiago greeting and atomic source quest/greeting flags using existing common NPC executor",
+      "whole_entry_qualifications": 0,
+      "source": "Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/santiago.lua:63-73,250-251; SHA256 e83d14b26fb9e6bca12cd3ec50abe34daaeb56f2719b5a1dee3d8efc4402a1bd in retained corpus.tar.gz"
     },
     "effective_entries": [
       "oteryn:quest.the_beginning_quest",
@@ -1100,13 +1101,78 @@
           ]
         },
         "clippy": {
-          "status": "RUNNING",
+          "status": "GREEN",
           "log": "/tmp/questpc3-sum-clippy.log",
-          "command": "cargo clippy --locked -p oteryn-gameplay-quests -p oteryn-gameplay-dispatch --all-features --all-targets -- -D warnings"
+          "sha256": "84c66e967428e66a1618285f51c4c3f50efb6a5ec66d2819fdf23b718d58977b",
+          "evidence": [
+            "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7m 47s"
+          ]
         },
         "fmt": "cargo fmt --all and cargo fmt --all -- --check passed; auto-mounted test formatted explicitly with rustfmt --edition 2024",
         "invalid_red_attempts": "Connection refused before local PostgreSQL startup, then MissingProgressionState before fixture generation admission; neither counted as RED. Valid RED reached SQL after 69020ms and returned NotSupported rather than StageMismatch.",
-        "source": "Crystal npc/maelyrra.lua:94-100, blob SHA256 16acd67b566785af18a6a5cfce6d03a7a41a9f66717596774a3c309eca0eea88; retained tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz#/source_records/492 and content/dialogues/quests-2/threatened-dreams-source.json (201189f871d23597b82caf88fd611454a2ddefb8); OTS_HYPOTHESIS_ONLY"
+        "source": "Crystal npc/maelyrra.lua:94-100, blob SHA256 16acd67b566785af18a6a5cfce6d03a7a41a9f66717596774a3c309eca0eea88; retained tools/content-schema/quest-authoring/samples/donor-source/refinements/dialogue.json.gz#/source_records/492 and content/dialogues/quests-2/threatened-dreams-source.json (201189f871d23597b82caf88fd611454a2ddefb8); OTS_HYPOTHESIS_ONLY",
+        "core_regression": {
+          "status": "GREEN",
+          "log": "/tmp/questpc3-sum-core.log",
+          "sha256": "c5432e39623d708f4dc3caebe49c358704f74cf1d910baf020f4f8bd5fb3b1af",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.59s",
+            "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 249 filtered out; finished in 0.02s"
+          ]
+        },
+        "npc_regression": {
+          "status": "GREEN",
+          "log": "/tmp/questpc3-sum-npc-regression.log",
+          "sha256": "a96f340aa098a3d7c6fc2d900e5be1be63721d058d15b75be5ab29a0c68ac5fd",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 19s",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2550 filtered out; finished in 172.64s"
+          ]
+        }
+      },
+      "beginning_greet_01": {
+        "red": {
+          "log": "/tmp/questpc3-beginning-greet-red.log",
+          "sha256": "5bf159af34940e8e69507519a5f2481e87cfc7abac86036ec1d1f702421493f2",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 5m 34s",
+            "  left: NoConversation",
+            "QUEST_L4_BEGINNING POSTGRES_CASE_COMPLETED duration_ms=123336 success=false",
+            "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2551 filtered out; finished in 123.34s"
+          ]
+        },
+        "green": {
+          "log": "/tmp/questpc3-beginning-greet-green.log",
+          "sha256": "54c0a625dcf782efc58da62c4ab5cc85d5b13e0baee882eeb25d5007b575c044",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 27s",
+            "QUEST_L4_BEGINNING POSTGRES_ASSERTION_REACHED greeting_value=1",
+            "QUEST_L4_BEGINNING POSTGRES_CASE_COMPLETED duration_ms=115161 success=true",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2551 filtered out; finished in 115.16s"
+          ]
+        },
+        "unit": {
+          "log": "/tmp/questpc3-beginning-greet-units.log",
+          "sha256": "c093aa6ff27e8fcc37807ff1a7f6cc8aea7fd5bfcf33a74568fbeef49faa2bfa",
+          "evidence": [
+            "    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.30s",
+            "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 256 filtered out; finished in 1.07s"
+          ]
+        },
+        "cargo_check": {
+          "log": "/tmp/questpc3-beginning-greet-check.log",
+          "sha256": "09122be9cc97c421e1a39967cb101ae1d0337c243e63d3cc048d1f318af6cd23",
+          "evidence": [
+            "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 36.68s"
+          ]
+        },
+        "clippy": {
+          "status": "RUNNING",
+          "log": "/tmp/questpc3-beginning-greet-clippy.log",
+          "exec_session": 88774,
+          "command": "cargo clippy --locked -p oteryn-gameplay-quests -p oteryn-gameplay-npc -p oteryn-gameplay-dispatch --all-features --all-targets -- -D warnings"
+        },
+        "review": "Reviewed full owned diff: source NPC identity, native production route, current-context and session fencing, one atomic source write, repeat guard, source templates and catalogue revision; no value grant or fee in this slice. No schema or generated content inputs changed."
       }
     },
     "source_corrections": [
@@ -1129,11 +1195,26 @@
       "questpc7": "96b478e86678c7607a9a2154f72fe6c91d354188"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-06T23:56:27.865728+00:00",
+    "updated_at": "2026-11-07T00:18:36.032955+00:00",
     "previous_publication": {
       "batch": "native-counters-01",
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
       "remote_verified": true
-    }
+    },
+    "completed_batches": [
+      {
+        "id": "sum-guards-01",
+        "status": "PUBLISHED at 73a106fc5035885a844c81e8618900f80c028116; all selected verification completed",
+        "entries": [
+          "oteryn:quest.threatened_dreams_quest"
+        ],
+        "mechanism": "Reusable bounded sum guard; atomic Maelyrra kill report through existing quest writer and NPC selector",
+        "whole_entry_qualifications": 0,
+        "publication": {
+          "commit": "73a106fc5035885a844c81e8618900f80c028116",
+          "remote_verified": true
+        }
+      }
+    ]
   }
 }

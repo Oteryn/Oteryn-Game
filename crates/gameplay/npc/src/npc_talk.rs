@@ -22,6 +22,13 @@ const FAREWELLS: [&str; 3] = ["bye", "farewell", "goodbye"];
 /// Words that ask what the NPC offers.
 const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
+// Crystal 9f5a72c data-global/npc/santiago.lua:70,73,250-251;
+// SHA256 e83d14b26fb9e6bca12cd3ec50abe34daaeb56f2719b5a1dee3d8efc4402a1bd.
+pub const BEGINNING_GREETING: &str = "Hello |PLAYERNAME|, nice to see you on Rookgaard! I saw you walking by and wondered if you could help me. Could you? Please, say {yes}!";
+pub const BEGINNING_REPEAT_GREETING: &str = "Oh, |PLAYERNAME|, it's you again! It's probably impolite to disturb a busy adventurer like you, but I really need help. Please, say {yes}!";
+const BEGINNING_FAREWELL: &str = "Take care, |PLAYERNAME|!.";
+const BEGINNING_WALKAWAY: &str = "Good bye traveller, and enjoy your stay on Rookgaard.";
+
 fn literal_keyword(keyword: &crate::content::ProjectV2DialogueKeyword) -> bool {
     keyword.reply.len() == 1
         && keyword.children.is_empty()
@@ -155,12 +162,16 @@ impl NpcTalkBook {
     pub fn from_model(model: &NpcServiceModel) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "{}\0{}\0{}",
+                "{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::grizzly_shop::book_digest(
                     model.source_tree_digest()
                 ),
                 dark_trails::TEXT,
                 isle_of_evil::revision_material(),
+                BEGINNING_GREETING,
+                BEGINNING_REPEAT_GREETING,
+                BEGINNING_FAREWELL,
+                BEGINNING_WALKAWAY,
             )),
             ..Self::default()
         };
@@ -207,6 +218,13 @@ impl NpcTalkBook {
                     ),
                     "May your path lead to enlightenment.".into(),
                     Some("Ask me about your pilgrimage or progress on the Three-Fold Path.".into()),
+                    Vec::new(),
+                )
+            } else if reference.key == "oteryn:npc.santiago" {
+                (
+                    BEGINNING_GREETING.into(),
+                    BEGINNING_FAREWELL.into(),
+                    None,
                     Vec::new(),
                 )
             } else if let Some(greeting) = crate::quest_greetings::get(&reference.key)
@@ -331,9 +349,12 @@ impl NpcTalkBook {
                     greeting_reply,
                     farewell_reply,
                     source_name_templates: dark_messages.is_some()
+                        || reference.key == "oteryn:npc.santiago"
                         || isle_messages.is_some()
                         || rookgaard_exchange_messages(&reference.key).is_some(),
-                    source_walkaway: if dark_messages.is_some() {
+                    source_walkaway: if reference.key == "oteryn:npc.santiago" {
+                        Some(BEGINNING_WALKAWAY.into())
+                    } else if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
                     } else {
                         isle_messages.map(|messages| messages.walkaway).or_else(|| {
