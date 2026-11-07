@@ -1056,3 +1056,27 @@ snapshot withdrawal/paging/own-rank proof PASS5.514s. Real Reference-profile
 public observer proof uses actual Game capture/sign/custody and producer-created
 Character; source issuer floor+1 bootstrap is fixed, final rerun pending.
 No Platform E11 logic or immutable public projection body policy was changed.
+
+## W17 authentic production data dependency
+
+The pinned complete Crystal/Canary Git trees have no Creature profile paths for
+Murmillion, Scissorion, Hoodinion, Mearidion or Domestikion. The reference manual
+combat.md:268 defines their roles; :297 explicitly states that HP/damage and the
+wave difficulty curve are absent. Source Item/plushie/corpse names do not supply
+Creature combat profiles. Existing dispatch/tibiadrome.rs still selects admitted
+Svargrond practice profiles; entities/carrier/tibiadrome.rs labels the working
+scaling parameters. These are not presented as authentic Drome production data.
+Manual :276 likewise does not quantify stronger super-drunk intensity; only the
+source-normal steering parameter is represented. No substitute base stats,
+attack profile or scaling curve was invented for this lane.
+
+## W17 public-profile custody qualification checkpoint
+
+The genuine public-profile proof compiled successfully (245s build) and ran
+32.572s, but its real Game Bazaar lock returned `Unavailable`; it is not
+counted GREEN. Investigation preserves capture/signature/custody guards and
+the excluded Platform E11 native-artifact boundary. Current-standing coverage
+is being qualified through the supported fenced Reference consumer; already
+GREEN native encounter, movement, physical rewards and Highscores paging proofs
+remain unchanged. Migration1106 is pending qualification and is not yet claimed
+as a completed rotation-cut production rule.
