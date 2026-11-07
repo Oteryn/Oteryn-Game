@@ -356,10 +356,10 @@
     "final_pg_log": "/tmp/npcfix-evidence/refusal-final-paid-clock-pg.log"
   },
   "counts": {
-    "QUALIFIED": 208,
+    "QUALIFIED": 214,
     "PENDING": 8,
     "EXCLUDED": 24,
-    "AUTHORED; QUALIFICATION PENDING": 77,
+    "AUTHORED; QUALIFICATION PENDING": 71,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -1620,8 +1620,14 @@
       "audit_status": "MISSING",
       "work": "Retail placement authored. Add exact displayed identity.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/203; content/npcs/definitions/npcs-00500-00999.json:1#/records/240; content/dialogues/definitions/dialogues-00000-00499.json:1#/records/487",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical-conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-35",
+        "scope": "Retain all six frozen retail cells/floors and exact native display names. Add only seven pinned passive cell profiles; reuse existing trophy-stand872 unchanged through the existing source importer; all previous native records exactly identical. Strict collision, custody and canonical conflict guards unchanged.",
+        "postgres_red_seconds": 64.92,
+        "postgres_green_seconds": 136.69
+      }
     },
     {
       "npc": "Lizard Tunnel Guard",
@@ -2008,8 +2014,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/214",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical-conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-35",
+        "scope": "Retain all six frozen retail cells/floors and exact native display names. Add only seven pinned passive cell profiles; reuse existing trophy-stand872 unchanged through the existing source importer; all previous native records exactly identical. Strict collision, custody and canonical conflict guards unchanged.",
+        "postgres_red_seconds": 64.92,
+        "postgres_green_seconds": 136.69
+      }
     },
     {
       "npc": "Maryza",
@@ -2062,8 +2074,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/280",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical-conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-35",
+        "scope": "Retain all six frozen retail cells/floors and exact native display names. Add only seven pinned passive cell profiles; reuse existing trophy-stand872 unchanged through the existing source importer; all previous native records exactly identical. Strict collision, custody and canonical conflict guards unchanged.",
+        "postgres_red_seconds": 64.92,
+        "postgres_green_seconds": 136.69
+      }
     },
     {
       "npc": "Pydar",
@@ -2346,8 +2364,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/276",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical-conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-35",
+        "scope": "Retain all six frozen retail cells/floors and exact native display names. Add only seven pinned passive cell profiles; reuse existing trophy-stand872 unchanged through the existing source importer; all previous native records exactly identical. Strict collision, custody and canonical conflict guards unchanged.",
+        "postgres_red_seconds": 64.92,
+        "postgres_green_seconds": 136.69
+      }
     },
     {
       "npc": "Amra",
@@ -3182,8 +3206,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/198",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical-conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-35",
+        "scope": "Retain all six frozen retail cells/floors and exact native display names. Add only seven pinned passive cell profiles; reuse existing trophy-stand872 unchanged through the existing source importer; all previous native records exactly identical. Strict collision, custody and canonical conflict guards unchanged.",
+        "postgres_red_seconds": 64.92,
+        "postgres_green_seconds": 136.69
+      }
     },
     {
       "npc": "WOX",
@@ -4621,8 +4651,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/201",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical-conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-35",
+        "scope": "Retain all six frozen retail cells/floors and exact native display names. Add only seven pinned passive cell profiles; reuse existing trophy-stand872 unchanged through the existing source importer; all previous native records exactly identical. Strict collision, custody and canonical conflict guards unchanged.",
+        "postgres_red_seconds": 64.92,
+        "postgres_green_seconds": 136.69
+      }
     },
     {
       "npc": "Maris",
@@ -6714,6 +6750,75 @@
       "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at c918fc759804e081dbf1c0174247e5598e7426ef; details in verification_components.latest_checked_source. Source identity checked before each slice",
       "test_code_commit": "c918fc759804e081dbf1c0174247e5598e7426ef",
       "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+    },
+    {
+      "name": "reviewed-passive-cells-35",
+      "state": "QUALIFIED",
+      "entries": [
+        "Lieutenant Harlan",
+        "Lisander",
+        "Lizard Prisoner",
+        "Malech",
+        "Polly",
+        "Pukosch"
+      ],
+      "scope": "Retain all six frozen retail cells/floors and exact native display names. Add only seven pinned passive cell profiles; reuse existing trophy-stand872 unchanged through the existing source importer; all previous native records exactly identical. Strict collision, custody and canonical conflict guards unchanged.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 64.92,
+        "log": "/tmp/npcfix-evidence/passive-seven-red.log",
+        "sha256": "a673f008697c82e52b9d8968cb05dcb47b9f46310bd1f3e6d7cce39e2d5ee185"
+      },
+      "spawn_collision_red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 59.58,
+        "log": "/tmp/npcfix-evidence/spawn-anchor-pg-red.log",
+        "sha256": "a3f54613d80191cbc06b0090db2653e1f1183d56962b515960ae17e9032adf49"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 136.69,
+        "log": "/tmp/npcfix-evidence/passive-seven-green.log",
+        "sha256": "d36fba02c88652c0125f8f706fbc2bcafaaa67cc1fa53fcadc2c5082ea87e621",
+        "cumulative_npcs": 201,
+        "cumulative_actors": 202
+      },
+      "spawn_repair": "Generic exact-before ordinary-source adjustment; retain Malech32605,31939,10 and captured source file. Bat moves one tile within original source area to32604,31940,10 with identity/facing/90000ms delay unchanged. All admission guards unchanged;5 focused units including both actual compiled actors PASS. Input fingerprint includes both authored source files.",
+      "native_provider": {
+        "existing872": "Original full native profile reused unchanged; attempted duplicate correctly rejected QENGINE_REWARD_ITEM_NATIVE_CONFLICT:oteryn:item.tibia.i872; passive-eight-native-generation.log retained.",
+        "profiles": {
+          "source_commit": "ad0e22dabcc55f2978bfb8f629802c98b10e18a2",
+          "existing_records": 3620,
+          "preserved_exactly": true,
+          "added_keys": [
+            "oteryn:item.tibia.i1063",
+            "oteryn:item.tibia.i1857",
+            "oteryn:item.tibia.i21935",
+            "oteryn:item.tibia.i2362",
+            "oteryn:item.tibia.i4795",
+            "oteryn:item.tibia.i6383",
+            "oteryn:item.tibia.i9823"
+          ],
+          "xml_source": "imports/canary/items-xml/items.xml:3007,3284,3880,4698,14040,26130,17643,43330",
+          "xml_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+          "compiler_source_equivalence": "World compiler/content/world-bundle Rust unchanged from retained release compiler."
+        },
+        "native_reproduction": "42 files generated and independently reproduced",
+        "tests": "9 profile/canonical-conflict tests PASS",
+        "log": "/tmp/npcfix-evidence/passive-seven-profile-units.log"
+      },
+      "world_pin": {
+        "inputs_digest": "e81baf2076b12ed12388a3fc127ce1880f780dcc40f975fb2de00dd7417e8445",
+        "pins": [
+          {
+            "bytes": 31812443,
+            "digest": "7fdc33df359df33a62b523bdbf84642289465c1dedfd646003f698453f864626",
+            "world": "oteryn"
+          }
+        ]
+      },
+      "source_proof": "imports/canary/items-xml/items.xml:3007,3284,3880,4698,14040,26130,17643,43330 sha2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2; appearances2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2. Frozen retail-placement packet SHA recorded in case manifest.",
+      "checks": "fmt PASS; changed world compiler all-target/all-feature check and strict Clippy -D warnings PASS. Release compiler rebuilt; independent refreshed pin-check PASS. Freshly rebuilt dispatch physical test runs against the combined compiler source; own dispatch Rust unchanged, prior scoped checks retained. Seven native profiles generated/reproduced42,9 canonical guards passed and all3620 prior native records identical including872."
     }
   ],
   "shared_engine_lookup": {
@@ -7140,34 +7245,75 @@
       "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
     }
   },
-  "next_batch": "Continue remaining owned entries immediately; preserve all cumulative PG cases. No final turn until all owned scope qualified and pushed.",
+  "next_batch": "Push immediately, refresh parity/source certificate, continue all remaining owned NPCs in small green batches. Preserve concurrent Ahmet fluid work and all existing actor/quest proofs.",
   "active_batch": {
-    "name": "retail-population-qualification-34",
+    "name": "reviewed-passive-cells-35",
     "state": "QUALIFIED",
     "entries": [
-      "Omar",
-      "Georgia Rainbird",
-      "Emilie",
-      "Gaberiel",
-      "Paulette",
-      "Captain Fearless"
+      "Lieutenant Harlan",
+      "Lisander",
+      "Lizard Prisoner",
+      "Malech",
+      "Polly",
+      "Pukosch"
     ],
-    "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
+    "scope": "Retain all six frozen retail cells/floors and exact native display names. Add only seven pinned passive cell profiles; reuse existing trophy-stand872 unchanged through the existing source importer; all previous native records exactly identical. Strict collision, custody and canonical conflict guards unchanged.",
     "red": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 52.26,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-34-red.log",
-      "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      "seconds": 64.92,
+      "log": "/tmp/npcfix-evidence/passive-seven-red.log",
+      "sha256": "a673f008697c82e52b9d8968cb05dcb47b9f46310bd1f3e6d7cce39e2d5ee185"
+    },
+    "spawn_collision_red": {
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "seconds": 59.58,
+      "log": "/tmp/npcfix-evidence/spawn-anchor-pg-red.log",
+      "sha256": "a3f54613d80191cbc06b0090db2653e1f1183d56962b515960ae17e9032adf49"
     },
     "green": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 124.05,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-34-green.log",
-      "cumulative_cases": 195
+      "seconds": 136.69,
+      "log": "/tmp/npcfix-evidence/passive-seven-green.log",
+      "sha256": "d36fba02c88652c0125f8f706fbc2bcafaaa67cc1fa53fcadc2c5082ea87e621",
+      "cumulative_npcs": 201,
+      "cumulative_actors": 202
     },
-    "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at c918fc759804e081dbf1c0174247e5598e7426ef; details in verification_components.latest_checked_source. Source identity checked before each slice",
-    "test_code_commit": "c918fc759804e081dbf1c0174247e5598e7426ef",
-    "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+    "spawn_repair": "Generic exact-before ordinary-source adjustment; retain Malech32605,31939,10 and captured source file. Bat moves one tile within original source area to32604,31940,10 with identity/facing/90000ms delay unchanged. All admission guards unchanged;5 focused units including both actual compiled actors PASS. Input fingerprint includes both authored source files.",
+    "native_provider": {
+      "existing872": "Original full native profile reused unchanged; attempted duplicate correctly rejected QENGINE_REWARD_ITEM_NATIVE_CONFLICT:oteryn:item.tibia.i872; passive-eight-native-generation.log retained.",
+      "profiles": {
+        "source_commit": "ad0e22dabcc55f2978bfb8f629802c98b10e18a2",
+        "existing_records": 3620,
+        "preserved_exactly": true,
+        "added_keys": [
+          "oteryn:item.tibia.i1063",
+          "oteryn:item.tibia.i1857",
+          "oteryn:item.tibia.i21935",
+          "oteryn:item.tibia.i2362",
+          "oteryn:item.tibia.i4795",
+          "oteryn:item.tibia.i6383",
+          "oteryn:item.tibia.i9823"
+        ],
+        "xml_source": "imports/canary/items-xml/items.xml:3007,3284,3880,4698,14040,26130,17643,43330",
+        "xml_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "compiler_source_equivalence": "World compiler/content/world-bundle Rust unchanged from retained release compiler."
+      },
+      "native_reproduction": "42 files generated and independently reproduced",
+      "tests": "9 profile/canonical-conflict tests PASS",
+      "log": "/tmp/npcfix-evidence/passive-seven-profile-units.log"
+    },
+    "world_pin": {
+      "inputs_digest": "e81baf2076b12ed12388a3fc127ce1880f780dcc40f975fb2de00dd7417e8445",
+      "pins": [
+        {
+          "bytes": 31812443,
+          "digest": "7fdc33df359df33a62b523bdbf84642289465c1dedfd646003f698453f864626",
+          "world": "oteryn"
+        }
+      ]
+    },
+    "source_proof": "imports/canary/items-xml/items.xml:3007,3284,3880,4698,14040,26130,17643,43330 sha2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2; appearances2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2. Frozen retail-placement packet SHA recorded in case manifest.",
+    "checks": "fmt PASS; changed world compiler all-target/all-feature check and strict Clippy -D warnings PASS. Release compiler rebuilt; independent refreshed pin-check PASS. Freshly rebuilt dispatch physical test runs against the combined compiler source; own dispatch Rust unchanged, prior scoped checks retained. Seven native profiles generated/reproduced42,9 canonical guards passed and all3620 prior native records identical including872."
   },
   "owner_constraints": {
     "excluded": [

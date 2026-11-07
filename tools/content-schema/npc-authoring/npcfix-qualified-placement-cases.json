@@ -2267,6 +2267,97 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "reviewed-passive-cells-35",
+      "before_commit": "ad0e22dabcc55f2978bfb8f629802c98b10e18a2",
+      "source": "tools/content-schema/npc-authoring/samples/npcfix-retail-placements.json:sha256:3aba747ac833bce3801b0f2a266eb56376590bcd746e7304848e74cb99eebdcd; reviewed pinned XML/appearance passive cell profiles1063,1857,2362,4795,6383,9823,21935; reuse existing872 exactly; all NPC coordinates preserved.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.lieutenant_harlan",
+          "name": "Lieutenant Harlan",
+          "expected": {
+            "x": 33850,
+            "y": 32193,
+            "floor": -6
+          },
+          "before": {
+            "x": 33850,
+            "y": 32193,
+            "floor": -6
+          }
+        },
+        {
+          "npc": "oteryn:npc.lisander",
+          "name": "Lisander",
+          "expected": {
+            "x": 32815,
+            "y": 31246,
+            "floor": -7
+          },
+          "before": {
+            "x": 32815,
+            "y": 31246,
+            "floor": -7
+          }
+        },
+        {
+          "npc": "oteryn:npc.lizard_prisoner",
+          "name": "Lizard Prisoner",
+          "expected": {
+            "x": 33261,
+            "y": 31159,
+            "floor": -7
+          },
+          "before": {
+            "x": 33261,
+            "y": 31159,
+            "floor": -7
+          }
+        },
+        {
+          "npc": "oteryn:npc.malech",
+          "name": "Malech",
+          "expected": {
+            "x": 32605,
+            "y": 31939,
+            "floor": -10
+          },
+          "before": {
+            "x": 32605,
+            "y": 31939,
+            "floor": -10
+          }
+        },
+        {
+          "npc": "oteryn:npc.polly",
+          "name": "Polly",
+          "expected": {
+            "x": 32116,
+            "y": 32968,
+            "floor": -11
+          },
+          "before": {
+            "x": 32116,
+            "y": 32968,
+            "floor": -11
+          }
+        },
+        {
+          "npc": "oteryn:npc.pukosch",
+          "name": "Pukosch",
+          "expected": {
+            "x": 32551,
+            "y": 31930,
+            "floor": -7
+          },
+          "before": {
+            "x": 32551,
+            "y": 31930,
+            "floor": -7
+          }
+        }
+      ]
     }
   ]
 }

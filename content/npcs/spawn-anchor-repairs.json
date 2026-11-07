@@ -1,0 +1,36 @@
+{
+  "schema": "OTERYN_NPC_SPAWN_ANCHOR_REPAIRS/v1",
+  "coordinate_frame": "global-target-2026-09-27",
+  "provenance": {
+    "reason": "Retail stationary Malech retains32605,31939,10. The captured ordinary bat shares that cell; author its adjacent32604,31940,10 anchor inside the original one-tile source area. No captured file, creature identity, facing, delay or admission guard changes. This is a first-party compatibility correction, not a claim that the donor used the new cell.",
+    "captured_source": "content/world/spawns/spawns-32000-33999.json:1#/records/900",
+    "captured_sha256": "72b523bbc7e4cbaaddfd5482841969211e291ddc1965f7bf17f53bee45e8cc49",
+    "npc_source": "tools/content-schema/npc-authoring/samples/npcfix-retail-placements.json:2517; BR Wiki Malech frozen revision retained there."
+  },
+  "repairs": [
+    {
+      "source": "oteryn:spawn.x32604_y31939_z10",
+      "npc": "oteryn:npc.malech",
+      "centre": {
+        "x": 32604,
+        "y": 31939,
+        "floor": 10
+      },
+      "before": {
+        "creature": "oteryn:creature.bat",
+        "cell": {
+          "x": 32605,
+          "y": 31939,
+          "floor": 10
+        },
+        "direction": "north",
+        "respawn_ms": 90000
+      },
+      "after": {
+        "x": 32604,
+        "y": 31940,
+        "floor": 10
+      }
+    }
+  ]
+}

@@ -167,6 +167,8 @@ const INPUT_PATHS: &[&str] = &[
     "content/creatures/definitions/",
     "content/items/definitions/",
     "content/npcs/definitions/",
+    "content/npcs/authored-ground-cells.json",
+    "content/npcs/spawn-anchor-repairs.json",
     "content/dialogues/definitions/",
     "content/services/",
     "tools/world-bundle-compiler/",

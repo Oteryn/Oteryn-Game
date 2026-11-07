@@ -11,6 +11,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 mod authored_cells;
+mod spawn_repairs;
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
@@ -187,6 +188,7 @@ fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Proj
         families.add_spawns(&shard)?;
     }
     add_npc_families(root, &mut families)?;
+    spawn_repairs::apply(root, &mut families)?;
     families.subareas = compile::subareas::Source::load(root)?;
     Ok(Project {
         index,
