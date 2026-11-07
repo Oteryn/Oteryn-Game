@@ -262,3 +262,15 @@ The diff review traced source tagging, every corpse-admission branch, transient
 ACK ordering, actor identity/replay, participant bounds and transaction lock
 order. Title qualification remains tied to each title's native integration
 proof; this shared slice changes no additional WORLDCHG-Q status rows.
+
+## Essence price policy correction
+
+The focused test reproduced the placeholder currency mismatch: slot zero
+returned `(3043,1)` instead of `(11666,2)`
+(`/tmp/wevents-cost-red.log`). The five slots now require 2/5/8/12/16 tentacle
+pieces, with retained-recipe and pinned-wiki citations in CONTRACT-NOTES.md.
+The focused test passed **1 test**, strict clippy passed for the changed library
+and test target, and the crate's `fmt --check` passed. Logs are
+`/tmp/wevents-price-{clippy,test,fmt}.log`. The price policy publishes no new
+event selector; its payment and encounter path receives separate title-level
+PostgreSQL verification. No qualification status changes in this slice.

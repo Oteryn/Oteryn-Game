@@ -74,3 +74,18 @@ most one robbery per day. Insectoid restoration uses three shared fires and a
 bucket holding at most three units; each successful extinguish spends one
 unit atomically. Reset creates a new cycle. These are model rules, not claims
 that the six remaining titles have completed native qualification.
+
+## Devovorga's Essence price tiers
+
+The retained recipe identifies Tentacle Piece `oteryn:item.tibia.i11666`,
+Anmothra's two-piece offering and the selectable 2/5/8/12/16 tier counts:
+`content/quests/definitions/quests-00200-00299.json:1`, SHA256
+`422ff275d4b416d2a77acf960bf61fb88ae68b044ca738b45198b1ac9d803a8b`.
+It cites the pinned article
+https://tibia.fandom.com/index.php?curid=76216&oldid=845419
+(body SHA256 `4f0767fb999b622c67eaef1d49a978c8a7502d122504176c51c71b3fd59d033e`)
+and spoiler
+https://tibia.fandom.com/index.php?curid=76217&oldid=944253
+(body SHA256 `0e5d9ea11a467ee2aed7b1baf384992f9f76253729affa594d07973372388cd0`).
+The engine's five incarnation slots use those counts and that item. Spring's
+independently authored merchant price remains one crystal coin.

@@ -46,14 +46,16 @@ impl Binding {
     pub fn level_admitted(&self, level: u32) -> bool {
         level >= self.minimum_level && self.maximum_level.is_none_or(|max| level <= max)
     }
-    /// Authored fallback price. A paid caller must debit this exact source item
+    /// Source-bound price tier. A paid caller must debit this exact source item
     /// in the same Quest transaction before invoking the World transition.
     pub fn cost(&self) -> Option<(u32, u16)> {
-        matches!(
-            (self.event, self.action),
-            (EventKind::DevovorgasEssence, Input::Enter(_))
-                | (EventKind::SpringIntoLife, Input::Observe)
-        )
-        .then_some((3043, 1))
+        match (self.event, self.action) {
+            (EventKind::DevovorgasEssence, Input::Enter(member)) => [2, 5, 8, 12, 16]
+                .get(usize::from(member))
+                .copied()
+                .map(|count| (11666, count)),
+            (EventKind::SpringIntoLife, Input::Observe) => Some((3043, 1)),
+            _ => None,
+        }
     }
 }
