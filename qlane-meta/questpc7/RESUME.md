@@ -1,3 +1,23 @@
+# World wardrobe PG checkpoint — 2026-11-07
+
+Actual PG18.6 RED41.719s observed a committed wardrobe USE with zero grants.
+Initial GREEN43.659s; expanded GREEN42.659s also checks generic-writer
+bypass refusal and missing-native refusal with no quest/appearance effects.
+WORLD-OUTFIT-PG-PROOF.json records the fixture boundary and exact logs.
+The negative fixture's held SpellLanePermit was released before its transport USE.
+
+Shared owner reuse follows qengine2's world grant transaction pattern, preserves
+this branch's read-only hoist/asymmetric gates, and admits only outfit effects.
+The retained Warmaster wardrobe's prior mission is a fenced fixture fact, not
+a qualification or ownership claim. No whole quest closes;21 ACTIVE remain.
+
+15 reward authoring and16 batch4 tests pass; repo generation/check passes.
+Product source remains uncommitted while final changed-crate checks, focused
+hoist PG, content/world tests and pins run. This evidence checkpoint is pushed
+to retain the executed proof within the owner's30-minute publication cadence.
+After all checks pass, commit and immediately push the complete product slice.
+Then finish the selected Formal Dress/Hunter routes; no ownership questions.
+
 # Native reward eligibility fully GREEN — 2026-11-07
 
 The shared eligibility slice is complete and ready for immediate push.

@@ -1,0 +1,39 @@
+{
+  "status": "PG GREEN; final source/content/pin checks in progress; no whole quest qualified",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "seconds": 41.719169904,
+    "log": "/tmp/questpc7-world-outfit-red.log",
+    "assertion": "Committed real world USE lacked its compatible outfit grant (actual0, expected1)"
+  },
+  "initial_green": {
+    "seconds": 43.658567297,
+    "log": "/tmp/questpc7-world-outfit-green.log"
+  },
+  "green": {
+    "seconds": 42.659470583,
+    "log": "/tmp/questpc7-world-outfit-final-green.log",
+    "checks": [
+      "generic writer cannot bypass the world participant",
+      "missing admitted native generation refuses without progress or grant",
+      "real native-map wardrobe USE grants one compatible base",
+      "exact command replay returns its receipt without another grant"
+    ]
+  },
+  "fixture_boundary": "The retained Warmaster wardrobe exercises the shared engine. Its independently owned prior mission is arranged through a fenced fixture transition. This does not qualify that quest or any questpc7 whole entry.",
+  "authoring_checks": [
+    "15 qengine reward tests PASS",
+    "16 batch4 tests PASS",
+    "qengine repository generation/check PASS"
+  ],
+  "remaining_checks": [
+    "retained three-floor read-only hoist PG",
+    "world callback Rust units",
+    "strict changed-crate Clippy",
+    "explicit Cargo check",
+    "required content/world tests",
+    "repository pin refresh/check",
+    "fmt"
+  ],
+  "fixture_repair": "Added negative test initially held its SpellLanePermit across the subsequent transport USE, producing a10-second timeout/no-command-result after52.896s. Releasing the permit before transport fixes the fixture; product grant code unchanged."
+}

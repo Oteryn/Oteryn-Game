@@ -101,3 +101,9 @@
   an explicit native adaptation, not a claim of an unknown original numeric ID.
 
 - Exact canonical parent source: content/quests/definitions/quests-00300-00351.json:1#/records/15/definition SHA2564a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a. Parent completion is a read-only prerequisite, and its fenced fixture precondition does not qualify that other-lane quest.
+
+## World wardrobe adapter — 2026-11-07
+
+Reuse qengine2's fenced world-outfit transaction pattern (origin/claude/happy-davinci-ijz3wy-qengine2 at412fba411), without replacing this lane's read-only hoist/remote selector or asymmetric passage rules. Only the outfit participant is admitted here; unrelated portal/encounter effects are not implicitly enabled. The retained shared wardrobe producer emits an explicit top-level outfit_reward. The regression uses the retained Warmaster wardrobe and a fenced fixture of its independently owned prior mission; it does not qualify or claim that other quest.
+
+Formal Dress fact budget is closed: Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data-global/scripts/quests/25_years_of _tibia_quest/lord_retro_death.lua:3-10 (sha256019afff6aac0e7ad9bd6e53edfb60ecf79094ab5a8393594238ac37c5ae78545) grants base looks1460/1461 from Lord Retro; usable_outfit_items.lua:51-52 (sha25669b5b133b329a76628dcd678f13d86bc3e5bd97902dc79998340c886e860af37) grants plume addon1 and button addon2. The selected quest instead explicitly calls for an exhibition display. Its display is an authored Oteryn adaptation of that selected recipe, not a claimed donor display location. Preserve existing consumptive item owners and their exact source grants.
