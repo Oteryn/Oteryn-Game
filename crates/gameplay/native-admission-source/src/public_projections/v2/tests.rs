@@ -1,0 +1,146 @@
+use super::*;
+const AUTHORITY: &str = "oteryn:game:primary";
+const FIXTURES: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../../docs/contracts/fixtures/public-projections/"
+);
+fn fixture(name: &str) -> (String, Snapshot) {
+    let wire = std::fs::read_to_string(format!("{FIXTURES}{name}_v2.json")).unwrap();
+    let value: serde_json::Value = serde_json::from_str(&wire).unwrap();
+    let (subject, world_id, body) = if let Some(id) = value.get("character_id") {
+        (
+            id.as_str().unwrap().to_owned(),
+            String::new(),
+            Body::Deaths(serde_json::from_value(value["deaths"].clone()).unwrap()),
+        )
+    } else if let Some(id) = value.get("guild_id") {
+        (
+            id.as_str().unwrap().to_owned(),
+            String::new(),
+            Body::Guild(serde_json::from_value(value["guild"].clone()).unwrap()),
+        )
+    } else {
+        (
+            value["house_key"].as_str().unwrap().to_owned(),
+            value["world_id"].as_str().unwrap().to_owned(),
+            Body::House(serde_json::from_value(value["house"].clone()).unwrap()),
+        )
+    };
+    (
+        wire,
+        Snapshot {
+            subject,
+            world_id,
+            projection_epoch: 1,
+            projection_revision: 3,
+            source_observed_at: 1790000000,
+            body,
+        },
+    )
+}
+#[test]
+fn v2_family_wire_matches_generated_goldens() {
+    for name in [
+        "character_deaths_player",
+        "character_deaths_creature",
+        "character_deaths_pvp_hidden",
+        "guild",
+        "house_vacant",
+        "house_auction",
+        "house_owned",
+        "house_move_out_pending",
+        "house_unavailable",
+    ] {
+        let (wire, snapshot) = fixture(name);
+        assert_eq!(encode(AUTHORITY, &snapshot).unwrap(), wire, "{name}");
+        assert!(
+            snapshot
+                .family()
+                .operation()
+                .path()
+                .starts_with("/internal/v2/game-public/")
+        );
+    }
+}
+#[test]
+fn stable_killer_identity_player_creature_and_pvp_hidden() {
+    let (_, player) = fixture("character_deaths_player");
+    let Body::Deaths(rows) = player.body else {
+        panic!("deaths")
+    };
+    assert!(
+        matches!(&rows[0].killers[0],Killer::Player {character_id,name} if character_id.ends_with("4402") && name=="Beren")
+    );
+    let (_, creature) = fixture("character_deaths_creature");
+    let Body::Deaths(rows) = creature.body else {
+        panic!("deaths")
+    };
+    assert!(
+        matches!(&rows[0].killers[0],Killer::Creature {creature_key,name} if creature_key=="oteryn:monster.dragon" && name=="Dragon")
+    );
+    let (_, hidden) = fixture("character_deaths_pvp_hidden");
+    let Body::Deaths(rows) = hidden.body else {
+        panic!("deaths")
+    };
+    assert!(rows[0].pvp);
+    assert!(rows[0].killers.is_empty());
+}
+#[test]
+fn v2_deaths_refuse_invalid_identity_order_and_over_bound_without_truncation() {
+    let (_, mut s) = fixture("character_deaths_player");
+    let Body::Deaths(rows) = &mut s.body else {
+        panic!("deaths")
+    };
+    rows[0].killers = vec![rows[0].killers[0].clone(); 17];
+    assert!(encode(AUTHORITY, &s).is_err());
+    let (_, mut s) = fixture("character_deaths_player");
+    let Body::Deaths(rows) = &mut s.body else {
+        panic!("deaths")
+    };
+    rows.push(rows[0].clone());
+    assert!(encode(AUTHORITY, &s).is_err());
+    let (_, mut s) = fixture("character_deaths_creature");
+    let Body::Deaths(rows) = &mut s.body else {
+        panic!("deaths")
+    };
+    rows[0].killers[0] = Killer::Creature {
+        creature_key: "Dragon".into(),
+        name: "Dragon".into(),
+    };
+    assert!(encode(AUTHORITY, &s).is_err());
+}
+#[test]
+fn v2_guild_requires_stable_unique_members_and_existing_rank() {
+    let (_, mut s) = fixture("guild");
+    let Body::Guild(rows) = &mut s.body else {
+        panic!("guild")
+    };
+    rows[0].members[0].rank_level = 4;
+    assert!(encode(AUTHORITY, &s).is_err());
+    let (_, mut s) = fixture("guild");
+    let Body::Guild(rows) = &mut s.body else {
+        panic!("guild")
+    };
+    let duplicate = rows[0].members[0].clone();
+    rows[0].members.push(duplicate);
+    assert!(encode(AUTHORITY, &s).is_err());
+}
+#[test]
+fn v2_ack_is_version_bound_and_never_accepts_http_status_alone() {
+    assert_eq!(
+        decode_response(br#"{"contract_version":2,"result":"accepted"}"#).unwrap(),
+        Delivery::Accepted
+    );
+    assert_eq!(
+        decode_response(br#"{"contract_version":2,"result":"superseded"}"#).unwrap(),
+        Delivery::Superseded
+    );
+    for raw in [
+        br#"{"contract_version":1,"result":"accepted"}"#.as_slice(),
+        br#"{}"#,
+        br#"{"contract_version":2,"result":"accepted","extra":0}"#,
+        br#"{"contract_version":2,"contract_version":2,"result":"accepted"}"#,
+    ] {
+        assert!(decode_response(raw).is_err());
+    }
+}

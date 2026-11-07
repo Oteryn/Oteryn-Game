@@ -31,3 +31,20 @@ identity: player CharacterId and native creature content key, historical names
 for display only. This amendment must preserve §7 privacy and requires durable
 cause capture before a creature identity can be emitted. Producers, acceptance
 text, fixtures and execution evidence are still pending in this checkpoint.
+
+### V2 wire checkpoint
+
+The owner acceptance is recorded in the V1 status line and the separate V2
+profile. V2 has typed player/creature killer identities, stable guild member
+ids, and exact house status variants. The fixture generator is
+`tools/contracts/generate_public_projection_fixtures.py`; it emits nine byte
+fixtures. Five focused wire tests passed (build 14.58s, tests <0.01s).
+V2 acknowledgements are version-bound; the closed V1 watermark stays unchanged.
+
+This checkpoint compiles, but B is not complete: the durable store methods,
+source capture migrations, PostgreSQL cases and resource-limit registration
+are pending. The production store defaults to unavailable for the V2 methods,
+so it cannot publish fabricated facts before those source paths are installed.
+Recent historical receipts without immutable classification must withhold
+freshness, rather than become guessed PvE or a known empty death history.
+C and D implementation has not started.
