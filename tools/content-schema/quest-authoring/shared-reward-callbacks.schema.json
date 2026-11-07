@@ -351,6 +351,11 @@
         "completes": {
           "type": "boolean",
           "default": false
+        },
+        "minimum_level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
         }
       }
     },

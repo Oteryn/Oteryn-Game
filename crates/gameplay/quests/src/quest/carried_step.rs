@@ -142,6 +142,8 @@ pub fn recipe(key: &str) -> Option<&'static Recipe> {
 
 pub(super) fn callbacks() -> impl Iterator<Item = Callback> {
     RECIPES.iter().map(|recipe| Callback {
+        actor_kind: Default::default(),
+        world_requirements: Vec::new(),
         key: recipe.key.into(), quest: "oteryn:quest.the_ancient_tombs_quest".into(),
         trigger: Trigger::StepIn,
         selector: Selector { position: None, unique: Some(recipe.unique), action: None, appearance: None },

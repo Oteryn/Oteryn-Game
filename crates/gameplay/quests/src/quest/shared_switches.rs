@@ -37,10 +37,10 @@ pub fn recipe(key: &str) -> Option<&'static Recipe> {
 }
 pub(super) fn callbacks() -> impl Iterator<Item = Callback> {
     RECIPES.iter().map(|r| Callback {
-        key:r.key.into(),quest:"oteryn:quest.the_ancient_tombs_quest".into(),trigger:Trigger::Use,
+        key:r.key.into(),quest:"oteryn:quest.the_ancient_tombs_quest".into(),trigger:Trigger::Use,actor_kind:Default::default(),
         selector:Selector {position:None,unique:None,action:Some(r.action),appearance:Some(2772)},
         lever:Some([2772,2773]),reversible:false,passages:Vec::new(),teleport:None,facing:None,
-        effects:Default::default(),storage:Vec::new(),minimum_level:None,experience:None,monk_reward:None,
+        effects:Default::default(),storage:Vec::new(),world_requirements:Vec::new(),minimum_level:None,experience:None,monk_reward:None,
         offerings:Vec::new(),item_on_target:None,return_on_failure:false,failure_message:None,
         success_message:None,native_rule:None,
         sources:vec![format!("crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_ancient_tombs/actions_active_teleport_switches.lua:{}",r.source_line)],

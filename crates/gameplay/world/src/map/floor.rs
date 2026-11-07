@@ -41,7 +41,7 @@ use crate::movement::{CardinalStep, MovementError};
 pub use house::resolve_house_step;
 use oteryn_world_bundle::bundle::Family;
 pub use quest_callback::{prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing};
-pub use rope::prepare_bundle_rope;
+pub use rope::{LadderTarget, prepare_bundle_ladder, prepare_bundle_rope};
 use std::collections::{BTreeMap, BTreeSet};
 use {
     crate::foundation::{
@@ -50,6 +50,13 @@ use {
     },
     oteryn_gameplay_domain::domain::carrier_values::CarrierError,
 };
+
+/// Known immovable ladders selected from the authoritative object catalogue.
+pub fn is_ladder_appearance(appearance: u16) -> bool {
+    super::ladder_catalogue::LADDERS
+        .binary_search(&appearance)
+        .is_ok()
+}
 
 const DOWN: u8 = 1;
 const NORTH: u8 = 2;

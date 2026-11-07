@@ -21,6 +21,10 @@ pub enum QuestCallbackProjection {
         endpoints: [(TilePos, TilePos, EntryFacts); 2],
         expires: Option<u64>,
     },
+    ItemPresence {
+        position: TilePos,
+        entry: EntryFacts,
+    },
     ItemCycle {
         position: TilePos,
         remove: Option<u64>,
@@ -40,6 +44,7 @@ pub(super) struct CallbackStates {
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
+    presences: BTreeMap<u64, (TilePos, EntryId)>,
 }
 
 impl CallbackStates {
@@ -101,6 +106,45 @@ impl CallbackStates {
                             expires: *expires,
                         },
                     );
+                }
+            }
+            QuestCallbackProjection::ItemPresence {
+                position,
+                entry: facts,
+            } => {
+                if let Some((pos, id)) = self.presences.get(&owner).copied() {
+                    if pos != *position {
+                        return false;
+                    }
+                    if !close {
+                        return true;
+                    }
+                    if let Some(entries) = self.movement_items.get_mut(&pos) {
+                        entries.retain(|entry| entry.source != view::EntrySource::Added(id));
+                        if entries.is_empty() {
+                            self.movement_items.remove(&pos);
+                        }
+                    }
+                    self.presences.remove(&owner);
+                } else if !close {
+                    if facts.pickupable || self.presences.values().any(|(pos, _)| pos == position) {
+                        return false;
+                    }
+                    let Some(sequence) = self.movement_sequence.checked_add(1) else {
+                        return false;
+                    };
+                    let Some(entry) = EntryId::callback(sequence) else {
+                        return false;
+                    };
+                    self.movement_sequence = sequence;
+                    self.movement_items
+                        .entry(*position)
+                        .or_default()
+                        .push(view::ComposedEntry {
+                            source: view::EntrySource::Added(entry),
+                            facts: *facts,
+                        });
+                    self.presences.insert(owner, (*position, entry));
                 }
             }
             QuestCallbackProjection::ItemCycle {
@@ -545,6 +589,23 @@ impl BundleFacts {
                 && passages <= 8
                 && s.has_capacity(passages)
         })
+    }
+
+    /// The authored base appearance is stable across Channel callback transformations.
+    /// Sparse attributes select the palette exactly; plain entries require an unambiguous id.
+    pub fn quest_callback_base_appearance(
+        &self,
+        pos: TilePos,
+        ordinal: u8,
+        id: u32,
+    ) -> Option<u16> {
+        let key = view::placement_key(pos, ordinal)?;
+        let index = match self.placements.binary_search_by_key(&key, |(key, _)| *key) {
+            Ok(found) => self.placements[found].1.palette,
+            Err(_) => self.unique_index(id)?,
+        };
+        let palette = self.palette.get(index as usize)?;
+        (palette.id == id).then_some(palette.facts.appearance_id)
     }
 
     /// A bridge replacement must already have unambiguous facts in the bundle palette.

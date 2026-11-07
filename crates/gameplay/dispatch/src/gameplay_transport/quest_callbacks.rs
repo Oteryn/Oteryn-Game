@@ -7,6 +7,7 @@ use super::{
 mod effects;
 mod encounter;
 mod execute;
+pub(super) mod monsters;
 mod rewards;
 mod soul_war_reward;
 
@@ -125,8 +126,14 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                                 .filter(|(_, depth)| **depth == 0)
                                 .nth(usize::from(ordinal))
                         })
-                        .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))
-                        .is_some_and(|facts| facts.appearance_id == appearance)
+                        .is_some_and(|(id, _)| {
+                            map.facts.quest_callback_base_appearance(pos, ordinal, *id)
+                                == Some(appearance)
+                                || map
+                                    .facts
+                                    .base_entry(pos, ordinal, *id)
+                                    .is_some_and(|facts| facts.appearance_id == appearance)
+                        })
                 })))
 }
 
@@ -376,7 +383,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let selected = self
             .callback_content()
             .iter()
-            .filter(|c| c.trigger == Trigger::Use && matches(map, c, resolved.placement_key))
+            .filter(|c| {
+                c.actor_kind == world_callbacks::ActorKind::Player
+                    && c.trigger == Trigger::Use
+                    && matches(map, c, resolved.placement_key)
+            })
             .collect::<Vec<_>>();
         let [callback] = selected.as_slice() else {
             return None;
@@ -537,7 +548,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(
                     self.callback_content()
                         .iter()
-                        .filter(move |c| c.trigger == trigger && matches(map, c, key))
+                        .filter(move |c| {
+                            c.actor_kind == world_callbacks::ActorKind::Player
+                                && c.trigger == trigger
+                                && matches(map, c, key)
+                        })
                         .map(move |c| (c, key)),
                 )
             })
@@ -765,4 +780,37 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
             })
         })
     }
+}
+
+fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
+    callback.world_requirements.iter().all(|requirement| {
+        let position = tile(requirement.position);
+        !map.facts.house_tile(position)
+            && map
+                .overlay
+                .base()
+                .tile(position.x, position.y, position.floor)
+                .is_some_and(|base| {
+                    base.ids()
+                        .iter()
+                        .zip(base.depths())
+                        .filter(|(_, depth)| **depth == 0)
+                        .enumerate()
+                        .any(|(ordinal, (id, _))| {
+                            let Ok(ordinal) = u8::try_from(ordinal) else {
+                                return false;
+                            };
+                            let Some(key) = placement_key(position, ordinal) else {
+                                return false;
+                            };
+                            !map.facts.base_hidden(key)
+                                && map.facts.base_entry(position, ordinal, *id).is_some_and(
+                                    |entry| {
+                                        !entry.pickupable
+                                            && entry.appearance_id == requirement.appearance
+                                    },
+                                )
+                        })
+                })
+    })
 }

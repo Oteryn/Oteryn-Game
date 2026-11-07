@@ -57,6 +57,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || callback
                 .lever
                 .is_some_and(|pair| after.appearance_id == pair[1]);
+        if !close && !world_requirements_match(map, callback) {
+            return UseDisposition::Rejected;
+        }
         if close && callback.lever.is_some() && !callback.reversible {
             return UseDisposition::NothingToUse;
         }

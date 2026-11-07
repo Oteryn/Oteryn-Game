@@ -180,6 +180,19 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
+    if name.starts_with("qengine-rewards-questpc4-puzzle-predicate") {
+        callback = super::super::l6_world_puzzles::predicate_fixture(
+            callback,
+            trigger,
+            name.ends_with("-refuse"),
+        );
+    }
+    if name == "qengine-rewards-questpc4-puzzle-presence" {
+        callback = super::super::l6_world_puzzles::presence_fixture(callback, trigger);
+    }
+    if name == "qengine-rewards-questpc4-puzzle-ladder" {
+        callback = super::super::l6_world_puzzles::ladder_fixture(callback, trigger);
+    }
     let world = world(&callback, trigger)?;
     run(async |admin| {
         let h = if qengine_reward || outfit_world {
@@ -312,7 +325,10 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if name.contains("l6-beggar-") || spirit {
+        let premium = if name.contains("l6-beggar-")
+            || spirit
+            || name.starts_with("qengine-rewards-questpc4-paradox")
+        {
             use crate::gameplay_transport::spell_premium_coordinator::{
                 SpellPremiumCoordinator, purchase_fixture,
             };
@@ -376,7 +392,8 @@ fn scenario_case(
                 &callback,
             )?));
         }
-        if lever_fixture
+        if name.starts_with("qengine-rewards-questpc4-puzzle-predicate")
+            || lever_fixture
             || target_swap
             || name.ends_with("-expiry")
             || name == "triangle-tower-lever"

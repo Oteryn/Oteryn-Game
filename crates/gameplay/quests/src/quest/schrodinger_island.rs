@@ -11,6 +11,7 @@ pub const ENTER: &str = "oteryn:quest-callback/srv6-schrodinger-island";
 
 pub(crate) fn callback() -> Callback {
     Callback {
+        actor_kind: Default::default(),
         key: ENTER.into(),
         quest: QUEST.into(),
         trigger: Trigger::StepIn,
@@ -20,6 +21,7 @@ pub(crate) fn callback() -> Callback {
         passages:Vec::new(),
         teleport:Some(Position { x:32832, y:32435, floor:-7 }),
         facing:None,
+        world_requirements: Vec::new(),
         storage:vec![Storage { track:VISITED.into(), minimum:-1, maximum:1, set:1, preserve:false, increment:false }],
         minimum_level:Some(999),
         experience:None,

@@ -108,6 +108,7 @@ mod loop_move;
 mod loop_training;
 pub mod mail;
 mod map_door;
+mod map_ladder;
 mod mining;
 mod monk_save;
 mod monster_ai_cycle;

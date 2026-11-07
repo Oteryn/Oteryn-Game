@@ -821,6 +821,7 @@ async fn wardrobe(
         participants: vec![],
         state_ops: vec![],
         requires_premium: false,
+        minimum_level: None,
         requires_outfits: vec![],
         creation_sex: None,
         take: vec![],

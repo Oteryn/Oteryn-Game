@@ -31,10 +31,12 @@ pub const CLEANSE_COOLDOWN_SECONDS: u64 = 68 * 60 * 60;
 pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
     use super::world_callbacks::{Callback, ItemOnTarget, Selector, Storage, Trigger};
     Callback {
+        actor_kind: Default::default(),
         key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use,
         selector: Selector { position: None, unique: None, action: None,
             appearance: Some(SACRIFICIAL_PLATE_APPEARANCE) },
         lever: None, reversible: false, passages: Vec::new(), teleport: None, facing: None, effects: Default::default(),
+        world_requirements: Vec::new(),
         storage: vec![Storage { track: ACCESS_TRACK.into(), minimum: 0, maximum: 3, set: 1, preserve: false, increment: false }],
         minimum_level: None, experience: None, monk_reward: None, offerings: Vec::new(),
         item_on_target: Some(ItemOnTarget { item: "oteryn:item.tibia.i32594".into(), count: 1,

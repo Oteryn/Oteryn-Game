@@ -20,6 +20,7 @@ mod door_registry;
 pub mod facts;
 pub mod floor;
 mod floor_catalogue;
+mod ladder_catalogue;
 pub mod overlay;
 pub mod spell_tiles;
 pub mod view;
