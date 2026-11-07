@@ -876,7 +876,7 @@ Generic owned_items/map_source is fresh/read-only under the Character root and
 uses immutable native MINT plus completed pickup receipts. Explicit legacy Item
 count0 adapter preserves raw codec exactness, runtime zero refusal, Terrain,
 positive counts and charge/action0. Existing native egg physics were retained.
-All17 focused validation gates GREEN including strict checks, repository
+All15 non-empty focused validation gates GREEN including strict checks, repository
 generation, newly built compiler pin refresh/check, content123/world5 and fmt.
 Stage final proof/status/pins, commit/push source immediately.11 ACTIVE remain.
 Continue Fire-Fighter immediately from /tmp/questpc7-fire-next-plan.txt. Both
@@ -885,3 +885,14 @@ exist. Add exact cosmetic compatibility aliases, chosen Gnomprona training/
 Gnomadness quartermaster route, ten actual native kills and both real USEs.
 Do not add a fake parent, duplicate item qualifier or new cosmetic mechanism.
 Bounded donor/source findings are complete; no further ownership questions.
+
+## Verification count correction after Hydra push
+
+Product9b9ecae58 is pushed and remains QUALIFIED. The final audit found two
+ancillary filters had matched0 tests; neither is counted as qualification
+evidence. HYDRA-PG-PROOF now records15 meaningful gates. Real world pickup3
+already asserts explicit0/101 refusal against the item policy, and compiler
+bundle13 exercises source codec/export, including raw zero preservation.
+All4 additional world-bundle subarea tests passed; not called sector tests.
+No tests/assertions weakened or removed. Push this accurate proof correction,
+then continue Fire-Fighter;11 ACTIVE entries remain.

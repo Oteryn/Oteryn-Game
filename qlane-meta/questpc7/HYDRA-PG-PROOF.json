@@ -147,21 +147,6 @@
       "log": "/tmp/questpc7-hydra-strict-pickup-units.log"
     },
     {
-      "check": "item-pickup-units",
-      "command": [
-        "cargo",
-        "test",
-        "--locked",
-        "-p",
-        "oteryn-gameplay-items",
-        "--lib",
-        "map_pickup::"
-      ],
-      "seconds": 37.388,
-      "exit_code": 0,
-      "log": "/tmp/questpc7-hydra-item-pickup-units.log"
-    },
-    {
       "check": "compiler-bundle",
       "command": [
         "cargo",
@@ -175,21 +160,6 @@
       "seconds": 1.564,
       "exit_code": 0,
       "log": "/tmp/questpc7-hydra-compiler-bundle.log"
-    },
-    {
-      "check": "codec-units",
-      "command": [
-        "cargo",
-        "test",
-        "--locked",
-        "-p",
-        "oteryn-world-bundle",
-        "--lib",
-        "sector::"
-      ],
-      "seconds": 0.921,
-      "exit_code": 0,
-      "log": "/tmp/questpc7-hydra-codec-units.log"
     },
     {
       "check": "author",
@@ -349,5 +319,42 @@
   "environment_repairs": [
     "Before validation, verified all compilers idle, retained focused PG cache and removed inactive incremental caches;11538665472 bytes free.",
     "After strict clippy, idle-only cleanup restored10043039744 free bytes."
-  ]
+  ],
+  "verification_audit": {
+    "empty_filters": [
+      {
+        "check": "item-pickup-units",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-items",
+          "--lib",
+          "map_pickup::"
+        ],
+        "seconds": 37.388,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hydra-item-pickup-units.log"
+      },
+      {
+        "check": "codec-units",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-world-bundle",
+          "--lib",
+          "sector::"
+        ],
+        "seconds": 0.921,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-hydra-codec-units.log"
+      }
+    ],
+    "resolution": "Neither empty filter is counted as qualification evidence. The3 real world pickup tests exercise the item eligibility policy, including explicit0/101 quantity refusals;13 real compiler bundle tests exercise the codec/export path, including raw zero preservation. Existing assertions were not edited.",
+    "meaningful_gate_count": 15,
+    "extra_ancillary": "All4 world-bundle subarea library tests also passed in /tmp/questpc7-hydra-codec-corrected.log; these are not relabelled as sector tests."
+  }
 }

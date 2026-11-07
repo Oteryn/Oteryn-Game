@@ -1594,7 +1594,8 @@
       ],
       "fixture_boundary": "Reset pointer1 is an activated boot/reset-consumer environment precondition, matching existing world-reset map-pickup fixtures; it does not qualify the reset activation writer. No subject quest-stage seed. One unrelated egg through fenced ordinary MINT/transfer is an explicit negative provenance input; the selected reward comes only from ordinary native map pickup.",
       "physical_item": "Existing accepted native4839 profile retained; no redundant qualifier or inferred use effect.",
-      "checks": "All17 focused gates GREEN: retained Hidden PG44.066s; loader/callback/reward/pickup/codec/compiler/author units; generation/check/strictclippy; rebuilt compiler pins; content123/world5/fmt."
+      "checks": "All15 non-empty focused gates GREEN: retained Hidden PG44.066s; loader/callback/reward/pickup/codec/compiler/author units; generation/check/strictclippy; rebuilt compiler pins; content123/world5/fmt.",
+      "verification_audit": "Two ancillary filters matched0 tests and are not evidence. Actual world pickup3 covers strict item zero/101 refusal; compiler bundle13 covers codec/export. HYDRA-PG-PROOF.json records the correction."
     }
   },
   {
