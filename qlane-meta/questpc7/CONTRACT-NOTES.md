@@ -612,3 +612,7 @@ The selected father stage also requires actual A Strange Chalice dialogue: chali
 ## Bounded repeated native USE
 
 Optional Storage.add=1 explicitly opts into checked Add1, retaining set as the terminal maximum+1. The finite range is nonnegative and below10000; one additive track requires a matching USE activation and forbids preserve/read_only/native/reversible combinations. Existing reward and completion guards stay intact. Core quest evaluation and durable callback transaction already own checked addition, cause replay and coherent fencing; no SQL is added. The initial PG proof is schema admission only; real native settlement and complete Feaster qualification remain ACTIVE until proven.
+
+## First-party static quest props
+
+The optional placements-index authored_props array pins per-lane JSON, canonical quest definitions and selected recipe roles. The compiler derives touched B3 region bytes in memory using the existing sector codec; retained binary files are not rewritten. Construction is bounded to512 props,128 per document and64 pinned documents; it rejects duplicate cells/keys, missing regions/tiles, houses, malformed roles, unsafe or escaping paths, mismatched hashes and arbitrary item attributes. Existing compilation, parity, equivalence, native collision and content resolution still apply. Source-qualified static appearances stay Ground-only, preventing players from picking up anchored quest machines/resources. Initial proof covers compiler behavior only; real source data and native settlement remain ACTIVE.

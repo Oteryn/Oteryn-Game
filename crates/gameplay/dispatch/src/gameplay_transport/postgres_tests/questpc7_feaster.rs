@@ -37,5 +37,13 @@ pub(super) async fn exercise(
     eprintln!("QUESTPC7_FEASTER_PREFIX POSTGRES_STARTED version={version}");
     let storage:oteryn_gameplay_quests::quest::world_callbacks::Storage=serde_json::from_value(serde_json::json!({"track":"oteryn:quest-progress/questpc7/feaster/samples","minimum":0,"maximum":19,"set":20,"add":1})).map_err(debug)?;
     assert_eq!((storage.minimum, storage.maximum, storage.set), (0, 19, 20));
+    assert!(
+        std::path::Path::new(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/world/authored-props/questpc7.json"
+        ))
+        .is_file(),
+        "source-backed quest props must exist before native sampling qualification"
+    );
     Ok(())
 }

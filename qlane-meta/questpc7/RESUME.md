@@ -1,3 +1,34 @@
+# Authored world-prop compiler checkpoint — 2026-11-07 15:11 UTC
+
+Generic overlay compiled;3 focused tests PASS, check3.45s and strict all-target/
+all-feature Clippy2.40s PASS. Actual PG18.6 RED42.342882583s requires the
+missing content/world/authored-props/questpc7.json, after schema admission.
+This remains RED until data/actual settlement; do not qualify Feaster.
+Compiler source::project now optionally applies pinned authored_props array
+from placements index. Each per-lane JSON binds canonical quest SHA and
+selected recipe role, bounded source citations/props, unique key/cell, existing
+unowned source tile, no arbitrary attrs and no source escape. Adds palette
+keys and re-encodes touched regions IN MEMORY with existing sector/zstd;
+all old parity/equivalence/collision code sees the resulting region normally.
+Original binary B3 files untouched. With absent index extension behavior is
+unchanged. Push compiling checkpoint now; data/real PG and pins next.
+
+Source profile probe confirmed8995/8996/21573/23163/32173/32537/32538 are
+materializable NonStackable Ground-only. Use real21573 grinder,8995 apparatus,
+32173 ulcer,32537 crystal and23163 fixed rift source;8996 purification bench.
+Extend physical qualifier with separate STATIC_IDS allowing exactly Ground;
+portable quest tool/sample/material IDs retain existing inventory guard.
+Generate own props at native-clear source lab/Brain Grounds/Barren Drift cells
+with canonical Feaster roles; add pinned per-lane array entry via repo producer.
+Next actual PG prefix must obtain quest Bell/Scalpel from Para Norbert, use
+three source bells, exact skull/flower processing and potion/entry, then20
+samples and20 purification uses with cap/refusal/replay/no-charge proof.
+Firstparty rift23163 can provide bounded personal raw lost souls; source
+ordinary-item transfer inputs are allowed for skull/flower, not unique tools
+or quest state. Whole23-stage route and missing Thaian still follow.
+Native facts/temp files from previous sections remain valid; no more fact
+research needed before authoring. Four ACTIVE remain; next push by15:26.
+
 # Bounded native USE compiling checkpoint — 2026-11-07 15:00 UTC
 
 Forgotten QUALIFIED/pushedc29700027. Four ACTIVE remain. Feaster PG18.6

@@ -112,7 +112,7 @@
       "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
       "scope": "Generic owner only; not this quest's route qualification"
     },
-    "current_batch": "Compiling shared bounded-USE checkpoint: actual PG18.6 schema RED41.717713297s\u2192GREEN42.656947790s;24 world-callback units PASS including exact cap20 and15 negatives. This does NOT qualify native settlement or the quest. Next source-backed authored static props and real native sampling settlement, then whole route. Reuse core checked Add; no SQL migration.",
+    "current_batch": "Compiling authored-prop overlay checkpoint: PG18.6 RED42.342882583s missing pinned prop JSON. Generic in-memory overlay implemented;3 compiler tests (including13 invalid cases), check and strict Clippy PASS. Next publish source-qualified Ground-only props and perform actual native sampling settlement. No binary map files or SQL migrations changed; remains ACTIVE.",
     "assumptions": "Feaster contact/quest/Thaian facts closed using Wiki revisions419674,368970,421868,445240; exact XML items retained. See RESUME and forthcoming source/prop contracts."
   },
   {
