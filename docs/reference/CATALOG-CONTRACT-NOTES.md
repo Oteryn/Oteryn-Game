@@ -7,6 +7,21 @@ has approved the catalogue artifact step in the existing protected-main Rust job
 
 ## Shared loader and view
 
+Quest schema changes must also refresh the offline Quest provenance chain, not
+only canonical definitions. Run `reward_claim_variant_migration.py`,
+`bundle_authoring.py`, `amend_monk_source_receipt.py`, then the dependency-ordered
+Quest generators documented in `tools/content-schema/quest-authoring/README.md`,
+including `quest_tree_authoring.py content --source-packet
+tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json`.
+Replay `quest_donor_source_authoring.py` after canonical definitions settle.
+The receipt amendment reconstructs the exact previous bundle and schema bytes
+after removing only G-2's optional Quest visibility property; every other SOURCE
+field and proof stays pinned (`source_fix_guard.py:46-50`). It rejects unrelated
+schema changes, changed SOURCE records and visibility on another definition.
+Validate with `run_checks.py --part checks`, `--part donor`, `--part unit-tests`,
+RewardClaim discovery and both RewardClaim `--check` commands. Repeating the
+generators must leave the committed checkout clean.
+
 `oteryn_gameplay_content::content::public_content_view` accepts the immutable
 `WorldProject` returned by `capture_world_project` / `ProjectSnapshot::parse`.
 This is the same loader used by the server's `NpcDataCatalogue::load`.
