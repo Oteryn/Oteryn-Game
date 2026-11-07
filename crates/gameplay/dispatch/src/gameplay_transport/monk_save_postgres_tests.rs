@@ -692,11 +692,8 @@ mod death_ml_loss_composed {
     use super::fixture::{Harness, debug, id, run};
     use super::{Dependencies, TestResult, prepare_current_session};
     use crate::ability::creature_bite::CreatureBiteVitals;
+    use crate::content::ContentActivationController;
     use crate::content::native_gameplay::NativeGameplayInput;
-    use crate::content::{
-        ContentActivationController, NativeEntryActivationIssuance, NodeBootQuiescence,
-        activate_native_entry_room_with_gameplay,
-    };
     use crate::durability::character_build::{
         BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildFormula, BuildOccurrence,
         DurableBuildState, convert_vocation,
@@ -840,25 +837,8 @@ mod death_ml_loss_composed {
             .as_mut()
             .ok_or("the manifest pins build training")?
             .content_revision = content.into();
-        let room = crate::content::qualify_selected_native_gameplay_room(world, &supplied)
-            .map_err(debug)?;
-        let issuance = NativeEntryActivationIssuance {
-            world_id: world,
-            activation_sequence: 1,
-            server_artifact_digest: room.compiled().server_digest(),
-            client_artifact_digest: room.compiled().client_digest(),
-            frame_binding_digest: room.frame_binding().digest(),
-        };
-        let mut controller = ContentActivationController::new();
-        let pin = activate_native_entry_room_with_gameplay(
-            &mut controller,
-            &NodeBootQuiescence::before_channel_runtime(),
-            world,
-            &issuance,
-            &supplied,
-        )
-        .map_err(debug)?;
-        Ok((controller, pin))
+        crate::content::native_gameplay::test_support::try_activate_input(world, &supplied)
+            .map_err(debug)
     }
 
     pub(super) async fn current_fence(

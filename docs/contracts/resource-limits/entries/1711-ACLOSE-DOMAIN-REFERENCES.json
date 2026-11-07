@@ -1,0 +1,20 @@
+{
+  "id": "ACLOSE-DOMAIN-REFERENCES",
+  "owner_contract": "OTERYN_GAME_ACCOUNT_DELETION_FINALIZATION_V1.md",
+  "resource": "Guild rights references per closure preparation",
+  "unit": "references",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 1024
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Unavailable or oversized evidence remains pending; no truncation of proof.",
+  "client_visible": false,
+  "boundary_tests": [
+    "account_deletion_postgres_producer_replays_resolves_and_fences"
+  ],
+  "consumers": [
+    "crates/gameplay/durability/src/durability/character_command/account_deletion/"
+  ]
+}

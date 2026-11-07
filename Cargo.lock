@@ -2500,6 +2500,7 @@ name = "oteryn-gameplay-durability"
 version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
+ "ed25519-dalek",
  "oteryn-error-codes",
  "oteryn-gameplay-admission-evidence",
  "oteryn-gameplay-character-recovery-fence",

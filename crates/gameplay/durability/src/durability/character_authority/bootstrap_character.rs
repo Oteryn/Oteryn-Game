@@ -61,7 +61,7 @@ impl DurabilityRoot {
             sqlx::query("SELECT account_id FROM game_character_account_guards WHERE account_id = encode($1, 'hex')::uuid FOR UPDATE")
                 .bind(account.as_slice()).fetch_one(&mut *tx).await?;
             // One operation identity is held by at most one receipt table (migration 0087).
-            if sqlx::query("SELECT 1 FROM game_character_command_receipts WHERE operation_id = encode($1, 'hex')::uuid")
+            if sqlx::query("SELECT 1 FROM game_character_command_receipts WHERE operation_id = encode($1, 'hex')::uuid UNION ALL SELECT 1 FROM game_bazaar_decisions WHERE issuer='OTERYN_PLATFORM_CHARACTER_AUTHORITY' AND operation_id=encode($1, 'hex')::uuid LIMIT 1")
                 .bind(operation.as_slice()).fetch_optional(&mut *tx).await?.is_some() {
                 return Ok(Err(CharacterAuthorityError::Conflict));
             }
@@ -73,6 +73,9 @@ impl DurabilityRoot {
                 let record = read_record_row(&row, account, world)?;
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(Ok(record));
+            }
+            if super::super::character_command::account_deletion::operation_exists(&mut tx, &operation).await? {
+                return Ok(Err(CharacterAuthorityError::Conflict));
             }
             // Source-time validity against trusted Game time; arrival or retry
             // time never refreshes the intent.

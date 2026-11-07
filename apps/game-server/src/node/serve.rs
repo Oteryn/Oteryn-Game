@@ -8,9 +8,11 @@
 //! signal or the end of any loop. Events are single stderr lines without
 //! secrets (D6).
 
+mod audit_collector;
 mod channel_boot;
 mod qualification_fixture;
 mod supervision;
+mod t94;
 mod world_reset;
 
 use super::cancellation::first;
@@ -53,6 +55,7 @@ use crate::gameplay_transport::{EvidenceUnavailable, FreshEvidenceSource};
 use crate::native_admission_source::account_characters::{
     self, EpochFence, EpochFenceFile, MtlsSink, ProjectionDescriptor, Publisher,
 };
+use crate::native_admission_source::bazaar::transport as bazaar_transport;
 use crate::native_admission_source::character_commands::{
     CommandDescriptor, Consumer, Decider, Decision, Input, MtlsSource,
 };
@@ -412,6 +415,14 @@ fn invalid(key: &'static str) -> BootError {
     BootError::Startup(StartupError::Invalid { key })
 }
 
+type BazaarTransportMaterial = (
+    bazaar_transport::BazaarDescriptor,
+    ProducerDescriptor,
+    String,
+    String,
+    bool,
+);
+
 /// Everything read before any socket is bound (D1).
 struct Material {
     config: NodeConfig,
@@ -428,12 +439,20 @@ struct Material {
         std::sync::Mutex<Option<(ProjectionDescriptor, String, std::path::PathBuf)>>,
     /// Character-command consumer identity and source authority; `None`
     /// (the default) disables it. Taken once by the serving loop.
-    character_commands: std::sync::Mutex<Option<(CommandDescriptor, String)>>,
+    character_commands: std::sync::Mutex<
+        Option<(
+            CommandDescriptor,
+            String,
+            crate::durability::character_command::account_deletion::Config,
+        )>,
+    >,
+    bazaar: std::sync::Mutex<Option<BazaarTransportMaterial>>,
     /// Public-projection publisher: its identity, source authority and epoch
     /// fence `F_pub`; `None` (absent or not enabled) disables it. Taken once
     /// by the serving loop.
     public_projections:
         std::sync::Mutex<Option<(PublicProjectionDescriptor, String, std::path::PathBuf)>>,
+    world_event_outcomes: std::sync::Mutex<Option<t94::Material>>,
     descriptor: DescriptorRegistration,
     launch: LaunchAuthorizationFile,
     s2: Option<S2AuthorizationFile>,
@@ -640,7 +659,77 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                 &others,
             )
             .map_err(|_| invalid("platform.character_commands"))?;
-            Some((descriptor, commands.source_authority.clone()))
+            Some((
+                descriptor,
+                commands.source_authority.clone(),
+                commands.account_deletion.clone(),
+            ))
+        }
+    };
+    let bazaar = match &platform.bazaar {
+        None => None,
+        Some(bazaar) => {
+            let chain = |key: &'static str, path: &Path| {
+                certificates(&secret(key, path, MAX_PEM_BYTES)?).map_err(|_| invalid(key))
+            };
+            let own = chain(
+                "platform.bazaar.client_certificate_file",
+                &bazaar.client_certificate_file,
+            )?;
+            let key = private_key(
+                "platform.bazaar.client_key_file",
+                &secret(
+                    "platform.bazaar.client_key_file",
+                    &bazaar.client_key_file,
+                    MAX_GAMEPLAY_KEY_BYTES,
+                )?,
+            )?;
+            let Some((receipt, receipt_source, _)) = &character_commands else {
+                return Err(invalid("platform.bazaar.character_receipt_identity"));
+            };
+            let mut others = vec![client.clone()];
+            if let Some(status) = &platform.runtime_status {
+                others.push(chain(
+                    "platform.runtime_status.client_certificate_file",
+                    &status.client_certificate_file,
+                )?);
+            }
+            if let Some(projection) = &platform.account_characters {
+                others.push(chain(
+                    "platform.account_characters.client_certificate_file",
+                    &projection.client_certificate_file,
+                )?);
+            }
+            if let Some(commands) = &platform.character_commands {
+                others.push(chain(
+                    "platform.character_commands.client_certificate_file",
+                    &commands.client_certificate_file,
+                )?);
+            }
+            if let Some(public) = &platform.public_projections {
+                others.push(chain(
+                    "platform.public_projections.client_certificate_file",
+                    &public.client_certificate_file,
+                )?);
+            }
+            let others: Vec<&[CertificateDer<'static>]> =
+                others.iter().map(Vec::as_slice).collect();
+            let descriptor = bazaar_transport::BazaarDescriptor::new(
+                endpoint.clone(),
+                platform.peer_name.clone(),
+                roots.clone(),
+                own,
+                key,
+                &others,
+            )
+            .map_err(|_| invalid("platform.bazaar"))?;
+            Some((
+                descriptor,
+                receipt.producer().clone(),
+                bazaar.source_authority.clone(),
+                receipt_source.clone(),
+                bazaar.enabled,
+            ))
         }
     };
     let public_projections = match &platform.public_projections {
@@ -699,6 +788,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         }
         _ => None,
     };
+    let world_event_outcomes = t94::material(platform, endpoint.clone(), &roots, &client)?;
     let intents = ProducerDescriptor::new(
         CHARACTER_BOOTSTRAP_INTENT_ISSUER.into(),
         endpoint,
@@ -755,7 +845,9 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         runtime_status,
         account_characters: std::sync::Mutex::new(account_characters),
         character_commands: std::sync::Mutex::new(character_commands),
+        bazaar: std::sync::Mutex::new(bazaar),
         public_projections: std::sync::Mutex::new(public_projections),
+        world_event_outcomes: std::sync::Mutex::new(world_event_outcomes),
         descriptor,
         launch,
         s2,
@@ -1136,6 +1228,9 @@ async fn both(a: impl Future<Output = ()>, b: impl Future<Output = ()>) {
 /// account's security evidence of a decoded create, then decides under the
 /// reconciled Character authority (contract §6).
 struct CommandDecider<'a, 'r, 'c> {
+    lifecycle_observed: bool,
+    closure_epoch_fence: EpochFenceFile,
+    deletion: crate::durability::character_command::account_deletion::Config,
     root: &'a DurabilityRoot,
     authority: &'a ReconciledCharacterAuthority<'r, 'c>,
     proof: &'a NodeIncarnationProof,
@@ -1144,15 +1239,114 @@ struct CommandDecider<'a, 'r, 'c> {
 }
 
 impl Decider for CommandDecider<'_, '_, '_> {
+    async fn begin_closure_lifecycle_read(
+        &mut self,
+        request: &crate::native_admission_source::account_closure::LifecycleRequest,
+    ) {
+        self.lifecycle_observed = false;
+        let _ = self
+            .root
+            .invalidate_account_closure_lifecycle(
+                self.authority,
+                self.proof,
+                &request.account_id,
+                &request.termination_id,
+            )
+            .await;
+    }
+
+    async fn quarantine_closure_publication(
+        &mut self,
+        p: &crate::native_admission_source::account_closure::Publication,
+    ) {
+        let _ = self
+            .root
+            .quarantine_account_closure_publication(self.authority, self.proof, p)
+            .await;
+    }
+
+    fn lifecycle_recovery_generation(&self) -> Option<u64> {
+        if !self.deletion.enabled || self.deletion.lifecycle_source!=crate::durability::character_command::account_deletion::LifecycleSource::PlatformPull {return None;}
+        self.authority
+            .record_for(self.root)
+            .ok()
+            .map(|r| r.recovery_generation)
+    }
+    async fn observe_closure_lifecycle(
+        &mut self,
+        request: &crate::native_admission_source::account_closure::LifecycleRequest,
+        raw: &[u8],
+    ) {
+        self.lifecycle_observed = self
+            .root
+            .observe_account_closure_lifecycle(self.authority, self.proof, request, raw)
+            .await
+            .is_ok();
+    }
+
+    async fn next_closure_publication(
+        &mut self,
+    ) -> Option<crate::native_admission_source::account_closure::Publication> {
+        // Pending jobs and outboxes survive disabling. Never erase or release them.
+        use crate::native_admission_source::account_characters::EpochFence;
+        let publication = self
+            .root
+            .next_account_closure_publication(self.authority, self.proof, &self.source_authority)
+            .await
+            .ok()
+            .flatten()?;
+        if publication.operation!=crate::native_admission_source::descriptor::Operation::PublishAccountClosureCommandReceiptV2 {
+            let body:serde_json::Value=serde_json::from_str(&publication.body).ok()?;
+            let epoch=body["projection_epoch"].as_str().and_then(crate::native_admission_source::character_commands::counter)?;
+            let floor=self.closure_epoch_fence.read().ok()?;
+            if epoch<floor {event("event=account_closure state=pending reason=epoch_resync");return None;}
+            if epoch>floor {self.closure_epoch_fence.persist(epoch).ok()?;}
+        }
+        Some(publication)
+    }
+    async fn acknowledge_closure_publication(
+        &mut self,
+        p: &crate::native_admission_source::account_closure::Publication,
+    ) {
+        let _ = self
+            .root
+            .acknowledge_account_closure(self.authority, self.proof, None, Some(p))
+            .await;
+    }
+    async fn acknowledge_receipt(&mut self, command: &str, operation: &str) {
+        if crate::native_admission_source::character_commands::account_deletion_command(command) {
+            let _ = self
+                .root
+                .acknowledge_account_closure(self.authority, self.proof, Some(operation), None)
+                .await;
+        }
+    }
+
     async fn decide(&mut self, command: &str, operation_id: &str, input: Input<'_>) -> Decision {
         let mut held = None;
-        if let Input::Intent(raw) = input
-            && let Classified::Create(intent) = classify_intent(raw, command, operation_id)
-        {
+        let refresh_account = match input {
+            Input::Intent(raw) => match classify_intent(raw, command, operation_id) {
+                Classified::Create(intent) => Some(uuid_text(&intent.account_id)),
+                _ => crate::durability::bazaar::decode_transfer(raw, operation_id)
+                    .map(|intent| intent.to_account_id.as_str().to_owned())
+                    .or_else(|| {
+                        if !self.deletion.enabled {
+                            return None;
+                        }
+                        crate::durability::character_command::account_deletion::decode(
+                            raw,
+                            command,
+                            operation_id,
+                        )
+                        .ok()
+                        .map(|intent| intent.account_id)
+                    }),
+            },
+            _ => None,
+        };
+        if let Some(account) = refresh_account {
             // A failed refresh leaves the evidence stale; the decision then
             // reads it as unknown and stays transient until the intent expires.
-            // The reason is logged as fixed tokens only (no account or bytes).
-            let account = uuid_text(&intent.account_id);
             let started = std::time::Instant::now();
             match self
                 .evidence
@@ -1174,15 +1368,23 @@ impl Decider for CommandDecider<'_, '_, '_> {
         }
         // The decision is the next pass after the acceptance; the accepted
         // slot is cleared only once it has read the evidence.
+        let mut deletion = self.deletion.clone();
+        if deletion.lifecycle_source
+            == crate::durability::character_command::account_deletion::LifecycleSource::PlatformPull
+            && !self.lifecycle_observed
+        {
+            deletion.lifecycle_source =
+                crate::durability::character_command::account_deletion::LifecycleSource::Pending;
+        }
         let decision = self
             .root
-            .decide_character_command(
+            .decide_character_command_configured(
                 self.authority,
                 self.proof,
                 &self.source_authority,
-                command,
-                operation_id,
+                (command, operation_id),
                 input,
+                &deletion,
             )
             .await;
         if let Some(evidence) = held {
@@ -1199,28 +1401,248 @@ async fn character_commands_loop(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     proof: &NodeIncarnationProof,
     evidence: &FreshEvidenceSource,
-    commands: Option<(CommandDescriptor, String)>,
+    commands: Option<(
+        CommandDescriptor,
+        String,
+        crate::durability::character_command::account_deletion::Config,
+    )>,
     stop: &CancellationToken,
 ) {
-    let Some((descriptor, source_authority)) = commands else {
+    let Some((descriptor, source_authority, deletion)) = commands else {
         return;
     };
     event("event=character_commands state=started");
-    let decider = CommandDecider {
+    let make_decider = || CommandDecider {
+        lifecycle_observed: false,
+        closure_epoch_fence: EpochFenceFile::new(deletion.epoch_fence_file.clone()),
+        deletion: deletion.clone(),
         root,
         authority,
         proof,
         evidence,
         source_authority: source_authority.clone(),
     };
+    let publisher =
+        crate::native_admission_source::character_commands::run_account_closure_publications(
+            SystemClock::default(),
+            MtlsSource::new(descriptor.clone()),
+            make_decider(),
+            event,
+        );
     let consumer = Consumer::new(
         SystemClock::default(),
         MtlsSource::new(descriptor),
-        decider,
-        source_authority,
+        make_decider(),
+        source_authority.clone(),
         event,
     );
-    first(consumer.run(), stop.cancelled()).await;
+    first(both(consumer.run(), publisher), stop.cancelled()).await;
+}
+
+/// One bounded owner reconciliation per cadence, independent of Platform reachability.
+async fn account_closure_offline_loop(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    runtime: &Mutex<ChannelRuntimeV1>,
+    scope: (crate::foundation::WorldId, crate::foundation::ChannelId),
+    stop: &CancellationToken,
+) {
+    let mut tick = tokio::time::interval(std::time::Duration::from_secs(1));
+    tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    loop {
+        if first(tick.tick(), stop.cancelled()).await.is_none() {
+            return;
+        }
+        if let Ok(sessions) = root
+            .next_account_closure_terminal(
+                authority,
+                proof,
+                (*scope.0.as_bytes(), *scope.1.as_bytes()),
+            )
+            .await
+        {
+            for (session, scope) in sessions {
+                let Ok(session) = crate::foundation::GameSessionId::decode(&session) else {
+                    continue;
+                };
+                let absent = {
+                    let runtime = runtime.lock().await;
+                    runtime
+                        .prove_player_session_absent_in(session, scope)
+                        .ok()
+                        .flatten()
+                };
+                if let Some(absent) = absent {
+                    let _ = root
+                        .acknowledge_account_closure_offline(authority, proof, absent)
+                        .await;
+                    break;
+                }
+            }
+        }
+    }
+}
+
+/// Production dispatch boundary after fresh-evidence refresh. Keeping it
+/// explicit also lets qualification drive the actual durable caller.
+pub(crate) async fn dispatch_bazaar_intent(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    receipt_source: &str,
+    command: &str,
+    operation: &str,
+    raw: &[u8],
+) -> Decision {
+    root.decide_bazaar_command(authority, proof, receipt_source, command, operation, raw)
+        .await
+}
+
+/// The production snapshot boundary uses the authority's own batch bound.
+pub(crate) async fn snapshot_bazaar_transport(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    source: &str,
+    enabled: bool,
+) -> Result<bazaar_transport::TransportBatch, crate::native_admission_source::SourceError> {
+    let mut batch = root
+        .bazaar_transport_snapshot(
+            authority,
+            proof,
+            source,
+            crate::durability::bazaar::TRANSPORT_BATCH_LIMIT,
+        )
+        .await
+        .map_err(|_| crate::native_admission_source::SourceError::Unavailable)?;
+    batch.enabled &= enabled;
+    Ok(batch)
+}
+
+struct BazaarAuthority<'a, 'r, 's> {
+    root: &'a DurabilityRoot,
+    authority: &'a ReconciledCharacterAuthority<'r, 's>,
+    proof: &'a NodeIncarnationProof,
+    evidence: &'a FreshEvidenceSource,
+    source: String,
+    receipt_source: String,
+    enabled: bool,
+}
+impl bazaar_transport::Authority for BazaarAuthority<'_, '_, '_> {
+    async fn decide(&mut self, command: &str, operation: &str, raw: &[u8]) -> Decision {
+        if !self.enabled {
+            return Decision::Transient;
+        }
+        let value = serde_json::from_slice::<serde_json::Value>(raw).ok();
+        let mut held = Vec::new();
+        let mut accounts = std::collections::BTreeSet::new();
+        for key in ["seller_account_id", "buyer_account_id"] {
+            if let Some(account) = value
+                .as_ref()
+                .and_then(|value| value.get(key))
+                .and_then(serde_json::Value::as_str)
+                && crate::native_admission_source::character_commands::uuid_v7(account)
+            {
+                accounts.insert(account);
+            }
+        }
+        for account in accounts {
+            if let Ok(evidence) = self
+                .evidence
+                .refresh_account_held(self.root, self.proof, account)
+                .await
+            {
+                held.push(evidence);
+            }
+        }
+        let result = dispatch_bazaar_intent(
+            self.root,
+            self.authority,
+            self.proof,
+            &self.receipt_source,
+            command,
+            operation,
+            raw,
+        )
+        .await;
+        for evidence in held {
+            let _ = evidence.release().await;
+        }
+        result
+    }
+    async fn read_failure(&mut self, command: &str, operation: &str, input: Input<'_>) -> Decision {
+        if !self.enabled {
+            return Decision::Transient;
+        }
+        self.root
+            .decide_bazaar_input(
+                self.authority,
+                self.proof,
+                &self.receipt_source,
+                command,
+                operation,
+                input,
+            )
+            .await
+    }
+    async fn snapshot(
+        &mut self,
+    ) -> Result<bazaar_transport::TransportBatch, crate::native_admission_source::SourceError> {
+        snapshot_bazaar_transport(
+            self.root,
+            self.authority,
+            self.proof,
+            &self.source,
+            self.enabled,
+        )
+        .await
+    }
+    async fn acknowledge(
+        &mut self,
+        key: bazaar_transport::DeliveryKey,
+        digest: [u8; 32],
+        status: u16,
+    ) -> Result<(), crate::native_admission_source::SourceError> {
+        self.root
+            .bazaar_transport_ack(self.authority, self.proof, key, digest, status)
+            .await
+            .map_err(|_| crate::native_admission_source::SourceError::Unavailable)
+    }
+    async fn reconcile(
+        &mut self,
+        state: &bazaar_transport::RemoteState,
+    ) -> Result<(), crate::native_admission_source::SourceError> {
+        self.root
+            .bazaar_reconcile_receipt(self.authority, self.proof, state)
+            .await
+            .map_err(|_| crate::native_admission_source::SourceError::Unavailable)
+    }
+}
+
+async fn bazaar_loop(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    evidence: &FreshEvidenceSource,
+    material: Option<BazaarTransportMaterial>,
+    stop: &CancellationToken,
+) {
+    let Some((descriptor, receipt, source, receipt_source, enabled)) = material else {
+        return;
+    };
+    let store = BazaarAuthority {
+        root,
+        authority,
+        proof,
+        evidence,
+        source: source.clone(),
+        receipt_source,
+        enabled,
+    };
+    let transport = bazaar_transport::MtlsTransport::new(descriptor, receipt);
+    let consumer = bazaar_transport::Consumer::new(store, transport, source);
+    first(consumer.run(event), stop.cancelled()).await;
 }
 
 async fn backoff(attempt: &mut u32) {
@@ -2112,10 +2534,18 @@ async fn audit_expiry_loop(
         let mut deleted = 0_u64;
         let mut failed = false;
         for _ in 0..AUDIT_RUN_CAP {
+            let bazaar_deleted = match root.expire_bazaar_audit(authority, AUDIT_BATCH).await {
+                Ok(count) => count,
+                Err(_) => {
+                    failed = true;
+                    0
+                }
+            };
+            deleted = deleted.saturating_add(bazaar_deleted);
             match root.expire_character_audit(authority, AUDIT_BATCH).await {
                 Ok(count) => {
                     deleted = deleted.saturating_add(count);
-                    if count < u64::from(AUDIT_BATCH) {
+                    if count < u64::from(AUDIT_BATCH) && bazaar_deleted < u64::from(AUDIT_BATCH) {
                         break;
                     }
                 }
@@ -2124,6 +2554,13 @@ async fn audit_expiry_loop(
                     break;
                 }
             }
+        }
+        match root.expire_account_closure_audit(authority).await {
+            Ok(count) => deleted = deleted.saturating_add(count),
+            Err(_) => failed = true,
+        }
+        if root.t94_expire(authority).await.is_err() {
+            failed = true;
         }
         match root.expire_staff_audit().await {
             Ok(count) => deleted = deleted.saturating_add(count),

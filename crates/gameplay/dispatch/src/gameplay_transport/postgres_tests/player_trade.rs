@@ -166,14 +166,13 @@ async fn scenario(h: &Harness, inspection: bool) -> TestResult {
     let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
     let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
     // The build writer requires the same content revision as the durable fixture roots.
-    let (controller, pin) =
-        super::death_ml_loss_composed::production_generation_with_source(
-            world,
-            "content-1",
-            Some(include_bytes!(
-                "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
-            )),
-        )?;
+    let (controller, pin) = super::death_ml_loss_composed::production_generation_with_source(
+        world,
+        "content-1",
+        Some(include_bytes!(
+            "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+        )),
+    )?;
     let active = controller.active().ok_or("active")?;
     let frame_digest = pin.frame_binding().digest();
     let room = pin.qualified_room().clone();
@@ -700,7 +699,19 @@ async fn scenario(h: &Harness, inspection: bool) -> TestResult {
             .await
             .ok_or("before root contention")?;
         assert_eq!(before_contention.1.phase, 1);
-        let held = h.root.try_issue_semantic_pass().map_err(debug)?;
+        // Exercise the background refresh at the exact point where the fixture
+        // takes a holder to qualify its unavailable-observation path.
+        let (refreshed, held) = join_two(owner.staff_refresh(admitted[0]), async {
+            let _lane = owner
+                .spell_lane
+                .acquire()
+                .await
+                .map_err(|_| "fixture lane unresolved")?;
+            h.root.try_issue_semantic_pass().map_err(debug)
+        })
+        .await;
+        assert!(refreshed);
+        let held = held?;
         let during_contention = owner
             .trade_observation(admitted[0].game_session_id)
             .await

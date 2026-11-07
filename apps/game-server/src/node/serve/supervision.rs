@@ -84,6 +84,17 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
     let mut expiry = pin!(audit_expiry_loop(root, authority, &loops_stop));
     // Never gates serving; its end is not a shutdown reason. The public
     // projections run beside it, disabled unless configured and enabled.
+    let collector = audit_collector::Collector {
+        root,
+        authority,
+        proof,
+        config: &config.audit_collector,
+        t94_key_id: material
+            .world_event_outcomes
+            .lock()
+            .ok()
+            .and_then(|value| value.as_ref().and_then(|value| value.audit_key_id.clone())),
+    };
     let mut projection = pin!(both(
         both(
             both(
@@ -129,15 +140,31 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
                 &loops_stop
             ),
         ),
-        public_projections_loop(
-            root,
-            authority,
-            material
-                .public_projections
-                .lock()
-                .ok()
-                .and_then(|mut public| public.take()),
-            &loops_stop
+        both(
+            both(
+                collector.run(&loops_stop),
+                t94::run(
+                    root,
+                    authority,
+                    material
+                        .world_event_outcomes
+                        .lock()
+                        .ok()
+                        .and_then(|mut value| value.take()),
+                    material.world,
+                    &loops_stop
+                )
+            ),
+            public_projections_loop(
+                root,
+                authority,
+                material
+                    .public_projections
+                    .lock()
+                    .ok()
+                    .and_then(|mut public| public.take()),
+                &loops_stop
+            )
         ),
     ));
     let mut projection_done = false;
@@ -155,7 +182,31 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
                 .and_then(|mut commands| commands.take()),
             &loops_stop
         ),
-        timed_npc_loop(runtime, timed_npcs, &loops_stop),
+        both(
+            bazaar_loop(
+                root,
+                authority,
+                proof,
+                evidence,
+                material
+                    .bazaar
+                    .lock()
+                    .ok()
+                    .and_then(|mut bazaar| bazaar.take()),
+                &loops_stop
+            ),
+            both(
+                timed_npc_loop(runtime, timed_npcs, &loops_stop),
+                account_closure_offline_loop(
+                    root,
+                    authority,
+                    proof,
+                    runtime,
+                    (material.world, material.channel),
+                    &loops_stop
+                )
+            ),
+        ),
     ));
     let mut commands_done = false;
     let mut signal = pin!(signalled.cancelled());

@@ -1,5 +1,25 @@
 use super::*;
 
+/// Evidence minted only by a current runtime owner after inspecting every slot.
+/// It cannot be constructed from a durable session record or a kick request.
+#[derive(Debug)]
+pub struct RuntimeSessionAbsence {
+    pub(super) session: GameSessionId,
+    pub(super) scope: RuntimeScopeRefV1,
+    pub(super) generation: u64,
+}
+impl RuntimeSessionAbsence {
+    pub const fn session(&self) -> GameSessionId {
+        self.session
+    }
+    pub const fn scope(&self) -> RuntimeScopeRefV1 {
+        self.scope
+    }
+    pub const fn generation(&self) -> u64 {
+        self.generation
+    }
+}
+
 impl ChannelRuntimeV1 {
     /// Facts of the committed player actor bound to exactly this GameSession.
     pub fn player_control_facts(
@@ -143,6 +163,31 @@ impl ChannelRuntimeV1 {
                 )
             })
             .count())
+    }
+
+    /// Exact all-slot absence check for terminal-session reconciliation. Pending,
+    /// positionless and control-loss slots count as present too.
+    pub fn contains_player_session(&self, session: GameSessionId) -> Result<bool, CarrierError> {
+        self.owner_fence()?;
+        Ok(self.carrier.slots.iter().any(|slot| {
+            matches!(slot,
+            Slot::Occupied { game_session_id: Some(current), .. } if *current == session)
+        }))
+    }
+
+    pub fn prove_player_session_absent(
+        &self,
+        session: GameSessionId,
+    ) -> Result<Option<RuntimeSessionAbsence>, CarrierError> {
+        let fence = self.owner_fence()?;
+        if self.contains_player_session(session)? {
+            return Ok(None);
+        }
+        Ok(Some(RuntimeSessionAbsence {
+            session,
+            scope: self.binding.runtime_scope,
+            generation: fence.generation().get(),
+        }))
     }
 
     /// Test-only census: (committed player actors, pending player reservations).

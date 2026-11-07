@@ -29,6 +29,11 @@ pub trait FreshAdmissionAuthority {
     fn staff_refresh(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
         async { true }
     }
+    /// A closing account uses the existing activity/terminal-release owners.
+    fn account_closure_check(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
+        async { false }
+    }
+
     #[cfg(test)]
     fn test_durability_root(&self) -> Option<&crate::durability::DurabilityRoot> {
         None
