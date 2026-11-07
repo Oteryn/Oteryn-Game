@@ -185,7 +185,7 @@
     "Broken Shamanic Staff": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "e9a0501432512b64679560f0a12e20d15187b3969ac6f4f2a51ded95904b3121",
+          "definition_sha256": "acc1151f4e77e89887729b2f9c8f728d32a8e1748e7e7a0ff65b49cb933741ed",
           "name": "broken shamanic staff",
           "path": "content/items/definitions/items-01000-01499.json"
         },
@@ -473,7 +473,7 @@
     "Demon Horn": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "7719190c32e527b6c76271026d76241ee2ea1286f92fbaf63a2d0afdead4e708",
+          "definition_sha256": "bbde515235f16cf0ceea77514d11aa2ece93c5436dd744ee39718da2812da595",
           "name": "demon horn",
           "path": "content/items/definitions/items-29500-29999.json"
         },
@@ -505,7 +505,7 @@
     "Demonic Skeletal Hand": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "85b40964b2c429ab2c109f7db736d89034f7adf03cd893b755b557d4d984af33",
+          "definition_sha256": "744105f1ce1defaae7bbb91af359c8734231b9ce2268c5ed35c65250675dd568",
           "name": "demonic skeletal hand",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -633,7 +633,7 @@
     "Elvish Talisman": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "6322ab477d82e3343593883b8d4d2295ecc03f0c2768aca7481040f6867fdcf0",
+          "definition_sha256": "ddc43d2e53e3d92350c20e0a26a221b0d50e7d50b0002bc1de9d3043cdcd0aef",
           "name": "elvish talisman",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -953,7 +953,7 @@
     "Green Dragon Leather": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "89063335f2e043cdf8bb85249f13225a39ede30a01bd8be72062f9d15781d879",
+          "definition_sha256": "9d66923beb24bec46fc5fa5e20a7217dfbd33c17e3bb5a80c0c448d025833ff0",
           "name": "green dragon leather",
           "path": "content/items/definitions/items-29500-29999.json"
         },
@@ -985,7 +985,7 @@
     "Green Dragon Scale": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "234b67d4560a8a1148a0532f465996b689234092553f7b7d329f6d983cca246c",
+          "definition_sha256": "0b84e7cef40e9271663b23afb3fad64777552d3b600cc8284213b4b5d4a76b21",
           "name": "green dragon scale",
           "path": "content/items/definitions/items-29500-29999.json"
         },
@@ -1305,7 +1305,7 @@
     "Orc Tooth": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "9849ea44bf7c76dc74a6c07d22cae9b3227441ac92a464cfbc88468048f5c5bc",
+          "definition_sha256": "9cdf63431ebc6d51d9010b07d4248308d93095bd389a9a6dbbbada304425f1c2",
           "name": "orc tooth",
           "path": "content/items/definitions/items-00000-00499.json"
         },

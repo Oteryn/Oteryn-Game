@@ -345,6 +345,134 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/elvenbane-basement-entry",
+      "quest": "oteryn:quest.authored.elvenbane_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32598,
+          "y": 31641,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/phase",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2553-2584#sha256:7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+        "owner:questpc2:authored68-elvenbane-personal-defender-route:2026-11-07",
+        "https://tibia.fandom.com/index.php?curid=8007&oldid=265159"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/elvenbane-return-after-defenders",
+      "quest": "oteryn:quest.authored.elvenbane_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32597,
+          "y": 31642,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/dragon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/elf-arcanist",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/demon-skeleton-east",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/demon-skeleton-west",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/minotaur-mage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/elvenbane/native-defenders/orc-shaman",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2553-2584#sha256:7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+        "owner:questpc2:authored68-elvenbane-personal-defender-route:2026-11-07",
+        "https://tibia.fandom.com/index.php?curid=8007&oldid=265159"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/thais-lighthouse-plate",
       "quest": "oteryn:quest.thais_lighthouse_quest",
       "trigger": "step_in",

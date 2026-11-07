@@ -1,55 +1,55 @@
-# Latest green: native objective and XP atomicity
+# Final owner-stop handoff merge — validation pending for r2
 
-Branch claude/happy-davinci-ijz3wy-questpc2. Counts2QUALIFIED/33UNFINISHED;
-Desert Dungeon and Annihilator remain QUALIFIED. Elvenbane is next and is NOT
-whole-qualified. Earlier completed work and proof are retained in BATCH files
-and git history. Read LANE-L3, PC-PACKET scope, QSPLIT ownership; skip other
-lanes/world-change owners and user exclusions. Single agent.
+Preserved incoming atomic XP/objective runtime d4b4ebe77 through86c4c6be7.
+Our integrated55a checkpoint4c94f2cb6 is GREEN: PG4cases,fmt/check/clippy,
+content123/World5/fullsourcechecks andpin allpassed. This additional86c4 merge
+was requested at ownerSTOP and has NOT received combined validation. r2 owns it.
+Conflicting derived Item/native/loot/prey/pin artifacts retain our verified
+superset: every incoming changed canonical Item was already covered by our
+admissions. Runtimeatomicity and its tests/persistmodule kept incoming. Native
+loot importer keeps stricter pinned XML fallback; existing21Demon/Dragon source
+items are all covered by selected71loot closure. Preserve incoming client-only
+predicate helper for its new test/API compatibility. No new implementation now.
+Regenerate/revalidate combined artifacts as needed in r2 before readiness claims.
+Older thread must stop after push. No PR/main/force. Counts2qualified/27unfinished
+owned29,6explicitWorldowner-skips; no fullElvenbanequalification.
 
-BATCH-native-objective-atomic-2026-11-07.json records actual PostgreSQL180006:
-RED74.71s zero capture (fixture lacked QuestSession admission), GREEN74.95s
-source Dragon/native death, admitted prior phase2, one capture, phase3,
-XP/Quest xmin equality and replay. Native subcase154ms runs after real
-source fixture initialization; total74.95s proves no skip. Direct native damage
-is an isolated engine seam; does not qualify client combat/traversal/rewards.
-Authority4.05s/4045ms and complete earned Annihilator105.20s/104401ms GREEN.
-Shared Quest persistence retains original SQL/normal gates; native objectives
-join XP transaction, no deferred crash gap. Fresh writes require XP audit
-created_xact_id=current; replay uses exact original binding/receipt.
+# OWNER STOP — replacement r2 owns continuation
 
-Four Dragon bodies +ten loot Items custody closure generated from pinned
-source; non-custody facts/probabilities preserved. Final prey15cases/776,
-registration43 write+check, source overlays verified, world pins refreshed/checked.
-Compiler3crates17.87s, fmt and clippy3crates/alltargets/allfeatures-Dwarnings
-pass. Source Python3corpse/3loot pass. No full suites or PR/readiness claim.
+Do not run this older thread concurrently. Owner requested commit/push and stop.
+Green checkpoint combines local9cb12b820 with published55a76f4f7. Exact6native
+origin goals use separate elvenbane/native-defenders/* tracks; prerequisites,
+caps/frozenprincipal/cancel/replay and17ordinarycorpseinstances proved in actual
+PG18.6:2cases101.87s. Incoming objective guard1/5.44s and complete Annihilator
+route1/127.97s also GREEN. Check4crates107.184s, alltargets/allfeaturesclippy217.36s,
+fmt,123content2.53s,5World53.39s allPASS. Strict34111Itemroundtrip191.382s and
+fullWorldProject590.597s plusallremainingrepoauthoringchecksPASS. Pin refreshed
+andchecked5c9a2f175f6ad7c325bc94bf4922dab1ac3b1e4bfc0ef92093bacc29a720d67d.
+Finalduplicatepincheckmaystillfinish in80699; earlieridenticalpincheckPASS.
 
-NEXT NOW: finish authorized commit and fetch/merge/push this green slice if
-not already pushed. Then continuous Elvenbane actual source exploration
-callbacks (basement, poison), real client earned Dragon+five defenders,
-guarded source treasure seven-item physical reward/replay, completion/exit.
-Prior phase2 fixture must NEVER substitute for full route. Spellbook3059 is
-documented choice; native objective floors are positive5/4/3, map negative.
-Use existing recipes.json2164+, source/hash CONTRACT-NOTES. Extend callbacks
-without duplicate phase tracks (kill_objectives currently extends last).
-No external dependency deferral; generic mechanisms and missing data our job.
+Latestremoteobserved86c4c6be7 includes atomicXP/objectivecommitd4b4ebe77 and
+exploration/ladderfindings. It must be preserved in finalhandoffmerge. Any code
+combined with86c4 afterthis verified55a checkpoint is NOT claimed newly tested;
+r2 mustvalidate combined snapshot. No further implementation by stoppedthread.
+Full Elvenbane is NOT qualified: exploration/poison/native wire combat/physical
+source treasure/exit remain. OtherPC86c4 records exploration+ladder localwork.
+Do not redo qualified Desert or Annihilator. Counts2QUALIFIED/27UNFINISHED owned29;
+6Worldtitles SKIPPED_OTHER_LANE per explicit ownerexclusion and currentSHAs/lines
+inWORLD-OWNERSHIP-SKIPS.json. Do not treat these aslocalqualifications.
 
-Environment source /workspace/oteryn-env/env.sh; do not read credentials.
-Only focused PG tests; RED before GREEN, real server marker+duration.
-Push every green slice and at least30min: fetch exact own branch, merge if
-moved, never force/rebase/main/PR. Correct owner identity and Claude trailers
-from packet/user. Update status/resume each batch; no final while33remain.
+Source fixes:20corpse stages+71selected lootkeys,53canonicaladmissions; exact
+canonical/native/sourcecharges enforced. Preservealreadyadmittedphysicalfacts
+(Gold10/minotaurleather229); onlyincomingunadmitted2824changes, all3596incoming
+profiles retained,3623total. Mapplacements byte-identical incoming. Existing
+Demon11replay added to strictvalidator; blockedstackpromotions onlysource-proven
+true/max100; rewardimporterpreservesNAagainstUNKNOWN (knownconflictstillrefuses).
+Stalecounts now43nativeoutputs(requiredsourcegateproof) and69containerrecipes
+(exactDesert+DraconiaUID/root/children assertions;36unimplemented stayclosed).
+AllRED/GREEN andsourcefacts inBATCH-elvenbane-native-defender-goals-2026-11-07.json.
+No newly authored binaries/wiki/referencecopies; no workflow/tools/repository edits.
 
-Build resources: retain /tmp/questpc2-*retention.json ledgers and archives in
-/workspace/oteryn-env/retained-cache-archives. RAM caches have original-path
-symlinks; do not overwrite newer caches with archived old ones. Inactive
-Content cache is archived, empty original, final-content-cache-retention ledger.
-Other relocation ledgers final-check-cache-relocation and
-final-inactive-caches-relocation retain lossless caches. Native newest READY dep-graph/query-cache are losslessly archived in
-final-positive-native-metadata-retention ledger; RESTORE those two files
-before next native compile. Current positive exe live; older RED exe retained
-exact checksum.
-Do not broad-clean/change build profiles. Heavy native compiler, pin compiler
-and prey simulation sequential; cgroup16GB/root32GB. Logs in batch JSON.
+
+# Incoming r2-relevant exploration checkpoint
 
 ## Active continuation 2026-11-07 10:18 UTC
 

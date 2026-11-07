@@ -5,8 +5,10 @@
   "lifecycle": "AUTHORING",
   "counts": {
     "qualified": 2,
-    "unfinished": 33,
-    "blocked": 0
+    "unfinished": 27,
+    "blocked": 0,
+    "skipped_other_lane": 6,
+    "owned_total": 29
   },
   "quests": [
     {
@@ -106,8 +108,8 @@
       "canonical": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
       "title": "Chakoya Iceberg Mini World Change",
       "mechanism": "encounter_party_admission_settlement",
-      "status": "UNFINISHED",
-      "blocker": "Personal iceberg route admission, Chakoya spawn lifecycle and credited encounter occurrences are absent.",
+      "status": "SKIPPED_OTHER_LANE",
+      "blocker": null,
       "source_lane_checks": [
         {
           "lane": "questpc",
@@ -125,7 +127,17 @@
         }
       ],
       "qualification_scope": "Whole quest; no qualification inferred from existing reward cohorts.",
-      "external_owner_blocker": false
+      "external_owner_blocker": false,
+      "owner_routing": {
+        "owner": "wvar",
+        "basis": "Explicit owner instruction excludes World changes owned by -worldchg/-wvar/-wcontrib/-wevents.",
+        "observed_status": "QUALIFIED",
+        "evidence_branch": "claude/happy-davinci-ijz3wy-wvar",
+        "sha": "5fe120419214c6256250e47c86587ad1e12f75aa",
+        "path": "docs/architecture/reviews/WORLDCHG-Q.md",
+        "line": 40,
+        "local_qualification_claimed": false
+      }
     },
     {
       "canonical": "oteryn:quest.authored.child_of_destiny_quest",
@@ -206,8 +218,8 @@
       "canonical": "oteryn:quest.deeplings_worldchange",
       "title": "Deeplings World Change",
       "mechanism": "encounter_party_admission_settlement",
-      "status": "UNFINISHED",
-      "blocker": "Fiehonja world-stage progression, boss encounters and stage reset are absent; the existing stage-13 teleports only read access.",
+      "status": "SKIPPED_OTHER_LANE",
+      "blocker": null,
       "source_lane_checks": [
         {
           "lane": "questpc",
@@ -225,14 +237,24 @@
         }
       ],
       "qualification_scope": "Whole quest; no qualification inferred from existing reward cohorts.",
-      "external_owner_blocker": false
+      "external_owner_blocker": false,
+      "owner_routing": {
+        "owner": "worldchg",
+        "basis": "Explicit owner instruction excludes World changes owned by -worldchg/-wvar/-wcontrib/-wevents.",
+        "observed_status": "QUALIFIED",
+        "evidence_branch": "claude/happy-davinci-ijz3wy-worldchg",
+        "sha": "ebc53bc6e5cceb72837b9a984723c433798c6955",
+        "path": "docs/architecture/reviews/WORLDCHG-Q.md",
+        "line": 50,
+        "local_qualification_claimed": false
+      }
     },
     {
       "canonical": "oteryn:quest.authored.demon_wars_world_change",
       "title": "Demon Wars World Change",
       "mechanism": "encounter_party_admission_settlement",
-      "status": "UNFINISHED",
-      "blocker": "Shaburak Demon/Lord/Prince faction combat progression and faction-war encounter reset are absent.",
+      "status": "SKIPPED_OTHER_LANE",
+      "blocker": null,
       "source_lane_checks": [
         {
           "lane": "questpc",
@@ -250,14 +272,24 @@
         }
       ],
       "qualification_scope": "Whole quest; no qualification inferred from existing reward cohorts.",
-      "external_owner_blocker": false
+      "external_owner_blocker": false,
+      "owner_routing": {
+        "owner": "worldchg",
+        "basis": "Explicit owner instruction excludes World changes owned by -worldchg/-wvar/-wcontrib/-wevents.",
+        "observed_status": "QUALIFIED",
+        "evidence_branch": "claude/happy-davinci-ijz3wy-worldchg",
+        "sha": "ebc53bc6e5cceb72837b9a984723c433798c6955",
+        "path": "docs/architecture/reviews/WORLDCHG-Q.md",
+        "line": 51,
+        "local_qualification_claimed": false
+      }
     },
     {
       "canonical": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
       "title": "Devovorga's Essence Mini World Change",
       "mechanism": "encounter_party_admission_settlement",
-      "status": "UNFINISHED",
-      "blocker": "Incarnation offering, Anmothra summon, Vengoth participants and terminal encounter cleanup are absent.",
+      "status": "SKIPPED_OTHER_LANE",
+      "blocker": null,
       "source_lane_checks": [
         {
           "lane": "questpc",
@@ -275,14 +307,24 @@
         }
       ],
       "qualification_scope": "Whole quest; no qualification inferred from existing reward cohorts.",
-      "external_owner_blocker": false
+      "external_owner_blocker": false,
+      "owner_routing": {
+        "owner": "wevents",
+        "basis": "Explicit owner instruction excludes World changes owned by -worldchg/-wvar/-wcontrib/-wevents.",
+        "observed_status": "OWNED_OTHER_LANE",
+        "evidence_branch": "claude/happy-davinci-ijz3wy-worldchg",
+        "sha": "ebc53bc6e5cceb72837b9a984723c433798c6955",
+        "path": "docs/architecture/reviews/WORLDCHG-Q.md",
+        "line": 52,
+        "local_qualification_claimed": false
+      }
     },
     {
       "canonical": "oteryn:quest.authored.down_the_drain_mini_world_change",
       "title": "Down the Drain Mini World Change",
       "mechanism": "encounter_party_admission_settlement",
-      "status": "UNFINISHED",
-      "blocker": "Personal flooded-island entry, Water Elemental encounter completion and dungeon reset are absent.",
+      "status": "SKIPPED_OTHER_LANE",
+      "blocker": null,
       "source_lane_checks": [
         {
           "lane": "questpc",
@@ -300,7 +342,17 @@
         }
       ],
       "qualification_scope": "Whole quest; no qualification inferred from existing reward cohorts.",
-      "external_owner_blocker": false
+      "external_owner_blocker": false,
+      "owner_routing": {
+        "owner": "wvar",
+        "basis": "Explicit owner instruction excludes World changes owned by -worldchg/-wvar/-wcontrib/-wevents.",
+        "observed_status": "QUALIFIED",
+        "evidence_branch": "claude/happy-davinci-ijz3wy-wvar",
+        "sha": "5fe120419214c6256250e47c86587ad1e12f75aa",
+        "path": "docs/architecture/reviews/WORLDCHG-Q.md",
+        "line": 45,
+        "local_qualification_claimed": false
+      }
     },
     {
       "canonical": "oteryn:quest.elemental_spheres_quest",
@@ -330,9 +382,9 @@
     {
       "canonical": "oteryn:quest.authored.elvenbane_quest",
       "title": "Elvenbane Quest",
-      "mechanism": "encounter_party_admission_settlement",
+      "mechanism": "native_source_origin_personal_kill_goals",
       "status": "UNFINISHED",
-      "blocker": "Native objective capture and XP/Quest atomic transaction are PostgreSQL-proved, including exact replay. Continuous source traversal, real client combat through all six defenders, and seven-item terminal reward/replay are the next composed route.",
+      "blocker": "Native six-origin defender prerequisite goals and ordinary corpse/loot closure now pass PostgreSQL. Whole qualification still requires physical approach, poison floor, actual wire combat, four source treasure claims and exit.",
       "source_lane_checks": [
         {
           "lane": "questpc",
@@ -357,6 +409,12 @@
         "postgres_version": 180006,
         "duration_seconds": 4.03,
         "whole_quest_qualified": false
+      },
+      "mechanism_pg_proof": {
+        "record": "BATCH-elvenbane-native-defender-goals-2026-11-07.json",
+        "server_version_num": 180006,
+        "cases": 2,
+        "runtime_seconds": 100.92
       }
     },
     {
@@ -506,8 +564,8 @@
       "canonical": "oteryn:quest.authored.rise_of_devovorga",
       "title": "Rise of Devovorga",
       "mechanism": "encounter_party_admission_settlement",
-      "status": "UNFINISHED",
-      "blocker": "Seasonal stages/reset, coordinated incarnation encounters and participant rewards are not composed.",
+      "status": "SKIPPED_OTHER_LANE",
+      "blocker": null,
       "source_lane_checks": [
         {
           "lane": "questpc3",
@@ -518,7 +576,17 @@
         }
       ],
       "qualification_scope": "Whole quest; no qualification inferred from existing reward cohorts.",
-      "external_owner_blocker": false
+      "external_owner_blocker": false,
+      "owner_routing": {
+        "owner": "wevents",
+        "basis": "Explicit owner instruction excludes World changes owned by -worldchg/-wvar/-wcontrib/-wevents.",
+        "observed_status": "OWNED_OTHER_LANE",
+        "evidence_branch": "claude/happy-davinci-ijz3wy-worldchg",
+        "sha": "ebc53bc6e5cceb72837b9a984723c433798c6955",
+        "path": "docs/architecture/reviews/WORLDCHG-Q.md",
+        "line": 72,
+        "local_qualification_claimed": false
+      }
     },
     {
       "canonical": "oteryn:quest.rotten_blood_quest",
@@ -1667,11 +1735,12 @@
     }
   },
   "current_batch": {
-    "id": "desert-source-gate-and-earned-rewards-2026-11-07",
-    "state": "GREEN",
-    "record": "BATCH-desert-source-gate-and-earned-rewards-2026-11-07.json",
-    "whole_quest_qualifications": 1,
-    "next": "Commit/push green batch, then Elvenbane source/encounter/reward route. Preserve ongoing other-PC Annihilator continuation."
+    "id": "elvenbane-native-defender-goals-2026-11-07",
+    "state": "OWNER_STOP_HANDOFF_MERGED_VALIDATION_PENDING",
+    "record": "BATCH-elvenbane-native-defender-goals-2026-11-07.json",
+    "last_green_commit": "5d7d8a330",
+    "next": "Owner STOP: replacement r2 continues. Preserve verified native goal/corpse/loot work, merge published atomic continuation and hand off without further implementation.",
+    "incoming_sha": "86c4c6be71cf4d24aa6ca0ae7525479d5b5feddf"
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -1877,7 +1946,7 @@
   },
   "native_objective_atomic_authoring_checkpoint": {
     "state": "AUTHORING",
-    "published_scope": "Native XP/Quest atomic objective mechanism and Dragon custody closure; no whole Elvenbane qualification.",
+    "published_scope": "Verified source/proof/resume checkpoint only; runtime/data changes remain local until green.",
     "postgres_red_log": "/tmp/questpc2-native-objective-atomic-link-retry-pg.log",
     "postgres_version": 180006,
     "duration_seconds": 79.95,
@@ -1889,32 +1958,7 @@
       4027
     ],
     "source_tests": "3 tests PASS1.599s; /tmp/questpc2-dragon-corpse-python.log",
-    "next": "Implement continuous Elvenbane source exploration callbacks, all six earned real-client kills, guarded physical seven-item terminal reward/replay; qualify whole quest, then remaining owned entries.",
-    "latest_red": {
-      "postgres_version": 180006,
-      "duration_seconds": 73.92,
-      "log": "/tmp/questpc2-native-objective-atomic-recovered-green-pg.log",
-      "finding": "Canonical corpse admission alone did not refresh native loot section; section has now been regenerated. Ten additional Dragon loot custody Items qualified through source tooling."
-    },
-    "custody_tests": "3 corpse tests PASS1.599s;3 loot custody tests PASS22.665s; no whole quest qualification.",
-    "postgres_green": {
-      "version": 180006,
-      "seconds": 74.95,
-      "marker_elapsed_ms": 154,
-      "log": "/tmp/questpc2-native-objective-admitted-pg.log",
-      "proof": "Real source Dragon/native death, coherent admitted phase2, one captured objective, phase3, identical XP/Quest xmin, exact replay."
-    },
-    "authority_regression": {
-      "version": 180006,
-      "seconds": 4.05,
-      "marker_elapsed_ms": 4045
-    },
-    "annihilator_regression": {
-      "version": 180006,
-      "seconds": 105.2,
-      "marker_elapsed_ms": 104401
-    },
-    "batch": "BATCH-native-objective-atomic-2026-11-07.json"
+    "next": "Finish common Quest persistence extraction and native XP-transaction objective consumer; same-xmin/replay PG proof; positive source traversal and physical rewards afterward."
   },
   "elvenbane_exploration_authoring_checkpoint": {
     "state": "AUTHORING",

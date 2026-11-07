@@ -33,6 +33,7 @@ pub mod liquid_black;
 pub mod loader;
 pub mod log;
 pub mod monk_shrines;
+pub mod native_kill_goals;
 pub mod native_rules;
 #[cfg(test)]
 pub mod npc_rules;

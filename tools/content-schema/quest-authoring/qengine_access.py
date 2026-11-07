@@ -107,6 +107,8 @@ def document():
         if encounter:
             for player in encounter['players']:
                 player['from'] = player.pop('from_')
+    import elvenbane_access
+    rows.extend(elvenbane_access.callbacks(callback, position))
     return dict(schema=1, callbacks=sorted(rows, key=lambda row: row['key']))
 
 

@@ -160,6 +160,17 @@ def apply_encounter_corpse_admissions(definitions, root=ROOT):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.apply_admissions(definitions, root)
+    spec = importlib.util.spec_from_file_location(
+        "native_goal_corpse_items", root / "tools/content-schema/native-gameplay/native_goal_corpse_items.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.apply_admissions(definitions, root)
+
+    spec = importlib.util.spec_from_file_location(
+        "native_goal_loot_items", root / "tools/content-schema/native-gameplay/native_goal_loot_items.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.apply_admissions(definitions, root)
 
 
 def main() -> int:
