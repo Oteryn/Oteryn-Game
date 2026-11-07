@@ -132,6 +132,56 @@
         }
       ],
       "scope": "Generic effect and fenced receipt/replay only; Draconia still requires the complete NPC/offering/exit journey."
+    },
+    {
+      "name": "bounded composed tile conjunctions and explicit callback recovery landing",
+      "status": "QUALIFIED",
+      "red_before_change": {
+        "postgresql": "18.6",
+        "duration_seconds": 44.82,
+        "test": "conditional_quest_failure_uses_authored_landing_and_replays_once",
+        "observed_cell": {
+          "x": 32817,
+          "y": 31598,
+          "floor": -9
+        },
+        "expected_cell": {
+          "x": 32818,
+          "y": 31599,
+          "floor": -9
+        }
+      },
+      "postgres": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED draconia-lever-exit",
+          "duration_seconds": 69.80870223,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED draconia-player-journey",
+          "duration_seconds": 81.375123029,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-failure-landing",
+          "duration_seconds": 45.492613937,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED conditional-failure-blocked",
+          "duration_seconds": 45.501275796,
+          "postgresql": "18.6",
+          "passed": true
+        }
+      ],
+      "reuse_commits": [
+        "c651c87d52acd0fcc56c5b426a1e9f27ab0b92ba",
+        "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
+        "3bfd856061e5aa89668747ec7405af8c2b8cf7f5"
+      ]
     }
   ],
   "entries": [
@@ -212,8 +262,50 @@
     },
     {
       "title": "Draconia",
-      "status": "PENDING",
-      "evidence": []
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "marker": "POSTGRES_CASE_COMPLETED draconia-lever-exit",
+          "duration_seconds": 69.80870223,
+          "postgresql": "18.6",
+          "passed": true
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED draconia-player-journey",
+          "duration_seconds": 81.375123029,
+          "postgresql": "18.6",
+          "passed": true
+        }
+      ],
+      "journey": [
+        "Fresh player has no seeded quest progress",
+        "Missing mushrooms refuse without items or quest receipts",
+        "NPC greeting consumes one mushroom and atomically issues the fetish and flag 1",
+        "Flag 1 prevents another paid issue",
+        "The player moves the actually issued fetish to the source offering cell through the fenced custody owner",
+        "Offering consumption, exact flag reset to 0 and exit share the callback transaction",
+        "Replayed exit and lever commands do not repeat effects",
+        "Each of four incorrect composed lever appearances prevents the alternative exit; restoring all four permits it"
+      ],
+      "legacy_levers_regression": {
+        "test": "classic_draconia_real_levers_open_and_restore_the_source_obstacles",
+        "passed": true,
+        "batch_duration_seconds": 89.75
+      },
+      "deployment": {
+        "npc": "oteryn:npc.an_old_dragonlord",
+        "cell": {
+          "x": 32796,
+          "y": 31558,
+          "floor": 2
+        },
+        "test": "test_l2_reward_and_programme_npcs_have_global_deployment_cells"
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/an_old_dragon_lord.lua:61-74:sha256:85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/draconia/movement-escape.lua:9-26:sha256:53f3313e99fb541c3e016b5ac09a2e372c0ad8a382786ccd79db6bb40a700312",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/draconia/movement-exit_teleport.lua:1-36:sha256:80af40ac459eb655670472a0391db78590d456827917d4a64e714947b64723a4"
+      ]
     },
     {
       "title": "Exchange Quests",
@@ -530,9 +622,9 @@
     "world_pins": {
       "regenerated": true,
       "checked": true,
-      "digest": "03dc19c5c053c939e0f4ab40c9e353a6488e7e453c82255039df65391d9edf99",
-      "bytes": 31101986,
-      "reason": "Combined PC5 source programmes, shared reward providers, and Global Jorge/Tereban/Viola placements; pin-check verified the merged tree.",
+      "digest": "7edac45215ec0cf12aba0f382ad398f78d99671fbed77a6a1597006691398d2f",
+      "bytes": 31102012,
+      "reason": "Includes the admitted Global An Old Dragonlord deployment alongside the existing L2 placements.",
       "tool": "regenerate_content.py --resolve --no-stage --skip-checks; world-bundle-compiler pin-check"
     },
     "formatting": "cargo fmt --all --check and explicit mounted-file rustfmt --check passed",
@@ -670,6 +762,43 @@
         "deny_warnings": true,
         "exit_code": 0
       }
+    },
+    "draconia": {
+      "postgresql": "18.6",
+      "passed": 5,
+      "failed": 0,
+      "selected_skipped": 0,
+      "world_callback_units": 21,
+      "reward_callback_units": 3,
+      "world_authoring_tests": 27,
+      "reward_authoring_tests": 12,
+      "l2_authoring_tests": 11,
+      "npc_placement_tests": 11,
+      "item_profile_tests": 9,
+      "world_pin": {
+        "regenerated": true,
+        "checked": true,
+        "digest": "7edac45215ec0cf12aba0f382ad398f78d99671fbed77a6a1597006691398d2f",
+        "bytes": 31102012
+      },
+      "resource_settings": {
+        "incremental": false,
+        "test_debug_symbols": false,
+        "build_jobs": 1,
+        "serialize_pin_compilation_and_rust_test_build": true
+      },
+      "qualification_scope": "Full Draconia journey and reusable world mechanisms; other pending entries retain their existing status.",
+      "clippy": {
+        "packages": [
+          "oteryn-gameplay-quests",
+          "oteryn-gameplay-dispatch"
+        ],
+        "all_targets": true,
+        "all_features": true,
+        "deny_warnings": true,
+        "exit_code": 0
+      },
+      "formatting": "cargo fmt --all --check; explicit rustfmt on mounted tests; git diff --check"
     }
   },
   "cross_lane_inspection": {

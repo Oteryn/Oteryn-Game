@@ -234,7 +234,7 @@ def build():
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     greetings=[]
     for npc in sorted({c['npc'] for c in callbacks}):
-        path='data-global/npc/'+npc.removeprefix('oteryn:npc.')+'.lua'
+        path=questl2_rewards.source_path(npc)
         messages={}
         citations=[]
         for field,constant in [('greet','GREET'),('farewell','FAREWELL'),('walkaway','WALKAWAY')]:

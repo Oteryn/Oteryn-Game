@@ -63,6 +63,7 @@ CALLBACK_FIELDS = {
     'teleport', 'storage', 'minimum_level', 'experience', 'monk_reward',
     'offerings', 'item_on_target', 'return_on_failure', 'failure_message',
     'success_message', 'native_rule', 'effects', 'sources', 'remote_teleport',
+    'failure_teleport',
 }
 CALLBACK_REQUIRED = {
     'key', 'quest', 'trigger', 'selector', 'reversible', 'passages',
@@ -171,10 +172,13 @@ def text_message(value, context):
 def provenance(value, context, *, outfit=False):
     require(isinstance(value, list) and value, context + ': empty provenance')
     for reference in value:
-        if outfit and isinstance(reference,str):
-            pinned=re.fullmatch(r'crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:(data-global/[a-zA-Z0-9_./-]+\.lua):sha256:[a-f0-9]{64}',reference)
+        if isinstance(reference,str):
+            pinned=re.fullmatch(r'crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:(data-global/[a-zA-Z0-9_./-]+\.lua)(?::([1-9][0-9]*)(?:-([1-9][0-9]*))?)?:sha256:[a-f0-9]{64}',reference)
             if pinned:
+                require(outfit or pinned.group(2) is not None, context + ': world source requires exact lines')
                 require('..' not in pinned.group(1).split('/'),context + ': invalid source path')
+                require(pinned.group(3) is None or int(pinned.group(2)) <= int(pinned.group(3)),
+                        context + ': reversed source lines')
                 continue
         match = SOURCE.fullmatch(reference) if isinstance(reference, str) else None
         require(match is not None, context + ': callback source must use the exact Crystal pin and line')
@@ -350,28 +354,53 @@ def validate_callback(callback, directory):
     remote = callback.get('remote_teleport')
     if remote is not None:
         fields(remote, {'position', 'appearance', 'destination'},
-               {'position', 'appearance', 'destination'}, key + ': remote teleport')
+               {'position', 'appearance', 'destination', 'additional'}, key + ': remote teleport')
         position(remote['position'], key + ': remote position')
         position(remote['destination'], key + ': remote destination')
+        additional = remote.get('additional', [])
+        require(isinstance(additional, list) and len(additional) <= 7,
+                key + ': excessive remote conditions')
+        seen_remote = {position(remote['position'], key + ': remote position')}
+        for condition in additional:
+            fields(condition, {'position', 'appearance'}, {'position', 'appearance'}, key + ': remote condition')
+            at = position(condition['position'], key + ': remote condition position')
+            require(at not in seen_remote and integer(condition['appearance'], 1, 65535),
+                    key + ': duplicate or invalid remote condition')
+            seen_remote.add(at)
         require(integer(remote['appearance'], 1, 65535)
                 and callback['trigger'] == 'step_in' and callback.get('teleport') is not None,
                 key + ': remote teleport requires a readonly step')
+    if callback.get('failure_teleport') is not None:
+        position(callback['failure_teleport'], key + ': failure_teleport')
+        require(callback['trigger'] == 'step_in' and callback['return_on_failure'],
+                key + ': failure teleport requires a returning STEP')
     for field in ('passages', 'storage', 'offerings'):
         require(isinstance(callback[field], list) and len(callback[field]) <= MAX_EFFECTS,
                 key + ': invalid or excessive ' + field)
     seen = set()
     for storage in callback['storage']:
         fields(storage, {'track', 'minimum', 'maximum', 'set'},
-               {'track', 'minimum', 'maximum', 'set', 'preserve', 'read_only'}, key + ': storage')
+               {'track', 'minimum', 'maximum', 'set', 'preserve', 'read_only', 'set_if'}, key + ': storage')
         require(valid_key(storage['track']) and storage['track'] not in seen, key + ': duplicate or invalid track')
         seen.add(storage['track'])
         require(all(integer(storage[field], -(2 ** 63), 2 ** 63 - 1) for field in ('minimum', 'maximum', 'set'))
                 and storage['minimum'] <= storage['maximum'], key + ': invalid storage range')
         require(type(storage.get('preserve', False)) is bool, key + ': invalid preserve')
         require(type(storage.get('read_only', False)) is bool, key + ': invalid read_only')
+
+        if storage.get('set_if') is not None:
+            require(integer(storage['set_if'], storage['minimum'], storage['maximum'])
+                    and not storage.get('preserve', False) and not storage.get('read_only', False)
+                    and callback.get('native_rule') is None,
+                    key + ': invalid conditional set')
     if remote is not None:
-        require(callback['storage'] and all(s.get('read_only') is True for s in callback['storage']),
-                key + ': remote teleport requires a readonly step')
+        map_only = (not callback['storage'] and not callback.get('lever')
+                    and not callback['passages'] and not callback['offerings']
+                    and not callback.get('item_on_target') and callback.get('minimum_level') is None
+                    and callback.get('experience') is None and callback.get('monk_reward') is None
+                    and callback.get('native_rule') is None and not callback.get('effects'))
+        require(map_only or (callback['storage'] and all(s.get('read_only') is True for s in callback['storage'])),
+                key + ': remote teleport requires a readonly or stateless step')
     if any(entry.get('read_only', False) for entry in callback['storage']):
         require(all(entry.get('read_only', False) and not entry.get('preserve', False)
                     for entry in callback['storage'])

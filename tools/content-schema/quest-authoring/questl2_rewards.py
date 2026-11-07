@@ -3,7 +3,12 @@ import hashlib
 import re
 
 
-NPCS = ('dorian', 'hairycles', 'jorge', 'kroox')
+NPCS = ('an_old_dragon_lord', 'dorian', 'hairycles', 'jorge', 'kroox')
+NPC_FILES = {'oteryn:npc.an_old_dragonlord': 'an_old_dragon_lord'}
+
+def source_path(npc):
+    return 'data-global/npc/' + NPC_FILES.get(npc, npc.removeprefix('oteryn:npc.')) + '.lua'
+
 ITEMS = {
     227, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933,
     7935, 7936, 19083, 19150, 19151, 19152, 19153, 19154, 19155,
@@ -21,11 +26,11 @@ def append(callbacks, offers, inputs, pin):
                 'set': after, **({'preserve': True} if preserve else {})}
 
     def add(name, quest, npc, keywords, storage, reply, take=(), topic=0, offer=None,
-            give=None, repeatable=False, source_text=None):
+            give=None, repeatable=False, source_text=None, npc_key=None):
         path = f'data-global/npc/{npc}.lua'
         callback = {
             'key': 'oteryn:quest-reward/' + name,
-            'quest': 'oteryn:quest.' + quest, 'npc': 'oteryn:npc.' + npc,
+            'quest': 'oteryn:quest.' + quest, 'npc': npc_key or 'oteryn:npc.' + npc,
             'keywords': keywords, 'topic': topic, 'next_topic': 0,
             'storage': storage,
             'take': [{'item': f'oteryn:item.tibia.i{item}', 'count': count}
@@ -55,6 +60,21 @@ def append(callbacks, offers, inputs, pin):
                 raise ValueError('L2 offer is absent from donor: ' + name)
             offers.append({'npc': callback['npc'], 'keywords': words, 'topic': 0,
                            'next_topic': topic, 'storage': storage, 'reply': [text]})
+
+    dragon_npc = 'oteryn:npc.an_old_dragonlord'
+    dragon_track = 'oteryn:quest-progress/dragonfetish'
+    dragon_reply = "AHHH MUSHRRROOOMSSS! NOW MY PAIN WILL BE EASSSED FOR A WHILE! TAKE THISS AND LEAVE THE DRAGONSSS' CEMETERY AT ONCE!"
+    for name, minimum, maximum in [('initial', -1, 0), ('later', 2, 9223372036854775807)]:
+        add('draconia-fetish-' + name, 'draconia_quest', 'an_old_dragon_lord', ['hi', 'hello'],
+            [{'track': dragon_track, 'minimum': minimum, 'maximum': maximum, 'set': 1}],
+            dragon_reply, take=[(3723, 1)], give=(3206, 1), repeatable=True,
+            source_text='player:addItem(3206, 1)', npc_key=dragon_npc)
+    blocked = "LEAVE THE DRAGONS' CEMETERY AT ONCE!"
+    if blocked not in inputs[source_path(dragon_npc)].decode():
+        raise ValueError('Draconia blocked greeting drift')
+    offers.append({'npc': dragon_npc, 'keywords': ['hi', 'hello'], 'topic': 0, 'next_topic': 0,
+                   'storage': [{'track': dragon_track, 'minimum': 1, 'maximum': 1, 'set': 1}],
+                   'reply': [blocked]})
 
     jorge = inputs['data-global/npc/jorge.lua'].decode()
     for required in ('{ name = "Abacus", id = 19151 }',

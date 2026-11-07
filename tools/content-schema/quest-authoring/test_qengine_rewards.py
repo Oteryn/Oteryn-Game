@@ -30,6 +30,21 @@ class QuestRewards(unittest.TestCase):
             for addon in range(row['addon_count']+1):
                 self.assertEqual(sum(m['grant_key']==f"{row['key']}/quest-grant/{addon}" for m in mappings),1)
 
+    def test_draconia_greeting_barter_uses_canonical_npc_and_excludes_only_flag_one(self):
+        rows = [c for c in self.callbacks['callbacks'] if c['key'].startswith('oteryn:quest-reward/draconia-fetish-')]
+        self.assertEqual(len(rows), 2)
+        for row in rows:
+            self.assertEqual(row['npc'], 'oteryn:npc.an_old_dragonlord')
+            self.assertEqual(row['take'], [{'item': 'oteryn:item.tibia.i3723', 'count': 1}])
+            self.assertEqual(row['give'], {'item': 'oteryn:item.tibia.i3206', 'count': 1, 'contents': []})
+            self.assertTrue(row['repeatable'])
+            self.assertEqual(row['storage'][0]['set'], 1)
+            self.assertIn('data-global/npc/an_old_dragon_lord.lua:72:sha256:85016cc0', row['sources'][0])
+        for value in [-1, 0, 1, 2, 9223372036854775807]:
+            matches = [r for r in rows if r['storage'][0]['minimum'] <= value <= r['storage'][0]['maximum']]
+            self.assertEqual(len(matches), 0 if value == 1 else 1)
+        self.assertEqual(q.questl2_rewards.source_path(rows[0]['npc']), 'data-global/npc/an_old_dragon_lord.lua')
+
     def test_cosmetics_revision_matches_the_character_gameplay_content(self):
         gameplay=json.loads(self.outputs['content/spells.manifest.json'])
         self.assertEqual(self.author['document']['content_revision'],
@@ -56,12 +71,12 @@ class QuestRewards(unittest.TestCase):
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
         original = {c['key'].split('/')[-1] for c in callbacks
-                    if not c['key'].split('/')[-1].startswith(('l1-', 'token-', 'ape-', 'thieves-'))
+                    if not c['key'].split('/')[-1].startswith(('l1-', 'token-', 'ape-', 'thieves-', 'draconia-'))
                     and c['key'].split('/')[-1] != 'sam-kroox'}
         self.assertEqual(original, {'pirate-sabre', 'knight-sword', 'deepling-helmet',
                                    'hallowed-holy-water', 'outfox-helmet', 'sam-backpack'})
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),11)
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),54)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),56)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

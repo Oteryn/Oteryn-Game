@@ -66,6 +66,9 @@ pub struct Storage {
     pub minimum: i64,
     pub maximum: i64,
     pub set: i64,
+    /// Replace only this exact locked value; other values are retained.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub set_if: Option<i64>,
     /// Preserve the track value within a receipt-bearing quest transition.
     #[serde(default, skip_serializing_if = "is_false")]
     pub preserve: bool,
@@ -103,10 +106,20 @@ pub struct MonkReward {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct RemoteTile {
+    pub position: Position,
+    pub appearance: u16,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct RemoteTeleport {
     pub position: Position,
     pub appearance: u16,
     pub destination: Position,
+    /// Every additional composed tile must also contain its exact appearance.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub additional: Vec<RemoteTile>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -136,6 +149,9 @@ pub struct Callback {
     #[serde(default)]
     pub item_on_target: Option<ItemOnTarget>,
     pub return_on_failure: bool,
+    /// Explicit recovery landing for a refused STEP; absent preserves its origin.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub failure_teleport: Option<Position>,
     pub failure_message: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub success_message: Option<String>,
@@ -147,6 +163,20 @@ pub struct Callback {
 }
 
 impl Callback {
+    fn permits_remote_teleport(&self) -> bool {
+        self.is_read_only()
+            || (self.storage.is_empty()
+                && self.lever.is_none()
+                && self.passages.is_empty()
+                && self.offerings.is_empty()
+                && self.item_on_target.is_none()
+                && self.minimum_level.is_none()
+                && self.experience.is_none()
+                && self.monk_reward.is_none()
+                && self.native_rule.is_none()
+                && self.effects.is_empty())
+    }
+
     /// A pure quest-state predicate, with no Quest mutation or receipt.
     #[must_use]
     pub fn is_read_only(&self) -> bool {
@@ -183,6 +213,42 @@ pub fn load() -> Result<Vec<Callback>, String> {
     Ok(callbacks)
 }
 
+// New general callbacks require both exact source lines and a blob SHA-256.
+// Existing wardrobe-only witnesses retain their narrower admission above.
+fn current_crystal_world_source(source: &str) -> bool {
+    let Some(source) = source.strip_prefix("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:")
+    else {
+        return false;
+    };
+    let Some((location, digest)) = source.rsplit_once(":sha256:") else {
+        return false;
+    };
+    if digest.len() != 64
+        || !digest
+            .bytes()
+            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+    {
+        return false;
+    }
+    let Some((path, lines)) = location.rsplit_once(':') else {
+        return false;
+    };
+    if !path.starts_with("data-global/")
+        || !path.ends_with(".lua")
+        || path.split('/').any(|part| part.is_empty() || part == "..")
+        || !path
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || b"_./-".contains(&byte))
+    {
+        return false;
+    }
+    let (first, last) = lines.split_once('-').unwrap_or((lines, lines));
+    let (Ok(first), Ok(last)) = (first.parse::<u32>(), last.parse::<u32>()) else {
+        return false;
+    };
+    first > 0 && first <= last
+}
+
 fn parse(text: &str) -> Result<Vec<Callback>, String> {
     let document: Document = serde_json::from_str(text).map_err(|e| e.to_string())?;
     if document.schema != 1 || document.callbacks.len() > MAX_CALLBACKS {
@@ -203,13 +269,25 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && selector.action.is_none())
             || selector.position.is_some_and(|p| !valid_pos(p))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
+            || callback.failure_teleport.is_some_and(|p| {
+                !valid_pos(p) || callback.trigger != Trigger::StepIn || !callback.return_on_failure
+            })
             || callback.remote_teleport.as_ref().is_some_and(|remote| {
                 !valid_pos(remote.position)
                     || !valid_pos(remote.destination)
                     || remote.appearance == 0
                     || callback.trigger != Trigger::StepIn
-                    || !callback.is_read_only()
+                    || !callback.permits_remote_teleport()
                     || callback.teleport.is_none()
+                    || remote.additional.len() > 7
+                    || remote.additional.iter().any(|condition| {
+                        !valid_pos(condition.position) || condition.appearance == 0
+                    })
+                    || std::iter::once(remote.position)
+                        .chain(remote.additional.iter().map(|condition| condition.position))
+                        .collect::<BTreeSet<_>>()
+                        .len()
+                        != remote.additional.len() + 1
             })
             || !effects::valid(callback)
             || unique_offerings.len() != callback.offerings.len()
@@ -256,11 +334,12 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || (!callback.offerings.is_empty() && callback.storage.is_empty())
             || callback.sources.is_empty()
             || !callback.sources.iter().any(|source| {
-                // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
+                // Both immutable Crystal captures and the earlier Canary capture are admitted.
                 source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
                     || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
                     || (callback.effects.outfit_reward.is_some()
                         && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
+                    || current_crystal_world_source(source)
             })
             || callback.item_on_target.as_ref().is_some_and(|item| {
                 item.target_replacement == Some(0)
@@ -317,10 +396,16 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || o.count > 100
                     || !super::valid_quest_key(&o.item)
             })
-            || callback
-                .storage
-                .iter()
-                .any(|s| !super::valid_quest_key(&s.track) || s.minimum > s.maximum)
+            || callback.storage.iter().any(|s| {
+                !super::valid_quest_key(&s.track)
+                    || s.minimum > s.maximum
+                    || s.set_if.is_some_and(|value| {
+                        !(s.minimum..=s.maximum).contains(&value)
+                            || s.preserve
+                            || s.read_only
+                            || callback.native_rule.is_some()
+                    })
+            })
         {
             return Err(format!("invalid callback {}", callback.key));
         }
@@ -382,7 +467,12 @@ fn extend_callbacks(
                     effect: match callback.native_rule {
                         Some(rule) => QuestEffectKind::Native(rule),
                         None if s.preserve => QuestEffectKind::Add(0),
-                        None => QuestEffectKind::Set(s.set),
+                        None => s.set_if.map_or(QuestEffectKind::Set(s.set), |equals| {
+                            QuestEffectKind::SetIf {
+                                equals,
+                                value: s.set,
+                            }
+                        }),
                     },
                 })
                 .collect(),
@@ -400,6 +490,122 @@ mod batch4_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn conditional_storage_compiles_exact_value_effect_and_rejects_guard_overloading()
+    -> Result<(), String> {
+        let callback = serde_json::json!({
+            "key":"oteryn:quest-callback/conditional-reset", "quest":"oteryn:quest/conditional-reset",
+            "trigger":"use", "selector":{"position":{"x":1,"y":2,"floor":-7}},
+            "reversible":false, "passages":[], "offerings":[], "return_on_failure":false,
+            "storage":[{"track":"oteryn:quest-progress/conditional-reset/flag", "minimum":-1,"maximum":2,"set":0,"set_if":1}],
+            "sources":["crystal:201189f871d23597b82caf88fd611454a2ddefb8:fixture.lua:1"]
+        });
+        let encoded = |callback: serde_json::Value| {
+            serde_json::json!({"schema":1,"callbacks":[callback]}).to_string()
+        };
+        let callbacks = parse(&encoded(callback.clone()))?;
+        let catalogue = extend_callbacks(
+            QuestStateCatalogue::empty("content-1").ok_or("catalogue")?,
+            &callbacks,
+        )?;
+        let effect = catalogue
+            .transition("oteryn:quest-callback/conditional-reset")
+            .ok_or("transition")?
+            .effects[0]
+            .effect;
+        assert_eq!(
+            effect,
+            QuestEffectKind::SetIf {
+                equals: 1,
+                value: 0
+            }
+        );
+        for (field, value) in [
+            ("set_if", serde_json::json!(3)),
+            ("read_only", serde_json::json!(true)),
+            ("preserve", serde_json::json!(true)),
+        ] {
+            let mut invalid = callback.clone();
+            invalid["storage"][0][field] = value;
+            assert!(parse(&encoded(invalid)).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn conditional_failure_destination_requires_returning_step_and_native_floor()
+    -> Result<(), String> {
+        let document: serde_json::Value =
+            serde_json::from_str(EMBEDDED).map_err(|e| e.to_string())?;
+        let mut callback = document["callbacks"]
+            .as_array()
+            .ok_or("callbacks")?
+            .iter()
+            .find(|c| {
+                c["key"]
+                    .as_str()
+                    .is_some_and(|k| k.ends_with("liquid-black-shortcut"))
+            })
+            .cloned()
+            .ok_or("returning step")?;
+        callback["failure_teleport"] = serde_json::json!({"x":32818,"y":31599,"floor":-9});
+        let encoded = |callback: serde_json::Value| {
+            serde_json::json!({"schema":1,"callbacks":[callback]}).to_string()
+        };
+        assert!(parse(&encoded(callback.clone())).is_ok());
+        for (field, value) in [
+            ("trigger", serde_json::json!("use")),
+            ("return_on_failure", serde_json::json!(false)),
+            (
+                "failure_teleport",
+                serde_json::json!({"x":1,"y":2,"floor":-16}),
+            ),
+        ] {
+            let mut invalid = callback.clone();
+            invalid[field] = value;
+            assert!(parse(&encoded(invalid)).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn remote_conditions_are_bounded_unique_and_allow_a_stateless_route() -> Result<(), String> {
+        let source: serde_json::Value = serde_json::from_str(include_str!("../../../../../tools/content-schema/quest-authoring/batches/quests4/formogar_mine_hoist.json")).map_err(|e| e.to_string())?;
+        let mut callback = source["callbacks"][0].clone();
+        callback["storage"] = serde_json::json!([]);
+        callback["remote_teleport"] = serde_json::json!({
+            "position":{"x":32802,"y":31584,"floor":-1}, "appearance":2772,
+            "destination":{"x":32701,"y":31639,"floor":-6},
+            "additional":[{"position":{"x":32803,"y":31584,"floor":-1},"appearance":2773}]
+        });
+        let document = |value| serde_json::json!({"schema":1,"callbacks":[value]}).to_string();
+        assert!(parse(&document(callback.clone())).is_ok());
+        for case in 0..5 {
+            let mut invalid = callback.clone();
+            match case {
+                0 => invalid["remote_teleport"]["additional"][0]["appearance"] = 0.into(),
+                1 => {
+                    invalid["remote_teleport"]["additional"][0]["position"]["floor"] = (-16).into()
+                }
+                2 => {
+                    invalid["remote_teleport"]["additional"][0]["position"] =
+                        invalid["remote_teleport"]["position"].clone()
+                }
+                3 => {
+                    invalid["remote_teleport"]["additional"] = serde_json::json!(vec![
+                            invalid["remote_teleport"]["additional"][0].clone();
+                            8
+                        ])
+                }
+                _ => {
+                    invalid["offerings"] = serde_json::json!([{"position":{"x":1,"y":2,"floor":-1},"item":"oteryn:item.tibia.i3031","count":1}])
+                }
+            }
+            assert!(parse(&document(invalid)).is_err(), "case {case}");
+        }
+        Ok(())
+    }
 
     #[test]
     fn remote_teleport_is_a_bounded_read_only_step() -> Result<(), String> {

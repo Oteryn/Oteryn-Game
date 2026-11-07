@@ -102,7 +102,10 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.storage.len() > super::QUESTSTATE0_RL_02
             || tracks.len() != c.storage.len()
             || c.storage.iter().any(|s| {
-                !slug(&s.track, "oteryn:", b"._/:-", 128) || s.minimum > s.maximum || s.read_only
+                !slug(&s.track, "oteryn:", b"._/:-", 128)
+                    || s.minimum > s.maximum
+                    || s.read_only
+                    || s.set_if.is_some()
             })
             || (!c.repeatable
                 && c.storage
@@ -237,6 +240,7 @@ mod tests {
                 minimum: 0,
                 maximum: 0,
                 set: 1,
+                set_if: None,
                 preserve: false,
                 read_only: false,
             })
@@ -250,6 +254,7 @@ mod tests {
             minimum: 0,
             maximum: 0,
             set: 1,
+            set_if: None,
             preserve: false,
             read_only: false,
         });
@@ -263,7 +268,7 @@ mod tests {
         let source = include_str!("../../../../../content/quests/shared-reward-callbacks.json");
         let callbacks = load()?;
         assert!(callbacks.len() >= 6);
-        for edit in 0..7 {
+        for edit in 0..8 {
             let mut value: serde_json::Value =
                 serde_json::from_str(source).map_err(|e| e.to_string())?;
             match edit {
@@ -282,6 +287,7 @@ mod tests {
                 }
                 4 => value["callbacks"][0]["unknown"] = true.into(),
                 6 => value["callbacks"][0]["storage"][0]["read_only"] = true.into(),
+                7 => value["callbacks"][0]["storage"][0]["set_if"] = 1.into(),
                 _ => {
                     value["callbacks"][0]["take"] = serde_json::json!([{"item":"oteryn:item.tibia.i139","count":1},{"item":"oteryn:item.tibia.i139","count":1}])
                 }

@@ -2,6 +2,26 @@
   "schema": 1,
   "offers": [
     {
+      "npc": "oteryn:npc.an_old_dragonlord",
+      "keywords": [
+        "hi",
+        "hello"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/dragonfetish",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "LEAVE THE DRAGONS' CEMETERY AT ONCE!"
+      ]
+    },
+    {
       "npc": "oteryn:npc.cael",
       "keywords": [
         "crest"
