@@ -52,6 +52,14 @@ fn wevents_devovorga_synchronizes_incarnations_resets_failed_attempts_and_wins()
         Input::Defeat(0),
         0
     )?);
+    for member in [6, 7, 0, 1, 2, 3, 4, 8] {
+        assert!(s.advance(
+            EventKind::RiseOfDevovorga,
+            day + 4 + 5 * MINUTE,
+            Input::Defeat(member),
+            0
+        )?);
+    }
     assert!(s.advance(
         EventKind::RiseOfDevovorga,
         day + 4 + 5 * MINUTE,

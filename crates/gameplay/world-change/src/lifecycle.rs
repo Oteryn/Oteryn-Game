@@ -106,13 +106,13 @@ impl LifecycleState {
         })
     }
     /// Five distinct members must be credited within one shared five-minute
-    /// window. Late attempts reset together; final member 5 belongs to stage 2.
+    /// window in stages 1 and 3. Mutations 6/7 and cocoon 8 precede final member 5.
     pub fn defeat(&mut self, member: u8, now: i64) -> Result<(bool, bool), &'static str> {
         if now < 0 {
             return Err("invalid defeat clock");
         }
         match (self.stage, member) {
-            (1, 0..=4) => {
+            (1 | 3, 0..=4) => {
                 let bit = 1_u16 << member;
                 if self.mask & bit != 0 {
                     return Ok((false, false));
@@ -120,12 +120,30 @@ impl LifecycleState {
                 self.first_defeat_ms.get_or_insert(now);
                 self.mask |= bit;
                 if self.mask == 31 {
+                    let next_stage = self.stage + 1;
                     self.next_generation()?;
-                    self.stage = 2;
+                    self.stage = next_stage;
                 }
                 Ok((true, false))
             }
-            (2, 5) => Ok((true, true)),
+            (2, 6..=7) => {
+                let bit = 1_u16 << member;
+                if self.mask & bit != 0 {
+                    return Ok((false, false));
+                }
+                self.mask |= bit;
+                if self.mask & 192 == 192 {
+                    self.next_generation()?;
+                    self.stage = 3;
+                }
+                Ok((true, false))
+            }
+            (4, 8) => {
+                self.next_generation()?;
+                self.stage = 5;
+                Ok((true, false))
+            }
+            (5, 5) => Ok((true, true)),
             _ => Ok((false, false)),
         }
     }

@@ -267,7 +267,7 @@ impl EventState {
                     self.lifecycle.stage = 1;
                     return Ok(true);
                 }
-                if self.lifecycle.stage == 1
+                if matches!(self.lifecycle.stage, 1 | 3)
                     && self
                         .lifecycle
                         .first_defeat_ms
