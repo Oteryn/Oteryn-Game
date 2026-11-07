@@ -444,3 +444,20 @@ still running in same4case focusedPGtarget;content/world/pin followon pending.
 Nextbatch proposed Knight/Druid/Assassin source paths;facts captured in /tmp
 qengine2-next-{morgan,sam,ustan,a_majestic_warwolf,vescu,erayo}.lua.
 Do not redo finished entries;refresh other lane source/status before nextbatch.
+
+L1-06 COMPLETE all3entries and all followon checks. Sourceabcf425fd pushed;
+4focusedPG166.02s,additionalDruidRook80.205483622s/CitizenRook82.193400746s;
+123content2.17s;5world46.63s;pin24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25.
+L1-07 active Knight/Druid/Assassin:9/12/19stage independent testprofiles added;
+RED running /tmp/qengine2-batch7-red.log (session52965),no sourcechanges yet.
+Fresh otherbranches audit:questpc6 3bfd856061e5aa89668747ec7405af8c2b8cf7f5
+DruidUNFINISHED,questpc8 fced2532a67ec03571d21c2bdb244ac2f0017737 KnightBLOCKED;
+questpc olderbranch lacksqlane-meta. No new matchedQUALIFIED. SourceNPCfiles
+/tmp/qengine2-next-{morgan,gregor,sam,ustan,ceiron,a_majestic_warwolf,vescu,erayo,atrad}.lua.
+Important:Vescu initialgreetDrunk, Atrad greetFire neednative actor-condition
+gate (ours,reuseactualruntimeconditionowner);Erayoownedbase+Shipwrecked2;
+Gregor globalApeCityQuestline>15 and task introPremiumCurrent. SourceMorgan
+actual sword hand-in is forge/knight's sword,not old synthetic yes;retain old
+knight-sword key and correct words when sourcepathimplemented (entrynotfinished).
+No missing fact investigation needed:all facts pinned source bytes in repo.
+18/66qualified48remaining;continue,never end while remaining.

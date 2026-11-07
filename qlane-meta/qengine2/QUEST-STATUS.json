@@ -1833,6 +1833,96 @@
         "commit": "e45e8f8a9",
         "push": "fast-forward confirmed"
       }
+    },
+    {
+      "id": "L1-06",
+      "entries": [
+        "oteryn:quest.druid_outfits_quest_on_rook",
+        "oteryn:quest.citizen_outfits_quest_on_rook",
+        "oteryn:quest.beggar_outfits_quest"
+      ],
+      "phase": "COMPLETE:all3L1entries qualified and pushed;allsource/Rust/PostgreSQL/content/world/pin checks pass.",
+      "facts": "Tom.lua:230-250:direct addon introduction bodyStage<1->1;paws/yes takes5896x50+5897x50,stage1->2,bodyaddon1. No source second addon on Rook;testmustassertmask1,notinventmask2. Hugo needs24hdeadline,Amber2hdeadline and Ref counter;Simon male5daytimer/femaleimmediate path with source stage bug.",
+      "eligibility_audit": "Readactualsource:IrmanahasNOisPremiumguard;do not reopenfinishedNobleman. Hugo/Simon explicitlyrequirepremium;reuseexistingGrizzlyPremiumGate Current native authority for those new paths.",
+      "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-druid-rook-story duration=43.490976609s success=false",
+      "source": "Crystal9f5a72c data-global/npc/tom.lua:230-250 sha2565079fd40c677dcee45941eac3eb4961c1260c5889635585d9d3441829de800b4",
+      "checks": [
+        "19authoring tests6.657s",
+        "check15.28s;3Rustrewardcallbacks1.17s;strictclippy38.97s",
+        "fmt;sourcecallback/placement reproduction"
+      ],
+      "greeting_rule": "SourceNPC multiple conditional variants use uniquely pinned NPCHandler neutral defaults;Tom ambiguous-static-greeting authoring error corrected generically.",
+      "slices": [
+        {
+          "id": "L1-06A",
+          "status": "QUALIFIED",
+          "entries": [
+            "oteryn:quest.druid_outfits_quest_on_rook"
+          ],
+          "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-druid-rook-story duration=43.490976609s success=false",
+          "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-druid-rook-story duration=78.473462376s success=true",
+          "result": "1passed;0failed;0ignored;78.47s;actualPostgreSQL18.6",
+          "scope": "Complete available Rook Druid source path:literal Tom addon introduction,50bearpaws5896+50wolfpaws5897,paws/yes hand-in,bodyStage1->2,addon1. Partial funding retains first ingredient,replay cannot consume/grant again,exact2immutable account facts,normalmask1appearance succeeds and unearnedmask3refuses. No source stage seeded and no fabricated second reward.",
+          "checks": [
+            "19authoring6.657s;reproducers",
+            "fmt;check15.28s;3Rustunit1.17s;strictclippy38.97s",
+            "repo pin-refresh passed"
+          ],
+          "follow_on_verification": "COMPLETE:123content2.05s;5world46.16s;pin-check24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25",
+          "commit": "8d3145a1d",
+          "push": "fast-forward confirmed"
+        },
+        {
+          "id": "L1-06B",
+          "status": "QUALIFIED",
+          "entries": [
+            "oteryn:quest.citizen_outfits_quest_on_rook"
+          ],
+          "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-citizen-rook-story duration=43.140819762s success=false",
+          "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-citizen-rook-story duration=79.962115793s success=true",
+          "result": "1passed;0failed;0ignored;79.96s;actualPostgreSQL18.6",
+          "scope": "Complete source Amber backpack introduction,100minotaur leather5878,start timestamp,strict7201-second wait and addon1;Norma hat introduction,3374x1+5902x50+5890x100 and addon2. Shared General Ref checked increment/reset retains its original owner in exact same-source primary revision. Early wait refusal,partial recipe atomic refusal,replay,exact3accountfacts and normal appearance verified. Only clock fixture advanced;no outfit stage seeded.",
+          "mechanism": "Bounded typed state_ops reuse native checked Add/SetNow/ElapsedAtLeast;primary and foreign participant exact SQL proofs;explicit source-backed writable declarations retain strict owner and default read-only contract. Legacy optional-empty serialization unchanged.",
+          "checks": [
+            "20authoring6.641s;callback/placement reproduction",
+            "5Rustreward_callbacks1.17s;fmt;check14.41s;strictclippy2m54s",
+            "repo pin-refresh passed"
+          ],
+          "follow_on_verification": "COMPLETE:123content2.08s;5world47.03s;pin-check24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25",
+          "commit": "e9d98947f",
+          "push": "fast-forward confirmed"
+        },
+        {
+          "id": "L1-06C",
+          "status": "QUALIFIED",
+          "entries": [
+            "oteryn:quest.beggar_outfits_quest"
+          ],
+          "red": [
+            "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-male-story duration=44.20147279s success=false",
+            "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-female-story duration=44.275113452s success=false"
+          ],
+          "green": [
+            "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-female-story duration=83.822053307s success=true",
+            "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-male-story duration=84.297408765s success=true"
+          ],
+          "scope": "Complete Hugo intro,20browncloth5913/50minotaurleather5878/10batwings5894/30heavenblossoms5921,strict24h wait/base;Simon owned-base introduction,100apefur5883+20000gold paid hand-in,female dress or male beard request/full5daywait,staff introduction/6107x1 and addon2. Native Current premium refusals preserve flags/items/money;exact fee once,recipe refusals,replay,3accountfacts and normal appearance proved for both immutable creation sexes. Timer-only fixtures seed no outfit stage.",
+          "checks": [
+            "21authoring6.921s;callback/placement reproduction",
+            "6Rustreward_callback1.14s;check19.82s;strictclippy2m14s;fmt",
+            "repo pin-refresh24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25"
+          ],
+          "mechanisms": "Optional Current premium requirement reuses native GrizzlyPremiumGate,including failclosed absent owner. Optional bounded owned-outfit requirements reuse normal starter/compatible-earned appearance owner. Both evaluated in same fenced SQL transaction before costs;legacy omitted defaults unchanged. Generic clock fixture and exact monetary assertions cover both sex stories.",
+          "follow_on_verification": "COMPLETE:4focusedL6PGpassed166.02s;DruidRook80.205483622s/CitizenRook82.193400746s regressions;123content2.17s;5world46.63s;pin-check24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25",
+          "commit": "abcf425fd",
+          "push": "fast-forward confirmed"
+        }
+      ],
+      "citizen_red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-citizen-rook-story duration=43.140819762s success=false",
+      "beggar_red": [
+        "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-male-story duration=44.20147279s success=false",
+        "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-female-story duration=44.275113452s success=false"
+      ]
     }
   ],
   "owner_rule": "This lane implements missing generic engine, reward/binding, world, NPC, item and callback features after checking/reusing related branches; dependency-only inherited blockers are superseded.",
@@ -2162,91 +2252,16 @@
   },
   "delivery_rule": "Push every finished green quest/mechanism slice immediately and at least every30minutes while green work exists. Bound each investigation/missing-fact search to10minutes; record conservative decisions in CONTRACT-NOTES.md and implement. No full workspace/PG suite.",
   "active_batch": {
-    "id": "L1-06",
+    "id": "L1-07",
     "entries": [
-      "oteryn:quest.druid_outfits_quest_on_rook",
-      "oteryn:quest.citizen_outfits_quest_on_rook",
-      "oteryn:quest.beggar_outfits_quest"
+      "oteryn:quest.knight_outfits_quest",
+      "oteryn:quest.druid_outfits_quest",
+      "oteryn:quest.assassin_outfits_quest"
     ],
-    "phase": "Beggar male/female actual PostgreSQL GREEN;commit/push immediately. CitizenRook/DruidRook regressions still running in same4case target;then targeted content/world/pin followon and next3entry source batch.",
-    "facts": "Tom.lua:230-250:direct addon introduction bodyStage<1->1;paws/yes takes5896x50+5897x50,stage1->2,bodyaddon1. No source second addon on Rook;testmustassertmask1,notinventmask2. Hugo needs24hdeadline,Amber2hdeadline and Ref counter;Simon male5daytimer/femaleimmediate path with source stage bug.",
-    "eligibility_audit": "Readactualsource:IrmanahasNOisPremiumguard;do not reopenfinishedNobleman. Hugo/Simon explicitlyrequirepremium;reuseexistingGrizzlyPremiumGate Current native authority for those new paths.",
-    "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-druid-rook-story duration=43.490976609s success=false",
-    "source": "Crystal9f5a72c data-global/npc/tom.lua:230-250 sha2565079fd40c677dcee45941eac3eb4961c1260c5889635585d9d3441829de800b4",
-    "checks": [
-      "19authoring tests6.657s",
-      "check15.28s;3Rustrewardcallbacks1.17s;strictclippy38.97s",
-      "fmt;sourcecallback/placement reproduction"
-    ],
-    "greeting_rule": "SourceNPC multiple conditional variants use uniquely pinned NPCHandler neutral defaults;Tom ambiguous-static-greeting authoring error corrected generically.",
-    "slices": [
-      {
-        "id": "L1-06A",
-        "status": "QUALIFIED",
-        "entries": [
-          "oteryn:quest.druid_outfits_quest_on_rook"
-        ],
-        "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-druid-rook-story duration=43.490976609s success=false",
-        "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-druid-rook-story duration=78.473462376s success=true",
-        "result": "1passed;0failed;0ignored;78.47s;actualPostgreSQL18.6",
-        "scope": "Complete available Rook Druid source path:literal Tom addon introduction,50bearpaws5896+50wolfpaws5897,paws/yes hand-in,bodyStage1->2,addon1. Partial funding retains first ingredient,replay cannot consume/grant again,exact2immutable account facts,normalmask1appearance succeeds and unearnedmask3refuses. No source stage seeded and no fabricated second reward.",
-        "checks": [
-          "19authoring6.657s;reproducers",
-          "fmt;check15.28s;3Rustunit1.17s;strictclippy38.97s",
-          "repo pin-refresh passed"
-        ],
-        "follow_on_verification": "COMPLETE:123content2.05s;5world46.16s;pin-check24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25",
-        "commit": "8d3145a1d",
-        "push": "fast-forward confirmed"
-      },
-      {
-        "id": "L1-06B",
-        "status": "QUALIFIED",
-        "entries": [
-          "oteryn:quest.citizen_outfits_quest_on_rook"
-        ],
-        "red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-citizen-rook-story duration=43.140819762s success=false",
-        "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-citizen-rook-story duration=79.962115793s success=true",
-        "result": "1passed;0failed;0ignored;79.96s;actualPostgreSQL18.6",
-        "scope": "Complete source Amber backpack introduction,100minotaur leather5878,start timestamp,strict7201-second wait and addon1;Norma hat introduction,3374x1+5902x50+5890x100 and addon2. Shared General Ref checked increment/reset retains its original owner in exact same-source primary revision. Early wait refusal,partial recipe atomic refusal,replay,exact3accountfacts and normal appearance verified. Only clock fixture advanced;no outfit stage seeded.",
-        "mechanism": "Bounded typed state_ops reuse native checked Add/SetNow/ElapsedAtLeast;primary and foreign participant exact SQL proofs;explicit source-backed writable declarations retain strict owner and default read-only contract. Legacy optional-empty serialization unchanged.",
-        "checks": [
-          "20authoring6.641s;callback/placement reproduction",
-          "5Rustreward_callbacks1.17s;fmt;check14.41s;strictclippy2m54s",
-          "repo pin-refresh passed"
-        ],
-        "follow_on_verification": "COMPLETE:123content2.08s;5world47.03s;pin-check24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25",
-        "commit": "e9d98947f",
-        "push": "fast-forward confirmed"
-      },
-      {
-        "id": "L1-06C",
-        "status": "QUALIFIED",
-        "entries": [
-          "oteryn:quest.beggar_outfits_quest"
-        ],
-        "red": [
-          "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-male-story duration=44.20147279s success=false",
-          "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-female-story duration=44.275113452s success=false"
-        ],
-        "green": [
-          "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-female-story duration=83.822053307s success=true",
-          "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-male-story duration=84.297408765s success=true"
-        ],
-        "scope": "Complete Hugo intro,20browncloth5913/50minotaurleather5878/10batwings5894/30heavenblossoms5921,strict24h wait/base;Simon owned-base introduction,100apefur5883+20000gold paid hand-in,female dress or male beard request/full5daywait,staff introduction/6107x1 and addon2. Native Current premium refusals preserve flags/items/money;exact fee once,recipe refusals,replay,3accountfacts and normal appearance proved for both immutable creation sexes. Timer-only fixtures seed no outfit stage.",
-        "checks": [
-          "21authoring6.921s;callback/placement reproduction",
-          "6Rustreward_callback1.14s;check19.82s;strictclippy2m14s;fmt",
-          "repo pin-refresh24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25"
-        ],
-        "mechanisms": "Optional Current premium requirement reuses native GrizzlyPremiumGate,including failclosed absent owner. Optional bounded owned-outfit requirements reuse normal starter/compatible-earned appearance owner. Both evaluated in same fenced SQL transaction before costs;legacy omitted defaults unchanged. Generic clock fixture and exact monetary assertions cover both sex stories.",
-        "follow_on_verification": "PENDING:2Rook regressions already running;content/world/pin after immediate source push"
-      }
-    ],
-    "citizen_red": "POSTGRES_CASE_COMPLETED qengine-rewards-l6-citizen-rook-story duration=43.140819762s success=false",
-    "beggar_red": [
-      "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-male-story duration=44.20147279s success=false",
-      "POSTGRES_CASE_COMPLETED qengine-rewards-l6-beggar-female-story duration=44.275113452s success=false"
-    ]
+    "phase": "Full9/12/19stage independent story expectations added;3focusedPGREDrunning before source implementation. No qualification claimed.",
+    "reuse_audit": "git fetch origin --no-tags refreshed branches;questpc6 3bfd856061e5aa89668747ec7405af8c2b8cf7f5 Druid UNFINISHED;questpc8 fced2532a67ec03571d21c2bdb244ac2f0017737 Knight BLOCKED;older questpc branch has no qlane-meta status tree. No newer matched QUALIFIED found. Reuse native timer/counter/owned-outfit/premium owners already delivered.",
+    "source_facts": "Pinned Crystal9f5a72c:Knight Morgan+Gregor+Sam exactore/crudeiron;ApeCity>15 gate;100fangs/helmet/sweat/royalsteel and strict2h Samtimer. Druid Ustan paws plusCeiron completehat objectives/gifts/language thenWarwolf. AssassinVescu7ingredients/base,Erayo6cloth+yarn/ownedbase/Shipwrecked2,Atradclaw+ring;Vescuinitial greeting requiresDrunk,Atrad greeting requiresFire. Generic current actor-condition support is ours;implement/reuse,never defer.",
+    "red_command": "cargo test --locked -p oteryn-gameplay-dispatch qengine_l7_ -- --nocapture --test-threads=2",
+    "red_log": "/tmp/qengine2-batch7-red.log"
   }
 }
