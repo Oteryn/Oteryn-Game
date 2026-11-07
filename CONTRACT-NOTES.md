@@ -965,3 +965,5 @@ Passed on the material merge tree:
 Content integration and focused real-PostgreSQL execution are still running.
 
 QENGPR validation `integration`: 123 passed, 0 ignored; command wall time 125.665s.
+
+QENGPR validation `world-integration`: 5 passed, 0 ignored; command wall time 118.875s.
