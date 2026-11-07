@@ -46,9 +46,12 @@
     "duplicate_migrations": "PASS"
   },
   "conservative_same_four_crate_unit_rerun": {
-    "state": "RUNNING no failures observed",
+    "state": "PASS",
     "selected": 1326,
-    "passed_at_snapshot": 957,
+    "passed": 1326,
+    "failed": 0,
+    "duration_seconds": 1024.412,
+    "excluded_or_preexisting_ignored": 18,
     "log": "/tmp/questpc2-corpse-refusals-full-unit-rerun.log"
   },
   "source_census": {
@@ -58,5 +61,5 @@
     "explicit_source_corpse_closures": 10,
     "primal_empty_row": 1
   },
-  "publication": "Changed-crate default units, own PG cases and all known failures are green. Additional unchanged-crate unit cases continue under PREPUSH-2 cadence exception."
+  "publication": "All1326 selected four-crate tests ultimately passed; the320 changed-content default units, five real PG cases and all11 previous failures were already green at16d3f9a3f."
 }

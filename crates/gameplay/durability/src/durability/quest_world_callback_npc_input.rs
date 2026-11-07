@@ -9,7 +9,7 @@ pub(super) async fn apply(
 ) -> Result<(), DurabilityError> {
     // Ground consumption requires the spell owner's channel permit.
     location_queries(&input.kind)?;
-    mutate_input(tx, input, transaction).await
+    apply_input_rows(tx, input, transaction).await
 }
 
 #[cfg(test)]

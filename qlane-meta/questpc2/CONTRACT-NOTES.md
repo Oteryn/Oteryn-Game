@@ -684,3 +684,48 @@ filled the lane filesystem. Retiring only completed lane incremental caches
 recovered8GiB; this is an infrastructure retry, not a mechanism blocker. Collect
 all failures from the full selected run before applying the repairs together,
 then rerun the complete same selected set. Own PG compilation was restarted.
+
+
+## Six Rotten Blood source Item facts, without runtime admission
+
+The retained Crystal summer XML at revision
+00ce02a57ca5a12e48f32a3476e37471167e4c3f, data/items/items.xml,
+SHA25613a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece,
+declares43501/43502/43503/43504 at lines75234/75237/75240/75243 and
+43899/43900 at76732/76736. These are the four boss essences, cursed wood and
+darklight geode. None declares weight: the retained Canary constructor declares
+int32_t weight=0 at src/items/items.hpp:282, revision
+04b83b512114bfd888000d6e1433ed8ecaec7c5b, SHA256
+b8c12f45122eeb575ad548719c5fb178a96460d8a41ad882d0d88b2e66d797e6.
+The existing build_source_item_profiles.profile loader applies that same zero
+default; the fact packet labels it loader_default_zero rather than claiming an
+explicit XML weight. Existing client/identity/Canary XML pins remain mandatory.
+The existing identity factory accepts these six exact binding rows. Stack and
+portability come from its pinned client and loader policies, not descriptions.
+
+The49-line helper replays the retained archive, exact XML and existing identity
+factory. It captures normalized core facts only. Native admission and use
+ effects remain false; descriptions about consuming essences authorize no new
+use/charge mechanism. Runtime admission needs its own real caller proof in a
+subsequent slice. A tampered archive fails closed. The new source test was RED
+for the missing producer, then RED for missing generated facts (2.973s), then
+GREEN2cases2.854s. No runtime content, pins or production Rust changes here.
+
+The conservative four-crate rerun from the previous batch completed:
+1326/1326 selected tests PASS1024.412s, including all9 repaired infrastructure
+retries. Existing filters/ignore declarations are unchanged; no excluded case
+is counted as passing. Publish the final receipt with this source-fact batch.
+
+
+Main advanced to47db34f09 (#3032) before publication. Reused main's
+apply_input_rows and removed the duplicate mutate_input layer. The NPC wrapper
+still requires NpcItemPermit and refuses ground; its negative test remains.
+Main's SQL and spell channel check are unchanged. One merge conflict was
+resolved immediately, retaining the lane party fence helper. The source fact
+batch therefore also changes durability and must run its units plus fresh real
+NPC hand-in and endgame PG cases before publication (or report pending tests
+under the owner cadence exception).
+
+The clone fetch refspec tracks only main. Explicit own-branch destination
+refspecs now refresh its remote-tracking ref too; always use them before push,
+then merge actual remote movement. Never rely on the stale historical lane ref.

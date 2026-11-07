@@ -485,11 +485,12 @@ async fn apply_input(
         return Err(DurabilityError::InvalidStoredState);
     };
     permit.check_channel(world_id, channel_id)?;
-    mutate_input(tx, input, transaction).await
+    apply_input_rows(tx, input, transaction).await
 }
 
-// Both callers hold an owner-specific permit; the NPC path additionally refuses ground.
-async fn mutate_input(
+/// Applies the row changes of one consumed input once the caller has proven
+/// its authority (spell lane channel check or the NPC item permit).
+async fn apply_input_rows(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     input: &Input,
     transaction: &str,

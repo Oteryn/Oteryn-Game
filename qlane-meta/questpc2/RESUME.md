@@ -1,3 +1,72 @@
+# Compiling main3032 plus source facts checkpoint; publish now
+
+Main47db34f09 merged. Reused its exact apply_input_rows body; removed duplicate
+mutate_input; retained lane NPC carried-only permit wrapper and negative test.
+Final workspace alltargetsPASS1m39s on retry after stale-cache ENOSPC recovery;
+fmtPASS,44 generated native outputs reproduced, source tests2PASS2.975s.
+Six normalized Item facts remain candidates only, with no runtime/use admission.
+
+Fresh post-merge698 durability units and real NPC hand-in+Rotten PG cases are
+PENDING. Their queued/running builds were paused to prioritize mandatory check
+and cadence publication. PREPUSH-2 explicitly permits this after steps1,2,4;
+do not claim these pending cases passed. Restart them immediately after push.
+Previous1326/1326 four-crate run and pre-main2/2PG63.830s remain historical proof.
+Current proof BATCH-rotten-item-source-facts-2026-11-07.json records both scopes.
+
+Disk recovery: obsolete native multi-package variant1x was not used by current
+focused runs (current LLVM native variant3t86); retired it and older completed
+snapshots.7GiB free. Preserve current3t86, not obsolete1x. No active caches removed.
+
+Commit merge with owner identity/trailers, fetch main and explicit lane refspec,
+assert both ancestors after committing the merge, then push. Last push16d3f9a3f.
+No force/rebase/main push/PR. Continue after publication; no new quest qualified.
+
+# Main3032 merged before source fact publication; validation running
+
+Before push main moved to47db34f09. Merge completed with one conflict resolved
+quickly. Main's apply_input_rows replaces the duplicate mutate_input function;
+keep the lane NpcItemPermit carried-only wrapper and negative test. No SQL or
+owner-check semantics changed. Source facts/staged work restored from stash.
+Durability units, fresh NPC hand-in+Rotten PG and workspace check are running.
+Source fact batch now touches durability; earlier no-Rust note below is superseded.
+
+IMPORTANT: clone fetch tracks only main. Refresh the actual lane tracking ref:
+git fetch origin main refs/heads/claude/happy-davinci-ijz3wy-questpc2:refs/remotes/origin/claude/happy-davinci-ijz3wy-questpc2
+Then merge movement and never force-push. Last actual push16d3f9a3f.
+
+# Six Rotten Blood source Item facts GREEN; publish and continue
+
+Previous push16d3f9a3fcb6bf8e42b23f817e8abad0255f2d6b. Prior conservative unit
+rerun is fullyGREEN1326/1326 in1024.412s; final receipt updated in this batch.
+New49-line source helper captures43501-43504/43899/43900 from exact retained
+Crystal summer XML. Six immutable identity rows pass existing factory guards;
+client, identity and ordinary Canary XML pins remain strict. Weight is the
+verified retained loader default zero, not an explicit XML attribute. Exact
+Cpp/default and XML source pointers/hashes are in CONTRACT-NOTES and the batch
+proof. Native admission and use effects remain false. No source guard bypass.
+
+Source regression RED missing producer; RED missing artifact2.973s; GREEN2
+cases2.854s, including archive tampering refusal. New fact artifact is normalized
+and bounded11574bytes, not a copied XML/archive. Fresh own PG cases PASS2/2
+63.830s, PostgreSQL180006 observed, both endgame corpse routes. Workspace
+alltargetsPASS2m15s,fmtPASS. No Rust crate changed; no crate unit run newly needed.
+Regenerate central evidence and native output freshness, refresh/check pins,
+duplicate migrations, fetch main+own branch, commit owner identity and push.
+
+Next immediately use the fact candidate in a small quest-local content adapter
+and add a real Item mint/custody PG case RED before native/canonical admission,
+then GREEN after. Avoid repeating unchanged World reconstruction. Runtime source
+must stay unchanged while another data-reading test run is in progress. The
+previous1326-unit run and current two PG cases have both finished.
+
+Remaining43961/62/64/66/67/68 need independently qualified source membership;
+existing identity factory accepts only its exact201189f8/8a4a526c witness for that
+path. Never label the summer13a XML as that witness or loosen the guard. Three
+other loot IDs43946/43947/44048 lack retained XML facts. Continue six ready Items
+while resolving remaining source identities separately. Shared boss callbacks
+and48-slot private loot admission remain requested from qengine2. Counts stay
+3qualified2active24notstarted6excluded; no whole quest newly qualified.
+
 # GREEN changed-content tests and all known failures; publish now
 
 Prior push948834804d9e80202f6012c5e18b066cda29ab7e. This batch changes only two

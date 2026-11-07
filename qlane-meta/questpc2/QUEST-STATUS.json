@@ -1757,10 +1757,10 @@
     }
   },
   "current_batch": {
-    "name": "source corpse expectation repair",
-    "state": "CHANGED_CRATE_GREEN_ADDITIONAL_RERUN_PENDING",
-    "scope": "Two content test expectation repairs, unchanged production code/data; no new quest qualification.",
-    "proof": "qlane-meta/questpc2/BATCH-source-corpse-expectations-2026-11-07.json"
+    "name": "six Rotten Blood Item source facts",
+    "state": "COMPILES_SOURCE_FACTS_GREEN_MAIN3032_TESTS_PENDING",
+    "scope": "Six normalized source fact candidates; no runtime/use admission, production Rust or additional quest qualification.",
+    "proof": "qlane-meta/questpc2/BATCH-rotten-item-source-facts-2026-11-07.json"
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",
@@ -2214,66 +2214,87 @@
     "push_policy": "one push after full dependent failure collection/grouped fixes and green full rerun; auto push reminder retracted"
   },
   "current_validation": {
-    "batch": "source corpse expectation repair",
-    "production_code_changed": false,
+    "batch": "six Rotten Blood Item source facts",
+    "state": "COMPILES_SOURCE_FACTS_GREEN_MAIN3032_TESTS_PENDING",
+    "runtime_admission": false,
+    "use_effects_admitted": false,
     "new_qualified_quests": 0,
-    "changed_content_crate": {
-      "selected_default_units_passed": 320,
-      "preexisting_ignored_full_manifest_case": "requires OTERYN_FULL_SPELL_TEST_MANIFEST; unchanged and not counted as passed"
+    "items": [
+      43501,
+      43502,
+      43503,
+      43504,
+      43899,
+      43900
+    ],
+    "helper_lines": 49,
+    "source": {
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data/items/items.xml",
+      "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+      "lines": [
+        75234,
+        75237,
+        75240,
+        75243,
+        76732,
+        76736
+      ]
     },
-    "red": {
-      "selected_unit_tests": 1326,
-      "passed": 1315,
-      "failed": 11,
-      "duration_seconds": 1069.333,
-      "groups": {
-        "source_expectations": 2,
-        "ENOSPC_in_PG_setup": 9
-      }
+    "weight_default_witness": {
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "src/items/items.hpp",
+      "line": 282,
+      "sha256": "b8c12f45122eeb575ad548719c5fb178a96460d8a41ad882d0d88b2e66d797e6",
+      "value": "int32_t weight = 0;"
     },
+    "red": [
+      "missing producer ModuleNotFoundError",
+      "missing generated fact packet: executed2.973s"
+    ],
     "green": {
-      "all_11_prior_failures_passed": true,
-      "prior_failures": [
-        "oteryn-gameplay-content content::native_gameplay::test_support::activation_fixture::reward_boss_test_fixture_preserves_source_loot_and_production_unavailability",
-        "oteryn-gameplay-content content::native_gameplay::tests::reward_boss_empty_corpse_does_not_admit_missing_private_loot",
-        "oteryn-gameplay-durability durability::boss_encounter::activity_assignment_tests::character_fence::boss_activity_full_character_fence_postgres",
-        "oteryn-gameplay-durability durability::boss_encounter::activity_assignment_tests::item_consumers::boss_activity_item_consumers_postgres",
-        "oteryn-gameplay-durability durability::boss_encounter::preparation::tests::boss_clock_native_owner_cas_and_restart_storage_postgres",
-        "oteryn-gameplay-durability durability::boss_encounter::preparation::tests::boss_cooldown_atomic_group_replay_and_compensation_postgres",
-        "oteryn-gameplay-durability durability::boss_encounter::preparation::tests::boss_reward_native_fences_atomic_claim_and_reload_postgres",
-        "oteryn-gameplay-durability durability::boss_encounter::preparation::tests::boss_reward_time_and_epoch_boundaries_postgres",
-        "oteryn-gameplay-durability durability::boss_encounter::preparation::tests::boss_spawn1_world_exclusion_restart_and_reset_postgres",
-        "oteryn-gameplay-durability durability::character_death::death_build_postgres::concurrent_native_deaths_serialize_build_and_one_receipt_on_the_root",
-        "oteryn-gameplay-durability durability::character_death::death_build_postgres::historical_v2_training_then_death_replays_and_reconciles_after_restart"
-      ],
-      "own_postgres_cases_passed": 5,
+      "source_tests": 2,
+      "source_test_seconds": 2.854,
+      "postgres_cases": 2,
+      "postgres_runtime_seconds": 63.83,
       "postgres_version_num": 180006,
-      "own_pg_runtime_seconds": 198.738,
-      "own_pg_build_plus_run_seconds": 685.415,
-      "own_pg_head": "948834804d9e80202f6012c5e18b066cda29ab7e",
-      "production_code_and_runtime_data_unchanged_since_pg": true,
-      "workspace_all_targets_check": "PASS3m52s",
+      "soul_war_seconds": 63.204,
+      "rotten_blood_seconds": 63.827,
+      "workspace_all_targets_check": "PASS2m15s",
       "fmt": "PASS",
-      "content_clippy": "PASS23.13s -D warnings",
-      "native_generated_outputs": "44 files reproduced exactly",
-      "central_evidence": "binding packets, NPC links, matrix and audit goldens refreshed",
-      "pin_refresh": "PASS unchanged runtime digest and inputs digest",
-      "duplicate_migrations": "PASS"
+      "postgres_scope": "These2PG cases passed before main3032; fresh post-merge cases are pending and not counted as passing."
     },
-    "conservative_same_four_crate_unit_rerun": {
-      "state": "RUNNING no failures observed",
+    "rust_crates_changed": [
+      "oteryn-gameplay-durability"
+    ],
+    "prior_batch_final_unit_result": {
       "selected": 1326,
-      "passed_at_snapshot": 957,
-      "log": "/tmp/questpc2-corpse-refusals-full-unit-rerun.log"
+      "passed": 1326,
+      "failed": 0,
+      "duration_seconds": 1024.412
     },
-    "source_census": {
-      "total_bosses": 387,
-      "missing": 52,
-      "inadmissible": 324,
-      "explicit_source_corpse_closures": 10,
-      "primal_empty_row": 1
-    },
-    "publication": "Changed-crate default units, own PG cases and all known failures are green. Additional unchanged-crate unit cases continue under PREPUSH-2 cadence exception."
+    "next": "Apply these exact source-proven core facts through the existing content owners and prove real Item materialization; preserve source identity and private-loot guards.",
+    "main_merge": {
+      "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+      "state": "COMPILES_TESTS_PENDING",
+      "conflicts_resolved": "Reuse main apply_input_rows and delete the duplicate mutate_input layer; retain the lane carried-only wrapper, its NpcItemPermit and its negative test.",
+      "semantic_change": "None; unchanged SQL and owner checks.",
+      "required_tests": [
+        "durability default non-full-PG unit selection",
+        "real NPC20-item/10000XP hand-in",
+        "Rotten Blood endgame corpse path"
+      ],
+      "workspace_all_targets": "PASS1m39s on resource-recovered retry",
+      "fmt": "PASS",
+      "native_generated_outputs": "44 reproduced exactly",
+      "source_tests": "2PASS2.975s",
+      "pending_tests": [
+        "698 selected durability units",
+        "real NPC20-item/10000XP hand-in",
+        "Rotten Blood endgame corpse path"
+      ],
+      "publication_authority": "PREPUSH-2 cadence exception after steps1,2,4; step3 remains pending."
+    }
   },
   "engine_requests": [
     {
