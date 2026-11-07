@@ -64,6 +64,7 @@ REGISTRY = (
 # Written by the authoring tools but not listed in the content manifest.
 EXTRA_DERIVED = (
     "content/interactions/index.json",
+    "content/quests/grizzly-boss-rooms.json",
     "tools/content-schema/native-gameplay/prey-model-results.json",
 )
 # Rewritten by the steps below but holding hand-maintained rows: the TibiaWiki import-only
@@ -89,6 +90,7 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py", "--check"],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/quest_batch4.py", "--available", "--check"],
     ["python3", "tools/content-migration/prey_difficulty.py", "--check"],
@@ -541,6 +543,7 @@ def main() -> int:
         if args.resolve or args.no_stage or args.check:
             parser.error("--native-only cannot be combined with --resolve, --no-stage or --check")
         run(["python3", "tools/content-migration/register_spell_families.py"])
+        run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
         if not args.skip_checks:
             run(["python3", "tools/content-migration/register_spell_families.py", "--check"])
         return 0
@@ -568,6 +571,9 @@ def main() -> int:
         if (ROOT / tool).is_file():
             run(["python3", tool, "content"])
     run(["python3", "tools/content-schema/world-authoring/quest_chest_bindings_rs.py"])
+    # Room provenance includes the native Item provider, including NPC inputs.
+    # Refresh after all native/map producers, before freshness checks and staging.
+    run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():
