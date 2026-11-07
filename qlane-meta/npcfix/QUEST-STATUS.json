@@ -1511,6 +1511,41 @@
         "world": "oteryn"
       },
       "review": "Only7 new profiles; every old native profile exactly preserved. No canonical identity, NPC coordinate, creature balance, compiler/collision exception, workflow/repository-tool or binary change."
+    },
+    {
+      "name": "retail-population-qualification-29",
+      "state": "QUALIFIED",
+      "entries": [
+        "Henricus",
+        "Lizzie",
+        "Markwin",
+        "Marvik",
+        "Partos",
+        "Allen"
+      ],
+      "scope": "Existing audited physical placement and exact display identity. Explicitly retain both captured Emiliana anchors and native actors; every other retained actor assertion remains exact. No new production or conditional-availability behavior.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 57.08,
+        "log": "/tmp/npcfix-evidence/multi-anchor-baseline-red.log",
+        "sha256": "b5ffc6f17a043c440c49696062addc5b4637e8cacca139794b08f9a2de447134"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 131.74,
+        "log": "/tmp/npcfix-evidence/multi-anchor-green.log",
+        "sha256": "4bfbf5693f64014c7b5aebf2850d96e8942272fc481b40412fa28bd21314b943",
+        "cumulative_npcs": 168,
+        "cumulative_actors": 169
+      },
+      "fixture_regression": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 50.03,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-29-red.log",
+        "sha256": "afce9be7c63c028296331526a93d08a8c9a3597b8d79ea3aa18a258a390389cf"
+      },
+      "checks": "Changed dispatch all-target/all-feature cargo check and Clippy -D warnings PASS; workspace and mounted fixture fmt PASS. No production content/pin changes.",
+      "historical_projection": "Only new six placement absences restored from published ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb; current mode tests actual source authoring."
     }
   ],
   "incoming_six_cells": {
@@ -1525,7 +1560,7 @@
     ],
     "proof": "Incoming actual PG6 actor proof91.16s, retained all identity/placement assertions; canonical Edgar name only,15 passive profiles added with canonical custody facts retained. Preserve publication and do not redo finished work."
   },
-  "next_batch": "Push these6 unchanged-cell qualifications immediately; continue remaining pure placements, source names and held/pending NPC mechanisms. Refresh held report after passive profile addition.",
+  "next_batch": "Continue immediately with next owned physical/profile/mechanism slices; preserve every cumulative assertion and push every green batch.",
   "note": "Original entry-level lane state is absent from available history. Recovered NPC audit rows preserve unfinished work; no prior authored row has been requalified without fresh evidence.",
   "schema": 1,
   "active_reward_delivery": {
@@ -1715,63 +1750,39 @@
     }
   },
   "active_batch": {
-    "name": "reviewed-passive-cells-28",
+    "name": "retail-population-qualification-29",
     "state": "QUALIFIED",
     "entries": [
-      "A Starving Dog",
-      "Eirik",
-      "Emiliana",
-      "Fayla",
-      "Gnommander",
-      "Jessica"
+      "Henricus",
+      "Lizzie",
+      "Markwin",
+      "Marvik",
+      "Partos",
+      "Allen"
     ],
-    "scope": "All6 original audited cells/floors/exact names retained; add7 source-proven missing passive profiles through existing importer, preserving every old native record and all canonical custody/conflict guards. Strict compiler/runtime admission unchanged.",
+    "scope": "Existing audited physical placement and exact display identity. Explicitly retain both captured Emiliana anchors and native actors; every other retained actor assertion remains exact. No new production or conditional-availability behavior.",
     "red": {
-      "seconds": 48.81,
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "log": "/tmp/npcfix-evidence/passive-six-red.log",
-      "sha256": "777c4707618d12ffe2b58a32921855f0665f3c279da49324860dc5226796d723"
+      "seconds": 57.08,
+      "log": "/tmp/npcfix-evidence/multi-anchor-baseline-red.log",
+      "sha256": "b5ffc6f17a043c440c49696062addc5b4637e8cacca139794b08f9a2de447134"
     },
     "green": {
-      "seconds": 191.07,
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "log": "/tmp/npcfix-evidence/passive-six-green.log",
-      "sha256": "53d12b89f4e68d65f44766da6c1e24d7ea55edbf4f659323d2fe44ee8e5d7fb0"
+      "seconds": 131.74,
+      "log": "/tmp/npcfix-evidence/multi-anchor-green.log",
+      "sha256": "4bfbf5693f64014c7b5aebf2850d96e8942272fc481b40412fa28bd21314b943",
+      "cumulative_npcs": 168,
+      "cumulative_actors": 169
     },
-    "cumulative_native_cases": 162,
-    "source_xml_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
-    "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
-    "xml_line_witnesses": {
-      "1855": "imports/canary/items-xml/items.xml:3878",
-      "14117": "imports/canary/items-xml/items.xml:32460",
-      "1867": "imports/canary/items-xml/items.xml:3881",
-      "17396": "imports/canary/items-xml/items.xml:35308",
-      "14783": "imports/canary/items-xml/items.xml:32916",
-      "15854": "imports/canary/items-xml/items.xml:33692",
-      "5593": "imports/canary/items-xml/items.xml:15246"
+    "fixture_regression": {
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "seconds": 50.03,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-29-red.log",
+      "sha256": "afce9be7c63c028296331526a93d08a8c9a3597b8d79ea3aa18a258a390389cf"
     },
-    "existing_profile_comparison": {
-      "source_commit": "ce893d6b19fe4305a1f9d94778365e62977b156e",
-      "existing_records": 3609,
-      "preserved_exactly": true,
-      "added_keys": [
-        "oteryn:item.tibia.i14117",
-        "oteryn:item.tibia.i14783",
-        "oteryn:item.tibia.i15854",
-        "oteryn:item.tibia.i17396",
-        "oteryn:item.tibia.i1855",
-        "oteryn:item.tibia.i1867",
-        "oteryn:item.tibia.i5593"
-      ],
-      "compiler_source_equivalence": "World compiler/content/world-bundle Rust unchanged from the retained release tool source."
-    },
-    "checks": "Repository native-provider42 generation and independent --check PASS; all9 profile/conflict/weight units PASS31.513s; fmt PASS; repository staged-input pin-refresh and independent pin-check PASS. No changed Rust crates; reuse source-equivalent entities/dispatch all-target/all-feature check5m42s and strict clippy14m16s from9bca5359f. Actual PG consumes the new provider.",
-    "world_pin": {
-      "bytes": 32008798,
-      "digest": "526ab4c033888e90986a38f40b3b443c47470b9700815bdd18deda9a752baa11",
-      "world": "oteryn"
-    },
-    "review": "Only7 new profiles; every old native profile exactly preserved. No canonical identity, NPC coordinate, creature balance, compiler/collision exception, workflow/repository-tool or binary change."
+    "checks": "Changed dispatch all-target/all-feature cargo check and Clippy -D warnings PASS; workspace and mounted fixture fmt PASS. No production content/pin changes.",
+    "historical_projection": "Only new six placement absences restored from published ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb; current mode tests actual source authoring."
   },
   "workshop_merged_validation": {
     "state": "GREEN; source publication; independent review follows",
@@ -1952,10 +1963,10 @@
     "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
   },
   "counts": {
-    "QUALIFIED": 175,
+    "QUALIFIED": 181,
     "PENDING": 10,
     "EXCLUDED": 24,
-    "AUTHORED; QUALIFICATION PENDING": 108,
+    "AUTHORED; QUALIFICATION PENDING": 102,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -5368,7 +5379,15 @@
         "batch": "reviewed-passive-cells-28",
         "scope": "All6 original audited cells/floors/exact names retained; add7 source-proven missing passive profiles through existing importer, preserving every old native record and all canonical custody/conflict guards. Strict compiler/runtime admission unchanged.",
         "postgres_red_seconds": 48.81,
-        "postgres_green_seconds": 191.07
+        "postgres_green_seconds": 191.07,
+        "retained_second_anchor_proof": {
+          "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+          "seconds": 131.74,
+          "log": "/tmp/npcfix-evidence/multi-anchor-green.log",
+          "sha256": "4bfbf5693f64014c7b5aebf2850d96e8942272fc481b40412fa28bd21314b943",
+          "cumulative_npcs": 168,
+          "cumulative_actors": 169
+        }
       }
     },
     {
@@ -5585,8 +5604,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/167",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-29",
+        "postgres_red_seconds": 57.08,
+        "postgres_green_seconds": 131.74,
+        "scope": "Existing audited physical placement and exact display identity. Explicitly retain both captured Emiliana anchors and native actors; every other retained actor assertion remains exact. No new production or conditional-availability behavior."
+      }
     },
     {
       "npc": "Hoaxette",
@@ -5631,8 +5656,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/203",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-29",
+        "postgres_red_seconds": 57.08,
+        "postgres_green_seconds": 131.74,
+        "scope": "Existing audited physical placement and exact display identity. Explicitly retain both captured Emiliana anchors and native actors; every other retained actor assertion remains exact. No new production or conditional-availability behavior."
+      }
     },
     {
       "npc": "Lubo",
@@ -5649,8 +5680,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/219",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-29",
+        "postgres_red_seconds": 57.08,
+        "postgres_green_seconds": 131.74,
+        "scope": "Existing audited physical placement and exact display identity. Explicitly retain both captured Emiliana anchors and native actors; every other retained actor assertion remains exact. No new production or conditional-availability behavior."
+      }
     },
     {
       "npc": "Marvik",
@@ -5658,8 +5695,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/221",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-29",
+        "postgres_red_seconds": 57.08,
+        "postgres_green_seconds": 131.74,
+        "scope": "Existing audited physical placement and exact display identity. Explicitly retain both captured Emiliana anchors and native actors; every other retained actor assertion remains exact. No new production or conditional-availability behavior."
+      }
     },
     {
       "npc": "Mercutios Drum",
@@ -5694,8 +5737,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/265",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-29",
+        "postgres_red_seconds": 57.08,
+        "postgres_green_seconds": 131.74,
+        "scope": "Existing audited physical placement and exact display identity. Explicitly retain both captured Emiliana anchors and native actors; every other retained actor assertion remains exact. No new production or conditional-availability behavior."
+      }
     },
     {
       "npc": "Paulette",
@@ -5867,8 +5916,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/24",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-29",
+        "postgres_red_seconds": 57.08,
+        "postgres_green_seconds": 131.74,
+        "scope": "Existing audited physical placement and exact display identity. Explicitly retain both captured Emiliana anchors and native actors; every other retained actor assertion remains exact. No new production or conditional-availability behavior."
+      }
     },
     {
       "npc": "Captain Fearless",

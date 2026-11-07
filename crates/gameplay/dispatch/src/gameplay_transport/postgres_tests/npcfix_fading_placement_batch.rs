@@ -25,6 +25,8 @@ struct Case {
     name: String,
     expected: Point,
     before: Option<Point>,
+    #[serde(default)]
+    additional: Vec<Point>,
 }
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -95,14 +97,18 @@ fn scenario() -> TestResult {
             );
             let anchors = all
                 .iter()
-                .map(|case| {
-                    (
-                        case.npc.as_str(),
-                        case.name.as_str(),
-                        case.expected.x,
-                        case.expected.y,
-                        case.expected.floor,
-                    )
+                .flat_map(|case| {
+                    std::iter::once(&case.expected)
+                        .chain(&case.additional)
+                        .map(move |point| {
+                            (
+                                case.npc.as_str(),
+                                case.name.as_str(),
+                                point.x,
+                                point.y,
+                                point.floor,
+                            )
+                        })
                 })
                 .collect::<Vec<_>>();
             let baseline = match std::env::var("NPCFIX_PG_BASELINE") {
@@ -174,10 +180,17 @@ fn scenario() -> TestResult {
                 let row = row.ok_or("admitted NPC")?;
                 assert_eq!(
                     row.placements.len(),
-                    1,
-                    "one spawn anchor, not a second roaming actor"
+                    anchors
+                        .iter()
+                        .filter(|(wanted, _, _, _, _)| *wanted == key)
+                        .count(),
+                    "exact explicitly reviewed source anchors"
                 );
-                let point = row.placements[0];
+                let point = row
+                    .placements
+                    .iter()
+                    .find(|point| (point.x, point.y, point.floor) == (x, y, floor))
+                    .ok_or("reviewed source anchor absent")?;
                 assert_eq!(
                     (point.x, point.y, point.floor),
                     (x, y, floor),
@@ -187,6 +200,18 @@ fn scenario() -> TestResult {
                     point.direction,
                     oteryn_world_bundle_compiler::spawn::Direction::North
                 );
+                if let Some(existing) = placements
+                    .iter_mut()
+                    .find(|entry: &&mut NpcPlacements| entry.key == key)
+                {
+                    existing.placements.push(NpcPlacement {
+                        x,
+                        y,
+                        floor,
+                        direction: MovementFacing::North,
+                    });
+                    continue;
+                }
                 placements.push(NpcPlacements {
                     key: key.into(),
                     placements: vec![NpcPlacement {
@@ -240,7 +265,11 @@ fn scenario() -> TestResult {
                 let key = runtime.npc_key(actor.actor).ok_or("native NPC binding")?;
                 let (_, name, x, y, floor) = anchors
                     .iter()
-                    .find(|(wanted, _, _, _, _)| *wanted == key)
+                    .find(|(wanted, _, x, y, floor)| {
+                        *wanted == key
+                            && (actor.position.x, actor.position.y, actor.position.floor)
+                                == (i32::from(*x), i32::from(*y), -i16::from(*floor))
+                    })
                     .ok_or("owned NPC")?;
                 assert_eq!(book.display_name(key), Some(*name));
                 assert_eq!(

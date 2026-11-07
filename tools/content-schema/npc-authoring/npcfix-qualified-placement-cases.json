@@ -1815,7 +1815,14 @@
             "x": 32412,
             "y": 32687,
             "floor": -12
-          }
+          },
+          "additional": [
+            {
+              "x": 31960,
+              "y": 31901,
+              "floor": -6
+            }
+          ]
         },
         {
           "npc": "oteryn:npc.fayla",
@@ -1858,6 +1865,73 @@
             "y": 31136,
             "floor": -7
           }
+        }
+      ]
+    },
+    {
+      "id": "retail-population-qualification-29",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.henricus",
+          "name": "Henricus",
+          "expected": {
+            "x": 32314,
+            "y": 32266,
+            "floor": -8
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.lizzie",
+          "name": "Lizzie",
+          "expected": {
+            "x": 31941,
+            "y": 31920,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.markwin",
+          "name": "Markwin",
+          "expected": {
+            "x": 32418,
+            "y": 32147,
+            "floor": -15
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.marvik",
+          "name": "Marvik",
+          "expected": {
+            "x": 32444,
+            "y": 32213,
+            "floor": -8
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.partos",
+          "name": "Partos",
+          "expected": {
+            "x": 32323,
+            "y": 32280,
+            "floor": -8
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.allen",
+          "name": "Allen",
+          "expected": {
+            "x": 32991,
+            "y": 32062,
+            "floor": -6
+          },
+          "before": null
         }
       ]
     }
