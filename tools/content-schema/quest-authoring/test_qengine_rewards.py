@@ -53,7 +53,7 @@ class QuestRewards(unittest.TestCase):
         self.assertFalse(rule['premium'])
         physical=json.loads(self.outputs['content/items/definitions/spell-native-profiles.json'])
         policies={r['production_definition']['production_key']:r for r in physical['records']}
-        for item in [21898,21899,21901,21902,21905,21906]:
+        for item in [21897,21898,21899,21901,21902,21905,21906]:
             policy=policies[f'oteryn:item.tibia.i{item}']
             self.assertTrue(policy['admission']['materializable'])
             self.assertEqual(policy['admission']['legal_destinations'],['CharacterInventory','Ground'])

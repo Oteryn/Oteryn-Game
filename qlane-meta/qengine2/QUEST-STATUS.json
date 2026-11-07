@@ -3035,12 +3035,12 @@
           }
         },
         "construction_step": {
-          "status": "AUTHORING",
+          "status": "GREEN_GLIDER_STEP",
           "point": "Real wire USE with all seven source Glider pieces returns NothingToUse instead of Committed.",
           "marker": "POSTGRES_CASE_COMPLETED S06_GLIDER ground=false missing=false duration=76.292884279s success=false",
           "log": "/tmp/qengine2-s06-glider-red.log",
           "remaining": "Implement generic bounded complete piece recipes, source Glider grant and source item-target constructions.",
-          "progress": "Six absent Glider components now admitted through existing pinned source-item producer. Focused authoring GREEN14.278s; four changed gameplay crates checkGREEN (12m09 including queue), server strict ClippyGREEN12m20 including queue. Actual PG recompile/rerun executing; no Glider qualification yet.",
+          "progress": "All three real-dispatch PG Glider cases GREEN87.67s: carried recipe, missing-piece refusal, Ground trigger preservation; literal replay, already-owned second-recipe no-spend and negotiated appearance selection. Native source-ID admission includes all seven items. Fifteen item-cosmetic unit tests GREEN; item strict ClippyGREEN53.10s. Three other construction rules and stock mount acquisition variants remain owned work.",
           "last_pg_log": "/tmp/qengine2-s06-glider-green1.log",
           "red_markers": [
             "POSTGRES_CASE_COMPLETED S06_GLIDER ground=false missing=false duration=76.292884279s success=false",
@@ -3052,7 +3052,13 @@
             "clippy": "GREEN content/items/durability/dispatch/server allfeatures alltargets -Dwarnings5m33s; /tmp/qengine2-s06-glider-clippy-retry.log",
             "pins": "GREEN refresh/check24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25; /tmp/qengine2-s06-glider-pin-check.log",
             "postgres": "Rerun rebuilding after disk-interrupted compilation; /tmp/qengine2-s06-glider-green3.log"
-          }
+          },
+          "markers": [
+            "POSTGRES_CASE_COMPLETED S06_GLIDER ground=false missing=false duration=75.054431815s success=true",
+            "POSTGRES_CASE_COMPLETED S06_GLIDER ground=false missing=true duration=79.524932792s success=true",
+            "POSTGRES_CASE_COMPLETED S06_GLIDER ground=true missing=false duration=87.665891948s success=true"
+          ],
+          "green_log": "/tmp/qengine2-s06-glider-green4.log"
         }
       },
       {
@@ -3084,5 +3090,6 @@
         }
       }
     ]
-  }
+  },
+  "validation_policy": "Owner2026-11-07: before every push, derive full reverse normal workspace dependencies with cargo tree -i for every changed crate and run cargo nextest run for the full set with PostgreSQL; collect all failures, fix by root cause, rerun full set, then one push. Merge origin/main every few hours and repeat those tests. This supersedes earlier no-full-suite / WIP-push exceptions."
 }

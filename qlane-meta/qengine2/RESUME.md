@@ -923,3 +923,18 @@ PG green2 build was interrupted by disk full, not a runtime result; retry
 green3 queued/rebuilding with all six admitted source components. Corrected
 content integration rerun also executing. Keep compilation and 7.6GB pin
 runtime serialized to stay within16GB memory. Counts44/66.
+
+Glider complete stepGREEN: /tmp/qengine2-s06-glider-green4.log actual PG
+carried75.054431815s, missing79.524932792s, Ground87.665891948s; all3passed
+87.67s. Full recipe/retained Ground trigger/literal replay/second complete
+recipe already-owned no-spend/normal cap25mount selection pass. All seven
+items now have explicit native source-ID profiles (canonical materialization
+alone did not populate the source-ID effect-owner lookup). Item cosmetic
+unit suite15GREEN; strict item ClippyGREEN53.10s. Remaining S06 three item
+target constructions plus stock mount-item variants; counts44/66.
+NEW OWNER TEST POLICY: no next push until full changed+reverse normal
+workspace dependency nextest set passes, including PostgreSQL. Collect every
+failure, group/fix all, rerun full set, one push. Merge origin/main every few
+hours and run that set after merge. Earlier no-full-suite and WIP-push
+exceptions superseded. Initial25crate set saved /tmp/qengine2-required-test-crates.json.
+Current fetched mainbbb3e06d0; merge next after this local checkpoint commit.
