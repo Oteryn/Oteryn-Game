@@ -27,6 +27,7 @@ pub enum Trigger {
     StepOut,
 }
 
+mod counterparts;
 mod effects;
 pub use effects::{
     CallbackEffectSet, CallbackEffects, Encounter, EncounterMonster, EncounterPlayer,
@@ -238,6 +239,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     }
     callbacks.push(super::rotten_blood::altar_callback());
     callbacks.push(super::schrodinger_island::callback());
+    counterparts::apply(&mut callbacks)?;
     validate_registry(&callbacks)?;
     callbacks.sort_by(|left, right| left.key.cmp(&right.key));
     Ok(callbacks)

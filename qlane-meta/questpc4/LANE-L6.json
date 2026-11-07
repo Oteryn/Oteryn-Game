@@ -574,7 +574,7 @@
         "questpc4"
       ],
       "blocker": {
-        "missing_piece": "Full native route composition and remaining signs/flames/conditional rooms/NPC/finale behavior are active obligations. Qualified selected interactions include generic assembly/lifetimes, seven native carried routes, shared lease activation/count gates, physical/personal expiry, native shared-switch USE, native8/7/5 threshold transports, native altar assembly/ruby and five native conditional room entries with legal monotone progress/11 cues/replay. Do not redo finished components; whole quest remains IN_PROGRESS.",
+        "missing_piece": "Full native route composition and remaining signs/conditional rooms/NPC/finale behavior are active obligations. Qualified selected interactions include assembly/lifetimes, seven native carried routes, shared lease activation/count gates, physical/personal expiry, native shared-switch USE, native8/7/5 threshold transports, native altar assembly/ruby, five native conditional room entries and allseven native flame flags/gate with source13/11cues and replay. Do not redo finished components; whole quest remains IN_PROGRESS.",
         "source": ".questpc4/evidence/wiki/The Ancient Tombs Quest_Spoiler.wiki:8",
         "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
         "canonical_json_pointer": "/records/15/definition",

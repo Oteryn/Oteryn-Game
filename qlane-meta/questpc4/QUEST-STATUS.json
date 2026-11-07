@@ -6848,7 +6848,7 @@
       "remote_verified": true
     },
     "flame_native_batch_22": {
-      "status": "COMPILED_RED_WIP_CHECKPOINT",
+      "status": "GREEN_READY_TO_FF_PUSH",
       "previous_pushed_head": "7d4378886272ae7306c3afd0a20f953fabe36106",
       "metadata": "content/quests/native-counterparts.json",
       "records": 8,
@@ -6863,7 +6863,7 @@
       "red_log": "/tmp/questpc4-native-flames-red.log",
       "red_session": 42783,
       "tests": "5composedcases missinglast/missingmiddle/all/unordered/repeat+replay. EveryflagactualSTEP, sealed fixtureonlyrelocation betweenoriginalnativepockets, noSQLflags.",
-      "implementation": "Sparsemetadata file stillunloaded; afteractualPGRED wireclosedgenerickeyedbinding/presentation loader, preservegeneratedoriginalstatecallbacks andlegalterminalbounds.",
+      "implementation": "Genericclosed sparse binding/presentation application toknownexistingcallbacks. Clone/stageallmetadata andvalidatebeforepublish, reject unknown/duplicate/closedrule/existingbinding/feedbackclobber/invalidcue/callbackshape; originalsource-statecallbacks/storage/guards/goals/sources unchanged.",
       "red": {
         "version": "18.6",
         "seconds": 56.58,
@@ -6872,7 +6872,59 @@
         "expected": "flameflag1 andblue13feedback",
         "log": "/tmp/questpc4-native-flames-red.log",
         "compiled": "4m52s"
-      }
+      },
+      "red_checkpoint_pushed_head": "fee7db5b0f12aa4ef1903bc42148d0d5baf1e9c9",
+      "red_checkpoint_remote_verified": true,
+      "green_log": "/tmp/questpc4-native-flames-green.log",
+      "green_session": 74736,
+      "gate_script": "/tmp/questpc4-native-flames-gates.sh",
+      "postgres": {
+        "status": "GREEN",
+        "version": "18.6",
+        "passed": 6,
+        "failed": 0,
+        "ignored": 0,
+        "flame_seconds": 156.79,
+        "cases": {
+          "l6-native-flames-all": {
+            "seconds": 86.237028933,
+            "log": "/tmp/questpc4-native-flames-green.log"
+          },
+          "l6-native-flames-repeat": {
+            "seconds": 90.553679213,
+            "log": "/tmp/questpc4-native-flames-green.log"
+          },
+          "l6-native-flames-missing-middle": {
+            "seconds": 97.018125294,
+            "log": "/tmp/questpc4-native-flames-green.log"
+          },
+          "l6-native-flames-missing-last": {
+            "seconds": 111.634271144,
+            "log": "/tmp/questpc4-native-flames-green.log"
+          },
+          "l6-native-flames-unordered": {
+            "seconds": 70.551544325,
+            "log": "/tmp/questpc4-native-flames-green.log"
+          },
+          "l6-native-room-morguthis-entry": {
+            "seconds": 97.642646755,
+            "log": "/tmp/questpc4-native-flames-room-regression.log"
+          }
+        }
+      },
+      "checks": {
+        "fmt": "PASS",
+        "check": "PASS quests/dispatchalltargets/features5m42s includesbuildlockwait",
+        "clippy": "PASS quests/dispatchalltargets/features -Dwarnings3m14s",
+        "atomic_metadata": "2passed0failed0.01s",
+        "frozen_hash": "1passed0failed1.28s",
+        "admission": "3passed0failed0.02s",
+        "unchanged_ancient": "5passed0failed2.76s",
+        "room_source": "1passed0failed1.41s",
+        "duplicates_diff": "PASS"
+      },
+      "main_recheck": "d34807f5bd234ee8318e57ba454ba39be0df113d at13:09UTC stillno0999..1006/QBASE1200..1209, #3020notintegrated",
+      "scope": "NativeflameSTEPflags, allseven/refusal/open/repeat/unordered/13+11cues/replayselectedinteractions. No wholemaze/questqualification."
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
