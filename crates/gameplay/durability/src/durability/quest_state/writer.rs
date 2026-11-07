@@ -101,7 +101,7 @@ impl DurabilityRoot {
         clippy::too_many_arguments,
         reason = "binds the existing authority and Quest transition to admitted reward participants"
     )]
-    pub(crate) async fn commit_character_quest_reward(
+    pub(crate) async fn commit_character_quest_reward<G: grizzly::GrizzlyPremiumGate>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
@@ -109,6 +109,7 @@ impl DurabilityRoot {
         request: QuestTransitionRequest,
         catalogue: Arc<QuestStateCatalogue>,
         admission: QuestRewardAdmission<'_>,
+        gate: &G,
     ) -> Result<QuestTransitionOutcome> {
         self.commit_quest_inner::<_, 0>(
             authority,
@@ -120,7 +121,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
-            &grizzly::NoGrizzlyPremium,
+            gate,
             None,
             None,
             Some(admission),
@@ -390,6 +391,28 @@ impl DurabilityRoot {
                         || content_revision != catalogue.content_revision()
                     {
                         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+                    }
+                    if let Some(requirements) = reward_callback.as_ref().and_then(|callback| callback.requirements.as_ref()) {
+                        if state.try_get::<i64,_>("level")? < i64::from(requirements.min_level) {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                        if requirements.premium {
+                            let account: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(account_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                                .bind(id).fetch_one(&mut *tx).await?;
+                            let account: [u8;16] = account.try_into().map_err(|_|DurabilityError::InvalidStoredState)?;
+                            if !grizzly_gate.task_permitted(&mut tx, account).await? {
+                                return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                            }
+                        }
+                        // The Character root lock serializes every quest write for this owner.
+                        // These existing completion facts remain read-only prerequisites.
+                        if !requirements.completed_quests.is_empty() {
+                            let completed: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=ANY($2::text[]) AND completed_character_revision IS NOT NULL")
+                                .bind(id).bind(&requirements.completed_quests).fetch_one(&mut *tx).await?;
+                            if completed != i64::try_from(requirements.completed_quests.len()).map_err(|_|DurabilityError::InvalidStoredState)? {
+                                return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                            }
+                        }
                     }
                     if request.transition_key==oteryn_gameplay_quests::quest::rotten_blood::RESTORE_DOOR
                         && state.try_get::<i64, _>("level")? < i64::from(oteryn_gameplay_quests::quest::rotten_blood::REQUIRED_LEVEL)

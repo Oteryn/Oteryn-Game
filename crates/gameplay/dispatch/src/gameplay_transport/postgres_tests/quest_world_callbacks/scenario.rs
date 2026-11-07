@@ -23,7 +23,8 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let monk = name.starts_with("monk-guidance");
-    let shared_rewards = name.starts_with("qengine-rewards-")
+    let shared_rewards = name.starts_with("questpc7-eligibility-")
+        || name.starts_with("qengine-rewards-")
         || name == "questpc7-golden"
         || name == "questpc7-friends";
     let classic_npc = shared_rewards
@@ -92,6 +93,31 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
+        if name == "questpc7-eligibility-high" {
+            // The subject starts with the published native level1000 prerequisite;
+            // no subject quest progress is arranged by this fixture.
+            let policy = generation
+                .native_gameplay()
+                .and_then(|n| n.progression())
+                .ok_or("native progression")?
+                .policy_for("profile-1", "ruleset-1", "content-1")
+                .map_err(debug)?;
+            let binding =
+                crate::gameplay_transport::SessionProgressionBinding::from_content(policy);
+            let xp = binding
+                .policy
+                .thresholds
+                .iter()
+                .find(|t| t.level == 1000)
+                .ok_or("native level1000 threshold")?
+                .minimum_experience
+                .get();
+            let inserted = sqlx::query("INSERT INTO game_character_progression_state VALUES(encode($1,'hex')::uuid,1,1000,$2,'profile-1','ruleset-1','content-1',$3,$4,$5,$6,$7)")
+                .bind(id(41).as_slice()).bind(xp).bind(&binding.context.simulation).bind(&binding.context.evidence)
+                .bind(&binding.context.declaration).bind(&binding.policy_revision).bind(&binding.reward_revision).execute(&h.pool).await?;
+            assert_eq!(inserted.rows_affected(), 1);
+        }
+
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
@@ -144,7 +170,33 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
+        let eligibility_premium =
+            if name.starts_with("questpc7-eligibility-") && !name.ends_with("no-premium") {
+                use crate::gameplay_transport::spell_premium_coordinator::{
+                    SpellPremiumCoordinator, purchase_fixture,
+                };
+                let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+                Some(SpellPremiumCoordinator::new(
+                    consumer,
+                    Some(clock),
+                    Some(activation),
+                    Some(h.root.clone()),
+                ))
+            } else {
+                None
+            };
         let mut owner = deps.owner(&h, &authority);
+        if let Some(premium) = &eligibility_premium {
+            owner.premium_coordinator = Some(premium);
+            owner.admit_premium(id(40), deps.admitted.game_session_id);
+            assert!(
+                owner
+                    .session_premium_gate(deps.admitted.game_session_id)
+                    .await
+                    .premium_current()
+            );
+        }
+
         owner.active_generation = Some(generation);
         owner.movement_cells = &cells;
         owner.quest_catalogue = Some(std::sync::Arc::new(
@@ -211,6 +263,9 @@ fn scenario_case(
         owner.admit_quest_session(&admitted).await;
         if name == "npc-item-exchanges" {
             super::super::npc_item_exchanges::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
+        } else if name.starts_with("questpc7-eligibility-") {
+            super::super::questpc7_eligibility::exercise(&mut owner, &mut admitted, &h, name)
                 .await?;
         } else if name == "questpc7-friends" {
             super::super::questpc7_friends::exercise(&mut owner, &mut admitted, &h, &authority)

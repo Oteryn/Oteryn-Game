@@ -266,6 +266,9 @@
         },
         "counter": {
           "$ref": "#/$defs/rewardCounter"
+        },
+        "requirements": {
+          "$ref": "#/$defs/rewardRequirements"
         }
       }
     },
@@ -347,6 +350,34 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 1000000000000
+        }
+      }
+    },
+    "rewardRequirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "min_level",
+        "premium"
+      ],
+      "properties": {
+        "min_level": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "premium": {
+          "type": "boolean"
+        },
+        "completed_quests": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^oteryn:quest[.][a-z0-9._/:-]+$",
+            "maxLength": 128
+          }
         }
       }
     }

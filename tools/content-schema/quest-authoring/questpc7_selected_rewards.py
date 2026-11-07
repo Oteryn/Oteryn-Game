@@ -100,3 +100,32 @@ def append_friends(root, callbacks, offers, inputs, pin):
         take=[(3381, 1)], give=(5887, 1), counter='steel-uses', maximum=15)
     add('yarn', 'marina', 2, 2, ['spin yarn'], 'Here is your spool of yarn.',
         take=[(5879, 10)], give=(5886, 1), counter='yarn-uses', maximum=15)
+
+
+def append_eligibility_starts(root, callbacks, inputs, pin):
+    """Own quest starts; subsequent native routes follow the shared eligibility owner."""
+    wanted = [('oteryn:quest.hunter_outfits_quest', 'hunter', 'elane', 'hunter commission'),
+              ('oteryn:quest.authored.illuminated_warrior_outfits_quest', 'illuminated', 'wayland_smythers', 'illuminated commission')]
+    definitions = {}
+    for path in sorted((root / 'content/quests/definitions').glob('quests-*.json')):
+        raw = path.read_bytes()
+        for index, row in enumerate(json.loads(raw)['records']):
+            definition = row['definition']
+            if definition['identity']['key'] in {r[0] for r in wanted}:
+                definitions[definition['identity']['key']] = (path.relative_to(root).as_posix(), index, raw, definition)
+    for quest, slug, npc, words in wanted:
+        path, index, raw, definition = definitions[quest]
+        recipe = definition.get('recipe') or definition['oteryn_recipe']['payload']['recipe']
+        requirements = recipe['requirements']
+        source_path = f'data-global/npc/{npc}.lua'
+        source_pin = ('crystal-summer:00ce02a57ca5a12e48f32a3476e37471167e4c3f'
+                      if npc == 'wayland_smythers' else f'crystal:{pin}')
+        callbacks.append({'key': f'oteryn:quest-reward/questpc7-{slug}-intro', 'quest': quest,
+            'npc': 'oteryn:npc.' + npc, 'keywords': [words], 'topic': 0, 'next_topic': 0,
+            'storage': [{'track': f'oteryn:quest-progress/questpc7/{slug}/programme', 'minimum': -1, 'maximum': -1, 'set': 0}],
+            'requirements': {'min_level': requirements['min_level'], 'premium': requirements['premium'],
+                'completed_quests': ['oteryn:quest.authored.make_believe_quest'] if slug == 'illuminated' else []},
+            'take': [], 'give': None, 'outfit': None, 'achievement': None,
+            'reply': ['Bring back my crossbow from the cultist cache.' if slug == 'hunter' else 'Collect 2500 radiant attire scraps for the basic outfit.'],
+            'sources': [f'canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}',
+                f'{source_pin}:{source_path}:1-{len(inputs[source_path].splitlines())}:sha256:{hashlib.sha256(inputs[source_path]).hexdigest()}']})

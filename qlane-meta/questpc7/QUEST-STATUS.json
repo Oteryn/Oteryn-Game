@@ -1499,7 +1499,7 @@
       "scope": "Generic owner only; not this quest's route qualification"
     },
     "eligibility_progress": {
-      "state": "native start and shared eligibility mechanism implemented; PG GREEN, final checks pending",
+      "state": "shared eligibility mechanism QUALIFIED; own native start bound; whole route remains ACTIVE",
       "proof": "qlane-meta/questpc7/ELIGIBILITY-PG-PROOF.json",
       "boundary": "Not whole route qualification; finish remaining physical/reward bindings here"
     }
@@ -1618,7 +1618,7 @@
       "scope": "Generic owner only; not this quest's route qualification"
     },
     "eligibility_progress": {
-      "state": "native start and shared eligibility mechanism implemented; PG GREEN, final checks pending",
+      "state": "shared eligibility mechanism QUALIFIED; own native start bound; whole route remains ACTIVE",
       "proof": "qlane-meta/questpc7/ELIGIBILITY-PG-PROOF.json",
       "boundary": "Not whole route qualification; finish remaining physical/reward bindings here"
     }

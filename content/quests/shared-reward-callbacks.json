@@ -1853,6 +1853,76 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc7-hunter-intro",
+      "quest": "oteryn:quest.hunter_outfits_quest",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "hunter commission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/hunter/programme",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "requirements": {
+        "min_level": 0,
+        "premium": true,
+        "completed_quests": []
+      },
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Bring back my crossbow from the cultist cache."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/44/definition:sha256:7f0c08859e1316aac2df4fe457e746687b4c759a673d93332bbb0ebdbaf14e9e",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:1-352:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-illuminated-intro",
+      "quest": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "illuminated commission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "requirements": {
+        "min_level": 1000,
+        "premium": true,
+        "completed_quests": [
+          "oteryn:quest.authored.make_believe_quest"
+        ]
+      },
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Collect 2500 radiant attire scraps for the basic outfit."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/5/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
+        "crystal-summer:00ce02a57ca5a12e48f32a3476e37471167e4c3f:data-global/npc/wayland_smythers.lua:1-128:sha256:9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/sam-backpack",
       "quest": "oteryn:quest.sam_s_old_backpack_quest",
       "npc": "oteryn:npc.sam",

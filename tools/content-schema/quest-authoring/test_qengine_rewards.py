@@ -84,6 +84,19 @@ class QuestRewards(unittest.TestCase):
             else:callback['completes']=True
             with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
 
+    def test_selected_reward_requirements_are_bounded_and_use_canonical_parents(self):
+        from jsonschema import ValidationError
+        selected={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks'] if c.get('requirements')}
+        self.assertEqual(selected['questpc7-hunter-intro']['requirements'],{'min_level':0,'premium':True,'completed_quests':[]})
+        self.assertEqual(selected['questpc7-illuminated-intro']['requirements'],{'min_level':1000,'premium':True,'completed_quests':['oteryn:quest.authored.make_believe_quest']})
+        for mutation in ('level','duplicate','foreign'):
+            bad=copy.deepcopy(self.callbacks)
+            callback=next(c for c in bad['callbacks'] if c['key']==selected['questpc7-illuminated-intro']['key'])
+            if mutation=='level':callback['requirements']['min_level']=1000001
+            elif mutation=='duplicate':callback['requirements']['completed_quests']*=2
+            else:callback['requirements']['completed_quests']=['unscoped:parent']
+            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
+
     def test_golden_selected_prices_and_fee_conservation(self):
         from jsonschema import ValidationError
         selected=[c for c in self.callbacks['callbacks'] if c['key'].split('/')[-1].startswith('questpc7-golden-')]

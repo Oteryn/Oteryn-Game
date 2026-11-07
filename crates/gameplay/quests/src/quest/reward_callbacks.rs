@@ -48,6 +48,16 @@ pub struct RewardCounter {
     pub maximum: i64,
 }
 
+/// Authoritative character/account prerequisites checked before any reward effect.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct RewardRequirements {
+    pub min_level: u32,
+    pub premium: bool,
+    #[serde(default)]
+    pub completed_quests: Vec<String>,
+}
+
 /// A read-only prerequisite: its original quest retains ownership and writes.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -86,6 +96,8 @@ pub struct RewardCallback {
     pub completes: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub counter: Option<RewardCounter>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requirements: Option<RewardRequirements>,
     /// Carried evidence checked under the same locks, without consuming it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<ItemAmount>,
@@ -158,6 +170,15 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                     || c.completes
                     || tracks.contains(&counter.track)
                     || requires.contains(&counter.track)
+            })
+            || c.requirements.as_ref().is_some_and(|r| {
+                r.min_level > 1_000_000
+                    || r.completed_quests.len() > 8
+                    || r.completed_quests.iter().collect::<BTreeSet<_>>().len()
+                        != r.completed_quests.len()
+                    || r.completed_quests
+                        .iter()
+                        .any(|key| !slug(key, "oteryn:quest.", b"._/:-", 128))
             })
             || c.present.len() > 8
             || evidence.len() != c.present.len()

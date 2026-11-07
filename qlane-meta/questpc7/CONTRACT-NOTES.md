@@ -99,3 +99,5 @@
   appearance references, preserving known weight/stack behavior and exact totals;
   add a bounded escrow if totals exceed the existing carried-tree bound. This is
   an explicit native adaptation, not a claim of an unknown original numeric ID.
+
+- Exact canonical parent source: content/quests/definitions/quests-00300-00351.json:1#/records/15/definition SHA2564a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a. Parent completion is a read-only prerequisite, and its fenced fixture precondition does not qualify that other-lane quest.

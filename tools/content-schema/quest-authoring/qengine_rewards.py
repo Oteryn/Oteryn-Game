@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'king_tibianus', 'a_sweaty_cyclops', 'marina', 'gamon', 'quentin', 'tibra', 'maealil',
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'king_tibianus', 'elane', 'a_sweaty_cyclops', 'marina', 'gamon', 'quentin', 'tibra', 'maealil',
         'yberius', 'isimov', 'amanda', 'kasmir', 'rahkem', 'brewster', 'tyrias')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
@@ -40,6 +40,11 @@ def donor_inputs():
     result = {}
     with tarfile.open(ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz') as corpus:
         manifest = json.load(corpus.extractfile('corpus-manifest.json'))
+        summer_path = 'data-global/npc/wayland_smythers.lua'
+        summer_row = next(r for r in manifest['files'] if r['source'] == 'crystal-summer' and r['revision'] == '00ce02a57ca5a12e48f32a3476e37471167e4c3f' and r['path'] == summer_path)
+        summer_raw = corpus.extractfile(summer_row.get('blob_path', summer_row.get('cache_path'))).read()
+        if sha(summer_raw) != summer_row['sha256']: raise ValueError('Wayland retained source changed')
+        result[summer_path] = summer_raw
         for path in paths:
             row = next(r for r in manifest['files'] if r['source'] == 'crystalserver' and r['revision'] == PIN and r['path'] == path)
             raw = corpus.extractfile(row.get('blob_path', row.get('cache_path'))).read()
@@ -277,6 +282,7 @@ def build():
     selected = load_module('questpc7_selected_rewards', 'tools/content-schema/quest-authoring/questpc7_selected_rewards.py')
     selected.append_golden(ROOT, callbacks, offers, inputs, PIN)
     selected.append_friends(ROOT, callbacks, offers, inputs, PIN)
+    selected.append_eligibility_starts(ROOT, callbacks, inputs, PIN)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'callbacks':callbacks})
@@ -302,7 +308,8 @@ def build():
             if len(matches)!=1: raise ValueError('ambiguous NPC greeting '+npc+field)
             messages[field]=matches[0].group(1)
             line=inputs[origin][:matches[0].start()].count(b'\n')+1
-            citations.append(f'crystal:{PIN}:{origin}:{line}:sha256:{sha(inputs[origin])}')
+            source = 'crystal-summer:00ce02a57ca5a12e48f32a3476e37471167e4c3f' if origin == 'data-global/npc/wayland_smythers.lua' else f'crystal:{PIN}'
+            citations.append(f'{source}:{origin}:{line}:sha256:{sha(inputs[origin])}')
         greetings.append({'npc':npc,**messages,'sources':citations})
     generated['content/dialogues/quests/shared-reward-greetings.json']=encoded({'schema':1,'npcs':greetings})
     access = load_module('qengine_l1_access', 'tools/content-schema/quest-authoring/qengine_access.py')

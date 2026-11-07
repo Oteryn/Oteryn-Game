@@ -101,6 +101,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.elane",
+      "greet": "Welcome to the paladins' guild, |PLAYERNAME|! How can I help you?",
+      "farewell": "Bye, |PLAYERNAME|.",
+      "walkaway": "Bye, |PLAYERNAME|.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:328:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:329:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:330:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef"
+      ]
+    },
+    {
       "npc": "oteryn:npc.gamon",
       "greet": "Nice to meet you, Mister |PLAYERNAME|! Looking for furniture? You've come to the right place!",
       "farewell": "You'll come back. They all do.",
@@ -274,6 +285,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tyrias.lua:173:sha256:d940a44e911493aa8091f8c8331220036f364288df05eb830b741f2b82d312c6",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tyrias.lua:175:sha256:d940a44e911493aa8091f8c8331220036f364288df05eb830b741f2b82d312c6",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tyrias.lua:174:sha256:d940a44e911493aa8091f8c8331220036f364288df05eb830b741f2b82d312c6"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "greet": "Ah, a visitor. Allow me to introduce myself. Wayland Smythers, in service of science. I am here in search of esteemed heroes, such as yourself, to avert a grave {danger}.",
+      "farewell": "Farewell, and do be careful.",
+      "walkaway": "Farewell, and do be careful.",
+      "sources": [
+        "crystal-summer:00ce02a57ca5a12e48f32a3476e37471167e4c3f:data-global/npc/wayland_smythers.lua:117:sha256:9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851",
+        "crystal-summer:00ce02a57ca5a12e48f32a3476e37471167e4c3f:data-global/npc/wayland_smythers.lua:118:sha256:9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851",
+        "crystal-summer:00ce02a57ca5a12e48f32a3476e37471167e4c3f:data-global/npc/wayland_smythers.lua:119:sha256:9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851"
       ]
     },
     {

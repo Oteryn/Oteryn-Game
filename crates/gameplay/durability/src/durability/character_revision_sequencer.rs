@@ -464,6 +464,22 @@ impl RevisionSlot {
         catalogue: std::sync::Arc<QuestStateCatalogue>,
         admission: super::reward_claim_mint::quest::QuestRewardAdmission<'_>,
     ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.commit_quest_reward_with_gate(root, authority, node, fence, request, catalogue, admission, &super::quest_state::grizzly::NoGrizzlyPremium).await
+    }
+
+    /// The native Premium owner participates in the same fenced reward transaction.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_quest_reward_with_gate<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        admission: super::reward_claim_mint::quest::QuestRewardAdmission<'_>,
+        gate: &G,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
         self.sequenced(
             root_revision(root, authority),
             fence,
@@ -476,6 +492,7 @@ impl RevisionSlot {
                     request.clone(),
                     std::sync::Arc::clone(&catalogue),
                     admission,
+                    gate,
                 )
             },
         )

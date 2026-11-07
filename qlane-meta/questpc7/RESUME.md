@@ -1,3 +1,30 @@
+# Native reward eligibility fully GREEN — 2026-11-07
+
+The shared eligibility slice is complete and ready for immediate push.
+ELIGIBILITY-PG-PROOF.json contains RED74.410s, three GREEN PG18.6 cases
+74.879/75.427/73.091s and retained ordinary Sam MINT GREEN76.832s.
+Missing Premium denies; Current permits; low level refuses despite a completed
+parent; level1000 still requires its parent; checking that parent never writes it.
+The native Premium latch is joined to the existing Character-fenced quest writer.
+Legacy reward calls retain a deny-by-default gate; requirements-free callbacks
+are unchanged. No command, capability or migration number was added.
+
+All checks pass:15 authoring tests; strict Clippy all targets/features on the
+three changed crates; explicit Cargo check;123 content and5 world tests;
+repo regeneration/registration checks; pin refresh/check; fmt. Both generated
+world and deployment pins equal842187e5493a9d04849d13d8062398f6120f250c116b0fc094c87387e611e0a3.
+
+Scope still21 ACTIVE. These are mechanism proofs and own native starts, never
+whole Hunter/Illuminated qualifications. Continue their physical/world reward
+bindings and Formal Dress. Existing consumptive-cosmetics actions already cover
+Formal Dress Items37604/37605 and resolve required/owned cosmetics semantically;
+reuse them. Sniper Gloves5875 still needs an explicit source binding. Hunter's
+Elane source grants male129 addon1 / female137 addon2, then male129 addon2 /
+female137 addon1 (elane.lua:141-142,206-207, SHAbeb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef).
+Reuse upstream world wardrobe support and preserve read-only/asymmetric hoist.
+Source look/item uncertainty for Illuminated has a timeboxed conservative authored
+compatibility decision in CONTRACT-NOTES.md; implement adapters rather than hold.
+
 # Eligibility mechanism PG GREEN — 2026-11-07
 
 Three actual PG18.6 cases pass in74.879/75.427/73.091s after RED74.410s.
