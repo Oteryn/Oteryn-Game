@@ -11,10 +11,19 @@ fn questpc5_independent_backpack_rewards_are_atomic_and_not_container_contents()
         let h = super::fixture::Harness::create_with_admission_seed(
             admin,
             "questpc5_backpack_outputs",
-            false,
+            true,
             false,
         )
         .await?;
+        let initialized: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_character_progression_state WHERE level>0",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(
+            initialized, 1,
+            "weighted MINT uses an admitted player, not a bootstrap root"
+        );
         let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
             .fetch_one(&h.pool)
             .await?;
@@ -41,6 +50,7 @@ fn questpc5_independent_backpack_rewards_are_atomic_and_not_container_contents()
             )?;
         let generation = controller.active().ok_or("generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
+        eprintln!("BACKPACK_PHASE native_ready");
         {
             super::prepare_current_session(&h).await?;
             let seal = h.recovery.seal_current().map_err(super::fixture::debug)?;
@@ -75,6 +85,7 @@ fn questpc5_independent_backpack_rewards_are_atomic_and_not_container_contents()
                 )
                 .await
                 .map_err(super::fixture::debug)?;
+            eprintln!("BACKPACK_PHASE equipment_ready");
             let definition = |id| crate::durability::item_mint::TypedDefinitionRef {
                 family: "Item".into(),
                 production_key: format!("oteryn:item.tibia.i{id}"),
@@ -100,6 +111,9 @@ fn questpc5_independent_backpack_rewards_are_atomic_and_not_container_contents()
                 )
                 .await
                 .map_err(super::fixture::debug)?;
+            eprintln!("BACKPACK_PHASE starter_ready");
+            let carried:Vec<String>=sqlx::query_scalar("SELECT DISTINCT definition_production_key FROM game_item_instances WHERE lifecycle=1 ORDER BY definition_production_key").fetch_all(&h.pool).await?;
+            eprintln!("BACKPACK_CARRIED_DEFINITIONS {carried:?}");
             use crate::durability::reward_claim_mint::{
                 RewardClaimMintContent, RewardClaimMintError, RewardClaimMintOutcome,
                 RewardClaimMintRequest, RewardClaimRefusal,
@@ -151,6 +165,7 @@ fn questpc5_independent_backpack_rewards_are_atomic_and_not_container_contents()
                 quest_transition: None,
                 key_number: None,
             };
+            eprintln!("BACKPACK_PHASE request_ready");
             let mut candidate = owner
                 .root
                 .freeze_reward_claim_mint_weighted(
@@ -162,6 +177,7 @@ fn questpc5_independent_backpack_rewards_are_atomic_and_not_container_contents()
                 )
                 .await
                 .map_err(super::fixture::debug)?;
+            eprintln!("BACKPACK_PHASE frozen");
             let (outcome, _) = owner
                 .root
                 .commit_reward_claim_mint_weighted_noticed(
@@ -174,6 +190,7 @@ fn questpc5_independent_backpack_rewards_are_atomic_and_not_container_contents()
                 )
                 .await
                 .map_err(super::fixture::debug)?;
+            eprintln!("BACKPACK_PHASE committed");
             assert!(matches!(outcome, RewardClaimMintOutcome::Committed(_)));
             let direct:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key=ANY($1)").bind(vec!["oteryn:item.tibia.i7343","oteryn:item.tibia.i3032","oteryn:item.tibia.i3054"]).fetch_one(&h.pool).await?;
             assert_eq!(direct, 3, "each reward is a direct backpack entry");

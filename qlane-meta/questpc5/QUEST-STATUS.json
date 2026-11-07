@@ -250,7 +250,8 @@
       "whole_recipe_qualified": false,
       "integration_state": "COMPILES_PG_FACTORY_RED_INVALID_STORED_STATE_51_32S",
       "integration_red_log": "/tmp/questpc5-backpack-outputs-green.log"
-    }
+    },
+    "active_checkpoint": "Independent backpack outputs compile and commit on PostgreSQL 18.6; current test RED at charge-state assertion after 50.30s. Investigating implicit native default versus explicit partial charge initialization; no qualification claimed."
   },
   {
     "canonical": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
