@@ -10796,5 +10796,11 @@
         "failure": "framed fixture omitted ordinary offered NPC/appearance capabilities; corrected using QENGINE story setup"
       }
     ]
+  },
+  "current_citizen_fixture": {
+    "state": "compiling WIP; PG rerun pending",
+    "root_cause": "subset catalogue omitted other active NPC programme tracks",
+    "fix": "test-support Citizen clock helper preserves full catalogue and additive history",
+    "qualified": false
   }
 }

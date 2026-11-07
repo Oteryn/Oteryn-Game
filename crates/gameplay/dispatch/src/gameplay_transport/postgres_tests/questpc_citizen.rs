@@ -4,9 +4,6 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::reward_callbacks::{ItemAmount, RewardCallback};
-use oteryn_gameplay_quests::quest::{
-    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
-};
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
@@ -74,70 +71,17 @@ pub(super) async fn exercise(
     let materials = find("backpack-materials")?;
     let backpack = find("backpack")?;
     let hat = find("hat")?;
-    // Keep all five source tracks and real programme transitions. Only a clock
-    // arrangement is added; no outfit stage, input or entitlement is seeded.
+    // Preserve every active programme track and production compatibility history.
+    // Only the clock is arranged; outfit stages, items and entitlements are earned.
     let canonical = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
-    let tracks = [
-        "addon_backpack",
-        "addon_backpack_timer",
-        "mission_backpack",
-        "addon_hat",
-        "mission_hat",
-    ]
-    .iter()
-    .map(|s| {
-        canonical
-            .track(&format!("{PREFIX}{s}"))
-            .cloned()
-            .ok_or("source track")
-    })
-    .collect::<Result<Vec<_>, _>>()?;
-    let source =
-        oteryn_gameplay_quests::quest::npc_rules::NpcRuleCatalog::runtime().map_err(debug)?;
-    let program = source
-        .programs()
-        .iter()
-        .find(|program| {
-            program.document.program_key.as_deref()
-                == Some("oteryn:quest-npc-program.citizen-mainland")
-        })
-        .ok_or("Citizen source programme")?;
-    let digest = program
-        .digest
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<String>();
-    let pin = format!("oteryn:quest-npc-pin/{digest}");
-    let keys = all
-        .iter()
-        .filter(|c| c.key.starts_with("oteryn:quest-reward/questpc-citizen-"))
-        .map(|c| c.key.as_str())
-        .chain(std::iter::once(pin.as_str()));
-    let mut transitions = keys
-        .map(|key| {
-            canonical
-                .transition(key)
-                .cloned()
-                .ok_or_else(|| format!("source transition {key}"))
-        })
-        .collect::<Result<Vec<_>, _>>()?;
     let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint")
         .fetch_one(&h.pool)
         .await?;
-    transitions.push(QuestTransition {
-        key: CLOCK.into(),
-        quest: backpack.quest.clone(),
-        effects: vec![QuestEffect {
-            track: format!("{PREFIX}addon_backpack_timer"),
-            from: QuestComparison::Any,
-            effect: QuestEffectKind::Set(now - 7202),
-        }],
-        completes: false,
-        experience: None,
-    });
     owner.quest_catalogue = Some(Arc::new(
-        QuestStateCatalogue::new(canonical.content_revision(), tracks, transitions)
-            .map_err(debug)?,
+        oteryn_gameplay_quests::quest::questpc_clock_fixture::with_citizen_clock(
+            canonical,
+            now - 7202,
+        )?,
     ));
     owner
         .refresh_quest_session(admitted.game_session_id, false)

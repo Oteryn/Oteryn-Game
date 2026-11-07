@@ -1,3 +1,10 @@
+## Citizen fixture catalogue preservation
+Third PG run executed both cases (83.927/84.091 seconds), failed greeting because
+its five-track subset omitted tracks required by all active NPC programmes.
+Rook comparison passed on PostgreSQL in88.955 seconds. Fixture now retains the
+full production catalogue and additive compatibility history using a small,
+feature-gated Citizen clock helper. Own PG rerun remains pending; no promotion.
+
 ## Current Citizen story harness WIP
 Source bindings pushed104fa1f7a7e167663793a7b1626aa32fee702a20; source/compatibility
 units green. New male backpack-first and female hat-first real PG stories cover

@@ -1090,3 +1090,6 @@ mod tests {
 mod citizen_source_tests;
 
 mod questpc_sources;
+
+#[cfg(feature = "test-support")]
+pub mod questpc_clock_fixture;

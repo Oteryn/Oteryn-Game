@@ -11,6 +11,9 @@ publish.workspace = true
 category = "gameplay"
 release-role = "production"
 
+[features]
+test-support = []
+
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
