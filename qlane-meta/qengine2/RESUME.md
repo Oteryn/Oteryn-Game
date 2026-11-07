@@ -907,3 +907,11 @@ through qengine_rewards.py; it already invokes the physical profile producer.
 No recipe/PG qualification claimed. Server world repository5GREEN100.30s;
 legacy content shape expectation corrected to accept2/reject0and21. Remaining
 required gates, pins and legacy regressions queued. Counts44/66.
+
+Six Glider components admitted through existing qengine source-item tool;
+qengine_rewards.py regenerated native profiles, proof packet and manifest.
+Focused physical-recipe authoringGREEN14.278s; gameplay content/items/durability/
+dispatch checkGREEN12m09includingqueue; strict server alltargets/features
+ClippyGREEN12m20includingqueue. Whole S06/Glider stillAUTHORING until new PG
+run /tmp/qengine2-s06-glider-green2.log passes. Pin refresh running, full
+changed-crate strict Clippy queued. Counts44/66; continue through66.

@@ -375,3 +375,15 @@ normalization must retain all47 creature rules plus3 item targets and route
 Glider through one complete seven-piece recipe; never silently omit a source row.
 A clicked Ground Glider blueprint is only the trigger, following the donor's
 carried getItemCount/removeItem loop; consume the seven carried ingredients.
+
+S06 Glider physical admission: added only the six absent component IDs to
+the existing qengine_reward_item_profiles producer. Its pinned
+imports/canary/items-xml/items.xml SHA256
+1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2
+and client appearance SHA256
+2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2
+supply exact physical/stack/custody facts; known canonical facts retain priority.
+Item XML locations: 21898:line43247, 21899:line43250, 21901:line43258, 21902:line43262, 21905:line43275, 21906:line43279.
+Canonical Item declarations and source captures remain unchanged; the existing
+native overlay admits the six portable plain components. Focused source test
+GREEN14.278s verifies every component's materializable inventory/Ground policy.

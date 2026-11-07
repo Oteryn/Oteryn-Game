@@ -51,6 +51,14 @@ class QuestRewards(unittest.TestCase):
         self.assertEqual(rule['mode'],'pieces')
         self.assertEqual(rule['required_items'],[21897,21898,21899,21901,21902,21905,21906])
         self.assertFalse(rule['premium'])
+        physical=json.loads(self.outputs['content/items/definitions/spell-native-profiles.json'])
+        policies={r['production_definition']['production_key']:r for r in physical['records']}
+        for item in [21898,21899,21901,21902,21905,21906]:
+            policy=policies[f'oteryn:item.tibia.i{item}']
+            self.assertTrue(policy['admission']['materializable'])
+            self.assertEqual(policy['admission']['legal_destinations'],['CharacterInventory','Ground'])
+            self.assertNotEqual(policy['admission']['stack_class'],'Unknown')
+
         self.assertEqual(rule['choices'][0]['grants'],['oteryn:item-grant.mount.71'])
         self.assertEqual(rule['choices'][0]['cues'],[{'binding':'canary.appearance:effect/magic_green','effect_id':15}])
         grant=next(r for r in packet['grants'] if r['key']=='oteryn:item-grant.mount.71')
