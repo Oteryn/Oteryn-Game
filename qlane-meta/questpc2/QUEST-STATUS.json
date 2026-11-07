@@ -590,7 +590,7 @@
       "title": "The Annihilator Quest",
       "mechanism": "encounter_party_admission_settlement",
       "status": "UNFINISHED",
-      "blocker": "Published shared four-player encounter entry and reward-choice cohorts are reused; source reward door, forced close displacement and exact durable claim gate are now PG verified. Continuous source-room entry-to-earned-reward route remains active implementation. No source escape timer or all-six-kill predicate is invented.",
+      "blocker": "Existing party encounter/reward owners reused; source reward door and four real captured startup chest selectors are PG verified. Continuous native source-room entry/combat/earned-reward route remains active implementation; no invented escape timer or all-six-kill storage.",
       "source_lane_checks": [
         {
           "lane": "questpc4",
@@ -612,6 +612,13 @@
         "record": "BATCH-annihilator-reward-door-2026-11-07.json",
         "postgres_version": 180006,
         "duration_seconds": 44.47
+      },
+      "source_startup_slice": {
+        "status": "PG_VERIFIED",
+        "record": "BATCH-annihilator-startup-selectors-2026-11-07.json",
+        "selectors": 4,
+        "postgres_version": 180006,
+        "duration_seconds": 43.95
       }
     },
     {
@@ -1630,10 +1637,10 @@
     }
   },
   "current_batch": {
-    "id": "annihilator-reward-door-2026-11-07",
-    "record": "BATCH-annihilator-reward-door-2026-11-07.json",
+    "id": "annihilator-startup-selectors-2026-11-07",
+    "record": "BATCH-annihilator-startup-selectors-2026-11-07.json",
     "whole_quest_qualifications": 0,
-    "next": "Continue the continuous Annihilator source room entry-to-reward composition using the published encounter/reward owners, then proceed through all remaining L3 quests."
+    "next": "Implement the continuous native Annihilator route against real source-region geometry and genuine current player/progression fences: entry door, exact four-person lever, source combat clearance, physical earned chest and sealed re-entry. Reuse encounter/reward owners; no invented kill flag or escape timer."
   },
   "completed_batch_records": [
     "BATCH-scoped-corpse-2026-11-07.json",

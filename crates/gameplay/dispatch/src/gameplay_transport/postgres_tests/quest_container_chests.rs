@@ -18,6 +18,7 @@ enum Case {
     Key,
     Choice,
     ChoiceDoor,
+    ChoiceCaptured,
     Text,
     RootText,
     CrystalKey,
@@ -58,6 +59,11 @@ fn quest_container_chests_annihilator_choices_share_storage_and_achievement() ->
 fn annihilator_reward_door_tracks_the_real_shared_claim() -> TestResult {
     assert!(std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some());
     execute(Case::ChoiceDoor, "ANNIHILATOR_REWARD_DOOR")
+}
+#[test]
+fn annihilator_captured_startup_chests_share_the_real_claim() -> TestResult {
+    assert!(std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some());
+    execute(Case::ChoiceCaptured, "ANNIHILATOR_CAPTURED_CHESTS")
 }
 #[test]
 fn quest_container_chests_authored_book_text_survives_replay() -> TestResult {
@@ -161,7 +167,7 @@ fn scenario(case: Case) -> TestResult {
                 ("oteryn:item.tibia.i3598", 27, 0),
             ],
         ),
-        Case::Choice | Case::ChoiceDoor => (
+        Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured => (
             "oteryn:reward-claim.quest.u7_24.the_annihilator.reward",
             (33233, 31656, -13),
             6088,
@@ -213,6 +219,17 @@ fn scenario(case: Case) -> TestResult {
                 "source reward door callback missing"
             );
         }
+        let captured_choices = if matches!(case, Case::ChoiceCaptured) {
+            let version: String = sqlx::query_scalar("SHOW server_version_num")
+                .fetch_one(&harness.pool)
+                .await?;
+            println!(
+                "ANNIHILATOR_CAPTURED_CHESTS POSTGRES_CASE_OBSERVED server_version_num={version}"
+            );
+            Some(super::annihilator_door::captured_chest_selectors()?)
+        } else {
+            None
+        };
         let mut deps = Dependencies::new()?;
         let (controller, activated_pin) =
             super::death_ml_loss_composed::production_generation_with_pin(
@@ -221,10 +238,15 @@ fn scenario(case: Case) -> TestResult {
             )?;
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
-        let world = if matches!(case, Case::Choice | Case::ChoiceDoor) {
+        let world = if matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured) {
             super::quest_callbacks::source_world_choices_with_door(
                 chest,
-                &[(33227, 6085), (33229, 6086), (33231, 6087), (33233, 6088)],
+                captured_choices.as_deref().unwrap_or(&[
+                    (33227, 6085),
+                    (33229, 6086),
+                    (33231, 6087),
+                    (33233, 6088),
+                ]),
                 2472,
                 matches!(case, Case::ChoiceDoor).then_some(native),
             )?
@@ -531,11 +553,12 @@ fn scenario(case: Case) -> TestResult {
                 "room/weight refusal must leave no partial or pending reward"
             );
         } else {
-            let alternate = if matches!(case, Case::Choice | Case::ChoiceDoor) {
-                target_at(33231)?
-            } else {
-                target.clone()
-            };
+            let alternate =
+                if matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured) {
+                    target_at(33231)?
+                } else {
+                    target.clone()
+                };
             let mut first_root = None;
             // One live stream starts at 1. Replay its retained result before
             // command 2 replaces the single terminal-record slot. A new owner
@@ -696,7 +719,10 @@ fn scenario(case: Case) -> TestResult {
                 .fetch_one(&harness.pool).await?;
             assert_eq!(
                 achievements,
-                i64::from(matches!(case, Case::Choice | Case::ChoiceDoor))
+                i64::from(matches!(
+                    case,
+                    Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured
+                ))
             );
             if matches!(case, Case::Text) {
                 let valid: (bool,bool,bool,bool,bool,bool) = sqlx::query_as("SELECT \

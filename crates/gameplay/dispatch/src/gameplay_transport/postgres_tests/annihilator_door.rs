@@ -243,3 +243,47 @@ pub(super) async fn exercise(
     );
     Ok(())
 }
+
+/// The committed source cells, depths, appearances and startup attributes are
+/// the witness. Crystal201189f chest.lua:1235-1263 (SHA2567c3ac128...).
+pub(super) fn captured_chest_selectors() -> TestResult<Vec<(u16, u16)>> {
+    let region = oteryn_world_bundle_compiler::b3::decode_region(
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/world/placements/region-z13-x129-y123.b3"
+        )),
+        oteryn_world_bundle::bundle::TILE_LIMITS,
+        &mut oteryn_world_bundle::sector::Budget {
+            tiles: 65536,
+            entries: 1_000_000,
+        },
+    )?;
+    assert_eq!((region.z, region.rx, region.ry), (13, 129, 123));
+    let palette: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/world/placements/index.json"
+    )))?;
+    let mut choices = Vec::new();
+    for (x, expected) in [(33227, 6085), (33229, 6086), (33231, 6087), (33233, 6088)] {
+        let tile = region
+            .sectors
+            .iter()
+            .flat_map(|(_, _, tiles)| tiles)
+            .find(|tile| tile.x == x && tile.y == 31656)
+            .ok_or("source chest cell")?;
+        let mut found = tile.items.iter().filter(|item| {
+            item.depth == 0
+                && palette["palette"][item.palette as usize]["source_item_id"].as_u64()
+                    == Some(2472)
+        });
+        let item = found.next().ok_or("source chest appearance")?;
+        assert!(found.next().is_none(), "ambiguous source chest");
+        let unique = item
+            .attrs
+            .unique
+            .ok_or("Annihilator source chest startup UID missing")?;
+        assert_eq!(unique, expected);
+        choices.push((x, unique));
+    }
+    Ok(choices)
+}
