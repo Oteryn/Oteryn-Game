@@ -42,6 +42,8 @@ pub trait RewardClaimTile {
     fn appearance(&self, ordinal: u8) -> Option<u16>;
 }
 
+mod native_aliases;
+
 /// The RewardClaim shards, embedded as the quest document is: the plain shards, then the authored
 /// variant shards. Keys and the exact W15b native container projection are served;
 /// other source dispositions remain closed.
@@ -191,7 +193,12 @@ pub fn bind_embedded_reward_claims(
     base: &impl RewardClaimBase,
     admitted: &dyn Fn(&TypedDefinitionRef) -> bool,
 ) -> Result<BindingReport, ClaimsError> {
-    bind_reward_claims(base, &REWARD_CLAIM_SHARDS, admitted)
+    bind_reward_claims_with_aliases(
+        base,
+        &REWARD_CLAIM_SHARDS,
+        admitted,
+        native_aliases::load()?,
+    )
 }
 
 /// The served set and binding report of `shards` over `base` (§1.4, §1.5). `admitted` says
@@ -201,7 +208,17 @@ pub fn bind_reward_claims(
     shards: &[&str],
     admitted: &dyn Fn(&TypedDefinitionRef) -> bool,
 ) -> Result<BindingReport, ClaimsError> {
+    bind_reward_claims_with_aliases(base, shards, admitted, &[])
+}
+
+fn bind_reward_claims_with_aliases(
+    base: &impl RewardClaimBase,
+    shards: &[&str],
+    admitted: &dyn Fn(&TypedDefinitionRef) -> bool,
+    aliases: &[native_aliases::NativePlacementAlias],
+) -> Result<BindingReport, ClaimsError> {
     let mut report = BindingReport::default();
+    let mut matched_aliases = std::collections::BTreeSet::new();
     for shard in shards {
         let shard: Value =
             serde_json::from_str(shard).map_err(|_| ClaimsError("not a JSON document"))?;
@@ -219,11 +236,26 @@ pub fn bind_reward_claims(
                 .and_then(|identity| identity.get("key"))
                 .and_then(Value::as_str)
                 .ok_or(ClaimsError("record without an identity key"))?;
+            for (index, alias) in aliases
+                .iter()
+                .enumerate()
+                .filter(|(_, alias)| alias.claim == key)
+            {
+                if !alias.validates(definition) {
+                    return Err(ClaimsError(
+                        "native alias does not match its original source placement",
+                    ));
+                }
+                matched_aliases.insert(index);
+            }
             match candidate(definition, admitted)? {
                 Err(left_out) => report.left_out.push((key.to_owned(), left_out)),
-                Ok(candidate) => bind_candidate(base, key, &candidate, &mut report)?,
+                Ok(candidate) => bind_candidate(base, key, &candidate, &mut report, aliases)?,
             }
         }
+    }
+    if matched_aliases.len() != aliases.len() {
+        return Err(ClaimsError("native alias names an unknown source claim"));
     }
     Ok(report)
 }
@@ -1017,6 +1049,7 @@ fn bind_candidate(
     key: &str,
     candidate: &Candidate,
     report: &mut BindingReport,
+    aliases: &[native_aliases::NativePlacementAlias],
 ) -> Result<(), ClaimsError> {
     let local = key
         .strip_prefix("oteryn:")
@@ -1024,7 +1057,17 @@ fn bind_candidate(
     let mut bound = Vec::with_capacity(candidate.placements.len());
     let mut unbound = Vec::new();
     for (index, placement) in candidate.placements.iter().enumerate() {
-        match bind_placement(base, placement) {
+        let binding = match bind_placement(base, placement) {
+            Err(UnboundReason::NoEntry) => {
+                if let Some(alias) = aliases.iter().find(|alias| alias.applies(key, placement)) {
+                    alias.bind(base, placement)
+                } else {
+                    Err(UnboundReason::NoEntry)
+                }
+            }
+            other => other,
+        };
+        match binding {
             Ok((cell, bundle_placement_key)) => bound.push(BoundPlacement {
                 placement: RewardClaimPlacement {
                     placement: PlacementKey::new(&format!("oteryn:placement/{local}/{index}"))?,

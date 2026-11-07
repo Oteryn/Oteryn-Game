@@ -1,26 +1,20 @@
-# Current source-scene batch
+# Current native source reward batch
 
-Mintwallin scene PG RED1.72s after PostgreSQL initialization, GREEN25.397996587s.
-New bounded scene projection supports32 edits without changing the old eight-
-passage limit. All nine removals, two creations, lever removal, stale refusal,
-replay and source-floor reconstruction passed.17 world callback units pass;
-Giant four-state source regression passes25.07s. Check, strict Clippy, fmt, generator and pin refresh/check pass.
-World digest is unchanged. No Cargo or pin job remains active. Logs /tmp/questpc8-scene-* and validation record
-native-scenes-validation.json. This is a source component, not whole Mintwallin
-qualification yet. Ruby cache native map has appearance2472 at32591,32097,14,
-ordinal1, no UID6138. Original claim is oteryn:reward-claim.kv.mintwallincyclops,
-reward i3028 x1, existing once-per-character identity. Next implement an explicit
-native placement alias supplement, preserving the source record and claim key;
-never allow arbitrary missing-UID fallback or any alias over a conflicting UID.
-Only embedded approved aliases should apply; fixture binder stays strict.
+Mintwallin Cyclops is QUALIFIED: its source scene and existing once-only Ruby
+cache are both real-PG proved. The native cache has no UID; the approved embedded
+alias matches original claim/revision/UID/position/appearance and exact ordinal,
+refuses conflicting tags and retains the original claim ledger. No reward plan
+or canonical source record changed. PG RED24.10s, GREEN25.495190726s with markers;
+legacy eleven-cache regression36.55s. Two alias units and eleven content reward
+units pass; all-feature check, strict Clippy, fmt and pin refresh/check pass.
+See native-alias-validation.json and native-scenes-validation.json.
 
-
-The Tinder Box merge passed PG26.193199456s, Mintwallin scene revalidation
-25.09514015s,17 world units, all-feature check, strict all-target/all-feature
-Clippy and fmt. Preserve source scene support and native item admission.
-No Cargo job is active. Native Ruby cache alias is the next active slice; its
-RED test and strict alias implementation are drafted in /tmp/questpc8-native-*.
-Do not redo Tinder Box. Counts below:3 qualified here,3 elsewhere,17 remaining.
+Remote has advanced with smith guardian/cache and reusable atomic backpack
+outputs (eb196696c, merge9bfdafcfc). Merge before pushing and retain both features.
+Its final checks are recorded pending in cloud-smith-cache-proof.json; do not
+claim whole smith qualification until those checks run. Current local counts:
+4 qualified here,3 elsewhere,16 remaining. Continue other selected programmes;
+never redo hunting, Braindeath, Tinder Box or Mintwallin.
 
 # questpc8 — AUTHORING
 
@@ -31,8 +25,8 @@ to ten minutes; document conservative choices in CONTRACT-NOTES.md. Shared
 engine features belong to this lane. Earlier publication bans are superseded.
 
 Scope: LANE-L7.json,23 entries. Triangle Tower, Waterfall and Vampire Shield are
-QUALIFIED elsewhere. Killing in the Name of, Braindeath and Tinder Box are QUALIFIED here;
-17 remain. Historical non-L7 rows are not additional scope. Preserve exclusions
+QUALIFIED elsewhere. Killing in the Name of, Braindeath, Tinder Box and Mintwallin are QUALIFIED here;
+16 remain. Historical non-L7 rows are not additional scope. Preserve exclusions
 Dawnport, W14/P23/X01-X06, atomic Father's Burden11-track write and exact charges.
 
 Pushed28a7715f7 after d90c1bfa2: Braindeath chosen exploration/native death/coffin

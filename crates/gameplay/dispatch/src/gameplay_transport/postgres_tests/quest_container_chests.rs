@@ -233,6 +233,9 @@ fn scenario_case(
         let harness =
             Harness::create_with_admission_seed(admin, "quest_container", false, false).await?;
         prepare_current_session(&harness).await?;
+        if catalogue.is_some_and(|chest| chest.unique == 0) {
+            eprintln!("POSTGRES_CASE_STARTED native-source-alias after PostgreSQL fixture initialization");
+        }
         if matches!(case, Case::Authored) {
             eprintln!("QUESTPC8_AUTHORED_PLACEMENT POSTGRES_CONNECTED");
         }

@@ -1221,7 +1221,7 @@
     "title": "Mintwallin Cyclops Quest",
     "canonical": "oteryn:quest.mintwallin_cyclops_quest",
     "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/60/definition",
-    "status": "UNFINISHED",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -1230,10 +1230,7 @@
         "retained_test": "quest_catalogue_chests_phase_a_11_use_replay_and_refusal"
       }
     ],
-    "blocker": {
-      "missing_piece": "The source scene is PG-qualified. The Ruby cache at32591,32097,14 appearance2472 ordinal1 has no native UID6138; its explicit placement alias is being implemented against the existing once-only claim."
-    },
-    "disposition": "authoring",
+    "disposition": "qualified",
     "qualified_elsewhere": [],
     "mechanism": "asymmetric_map_effects_multi_actor_moves",
     "round": "L7",
@@ -1244,8 +1241,16 @@
         "marker": "POSTGRES_CASE_COMPLETED questpc8_mintwallin_scene",
         "duration_seconds": 25.397996587,
         "proof": "native-scenes-validation.json"
+      },
+      {
+        "scope": "Actual untagged native Ruby cache, existing source claim and once-only mint/replay",
+        "test": "questpc8_mintwallin_native_cache_without_uid_mints_ruby_once",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_mintwallin_native_cache",
+        "duration_seconds": 25.495190726,
+        "proof": "native-alias-validation.json"
       }
-    ]
+    ],
+    "qualification_scope": "Complete selected native source scene and original once-only Ruby cache; no additional authored recipe is present."
   },
   {
     "title": "Mystery of the Valley Quest",
