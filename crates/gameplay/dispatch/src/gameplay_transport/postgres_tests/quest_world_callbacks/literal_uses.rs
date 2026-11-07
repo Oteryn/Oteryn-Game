@@ -114,33 +114,18 @@ fn questpc5_l5_remote_hoist_uses_current_tile_and_both_instructions() -> TestRes
         return Ok(());
     }
     super::super::kill_reward_e2e::scenario_thread::run("l5-hoist-remote-step", || {
-        let mut callback = callback("formogar-hoist-3059")?;
-        callback.selector.unique = Some(3060);
-        callback.selector.position = Some(Position {
-            x: 32157,
-            y: 31125,
-            floor: -10,
-        });
-        callback.teleport = Some(Position {
-            x: 32157,
-            y: 31125,
-            floor: -9,
-        });
-        callback.remote_teleport = Some(
-            oteryn_gameplay_quests::quest::world_callbacks::RemoteTeleport {
-                position: Position {
-                    x: 32156,
-                    y: 31125,
-                    floor: -10,
-                },
-                appearance: 2772,
-                destination: Position {
-                    x: 32157,
-                    y: 31125,
-                    floor: -11,
-                },
-            },
-        );
+        let mut callback = callback("formogar-hoist-3060")?;
+        // Bind the actual source placement without changing the production program.
+        assert_eq!(callback.selector.unique, Some(3060));
+        assert_eq!(callback.teleport, Some(position((32157, 31125, -9))));
+        let remote = callback
+            .remote_teleport
+            .as_ref()
+            .ok_or("remote source branch")?;
+        assert_eq!(remote.position, position((32156, 31125, -10)));
+        assert_eq!(remote.appearance, 2772);
+        assert_eq!(remote.destination, position((32157, 31125, -11)));
+        callback.selector.position = Some(position((32157, 31126, -10)));
         for appearance in [Some(2772), Some(2773), None] {
             exercise_with_remote(
                 callback.clone(),

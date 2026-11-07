@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "scope": "Production source UID3060 registration and real read-only STEP branches. Whole-character acquisition/travel composition follows.",
+  "red": {
+    "test_seconds": 3.46,
+    "postgres_marker_seconds": 3.452459404,
+    "error": "source hoist callback 3060 is absent"
+  },
+  "green": {
+    "registration_test_seconds": 4.75,
+    "postgres_marker_seconds": 4.14869106,
+    "movement_test_seconds": 205.09,
+    "cases_seconds": [
+      52.460802347,
+      50.6023603,
+      50.318200107,
+      50.592089725
+    ],
+    "cases": [
+      "remote lever2772 selects floor11",
+      "live2773 transformation selects floor9",
+      "absent lever selects floor9",
+      "missing chest instruction refuses entry"
+    ],
+    "unchanged": [
+      "quest tracks",
+      "quest receipts",
+      "Character revision"
+    ]
+  },
+  "source": {
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua",
+    "lines": "18-23",
+    "git_blob_sha1": "5fd560ef6dbdf27bcb58f0f14447750fe90dc062"
+  },
+  "checks": {
+    "python_batch4_tests": 17,
+    "authoring_check": 0,
+    "cargo_check_dispatch": 0,
+    "clippy_dispatch_all_targets_all_features_D_warnings": 0,
+    "cargo_and_mounted_fmt": 0,
+    "pin_refresh": 0,
+    "pin_check": 0
+  },
+  "logs": {
+    "red": {
+      "path": "/tmp/questpc5-hoist-route-red.log",
+      "sha256": "141477ced23a9d1381e522124ff7a1f8ce5220316391d110de2c19d54082e9f9"
+    },
+    "registration": {
+      "path": "/tmp/questpc5-hoist-registration-green.log",
+      "sha256": "9ec622337cab17efe33700a8309dbd9ab24e057b46ec575c5aea8f9e1dce8f37"
+    },
+    "movement": {
+      "path": "/tmp/questpc5-hoist-3060-green.log",
+      "sha256": "b893c632c1a58a68d26740e1deb8c959d8fd19059f7257d31b21b2ba345c8947"
+    },
+    "check": {
+      "path": "/tmp/questpc5-hoist-3060-check.log",
+      "sha256": "68c2ff7c23983d3a4fcf9ca8b0909d2dbed3666b90483a1b2d85ffadabbdd902"
+    },
+    "clippy": {
+      "path": "/tmp/questpc5-hoist-3060-clippy.log",
+      "sha256": "b4b3f4e158d9a4055577c1fa34cd77c2d4ba92181a8444eb44d1786dd5d67932"
+    },
+    "pin_refresh": {
+      "path": "/tmp/questpc5-hoist-3060-pin-refresh.log",
+      "sha256": "700435309c4fd9e0ff15b3b251b2992baec78ba7f8cc940bdc0c05a1874a7f5d"
+    },
+    "pin_check": {
+      "path": "/tmp/questpc5-hoist-3060-pin-check.log",
+      "sha256": "a9e53f6db6ee79ef72bc3d58bc1cbb2d1f8b830fbad469eefb5b53e08cd5d43f"
+    }
+  }
+}
