@@ -492,6 +492,7 @@ fn scenario_case(
                     sim_revision: "sim-1".into(),
                     achievement: None,
                     quest_transition: None,
+                    quest_requirements: Vec::new(),
                     key_number: None,
                 };
                 let mut candidate = harness

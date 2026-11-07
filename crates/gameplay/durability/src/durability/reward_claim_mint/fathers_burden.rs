@@ -28,7 +28,7 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         contents:Vec::new(), root_text:None, root_fluid_subtype:None, root_charges_remaining:None, backpack,
         content_revision:format!("sha256:{}", content.loop_content_digest().iter().map(|byte|format!("{byte:02x}")).collect::<String>()),
         ruleset_revision, sim_revision,
-        achievement:None, quest_transition:None, key_number:None,
+        achievement:None, quest_transition:None, quest_requirements:Vec::new(), key_number:None,
     };
     if validate_request(&request).is_err() || !contents::weight_pin_matches(&request, content) {
         return Ok(Err(RewardClaimMintError::InvalidInput));

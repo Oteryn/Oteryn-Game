@@ -26,13 +26,22 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
             name,
             Position {
                 // Keep the longer NPC corridor away from Behemoth's five barriers.
-                x: if name == "qengine-rewards-paid-stake-priests" {
-                    33310
-                } else {
-                    33294
+                x: match name {
+                    "qengine-rewards-paid-stake-priests" => 33310,
+                    "qengine-rewards-l2-full-sam" => 32455,
+                    "qengine-rewards-l2-full-outfox" => 32467,
+                    _ => 33294,
                 },
-                y: 31677,
-                floor: -15,
+                y: match name {
+                    "qengine-rewards-l2-full-sam" => 31966,
+                    "qengine-rewards-l2-full-outfox" => 31968,
+                    _ => 31677,
+                },
+                floor: match name {
+                    "qengine-rewards-l2-full-sam" => -14,
+                    "qengine-rewards-l2-full-outfox" => -5,
+                    _ => -15,
+                },
             },
             false,
         )
@@ -286,6 +295,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l4-pirate-hat" => &["task"],
         "hallowed-holy-water" => &["holy water"],
         "sam-backpack" => &["old backpack"],
+        "outfox-start" | "bone-pit-issue" => &["mission"],
         key if key.starts_with("token-") => &["souvenir"],
         key if key.starts_with("ape-") || key.starts_with("thieves-") => &["mission"],
         "deepling-helmet" => &[
@@ -752,6 +762,12 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name.starts_with("qengine-rewards-l2-full-") {
+        return super::questl2_player_journeys::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name.starts_with("qengine-rewards-l2-batch5-") {
+        return super::questl2_batch5_bindings::exercise(owner, admitted, h, name).await;
+    }
     if name == "qengine-rewards-exchange-fixed" {
         return exchange_fixed::exercise(owner, admitted, h).await;
     }

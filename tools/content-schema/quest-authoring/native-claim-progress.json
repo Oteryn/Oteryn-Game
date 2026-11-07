@@ -23,6 +23,31 @@
         "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2259"
       },
       "assumption": "The construction plans teach the hoist chest instruction. This repairs the missing FormorgarMinesHoistChest writer: all three retained movement scripts read that flag, but UID6214 writes FormorgarGlacierChest. Keep the separate skeleton instruction mandatory. The owner explicitly authorized conservative rules for missing source mechanisms."
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u7_5.sams_old_backpack.armor",
+      "claim_revision": "reward-claim-r1",
+      "unique_id": 9226,
+      "item": "oteryn:item.tibia.i3397",
+      "source_completion": "Storage.Quest.U7_5.SamsOldBackpack.SamsOldBackpackNpc",
+      "quest": "oteryn:quest.sam_s_old_backpack_quest",
+      "track": "oteryn:quest-progress/quest/u7_5/sams_old_backpack/sams_old_backpack_npc",
+      "transition": "oteryn:quest-transition/native-claim/sams-old-backpack-armor",
+      "initial": 0,
+      "minimum": 0,
+      "maximum": 3,
+      "value": 3,
+      "from": 2,
+      "source_claim": "crystalserver:reward-claim/quest/u7_5/sams_old_backpack/armor",
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/actions/other/others/quest_system2.lua",
+        "line": 97,
+        "sha256": "04990d261d85479bf9a75de040f6c158bc6eb557018a7ad359374400c2a49635",
+        "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/actions/other/others/quest_system2.lua#L97"
+      },
+      "assumption": "Exact source formerValue2/newValue3 is preserved. The existing native Sam owner retains its zero initial value and all existing tracks; the native source claim checks NPC2 under the same Character root before MINT. No mission stage is seeded or duplicated."
     }
   ]
 }

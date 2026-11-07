@@ -3,6 +3,7 @@ import hashlib
 import re
 import questl2_exchange_prayers as prayers
 import questl2_exchange_recipes as recipes
+import questl2_journeys as journeys
 
 
 NPCS = tuple(sorted({'an_old_dragon_lord', 'dorian', 'gamon', 'hairycles', 'jorge', 'kroox', *prayers.PRIESTS, *recipes.NPCS}))
@@ -12,7 +13,7 @@ NPC_FILES = {'oteryn:npc.an_old_dragonlord': 'an_old_dragon_lord'}
 def source_path(npc):
     return 'data-global/npc/' + NPC_FILES.get(npc, npc.removeprefix('oteryn:npc.')) + '.lua'
 ITEMS = {
-    227, 5941, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933,
+    131, 227, 4852, 5941, 4827, 4828, 4829, 4831, 4832, 7870, 7871, 7933,
     7935, 7936, 19083, 19150, 19151, 19152, 19153, 19154, 19155,
     19156, 22026, 22027, 22028, 23676, 23677, 23678, 23679, 23680,
     23681, 23682, 23683, 25979, 25980, 25981, 25982, 28894, 28895,
@@ -105,6 +106,10 @@ def append(callbacks, offers, inputs, pin):
 
     prayers.append(add, state, callbacks, inputs)
     recipes.append(add, state, callbacks, offers, inputs)
+    journeys.append(add, state, callbacks, inputs)
+    for offer in offers:
+        if offer["npc"] == "oteryn:npc.muriel" and offer["storage"][0]["track"].endswith("into_the_bone_pit"):
+            offer.update(minimum_level=35, failure_reply=[journeys.BONE_PIT_LEVEL_REPLY])
 
     dragon = inputs['data-global/npc/an_old_dragon_lord.lua'].decode()
     refusal = "AHHHH THE PAIN OF AGESSS! I NEED MUSSSSHRROOOMSSS TO EASSSE MY PAIN! BRRRING ME MUSHRRROOOMSSS!"

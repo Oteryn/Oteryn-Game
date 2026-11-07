@@ -105,6 +105,8 @@ pub enum ChestUseError {
     ChestNotAnItem,
     /// No RewardClaim in the current Content lists the placement, so it rewards nothing.
     ChestHasNoClaim,
+    /// A guarded chest requires the native path with its activated Quest catalogue.
+    QuestCatalogueRequired,
     /// The reward item or the equipped backpack has no admissible Content definition.
     Content(PickupContentError),
     /// The child occurrence identity could not be built (empty key).
@@ -136,6 +138,9 @@ impl std::fmt::Display for ChestUseError {
             }
             Self::ChestHasNoClaim => {
                 formatter.write_str("chest use: no reward claim lists the placement")
+            }
+            Self::QuestCatalogueRequired => {
+                formatter.write_str("chest use: activated Quest catalogue required")
             }
             Self::Content(error) => write!(formatter, "chest use content resolution: {error}"),
             Self::Identity(error) => write!(formatter, "chest use occurrence identity: {error}"),
@@ -250,6 +255,9 @@ pub fn resolve_chest(
             _ => None,
         })
         .ok_or(ChestUseError::ChestHasNoClaim)?;
+    if !entry.quest_requirements.is_empty() {
+        return Err(ChestUseError::QuestCatalogueRequired);
+    }
     // Link validation guarantees exactly one reward item per placement; fail closed otherwise.
     let [reward] = entry.items.as_slice() else {
         return Err(ChestUseError::ChestHasNoClaim);
@@ -325,6 +333,7 @@ pub async fn prepare_chest_use(
         sim_revision: request.sim_revision,
         achievement: chest_achievement(achievements, chest.achievement),
         quest_transition: chest.quest_transition,
+        quest_requirements: Vec::new(),
         key_number: chest.key_number,
     };
     Ok((child, mint_request))
@@ -480,6 +489,7 @@ pub fn with_entry_chest(
                 }],
                 achievement: None,
                 quest_transition: None,
+                quest_requirements: Vec::new(),
                 key_number: None,
             }],
         }),

@@ -176,6 +176,7 @@ async fn prepare_items(
             sim_revision: "qualification-v1".into(),
             achievement: None,
             quest_transition: None,
+            quest_requirements: Vec::new(),
             key_number: None,
         };
         let mut candidate = root

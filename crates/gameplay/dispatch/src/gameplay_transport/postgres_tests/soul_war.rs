@@ -1387,6 +1387,7 @@ async fn reward_delivery(
         sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
         achievement: None,
         quest_transition: None,
+        quest_requirements: Vec::new(),
         key_number: None,
     };
     assert!(

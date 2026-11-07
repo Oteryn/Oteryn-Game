@@ -409,12 +409,63 @@
         "Changing the layout cannot reinterpret a committed claim"
       ],
       "qualification_scope": "Generic mechanism only; no quest qualification is inferred."
+    },
+    {
+      "name": "bounded quest prerequisites in both MINT admission passes",
+      "status": "QUALIFIED",
+      "postgresql": "18.6",
+      "batch": 5,
+      "postgres_tests": [
+        "questl2_sam_full_player_journey"
+      ],
+      "validation": "batch5_full_journeys"
+    },
+    {
+      "name": "complete carried-quantity branches and durable level previews",
+      "status": "QUALIFIED",
+      "postgresql": "18.6",
+      "batch": 5,
+      "postgres_tests": [
+        "questl2_bone_pit_full_player_journey",
+        "questl2_bone_pit_lost_sample_completion"
+      ],
+      "validation": "batch5_full_journeys"
+    },
+    {
+      "name": "same-instance quest tool transformation and clicked-target removal",
+      "status": "QUALIFIED",
+      "postgresql": "18.6",
+      "batch": 5,
+      "postgres_tests": [
+        "questl2_bone_pit_full_player_journey"
+      ],
+      "validation": "batch5_full_journeys"
+    },
+    {
+      "name": "source door aliases to existing native track owners",
+      "status": "QUALIFIED",
+      "postgresql": "18.6",
+      "batch": 5,
+      "postgres_tests": [
+        "questl2_outfox_full_player_journey"
+      ],
+      "validation": "batch5_full_journeys"
+    },
+    {
+      "name": "immediate publication of fresh world quest commits",
+      "status": "QUALIFIED",
+      "postgresql": "18.6",
+      "batch": 5,
+      "postgres_tests": [
+        "questl2_bone_pit_full_player_journey"
+      ],
+      "validation": "batch5_full_journeys"
     }
   ],
   "entries": [
     {
       "title": "A Father's Burden",
-      "status": "PENDING",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "postgres_test": "catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction",
@@ -429,6 +480,15 @@
           "duration_seconds": 83.901222239,
           "passed": 1,
           "failed": 0
+        },
+        {
+          "postgres_test": "fathers_burden_eight_handins_cape_experience_and_replay",
+          "marker": "POSTGRES_CASE_COMPLETED fathers_burden_eight_handins_cape_experience_and_replay",
+          "duration_seconds": 125.607254686,
+          "postgresql": "18.6",
+          "passed": 1,
+          "failed": 0,
+          "batch": 5
         }
       ]
     },
@@ -567,7 +627,7 @@
     },
     {
       "title": "Exchange Quests",
-      "status": "PENDING",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-paid-stake-priests",
@@ -582,6 +642,24 @@
           "postgresql": "18.6",
           "passed": true,
           "path": "Cyclops fixed recipes and complete Marina path"
+        },
+        {
+          "postgres_test": "questl2_paid_stake_full_priest_journey",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-paid-stake-priests",
+          "duration_seconds": 198.021191798,
+          "postgresql": "18.6",
+          "passed": 1,
+          "failed": 0,
+          "batch": 5
+        },
+        {
+          "postgres_test": "questl2_exchange_fixed_source_journey",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-exchange-fixed",
+          "duration_seconds": 213.134335211,
+          "postgresql": "18.6",
+          "passed": 1,
+          "failed": 0,
+          "batch": 5
         }
       ],
       "completed_paths": [
@@ -728,8 +806,34 @@
     },
     {
       "title": "Into The Bone Pit",
-      "status": "PENDING",
-      "evidence": []
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "postgres_test": "questl2_bone_pit_full_player_journey",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-full-bone",
+          "duration_seconds": 199.519424491,
+          "postgresql": "18.6",
+          "passed": 1,
+          "failed": 0,
+          "batch": 5
+        },
+        {
+          "postgres_test": "questl2_bone_pit_lost_sample_completion",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-full-bone-lost",
+          "duration_seconds": 187.460507125,
+          "postgresql": "18.6",
+          "passed": 1,
+          "failed": 0,
+          "batch": 5
+        }
+      ],
+      "assumptions": [
+        {
+          "rule": "Returning the actual filled sample grants 1000 XP. Lost-sample completion grants no XP or item.",
+          "basis": "The owner explicitly requests XP and authorizes documented conservative rules; the pinned Muriel source grants a Death Ring and has no addExperience call.",
+          "source": "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:81-96:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc"
+        }
+      ]
     },
     {
       "title": "Kilmaresh",
@@ -763,8 +867,18 @@
     },
     {
       "title": "Sam's Old Backpack",
-      "status": "PENDING",
-      "evidence": []
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "postgres_test": "questl2_sam_full_player_journey",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-full-sam",
+          "duration_seconds": 172.201736405,
+          "postgresql": "18.6",
+          "passed": 1,
+          "failed": 0,
+          "batch": 5
+        }
+      ]
     },
     {
       "title": "Sea of Light",
@@ -868,8 +982,19 @@
     },
     {
       "title": "To Outfox a Fox",
-      "status": "PENDING",
-      "evidence": []
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "postgres_test": "questl2_outfox_full_player_journey",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-full-outfox",
+          "duration_seconds": 152.040793566,
+          "postgresql": "18.6",
+          "passed": 1,
+          "failed": 0,
+          "batch": 5
+        }
+      ],
+      "compatibility_rule": "The existing native Tibia Tales owner uses the parent track and initial 0 for donor absence (-1); the exact source door alias requires mission value 1 or later."
     },
     {
       "title": "Tomes of Knowledge",
@@ -1430,6 +1555,84 @@
       "pin_refresh_log": "/tmp/l2-flat-pin-refresh.log",
       "pin_check_log": "/tmp/l2-flat-pin-check.log",
       "pin_digest": "099ec5efdf4e1fa87a0e63fb8077e0f22fa497bf252c8f2a244276f9a753947b"
+    },
+    "batch5_source_bindings_red": {
+      "passed": 0,
+      "failed": 3,
+      "selected_skipped": 0,
+      "unselected": 2634,
+      "seconds": 92.834,
+      "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "log": "/tmp/l2-batch5-source-bindings-red.log",
+      "cases": [
+        {
+          "marker": "POSTGRES_CASE_FAILED qengine-rewards-l2-batch5-bone",
+          "seconds": 84.5808528,
+          "failure": "missing bone-pit-issue source binding"
+        },
+        {
+          "marker": "POSTGRES_CASE_FAILED qengine-rewards-l2-batch5-sam",
+          "seconds": 89.110723001,
+          "failure": "Sam source armor claim is absent"
+        },
+        {
+          "marker": "POSTGRES_CASE_FAILED qengine-rewards-l2-batch5-outfox",
+          "seconds": 92.750210695,
+          "failure": "missing outfox-start source binding"
+        }
+      ]
+    },
+    "batch5_full_journeys": {
+      "postgresql": "18.6",
+      "log": "/tmp/l2-batch5-merged-pg2.log",
+      "command": "cargo nextest run (four changed gameplay packages, explicit twelve-case filter) --no-fail-fast --success-output immediate",
+      "passed": 12,
+      "failed": 0,
+      "seconds": 300.812,
+      "full_player_journeys": 4,
+      "source_bindings": 3,
+      "core_unit_tests": 5,
+      "reused_full_journeys": {
+        "log": "/tmp/l2-batch5-reused-full-pg.log",
+        "passed": 3,
+        "failed": 0,
+        "seconds": 213.206
+      },
+      "clippy": {
+        "log": "/tmp/l2-batch5-final-clippy.log",
+        "changed_crates": 6,
+        "all_targets": true,
+        "warnings_denied": true,
+        "result": "PASS",
+        "duration": "8m17s"
+      },
+      "authoring": {
+        "passed": 43,
+        "failed": 0,
+        "seconds": 113.619,
+        "custom_claim_checks_passed": 27,
+        "native_source_tests_passed": 5,
+        "callback_profile_tests": {
+          "passed": 14,
+          "failed": 0,
+          "seconds": 282.891
+        },
+        "post_generation": {
+          "passed": 43,
+          "failed": 0,
+          "seconds": 72.854
+        }
+      },
+      "regeneration": {
+        "status": "PASS",
+        "materialization_log": "/tmp/l2-batch5-full-regenerate2.log",
+        "tree_retry_log": "/tmp/l2-batch5-tree-retry.log",
+        "remaining_tooling_log": "/tmp/l2-batch5-regeneration-finish.log",
+        "pin_check_log": "/tmp/l2-batch5-pin-check2.log",
+        "world_digest": "053a2a27bb7fd93fe044456f533b738b90a765bc0d83e5ce5a55550657b18b68",
+        "world_bytes": 31102562,
+        "note": "Completed materialization, repaired strict source-cohort native admission, reran tree conversion and all remaining repository authoring/pin tools."
+      }
     }
   },
   "cross_lane_inspection": {
@@ -1516,10 +1719,10 @@
   },
   "next_batch": {
     "entries": [
-      "Sam's Old Backpack",
-      "To Outfox a Fox",
-      "Into The Bone Pit"
+      "Kilmaresh",
+      "An Interest In Botany",
+      "An Uneasy Alliance"
     ],
-    "source_tracing": "Pinned NPC/startup sources and public quest_system2.lua resolve Sam door/chest/reward and Outfox door/helmet; generic doors already exist. Reuse them and compose complete journeys."
+    "rule": "Inspect and reuse published shared-engine and lane mechanisms, then source-author and prove complete fresh PostgreSQL journeys."
   }
 }

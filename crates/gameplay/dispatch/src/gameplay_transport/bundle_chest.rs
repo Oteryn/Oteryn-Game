@@ -175,6 +175,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Ok(contents) = contents else {
                     return outcome(UseDisposition::Rejected);
                 };
+                let quest_requirements = bound
+                    .placement
+                    .quest_requirements
+                    .iter()
+                    .map(|requirement| {
+                        let catalogue = self.quest_catalogue.as_ref()?;
+                        let track = catalogue.track(&requirement.track)?;
+                        Some(
+                            crate::durability::reward_claim_mint::RewardClaimQuestRequirement {
+                                track: requirement.track.clone(),
+                                quest: track.quest.clone(),
+                                definition_hash: catalogue.definition_hash(&track.quest)?,
+                                initial: track.initial,
+                                minimum: requirement.minimum,
+                                maximum: requirement.maximum,
+                            },
+                        )
+                    })
+                    .collect::<Option<Vec<_>>>();
+                let Some(quest_requirements) = quest_requirements else {
+                    return outcome(UseDisposition::Rejected);
+                };
                 let request = RewardClaimMintRequest {
                     backpack_outputs: false,
                     command: CommandRef::new(command.game_session_id, command_id),
@@ -208,6 +230,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         }
                     }),
                     quest_transition: bound.placement.quest_transition.clone(),
+                    quest_requirements,
                     key_number: bound.placement.key_number,
                 };
                 // Arm recovery before the commit: the deadline may cancel an

@@ -1831,6 +1831,7 @@ fn reward_placement(
         }],
         achievement: None,
         quest_transition: None,
+        quest_requirements: Vec::new(),
         key_number: None,
     })
 }

@@ -426,13 +426,18 @@ def validate_callback(callback, directory):
         seen.add(location)
     item = callback.get('item_on_target')
     if item is not None:
-        fields(item, {'item', 'count'}, {'item', 'count', 'replacement', 'target_replacement'}, key + ': item_on_target')
+        fields(item, {'item', 'count'}, {'item', 'count', 'replacement', 'target_replacement', 'target_remove'}, key + ': item_on_target')
         require(valid_key(item['item']) and integer(item['count'], 1, 100)
                 and bool(callback['storage']) and callback['trigger'] == 'use', key + ': invalid item_on_target')
         if item.get('replacement') is not None:
             require(valid_key(item['replacement']) and item['count'] == 1, key + ': invalid item replacement')
         nullable_id(item.get('target_replacement'), key + ': target replacement')
         require(item.get('target_replacement') != 0, key + ': zero target replacement')
+        require(type(item.get('target_remove', False)) is bool
+                and (not item.get('target_remove', False) or (item.get('target_replacement') is None
+                     and not any(callback.get('effects', {}).get(k) is not None
+                                 for k in ('transform', 'portals', 'item_cycle', 'encounter')))),
+                key + ': conflicting target removal')
     if callback.get('minimum_level') is not None:
         require(integer(callback['minimum_level'], 1, 2 ** 32 - 1) and bool(callback['storage']), key + ': invalid minimum_level')
     if callback.get('experience') is not None:

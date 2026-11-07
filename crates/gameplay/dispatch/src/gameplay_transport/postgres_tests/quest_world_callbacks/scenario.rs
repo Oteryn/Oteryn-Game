@@ -22,6 +22,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let bone_journey = name.starts_with("qengine-rewards-l2-full-bone");
     let draconia = matches!(name, "draconia-player-journey" | "draconia-lever-exit");
     let draconia_journey = name == "draconia-player-journey";
     let failure_landing = name.starts_with("conditional-failure-");
@@ -46,7 +47,9 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if draconia_journey {
+    let mut callback = callback(if bone_journey {
+        "bone-pit-collect"
+    } else if draconia_journey {
         "draconia-escape-35012"
     } else if draconia {
         "draconia-exit-35011"
@@ -127,6 +130,17 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
+        let world = if matches!(
+            name,
+            "qengine-rewards-l2-full-sam" | "qengine-rewards-l2-full-outfox"
+        ) {
+            super::super::questl2_journey_world::world(
+                generation.native_gameplay().ok_or("native")?,
+                name.ends_with("sam"),
+            )?
+        } else {
+            world
+        };
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;

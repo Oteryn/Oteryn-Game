@@ -6,6 +6,9 @@ use super::{
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
+mod inventory;
+pub use inventory::InventoryRequirement;
+
 pub const PROVENANCE: &str = "crystal-9f5a72c-quest-rewards-v1";
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -89,6 +92,8 @@ pub struct RewardCallback {
     pub storage: Vec<Storage>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires: Vec<TrackRequirement>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub inventory: Vec<InventoryRequirement>,
     pub take: Vec<ItemAmount>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fee: Option<MonetaryFee>,
@@ -227,6 +232,16 @@ fn parse_document(text: &str) -> Result<Document, String> {
                     || c.give.is_none()
                     || c.outfit.is_some()
                     || c.achievement.is_some()))
+            || c.inventory.len() > 8
+            || c.inventory
+                .iter()
+                .map(|r| &r.item)
+                .collect::<BTreeSet<_>>()
+                .len()
+                != c.inventory.len()
+            || c.inventory
+                .iter()
+                .any(|r| !slug(&r.item, "oteryn:item.", b"._/:-", 256) || r.minimum > r.maximum)
             || c.present.len() > 8
             || evidence.len() != c.present.len()
             || c.present

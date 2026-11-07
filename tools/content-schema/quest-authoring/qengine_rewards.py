@@ -447,6 +447,8 @@ def validate_callbacks(document):
             or len({i['item'] for i in callback.get('present',[])})!=len(callback.get('present',[]))
             or (callback.get('fee') and any(i['item'] in ('oteryn:item.tibia.i3031','oteryn:item.tibia.i3035','oteryn:item.tibia.i3043') for i in callback['take']))
             or len({r['track'] for r in requires})!=len(requires)
+            or len({r['item'] for r in callback.get('inventory',[])})!=len(callback.get('inventory',[]))
+            or any(r['minimum']>r['maximum'] for r in callback.get('inventory',[]))
             or {r['track'] for r in requires}&{s['track'] for s in storage}
             or any(r['minimum']>r['maximum'] for r in requires)
             or any(s['minimum']>s['maximum'] for s in storage)

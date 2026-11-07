@@ -111,6 +111,33 @@ class LaneL2Rewards(unittest.TestCase):
             [('sams_old_backpack_npc', 2), ('sams_old_backpack_door', 1)],
         )
 
+    def test_bone_pit_inventory_branches_are_disjoint_and_level_gated(self):
+        issue = self.callbacks['bone-pit-issue']
+        filled = self.callbacks['bone-pit-return']
+        lost = self.callbacks['bone-pit-lost-sample']
+        self.assertEqual(issue['give']['item'], 'oteryn:item.tibia.i4852')
+        self.assertEqual(filled['take'], [{'item': 'oteryn:item.tibia.i131', 'count': 1}])
+        self.assertEqual(filled['give']['item'], 'oteryn:item.tibia.i6299')
+        self.assertEqual(filled['experience'], 1000)
+        self.assertIsNone(lost['give'])
+        self.assertFalse(lost.get('take'))
+        self.assertFalse(lost.get('experience'))
+        for callback in (issue, filled, lost):
+            self.assertEqual(callback['minimum_level'], 35)
+            self.assertTrue(callback['failure_reply'])
+            self.assertIn('data-global/npc/muriel.lua:', callback['sources'][0])
+        self.assertEqual(filled['inventory'], [
+            {'item': 'oteryn:item.tibia.i131', 'minimum': 1, 'maximum': 4294967295}])
+        self.assertEqual(lost['inventory'], [
+            {'item': 'oteryn:item.tibia.i131', 'minimum': 0, 'maximum': 0}])
+
+    def test_outfox_issue_sets_both_native_owner_tracks_together(self):
+        start = self.callbacks['outfox-start']
+        self.assertEqual(start['quest'], 'oteryn:quest.tibia_tales')
+        self.assertEqual([(r['track'], r['set']) for r in start['storage']], [
+            ('oteryn:quest-progress/quest/u8_1/tibia_tales/default_start', 1),
+            ('oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest', 1)])
+
     def test_thieves_deliveries_burn_the_exact_source_items(self):
         stages = [
             ('tusks', 3044, 10, 1, 2), ('vase', 227, 1, 2, 3),

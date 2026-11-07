@@ -13,6 +13,7 @@ SOURCE = 'tools/content-schema/reward-claim-authoring/container_native_source.js
 FIELDS = {'claim', 'claim_revision', 'unique_id', 'item', 'source_completion',
           'quest', 'track', 'transition', 'initial', 'minimum', 'maximum', 'value',
           'source', 'assumption'}
+OPTIONAL_FIELDS = {'source_claim', 'from'}
 
 
 def require(condition, message):
@@ -32,7 +33,7 @@ def load(root):
     require(isinstance(rows, list) and len(rows) <= 512, 'binding bounds')
     seen_claims, seen_transitions = set(), set()
     for row in rows:
-        require(isinstance(row, dict) and set(row) == FIELDS, 'unknown binding fields')
+        require(isinstance(row, dict) and FIELDS <= set(row) <= FIELDS | OPTIONAL_FIELDS, 'unknown binding fields')
         for field, prefix in [('claim', 'oteryn:reward-claim.'),
                               ('item', 'oteryn:item.'), ('quest', 'oteryn:quest'),
                               ('track', 'oteryn:quest-progress/'),
@@ -54,22 +55,34 @@ def load(root):
         require(all(isinstance(row[field], str) and row[field]
                     for field in ('claim_revision', 'source_completion', 'assumption')),
                 'missing revision, source completion or explicit rule')
+        if 'from' in row:
+            require(type(row['from']) is int and row['minimum'] <= row['from'] <= row['maximum'],
+                    'invalid exact source prerequisite')
+        if 'source_claim' in row:
+            require(isinstance(row['source_claim'], str)
+                    and row['source_claim'].startswith('crystalserver:reward-claim/')
+                    and 'from' in row, 'plain source claim requires an exact prerequisite')
         source = row['source']
         require(isinstance(source, dict) and set(source) == {
-            'repository', 'revision', 'path', 'line', 'blob_sha1', 'url'}, 'source witness shape')
+            'repository', 'revision', 'path', 'line',
+            ('sha256' if 'source_claim' in row else 'blob_sha1'), 'url'}, 'source witness shape')
         require(type(source['line']) is int and source['line'] > 0
                 and all(isinstance(source[field], str) and source[field]
                         for field in ('repository', 'path', 'url'))
-                and isinstance(source['revision'], str) and isinstance(source['blob_sha1'], str)
+                and isinstance(source['revision'], str)
                 and re.fullmatch('[0-9a-f]{40}', source['revision'])
-                and re.fullmatch('[0-9a-f]{40}', source['blob_sha1']), 'invalid source witness')
+                and isinstance(source.get('sha256', source.get('blob_sha1')), str)
+                and re.fullmatch('[0-9a-f]{64}' if 'source_claim' in row else '[0-9a-f]{40}',
+                                 source.get('sha256', source.get('blob_sha1'))), 'invalid source witness')
     return rows
 
 
-def apply_claims(root, records):
-    rows = load(root)
+def apply_claims(root, records, *, plain=False):
+    rows = [r for r in load(root) if bool(r.get("source_claim")) == plain]
     if not rows:
         return
+    if plain:
+        return apply_plain_claims(root, records, rows)
     raw = (root / SOURCE).read_bytes()
     source = json.loads(raw)
     definitions = {r['definition']['identity']['key']: r['definition'] for r in records}
@@ -99,6 +112,35 @@ def apply_claims(root, records):
         placement['quest_transition'] = row['transition']
 
 
+def apply_plain_claims(root, records, rows):
+    source = json.loads((root / 'tools/content-schema/quest-authoring/native-source-claims.json').read_text())
+    definitions = {r['definition']['identity']['key']: r['definition'] for r in records}
+    for row in rows:
+        matches = [r for r in source['claims'] if r['key'] == row['source_claim']]
+        require(len(matches) == 1, 'one normalized source claim is required')
+        witness = matches[0]
+        definition = definitions.get(row['claim'])
+        require(definition is not None and definition.get('readiness') == 'ready'
+                and definition['identity']['revision'] == row['claim_revision']
+                and definition['provenance']['pilot_key'] == row['source_claim']
+                and row['source'] == witness['source']
+                and row['unique_id'] == witness['unique_id']
+                and row['item'] == f"oteryn:item.tibia.i{witness['item']}"
+                and len(definition['placements']) == 1, 'plain source witness mismatch')
+        placement = definition['placements'][0]
+        require(placement['source_binding']['project_position'] == witness['position']
+                and placement['source_binding']['legacy_unique_ids'] == [
+                    {'server': 'crystalserver', 'unique_id': row['unique_id']}]
+                and placement['appearance_tibia_id'] == witness['appearance']
+                and placement['reward']['items'] == [{'item': {'family': 'Item',
+                    'key': row['item'], 'revision': 'definition-r1'}, 'count': witness['count']}]
+                and placement.get('quest_transition') in (None, row['transition']),
+                'plain source projection mismatch')
+        placement['quest_transition'] = row['transition']
+        placement['quest_requirements'] = [{'track': row['track'],
+            'minimum': row['from'], 'maximum': row['from']}]
+
+
 def extend_state(root, quests, definitions):
     rows = load(root)
     for row in rows:
@@ -109,21 +151,29 @@ def extend_state(root, quests, definitions):
             owner = {'quest': row['quest'], 'source_quest': definition['source_refs']['quest']['key'],
                      'completion': 'NOT_LOWERED_NO_MISSIONS', 'tracks': [], 'transitions': []}
             quests.append(owner)
-        require(not any(t['key'] == row['track'] for q in quests for t in q['tracks']),
-                'track already has an owner')
+        existing = [t for q in quests for t in q['tracks'] if t['key'] == row['track']]
+        if existing:
+            require('from' in row and len(existing) == 1
+                    and existing[0]['quest'] == row['quest']
+                    and existing[0]['initial'] == row['initial']
+                    and existing[0]['min'] == row['minimum']
+                    and existing[0]['max'] <= row['maximum'],
+                    'track already has an owner or incompatible source bounds')
+            existing[0]['max'] = row['maximum']
         require(not any(t['key'] == row['transition'] for q in quests for t in q['transitions']),
                 'transition already has an owner')
         tail = row['track'].removeprefix('oteryn:quest-progress/')
         source_track = ('crystalserver:quest-progress/' + tail.removeprefix('crystalserver/')
                         if tail.startswith('crystalserver/') else 'canary:quest-progress/' + tail)
-        owner['tracks'].append({'key': row['track'], 'quest': row['quest'],
-            'initial': row['initial'], 'min': row['minimum'], 'max': row['maximum'],
-            'source_key': source_track, 'bounds_basis': 'native_claim_source_binding'})
+        if not existing:
+            owner['tracks'].append({'key': row['track'], 'quest': row['quest'],
+                'initial': row['initial'], 'min': row['minimum'], 'max': row['maximum'],
+                'source_key': source_track, 'bounds_basis': 'native_claim_source_binding'})
         owner['transitions'].append({'key': row['transition'], 'quest': row['quest'],
             'completes': False, 'requested_by': None,
             # The claim receipt owns eligibility. Teaching an already learned
             # flag must still consume its obligation, without lowering a value.
-            'effects': [{'track': row['track'], 'from': {'op': 'ANY'},
+            'effects': [{'track': row['track'], 'from': ({'op': 'EQ', 'value': row['from']} if 'from' in row else {'op': 'ANY'}),
                          'from_exact': True, 'effect': {'kind': 'SET', 'value': row['value']}}],
             'source': {'key': 'chest', 'owner': 'chest', 'script': row['source']['path'],
                        'servers': ['crystalserver']}})

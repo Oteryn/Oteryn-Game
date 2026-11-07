@@ -389,12 +389,16 @@ def test_a_placement_carries_only_the_transition_the_lowering_constructed() -> N
     assert any("quest_transition" in e for e in rca.validate(bound, items(), None, [claim], []))
 
 
-def test_the_committed_content_binds_exactly_the_two_chest_transitions() -> None:
+def test_committed_content_binds_exactly_the_authored_chest_transitions() -> None:
     records = [r["definition"] for p in json.loads((rca.ROOT / rca.INDEX_PATH).read_text())["shards"]
                for r in json.loads((rca.ROOT / p).read_text())["records"]]
     bound = {r["identity"]["key"]: {p["quest_transition"] for p in r["placements"]}
              for r in records if any("quest_transition" in p for p in r["placements"])}
     assert bound == {
+        "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest":
+            {"oteryn:quest-transition/native-claim/formogar-hoist-construction-plans"},
+        "oteryn:reward-claim.quest.u7_5.sams_old_backpack.armor":
+            {"oteryn:quest-transition/native-claim/sams-old-backpack-armor"},
         "oteryn:reward-claim.quest.u7_8.the_shattered_isles.dragahs_spellbook":
             {"oteryn:quest-transition/quest/u7_8/the_shattered_isles/dragahs_spellbook/chest"},
         "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots":
@@ -405,7 +409,9 @@ def test_the_committed_content_binds_exactly_the_two_chest_transitions() -> None
 def test_committed_content_is_valid() -> None:
     assert rca.committed_errors() == []
     index = json.loads((rca.ROOT / rca.INDEX_PATH).read_text(encoding="utf-8"))
-    assert index.get("plain_record_count", index["record_count"]) == 231
+    # Keep the original pilot cohort exact while admitting separately witnessed leaves.
+    added = rca.native_source_claims.load(rca.ROOT)[0]
+    assert index.get("plain_record_count", index["record_count"]) - len(added) == 231
     records = [r["definition"] for p in index["shards"]
                for r in json.loads((rca.ROOT / p).read_text())["records"]]
     assert index["readiness"] == dict(Counter(r["readiness"] for r in records))

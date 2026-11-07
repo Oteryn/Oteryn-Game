@@ -215,17 +215,21 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     source_items = ET.fromstring(raw).findall('item')
     import quests_2_emperor_item_profiles
     source_packet = json.loads((root / quests_2_emperor_item_profiles.PATH).read_bytes())
+    import sys
+    sys.path.insert(0, str(root / "tools/content-schema/reward-claim-authoring"))
+    import native_source_claims
     for key, definition in sorted(definitions.items()):
         # These exact source-qualified Items retain their canonical identity;
         # this is not a general bypass for an unqualified native record.
         definition = quests_2_emperor_item_profiles.callback_definition(
             source_packet, present.get(key), definition, root)
+        definition = native_source_claims.callback_definition(root, present.get(key), definition)
         identity = definition['identity']
         matches = [binding for binding in bindings if binding['target'] == identity]
         if (not definition['materializable']
                 or definition['stack_class'] not in ('StackCapable', 'NonStackable')
                 or len(matches) != 1 or matches[0]['disposition'] != 'EXACT'):
-            raise ValueError('QUEST_CALLBACK_ITEM_NOT_ADMITTED')
+            raise ValueError('QUEST_CALLBACK_ITEM_NOT_ADMITTED: ' + key)
         physical = definition['semantics']['physical']
         if (physical['state'] != 'KNOWN'
                 or any(physical['value'][field] != {'state': 'KNOWN', 'value': True}

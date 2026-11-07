@@ -76,7 +76,7 @@
     },
     "RewardClaim": {
       "index": "content/interactions/reward_claims/index.json",
-      "records": 336
+      "records": 337
     },
     "Service.Bank": {
       "index": "content/services/bank/index.json",
@@ -397,7 +397,7 @@
       "path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
     },
     {
-      "path": "content/interactions/reward_claims/reward-claims-00200-00230.json"
+      "path": "content/interactions/reward_claims/reward-claims-00200-00231.json"
     },
     {
       "path": "content/items/definitions/items-00000-00499.json"
@@ -1004,7 +1004,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3753,
+          "record_count": 3755,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1012,7 +1012,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "b1f0ca5cb688b258f5397ea8bd218c22ddf15ead773cf266f3ae0effc0be3dd6"
+          "sha256": "da605aca19ad531cff8434054e5afa79fe93ee61604a54f55575ec62ad2250fa"
         },
         {
           "creates_canonical_identities": false,

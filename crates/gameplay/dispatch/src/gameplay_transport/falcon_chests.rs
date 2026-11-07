@@ -179,6 +179,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .into(),
                         achievement: None,
                         quest_transition: None,
+                        quest_requirements: Vec::new(),
                         key_number: None,
                     })
                     .collect::<Vec<_>>();

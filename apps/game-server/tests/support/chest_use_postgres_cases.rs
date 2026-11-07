@@ -230,6 +230,7 @@ fn pg_content() -> TestResult<CanonicalReferencePlayableContent> {
                     }],
                     achievement: None,
                     quest_transition: None,
+                    quest_requirements: Vec::new(),
                     key_number: None,
                 })
             })
@@ -1116,6 +1117,7 @@ fn a_chest_with_an_achievement_grants_it_and_a_chest_without_one_grants_none() -
                     }],
                     achievement: Some(ABSENT_ACHIEVEMENT.into()),
                     quest_transition: None,
+                    quest_requirements: Vec::new(),
                     key_number: None,
                 }],
             }),
