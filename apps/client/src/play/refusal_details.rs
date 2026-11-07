@@ -9,6 +9,9 @@ impl Outbox {
     }
 }
 #[cfg(test)]
+#[path = "refusal_details/tests.rs"]
+mod driver_tests;
+#[cfg(test)]
 mod tests {
     use super::*;
     #[test]
