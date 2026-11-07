@@ -1,3 +1,25 @@
+# Migration registry validated; Venore supply slice GREEN
+
+Five focused PostgreSQL cases pass on the renamed embedded ledger: Venore
+supplies39.33024761s, Valley166.134295868s, Father's atomic eleven-track
+acceptance154.423917076s, state clock5.994392702s and paid Treasure Island
+travel201.44931012s. Default4-crate check5m53s, strict4-crate Clippy4m19s,
+embedded migration/source-list unit, duplicate script, fmt, native41-file
+drift,2NPC authoring units and regenerated pin/check all PASS. No full suite.
+QENGINE2 migrations0999-1006 are byte-identical to fresh e71a5d916; PR3020
+remains OPEN. QBASE1200-1205 have unchanged contents. Lane files1300-1302
+retain backpack outputs, exact world reward receipts and stricter state-clock
+validation. Full list and proof hashes: migration-number-registry.json.
+
+19of23L7entries remain QUALIFIED; four remain. Venore's three supplies and
+Norman acceptance are authored, but the full circuit is not yet qualified.
+Next: mount /tmp/questpc8_venore.rs and register its full native case, run it
+RED against the current acceptance-only programme. The nine-machine and
+Scott/Frank/report/restart data draft is /tmp/questpc8-author-venore-circuit.py
+(unapplied); add five native corym guardians in the chosen southern chamber
+using the test's real walkable-cell probe. Never seed quest progress.
+Continue Colours,Winterlight,Wrath after Venore; do not end while four remain.
+
 # Migration registry applied; fresh embedded-ledger validation building
 
 All eight QENGINE2 migrations0999-1006 are byte-identical to69609ef78.
