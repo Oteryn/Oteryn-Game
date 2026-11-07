@@ -837,3 +837,30 @@ unselected entitlement is byte-identical after collection and replay, with
 exactly one collected ordinal. No source chance/count or Item custody rule
 changed. No numbers allocated. Source Sugar entry qualification continues
 separately; its current red is exact source profile digest mismatch.
+
+## SRVENC W17: Drome movement conditions (2026-11-07)
+
+The actual movement owner consumes canonical Fear/Root conditions only for an
+actor whose runtime Drome membership and `PlayerSpellState::drome_practice` both
+remain current. `docs/reference/tibia-manual/combat.md:277-278` supplies the 2/3
+second durations; Crystal `201189f871d23597b82caf88fd611454a2ddefb8`
+`creature.cpp:286-291` supplies the walking refusal. Expiry and suppression remain
+with the existing condition owner.
+
+Only the live `drome.drunk` condition supplies Tanked Up steering. Crystal
+`creature.cpp:224-260,275-284` maps its normal roll using `(subId + 25) / 5`.
+The represented standard Drunk condition has no intensity field, so this consumer
+uses default subId 0 and the existing source-normal roll helper. The stronger
+"super drunk" intensity in manual `combat.md:276` remains missing source data;
+no stronger intensity is inferred. Other Drunk sources and non-Drome movement
+retain their existing behavior.
+
+The actor/session, position revision and frozen owner time identify the semantic
+roll. Preflight and the common physical movement commit use that identical
+occurrence and time, preserving field/floor destination proofs through SQL.
+Command replay remains with the existing admitted command owner, before movement
+or RNG is re-entered. This consumer adds no actor fields, persistence, protocol or command IDs.
+
+Validation: behavioral RED showed East movement during Fear and instead of
+keyed Drunk steering. GREEN:18 actual movement/field regressions passed0.17s
+(132.606s build+test). No numeric identifiers allocated.

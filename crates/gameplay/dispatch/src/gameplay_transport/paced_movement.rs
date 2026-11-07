@@ -91,6 +91,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if states.has_pending_spell_commit(actor, session) {
             return (StepOutcome::rejected(), None);
         }
+        // Resolve steering before any direction-dependent field/floor read. Pass
+        // this same frozen `now` to the common movement owner after preflight.
+        let cardinal = match states.drome_step_direction(&runtime, actor, session, now, cardinal) {
+            Ok(direction) => direction,
+            Err(MovementError::Blocked) => {
+                return (
+                    StepOutcome {
+                        disposition: StepDisposition::Blocked,
+                        moved_to: None,
+                    },
+                    None,
+                );
+            }
+            Err(_) => return (StepOutcome::rejected(), None),
+        };
         // The closed bundle doors are read live per candidate cell, not collected per step: a
         // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).
         let (none, bundle_doors, legacy);
