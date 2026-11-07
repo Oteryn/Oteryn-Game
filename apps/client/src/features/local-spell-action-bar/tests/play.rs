@@ -193,3 +193,6 @@ fn nx7_battle_instinct_reply_reaches_hud_beside_harmony() -> Result<(), Box<dyn 
     assert!(!view.hud_status().contains("Battle Instinct"));
     Ok(())
 }
+
+#[path = "directional.rs"]
+mod directional;
