@@ -1,0 +1,64 @@
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+warning: `tokio` (lib) generated 2 warnings (2 duplicates)
+warning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14
+    |
+260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |
+
+warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)
+warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)
+   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 49s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-dc2d45c3f744ff68)
+
+running 3 tests
+POSTGRES_CASE_STARTED draconia-container-stock-wire-open server_version=18.6 (Debian 18.6-1.pgdg13+2) native_trigger=Position { x: 32794, y: 31572, floor: -7 }
+POSTGRES_CASE_STARTED draconia-container-stock-wire-pickup server_version=18.6 (Debian 18.6-1.pgdg13+2) native_trigger=Position { x: 32794, y: 31572, floor: -7 }
+POSTGRES_CASE_STARTED draconia-container-stock-wire-replay server_version=18.6 (Debian 18.6-1.pgdg13+2) native_trigger=Position { x: 32794, y: 31572, floor: -7 }
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=2 server_sequence=2
+POSTGRES_STOCK_WIRE literal_frames=true keys=0
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=4 server_sequence=7
+POSTGRES_STOCK_WIRE literal_frames=true keys=1
+oteryn-game-server event=serve_end reason=disconnected source=crates/gameplay/dispatch/src/gameplay_transport/connection/serve/mod.rs:264:32 next_command_id=3 server_sequence=5
+POSTGRES_STOCK_WIRE literal_frames=true keys=1
+POSTGRES_CASE_COMPLETED draconia_container_stock_wire-replay duration=54.965967191s
+test gameplay_transport::monk_save::postgres_tests::draconia_stock_wire::draconia_stock_wire_replay_and_stale_child_never_duplicate ... ok
+POSTGRES_CASE_COMPLETED draconia_container_stock_wire-pickup duration=54.999509768s
+POSTGRES_CASE_COMPLETED draconia_container_stock_wire-open duration=54.999564781s
+test gameplay_transport::monk_save::postgres_tests::draconia_stock_wire::draconia_stock_wire_native_key_withdraws ... ok
+test gameplay_transport::monk_save::postgres_tests::draconia_stock_wire::draconia_stock_wire_native_container_opens ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 2612 filtered out; finished in 55.00s

@@ -1,0 +1,121 @@
+{
+  "title": "Draconia Quest",
+  "scope": "complete pinned native source path",
+  "state": "QUALIFIED",
+  "components": [
+    {
+      "requirement": "Hellgate key3012 issuance, exact5000 cash/bank and repeatable/replay/refusal",
+      "evidence": "cloud-elathriel-validation.json",
+      "sha256": "50a0ab49432cf035db3535425f59a02daeea8c933473ebfbf962f3ecc205b88f",
+      "state": "retained component PG GREEN"
+    },
+    {
+      "requirement": "All ten native access doors3001-3008 and both3012 selectors",
+      "evidence": "cloud-draconia-door-validation.json",
+      "sha256": "3774cd5e8c3bae8ccb7db85b2e2fbfd08d6986d31ef7a376978e7a14507e0385",
+      "state": "retained component PG GREEN"
+    },
+    {
+      "requirement": "Upper native access doors3004-3008",
+      "evidence": "cloud-draconia-upper-door-validation.json",
+      "sha256": "8619cf3240655d6abe8dfd89e6b5d55dd990bc1e08e343f381d99706f6839518",
+      "state": "retained component PG GREEN"
+    },
+    {
+      "requirement": "Native level25 boundary24/25/26",
+      "evidence": "cloud-draconia-level-gate-validation.json",
+      "sha256": "2ad3d4c392de4539efb90ddcb55f53cccac1aa22b79f1568ccd9c5bec7035099",
+      "state": "retained component PG GREEN"
+    },
+    {
+      "requirement": "Shared resettable floor keys3003-3007, immutable numbers and crash replay",
+      "evidence": "cloud-native-key-validation.json",
+      "sha256": "2a5a04434e45c5e4c88971232c6b74e168dd2987ab5d4d1c61efb8986fbe1087",
+      "state": "retained component PG GREEN"
+    },
+    {
+      "requirement": "Native levers30006/30035 and exit/escape startup selectors",
+      "evidence": "cloud-draconia-anchors-validation.json",
+      "sha256": "b25a872cec62edf3b07f77d39734b8429c4531c797e0a7ad8de20c0d7a6e3a63",
+      "state": "retained component PG GREEN"
+    },
+    {
+      "requirement": "Two real players on source pressure gates29002/29003; native portals38003-38006",
+      "evidence": "cloud-draconia-route-validation.json",
+      "sha256": "3ae729e2c9bc1ddc6fb6d4a653dca6a3677e8fc8fda977f4095bb91d431fad28",
+      "state": "retained component PG GREEN"
+    },
+    {
+      "requirement": "Current alternating four-lever exit pattern, every mismatch and live changes",
+      "evidence": "cloud-draconia-exit-validation.json",
+      "sha256": "a2a9227379665a89bb93488b31b0e20307f02aaba1a602ed8ab8988b906ff392",
+      "state": "retained component PG GREEN"
+    },
+    {
+      "requirement": "Exact fetish offering/flag conditional escape with atomic refusal",
+      "evidence": "cloud-draconia-escape-validation.json",
+      "sha256": "a889a53d42070e72379bea8363a81c1104acd5cba598f3a661dbd4a22738a860",
+      "state": "retained component PG GREEN"
+    },
+    {
+      "requirement": "Source Dragonlord mushroom-to-fetish greeting, exact flag and replay/rollback",
+      "evidence": "cloud-dragonlord-validation.json",
+      "sha256": "ff0d0705387e84729be0fcb27c12cf5ddd15a949bac880392cb0128b240d02d2",
+      "state": "retained component PG GREEN"
+    },
+    {
+      "requirement": "Shared skeleton silverkey3001 stock source, withdrawal and durable restoration",
+      "evidence": "cloud-container-stock-validation.json",
+      "sha256": "3d90e93aae5a8f0c25b0c663c2e3fb10edf2d86c817009687c5eabfabbfdd4a4",
+      "state": "retained component PG GREEN"
+    },
+    {
+      "requirement": "Two admitted characters, epoch replenishment, stale handles and real reset activation",
+      "evidence": "cloud-stock-epochs-validation.json",
+      "sha256": "65f3bb47108c3fb23de0bdffcd452c01697b0f0afe69d945bf2c0930dfbc9cf9",
+      "state": "retained component PG GREEN"
+    },
+    {
+      "requirement": "Current shared/lane migration layout; paid sales/Father11/stock native PG regressions",
+      "evidence": "cloud-migration-registry-validation.json",
+      "sha256": "c6cef30cb7a26c1de57f5c74e3a07acf71f62fea252e618785dfe62e2710ccec",
+      "state": "retained component PG GREEN"
+    },
+    {
+      "requirement": "Literal client snapshot ->base ordinalUSE ->native source pane ->withdrawal ->empty pane ->exact replay/stale refusal; personal chest fallback",
+      "evidence": "cloud-stock-wire-validation.json",
+      "sha256": "58686ae941d6e7fb87d7a59c4d1aae927739386645303c9802f24aa82f6d8637",
+      "state": "PG GREEN3 plus personal3002 regression"
+    }
+  ],
+  "original_reward_claims": [
+    {
+      "claim": "oteryn:reward-claim.kv.draconia1",
+      "status": "dispatch_pg_qualified",
+      "retained_test": "quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal"
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.draconia2",
+      "status": "dispatch_pg_qualified",
+      "retained_test": "quest_catalogue_chests_phase_a_05_use_replay_and_refusal"
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.key.id3002",
+      "status": "dispatch_pg_qualified",
+      "retained_test": "quest_container_chests_crystal_key3002_is_minted_once"
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.key.id3008",
+      "status": "dispatch_pg_qualified",
+      "retained_test": "quest_catalogue_chests_phase_a_05_use_replay_and_refusal"
+    }
+  ],
+  "pending": [],
+  "boundary": "Source route is composed from native anchored component PG proofs; this is not a claim of one continuous full-world walk in a single test. No invented personal flag for shared stock.",
+  "source_contracts": [
+    "source startup tables plus their SHA-verified native B3 selectors",
+    "source Elathriel/Dragonlord scripts and reviewed native NPC placements",
+    "source four-lever/escape scripts and pressure/portal callbacks"
+  ],
+  "qualified_titles_added": 1
+}

@@ -640,6 +640,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         loop_move::observe_container(self, actor, fence, target).await
     }
 
+    async fn observe_map_container(
+        &self,
+        actor: ExactActorRef,
+        fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
+        target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Option<(item_view::ItemKey, container_view::ContainerObservation)> {
+        loop_move::observe_map_container(self, actor, fence, target).await
+    }
+
     /// VIS-3: the Channel's players, live creatures and (NPC-LOAD-1) NPC actors, read in one
     /// owner work item, and (MAP-ITEM-REF-1 Part B) its bound corpses as objects in the same
     /// read.

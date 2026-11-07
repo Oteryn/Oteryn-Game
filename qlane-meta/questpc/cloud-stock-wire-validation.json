@@ -1,0 +1,95 @@
+{
+  "scope": "base-ordinal source-container framed USE/MOVE, pane refresh and replay",
+  "result": "PASS",
+  "red": "cloud-stock-wire-red-validation.json",
+  "intermediate": "cloud-stock-wire-progress.json",
+  "green": [
+    {
+      "case": "draconia_container_stock_wire-replay",
+      "postgres": "18.6",
+      "duration_seconds": 54.965967191,
+      "result": "GREEN"
+    },
+    {
+      "case": "draconia_container_stock_wire-pickup",
+      "postgres": "18.6",
+      "duration_seconds": 54.999509768,
+      "result": "GREEN"
+    },
+    {
+      "case": "draconia_container_stock_wire-open",
+      "postgres": "18.6",
+      "duration_seconds": 54.999564781,
+      "result": "GREEN"
+    }
+  ],
+  "logs": {
+    "pg": {
+      "path": "cloud-stock-wire-pg.log",
+      "raw_sha256": "6244e6b03ada218e96757a2974319690b0c0555a1cbed7480bb5b61249c814f1",
+      "sha256": "eed8442faae2fd36a21ff06901bf7097137f87bd11300e57eccc267115d81dbf",
+      "normalization": "EOF only"
+    },
+    "fallback": {
+      "path": "cloud-stock-wire-fallback.log",
+      "raw_sha256": "613b0c6c35bd619acc17a6f42ab7a0ca85c90d5493bcdcc28c38bd80fdc44f56",
+      "sha256": "dbc6c00947a8bdc981a52ee0f2874ef4c53f25e7cc8c969bb6fd742076c18dae",
+      "normalization": "EOF only"
+    },
+    "clippy": {
+      "path": "cloud-stock-wire-clippy.log",
+      "raw_sha256": "ea68365ffe352c38a059215e5c44c6bc932cbc2965ed399aab49b88c14e078b1",
+      "sha256": "ea68365ffe352c38a059215e5c44c6bc932cbc2965ed399aab49b88c14e078b1",
+      "normalization": "EOF only"
+    },
+    "check": {
+      "path": "cloud-stock-wire-check.log",
+      "raw_sha256": "522de6de94809b94b938378eb125bea8b91f47156768899cf6f299b164842161",
+      "sha256": "522de6de94809b94b938378eb125bea8b91f47156768899cf6f299b164842161",
+      "normalization": "EOF only"
+    },
+    "fmt": {
+      "path": "cloud-stock-wire-fmt.log",
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "normalization": "EOF only"
+    },
+    "generation": {
+      "path": "cloud-stock-wire-generation.log",
+      "raw_sha256": "374beaff4948e4afc639699fc833d70dd183aa887562951152c05b4fb89b8750",
+      "sha256": "374beaff4948e4afc639699fc833d70dd183aa887562951152c05b4fb89b8750",
+      "normalization": "EOF only"
+    },
+    "pins": {
+      "path": "cloud-stock-wire-pins.log",
+      "raw_sha256": "74bbfa74e1d45b0ef0cf9721cf6b83879b3726546089cb629f3ff906164543ed",
+      "sha256": "74bbfa74e1d45b0ef0cf9721cf6b83879b3726546089cb629f3ff906164543ed",
+      "normalization": "EOF only"
+    }
+  },
+  "review": {
+    "findings": [],
+    "checked": [
+      "existing digest/hidden/revision target validator reused",
+      "source stock declaration and current session/reach observer reused",
+      "unmatched WorldObject USE keeps original fallback",
+      "no protocol capability/message/SQL migration added",
+      "wire snapshot supplies target; pane and key come from native owners",
+      "correct DuplicateReplay status; stale source handle refuses; one key only"
+    ]
+  },
+  "personal_chest_regression": {
+    "case": "quest_container_chests_crystal_key3002_is_minted_once",
+    "duration_seconds": 50.217283074,
+    "postgres": "18.6",
+    "result": "GREEN"
+  },
+  "green_wall_seconds": 55.0,
+  "checks": {
+    "fmt": "PASS",
+    "check": "PASS final1m24s",
+    "clippy": "PASS dispatch all targets/all features -D warnings7m04s including lock wait",
+    "generation": "PASS source capture check",
+    "pins": "PASS unchanged174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62"
+  }
+}

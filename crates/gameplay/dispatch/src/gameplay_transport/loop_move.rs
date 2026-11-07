@@ -899,6 +899,16 @@ pub(super) async fn relocate_door_item(
 /// A carried container or a container below a proven Ground root, with direct entries.
 /// Ground reach uses the actor's current same-floor position under the Channel lane.
 /// Reach follows the current Ground root; other external sources remain unavailable.
+/// Read-only base-ordinal opening; the source owner preserves native target validation.
+pub(super) async fn observe_map_container(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    fence: Option<CurrentCharacterItemFence>,
+    target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+) -> Option<(ItemKey, ContainerObservation)> {
+    container_stock::observe_object(admission, actor, fence, target).await
+}
+
 pub(super) async fn observe_container(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,

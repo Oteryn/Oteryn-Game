@@ -1,3 +1,23 @@
+## Draconia complete source route QUALIFIED — 2026-11-07
+Final framedPG3 GREEN55.00s wall: open54.999564781s,pickup54.999509768s,
+replay54.965967191s; actualPostgreSQL18.6. Native map snapshot ->baseordinal
+USE ->sourcepane ->key3001withdrawal ->one still-open empty pane. Literal
+replay DuplicateReplay/Moved; fresh oldhandleStale; exactlyone immutable key.
+Fresh personalcrystal3002 fallback GREEN50.217283074s. Existing target resolver
+proves digest/visibility/revision; source observer current session/reach. Other
+WorldObject USE falls through unchanged. Finalfmt/check/strictClippy/source/pinsPASS.
+Proof cloud-stock-wire-validation.json; originalRED3 and corrected harness-only
+replay expectation retained honestly. No protocol/SQL additions in this slice.
+Draconia matrix cloud-draconia-composition-validation.json combines14 source
+component proofs and4 original reward claims; no fabricated single full-world
+walk, no invented personal shared-stock flag. All source NPCs, level/keydoors,
+shared key stock/reset, realtwo-player gates, native portals/levers/exits covered.
+Counts61QUALIFIED/116UNFINISHED/1excludedDawnportBLOCKED;40unfinishedSKIP
+under freshother-lane86QUALIFIED titles. NEXT choose next owned unfinished row.
+Migrationregistry6c1533c4c remainsGREEN, own1290-1296, QBASE1200-1205, exact
+QENGINE0999-1006. PR3020 OPEN at13:02; aftermergemergeorigin/main.
+Before EVERYpush fetch exacttarget andmergeFETCH_HEAD, neverforce/rebase/mainpush/PR.
+
 ## Native stock wire checkpoint — 2026-11-07
 Runtime client-opener changes remain local pending final3PG/strict. Original real
 PG3 RED~47s: snapshot-derived base-ordinal skeleton USE returnsNothingToUse.

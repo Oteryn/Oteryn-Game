@@ -946,6 +946,17 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// Existing base-map container named by the map's digest, ordinal and revision.
+    /// The owner validates current visibility/reach before exposing a pane.
+    fn observe_map_container(
+        &self,
+        _actor: ExactActorRef,
+        _fence: Option<CurrentCharacterItemFence>,
+        _target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> impl Future<Output = Option<(ItemKey, ContainerObservation)>> {
+        async { None }
+    }
+
     /// Current observer-relative icons. Unavailable facts produce no update.
     fn observe_party_icons(
         &self,

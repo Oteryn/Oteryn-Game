@@ -701,6 +701,8 @@ fn scenario_case(
         } else if name == "marlin-trophy-exchange" {
             super::super::marlin_trophy::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if container_stock && name.contains("-wire-") {
+            super::super::draconia_stock_wire::exercise(&owner, &mut admitted, &h, name).await?;
         } else if container_stock && name.contains("-epoch-") {
             super::super::draconia_stock_epochs::exercise(&deps, &mut owner, &admitted, &h, name)
                 .await?;

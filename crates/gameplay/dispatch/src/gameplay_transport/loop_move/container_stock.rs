@@ -83,3 +83,40 @@ pub(super) async fn observe(
         entries,
     })
 }
+
+/// Reuse the same digest/visibility/revision resolver as ordinary native world actions.
+pub(super) async fn observe_object(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    fence: Option<CurrentCharacterItemFence>,
+    target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+) -> Option<(ItemKey, ContainerObservation)> {
+    let current = fence?;
+    let key = {
+        let mut runtime = admission.runtime.lock().await;
+        runtime
+            .player_control_facts(actor, current.game_session_id)
+            .ok()?;
+        let at = super::super::bundle_map_position(&mut runtime, admission.movement_cells, actor)?;
+        let facts = at.map.facts.pinned();
+        let source = super::super::world_map::MapViewSource {
+            overlay: &at.map.overlay,
+            facts: &facts,
+            content_generation: at.content_generation,
+            reset_epoch: admission.reset_epoch,
+        };
+        let resolved =
+            super::super::world_map::resolve_map_target(&source, &target, |_| None::<()>).ok()?;
+        let base = at.map.overlay.base();
+        let stock = base.container_stock(resolved.pos)?;
+        if stock.parent_ordinal != resolved.ordinal {
+            return None;
+        }
+        ItemKey::MapBase {
+            bundle_digest: base.digest(),
+            placement_key: resolved.placement_key,
+            reset_epoch: admission.reset_epoch,
+        }
+    };
+    Some((key, observe(admission, actor, fence, key).await?))
+}

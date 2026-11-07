@@ -452,19 +452,29 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 use_with: None,
                 use_with_map_item: None,
                 use_with_position: None,
-            }) => Dispatch::Use(
-                authority
-                    .use_object(
-                        actor,
-                        UseCommand {
-                            game_session_id: admitted.game_session_id,
-                            command_id: command.command_id,
-                            item_fence: admitted.item_fence,
-                        },
-                        target,
-                    )
-                    .await,
-            ),
+            }) => {
+                let container = if item_view.is_some() && container_views.is_some() {
+                    authority.observe_map_container(actor, admitted.item_fence, target.clone()).await
+                } else { None };
+                if let Some((key, observation)) = container {
+                    let view = item_view.as_mut()?;
+                    let views = container_views.as_mut()?;
+                    let Ok((outcome, delta)) = views.apply(view, PendingOpen::new_view(key), Some(observation)) else { return None; };
+                    admitted.continuity.item_view = view.continuity();
+                    Dispatch::UseItem(match outcome {
+                        ContainerViewOutcome::Opened => OpenDecision::Open,
+                        ContainerViewOutcome::TooFar => OpenDecision::TooFar,
+                        ContainerViewOutcome::Stale | ContainerViewOutcome::Closed => OpenDecision::StaleState,
+                        ContainerViewOutcome::NotAContainer | ContainerViewOutcome::TooManyViews => OpenDecision::NothingToUse,
+                    }, delta)
+                } else {
+                    Dispatch::Use(authority.use_object(actor, UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    }, target).await)
+                }
+            },
             Err(_) => Dispatch::Use(UseOutcome::rejected()),
         }
     })

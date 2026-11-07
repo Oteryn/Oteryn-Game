@@ -3,8 +3,8 @@
   "scope": "Pinned wiki titles A..M; no numeric or N..Z titles",
   "lifecycle": "AUTHORING on claude/happy-davinci-ijz3wy-questpc-pc2; green batch commits and fast-forward pushes authorized; no frozen integration candidate.",
   "counts": {
-    "QUALIFIED": 60,
-    "UNFINISHED": 117,
+    "QUALIFIED": 61,
+    "UNFINISHED": 116,
     "BLOCKED": 1
   },
   "owner_excluded_with_blocked_status": 1,
@@ -3498,8 +3498,8 @@
       "title": "Draconia Quest",
       "canonical": "oteryn:quest.draconia_quest",
       "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/26/definition",
-      "status": "UNFINISHED",
-      "scope": "complete pinned quest path",
+      "status": "QUALIFIED",
+      "scope": "complete pinned native source path",
       "reward_claims": [
         {
           "claim": "oteryn:reward-claim.kv.draconia1",
@@ -3522,21 +3522,7 @@
           "retained_test": "quest_catalogue_chests_phase_a_05_use_replay_and_refusal"
         }
       ],
-      "queued_stage_binding": {
-        "stage": "s1",
-        "native_dispatch_binding": null,
-        "runtime_enabled": false
-      },
-      "first_unqualified_stage": {
-        "key": "s1",
-        "kind": "use",
-        "objective": "Enter Hellgate with Key 3012 and reach Draconia.",
-        "targets": [
-          "Key 3012",
-          "Hellgate",
-          "Draconia"
-        ]
-      },
+      "first_unqualified_stage": null,
       "historical_blocker": {
         "missing_piece": "The complete source requires party-occupied floor switches for Key3007, shared resettable key pickups, and an exit portal conditional on four current lever placements. QENGINE owns paired/conditional portals, shared pickup/reset and party switch access; the current callback model has only Use/StepIn and no cross-placement fenced lever read-set. Personal reward claim receipts alone cannot complete this path.",
         "evidence": [
@@ -3553,7 +3539,19 @@
         ]
       },
       "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
-      "active_batch": "Source container stock plus real two-player visibility, per-epoch replenishment/replay and production reset lifecycle PG GREEN. Next framed source-container interaction and final route composition."
+      "active_batch": "CLOSED: complete source-route composition, native client container interaction and current personal3002 fallback PG GREEN",
+      "historical_queued_stage_binding": {
+        "stage": "s1",
+        "native_dispatch_binding": null,
+        "runtime_enabled": false
+      },
+      "qualification": {
+        "evidence": "cloud-draconia-composition-validation.json",
+        "native_runtime_enabled": true,
+        "source_route_components": 14,
+        "original_reward_claims": 4,
+        "boundary": "Source route is composed from native anchored component PG proofs; this is not a claim of one continuous full-world walk in a single test. No invented personal flag for shared stock."
+      }
     },
     {
       "title": "Dragon Corpse Quest",
@@ -10361,7 +10359,7 @@
   "container_stock_progress": {
     "state": "GREEN: reusable source-container stock owner and3 actual PG probes",
     "evidence": "cloud-container-stock-validation.json",
-    "remaining": "framed client source-container opening/withdrawal and final Draconia route composition",
+    "remaining": "none for Draconia; full source route QUALIFIED",
     "implementation_commit": "cc0b08f71",
     "proof_log_normalization": "EOF only; raw hashes retained in validation"
   },
@@ -10395,8 +10393,9 @@
     "runtime_published": true
   },
   "stock_wire_progress": {
-    "state": "initial realPG3 RED; opener implementation makes opening/withdrawal GREEN, final replay assertion and strict validation running",
-    "evidence": "cloud-stock-wire-progress.json",
-    "runtime_published": false
-  }
+    "state": "GREEN: final literal PG3 plus personal chest fallback and strict checks",
+    "evidence": "cloud-stock-wire-validation.json",
+    "runtime_published": true
+  },
+  "latest_qualified_title": "Draconia Quest"
 }
