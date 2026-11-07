@@ -784,3 +784,18 @@ DromeStatus API was absent (compile-red). The real encounter engine/cadence
 uses these successors in the next step; its behavioral RED showed200HP
 where the source25percent corpse burst requires150HP. Full encounter
 PostgreSQL GREEN remains pending; this is not a full W17 completion claim.
+
+## SRVENC W17: production modifier checkpoint
+
+The native encounter owner applies corpse bursts once per participant, timed
+Lava/Beam/Tanked warnings, seed defusal, Somersault melee hooks and Escalated
+working levels. Source: `docs/reference/tibia-manual/combat.md:271-278`.
+Terminal grace return retains exact actor/session authority without granting
+control to the dead player. No new IDs or migrations.
+
+Validation: actual PostgreSQL exploding-corpse/current-HP case passed42.233s
+and actual grace-expiry cleanup passed41.838s; dispatch compiled in the same
+473.453s focused run. Remaining red points are the real source map placement,
+Instance reward binding/loot lock and item-selection test accounting. Actual
+Drome movement steering and late-observed native kill timing remain next steps.
+Creature base HP/damage/scaling remain absent from available donor evidence.

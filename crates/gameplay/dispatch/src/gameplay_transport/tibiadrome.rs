@@ -12,10 +12,27 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+#[path = "tibiadrome/modifiers.rs"]
+mod modifiers;
+use modifiers::Modifier;
+pub(super) use modifiers::somersault;
+
 #[derive(Default)]
 pub(super) struct Drome {
     command: tokio::sync::Mutex<()>,
     live: Mutex<HashMap<GameSessionId, Live>>,
+}
+#[cfg(test)]
+impl Drome {
+    pub(in crate::gameplay_transport) fn test_exploding_corpses(
+        &self,
+        session: GameSessionId,
+    ) -> Result<(), &'static str> {
+        let live = self.live.lock().map_err(|_| "Drome registry")?;
+        let current = live.get(&session).ok_or("Drome participant")?;
+        current.battle.lock().map_err(|_| "Drome battle")?.modifier = Modifier::ExplodingCorpses;
+        Ok(())
+    }
 }
 struct Live {
     actor: ExactActorRef,
@@ -28,6 +45,12 @@ struct Live {
     mana: u32,
 }
 struct Battle {
+    modifier: Modifier,
+    mark: Option<modifiers::Mark>,
+    next_modifier: Instant,
+    effect_sequence: u64,
+    exploded: Vec<(ExactActorRef, GameSessionId)>,
+    somersaults: Vec<(ExactActorRef, u64)>,
     center: MovementLocalPosition,
     opponents: Vec<ExactActorRef>,
     wave: u32,
@@ -242,6 +265,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 (
                                     crate::durability::arena_match::identity(command, b"drome"),
                                     Arc::new(Mutex::new(Battle {
+                                        modifier: Modifier::Somersault,
+                                        mark: None,
+                                        next_modifier: Instant::now(),
+                                        effect_sequence: 0,
+                                        exploded: Vec::new(),
+                                        somersaults: Vec::new(),
                                         center: at,
                                         opponents: Vec::new(),
                                         wave: after.progress.start.saturating_add(1),
@@ -383,7 +412,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         if runtime
-            .relocate_arena_player(actor, session, at, current.origin)
+            .return_tibiadrome_player(actor, session, at, current.origin)
             .is_err()
         {
             return false;
@@ -502,10 +531,17 @@ pub(in crate::gameplay_transport) fn tick_at(
         let present = runtime
             .player_control_facts(current.actor, *session)
             .is_ok();
+        let center = match current.battle.lock() {
+            Ok(battle) => battle.center,
+            Err(_) => {
+                current.ended = true;
+                continue;
+            }
+        };
         let inside = runtime.read_actor_position(current.actor).is_ok_and(|p| {
-            p.position().floor == current.origin.floor
-                && p.position().x.abs_diff(current.origin.x) <= 6
-                && p.position().y.abs_diff(current.origin.y) <= 6
+            p.position().floor == center.floor
+                && p.position().x.abs_diff(center.x) <= 6
+                && p.position().y.abs_diff(center.y) <= 6
         });
         if !present || !inside {
             current.ended = true;
@@ -533,7 +569,9 @@ pub(in crate::gameplay_transport) fn tick_at(
             }
             continue;
         }
+        let bursts_complete = modifiers::deaths(owner, runtime, &live, &mut battle, current.run);
         if !battle.preparing
+            && bursts_complete
             && !battle.opponents.is_empty()
             && battle.opponents.iter().all(|target| {
                 runtime
@@ -549,13 +587,31 @@ pub(in crate::gameplay_transport) fn tick_at(
                 let _ = runtime.remove_arena_opponent(target);
             }
             battle.preparing = true;
+            battle.mark = None;
             battle.deadline = now + Duration::from_secs(u64::from(rules::PREPARATION_SECONDS));
+        }
+        if !battle.preparing {
+            modifiers::timed(owner, runtime, &live, &mut battle, current.run, now);
         }
         if battle.preparing && now >= battle.deadline {
             // oteryn-choice: use qualified native arena profiles; the pinned donors provide
             // neither Drome creature profiles nor a numeric difficulty curve.
-            // oteryn-choice: retain those profiles' existing attacks/conditions as the
-            // combat modifiers, rather than inventing unqualified Drome spell profiles.
+            // Manual combat.md:269-278 supplies all nine modifiers independently
+            // of the still-missing Drome-exclusive base profiles.
+            battle.modifier = Modifier::draw(current.run, battle.wave);
+            battle.mark = None;
+            battle.exploded.clear();
+            battle.somersaults.clear();
+            battle.effect_sequence = 0;
+            let interval = if matches!(battle.modifier, Modifier::SownSorrow | Modifier::BadRoots) {
+                [20, 17, 14, 11, 8]
+                    .get(players.saturating_sub(1))
+                    .copied()
+                    .unwrap_or(20)
+            } else {
+                15
+            };
+            battle.next_modifier = now + Duration::from_secs(interval);
             let count = rules::monster_count(players).unwrap_or(0);
             for (index, at) in positions(battle.center).into_iter().take(count).enumerate() {
                 let key = format!(
@@ -567,6 +623,13 @@ pub(in crate::gameplay_transport) fn tick_at(
                 }) {
                     if runtime
                         .scale_tibiadrome_opponent(target, battle.wave)
+                        .is_err()
+                    {
+                        let _ = runtime.remove_arena_opponent(target);
+                        break;
+                    }
+                    if runtime
+                        .set_tibiadrome_escalation(target, battle.modifier == Modifier::Escalated)
                         .is_err()
                     {
                         let _ = runtime.remove_arena_opponent(target);

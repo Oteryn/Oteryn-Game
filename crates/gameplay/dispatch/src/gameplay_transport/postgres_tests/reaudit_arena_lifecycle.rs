@@ -288,7 +288,7 @@ fn reaudit_arena_lifecycle_postgres_real_wave_and_exempt_death() -> TestResult {
     let start = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| physical().map_err(|e| e.to_string()))?
+        .spawn(|| physical(false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "Drome physical thread panicked")??;
     eprintln!(
@@ -297,7 +297,37 @@ fn reaudit_arena_lifecycle_postgres_real_wave_and_exempt_death() -> TestResult {
     );
     Ok(())
 }
-fn physical() -> TestResult {
+#[test]
+fn srvenc_tibiadrome_postgres_exploding_corpse_hits_current_health_once() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| physical(true, false).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Drome modifier thread panicked")??;
+    eprintln!("SRVENC POSTGRES_CASE_COMPLETED exploding_corpse_once duration={:?}", started.elapsed());
+    Ok(())
+}
+
+#[test]
+fn srvenc_tibiadrome_postgres_grace_expiry_clears_temporary_status_before_save() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| physical(false, true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Drome grace thread panicked")??;
+    eprintln!("SRVENC POSTGRES_CASE_COMPLETED drome_grace_cleanup duration={:?}", started.elapsed());
+    Ok(())
+}
+
+fn physical(exploding: bool, grace: bool) -> TestResult {
     use super::fixture::{debug, id, run};
     use super::{Dependencies, prepare_current_session};
     use crate::durability::character_progression::{
@@ -545,6 +575,20 @@ fn physical() -> TestResult {
                 .collect()
         };
         assert_eq!(targets.len(), 4);
+        if exploding {
+            owner.states.tibiadrome.test_exploding_corpses(session)?;
+            let mut runtime = deps.runtime.lock().await;
+            let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+            let origin = before.position();
+            let other = crate::foundation::GameSessionId::decode(&id(94)).map_err(debug)?;
+            assert!(runtime.return_tibiadrome_player(deps.actor, other, before, origin).is_err(),
+                "a terminal arena return cannot borrow another session");
+            assert_eq!(runtime.read_actor_position(deps.actor).map_err(debug)?.position(), origin);
+            runtime.relocate_arena_player(deps.actor, session, before, origin).map_err(debug)?;
+            assert!(runtime.return_tibiadrome_player(deps.actor, session, before, origin).is_err(),
+                "a terminal arena return compares the current position revision");
+            assert!(runtime.is_tibiadrome(deps.actor));
+        }
         {
             let mut runtime = deps.runtime.lock().await;
             let outsider_session =
@@ -599,8 +643,24 @@ fn physical() -> TestResult {
             );
             runtime.remove_test_actor(outsider).map_err(debug)?;
         }
-        for target in targets {
+        for (index, target) in targets.into_iter().enumerate() {
             fixture::fight(&mut owner, &mut admitted, deps.actor, target).await?;
+            if exploding && index == 0 {
+                let mut runtime = deps.runtime.lock().await;
+                let (_, corpse) = runtime.borrow_combat_death().projected_death(target).map_err(debug)?;
+                let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                runtime.relocate_arena_player(deps.actor, session, before, corpse).map_err(debug)?;
+                let health = owner.states.spell_states.lock().await
+                    .get(&runtime, deps.actor, session).ok_or("Drome participant")?.vitals().health;
+                crate::gameplay_transport::tibiadrome::tick(&owner, &mut runtime);
+                let after = owner.states.spell_states.lock().await
+                    .get(&runtime, deps.actor, session).ok_or("Drome participant")?.vitals().health;
+                assert_eq!(after, health - health / 4, "Exploding Corpses takes 25% of CURRENT health");
+                crate::gameplay_transport::tibiadrome::tick(&owner, &mut runtime);
+                assert_eq!(owner.states.spell_states.lock().await
+                    .get(&runtime, deps.actor, session).ok_or("Drome participant")?.vitals().health,
+                    after, "a retained native death cannot explode twice");
+            }
         }
         assert!(owner.drome_sync(session, false).await);
         let status = drome_exchange(
@@ -620,6 +680,34 @@ fn physical() -> TestResult {
             xp_before,
             "Drome kills award no experience"
         );
+        if grace {
+            // Expire the actual combat-owner in-fight clock before expiry; the
+            // newly applied modifier must still be live at the condition save.
+            owner.clock_origin -= std::time::Duration::from_secs(61);
+            {
+                let runtime = deps.runtime.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
+                let next = states.get(&runtime, deps.actor, session).ok_or("Drome player")?
+                    .try_after_drome_status(crate::spell::cast::DromeStatus::Root, owner.owner_now().get())
+                    .map_err(debug)?;
+                assert!(states.commit(&runtime, deps.actor, session, next));
+            }
+            let deadline: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint-1")
+                .fetch_one(&harness.pool).await?;
+            sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=1,current_transport_ref=NULL,control_loss_epoch=1,predecessor_generation=current_generation,original_grace_deadline=$1 WHERE game_session_id=encode($2,'hex')::uuid")
+                .bind(deadline).bind(session.as_bytes().as_slice()).execute(&harness.pool).await?;
+            deps.runtime.lock().await.record_control_loss(deps.actor, session,
+                crate::foundation::ControlLossMark { epoch: 1, grace_deadline: deadline }).map_err(debug)?;
+            assert_eq!(tokio::time::timeout(std::time::Duration::from_secs(10), owner.release_after_grace(admitted)).await?,
+                crate::gameplay_transport::connection::GraceExpiryResult::Released);
+            let snapshot: Option<serde_json::Value> = sqlx::query_scalar("SELECT snapshot FROM game_character_condition_snapshots WHERE character_id=encode($1,'hex')::uuid")
+                .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&harness.pool).await?;
+            assert!(!snapshot.as_ref().is_some_and(|snapshot| snapshot.to_string().contains("drome.")), "temporary Drome effects must not survive grace expiry");
+            let stored: serde_json::Value = sqlx::query_scalar("SELECT body FROM game_character_tibiadrome WHERE character_id=encode($1,'hex')::uuid")
+                .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(stored.get("active"), Some(&serde_json::Value::Bool(false)));
+            return Ok(());
+        }
         let death = {
             let runtime = deps.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
