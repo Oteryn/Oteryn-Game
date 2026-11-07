@@ -143,6 +143,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     keys = {offering['item'] for callback in callbacks['callbacks']
             for offering in callback['offerings']}
     authored_keys = set()
+    authored_callbacks = []
     # Executable authored callbacks use the same exact canonical/native Item
     # qualification as source chests. Include every output, never a partial bag.
     for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json'):
@@ -150,6 +151,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         if not path.is_file():
             continue
         for callback in json.loads(path.read_bytes())['callbacks']:
+            authored_callbacks.append(callback)
             reward = callback.get('give') or callback.get('effects', {}).get('item_reward')
             if reward:
                 authored_keys.add(reward['item'])
@@ -160,6 +162,14 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                             for child in reward.get(field, []))
             for field in ('take', 'present', 'offerings'):
                 keys.update(item['item'] for item in callback.get(field, []))
+                authored_keys.update(item['item'] for item in callback.get(field, []))
+            tool = callback.get('item_on_target')
+            if tool:
+                authored_keys.add(tool['item'])
+                keys.add(tool['item'])
+                if tool.get('replacement'):
+                    authored_keys.add(tool['replacement'])
+                    keys.add(tool['replacement'])
     # Rotten Blood's fixed Rust callback is not part of the JSON inventory.
     # Crystal 201189f actions_sacrifice.lua:4-29 requires this canonical Item;
     # apply the same pinned source, exact binding and portability checks below.
@@ -239,6 +249,16 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         definition = quests_2_emperor_item_profiles.callback_definition(
             source_packet, present.get(key), definition, root)
         identity = definition['identity']
+        if key in authored_keys and key not in present:
+            import authored_quest_timed_custody
+            exact = [binding for binding in bindings if binding['target'] == identity]
+            if len(exact) != 1 or exact[0]['disposition'] != 'EXACT':
+                raise ValueError('AUTHORED_TIMED_EXACT_BINDING')
+            expiry = authored_quest_timed_custody.source_expiry(raw, int(exact[0]['external_id']))
+            if expiry is not None:
+                profile, _ = authored_quest_timed_custody.qualify(root, definition, raw, authored_callbacks)
+                document['records'].append(profile)
+                continue
         if key in authored_keys and not definition['materializable'] and definition['stack_class'] == 'Unknown':
             import authored_quest_item_custody
             if key in present:

@@ -78,6 +78,8 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
         && callback.minimum_level.is_none()
         && callback.experience.is_none()
         && callback.monk_reward.is_none()
+        && callback.present.is_empty()
+        && callback.required_travel.is_empty()
         && callback.offerings.is_empty()
         && callback.item_on_target.is_none()
         && !callback.return_on_failure

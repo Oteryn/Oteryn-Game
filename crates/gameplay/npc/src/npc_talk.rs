@@ -24,6 +24,10 @@ const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 const REWARD_CALLBACKS: &str =
     include_str!("../../../../content/quests/shared-reward-callbacks.json");
+const CHOSEN_REWARD_CALLBACKS: &str =
+    include_str!("../../../../content/quests/chosen-reward-callbacks.json");
+const CHOSEN_REWARD_GREETINGS: &str =
+    include_str!("../../../../content/dialogues/quests/chosen-reward-greetings.json");
 const REWARD_GREETINGS: &str =
     include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json");
 
@@ -43,10 +47,22 @@ fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
     }
     static DATA: std::sync::OnceLock<Option<Vec<RewardMessages>>> = std::sync::OnceLock::new();
     let rows = DATA.get_or_init(|| {
-        serde_json::from_str::<Document>(REWARD_GREETINGS)
-            .ok()
-            .filter(|d| d.schema == 1 && d.npcs.len() <= 256)
-            .map(|d| d.npcs)
+        let mut source: Document = serde_json::from_str(REWARD_GREETINGS).ok()?;
+        let chosen: Document = serde_json::from_str(CHOSEN_REWARD_GREETINGS).ok()?;
+        if source.schema != 1 || chosen.schema != 1 || source.npcs.len() + chosen.npcs.len() > 256 {
+            return None;
+        }
+        let mut keys = std::collections::BTreeSet::new();
+        if source
+            .npcs
+            .iter()
+            .chain(&chosen.npcs)
+            .any(|row| !keys.insert(&row.npc))
+        {
+            return None;
+        }
+        source.npcs.extend(chosen.npcs);
+        Some(source.npcs)
     });
     reward_callback_npc(key).then_some(())?;
     rows.as_ref()?.iter().find(|r| r.npc == key)
@@ -67,11 +83,23 @@ fn reward_callback_npc(key: &str) -> bool {
     static NPCS: std::sync::OnceLock<std::collections::BTreeSet<String>> =
         std::sync::OnceLock::new();
     NPCS.get_or_init(|| {
-        serde_json::from_str::<Document>(REWARD_CALLBACKS)
-            .ok()
-            .filter(|d| d.schema == 1 && d.callbacks.len() <= 256)
-            .map(|d| d.callbacks.into_iter().map(|c| c.npc).collect())
-            .unwrap_or_default()
+        let documents = [REWARD_CALLBACKS, CHOSEN_REWARD_CALLBACKS]
+            .into_iter()
+            .map(serde_json::from_str::<Document>)
+            .collect::<Result<Vec<_>, _>>();
+        let Ok(documents) = documents else {
+            return Default::default();
+        };
+        if documents.iter().any(|d| d.schema != 1)
+            || documents.iter().map(|d| d.callbacks.len()).sum::<usize>() > 256
+        {
+            return Default::default();
+        }
+        documents
+            .into_iter()
+            .flat_map(|d| d.callbacks)
+            .map(|c| c.npc)
+            .collect()
     })
     .contains(key)
 }
@@ -194,14 +222,18 @@ impl NpcTalkBook {
     pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "{}\0{}\0{}\0{}\0{}",
-                crate::content::npc_catalogue::grizzly_shop::book_digest(
-                    model.source_tree_digest()
+                "{}\0{}\0{}\0{}\0{}\0{}\0{}",
+                crate::content::npc_catalogue::quest_access::book_digest(
+                    &crate::content::npc_catalogue::grizzly_shop::book_digest(
+                        model.source_tree_digest()
+                    ),
                 ),
                 dark_trails::TEXT,
                 isle_of_evil::revision_material(),
                 REWARD_CALLBACKS,
                 REWARD_GREETINGS,
+                CHOSEN_REWARD_CALLBACKS,
+                CHOSEN_REWARD_GREETINGS,
             )),
             ..Self::default()
         };

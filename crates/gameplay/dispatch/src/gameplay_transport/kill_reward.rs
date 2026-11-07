@@ -1826,6 +1826,7 @@ fn accept_kill(
     mut entry: PendingKillSettlement,
 ) -> AppendOutcome {
     super::grizzly_kills::capture(runtime, queue, &mut entry);
+    super::quest_death_loot::capture(&mut entry);
     if entry.creature == "oteryn:creature.the_corruptor" {
         entry.tutorial_loot = queue.freeze_tutorial_loot(runtime, entry.target);
     }
@@ -2866,7 +2867,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 };
             }
         }
-        super::echo_warden::drops::append_callback_loot(&mut loot_table, &entry.callback_loot);
+        super::quest_death_loot::append(&mut loot_table, &entry);
         // Ordinary stamina/event/duplex transforms must never remove or multiply
         // the one-shot tutorial reward. Its arm is consumed by the atomic MINT.
         let Ok((loot_table, tutorial_corruptor)) = admission

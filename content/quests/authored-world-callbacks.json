@@ -1994,6 +1994,786 @@
           "contents": []
         }
       }
+    },
+    {
+      "quest": "oteryn:quest.authored.tibia_anniversary",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:tibia-anniversary:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=87456&oldid=752614",
+        "Conservative chosen seasonal programme: one old rag per captured named native animal death while collecting;30ownedrags, five native Pinata Dragons, one festive backpack. Source-event randomness is replaced by deterministic bounded progress; no ordinary loot table changes.",
+        "Conservative seasonal station: literal untagged public Thais small table2319 at32359,32235,z7 ordinal1 stands in for absent24414/24842 sewing table; original palette and all native table properties remain unchanged."
+      ],
+      "premium_required": false,
+      "key": "oteryn:quest-callback/authored-anniversary",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32359,
+          "y": 32234,
+          "floor": -7
+        },
+        "ordinal": 0,
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/anniversary/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/anniversary/rags",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/anniversary/kills",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ]
+    },
+    {
+      "quest": "oteryn:quest.authored.tibia_anniversary",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:tibia-anniversary:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=87456&oldid=752614",
+        "Conservative chosen seasonal programme: one old rag per captured named native animal death while collecting;30ownedrags, five native Pinata Dragons, one festive backpack. Source-event randomness is replaced by deterministic bounded progress; no ordinary loot table changes.",
+        "Conservative seasonal station: literal untagged public Thais small table2319 at32359,32235,z7 ordinal1 stands in for absent24414/24842 sewing table; original palette and all native table properties remain unchanged."
+      ],
+      "premium_required": false,
+      "key": "oteryn:quest-callback/authored-anniversary-contribute",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32359,
+          "y": 32235,
+          "floor": -7
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 2319
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/anniversary/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/anniversary/rags",
+          "minimum": 30,
+          "maximum": 30,
+          "set": 30,
+          "preserve": true
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i24415",
+        "count": 30,
+        "replacement": null,
+        "target_replacement": null
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.tibia_anniversary",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:tibia-anniversary:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=87456&oldid=752614",
+        "Conservative chosen seasonal programme: one old rag per captured named native animal death while collecting;30ownedrags, five native Pinata Dragons, one festive backpack. Source-event randomness is replaced by deterministic bounded progress; no ordinary loot table changes.",
+        "Conservative seasonal station: literal untagged public Thais small table2319 at32359,32235,z7 ordinal1 stands in for absent24414/24842 sewing table; original palette and all native table properties remain unchanged."
+      ],
+      "premium_required": false,
+      "key": "oteryn:quest-callback/authored-anniversary-reward",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32359,
+          "y": 32235,
+          "floor": -7
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 2319
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/anniversary/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/anniversary/kills",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "completes": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i30197",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "oteryn-authored:chosen-secret-library:quest-r1: Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "key": "oteryn:quest-callback/authored-secret-library",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32031,
+          "y": 32463,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "premium_required": true,
+      "minimum_level": 250
+    },
+    {
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "oteryn-authored:chosen-secret-library:quest-r1: Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "key": "oteryn:quest-callback/authored-secret-library-raft",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32031,
+          "y": 32463,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4527,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "premium_required": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i28707",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      }
+    },
+    {
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "oteryn-authored:chosen-secret-library:quest-r1: Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "key": "oteryn:quest-callback/authored-secret-library-temple",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33525,
+          "y": 31464,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "premium_required": true
+    },
+    {
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "oteryn-authored:chosen-secret-library:quest-r1: Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "key": "oteryn:quest-callback/authored-secret-library-fingerboard",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32807,
+          "y": 32765,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 23881,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "premium_required": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i28491",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i28492",
+        "target_replacement": null
+      }
+    },
+    {
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "oteryn-authored:chosen-secret-library:quest-r1: Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "key": "oteryn:quest-callback/authored-secret-library-strings",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32808,
+          "y": 32765,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25051,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "premium_required": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i28492",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i28493",
+        "target_replacement": null
+      }
+    },
+    {
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "oteryn-authored:chosen-secret-library:quest-r1: Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "key": "oteryn:quest-callback/authored-secret-library-wing",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32480,
+          "y": 32597,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/access",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "premium_required": true,
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i28493",
+          "count": 1
+        }
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-treasure-island",
+      "quest": "oteryn:quest.treasure_island_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32131,
+          "y": 32913,
+          "floor": -7
+        },
+        "ordinal": 0,
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/treasure-island/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:treasure-island:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=9859&oldid=742171",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/captain_waverider.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/lib/register_actions.lua",
+        "Conservative selected spot: retained sand231 at32126,32934,z7 ordinal0 above native rope386 at z8; source action100 is absent, so literal position binds deterministic map-gated opening615 without fabricated AID. Selected no-item exploration programme."
+      ],
+      "premium_required": true,
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3457",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3003",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i9205",
+          "count": 1
+        }
+      ],
+      "required_travel": [
+        {
+          "route": "oteryn:service.travel.captain_waverider/treasure_island",
+          "after_transition": null
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-treasure-dig",
+      "quest": "oteryn:quest.treasure_island_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32126,
+          "y": 32934,
+          "floor": -7
+        },
+        "ordinal": 0,
+        "unique": null,
+        "action": null,
+        "appearance": 231
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/treasure-island/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3457",
+        "count": 1,
+        "reusable": true,
+        "replacement": null,
+        "target_replacement": 615
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:treasure-island:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=9859&oldid=742171",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/captain_waverider.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/lib/register_actions.lua",
+        "Conservative selected spot: retained sand231 at32126,32934,z7 ordinal0 above native rope386 at z8; source action100 is absent, so literal position binds deterministic map-gated opening615 without fabricated AID. Selected no-item exploration programme."
+      ],
+      "premium_required": true,
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3003",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i9205",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-treasure-scout",
+      "quest": "oteryn:quest.treasure_island_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32126,
+          "y": 32935,
+          "floor": -8
+        },
+        "ordinal": 0,
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/treasure-island/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:treasure-island:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=9859&oldid=742171",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/captain_waverider.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/lib/register_actions.lua",
+        "Conservative selected spot: retained sand231 at32126,32934,z7 ordinal0 above native rope386 at z8; source action100 is absent, so literal position binds deterministic map-gated opening615 without fabricated AID. Selected no-item exploration programme."
+      ],
+      "premium_required": true,
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3457",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3003",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i9205",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-treasure-rope",
+      "quest": "oteryn:quest.treasure_island_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32126,
+          "y": 32934,
+          "floor": -8
+        },
+        "ordinal": 0,
+        "unique": null,
+        "action": null,
+        "appearance": 386
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32126,
+        "y": 32933,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/treasure-island/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3003",
+        "count": 1,
+        "reusable": true,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:treasure-island:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=9859&oldid=742171",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/captain_waverider.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/lib/register_actions.lua",
+        "Conservative selected spot: retained sand231 at32126,32934,z7 ordinal0 above native rope386 at z8; source action100 is absent, so literal position binds deterministic map-gated opening615 without fabricated AID. Selected no-item exploration programme."
+      ],
+      "premium_required": true,
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3457",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i9205",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-treasure-complete",
+      "quest": "oteryn:quest.treasure_island_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32349,
+          "y": 32856,
+          "floor": -7
+        },
+        "ordinal": 0,
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/treasure-island/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:treasure-island:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=9859&oldid=742171",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/captain_waverider.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/lib/register_actions.lua",
+        "Conservative selected spot: retained sand231 at32126,32934,z7 ordinal0 above native rope386 at z8; source action100 is absent, so literal position binds deterministic map-gated opening615 without fabricated AID. Selected no-item exploration programme."
+      ],
+      "premium_required": true,
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3457",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3003",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i9205",
+          "count": 1
+        }
+      ],
+      "required_travel": [
+        {
+          "route": "oteryn:service.travel.captain_waverider_island/liberty_bay",
+          "after_transition": "oteryn:quest-callback/authored-treasure-rope"
+        }
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-trader-package",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32661,
+          "y": 32192,
+          "floor": -8
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "premium_required": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i145",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "oteryn-authored:chosen-recipe:travelling-trader:authored-r1",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/snake_eye.lua",
+        "OTERYN_CONSERVATIVE_NATIVE_BINDING: retained sole nearby box at32661,32192,-8 appearance2472ordinal1 is untagged; require exact literal source tile after Willard and Snake Eye, never fabricate UID."
+      ]
     }
   ]
 }

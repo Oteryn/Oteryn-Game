@@ -259,6 +259,39 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
+    // The Character root and current session are already fenced. Lock the actual
+    // carried instances before testing quantities; map objects never prove ownership.
+    for evidence in &callback.present {
+        let quantities: Vec<i64> = sqlx::query_scalar(
+            "SELECT i.quantity FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c \
+             JOIN game_item_instances i ON i.item_instance_id=c.item \
+             WHERE i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$3 \
+             ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i",
+        ).bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice())
+            .bind(&evidence.item).fetch_all(&mut **tx).await?;
+        if quantities.len() > 500 || quantities.iter().sum::<i64>() < i64::from(evidence.count) {
+            return Ok(false);
+        }
+    }
+    // NPC travel locks the Character root but does not advance its revision.
+    // A trip admitted after the quest milestone therefore carries exactly the
+    // milestone's committed revision. Every trip serialized before it has a
+    // strictly smaller revision because the quest milestone itself advances it.
+    for route in &callback.required_travel {
+        let arrived: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_newhaven_travel_receipts r \
+             LEFT JOIN game_item_fee_burns f ON f.transaction_id=r.fee_transaction_id \
+             WHERE r.character_id=encode($1,'hex')::uuid AND r.route=$2 AND r.arrived_at IS NOT NULL \
+             AND ($3::text IS NULL OR EXISTS(SELECT 1 FROM game_character_quest_receipts q \
+                 WHERE q.character_id=r.character_id AND q.quest_key=$4 AND q.transition_key=$3 \
+                 AND f.character_id=r.character_id \
+                 AND f.committed_character_revision>=q.committed_character_revision)))",
+        ).bind(fence.character_id.as_bytes().as_slice()).bind(&route.route)
+            .bind(&route.after_transition).bind(&callback.quest).fetch_one(&mut **tx).await?;
+        if !arrived {
+            return Ok(false);
+        }
+    }
     if callback.offerings.is_empty() && callback.item_on_target.is_none() {
         return Ok(true);
     }

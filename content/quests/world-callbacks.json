@@ -7992,12 +7992,28 @@
         "y": 32597,
         "floor": -15
       },
-      "storage": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": 7,
+          "maximum": 8,
+          "set": 7,
+          "read_only": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        }
+      ],
       "offerings": [],
-      "return_on_failure": false,
+      "return_on_failure": true,
       "failure_message": null,
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/movement_teleport.lua:1-25"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_secret_library_quest/movement_teleport.lua:1-25",
+        "oteryn-authored:chosen-secret-library-access:stage7-native-Oberon-proof; completed stage8 retains earned entry."
       ]
     },
     {

@@ -447,7 +447,7 @@ fn scenario_in_world(
                 experience: None,
                 completes: false,
                 premium_required: false,
-                monk_reward: None,
+                monk_reward: None, present: Vec::new(), required_travel: Vec::new(),
                 item_on_target: None,
                 return_on_failure: refused,
                 failure_message: None,

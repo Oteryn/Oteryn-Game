@@ -118,6 +118,8 @@ pub enum QuestComparison {
     Between(i64, i64),
     /// `elapsed >= s`: database time minus the value, in seconds.
     ElapsedAtLeast(i64),
+    /// A previously initialized timestamp whose nonnegative elapsed time is strictly below the bound.
+    ElapsedLessThan(i64),
 }
 
 impl QuestComparison {
@@ -133,6 +135,12 @@ impl QuestComparison {
             Self::Between(low, high) => (low..=high).contains(&value),
             Self::ElapsedAtLeast(seconds) => {
                 i128::from(now) - i128::from(value) >= i128::from(seconds)
+            }
+            Self::ElapsedLessThan(seconds) => {
+                seconds > 0
+                    && value > 0
+                    && now >= value
+                    && i128::from(now) - i128::from(value) < i128::from(seconds)
             }
         }
     }
@@ -153,6 +161,7 @@ impl QuestComparison {
                 return;
             }
             Self::ElapsedAtLeast(value) => (8, std::slice::from_ref(value)),
+            Self::ElapsedLessThan(value) => (9, std::slice::from_ref(value)),
         };
         out.push(tag);
         for value in values {
@@ -348,6 +357,9 @@ impl QuestStateCatalogue {
                 let comparison_ok = match effect.from {
                     QuestComparison::Between(low, high) => low <= high,
                     QuestComparison::ElapsedAtLeast(seconds) => seconds >= 0,
+                    QuestComparison::ElapsedLessThan(seconds) => {
+                        (1..=366 * 24 * 60 * 60).contains(&seconds)
+                    }
                     _ => true,
                 };
                 let effect_ok = match effect.effect {
@@ -410,6 +422,25 @@ impl QuestStateCatalogue {
         )?;
         extended.npc_legacy.clone_from(&self.npc_legacy);
         Ok(extended)
+    }
+
+    /// Test-support fixtures may author an extra transition through the same full
+    /// catalogue validation and definition hashing as production content. As with
+    /// entities/test-support, this adds no production mutation or fence bypass.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn with_fixture_transition(
+        &self,
+        transition: QuestTransition,
+    ) -> Result<Self, QuestCatalogueError> {
+        let mut transitions: Vec<_> = self.transitions.values().cloned().collect();
+        transitions.push(transition);
+        let mut updated = Self::new(
+            self.content_revision.clone(),
+            self.tracks.values().cloned().collect(),
+            transitions,
+        )?;
+        updated.npc_legacy.clone_from(&self.npc_legacy);
+        Ok(updated)
     }
 
     /// A catalogue with no quest: every transition request is unknown.
@@ -997,5 +1028,42 @@ mod tests {
         assert_eq!(QuestRefusal::RevisionMismatch.code(), "REVISION_MISMATCH");
         assert!(QuestStateCatalogue::empty("content-1").is_some());
         assert!(QuestStateCatalogue::empty("bad revision").is_none());
+    }
+    #[test]
+    fn fixture_transition_keeps_full_owner_and_duplicate_validation() -> Result<(), String> {
+        let base = catalogue(vec![]);
+        let aging = transition(
+            "oteryn:quest-transition/test.rats.fixture-age",
+            vec![effect(
+                TIMER,
+                QuestComparison::Any,
+                QuestEffectKind::Add(-1801),
+            )],
+            false,
+        );
+        let extended = base
+            .with_fixture_transition(aging.clone())
+            .map_err(|error| format!("{error:?}"))?;
+        assert_ne!(extended.definition_hash(QUEST), base.definition_hash(QUEST));
+        assert!(matches!(
+            extended.with_fixture_transition(aging),
+            Err(QuestCatalogueError::DuplicateKey(_))
+        ));
+        let foreign = QuestTransition {
+            key: "oteryn:quest-transition/test.rats.foreign".into(),
+            quest: "oteryn:quest.other".into(),
+            effects: vec![effect(
+                TIMER,
+                QuestComparison::Any,
+                QuestEffectKind::Add(-1801),
+            )],
+            completes: false,
+            experience: None,
+        };
+        assert!(matches!(
+            base.with_fixture_transition(foreign),
+            Err(QuestCatalogueError::ForeignTrack(_))
+        ));
+        Ok(())
     }
 }

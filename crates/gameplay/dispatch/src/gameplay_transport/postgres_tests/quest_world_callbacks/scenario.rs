@@ -61,6 +61,8 @@ fn scenario_case(
             "giant-smithhammer"
         } else if target_swap {
             "fish-napping-key"
+        } else if name == "authored-trader" {
+            "authored-trader-package"
         } else {
             name
         })?;
@@ -80,7 +82,15 @@ fn scenario_case(
         if stateless_destination.is_some() {
             assert_eq!(callback.selector.position, Some(trigger));
         }
-        let world = if name == "authored-magic-sword" {
+        let world = if name == "authored-secret-library" {
+            super::super::questpc8_secret_library::world()?
+        } else if name == "authored-treasure-island" {
+            super::super::questpc8_treasure_island::world()?
+        } else if name == "authored-trader" {
+            super::super::questpc8_trader::world()?
+        } else if name == "authored-anniversary" {
+            super::super::questpc8_anniversary::world()?
+        } else if name == "authored-magic-sword" {
             super::super::questpc8_magic_sword::world()?
         } else if name == "authored-torch" {
             super::super::questpc8_bridge_routes::torch_world()?
@@ -158,6 +168,14 @@ fn scenario_case(
                 6
             } else if name == "authored-magic-sword" {
                 9
+            } else if name == "authored-trader" {
+                7
+            } else if name == "authored-treasure-island" {
+                3
+            } else if name == "authored-secret-library" {
+                5
+            } else if name == "authored-anniversary" {
+                12
             } else if name == "authored-torch" {
                 3
             } else if classic_npc {
@@ -274,6 +292,14 @@ fn scenario_case(
         owner.admit_quest_session(&admitted).await;
         if name == "authored-magic-sword" {
             super::super::questpc8_magic_sword::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-trader" {
+            super::super::questpc8_trader::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-treasure-island" {
+            super::super::questpc8_treasure_island::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-secret-library" {
+            super::super::questpc8_secret_library::exercise(&mut owner, &mut admitted, &h).await?;
+        } else if name == "authored-anniversary" {
+            super::super::questpc8_anniversary::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-torch" {
             super::super::questpc8_bridge_routes::exercise_torch(&mut owner, &mut admitted, &h)
                 .await?;

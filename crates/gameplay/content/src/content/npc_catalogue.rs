@@ -16,6 +16,7 @@ use super::{
 };
 pub mod grizzly_shop;
 pub mod premium_services;
+pub mod quest_access;
 pub mod replies;
 pub mod service;
 pub mod travel;

@@ -18,5 +18,12 @@
     "active": 23,
     "qualified": 14,
     "remaining": 9
+  },
+  "remote_convergence": {
+    "head": "c606b2308",
+    "qualified": 18,
+    "remaining": 5,
+    "preserved": "four published routes and their existing shared engine features",
+    "local_work": "stashed for selective reuse; no unpublished runtime qualification claim"
   }
 }

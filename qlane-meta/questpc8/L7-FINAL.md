@@ -1,3 +1,9 @@
+Current checkpoint:18/23 active L7 entries QUALIFIED (15 here,3 elsewhere).
+Trader,Treasure,Anniversary,Library full chosen routes now pass initialized
+PostgreSQL; strict checks/generated content/world pins pass. Five programmes
+remain under active implementation; this is not the final lane state. See
+QUEST-STATUS.json,RESUME.md and continuation-validation.json.
+
 Magic Sword and Torch now QUALIFIED; Life Ring shared-engine convergence passes.
 14of23activeL7entries QUALIFIED (11here,3elsewhere),9remain; this is an ongoing
 owner continuation, not the final lane state. Full RED/GREEN, strict checks,

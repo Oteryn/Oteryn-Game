@@ -1291,7 +1291,14 @@
       "runtime_enabled": false
     },
     "blocker": {
-      "missing_piece": "Active authoring of three collection bindings and crystal exploration. Native landmark geometry probe passed; fixture client sequencing is corrected locally. Full receipt-backed route validation remains in progress; no lane handoff or shared-engine hold."
+      "kind": "active_implementation",
+      "owner": "questpc8",
+      "missing_piece": "Mount authored programme and reusable shared-feature drafts, run full native PostgreSQL graph and strict/generated checks. The five-entry batch has actual PostgreSQL RED evidence; implementation is owned here, not waiting for another lane.",
+      "evidence": [
+        "qlane-meta/questpc8/RESUME.md",
+        "qlane-meta/questpc8/continuation-validation.json"
+      ],
+      "reuse": "Incoming37aa8adda admits exact existing canonical GuardianStatue50335/fragments50336..50338; reuse native constructors and incoming Lai programme/placement, finish selected full graph."
     },
     "first_unqualified_stage": {
       "key": "s2",
@@ -1304,7 +1311,7 @@
     },
     "disposition": "authoring",
     "qualified_elsewhere": [],
-    "mechanism": "authored_npc_dialogue_and_world_rewards",
+    "mechanism": "native_reward_source_placement",
     "round": "L7",
     "qualified_components": [
       {
@@ -1344,7 +1351,8 @@
     "authoring_checkpoint": {
       "proof": "mystery-native-authoring-checkpoint.json",
       "runtime_changes_published": false,
-      "next": "Focused receipt-backed native route RED, then three shrine collection bindings and crystal STEP before assembly GREEN."
+      "next": "Focused receipt-backed native route RED, then three shrine collection bindings and crystal STEP before assembly GREEN.",
+      "convergence": "Incoming four-route qualification retained:18of23,5remain. Local source-native geometry work is stashed for selective reuse; compare upstream97cb9db79 carried USE before restoring any generic input implementation."
     }
   },
   {
@@ -1418,45 +1426,84 @@
     "qualified_elsewhere": [],
     "mechanism": "calendar_repeatable_random_rewards",
     "blocker": {
-      "missing_piece": "Powder application, participant/team colour, event eligibility and reward delivery lack native bindings for the five chosen stages."
+      "kind": "active_implementation",
+      "owner": "questpc8",
+      "missing_piece": "Mount authored programme and reusable shared-feature drafts, run full native PostgreSQL graph and strict/generated checks. The five-entry batch has actual PostgreSQL RED evidence; implementation is owned here, not waiting for another lane.",
+      "evidence": [
+        "qlane-meta/questpc8/RESUME.md",
+        "qlane-meta/questpc8/continuation-validation.json"
+      ]
     },
     "round": "L7"
   },
   {
     "canonical": "oteryn:quest.the_secret_library_quest",
     "title": "The Secret Library Quest",
-    "status": "UNFINISHED",
-    "disposition": "authoring",
-    "qualified_elsewhere": [],
-    "mechanism": "calendar_repeatable_random_rewards",
-    "blocker": {
-      "missing_piece": "The chosen island raft -> sunken temple -> Bone Fiddle -> Gail -> Oberon -> Secret Library -> completion graph is not lowered. Existing six-chest random/24-hour cycle code does not prove that graph or key0909 delivery."
-    },
-    "round": "L7"
+    "status": "QUALIFIED",
+    "disposition": "qualified-here",
+    "qualified_elsewhere": false,
+    "mechanism": "Native NPC investigations, owned hawser and Bone Fiddle components, actual Oberon death and read-only library access gate",
+    "blocker": null,
+    "round": "L7",
+    "scope": "complete pinned quest path",
+    "first_unqualified_stage": null,
+    "qualification_scope": "Complete finite chosen Oteryn recipe with canonical adaptations and documented conservative source mappings; see continuation-validation.json and CONTRACT-NOTES.md",
+    "qualified_components": [
+      "Native NPC investigations, owned hawser and Bone Fiddle components, actual Oberon death and read-only library access gate",
+      "Real PostgreSQL RED/GREEN, full chosen route 54.515229036s; fees/inputs/replay/cold checks as applicable",
+      "Strict checks, native generation and world pin reproducibility pass"
+    ],
+    "queued_stage_binding": {
+      "stage": "complete",
+      "native_dispatch_binding": "native NPC/world callbacks, Quest writer, native Item/loot/travel/access owners",
+      "runtime_enabled": true
+    }
   },
   {
     "canonical": "oteryn:quest.the_travelling_trader_quest",
     "title": "The Travelling Trader Quest",
-    "status": "UNFINISHED",
-    "disposition": "authoring",
-    "qualified_elsewhere": [],
-    "mechanism": "calendar_repeatable_random_rewards",
-    "blocker": {
-      "missing_piece": "Rashid's weekday-specific tests, item hand-ins and final merchant service entitlement lack a native calendar/transaction binding; one delivery callback is insufficient."
-    },
-    "round": "L7"
+    "status": "QUALIFIED",
+    "disposition": "qualified-here",
+    "qualified_elsewhere": false,
+    "mechanism": "Native six-object NPC delivery route, exact source fees/input BURN, once-only Rashid recognition and fenced retained shop offers",
+    "blocker": null,
+    "round": "L7",
+    "scope": "complete pinned quest path",
+    "first_unqualified_stage": null,
+    "qualification_scope": "Complete finite chosen Oteryn recipe with canonical adaptations and documented conservative source mappings; see continuation-validation.json and CONTRACT-NOTES.md",
+    "qualified_components": [
+      "Native six-object NPC delivery route, exact source fees/input BURN, once-only Rashid recognition and fenced retained shop offers",
+      "Real PostgreSQL RED/GREEN, full chosen route 70.169371517s; fees/inputs/replay/cold checks as applicable",
+      "Strict checks, native generation and world pin reproducibility pass"
+    ],
+    "queued_stage_binding": {
+      "stage": "complete",
+      "native_dispatch_binding": "native NPC/world callbacks, Quest writer, native Item/loot/travel/access owners",
+      "runtime_enabled": true
+    }
   },
   {
     "canonical": "oteryn:quest.authored.tibia_anniversary",
     "title": "Tibia Anniversary",
-    "status": "UNFINISHED",
-    "disposition": "authoring",
-    "qualified_elsewhere": [],
-    "mechanism": "calendar_repeatable_random_rewards",
-    "blocker": {
-      "missing_piece": "The selected four-stage pinata/sewing/kill/reward programme lacks native event and reward-instance bindings."
-    },
-    "round": "L7"
+    "status": "QUALIFIED",
+    "disposition": "qualified-here",
+    "qualified_elsewhere": false,
+    "mechanism": "Thirty native conditional corpse drops, exact rag hand-in, five native Pinata Dragon deaths and once-only Festive Backpack",
+    "blocker": null,
+    "round": "L7",
+    "scope": "complete pinned quest path",
+    "first_unqualified_stage": null,
+    "qualification_scope": "Complete finite chosen Oteryn recipe with canonical adaptations and documented conservative source mappings; see continuation-validation.json and CONTRACT-NOTES.md",
+    "qualified_components": [
+      "Thirty native conditional corpse drops, exact rag hand-in, five native Pinata Dragon deaths and once-only Festive Backpack",
+      "Real PostgreSQL RED/GREEN, full chosen route 55.296868003s; fees/inputs/replay/cold checks as applicable",
+      "Strict checks, native generation and world pin reproducibility pass"
+    ],
+    "queued_stage_binding": {
+      "stage": "complete",
+      "native_dispatch_binding": "native NPC/world callbacks, Quest writer, native Item/loot/travel/access owners",
+      "runtime_enabled": true
+    }
   },
   {
     "canonical": "oteryn:quest.tinder_box_quest_chyllfroest",
@@ -1471,14 +1518,25 @@
   {
     "canonical": "oteryn:quest.treasure_island_quest",
     "title": "Treasure Island Quest",
-    "status": "UNFINISHED",
-    "disposition": "authoring",
-    "qualified_elsewhere": [],
-    "mechanism": "calendar_repeatable_random_rewards",
-    "blocker": {
-      "missing_piece": "Pirate Treasure Map selection/consumption and the corresponding random buried reward lack a source-qualified native harvest/receipt binding."
-    },
-    "round": "L7"
+    "status": "QUALIFIED",
+    "disposition": "qualified-here",
+    "qualified_elsewhere": false,
+    "mechanism": "Actual paid ship travel, owned map/shovel/rope, selected native cave sand/rope and causally fresh paid return",
+    "blocker": null,
+    "round": "L7",
+    "scope": "complete pinned quest path",
+    "first_unqualified_stage": null,
+    "qualification_scope": "Complete finite chosen Oteryn recipe with canonical adaptations and documented conservative source mappings; see continuation-validation.json and CONTRACT-NOTES.md",
+    "qualified_components": [
+      "Actual paid ship travel, owned map/shovel/rope, selected native cave sand/rope and causally fresh paid return",
+      "Real PostgreSQL RED/GREEN, full chosen route 96.693820757s; fees/inputs/replay/cold checks as applicable",
+      "Strict checks, native generation and world pin reproducibility pass"
+    ],
+    "queued_stage_binding": {
+      "stage": "complete",
+      "native_dispatch_binding": "native NPC/world callbacks, Quest writer, native Item/loot/travel/access owners",
+      "runtime_enabled": true
+    }
   },
   {
     "canonical": "oteryn:quest.authored.venore_daily_tasks_quest",
@@ -1488,7 +1546,13 @@
     "qualified_elsewhere": [],
     "mechanism": "calendar_repeatable_random_rewards",
     "blocker": {
-      "missing_piece": "The seven-stage Norman/Scott/Frank programme lacks executable treadmill, crane, grindstone and pathfinder effects with repeatable receipts."
+      "kind": "active_implementation",
+      "owner": "questpc8",
+      "missing_piece": "Mount authored programme and reusable shared-feature drafts, run full native PostgreSQL graph and strict/generated checks. The five-entry batch has actual PostgreSQL RED evidence; implementation is owned here, not waiting for another lane.",
+      "evidence": [
+        "qlane-meta/questpc8/RESUME.md",
+        "qlane-meta/questpc8/continuation-validation.json"
+      ]
     },
     "round": "L7"
   },
@@ -1500,7 +1564,13 @@
     "qualified_elsewhere": [],
     "mechanism": "calendar_repeatable_random_rewards",
     "blocker": {
-      "missing_piece": "The seasonal Percht disguise/torch/fire sequence and final reward epoch lack a native calendar, appearance and world-encounter binding."
+      "kind": "active_implementation",
+      "owner": "questpc8",
+      "missing_piece": "Mount authored programme and reusable shared-feature drafts, run full native PostgreSQL graph and strict/generated checks. The five-entry batch has actual PostgreSQL RED evidence; implementation is owned here, not waiting for another lane.",
+      "evidence": [
+        "qlane-meta/questpc8/RESUME.md",
+        "qlane-meta/questpc8/continuation-validation.json"
+      ]
     },
     "round": "L7"
   },
@@ -1576,7 +1646,13 @@
     "qualified_elsewhere": [],
     "mechanism": "native_reward_source_placement",
     "blocker": {
-      "missing_piece": "UID14092 is Canary-only without a pinned Crystal counterpart in the shared source fixture; the Magistratus/dragon-dream storyline also needs its own qualified completion route."
+      "kind": "active_implementation",
+      "owner": "questpc8",
+      "missing_piece": "Mount authored programme and reusable shared-feature drafts, run full native PostgreSQL graph and strict/generated checks. The five-entry batch has actual PostgreSQL RED evidence; implementation is owned here, not waiting for another lane.",
+      "evidence": [
+        "qlane-meta/questpc8/RESUME.md",
+        "qlane-meta/questpc8/continuation-validation.json"
+      ]
     },
     "round": "L7"
   },

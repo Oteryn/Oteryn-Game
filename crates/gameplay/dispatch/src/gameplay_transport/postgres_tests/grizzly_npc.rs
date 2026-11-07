@@ -31,7 +31,7 @@ pub(super) mod questpc8_campaign;
 #[path = "grizzly_npc/shop.rs"]
 mod shop;
 #[path = "grizzly_npc/wire.rs"]
-mod wire;
+pub(super) mod wire;
 use shop::rank_shop;
 
 #[test]

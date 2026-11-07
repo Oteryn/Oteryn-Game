@@ -89,7 +89,7 @@ pub(super) fn world_at(
 
 /// Keep one conversation for a complete choice/confirmation sequence. A new connection
 /// greets again; session command receipts still deduplicate repeated command ids.
-pub(super) async fn talk(
+pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn talk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
@@ -106,7 +106,7 @@ pub(super) async fn talk(
     .await
 }
 
-pub(super) async fn talk_refused(
+pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn talk_refused(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,

@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "npcs": [
+    {
+      "npc": "oteryn:npc.briasol",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/briasol.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/miraia.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rashid",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/rashid.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.snake_eye",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/snake_eye.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.uzgod",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/uzgod.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.willard",
+      "greet": "Greetings, |PLAYERNAME|. Ask about your trading mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/willard.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.charles",
+      "greet": "Hello, |PLAYERNAME|. Ask about your library research.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "oteryn-authored:chosen-secret-library-research:quest-r1",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.spectulus",
+      "greet": "Hello, |PLAYERNAME|. Ask about your library research.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "oteryn-authored:chosen-secret-library-research:quest-r1",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gail",
+      "greet": "Hello, |PLAYERNAME|. Ask about your library research.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "oteryn-authored:chosen-secret-library-research:quest-r1",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua"
+      ]
+    }
+  ]
+}

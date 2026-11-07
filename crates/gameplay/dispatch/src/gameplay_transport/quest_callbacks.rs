@@ -71,6 +71,22 @@ fn callbacks() -> &'static [Callback] {
     static DATA: OnceLock<Vec<Callback>> = OnceLock::new();
     DATA.get_or_init(|| world_callbacks::load().unwrap_or_default())
 }
+// A shared native station may author disjoint stages. The session copy selects
+// a candidate only; the durable Quest owner rechecks every gate before effects.
+fn unique_eligible<'a>(
+    candidates: impl IntoIterator<Item = &'a Callback>,
+    tracks: &std::collections::BTreeMap<String, i64>,
+) -> Option<&'a Callback> {
+    let mut eligible = candidates.into_iter().filter(|callback| {
+        callback.storage.iter().all(|storage| {
+            (storage.minimum..=storage.maximum)
+                .contains(&tracks.get(&storage.track).copied().unwrap_or(-1))
+        })
+    });
+    let selected = eligible.next()?;
+    eligible.next().is_none().then_some(selected)
+}
+
 fn tile(p: Position) -> TilePos {
     TilePos {
         x: p.x,
@@ -360,8 +376,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .filter(|c| c.trigger == Trigger::Use && matches(map, c, resolved.placement_key))
             .collect::<Vec<_>>();
-        let [callback] = selected.as_slice() else {
-            return None;
+        let callback = if let [callback] = selected.as_slice() {
+            *callback
+        } else {
+            if selected.is_empty() {
+                return None;
+            }
+            let Ok(sessions) = self.states.quest_sessions.lock() else {
+                return Some(UseOutcome::rejected());
+            };
+            let Some(copy) = sessions
+                .get(&command.game_session_id)
+                .and_then(|state| state.copy.as_ref())
+            else {
+                return Some(UseOutcome::rejected());
+            };
+            let Some(callback) = unique_eligible(selected.iter().copied(), copy.tracks()) else {
+                return Some(UseOutcome::rejected());
+            };
+            callback
         };
         let result = tokio::time::timeout(std::time::Duration::from_secs(10), async {
             let Some(permit) = self.spell_lane_permit().await else {
@@ -563,10 +596,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .flatten()
             .collect::<Vec<_>>();
-        // Ambiguous content never chooses one action by incidental registration order.
-        let [(callback, key)] = selected.as_slice() else {
-            return entered;
+        // Overlapping eligible stages still refuse; registration order is never authority.
+        let selected_pair = if let [pair] = selected.as_slice() {
+            *pair
+        } else {
+            let Ok(sessions) = self.states.quest_sessions.lock() else {
+                return entered;
+            };
+            let Some(copy) = sessions.get(&session).and_then(|state| state.copy.as_ref()) else {
+                return entered;
+            };
+            let Some(callback) = unique_eligible(
+                selected.iter().map(|(callback, _)| *callback),
+                copy.tracks(),
+            ) else {
+                return entered;
+            };
+            let Some(pair) = selected
+                .iter()
+                .find(|(candidate, _)| std::ptr::eq(*candidate, callback))
+            else {
+                return entered;
+            };
+            *pair
         };
+        let (callback, key) = &selected_pair;
         let Some(command) = step_command(actor, session, entered.revision(), self.reset_epoch)
         else {
             return entered;
@@ -583,6 +637,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None => None,
             };
             let optional_pvp = self.special_movement_policy(permit, actor, session).await;
+            let read_only_gate = if callback.is_read_only() {
+                if let (Some(fence), Some(catalogue)) = (fence, self.quest_catalogue.as_ref()) {
+                    let context = {
+                        let runtime = self.runtime.lock().await;
+                        (runtime.read_actor_position(actor) == Ok(entered)).then(|| {
+                            QuestWorldContext {
+                                map_revision: crate::map::overlay::map_revision(map.overlay.base()),
+                                content_revision: format!(
+                                    "sha256:{}",
+                                    hex(&runtime.content_pin().server_artifact_digest())
+                                ),
+                                placement_context: runtime
+                                    .content_pin()
+                                    .frame_binding_digest()
+                                    .to_vec(),
+                                reset_epoch: self.reset_epoch,
+                                actor_placement: actor.placement_identity(),
+                                movement_revision: entered.revision(),
+                            }
+                        })
+                    };
+                    if let Some(context) = context {
+                        matches!(
+                            self.root
+                                .check_character_world_callback(
+                                    self.character,
+                                    self.holder,
+                                    fence,
+                                    &callback.key,
+                                    std::sync::Arc::clone(catalogue),
+                                    permit,
+                                    context,
+                                )
+                                .await,
+                            Ok(true)
+                        )
+                        .then(|| ReadOnlyGate {
+                            actor,
+                            session,
+                            expected: entered,
+                            callback: callback.key.clone(),
+                        })
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             if runtime.read_actor_position(actor) != Ok(entered) {
@@ -604,7 +709,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fence,
                     slot.as_mut(),
                     optional_pvp,
-                    None,
+                    read_only_gate.as_ref(),
                 )
                 .await;
             let unresolved =
