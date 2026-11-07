@@ -366,7 +366,7 @@
       "producers": [
         {
           "repository": "Oteryn/Oteryn-Game",
-          "status": "CANDIDATE_CONTRACT_NOT_IMPLEMENTED"
+          "status": "GAME_PRODUCER_IMPLEMENTED_PENDING_CROSS_REPOSITORY_QUALIFICATION"
         }
       ],
       "consumers": [
@@ -378,10 +378,10 @@
       "rollout_order": [
         "independent review and owner acceptance of candidate and source mappings",
         "supply real review PR then pin actual merged canonical SHA, revision and digest",
-        "implement Game producer and qualify Platform adapters with flags default off",
+        "Game producer defaults ON per owner 2026-11-06; qualify Platform adapters independently",
         "shared exact-head interrupted-flow qualification then separate environment enablement"
       ],
-      "notes": "Candidate opened for independent review. Platform evidence: efdd058839cca2b922391e9a8323236e94e78834."
+      "notes": "Game configuration and lifecycle-read extension: fixtures/account-deletion/CONTRACT-NOTES.md. Candidate acceptance remains separate. Platform evidence: efdd058839cca2b922391e9a8323236e94e78834."
     },
     {
       "coordination_id": "PLAT3-CONTRACTS-WORLD-EVENT-OUTCOMES-AND-GUILD-SEASON",

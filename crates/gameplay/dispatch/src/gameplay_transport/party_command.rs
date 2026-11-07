@@ -46,6 +46,7 @@ impl SessionPartyView {
         &mut self,
         admitted: AdmittedSession,
         view: world_party::ingress::PartyIngressView,
+        effects: &BTreeMap<[u8; 16], [u32; 5]>,
     ) -> Option<PartyResult> {
         let mut result = PartyResult::refused(PartyDisposition::Ok);
         result.shared_xp_enabled = view.source.shared_xp_enabled;
@@ -55,6 +56,7 @@ impl SessionPartyView {
                 name,
                 leader: view.source.leader == Some(id),
                 expires_at: 0,
+                party_spell_remaining_ms: effects.get(&id).copied(),
             });
         }
         for (id, name, expires_at) in view.invitations {
@@ -63,6 +65,7 @@ impl SessionPartyView {
                 name,
                 leader: false,
                 expires_at,
+                party_spell_remaining_ms: None,
             });
         }
         Some(result)
@@ -127,7 +130,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return bytes(PartyDisposition::Rejected);
         }
         // Keep the same guard order as attacks/spells. A hit cannot race the leave proof.
-        let _states = self.states.spell_states.lock().await;
+        let states = self.states.spell_states.lock().await;
         let attack = self.states.attack.lock().await;
         let now = self.owner_now();
         let invite_target = if let Some(PartyIntent::Invite(target)) = intent {
@@ -237,7 +240,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         _ => PartyDisposition::Rejected,
                     });
                 }
-                let Some(projected) = view.project(admitted, source) else {
+                // The durable membership is authority. Resolve only its members through
+                // current exact actor/session leases under the same owning guards.
+                let mut effects = BTreeMap::new();
+                if admitted
+                    .continuity
+                    .selected_capabilities
+                    .contains(CAPABILITY_PARTY_MEMBER_EFFECTS_V1)
+                {
+                    let Ok(census) = runtime.positioned_actor_census() else {
+                        return bytes(PartyDisposition::Unavailable);
+                    };
+                    let now = self.owner_now().get();
+                    for (member_actor, _, member_session) in census {
+                        let Some(member_session) = member_session else {
+                            continue;
+                        };
+                        let Ok(lease) = runtime.bound_attacker_lease(member_actor, member_session)
+                        else {
+                            continue;
+                        };
+                        let member_id = *lease.character_id().as_bytes();
+                        if !source.members.iter().any(|(id, _)| *id == member_id) {
+                            continue;
+                        }
+                        let Some(state) = states.get(&runtime, member_actor, member_session) else {
+                            continue;
+                        };
+                        effects.insert(member_id, member_party_spell_durations(state, now));
+                    }
+                }
+                let Some(projected) = view.project(admitted, source, &effects) else {
                     return bytes(PartyDisposition::Unavailable);
                 };
                 encode_party_result(&projected)
@@ -252,3 +285,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 #[cfg(test)]
 #[path = "party_command_tests.rs"]
 mod tests;
+
+/// Read the five production party spell conditions; expiry/removal produces zero on refresh.
+fn member_party_spell_durations(
+    state: &oteryn_gameplay_spell::spell::cast::PlayerSpellState,
+    now: u64,
+) -> [u32; 5] {
+    let mut remaining = [0; 5];
+    let conditions = state.owned_conditions();
+    for instance in conditions.instances() {
+        let index = match instance.definition().key() {
+            "candidate:spell/train_party/effect-attributes" => 0,
+            "candidate:spell/protect_party/effect-attributes" => 1,
+            "candidate:spell/enchant_party/effect-attributes" => 2,
+            "candidate:spell/heal_party/effect-regeneration" => 3,
+            "candidate:spell/enlighten_party/effect-regeneration" => 4,
+            _ => continue,
+        };
+        if conditions
+            .active_at(instance.definition().condition_type().conflict_key(), now)
+            .is_some()
+        {
+            remaining[index] = instance
+                .remaining_duration_ms(now)
+                .and_then(|ms| u32::try_from(ms).ok())
+                .unwrap_or(0);
+        }
+    }
+    remaining
+}

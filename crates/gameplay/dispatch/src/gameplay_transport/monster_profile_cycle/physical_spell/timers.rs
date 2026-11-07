@@ -202,6 +202,7 @@ pub(super) async fn drain(
     map: &mut CurrentMonsterMap<'_, '_>,
     parties: &ReferenceParties,
     now: u64,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
 ) {
     let clock = TurnClock(SemanticTimeMicros::from_micros(now));
     let Ok(stamp) = runtime.issue_owner_work() else {
@@ -232,7 +233,12 @@ pub(super) async fn drain(
     let outcomes = spells.run_windup_due_current_with(
         runtime,
         stamp,
-        states,
+        &mut super::super::super::attack::charm_combat::source_vitals::CharmSourceVitals {
+            states,
+            attack,
+            catalogue: charms,
+            root: GameplayDecisionRoot::from_bytes(native.source_digest()),
+        },
         &clock,
         |source, proposal, session, pulse_stamp| {
             if pulse_stamp != stamp {
@@ -313,7 +319,12 @@ pub(super) async fn drain(
     let outcomes = chains.run_due_current_with(
         runtime,
         stamp,
-        states,
+        &mut super::super::super::attack::charm_combat::source_vitals::CharmSourceVitals {
+            states,
+            attack,
+            catalogue: charms,
+            root: GameplayDecisionRoot::from_bytes(native.source_digest()),
+        },
         &spells,
         &clock,
         |source, proposal, session, from, pulse_stamp| {

@@ -72,6 +72,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     now,
                 )
             });
+            self.states.staff_world.filter(actor, &mut view);
             return Some(view);
         }
         let visible = runtime.visible_entities();
@@ -159,12 +160,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-        Some(world_spatial::ChannelEntities {
+        let mut view = world_spatial::ChannelEntities {
             content_generation: runtime.content_pin().client_artifact_digest(),
             observer: actor.placement_identity(),
             entities,
             lights,
             observed_at_ms: now_us / 1_000,
-        })
+        };
+        self.states.staff_world.filter(actor, &mut view);
+        Some(view)
     }
 }

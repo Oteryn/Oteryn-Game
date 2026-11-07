@@ -209,7 +209,10 @@ impl CreatureAiState {
         }
         // §2.1 item 6: flee while hurt and no override holds; the strategy draw picks whom
         // to flee from when the target cannot be attacked from here.
-        let fleeing = !self.is_summon && !override_holds && facts.health <= flee_health;
+        let fleeing = !self.is_summon
+            && !override_holds
+            && facts.now_us >= self.fatal_hold_until
+            && facts.health <= flee_health;
         if fleeing
             && target.is_none_or(|actor| !in_range(actor))
             && let Some(found) = strategy_search(4)?

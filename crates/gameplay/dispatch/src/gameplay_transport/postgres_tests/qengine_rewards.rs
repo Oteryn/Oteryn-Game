@@ -1222,7 +1222,9 @@ async fn legacy_decaying(
         .appearance_observation(actor, admitted.game_session_id, vec![])
         .await
         .ok_or("legacy catalogue")?;
-    let outfit = "oteryn:outfit.decaying_defender";
+    assert!(observed.catalogue.outfits.iter().any(|entry| entry.key == "oteryn:outfit.decaying_defender"));
+    // A pre-merge NX-5 selection must remain valid under its original key too.
+    let outfit = "oteryn:content.outfit.decaying_defender_outfits";
     let option = observed
         .catalogue
         .outfits

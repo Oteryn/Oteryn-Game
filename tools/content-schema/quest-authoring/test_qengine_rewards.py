@@ -206,6 +206,8 @@ class QuestRewards(unittest.TestCase):
             self.assertEqual(row['addon_count'],2)
         mappings=self.author['document']['grant_mappings']
         for row in outfits.values():
+            if not row['key'].startswith('oteryn:outfit.'):
+                continue
             for addon in range(row['addon_count']+1):
                 self.assertEqual(sum(m['grant_key']==f"{row['key']}/quest-grant/{addon}" for m in mappings),1)
 

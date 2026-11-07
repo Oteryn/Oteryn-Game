@@ -149,7 +149,30 @@ def build():
     author = {'schema': 'OTERYN_CHARACTER_COSMETICS_AUTHORING/v1',
         'profile': {'kind': 'reference', 'revision': 'quest-cosmetics-r1', 'mount_speed_bonus': 10},
         'client_version': manifest['client_version'], 'document': doc, 'promotions': []}
+    # NX-5's promoted item grants and mounts remain admitted alongside quest rewards.
+    nx5 = json.loads((ROOT / 'tools/content-schema/cosmetics-authoring/nx5-authoring.json').read_bytes())
+    cosmetics.validate(nx5)
+    nx5_doc = nx5['document']
+    doc['outfits'].extend(nx5_doc['outfits'])
+    doc['mounts'] = nx5_doc['mounts']
+    grant_keys = {row['grant_key'] for row in mappings}
+    for row in nx5_doc['grant_mappings']:
+        if row['grant_key'] not in grant_keys:
+            mappings.append(row)
+        else:
+            existing = next(m for m in mappings if m['grant_key'] == row['grant_key'])
+            if existing['target'] != row['target']:
+                existing['outfit_aliases'] = [row['target']['outfit_key']]
+    nx5_promotions = {row['path']: row for row in nx5['promotions']}
+    quest_outfits = len(outfits) - len(nx5_doc['outfits'])
     for path in sorted(cosmetics.promotion_paths(doc)):
+        parts = path.split('/')
+        nx5_path = path if parts[1] == 'mounts' else None
+        if parts[1] == 'outfits' and int(parts[2]) >= quest_outfits:
+            nx5_path = '/outfits/' + str(int(parts[2]) - quest_outfits) + '/' + parts[3]
+        if nx5_path is not None:
+            author['promotions'].append({**nx5_promotions[nx5_path], 'path': path})
+            continue
         citation=palette_source if path == '/palette' else source
         if path in ('/source_manifest_sha256','/source_appearances_sha256'):
             citation={'reference': 'imports/cipsoft-appearances/outfits/manifest.json',
@@ -870,7 +893,9 @@ def build():
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
-    native_cosmetics=cosmetics.build(author, appearance/'manifest.json')
+    native_cosmetics = cosmetics.provisioning_input(
+        ROOT / cosmetics.AUTHORING, appearance / 'manifest.json', ROOT / cosmetics.OUTPUT,
+        authoring_bytes=encoded(author))
     gameplay['schema']='OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6'
     gameplay['cosmetics']={'path':'cosmetics/outfits/native-cosmetics.json','sha256':sha(native_cosmetics)}
     generated = {'content/cosmetics/outfits/authoring.json': encoded(author),
@@ -940,7 +965,7 @@ def build():
     import qengine_reward_item_profiles as reward_items
     import register_spell_families as native
     generated[reward_items.PROFILE]=(ROOT/reward_items.PROFILE).read_bytes()
-    reward_items.admit(ROOT,generated,reward_items.PROFILE,'content/spells.manifest.json',native.provider_order,encoded)
+    reward_items.admit(ROOT,generated,reward_items.PROFILE,'content/spells.manifest.json',native.provider_order,cosmetics.canonical)
     return generated
 
 

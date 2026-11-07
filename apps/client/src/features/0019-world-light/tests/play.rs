@@ -9,6 +9,7 @@ fn clxa_character_light_reaches_native_scene_and_expires_on_update()
     };
     let mut view = PlayView::new(TileCoord::new(0, 0), 7, &[])?;
     let entry = VisibleAppearance {
+        forge_stacks: None,
         entity: oteryn_session::WorldSpatialEntity {
             display_name: None,
             kind: EntityKind::Player,
@@ -72,6 +73,7 @@ fn clxa_character_light_reaches_native_scene_and_expires_on_update()
     assert!(view.scene().sprites().lighting.sources.is_empty());
     view.apply_pushed(&Pushed {
         appearances: Some(vec![VisibleAppearance {
+            forge_stacks: None,
             light: None,
             ..entry
         }]),

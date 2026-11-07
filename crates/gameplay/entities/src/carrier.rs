@@ -114,6 +114,7 @@ mod owner_views;
 mod party_reward_occurrence_tests;
 
 mod player_control;
+pub use player_control::RuntimeSessionAbsence;
 
 mod positions;
 

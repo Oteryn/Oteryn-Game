@@ -14,7 +14,7 @@ pub(in crate::gameplay_transport) async fn observe(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     observer: ExactActorRef,
     session: GameSessionId,
-    _empty_outfit: bool,
+    empty_outfit: bool,
     mut entities: Vec<wire::EntityRef>,
 ) -> Option<Observation> {
     if entities.len() > 256 {
@@ -181,7 +181,18 @@ pub(in crate::gameplay_transport) async fn observe(
         {
             return None;
         }
-        if let Some(temporary) = spell_look.or(owned_look) {
+        // Crystal 201189f8 protocolgame.cpp:9233 and player.cpp:1383-1396: an
+        // invisible player remains observable, but other players receive no outfit.
+        if empty_outfit
+            && target_session != session
+            && (admission.states.staff_world.invisible(*actor)
+                && admission.states.staff_world.group(observer) < 4
+                || player.equipped_invisible()
+                || spell.invisible_at(now)
+                || owned.invisible_at(now))
+        {
+            look = wire::Look::EmptyOutfit;
+        } else if let Some(temporary) = spell_look.or(owned_look) {
             look = temporary;
         }
         // The selection and root are re-read after observer preparation. Runtime pin,
@@ -194,7 +205,9 @@ pub(in crate::gameplay_transport) async fn observe(
             appearance_ref: 1,
             entity,
             root_revision: fence.expected_character_revision.get(),
-            condition_revision: player.revision(),
+            condition_revision: player
+                .revision()
+                .checked_add(runtime.actor_staff_visibility(*actor).ok()?.2)?,
             owner_time_us: now,
             look,
             selection_revision,

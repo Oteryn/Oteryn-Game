@@ -94,11 +94,21 @@ impl Scene {
             } else {
                 self.actor_draws.push((tile, draws));
             }
-            if self.view.contains(tile)
-                && let Some(name) = entity.display_name
-                && let Ok(name) = name.as_str()
-            {
-                self.names.push((tile, self.cache.name(name)));
+            if self.view.contains(tile) {
+                let mut marker = None;
+                oteryn_client_ui::forge_creature::protocol::replace(
+                    &mut marker,
+                    entity.kind == oteryn_session::EntityKind::Creature,
+                    entry.forge_stacks,
+                );
+                let name = entity
+                    .display_name
+                    .as_ref()
+                    .and_then(|name| name.as_str().ok());
+                if let Some(name) = name.or_else(|| marker.map(|_| "Creature")) {
+                    let label = oteryn_client_ui::forge_creature::label(name, marker);
+                    self.names.push((tile, self.cache.name(&label)));
+                }
             }
         }
         if !entries.is_empty() {

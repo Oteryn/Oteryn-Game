@@ -572,6 +572,8 @@ struct SoundEntry {
     cue: u16,
     secondary: u16,
     creature: bool,
+    effect: bool,
+    private: bool,
 }
 impl SoundPublisher {
     pub fn record(
@@ -612,7 +614,29 @@ impl SoundPublisher {
             cue,
             secondary,
             creature: runtime.companion_snapshot_including_dead(actor).is_ok(),
+            effect: false,
+            private: false,
         });
+    }
+    pub(super) fn record_item_effect(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        position: MovementLocalPosition,
+        cue: u16,
+        private: bool,
+    ) {
+        if cue == 0 {
+            return;
+        }
+        let before = self.revision;
+        self.record(runtime, actor, position, cue, 0);
+        if self.revision != before
+            && let Some(entry) = self.sounds.back_mut()
+        {
+            entry.effect = true;
+            entry.private = private;
+        }
     }
     pub fn capture(
         &mut self,
@@ -673,6 +697,9 @@ impl SoundPublisher {
             });
         }
         for sound in self.sounds.iter().filter(|sound| sound.revision > after) {
+            if sound.private && sound.actor != actor {
+                continue;
+            }
             let Ok(target) = view(sound.position) else {
                 continue;
             };
@@ -689,14 +716,25 @@ impl SoundPublisher {
             events.push(PresentationEvent {
                 decision_ordinal: u32::try_from(events.len() + 1).ok()?,
                 emission_ordinal: 1,
-                kind: PresentationEventKind::Sound {
-                    position: ActorPosition {
-                        floor: tibia_floor(sound.position.floor)?,
-                        ..pos(sound.position)
-                    },
-                    cue_id: u32::from(sound.cue),
-                    source,
-                    secondary_cue_id: u32::from(sound.secondary),
+                kind: if sound.effect {
+                    PresentationEventKind::MagicEffect {
+                        position: ActorPosition {
+                            floor: tibia_floor(sound.position.floor)?,
+                            ..pos(sound.position)
+                        },
+                        effect_id: u32::from(sound.cue),
+                        source,
+                    }
+                } else {
+                    PresentationEventKind::Sound {
+                        position: ActorPosition {
+                            floor: tibia_floor(sound.position.floor)?,
+                            ..pos(sound.position)
+                        },
+                        cue_id: u32::from(sound.cue),
+                        source,
+                        secondary_cue_id: u32::from(sound.secondary),
+                    }
                 },
             });
         }

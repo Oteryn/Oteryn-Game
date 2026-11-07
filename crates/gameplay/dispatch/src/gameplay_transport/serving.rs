@@ -23,6 +23,20 @@ pub async fn serve_gameplay(
     .ok_or(GameplayServeError::InvalidLimits)?;
     let tls = tcp_tls::tls_config(config.certificates, config.private_key)
         .map_err(GameplayServeError::InvalidTls)?;
+    let casts = std::sync::OnceLock::new();
+    if let Some(config) = owners.cast {
+        let service = oteryn_gameplay_social::cast::service::CastService::spawn(
+            owners.root.clone(),
+            owners.holder.clone(),
+            config.node_capacity,
+            config.access.clone(),
+        )
+        .map_err(|_| GameplayServeError::InvalidLimits)?;
+        let _ = casts.set(cast::CastNode {
+            service,
+            access: config.access,
+        });
+    }
     let authority = ComposedFreshAdmission {
         server_motd: &config.server_motd,
         reset_epoch: drain.epoch(),
@@ -49,6 +63,7 @@ pub async fn serve_gameplay(
         clock_origin: std::time::Instant::now(),
         activity_runtimes: Default::default(),
         states: std::sync::Arc::new(channel_states::ChannelSessionStates {
+            casts,
             gameplay_idle_policy: owners.gameplay_idle_policy,
             ..Default::default()
         }),
@@ -224,6 +239,12 @@ pub async fn serve_gameplay(
         }
     })
     .await;
+    if let Some(node) = authority.states.casts.get() {
+        let _ = node
+            .service
+            .apply(oteryn_gameplay_social::cast::service::Operation::Shutdown)
+            .await;
+    }
     if owner_failed {
         Err(GameplayServeError::OwnerUnavailable)
     } else {

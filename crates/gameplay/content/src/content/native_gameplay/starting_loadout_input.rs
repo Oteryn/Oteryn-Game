@@ -72,7 +72,18 @@ mod reaudit_starting_progression {
             .ok_or_else(|| invalid("merged provider"))?;
         let items: ItemProfilesDocument =
             serde_json::from_slice(&merged.bytes).map_err(|_| invalid("merged test provider"))?;
-        assert_eq!(items.records.len(), 8);
+        // The original eight starter profiles plus the five source-qualified Newhaven items.
+        assert_eq!(items.records.len(), 13);
+        for tibia_id in [34017, 21348, 21400, 21350, 50166] {
+            let key = format!("oteryn:item.tibia.i{tibia_id}");
+            assert!(
+                items
+                    .records
+                    .iter()
+                    .any(|record| { record.production_definition.production_key == key }),
+                "missing Newhaven starter profile {key}"
+            );
+        }
         assert!(merge(Some(merged), Some(extra.clone())).is_err());
         let mut stale = extra;
         stale.sha256 = "0".repeat(64);

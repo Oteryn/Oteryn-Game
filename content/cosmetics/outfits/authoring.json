@@ -2607,9 +2607,550 @@
           "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
           "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
         }
+      },
+      {
+        "key": "oteryn:content.outfit.afflicted_outfits",
+        "revision": "nx5-r1",
+        "female": {
+          "id": 431,
+          "source_record_sha256": "f4f2c65b2c918eba4b9d59031b651b1caf4baf82c313f060dc376c528ffcdf28"
+        },
+        "male": {
+          "id": 430,
+          "source_record_sha256": "aec5684187998b9099c31c0d059b5fd5ef710c6877302628caecc95c9f3485da"
+        },
+        "addon_count": 2,
+        "starter_female": false,
+        "starter_male": false,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": true,
+        "unlock_sources": [
+          {
+            "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/1",
+            "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+            "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+          }
+        ],
+        "source": {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/1",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      },
+      {
+        "key": "oteryn:content.outfit.citizen_outfits",
+        "revision": "nx5-r1",
+        "female": {
+          "id": 136,
+          "source_record_sha256": "c75162dea7feab06e8e60d587c23073a64feef204a2f47092e0671e8ffd2db74"
+        },
+        "male": {
+          "id": 128,
+          "source_record_sha256": "70646a3166e00bed7e3b7b16bb416316985090f9026c73a3c292a9383f9abdf2"
+        },
+        "addon_count": 2,
+        "starter_female": true,
+        "starter_male": true,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": false,
+        "unlock_sources": [
+          {
+            "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/22",
+            "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+            "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+          }
+        ],
+        "source": {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/22",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      },
+      {
+        "key": "oteryn:content.outfit.crystal_warlord_outfits",
+        "revision": "nx5-r1",
+        "female": {
+          "id": 513,
+          "source_record_sha256": "539dfdea90fa4d6fb0b7b88cba869a2409c32d0b00e9fab19bd0c40e12a843b6"
+        },
+        "male": {
+          "id": 512,
+          "source_record_sha256": "576d0b12ab4dc44462981073f61d8fef4f2d8145118e9b5182071717143209b0"
+        },
+        "addon_count": 2,
+        "starter_female": false,
+        "starter_male": false,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": true,
+        "unlock_sources": [
+          {
+            "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/25",
+            "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+            "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+          }
+        ],
+        "source": {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/25",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      },
+      {
+        "key": "oteryn:content.outfit.decaying_defender_outfits",
+        "revision": "nx5-r1",
+        "female": {
+          "id": 1663,
+          "source_record_sha256": "902eaf76674d25775f2b067a3995ecd0b402692084c7a9cc3fdc91d65b373448"
+        },
+        "male": {
+          "id": 1662,
+          "source_record_sha256": "93ee4f96cbcb903fd7fd66931c7586f0708ee4fe0585a4e85e1dfc957af044dc"
+        },
+        "addon_count": 2,
+        "starter_female": false,
+        "starter_male": false,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": true,
+        "unlock_sources": [
+          {
+            "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/28",
+            "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+            "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+          }
+        ],
+        "source": {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/28",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      },
+      {
+        "key": "oteryn:content.outfit.fiend_slayer_outfits",
+        "revision": "nx5-r1",
+        "female": {
+          "id": 1808,
+          "source_record_sha256": "739bec216a753848899eb23bbe02615fb2d891a731f52e52cdc3c192e690c620"
+        },
+        "male": {
+          "id": 1809,
+          "source_record_sha256": "c649a9e13c7dfc9bf5247daaa6b6a7a745323efd595b0c812eded4b47c757554"
+        },
+        "addon_count": 2,
+        "starter_female": false,
+        "starter_male": false,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": true,
+        "unlock_sources": [
+          {
+            "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/48",
+            "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+            "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+          }
+        ],
+        "source": {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/48",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      },
+      {
+        "key": "oteryn:content.outfit.fire_fighter_outfits",
+        "revision": "nx5-r1",
+        "female": {
+          "id": 1569,
+          "source_record_sha256": "5b56f11e96f71daf74337b7190162587c74e7a327055e43451de9f65a76960b9"
+        },
+        "male": {
+          "id": 1568,
+          "source_record_sha256": "264b7e4a66dcbf4d49b4a22835e910d9831c50812959248fb7f967a1b52b0673"
+        },
+        "addon_count": 2,
+        "starter_female": false,
+        "starter_male": false,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": true,
+        "unlock_sources": [
+          {
+            "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/49",
+            "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+            "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+          }
+        ],
+        "source": {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/49",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      },
+      {
+        "key": "oteryn:content.outfit.formal_dress_outfits",
+        "revision": "nx5-r1",
+        "female": {
+          "id": 1461,
+          "source_record_sha256": "00a202670daa1c8f914e9814ae9c6cb304d0aecbe822e427b03ffc5bdf4962cb"
+        },
+        "male": {
+          "id": 1460,
+          "source_record_sha256": "625c4e9912bd20f05e51a5008511015f272759fbb3d52279faa58f3e337a648c"
+        },
+        "addon_count": 2,
+        "starter_female": false,
+        "starter_male": false,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": true,
+        "unlock_sources": [
+          {
+            "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/52",
+            "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+            "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+          }
+        ],
+        "source": {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/52",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      },
+      {
+        "key": "oteryn:content.outfit.hand_of_the_inquisition_outfits",
+        "revision": "nx5-r1",
+        "female": {
+          "id": 1244,
+          "source_record_sha256": "12b030d4c9072145d6dcbd66e72c376ef07e0ca1978c000e6ff71fd922fca9b8"
+        },
+        "male": {
+          "id": 1243,
+          "source_record_sha256": "53c2edc5888ebb0ce573cd3a7e74d0068d176938a82f7cd9480d13ec4dade749"
+        },
+        "addon_count": 2,
+        "starter_female": false,
+        "starter_male": false,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": true,
+        "unlock_sources": [
+          {
+            "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/59",
+            "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+            "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+          }
+        ],
+        "source": {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/59",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      },
+      {
+        "key": "oteryn:content.outfit.illuminator_outfits",
+        "revision": "nx5-r1",
+        "female": {
+          "id": 1861,
+          "source_record_sha256": "24e05eaa4d8237b5300b1e19a51ea8963a81215dad283f500a5db286090ecfa5"
+        },
+        "male": {
+          "id": 1860,
+          "source_record_sha256": "2d4969cc53ad9f67c62291c04773ac45b22f6025bee6e40a195d2327e983ea41"
+        },
+        "addon_count": 2,
+        "starter_female": false,
+        "starter_male": false,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": true,
+        "unlock_sources": [
+          {
+            "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/64",
+            "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+            "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+          }
+        ],
+        "source": {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/64",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      },
+      {
+        "key": "oteryn:content.outfit.makeshift_warrior_outfits",
+        "revision": "nx5-r1",
+        "female": {
+          "id": 1043,
+          "source_record_sha256": "c082502989dfc9bffa0b829c05fcdc111e471cf407d54089df30aad1ba8467dc"
+        },
+        "male": {
+          "id": 1042,
+          "source_record_sha256": "74fac2d8e7bb85f5393fd2a52e358057c6622022118faf643866394f64c77dc2"
+        },
+        "addon_count": 2,
+        "starter_female": false,
+        "starter_male": false,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": true,
+        "unlock_sources": [
+          {
+            "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/73",
+            "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+            "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+          }
+        ],
+        "source": {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/73",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      },
+      {
+        "key": "oteryn:content.outfit.poltergeist_outfits",
+        "revision": "nx5-r1",
+        "female": {
+          "id": 1271,
+          "source_record_sha256": "42aab58b0c80e5142a2023fa97be3d5816f56c274d1777b12d6e2c270bf3d71c"
+        },
+        "male": {
+          "id": 1270,
+          "source_record_sha256": "d800212426caa23e50f44a4e32da14832cfa54ff1b651ef0bcacbc1e266c46c0"
+        },
+        "addon_count": 2,
+        "starter_female": false,
+        "starter_male": false,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": true,
+        "unlock_sources": [
+          {
+            "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/94",
+            "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+            "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+          }
+        ],
+        "source": {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/94",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      },
+      {
+        "key": "oteryn:content.outfit.rascoohan_outfits",
+        "revision": "nx5-r1",
+        "female": {
+          "id": 1372,
+          "source_record_sha256": "41d6b8a78c3d41c8b3560c90d558b8ab42adc591f755e64beb8c244525458244"
+        },
+        "male": {
+          "id": 1371,
+          "source_record_sha256": "8b86c0027328adc3630e2db3c0a3d0a848ad43269c1faa9dd475bb11458a141e"
+        },
+        "addon_count": 2,
+        "starter_female": false,
+        "starter_male": false,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": true,
+        "unlock_sources": [
+          {
+            "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/98",
+            "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+            "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+          }
+        ],
+        "source": {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/98",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      },
+      {
+        "key": "oteryn:content.outfit.revenant_outfits",
+        "revision": "nx5-r1",
+        "female": {
+          "id": 1323,
+          "source_record_sha256": "1f88f7e2bbb6f390bd22d9b867aecf48623d3fb85c2369ba38d01bcba084797c"
+        },
+        "male": {
+          "id": 1322,
+          "source_record_sha256": "eea6c497a7b785d0850e5d84d5ff8357589cab18ba15631ccc68eb0c7ed53d41"
+        },
+        "addon_count": 2,
+        "starter_female": false,
+        "starter_male": false,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": true,
+        "unlock_sources": [
+          {
+            "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/107",
+            "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+            "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+          }
+        ],
+        "source": {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/107",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      },
+      {
+        "key": "oteryn:content.outfit.soil_guardian_outfits",
+        "revision": "nx5-r1",
+        "female": {
+          "id": 514,
+          "source_record_sha256": "5967ea3c7f78d2d26a0987d6c15c4b1fce497b26acb1b06424237907f4b30fd6"
+        },
+        "male": {
+          "id": 516,
+          "source_record_sha256": "c04774e5de1e01717a6f0c6d45fe530b00efdd3a237652da5240c463fc7e9839"
+        },
+        "addon_count": 2,
+        "starter_female": false,
+        "starter_male": false,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": true,
+        "unlock_sources": [
+          {
+            "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/120",
+            "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+            "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+          }
+        ],
+        "source": {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/120",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
       }
     ],
-    "mounts": [],
+    "mounts": [
+      {
+        "key": "oteryn:content.mount.haze",
+        "revision": "nx5-r1",
+        "look": {
+          "id": 1269,
+          "source_record_sha256": "44de552f31c02ff2118565704dd5c8b03297b8d7274b64391afd6c8c803ef5eb"
+        },
+        "speed_bonus": 10,
+        "premium": true,
+        "source": {
+          "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L191",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+        }
+      },
+      {
+        "key": "oteryn:content.mount.neon_sparkid",
+        "revision": "nx5-r1",
+        "look": {
+          "id": 889,
+          "source_record_sha256": "ff82f3f3122bca1abe7b355cf7bd54ec40fe1191645122a51a32dfc497423571"
+        },
+        "speed_bonus": 10,
+        "premium": true,
+        "source": {
+          "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L127",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+        }
+      },
+      {
+        "key": "oteryn:content.mount.phantasmal_jade",
+        "revision": "nx5-r1",
+        "look": {
+          "id": 1321,
+          "source_record_sha256": "83419656e0f8277812002a91e6ded5cd31564876de2d56591cfa9116a305f7ce"
+        },
+        "speed_bonus": 10,
+        "premium": true,
+        "source": {
+          "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L196",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+        }
+      },
+      {
+        "key": "oteryn:content.mount.primal_demonosaur",
+        "revision": "nx5-r1",
+        "look": {
+          "id": 1810,
+          "source_record_sha256": "7268750eeea444939a0ba8a72c1129f9feceb596cb6dd6e6e75670150daf1de1"
+        },
+        "speed_bonus": 10,
+        "premium": false,
+        "source": {
+          "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L261",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+        }
+      },
+      {
+        "key": "oteryn:content.mount.singeing_steed",
+        "revision": "nx5-r1",
+        "look": {
+          "id": 1431,
+          "source_record_sha256": "6a7fd389765adecdded933be3cd71392b21cf15576b6caac0c8d06d442f2c8be"
+        },
+        "speed_bonus": 10,
+        "premium": true,
+        "source": {
+          "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L213",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+        }
+      },
+      {
+        "key": "oteryn:content.mount.sparkion_mount",
+        "revision": "nx5-r1",
+        "look": {
+          "id": 883,
+          "source_record_sha256": "0deef10c872c731d3c459129263a85954d773bfe24c03869277cebda26e77352"
+        },
+        "speed_bonus": 10,
+        "premium": true,
+        "source": {
+          "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L123",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+        }
+      },
+      {
+        "key": "oteryn:content.mount.spirit_of_purity",
+        "revision": "nx5-r1",
+        "look": {
+          "id": 1682,
+          "source_record_sha256": "0f47731082f7a91fbb14c04d5427552aa7154eed99b610f7c40b6307db36263f"
+        },
+        "speed_bonus": 10,
+        "premium": false,
+        "source": {
+          "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L246",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+        }
+      },
+      {
+        "key": "oteryn:content.mount.vortexion",
+        "revision": "nx5-r1",
+        "look": {
+          "id": 890,
+          "source_record_sha256": "bd0d97e1189e730789edef181d43088145bebd0e566dc18128fee11e1910a8c2"
+        },
+        "speed_bonus": 10,
+        "premium": true,
+        "source": {
+          "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L128",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+        }
+      }
+    ],
     "grant_mappings": [
       {
         "grant_key": "oteryn:outfit.afflicted/quest-grant/0",
@@ -4602,6 +5143,9 @@
         },
         "compatible_provenance": [
           "crystal-item-cosmetics-201189f-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.afflicted_outfits"
         ]
       },
       {
@@ -4613,6 +5157,9 @@
         },
         "compatible_provenance": [
           "crystal-item-cosmetics-201189f-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.afflicted_outfits"
         ]
       },
       {
@@ -4623,6 +5170,9 @@
         },
         "compatible_provenance": [
           "crystal-item-cosmetics-201189f-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.afflicted_outfits"
         ]
       },
       {
@@ -4634,6 +5184,9 @@
         },
         "compatible_provenance": [
           "crystal-item-cosmetics-201189f-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.crystal_warlord_outfits"
         ]
       },
       {
@@ -4645,6 +5198,9 @@
         },
         "compatible_provenance": [
           "crystal-item-cosmetics-201189f-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.crystal_warlord_outfits"
         ]
       },
       {
@@ -4655,6 +5211,9 @@
         },
         "compatible_provenance": [
           "crystal-item-cosmetics-201189f-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.crystal_warlord_outfits"
         ]
       },
       {
@@ -4666,6 +5225,9 @@
         },
         "compatible_provenance": [
           "crystal-item-cosmetics-201189f-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.soil_guardian_outfits"
         ]
       },
       {
@@ -4677,6 +5239,9 @@
         },
         "compatible_provenance": [
           "crystal-item-cosmetics-201189f-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.soil_guardian_outfits"
         ]
       },
       {
@@ -4687,6 +5252,9 @@
         },
         "compatible_provenance": [
           "crystal-item-cosmetics-201189f-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.soil_guardian_outfits"
         ]
       },
       {
@@ -4697,6 +5265,9 @@
         },
         "compatible_provenance": [
           "crystal-201189f-soul-war-revenant-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.revenant_outfits"
         ]
       },
       {
@@ -4707,6 +5278,9 @@
         },
         "compatible_provenance": [
           "owner-pr2784-decaying-defender-base-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.decaying_defender_outfits"
         ]
       },
       {
@@ -4917,6 +5491,406 @@
         "sex": "male",
         "compatible_provenance": [
           "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.mount.162",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.haze"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.mount.167",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.phantasmal_jade"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.mount.184",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.singeing_steed"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.mount.217",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.spirit_of_purity"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.mount.232",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.primal_demonosaur"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.mount.94",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.sparkion_mount"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.mount.98",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.neon_sparkid"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.mount.99",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.vortexion"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1042-1043.addon1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.makeshift_warrior_outfits",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1042-1043.addon2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.makeshift_warrior_outfits",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1042-1043.base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:content.outfit.makeshift_warrior_outfits"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1243-1244.addon1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.hand_of_the_inquisition_outfits",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1243-1244.addon2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.hand_of_the_inquisition_outfits",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1243-1244.base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:content.outfit.hand_of_the_inquisition_outfits"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1270-1271.addon1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.poltergeist_outfits",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1270-1271.addon2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.poltergeist_outfits",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1270-1271.base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:content.outfit.poltergeist_outfits"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1322-1323.addon1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.revenant_outfits",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1322-1323.addon2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.revenant_outfits",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1322-1323.base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:content.outfit.revenant_outfits"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1371-1372.addon1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.rascoohan_outfits",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1371-1372.addon2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.rascoohan_outfits",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1371-1372.base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:content.outfit.rascoohan_outfits"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1460-1461.addon1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.formal_dress_outfits",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1460-1461.addon2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.formal_dress_outfits",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1460-1461.base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:content.outfit.formal_dress_outfits"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1568-1569.addon1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.fire_fighter_outfits",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1568-1569.addon2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.fire_fighter_outfits",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1568-1569.base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:content.outfit.fire_fighter_outfits"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1662-1663.addon1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.decaying_defender_outfits",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1662-1663.addon2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.decaying_defender_outfits",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1662-1663.base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:content.outfit.decaying_defender_outfits"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1808-1809.addon1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.fiend_slayer_outfits",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1808-1809.addon2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.fiend_slayer_outfits",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1808-1809.base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:content.outfit.fiend_slayer_outfits"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1860-1861.addon1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.illuminator_outfits",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1860-1861.addon2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:content.outfit.illuminator_outfits",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.1860-1861.base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:content.outfit.illuminator_outfits"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
         ]
       }
     ],
@@ -6976,6 +7950,9 @@
           },
           "compatible_provenance": [
             "crystal-item-cosmetics-201189f-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.afflicted_outfits"
           ]
         },
         {
@@ -6987,6 +7964,9 @@
           },
           "compatible_provenance": [
             "crystal-item-cosmetics-201189f-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.afflicted_outfits"
           ]
         },
         {
@@ -6997,6 +7977,9 @@
           },
           "compatible_provenance": [
             "crystal-item-cosmetics-201189f-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.afflicted_outfits"
           ]
         },
         {
@@ -7008,6 +7991,9 @@
           },
           "compatible_provenance": [
             "crystal-item-cosmetics-201189f-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.crystal_warlord_outfits"
           ]
         },
         {
@@ -7019,6 +8005,9 @@
           },
           "compatible_provenance": [
             "crystal-item-cosmetics-201189f-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.crystal_warlord_outfits"
           ]
         },
         {
@@ -7029,6 +8018,9 @@
           },
           "compatible_provenance": [
             "crystal-item-cosmetics-201189f-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.crystal_warlord_outfits"
           ]
         },
         {
@@ -7040,6 +8032,9 @@
           },
           "compatible_provenance": [
             "crystal-item-cosmetics-201189f-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.soil_guardian_outfits"
           ]
         },
         {
@@ -7051,6 +8046,9 @@
           },
           "compatible_provenance": [
             "crystal-item-cosmetics-201189f-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.soil_guardian_outfits"
           ]
         },
         {
@@ -7061,6 +8059,9 @@
           },
           "compatible_provenance": [
             "crystal-item-cosmetics-201189f-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.soil_guardian_outfits"
           ]
         },
         {
@@ -7071,6 +8072,9 @@
           },
           "compatible_provenance": [
             "crystal-201189f-soul-war-revenant-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.revenant_outfits"
           ]
         },
         {
@@ -7081,6 +8085,9 @@
           },
           "compatible_provenance": [
             "owner-pr2784-decaying-defender-base-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.decaying_defender_outfits"
           ]
         },
         {
@@ -7292,6 +8299,406 @@
           "compatible_provenance": [
             "crystal-9f5a72c-quest-rewards-v1"
           ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.mount.162",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.haze"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.mount.167",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.phantasmal_jade"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.mount.184",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.singeing_steed"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.mount.217",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.spirit_of_purity"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.mount.232",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.primal_demonosaur"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.mount.94",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.sparkion_mount"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.mount.98",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.neon_sparkid"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.mount.99",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.vortexion"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1042-1043.addon1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.makeshift_warrior_outfits",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1042-1043.addon2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.makeshift_warrior_outfits",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1042-1043.base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:content.outfit.makeshift_warrior_outfits"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1243-1244.addon1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.hand_of_the_inquisition_outfits",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1243-1244.addon2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.hand_of_the_inquisition_outfits",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1243-1244.base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:content.outfit.hand_of_the_inquisition_outfits"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1270-1271.addon1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.poltergeist_outfits",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1270-1271.addon2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.poltergeist_outfits",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1270-1271.base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:content.outfit.poltergeist_outfits"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1322-1323.addon1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.revenant_outfits",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1322-1323.addon2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.revenant_outfits",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1322-1323.base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:content.outfit.revenant_outfits"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1371-1372.addon1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.rascoohan_outfits",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1371-1372.addon2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.rascoohan_outfits",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1371-1372.base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:content.outfit.rascoohan_outfits"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1460-1461.addon1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.formal_dress_outfits",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1460-1461.addon2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.formal_dress_outfits",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1460-1461.base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:content.outfit.formal_dress_outfits"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1568-1569.addon1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.fire_fighter_outfits",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1568-1569.addon2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.fire_fighter_outfits",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1568-1569.base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:content.outfit.fire_fighter_outfits"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1662-1663.addon1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.decaying_defender_outfits",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1662-1663.addon2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.decaying_defender_outfits",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1662-1663.base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:content.outfit.decaying_defender_outfits"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1808-1809.addon1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.fiend_slayer_outfits",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1808-1809.addon2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.fiend_slayer_outfits",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1808-1809.base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:content.outfit.fiend_slayer_outfits"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1860-1861.addon1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.illuminator_outfits",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1860-1861.addon2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:content.outfit.illuminator_outfits",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.1860-1861.base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:content.outfit.illuminator_outfits"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
         }
       ],
       "state": "PROMOTED",
@@ -7301,6 +8708,638 @@
         "reference": "crystal:data/XML/outfits.xml",
         "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
         "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/mounts/0/key",
+      "value": "oteryn:content.mount.haze",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L191",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/0/look",
+      "value": {
+        "id": 1269,
+        "source_record_sha256": "44de552f31c02ff2118565704dd5c8b03297b8d7274b64391afd6c8c803ef5eb"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L191",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/0/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L191",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/0/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L191",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/0/source",
+      "value": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L191",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L191",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/0/speed_bonus",
+      "value": 10,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L191",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/1/key",
+      "value": "oteryn:content.mount.neon_sparkid",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L127",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/1/look",
+      "value": {
+        "id": 889,
+        "source_record_sha256": "ff82f3f3122bca1abe7b355cf7bd54ec40fe1191645122a51a32dfc497423571"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L127",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/1/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L127",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/1/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L127",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/1/source",
+      "value": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L127",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L127",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/1/speed_bonus",
+      "value": 10,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L127",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/2/key",
+      "value": "oteryn:content.mount.phantasmal_jade",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L196",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/2/look",
+      "value": {
+        "id": 1321,
+        "source_record_sha256": "83419656e0f8277812002a91e6ded5cd31564876de2d56591cfa9116a305f7ce"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L196",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/2/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L196",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/2/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L196",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/2/source",
+      "value": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L196",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L196",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/2/speed_bonus",
+      "value": 10,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L196",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/3/key",
+      "value": "oteryn:content.mount.primal_demonosaur",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L261",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/3/look",
+      "value": {
+        "id": 1810,
+        "source_record_sha256": "7268750eeea444939a0ba8a72c1129f9feceb596cb6dd6e6e75670150daf1de1"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L261",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/3/premium",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L261",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/3/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L261",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/3/source",
+      "value": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L261",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L261",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/3/speed_bonus",
+      "value": 10,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L261",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/4/key",
+      "value": "oteryn:content.mount.singeing_steed",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L213",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/4/look",
+      "value": {
+        "id": 1431,
+        "source_record_sha256": "6a7fd389765adecdded933be3cd71392b21cf15576b6caac0c8d06d442f2c8be"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L213",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/4/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L213",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/4/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L213",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/4/source",
+      "value": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L213",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L213",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/4/speed_bonus",
+      "value": 10,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L213",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/5/key",
+      "value": "oteryn:content.mount.sparkion_mount",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L123",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/5/look",
+      "value": {
+        "id": 883,
+        "source_record_sha256": "0deef10c872c731d3c459129263a85954d773bfe24c03869277cebda26e77352"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L123",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/5/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L123",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/5/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L123",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/5/source",
+      "value": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L123",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L123",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/5/speed_bonus",
+      "value": 10,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L123",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/6/key",
+      "value": "oteryn:content.mount.spirit_of_purity",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L246",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/6/look",
+      "value": {
+        "id": 1682,
+        "source_record_sha256": "0f47731082f7a91fbb14c04d5427552aa7154eed99b610f7c40b6307db36263f"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L246",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/6/premium",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L246",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/6/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L246",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/6/source",
+      "value": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L246",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L246",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/6/speed_bonus",
+      "value": 10,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L246",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/7/key",
+      "value": "oteryn:content.mount.vortexion",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L128",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/7/look",
+      "value": {
+        "id": 890,
+        "source_record_sha256": "bd0d97e1189e730789edef181d43088145bebd0e566dc18128fee11e1910a8c2"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L128",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/7/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L128",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/7/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L128",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/7/source",
+      "value": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L128",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L128",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
+      }
+    },
+    {
+      "path": "/mounts/7/speed_bonus",
+      "value": 10,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "ACCEPTED_REFERENCE_EVIDENCE",
+      "source": {
+        "reference": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L128",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "sha256": "e4ad7d0f7b712a77160484f4c70ef83c66af1c798950b3853acf23f4897c397f"
       }
     },
     {
@@ -17064,6 +19103,966 @@
       }
     },
     {
+      "path": "/outfits/64/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/1",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/64/female",
+      "value": {
+        "id": 431,
+        "source_record_sha256": "f4f2c65b2c918eba4b9d59031b651b1caf4baf82c313f060dc376c528ffcdf28"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/1",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/64/key",
+      "value": "oteryn:content.outfit.afflicted_outfits",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/1",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/64/male",
+      "value": {
+        "id": 430,
+        "source_record_sha256": "aec5684187998b9099c31c0d059b5fd5ef710c6877302628caecc95c9f3485da"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/1",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/64/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/1",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/64/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/1",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/64/source",
+      "value": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/1",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/1",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/64/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/1",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/64/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/1",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/64/starter_female",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/1",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/64/starter_male",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/1",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/64/unlock_sources",
+      "value": [
+        {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/1",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/1",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/65/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/22",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/65/female",
+      "value": {
+        "id": 136,
+        "source_record_sha256": "c75162dea7feab06e8e60d587c23073a64feef204a2f47092e0671e8ffd2db74"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/22",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/65/key",
+      "value": "oteryn:content.outfit.citizen_outfits",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/22",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/65/male",
+      "value": {
+        "id": 128,
+        "source_record_sha256": "70646a3166e00bed7e3b7b16bb416316985090f9026c73a3c292a9383f9abdf2"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/22",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/65/premium",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/22",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/65/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/22",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/65/source",
+      "value": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/22",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/22",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/65/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/22",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/65/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/22",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/65/starter_female",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/22",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/65/starter_male",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/22",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/65/unlock_sources",
+      "value": [
+        {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/22",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/22",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/66/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/25",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/66/female",
+      "value": {
+        "id": 513,
+        "source_record_sha256": "539dfdea90fa4d6fb0b7b88cba869a2409c32d0b00e9fab19bd0c40e12a843b6"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/25",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/66/key",
+      "value": "oteryn:content.outfit.crystal_warlord_outfits",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/25",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/66/male",
+      "value": {
+        "id": 512,
+        "source_record_sha256": "576d0b12ab4dc44462981073f61d8fef4f2d8145118e9b5182071717143209b0"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/25",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/66/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/25",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/66/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/25",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/66/source",
+      "value": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/25",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/25",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/66/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/25",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/66/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/25",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/66/starter_female",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/25",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/66/starter_male",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/25",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/66/unlock_sources",
+      "value": [
+        {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/25",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/25",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/67/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/28",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/67/female",
+      "value": {
+        "id": 1663,
+        "source_record_sha256": "902eaf76674d25775f2b067a3995ecd0b402692084c7a9cc3fdc91d65b373448"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/28",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/67/key",
+      "value": "oteryn:content.outfit.decaying_defender_outfits",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/28",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/67/male",
+      "value": {
+        "id": 1662,
+        "source_record_sha256": "93ee4f96cbcb903fd7fd66931c7586f0708ee4fe0585a4e85e1dfc957af044dc"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/28",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/67/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/28",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/67/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/28",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/67/source",
+      "value": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/28",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/28",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/67/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/28",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/67/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/28",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/67/starter_female",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/28",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/67/starter_male",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/28",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/67/unlock_sources",
+      "value": [
+        {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/28",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/28",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/68/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/48",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/68/female",
+      "value": {
+        "id": 1808,
+        "source_record_sha256": "739bec216a753848899eb23bbe02615fb2d891a731f52e52cdc3c192e690c620"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/48",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/68/key",
+      "value": "oteryn:content.outfit.fiend_slayer_outfits",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/48",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/68/male",
+      "value": {
+        "id": 1809,
+        "source_record_sha256": "c649a9e13c7dfc9bf5247daaa6b6a7a745323efd595b0c812eded4b47c757554"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/48",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/68/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/48",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/68/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/48",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/68/source",
+      "value": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/48",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/48",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/68/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/48",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/68/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/48",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/68/starter_female",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/48",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/68/starter_male",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/48",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/68/unlock_sources",
+      "value": [
+        {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/48",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/48",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/69/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/49",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/69/female",
+      "value": {
+        "id": 1569,
+        "source_record_sha256": "5b56f11e96f71daf74337b7190162587c74e7a327055e43451de9f65a76960b9"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/49",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/69/key",
+      "value": "oteryn:content.outfit.fire_fighter_outfits",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/49",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/69/male",
+      "value": {
+        "id": 1568,
+        "source_record_sha256": "264b7e4a66dcbf4d49b4a22835e910d9831c50812959248fb7f967a1b52b0673"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/49",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/69/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/49",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/69/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/49",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/69/source",
+      "value": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/49",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/49",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/69/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/49",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/69/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/49",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/69/starter_female",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/49",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/69/starter_male",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/49",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/69/unlock_sources",
+      "value": [
+        {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/49",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/49",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
       "path": "/outfits/7/addon_count",
       "value": 2,
       "state": "PROMOTED",
@@ -17221,6 +20220,1286 @@
         "reference": "crystal:data/XML/outfits.xml",
         "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
         "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/70/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/52",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/70/female",
+      "value": {
+        "id": 1461,
+        "source_record_sha256": "00a202670daa1c8f914e9814ae9c6cb304d0aecbe822e427b03ffc5bdf4962cb"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/52",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/70/key",
+      "value": "oteryn:content.outfit.formal_dress_outfits",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/52",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/70/male",
+      "value": {
+        "id": 1460,
+        "source_record_sha256": "625c4e9912bd20f05e51a5008511015f272759fbb3d52279faa58f3e337a648c"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/52",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/70/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/52",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/70/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/52",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/70/source",
+      "value": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/52",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/52",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/70/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/52",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/70/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/52",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/70/starter_female",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/52",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/70/starter_male",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/52",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/70/unlock_sources",
+      "value": [
+        {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/52",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/52",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/71/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/59",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/71/female",
+      "value": {
+        "id": 1244,
+        "source_record_sha256": "12b030d4c9072145d6dcbd66e72c376ef07e0ca1978c000e6ff71fd922fca9b8"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/59",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/71/key",
+      "value": "oteryn:content.outfit.hand_of_the_inquisition_outfits",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/59",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/71/male",
+      "value": {
+        "id": 1243,
+        "source_record_sha256": "53c2edc5888ebb0ce573cd3a7e74d0068d176938a82f7cd9480d13ec4dade749"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/59",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/71/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/59",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/71/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/59",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/71/source",
+      "value": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/59",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/59",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/71/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/59",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/71/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/59",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/71/starter_female",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/59",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/71/starter_male",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/59",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/71/unlock_sources",
+      "value": [
+        {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/59",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/59",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/72/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/64",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/72/female",
+      "value": {
+        "id": 1861,
+        "source_record_sha256": "24e05eaa4d8237b5300b1e19a51ea8963a81215dad283f500a5db286090ecfa5"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/64",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/72/key",
+      "value": "oteryn:content.outfit.illuminator_outfits",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/64",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/72/male",
+      "value": {
+        "id": 1860,
+        "source_record_sha256": "2d4969cc53ad9f67c62291c04773ac45b22f6025bee6e40a195d2327e983ea41"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/64",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/72/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/64",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/72/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/64",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/72/source",
+      "value": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/64",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/64",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/72/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/64",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/72/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/64",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/72/starter_female",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/64",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/72/starter_male",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/64",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/72/unlock_sources",
+      "value": [
+        {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/64",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/64",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/73/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/73",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/73/female",
+      "value": {
+        "id": 1043,
+        "source_record_sha256": "c082502989dfc9bffa0b829c05fcdc111e471cf407d54089df30aad1ba8467dc"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/73",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/73/key",
+      "value": "oteryn:content.outfit.makeshift_warrior_outfits",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/73",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/73/male",
+      "value": {
+        "id": 1042,
+        "source_record_sha256": "74fac2d8e7bb85f5393fd2a52e358057c6622022118faf643866394f64c77dc2"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/73",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/73/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/73",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/73/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/73",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/73/source",
+      "value": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/73",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/73",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/73/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/73",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/73/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/73",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/73/starter_female",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/73",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/73/starter_male",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/73",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/73/unlock_sources",
+      "value": [
+        {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/73",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/73",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/74/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/94",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/74/female",
+      "value": {
+        "id": 1271,
+        "source_record_sha256": "42aab58b0c80e5142a2023fa97be3d5816f56c274d1777b12d6e2c270bf3d71c"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/94",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/74/key",
+      "value": "oteryn:content.outfit.poltergeist_outfits",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/94",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/74/male",
+      "value": {
+        "id": 1270,
+        "source_record_sha256": "d800212426caa23e50f44a4e32da14832cfa54ff1b651ef0bcacbc1e266c46c0"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/94",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/74/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/94",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/74/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/94",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/74/source",
+      "value": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/94",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/94",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/74/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/94",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/74/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/94",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/74/starter_female",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/94",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/74/starter_male",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/94",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/74/unlock_sources",
+      "value": [
+        {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/94",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/94",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/75/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/98",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/75/female",
+      "value": {
+        "id": 1372,
+        "source_record_sha256": "41d6b8a78c3d41c8b3560c90d558b8ab42adc591f755e64beb8c244525458244"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/98",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/75/key",
+      "value": "oteryn:content.outfit.rascoohan_outfits",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/98",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/75/male",
+      "value": {
+        "id": 1371,
+        "source_record_sha256": "8b86c0027328adc3630e2db3c0a3d0a848ad43269c1faa9dd475bb11458a141e"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/98",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/75/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/98",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/75/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/98",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/75/source",
+      "value": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/98",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/98",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/75/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/98",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/75/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/98",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/75/starter_female",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/98",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/75/starter_male",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/98",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/75/unlock_sources",
+      "value": [
+        {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/98",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/98",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/76/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/107",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/76/female",
+      "value": {
+        "id": 1323,
+        "source_record_sha256": "1f88f7e2bbb6f390bd22d9b867aecf48623d3fb85c2369ba38d01bcba084797c"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/107",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/76/key",
+      "value": "oteryn:content.outfit.revenant_outfits",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/107",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/76/male",
+      "value": {
+        "id": 1322,
+        "source_record_sha256": "eea6c497a7b785d0850e5d84d5ff8357589cab18ba15631ccc68eb0c7ed53d41"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/107",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/76/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/107",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/76/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/107",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/76/source",
+      "value": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/107",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/107",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/76/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/107",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/76/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/107",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/76/starter_female",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/107",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/76/starter_male",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/107",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/76/unlock_sources",
+      "value": [
+        {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/107",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/107",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/77/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/120",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/77/female",
+      "value": {
+        "id": 514,
+        "source_record_sha256": "5967ea3c7f78d2d26a0987d6c15c4b1fce497b26acb1b06424237907f4b30fd6"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/120",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/77/key",
+      "value": "oteryn:content.outfit.soil_guardian_outfits",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/120",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/77/male",
+      "value": {
+        "id": 516,
+        "source_record_sha256": "c04774e5de1e01717a6f0c6d45fe530b00efdd3a237652da5240c463fc7e9839"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/120",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/77/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/120",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/77/revision",
+      "value": "nx5-r1",
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/120",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/77/source",
+      "value": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/120",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      },
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/120",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/77/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/120",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/77/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/120",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/77/starter_female",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/120",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/77/starter_male",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/120",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+      }
+    },
+    {
+      "path": "/outfits/77/unlock_sources",
+      "value": [
+        {
+          "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/120",
+          "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+          "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "NX-5",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json#/records/120",
+        "revision": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+        "sha256": "19cf7673da3130ef4bfe690b18961ec51a5b341d2c7e92185ac4297cc06bcfc0"
       }
     },
     {
