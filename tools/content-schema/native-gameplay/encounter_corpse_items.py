@@ -2,7 +2,7 @@
 """Source-qualified encounter corpse Item admission, not quest qualification.
 
 OTS_HYPOTHESIS_ONLY: imports/canary/items-xml/items.xml:12452-12465,16320-16324,
-63217-63236,76397-76412;
+12095-12108,16191-16195,63217-63236,76397-76412;
 Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b, SHA256 below. Read exact
 capacity/duration/decay edges from that pinned donor, including48-slot Spite.
 Movement/corpse identity uses the existing captured Game WorldObject owner.
@@ -21,8 +21,8 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[3]
 XML = 'imports/canary/items-xml/items.xml'
 SHA256 = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
-ROOTS = (5995, 33867, 44012)
-OBJECT_SHARDS = ('objects-01000-01499.json', 'objects-01500-01999.json',
+ROOTS = (5973, 5995, 33867, 44012)
+OBJECT_SHARDS = ('objects-00500-00999.json', 'objects-01000-01499.json', 'objects-01500-01999.json',
                  'objects-10500-10999.json', 'objects-12000-12499.json')
 
 

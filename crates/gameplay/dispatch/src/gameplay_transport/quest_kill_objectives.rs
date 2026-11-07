@@ -5,7 +5,7 @@ use super::{
 };
 use crate::durability::{
     character_progression::CharacterProgressionError,
-    quest_state::{QuestTransitionOutcome, kill_objectives::NativeObjectiveDeath},
+    quest_state::kill_objectives::NativeObjectiveDeath,
 };
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use oteryn_gameplay_quests::quest::kill_objectives as rules;
@@ -140,6 +140,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(mut cache) = attack.kills().2.lock() else {
             return;
         };
+        if snapshot.as_ref().is_some_and(|new| {
+            cache.sessions.iter().any(|old| {
+                old.session == new.session
+                    && old.character == new.character
+                    && old.lease == new.lease
+                    && old.revision > new.revision
+            })
+        }) {
+            return;
+        }
         cache.sessions.retain(|old| {
             old.session != session && runtime.player_control_facts(old.actor, old.session).is_ok()
         });
@@ -148,63 +158,86 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    pub(super) async fn credit_native_objectives(&self, entry: &PendingKillSettlement) -> bool {
-        let Some(captured) = &entry.objectives else {
-            return true;
-        };
-        let Some(catalogue) = &self.quest_catalogue else {
-            return captured.is_empty();
-        };
-        for objective in captured.iter() {
-            let snapshot = &objective.snapshot;
-            let fence = match self.current_quest_fence(snapshot.session).await {
-                Ok(Some(fence)) => fence,
-                Ok(None) => continue,
-                Err(()) => return false,
-            };
-            if fence.character_id.as_bytes() != &snapshot.character
-                || fence.character_lease_generation != snapshot.lease
+    pub(super) async fn refresh_native_objective_recipients(&self, entry: &PendingKillSettlement) {
+        if let Some(captured) = &entry.objectives {
+            for objective in captured.iter() {
+                self.refresh_quest_session(objective.snapshot.session, false)
+                    .await;
+            }
+        }
+    }
+}
+
+/// The XP owner holds all captured Character slots and the native Channel turn.
+/// Only the exact original damage principal may consume a captured objective.
+pub(super) async fn apply_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+    entry: &PendingKillSettlement,
+    participants: &[(
+        crate::durability::character_progression::CurrentCharacterGameplayFence,
+        bool,
+    )],
+    catalogue: Option<&oteryn_gameplay_quests::quest::QuestStateCatalogue>,
+) -> Result<Vec<crate::durability::quest_state::CommittedQuestTransition>, CharacterProgressionError>
+{
+    let mut committed = Vec::new();
+    let Some(captured) = &entry.objectives else {
+        return Ok(committed);
+    };
+    for objective in captured.iter() {
+        let snapshot = &objective.snapshot;
+        let fence = participants
+            .iter()
+            .find_map(|(fence, damaged)| {
+                (*damaged
+                    && fence.character_id.as_bytes() == &snapshot.character
+                    && fence.game_session_id == snapshot.session
+                    && fence.character_lease_generation == snapshot.lease)
+                    .then_some(*fence)
+            })
+            .ok_or(CharacterProgressionError::AuthorityRejected)?;
+        let catalogue = catalogue.ok_or(CharacterProgressionError::InvalidInput)?;
+        if let Some(receipt) =
+            crate::durability::quest_state::kill_objectives::apply_in_transaction(
+                tx,
+                node,
+                fence,
+                objective.transition,
+                &objective.source,
+                catalogue,
+            )
+            .await?
+        {
+            committed.push(receipt);
+        }
+    }
+    Ok(committed)
+}
+
+/// Publish only after the enclosing XP/Quest transaction commits, while the
+/// lethal owner still holds runtime/attack guards. A replay cannot regress it.
+pub(super) fn publish(
+    queue: &KillSettlementQueue,
+    committed: &[crate::durability::quest_state::CommittedQuestTransition],
+) {
+    let Ok(mut cache) = queue.2.lock() else {
+        return;
+    };
+    for receipt in committed {
+        for snapshot in &mut cache.sessions {
+            let revision = receipt.committed_character_revision.get();
+            if snapshot.character != *receipt.character_id.as_bytes()
+                || revision < snapshot.revision
             {
                 continue;
             }
-            let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
-            // The writer reacquires all gameplay/recovery/root fences and independently
-            // proves this exact native principal, creature, scope and death receipt.
-            slot.observe_endgame_progression();
-            let result = self
-                .root
-                .commit_character_native_kill_objective(
-                    self.character,
-                    self.holder,
-                    fence,
-                    objective.transition,
-                    objective.source.clone(),
-                    Arc::clone(catalogue),
-                )
-                .await;
-            drop(slot);
-            match result {
-                Ok(
-                    QuestTransitionOutcome::Committed(_)
-                    | QuestTransitionOutcome::AlreadyCommitted(_),
-                ) => {
-                    self.refresh_quest_session(snapshot.session, false).await;
-                }
-                Ok(
-                    QuestTransitionOutcome::Refused(_) | QuestTransitionOutcome::ObligationClosed,
-                ) => {}
-                Err(
-                    CharacterProgressionError::Unavailable(_)
-                    | CharacterProgressionError::CharacterRevisionMismatch,
-                ) => {
-                    self.schedule_quest_refresh(snapshot.session);
-                    return false;
-                }
-                Err(error) => {
-                    super::operator_event(&format!("native_objective_refused reason={error:?}"))
+            for change in &receipt.changes {
+                if let Some(value) = snapshot.phases.get_mut(&change.track) {
+                    *value = change.after;
                 }
             }
+            snapshot.revision = revision;
         }
-        true
     }
 }

@@ -25,6 +25,14 @@ BINDINGS = 'imports/crystalserver/bindings/items.json'
 BINDINGS_SHA = '1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a'
 
 
+
+def client_only_custody_supported(obj):
+    flags = obj['flags']
+    return (flags.get('flags.take') is True
+            and not flags.get('flags.container', False)
+            and not flags.get('flags.cumulative', False))
+
+
 def facts(root=ROOT, ids=None, *, allow_containers=False, xml_override=None):
     ids = IDS if ids is None else ids
     raw = {}

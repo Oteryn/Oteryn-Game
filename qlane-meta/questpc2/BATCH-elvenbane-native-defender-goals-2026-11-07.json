@@ -429,5 +429,18 @@
     },
     "pin": "5c9a2f175f6ad7c325bc94bf4922dab1ac3b1e4bfc0ef92093bacc29a720d67d"
   },
-  "owner_stop": "Replacement r2 owns further work. Commit/push checkpoint and stop; latest86c4c6be7 integration may remain unvalidated."
+  "owner_stop": "Replacement r2 owns further work. Commit/push checkpoint and stop; latest86c4c6be7 integration may remain unvalidated.",
+  "final_green_checks": {
+    "content_command_seconds": 10.08,
+    "content_runtime_seconds": 2.53,
+    "content_passed": 123,
+    "pin_check_seconds": 26.343,
+    "pin_check": "PASS"
+  },
+  "owner_stop_final_merge": {
+    "incoming": "86c4c6be71cf4d24aa6ca0ae7525479d5b5feddf",
+    "verified_checkpoint": "4c94f2cb6",
+    "combined_validation": "PENDING_R2_OWNER_STOP",
+    "resolution": "Incoming atomic runtime preserved. Ours verified artifact superset retained for conflicts; every incoming changed canonical definition already covered. Client-only compatibility helper retained; stricter explicit XML proof unchanged."
+  }
 }

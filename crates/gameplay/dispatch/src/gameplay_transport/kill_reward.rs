@@ -2417,6 +2417,9 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
             Box::pin(self.settle_durably(entry, inflight_before)),
         )
         .await;
+        self.admission
+            .refresh_native_objective_recipients(entry)
+            .await;
         // Row-less Grizzly/Bosstiary work never binds a corpse Item, but its final
         // settlement must release exactly the same native projection pin as loot.
         if entry.row.is_none() {
@@ -3066,12 +3069,6 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             && !admission
                 .credit_frozen_task_board_recipients(&entry, race.key())
                 .await
-        {
-            report.verdict = SettleVerdict::Retry;
-        }
-        if report.verdict == SettleVerdict::Final
-            && outcome.is_ok()
-            && !admission.credit_native_objectives(&entry).await
         {
             report.verdict = SettleVerdict::Retry;
         }

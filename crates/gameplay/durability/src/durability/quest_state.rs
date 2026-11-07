@@ -544,6 +544,7 @@ pub mod grizzly;
 pub mod grizzly_boss;
 mod hero_of_bounac;
 pub mod kill_objectives;
+mod persist;
 mod planegazer_finale;
 pub mod rotten_blood;
 pub mod rotten_blood_access;

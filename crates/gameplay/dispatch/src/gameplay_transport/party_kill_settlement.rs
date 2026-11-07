@@ -312,7 +312,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             slots.push(slot);
         }
         let endgame_kill = super::kill_reward::tracks_native_progression(&entry.creature);
-        if endgame_kill {
+        let objective_kill = entry
+            .objectives
+            .as_ref()
+            .is_some_and(|captured| !captured.is_empty());
+        if endgame_kill || objective_kill {
             // The fences above retain the expected revisions. Invalidate the
             // cached cursors before the await so cancellation after an uncertain
             // composed XP/Quest commit cannot expose a stale cursor to a waiter.
@@ -373,7 +377,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?
                     {
+                        let participants = members.as_ref().ok_or(DurabilityError::InvalidStoredState)?
+                            .iter().map(|member| (member.fence, entry.damage_shares.iter().any(|damage|
+                                damage.total > 0 && damage.character.as_bytes() == member.fence.character_id.as_bytes()
+                                && damage.session == Some(member.fence.game_session_id)
+                                && damage.lease_generation == Some(member.fence.character_lease_generation))))
+                            .collect::<Vec<_>>();
+                        let objectives = match super::quest_kill_objectives::apply_in_transaction(
+                            &mut tx, owner.holder, entry, &participants, owner.quest_catalogue.as_deref()).await {
+                            Ok(committed) => committed, Err(error) => return Ok(Err(error)),
+                        };
                         party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
+                        super::quest_kill_objectives::publish(_attack.kills(), &objectives);
                         publish_stamina(states, runtime, previous, entry, &awards);
                         return Ok(Ok(awards));
                     }
@@ -492,7 +507,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             &mut tx, owner.holder, death, &entry.creature, &participants,
                         ).await { return Ok(Err(error)); }
                     }
+                    let objectives = match super::quest_kill_objectives::apply_in_transaction(
+                        &mut tx, owner.holder, entry, &participants, owner.quest_catalogue.as_deref()).await {
+                        Ok(committed) => committed, Err(error) => return Ok(Err(error)),
+                    };
                     party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
+                    super::quest_kill_objectives::publish(_attack.kills(), &objectives);
                     publish_stamina(states, runtime, &current, entry, &awards);
                     Ok(Ok(awards))
                 })
@@ -553,7 +573,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-        if endgame_kill {
+        if endgame_kill || objective_kill {
             // Returned XP revisions precede possible Quest/Hazard descendants.
             // Invalidate on replay too: a historical receipt is not a current cursor.
             for slot in &mut slots {
