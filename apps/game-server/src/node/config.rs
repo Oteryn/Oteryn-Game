@@ -1456,6 +1456,39 @@ epoch_fence_file = "/var/lib/oteryn/public-projection/epoch-fence"
 [launch]"#;
 
     #[test]
+    fn public_projections_missing_and_invalid_configuration_exit_ten() {
+        let valid = NODE.replace("\n[launch]", PUBLIC);
+        for field in [
+            "client_certificate_file",
+            "client_key_file",
+            "source_authority",
+            "epoch_fence_file",
+        ] {
+            let at = valid
+                .find("[platform.public_projections]")
+                .expect("section");
+            let without = format!(
+                "{}{}",
+                &valid[..at],
+                valid[at..]
+                    .lines()
+                    .filter(|line| !line.starts_with(field))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            );
+            let invalid = valid.replace(&format!("{field} = "), &format!("{field} = false # "));
+            for document in [without, invalid] {
+                let rejected = NodeConfig::parse(document.as_bytes()).expect_err(field);
+                let boot =
+                    super::super::serve::BootError::Startup(super::super::StartupError::Invalid {
+                        key: rejected.key,
+                    });
+                assert_eq!(boot.exit_code(), 10, "{field}");
+            }
+        }
+    }
+
+    #[test]
     fn public_projections_section_is_off_by_default_separate_and_fenced() {
         let config = NodeConfig::parse(NODE.as_bytes()).expect("valid configuration");
         assert!(config.platform.public_projections.is_none());

@@ -82,6 +82,14 @@ enabled = true
 client_certificate_file = "<BASE>/node/secrets/bazaar.crt"
 client_key_file = "<BASE>/node/secrets/bazaar.key"
 source_authority = "oteryn:game:primary"
+# PUBPROJ owner 2026-11-07: install the purpose-separated identity before enabling.
+# Reuses the Platform endpoint and trust roots; never shares the LCFA epoch fence.
+[platform.public_projections]
+enabled = false
+source_authority = "oteryn:game:primary"
+client_certificate_file = "<BASE>/node/secrets/public-projections.crt"
+client_key_file = "<BASE>/node/secrets/public-projections.key"
+epoch_fence_file = "<BASE>/public-projections/epoch-fence"
 # T94 owner 2026-11-06: enabled by default, with a dedicated mTLS identity.
 [platform.world_event_outcomes]
 enabled = true
