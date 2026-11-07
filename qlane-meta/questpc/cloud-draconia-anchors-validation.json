@@ -1,0 +1,108 @@
+{
+  "result": "PASS",
+  "pg_red": {
+    "failed": 4,
+    "passed": 0,
+    "case_seconds": [
+      47.28,
+      46.53,
+      46.77,
+      46.58
+    ],
+    "total_seconds": 187.16,
+    "version": "18.6",
+    "failures": "Two levers NothingToUse; two portals remain at trigger instead of destination"
+  },
+  "logs": {
+    "red-escape_35012": {
+      "log": "qlane-meta/questpc/cloud-draconia-anchors-red-escape_35012.log",
+      "sha256": "d8664c1545b588939c76e7499f231a56c2464f8374ed6e9e22aa2449e9fe06b3"
+    },
+    "red-exit_35011": {
+      "log": "qlane-meta/questpc/cloud-draconia-anchors-red-exit_35011.log",
+      "sha256": "de15670094eb9c6e38be253d347f551b3edeebe81c1610bdf8f022d7d1f2c3ea"
+    },
+    "red-lever_30035": {
+      "log": "qlane-meta/questpc/cloud-draconia-anchors-red-lever_30035.log",
+      "sha256": "b641a0e3d135a7e8a7b4d52b8b4df0af82bb64830f2b5419cab240015ea9f0ac"
+    },
+    "red-30006": {
+      "log": "qlane-meta/questpc/cloud-draconia-anchors-red-30006.log",
+      "sha256": "1dcd4c2b5f4e5081692a52bb7f56dd4dc0e0599be95876af75e813534faf2a41"
+    },
+    "green": {
+      "log": "qlane-meta/questpc/cloud-draconia-anchors-green.log",
+      "sha256": "bbb296f556dc4f5b023fb6cc8ee18eae6991f8f59073316345f98e7cce87f461"
+    },
+    "units": {
+      "log": "qlane-meta/questpc/cloud-draconia-anchors-units.log",
+      "sha256": "90c464a0f36276435fde6c5f69b3585859e8e9a38b5887bb16725143ad91daa5"
+    },
+    "fmt": {
+      "log": "qlane-meta/questpc/cloud-draconia-anchors-fmt.log",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    "generated": {
+      "log": "qlane-meta/questpc/cloud-draconia-anchors-generated.log",
+      "sha256": "acf5aae90563de910885545955a84aadc0055adc9af345704fd9f23c45e7cc41"
+    },
+    "check": {
+      "log": "qlane-meta/questpc/cloud-draconia-anchors-check.log",
+      "sha256": "192f67b86c2b11b1acd87a71388eca451370218565e3ffb26e5350ee560a5c9d"
+    },
+    "clippy": {
+      "log": "qlane-meta/questpc/cloud-draconia-anchors-clippy.log",
+      "sha256": "e18c5c17ff1fd0815bc27c4678309be6165073098a9c6865f9fcf3d4ed557a8b"
+    },
+    "pins": {
+      "log": "qlane-meta/questpc/cloud-draconia-anchors-pins.log",
+      "sha256": "7a5a14409a4eea738e1636403f96179e76b2de58330e1b82681364a44a125bfe"
+    }
+  },
+  "pg_green": {
+    "passed": 4,
+    "failed": 0,
+    "total_seconds": 187.26,
+    "case_seconds": {
+      "escape35012": 47.874087529,
+      "exit35011": 47.055772562,
+      "lever30006": 46.185858053,
+      "lever30035": 46.138378075
+    },
+    "coverage": "Real framed native USE reversal and STEP portal replay; source exit current lever pattern; exact offering/flag atomicity"
+  },
+  "units": "10 pure units passed (5 source binder0.04s,5 pickup0.00s); not PG",
+  "checks": {
+    "fmt": "PASS changed crates and explicitly mounted test files",
+    "check": "PASS world/dispatch all targets/all features2m39s",
+    "clippy": "PASS world/dispatch all targets/all features -D warnings2m48s",
+    "generation": "All three captures verified; ten original door and five stock bindings preserved",
+    "pins": "PASS; unchanged world9865615ff643553f07bccfc4f76c0f05919939c751cd35f0a87f92d82591e8f7; existing unchanged repository compiler used directly"
+  },
+  "native_effect_targets": [
+    {
+      "callback": 30006,
+      "position": [
+        32792,
+        31581,
+        -7
+      ],
+      "appearance": 1282,
+      "native_exact": true
+    },
+    {
+      "callback": 30035,
+      "position": [
+        32790,
+        31594,
+        -7
+      ],
+      "appearance": 1772,
+      "native_exact": true
+    }
+  ],
+  "qualified_titles_added": 0,
+  "parent": "886ac871c",
+  "review": "qlane-meta/questpc/cloud-draconia-anchors-review.md",
+  "boundary": "Four native callback anchors only. Whole Draconia remains active; no raw reference source or binary maps added."
+}

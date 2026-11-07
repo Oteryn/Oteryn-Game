@@ -244,7 +244,8 @@ fn scenario_case(
         callback.selector.unique = Some(35012);
         callback.selector.action = None;
         callback.selector.position = None;
-        callback.selector.appearance = None;
+        callback.selector.appearance =
+            (trigger.x == 32815 && trigger.y == 31599 && trigger.floor == -9).then_some(1949);
         callback.lever = None;
         callback.passages.clear();
         callback.teleport = Some(Position {
@@ -266,7 +267,13 @@ fn scenario_case(
         callback.selector.unique = Some(35011);
         callback.selector.position = None;
         callback.selector.action = None;
-        callback.selector.appearance = Some(100);
+        callback.selector.appearance = Some(
+            if trigger.x == 32805 && trigger.y == 31587 && trigger.floor == -1 {
+                1949
+            } else {
+                100
+            },
+        );
         callback.lever = None;
         callback.passages = super::super::draconia_exit::pattern()
             .into_iter()
@@ -312,6 +319,14 @@ fn scenario_case(
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
             .await?;
+        if name.starts_with("draconia-") {
+            let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
+                .fetch_one(&h.pool)
+                .await?;
+            println!(
+                "POSTGRES_CASE_STARTED {name} server_version={version} native_trigger={trigger:?}"
+            );
+        }
         if dropdown {
             println!("POSTGRES_CASE_STARTED source_dropdown database_created=true");
         }

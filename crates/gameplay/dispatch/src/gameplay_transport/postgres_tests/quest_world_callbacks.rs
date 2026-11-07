@@ -410,8 +410,23 @@ fn world_ordinal_palette(
             palette: 1,
             depth: 0,
             attrs: sector::Attrs {
-                unique: if callback.key == "oteryn:quest-callback/giant-smithhammer" {
-                    // The exact native lever at32778,32232,z8 has no UID.
+                unique: if callback.key == "oteryn:quest-callback/giant-smithhammer"
+                    || matches!(
+                        (callback.key.as_str(), trigger.x, trigger.y, trigger.floor),
+                        (
+                            "oteryn:quest-callback/draconia-lever-30006",
+                            32792,
+                            31595,
+                            -7
+                        ) | (
+                            "oteryn:quest-callback/draconia-lever-30035",
+                            32792,
+                            31579,
+                            -7
+                        ) | ("oteryn:quest-callback/behemoth", 32805, 31587, -1)
+                            | ("oteryn:quest-callback/behemoth", 32815, 31599, -9)
+                    ) {
+                    // These exact native roots have no script attributes.
                     None
                 } else {
                     callback.selector.unique

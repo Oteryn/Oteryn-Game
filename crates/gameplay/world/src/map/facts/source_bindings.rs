@@ -21,7 +21,8 @@ pub(super) fn apply(position: TilePos, appearance: u16, house: u32, attrs: &mut 
     let Some(capture) = CAPTURE.get_or_init(|| {
         let stock = parse(include_str!("../../../../../../tools/content-schema/world-authoring/samples/quest-stock-key-bindings.json"))?;
         let doors = parse(include_str!("../../../../../../tools/content-schema/world-authoring/samples/quest-route-key-door-bindings.json"))?;
-        combine(stock, doors)
+        let callbacks = parse(include_str!("../../../../../../tools/content-schema/world-authoring/samples/quest-route-callback-bindings.json"))?;
+        combine(combine(stock, doors)?, callbacks)
     }) else {
         return;
     };
@@ -157,6 +158,44 @@ mod tests {
             };
             apply(pos, 5097, 0, &mut native);
             assert_eq!(native.action, Some(42));
+        }
+    }
+
+    #[test]
+    fn source_callback_anchors_bind_only_exact_native_roots_and_preserve_attributes() {
+        for (x, y, floor, appearance, unique) in [
+            (32792, 31595, -7, 2772, 30006),
+            (32792, 31579, -7, 2772, 30035),
+            (32805, 31587, -1, 1949, 35011),
+            (32815, 31599, -9, 1949, 35012),
+        ] {
+            let pos = TilePos { x, y, floor };
+            let mut attrs = Attrs::default();
+            apply(pos, appearance, 0, &mut attrs);
+            assert_eq!(attrs.unique, Some(unique));
+            for (position, item, house) in [
+                (TilePos { x: x + 1, ..pos }, appearance, 0),
+                (
+                    TilePos {
+                        floor: floor - 1,
+                        ..pos
+                    },
+                    appearance,
+                    0,
+                ),
+                (pos, appearance + 1, 0),
+                (pos, appearance, 1),
+            ] {
+                let mut untouched = Attrs::default();
+                apply(position, item, house, &mut untouched);
+                assert_eq!(untouched.unique, None);
+            }
+            let mut native = Attrs {
+                unique: Some(42),
+                ..Attrs::default()
+            };
+            apply(pos, appearance, 0, &mut native);
+            assert_eq!(native.unique, Some(42));
         }
     }
 

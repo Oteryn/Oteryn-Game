@@ -1,3 +1,42 @@
+## Four native Draconia callback anchors fully GREEN — 2026-11-07
+Exact native source levers30006/30035 and portals35011/35012 now acquire startup
+UIDs at boot through the existing bounded binder. Capture verifies pinned source
+SHA256/git-blob and native region hashes; original stock/door captures unchanged.
+Actual PostgreSQL18.6 RED4/4 failures187.16s; GREEN4/4 passes187.26s. Durations:
+escape47.874087529s, exit47.055772562s, lever30006=46.185858053s,
+lever30035=46.138378075s. Real wire reversal/replay and source offering/flag behavior.
+Ten pure units, fmt, all-target/all-feature world/dispatch check2m39s, strict Clippy
+2m48s, captures and pin refresh PASS. World digest unchanged9865615f... . Native
+stone1282 and crate1772 targets also match source exactly. Self-review no findings.
+Full evidence: cloud-draconia-anchors-validation.json. No title promotion.
+
+NEXT six-entry batch: two source pressure plates and four route portals. Primary
+source facts/plan: /tmp/questpc-draconia-pressure-next-plan.md. Existing StepIn/Out,
+pressure transforms and stateless world-object effects should compose the gates;
+implement any missing generic behavior here. Then level25/NPC acquisition/exchange
+and first shared container stock. NPC source plan:/tmp/questpc-dragonlord-next-plan.md.
+Fresh cross-lane exclusions record34 distinct externally QUALIFIED titles,27 still
+locally unfinished; these are skipped without claiming an unmerged implementation.
+Counts remain60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED (90 actionable local
+unfinished titles after owner exclusions). Use sourceenv,CARGO_INCREMENTAL=0.
+Push every green slice and at least30min; never end while actual entries remain.
+
+## Four native Draconia callback anchors PG GREEN; strict checks running
+Actual PostgreSQL18.6 RED4/4 failures187.16s; GREEN4/4 passes187.26s. Exact native
+levers30006/30035 and portals35011/35012 have no injected UIDs. Pinned source capture
+restores exact selectors through the existing bounded boot binder. Ten pure units
+and fmt pass. Strict crate checks/Clippy and pins still running in session47011;
+logs /tmp/questpc-draconia-anchors-{check,clippy,pins}.log. Do not publish this slice
+as fully green until they pass. No whole-title promotion. Final evidence goes in
+cloud-draconia-anchors-validation.json. Latest pushed head886ac871c.
+
+Next sources: /tmp/questpc-dragonlord-next-plan.md and
+/tmp/questpc-draconia-pressure-next-plan.md. Four source portal selectors and two
+party plates form a six-entry route batch using existing movement/world owners.
+Level25 gate, NPC acquisition/exchange and first shared container key also remain.
+Fresh owner scan excludes27 locally unfinished titles QUALIFIED elsewhere; no
+local qualifications or merges are claimed by that exclusion. Counts remain60/117/1.
+
 ## Upper-door and concurrent NPC merge checked — 2026-11-07
 Preserved remote4c2056aa8 Corym NPC work and local upper-door batch7c3d513fe.
 Only latest-batch JSON conflicted; both records retained. Combined world/dispatch

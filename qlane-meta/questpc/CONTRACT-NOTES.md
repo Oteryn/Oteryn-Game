@@ -296,3 +296,14 @@ First key3001 is declared inside skeleton5972 in container_misc.lua at32794,3157
 Source loads container contents before recursively applying key actions; stock is
 filled only when the source container is empty. Primary source:
 https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/container_misc.lua
+
+Draconia native callback anchors use pinned startup LeverUnique30006/30035 and
+TeleportUnique35011/35012, with exact source position/item and no proximity aliases.
+Native roots have no attributes and no house. Existing bounded binder preserves
+native attributes and rejects ambiguous capture unions. Source capture verifies
+both SHA256/git-blob custody and actual native region hashes:
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/lever.lua
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/teleport.lua
+Fresh owner-lane scan finds34 distinct locally listed titles QUALIFIED elsewhere;
+27 remain locally UNFINISHED but are explicitly excluded from implementation here.
+Local counts are not promoted by an unmerged external implementation.
