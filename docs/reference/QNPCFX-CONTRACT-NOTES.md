@@ -722,3 +722,7 @@ Shared QBASE migrations are 1202_questpc_npc_revision and 1205_fathers_burden_it
 Migration 1310 is an absence-only bootstrap: when QBASE 1200 has installed the canonical response table it leaves that table, function and trigger untouched. Shared 1202 and 1205 were compared byte-for-byte with canonical pc2 migrations.
 
 Registry reconciliation validation: staged-tree duplicate-migration script passed; pin-refresh and pin-check passed with unchanged world pin; focused real-dispatch PostgreSQL cases passed (acceptance/replay 76.98s, delayed dismissal 83.60s, calendar gating 93.92s). No full PostgreSQL suite was run.
+
+## Fifteen-minute publication checkpoint
+
+The verified migration reconciliation at 583d0994c is the current green baseline (three focused PostgreSQL cases, duplicate check and pins passed). Publication cadence is now every green step and at least every fifteen minutes. The next code step is general source achievement/XP rewards through the existing account achievement and quest XP obligation owners. The exact current refusal remains npc_rules/evaluate.rs, the storage-only effect match; value-only exchanges additionally require lifting npc_program.rs's nonempty-track receipt restriction with durable proof. No title qualification is claimed by this checkpoint.
