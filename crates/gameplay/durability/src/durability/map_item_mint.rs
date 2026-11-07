@@ -124,6 +124,8 @@ pub struct MapItemMintRequest {
     pub reset_epoch: u64,
     /// Facts of the entry's item definition.
     pub item: ItemDefinitionFacts,
+    /// Trusted map-authored key binding; never supplied by the client.
+    pub key_number: Option<u16>,
     pub quantity: u32,
     pub content_revision: String,
     pub ruleset_revision: String,
@@ -873,7 +875,7 @@ fn mint_message(
             definition: Some(definition_message(&request.item.definition)),
             quantity: request.quantity,
             lifecycle: ITEM_LIFECYCLE_LIVE,
-            key_number: 0,
+            key_number: request.key_number.map_or(0, u32::from),
         }),
         destination: Some(ground),
         source: Some(OneItemMapItemMintCauseV1 {
@@ -932,6 +934,17 @@ async fn apply_mint(
     .bind(tx_id)
     .execute(&mut **tx)
     .await?;
+    if let Some(number) = request.key_number {
+        sqlx::query(
+            "INSERT INTO game_item_keys(item_instance_id, key_number, minted_transaction_id) \
+             VALUES (encode($1,'hex')::uuid, $2, encode($3,'hex')::uuid)",
+        )
+        .bind(item_id)
+        .bind(i32::from(number))
+        .bind(tx_id)
+        .execute(&mut **tx)
+        .await?;
+    }
     let generation = ground.runtime_scope_ownership_generation.to_string();
     sqlx::query(
         "INSERT INTO game_item_ground_locations(item_instance_id, world_id, channel_id, \
@@ -1200,6 +1213,14 @@ fn validate_request(request: &MapItemMintRequest) -> Result<()> {
     {
         return Err(MapItemMintError::InvalidInput);
     }
+    if request.key_number.is_some_and(|number| {
+        number == 0
+            || request.quantity != 1
+            || request.item.stack != super::item_transfer::ItemStackClass::NonStackable
+            || request.item.container_capacity.is_some()
+    }) {
+        return Err(MapItemMintError::InvalidInput);
+    }
     for revision in [
         &request.content_revision,
         &request.ruleset_revision,
@@ -1238,6 +1259,11 @@ fn intent_binding(
         &request.sim_revision,
     ] {
         push_text(&mut canonical, revision.as_bytes()).map_err(from_transfer_input)?;
+    }
+    // Optional tagged suffix preserves every existing unbound intent byte.
+    if let Some(number) = request.key_number {
+        canonical.push(0x4b);
+        canonical.extend_from_slice(&number.to_be_bytes());
     }
     let mut out = [0_u8; 33];
     out[0] = INTENT_BINDING_VERSION;
@@ -1291,6 +1317,7 @@ mod tests {
             placement_key: key(-7, 32000, 31000, 2),
             reset_epoch: 0,
             item: facts("fixture:map.coin", COIN),
+            key_number: None,
             quantity: 3,
             content_revision: "content-1".into(),
             ruleset_revision: "ruleset-1".into(),
@@ -1351,6 +1378,42 @@ mod tests {
         assert_eq!(
             plan_map_item_mint(&coin, 101, false),
             Err(R::QuantityAboveStackMaximum)
+        );
+    }
+
+    #[test]
+    fn map_item_mint_key_binding_is_single_nonstackable_and_part_of_intent() {
+        let mut keyed = request();
+        keyed.item.stack = super::super::item_transfer::ItemStackClass::NonStackable;
+        keyed.quantity = 1;
+        keyed.key_number = Some(3007);
+        assert!(validate_request(&keyed).is_ok());
+        for (number, quantity, stack, capacity) in [
+            (Some(0), 1, keyed.item.stack, None),
+            (Some(3007), 2, keyed.item.stack, None),
+            (Some(3007), 1, COIN, None),
+            (Some(3007), 1, keyed.item.stack, Some(8)),
+        ] {
+            let mut invalid = keyed.clone();
+            invalid.key_number = number;
+            invalid.quantity = quantity;
+            invalid.item.stack = stack;
+            invalid.item.container_capacity = capacity;
+            assert!(validate_request(&invalid).is_err());
+        }
+        let character = CharacterId::from_bytes(id(41)).expect("character");
+        let world = crate::foundation::WorldId::decode(&id(42)).expect("world");
+        let channel = crate::foundation::ChannelId::decode(&id(43)).expect("channel");
+        let bound = intent_binding(&keyed, character, world, channel).expect("bound");
+        keyed.key_number = Some(3008);
+        assert_ne!(
+            bound,
+            intent_binding(&keyed, character, world, channel).expect("changed")
+        );
+        keyed.key_number = None;
+        assert_ne!(
+            bound,
+            intent_binding(&keyed, character, world, channel).expect("unbound")
         );
     }
 

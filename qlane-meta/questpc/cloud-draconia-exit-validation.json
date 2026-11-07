@@ -1,5 +1,5 @@
 {
-  "result": "PG PASS; implementation in working tree, check/clippy/pin pipeline running",
+  "result": "PASS",
   "scope": "Generic bounded immutable placement predicates and original UID35011 alternating four-lever exit; no whole-title promotion",
   "red_seconds": 3.45,
   "pg": {
@@ -24,7 +24,10 @@
     "python": "PASS8batch3 and19batch4 pure units",
     "generation": "PASS callback,23packet and40Native checks;4Quest shards regenerated/check clean",
     "semantic_diff": "Only new exit callback; old callbacks/Native records unchanged;28Quest provenance hashes only",
-    "check_clippy_pin": "RUNNING"
+    "check": "PASS dispatch/content/quests alltarget/allfeature2m50s",
+    "clippy": "PASS dispatch/content/quests alltarget/allfeature,-D warnings2m56s",
+    "pin": "PASS unchanged world digest2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968",
+    "format": "PASS changed-crate cargo fmt and explicit mounted Rust formatting"
   },
   "logs": {
     "red": {
@@ -62,6 +65,31 @@
     "tree-check": {
       "log": "qlane-meta/questpc/cloud-draconia-exit-tree-check.log",
       "sha256": "4b1a51f1f00f83f5e1ea3ce860719e88e9df6fdbf9c8e82a29016b5982a7a8f2"
+    },
+    "check": {
+      "log": "qlane-meta/questpc/cloud-draconia-exit-check.log",
+      "sha256": "d51badfc00dcc86c611a61915969563c7fbb3d8334f08b480a4681c1070aa8a1"
+    },
+    "clippy": {
+      "log": "qlane-meta/questpc/cloud-draconia-exit-clippy.log",
+      "sha256": "60f148962c32fdd3c14c57417169961249c1d3e914bf266c66b7b1a3ed6e5416"
+    },
+    "pin": {
+      "log": "qlane-meta/questpc/cloud-draconia-exit-pin.log",
+      "sha256": "f246b07810f21960855887cc884f7904387fcccf52dee1ca216a71f64fd2297e"
     }
+  },
+  "runtime_contract": {
+    "bound": 8,
+    "allowed_objects": "Current immutable Channel Base/Added; no portable/ground/house custody",
+    "read_set": "One pinned current snapshot under runtime owner; stateless, no await before map/movement commit",
+    "failure": "Missing/unreadable placement fails predicate and uses authored failure landing",
+    "compatibility": "Existing callbacks default to an empty predicate list"
+  },
+  "artifact_hashes": {
+    "content/quests/world-callbacks.json": "af96e5d623b5e5b17508c0d19003c62f155ba8e1a26ec49b1e973f156ddcfc4b",
+    "crates/gameplay/quests/src/quest/world_callbacks/conditions.rs": "d17ad27a02a71e80c2b14ee125ac4c154b549e03840be571067365d468ac5981",
+    "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/conditions.rs": "e12b6de2bad173b14474af90ba53a8c20c8a305ba59e3b6239f60153cb9aa98f",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/draconia_exit.rs": "c1a4ba1abe8ad1421f26b576ae26d0e877ca7d4b8162c44a1270b5063ff47250"
   }
 }

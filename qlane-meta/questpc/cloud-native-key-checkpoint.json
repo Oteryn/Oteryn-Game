@@ -1,0 +1,74 @@
+{
+  "timestamp": "2026-11-07T04:19:31.583559+00:00",
+  "result": "PG_GREEN_STRICT_VERIFICATION_PENDING",
+  "implementation_published": false,
+  "qualified_titles_added": 0,
+  "pg": {
+    "version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "red": {
+      "actual_pg_cases_failed": 5,
+      "first_case_seconds": 45.04,
+      "fresh_process_remaining_case_seconds": [
+        44.86,
+        44.91,
+        44.83,
+        45.0
+      ],
+      "total_actual_pg_seconds": 224.64,
+      "reason": "Real source-coordinate pickup/replay loses key number: empty bindings versus expected3003-3007",
+      "infrastructure_note": "Initial failing assertion poisoned serial fixture mutex; four collateral mutex failures are not PG evidence. All four remaining cases were rerun in separate processes of the same compiled test binary; each executed PostgreSQL and failed the intended missing-binding assertion."
+    },
+    "green": {
+      "passed": 5,
+      "failed": 0,
+      "total_seconds": 226.66,
+      "case_body_seconds": {
+        "3003_crash_replay": 41.351462413,
+        "3004": 40.914068296,
+        "3005": 40.775798261,
+        "3006": 41.486564917,
+        "3007": 41.160423235
+      }
+    }
+  },
+  "gates": {
+    "fmt": "PASS",
+    "source_capture": "PASS5 exact pinned source/native bindings",
+    "units": "PASS7/7,0.05s pure units; not PG",
+    "check_clippy_pins": "Strict pipeline in progress; runtime code deliberately not included in this checkpoint"
+  },
+  "working_tree_source_sha256": {
+    "crates/gameplay/world/src/map/facts.rs": "cb0ee27f0f10339816e9504ef10cf68bb699a3c51f2d5e523b771dbabd9f1139",
+    "crates/gameplay/world/src/map/facts/source_bindings.rs": "3422d15f23f767d1af9c608e23bd3d67666ff78930f3fc4692ec1da9c45c9706",
+    "crates/gameplay/world/src/map/overlay/pickup.rs": "5cbc91620a1d8f10e17d9f2e4012a3eb89fb11cdf19ab1204e8d272bfd44d8d1",
+    "crates/gameplay/dispatch/src/gameplay_transport/loop_map_pickup_tests.rs": "030ac9f4b7a81a3e737cb5c669150b27bff3e311b316a75c9e44f6755f8413db",
+    "tools/content-schema/world-authoring/quest_stock_key_bindings.py": "91d30113f881ce497b214cdef4f9ff60bed7b2ef64de414bec5bea28452118ac",
+    "tools/content-schema/world-authoring/samples/quest-stock-key-bindings.json": "97a7794ba976b11f44c9db25f946424b73213a31f0d9ff50ef9e0e92efb897e7"
+  },
+  "logs": {
+    "red-initial": {
+      "log": "qlane-meta/questpc/cloud-native-key-checkpoint-red-initial.log",
+      "sha256": "23912b8e7a3c9eb7fe6398a909259464535669b4fbeeeb759b59027f030e1444"
+    },
+    "red-isolated": {
+      "log": "qlane-meta/questpc/cloud-native-key-checkpoint-red-isolated.log",
+      "sha256": "1564e922601907086b9e02c54998d8e930048138fb032d7c23531749639c9e10"
+    },
+    "pg": {
+      "log": "qlane-meta/questpc/cloud-native-key-checkpoint-pg.log",
+      "sha256": "493e9104fc20e6169df4c038d07fb003cd93f9d812771f05807981521d87cd06"
+    },
+    "units": {
+      "log": "qlane-meta/questpc/cloud-native-key-checkpoint-units.log",
+      "sha256": "ed3e8af859bd87473e956c9e46d078197184855270e3f1812644ee702f4e3a93"
+    },
+    "generated-check": {
+      "log": "qlane-meta/questpc/cloud-native-key-checkpoint-generated-check.log",
+      "sha256": "bae8b598e12cb3b0c8cd893a6efa846807305a9821b2fe1235aa902def5d66ab"
+    },
+    "fmt": {
+      "log": "qlane-meta/questpc/cloud-native-key-checkpoint-fmt.log",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    }
+  }
+}

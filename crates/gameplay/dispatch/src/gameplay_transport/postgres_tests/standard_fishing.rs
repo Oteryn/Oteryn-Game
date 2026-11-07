@@ -485,6 +485,7 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
                 placement_key: crate::map::view::placement_key(target_pos,1).ok_or("placement")?,
                 reset_epoch: 0,
                 item: crate::gameplay_transport::item_ref_admission::generation_item_facts(native,&definition).map_err(debug)?,
+                key_number: None,
                 quantity: 1,
                 content_revision: format!("sha256:{}", native.source_digest().iter().map(|b| format!("{b:02x}")).collect::<String>()),
                 ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),

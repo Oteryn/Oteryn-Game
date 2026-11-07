@@ -4,6 +4,7 @@ use super::{
     actor_spell::ChannelSpellStates,
     connection::{UseCommand, UseOutcome},
 };
+mod conditions;
 mod ejection;
 mod execute;
 mod objects;

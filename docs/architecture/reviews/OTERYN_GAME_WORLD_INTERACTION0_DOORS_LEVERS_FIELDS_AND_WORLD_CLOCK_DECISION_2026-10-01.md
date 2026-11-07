@@ -310,11 +310,17 @@ quest doors, quest format §3.1) stays sealed.
   one immutable typed `key_number` in `1..65,535` (`WORLDINT0-RL-10`). It is set at MINT and never
   changes; no other path writes it. It is part of the item's state digest, so trade bindings and
   replays see it. Keys are not stackable.
-- A key reaches a character only through a `RewardClaim` MINT (the CHEST-1 path, D40) whose content
-  names the key definition and number (the quest format's `key_from_claims`). KEY-1 adds the number
-  to that MINT's typed evidence; every TRANSFER carries it unchanged (DUR-03 §39.1 amendment).
-- A map-authored key on the base map is never materializable (ADR-0021 §4.4: it carries an `action`
-  binding), so keys enter the economy only through claims.
+- A key reaches a character through a `RewardClaim` MINT whose content names the key definition
+  and number (the quest format's `key_from_claims`), or a map-item MINT of an eligible source key
+  placement. Both include the number in typed evidence; every TRANSFER carries it unchanged
+  (DUR-03 §39.1 amendment).
+- Owner-authorized quest parity amendment (2026-11-07): a base-map key may materialize through
+  the existing shared map-item MINT owner. Only a trusted source key definition's nonzero action
+  number becomes its immutable key number; all other bound-placement refusals remain. The key
+  row, single-item instance, Ground location, audit and map receipt commit atomically. The
+  deferred key guard requires that same physical MINT transaction. Stock remains once per
+  World/Channel/base digest/placement/reset epoch, never once per character. The optional binding
+  participates in the command intent; absent bindings retain their previous intent bytes.
 
 ### 4.5 Premium and vocation gates
 

@@ -1,0 +1,83 @@
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+warning: `tokio` (lib) generated 2 warnings (2 duplicates)
+warning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14
+    |
+260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |
+
+warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)
+warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)
+   Compiling oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 15s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_durability-4c36e2b90120e7e6)
+
+running 3 tests
+test durability::ground_cell_limit::tests::postgres::map_key_bindings::map_key_binding_copper_replays_without_duplicate_binding ... GROUND-CAP-NATIVE-PG server_version_num=180006 fixture=map_key_binding
+QUESTPC-MAP-KEY-PG appearance=2970 key=3008
+
+thread 'durability::ground_cell_limit::tests::postgres::map_key_bindings::map_key_binding_copper_replays_without_duplicate_binding' (87241) panicked at crates/gameplay/durability/src/durability/map_key_binding_postgres_tests.rs:54:9:
+assertion `left == right` failed: trusted source binding must survive shared map MINT
+  left: None
+ right: Some(3008)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+test durability::ground_cell_limit::tests::postgres::map_key_bindings::map_key_binding_golden_replays_without_duplicate_binding ... GROUND-CAP-NATIVE-PG server_version_num=180006 fixture=map_key_binding
+QUESTPC-MAP-KEY-PG appearance=2972 key=3002
+
+thread 'durability::ground_cell_limit::tests::postgres::map_key_bindings::map_key_binding_golden_replays_without_duplicate_binding' (87248) panicked at crates/gameplay/durability/src/durability/map_key_binding_postgres_tests.rs:54:9:
+assertion `left == right` failed: trusted source binding must survive shared map MINT
+  left: None
+ right: Some(3002)
+FAILED
+test durability::ground_cell_limit::tests::postgres::map_key_bindings::map_key_binding_silver_replays_without_duplicate_binding ... GROUND-CAP-NATIVE-PG server_version_num=180006 fixture=map_key_binding
+QUESTPC-MAP-KEY-PG appearance=2969 key=3007
+
+thread 'durability::ground_cell_limit::tests::postgres::map_key_bindings::map_key_binding_silver_replays_without_duplicate_binding' (87255) panicked at crates/gameplay/durability/src/durability/map_key_binding_postgres_tests.rs:54:9:
+assertion `left == right` failed: trusted source binding must survive shared map MINT
+  left: None
+ right: Some(3007)
+FAILED
+
+failures:
+
+failures:
+    durability::ground_cell_limit::tests::postgres::map_key_bindings::map_key_binding_copper_replays_without_duplicate_binding
+    durability::ground_cell_limit::tests::postgres::map_key_bindings::map_key_binding_golden_replays_without_duplicate_binding
+    durability::ground_cell_limit::tests::postgres::map_key_bindings::map_key_binding_silver_replays_without_duplicate_binding
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 682 filtered out; finished in 10.96s
+
+error: test failed, to rerun pass `-p oteryn-gameplay-durability --lib`

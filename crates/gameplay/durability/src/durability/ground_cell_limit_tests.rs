@@ -310,6 +310,9 @@ fn current_scope_issuer_failure_stays_authority_and_native_source_error_stays_so
 /// PostgreSQL cases use real native source MINT/TRANSFER writers and current
 /// Root/Node/recovery/scope predicates. Prospective insertions remain DATA.
 mod postgres {
+    mod map_key_bindings {
+        include!("map_key_binding_postgres_tests.rs");
+    }
     mod field_capabilities {
         include!("field_capability_port_postgres_tests.rs");
     }
@@ -876,6 +879,7 @@ mod postgres {
                             container_capacity: None,
                             container_slot_equip_pattern: false,
                         },
+                        key_number: None,
                         quantity: 1,
                         content_revision: "content-1".into(),
                         ruleset_revision: "ruleset-1".into(),
@@ -1262,6 +1266,7 @@ mod postgres {
                         container_capacity: None,
                         container_slot_equip_pattern: false,
                     },
+                    key_number: None,
                     quantity: 1,
                     content_revision: "content-1".into(),
                     ruleset_revision: "ruleset-1".into(),

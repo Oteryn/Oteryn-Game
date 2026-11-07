@@ -61,7 +61,27 @@ def compile_callbacks(existing, previous, shards):
                     or row.get('native_rule') is not None
                 ) for state in row.get('storage', [])
             )
-            if declined or storage_extensions or conditional_extensions:
+            conditions = row.get('object_conditions', [])
+            invalid_conditions = not isinstance(conditions, list) or len(conditions) > 8
+            if conditions:
+                invalid_conditions |= bool(row.get('storage') or row.get('offerings')) or any(
+                    row.get(field) is not None for field in ('item_on_target', 'minimum_level', 'experience', 'monk_reward', 'native_rule'))
+                seen_conditions = set()
+                for condition in conditions if isinstance(conditions, list) else []:
+                    if not isinstance(condition, dict) or set(condition) != {'position', 'appearance'}:
+                        invalid_conditions = True
+                        continue
+                    pos = condition['position']
+                    if (not isinstance(pos, dict) or set(pos) != {'x', 'y', 'floor'}
+                            or any(type(pos[axis]) is not int or not 0 <= pos[axis] <= 65535 for axis in ('x', 'y'))
+                            or type(pos['floor']) is not int or not -15 <= pos['floor'] <= 0
+                            or type(condition['appearance']) is not int or not 1 <= condition['appearance'] <= 65535):
+                        invalid_conditions = True
+                        continue
+                    identity = (pos['x'], pos['y'], pos['floor'], condition['appearance'])
+                    invalid_conditions |= identity in seen_conditions
+                    seen_conditions.add(identity)
+            if declined or storage_extensions or conditional_extensions or invalid_conditions:
                 raise ValueError(f'held callback contract extension: {row["key"]}')
             if row['key'] in keys:
                 raise ValueError(f'duplicate callback key: {row["key"]}')

@@ -10,6 +10,8 @@ pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-cal
 // Static callbacks and the dynamic altar share the same boot bound.
 pub const MAX_CALLBACKS: usize = 512;
 pub const MAX_EFFECTS: usize = 8;
+mod conditions;
+pub use conditions::ObjectCondition;
 mod objects;
 pub use objects::{ObjectEffects, ObjectMutation};
 
@@ -131,6 +133,9 @@ pub struct Callback {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub eject_occupants: Option<OccupantEjection>,
     pub passages: Vec<Passage>,
+    /// Bounded current immutable placements; stateless to retain the same owner turn.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub object_conditions: Vec<ObjectCondition>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub objects: Option<ObjectEffects>,
     pub teleport: Option<Position>,
@@ -354,6 +359,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                         .iter()
                         .any(|p| p.position == ejection.destination)
             })
+            || !conditions::valid(callback)
             || !objects::valid(callback)
             || unique_offerings.len() != callback.offerings.len()
             || unique_passages.len() != callback.passages.len()

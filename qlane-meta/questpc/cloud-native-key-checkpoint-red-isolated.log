@@ -1,0 +1,76 @@
+
+running 1 test
+test gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3004 ... QUESTPC-MAP-KEY-WIRE-PG version=18.6 (Debian 18.6-1.pgdg13+2) appearance=2969 key=3004 crash=false full=false
+
+thread 'gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3004' (99915) panicked at crates/gameplay/dispatch/src/gameplay_transport/loop_map_pickup_tests.rs:718:13:
+assertion `left == right` failed
+  left: []
+ right: [3004]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3004
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2566 filtered out; finished in 44.86s
+
+NATIVE_KEY_RED_EXPECTED_FAILURE key=3004 exit=101
+
+running 1 test
+test gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3005 ... QUESTPC-MAP-KEY-WIRE-PG version=18.6 (Debian 18.6-1.pgdg13+2) appearance=2969 key=3005 crash=false full=false
+
+thread 'gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3005' (99944) panicked at crates/gameplay/dispatch/src/gameplay_transport/loop_map_pickup_tests.rs:718:13:
+assertion `left == right` failed
+  left: []
+ right: [3005]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3005
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2566 filtered out; finished in 44.91s
+
+NATIVE_KEY_RED_EXPECTED_FAILURE key=3005 exit=101
+
+running 1 test
+test gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3006 ... QUESTPC-MAP-KEY-WIRE-PG version=18.6 (Debian 18.6-1.pgdg13+2) appearance=2969 key=3006 crash=false full=false
+
+thread 'gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3006' (99982) panicked at crates/gameplay/dispatch/src/gameplay_transport/loop_map_pickup_tests.rs:718:13:
+assertion `left == right` failed
+  left: []
+ right: [3006]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3006
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2566 filtered out; finished in 44.83s
+
+NATIVE_KEY_RED_EXPECTED_FAILURE key=3006 exit=101
+
+running 1 test
+test gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3007 ... QUESTPC-MAP-KEY-WIRE-PG version=18.6 (Debian 18.6-1.pgdg13+2) appearance=2969 key=3007 crash=false full=false
+
+thread 'gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3007' (100012) panicked at crates/gameplay/dispatch/src/gameplay_transport/loop_map_pickup_tests.rs:718:13:
+assertion `left == right` failed
+  left: []
+ right: [3007]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    gameplay_transport::monk_save::postgres_tests::map_pickup::map_native_key_pickup_draconia_3007
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2566 filtered out; finished in 45.00s
+
+NATIVE_KEY_RED_EXPECTED_FAILURE key=3007 exit=101

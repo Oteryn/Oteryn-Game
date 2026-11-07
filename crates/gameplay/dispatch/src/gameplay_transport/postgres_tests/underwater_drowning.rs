@@ -429,7 +429,7 @@ fn scenario_in_world(
                 lever: None,
                 reversible: false,
                 passages: vec![],
-                objects: None,
+                objects: None, object_conditions: Vec::new(),
                 eject_occupants: None,
                 required_claims: Vec::new(),
                 teleport: Some(position(destination)),

@@ -34,7 +34,7 @@ pub(crate) fn altar_callback() -> super::world_callbacks::Callback {
         key: SACRIFICE.into(), quest: QUEST.into(), trigger: Trigger::Use,
         selector: Selector { positions: Vec::new(), position: None, unique: None, action: None,
             appearance: Some(SACRIFICIAL_PLATE_APPEARANCE) },
-        lever: None, reversible: false, passages: Vec::new(), objects: None, eject_occupants: None, required_claims: Vec::new(), teleport: None,
+        lever: None, reversible: false, passages: Vec::new(), objects: None, object_conditions: Vec::new(), eject_occupants: None, required_claims: Vec::new(), teleport: None,
         storage: vec![Storage { track: ACCESS_TRACK.into(), minimum: 0, maximum: 3, set: 1, set_if: None, preserve: false, read_only: false }],
         minimum_level: None, experience: None, monk_reward: None, offerings: Vec::new(),
         item_on_target: Some(ItemOnTarget { item: "oteryn:item.tibia.i32594".into(), count: 1,

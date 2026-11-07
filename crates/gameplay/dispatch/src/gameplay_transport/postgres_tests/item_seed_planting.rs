@@ -234,6 +234,7 @@ fn scenario(case: Case) -> TestResult {
                 &definition,
             )
             .map_err(debug)?,
+            key_number: None,
             quantity: 1,
             content_revision: format!(
                 "sha256:{}",

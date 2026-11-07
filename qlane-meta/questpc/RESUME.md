@@ -1,3 +1,156 @@
+## NPC and native-stock integration — 2026-11-07
+
+NPC batch90a959a3e is green with three source components; remote89cfab3ee
+adds exact native stock-key bindings plus shared map-key pickup and object
+predicates. Runtime merged without conflicts. The only JSON metadata conflict
+keeps both batch records. Current44-NPC-placement world pin9865615f... supersedes
+the older remote2cabea56... pin. Both implementations and all evidence retained.
+
+Merged format/check/strict Clippy, source generation checks, one full NPC hand-in
+composition and native3003 crash/replay, then pin check are running. Archive
+evidence and commit/push merge after green. Continue forge/doors/Cave Spider
+room; full Hidden Threats remains active. Counts60/117/1excluded unchanged.
+
+---
+
+## Exact native source stock runtime GREEN — 2026-11-07
+Reused questpc6@f91534062 source_bindings.rs and its source/native pin producer
+pattern. Exact pinned startup keys3003-3007 now receive their action numbers at
+native boot; source attributes remain authoritative, House/position/item/floor and
+ambiguity guards retained. Effective startup attrs feed the closed pickup wrapper,
+so derived unique/action bindings cannot bypass materialization restrictions.
+No binary maps changed. Producer verifies source SHA256/git blob and native region
+hashes/unique unbound stock shape. Primary source replaces approximate wiki mapping.
+
+Actual PG RED5 cases224.64s (fresh processes after first assertion poisoned fixture
+mutex), GREEN5/5,226.66s. Source-coordinate key3003 crash/rehide/replay41.351462413s;
+3004=40.914068296s;3005=40.775798261s;3006=41.486564917s;3007=41.160423235s.
+Seven pure binding/wrapper units0.05s, fmt, source capture check, world+dispatch
+all-target/all-feature check2m39s and strict clippy2m51s PASS. Pin refresh unchanged
+2cabea56... . cloud-native-key-validation.json references all logs and proves final
+source hashes exactly match the PG checkpoint. Runtime code/capture now published;
+prior0d20fa90f was evidence only while strict checks ran. No title promotion:
+counts remain60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED.
+
+NEXT: exact source key doors and access. All eight Draconia key doors plus two
+Hellgate3012 doors are native appearance5097 with no attrs, source positions and
+numbers in pinned startup KeyDoorAction. Facts in /tmp/questpc-draconia-native-door-facts.json.
+Suggested next5-entry batch: doors3001/3002/3003 and the two3012 doors; then3004-3008.
+Check5097/5098/5099 native profiles; reuse questpc6 key-door profile producer if
+missing. Reuse/extend source binder with a second scoped capture; preserve other
+lanes and conflicting native attrs. Source door cases should use real framed key
+USE at exact native positions (reuse questpc6 m06_keys fixture). Then source reward
+selectors/level gate, first shared stock key/NPC exchange, party pressure gates,
+and original reward composition. Do not end while entries remain.
+
+BUILD: source /workspace/oteryn-env/env.sh; export CARGO_INCREMENTAL=0. Only
+rebuildable25GB incremental cache was removed after disk filled;22GB+ space free.
+
+## Five native stock PG proofs — runtime local, strict checks in progress
+All five actual PostgreSQL18.6 source-coordinate stock cases RED on missing key
+number, then GREEN5/5,226.66s. Keys3003-3007 use their exact pinned startup/native
+positions with no fixture-injected action. Key3003 includes MINT/TRANSFER crash,
+rehide and replay. Red first assertion poisoned fixture mutex: four collateral
+mutex failures are excluded; four fresh test processes each executed real PG and
+failed the intended empty-bindings assertion. All logs, durations, source working
+hashes in cloud-native-key-checkpoint.json. Seven focused pure units pass0.05s;
+fmt and five source/native pin checks pass. Current cargo check/clippy running;
+pin refresh remains required. This checkpoint publishes evidence/status only;
+implementation code and captures remain LOCAL until every strict gate is green.
+
+Continue active sessions if present: PG52188 completed successfully; strict58690
+runs focused units/check/clippy against unchanged source; pin refresh must follow.
+Before final feature push, archive final check/clippy/pin logs, update current
+status to implementation_published=true, fetch/merge target, push immediately.
+No title promotion yet; counts60/117/1excluded unchanged. Do not end while work
+remains. Next exact source key-door/access selectors, party gates, NPC/first shared
+stock key and original reward composition. Source primary startup tables now give
+exact key+door positions, superseding wiki coordinate approximations.
+
+## Shared source-key pickup wire GREEN — 2026-11-07
+Three real PostgreSQL18.6 cases RED130.06s / GREEN132.83s: silver3007 real
+command9 pickup/replay39.355735236s; copper3008 MINT/TRANSFER interruption and
+recovery/replay40.187052424s; golden3002 full bag/refusals40.56201804s.
+Key binding persists through source MINT and ordinary TRANSFER. Shared source
+rehide/stock/replay/read-failure ownership is reused. Wrapper keeps house,
+unrelated bindings, contents, charges, text and teleport refusals. Only trusted
+standard key Item2967-2973 receives the action-number exception and movable view.
+Four focused wrapper units pass0.00s (pure units, not PG); fmt/check2m58s/strict
+clippy3m07s pass world+dispatch all targets/all features; pin unchanged2cabea56... .
+Full logs/hashes:cloud-map-key-wire-validation.json. Counts60/117/1excluded unchanged.
+
+NEXT: Native Draconia key objects lack action attributes. Freshly fetched
+questpc6@f91534062 has reusable world/map/facts/source_bindings.rs; commit8aacc18bb
+extends source key-door bindings for Fibula. Reuse that owner/capture/producer
+pattern for owned Draconia keys, without enabling unrelated lane aliases.
+Draconia remains SKIPPED_OTHER_LANE on questpc6, so this lane retains ownership.
+Five native key facts/pins prepared in /tmp/questpc-draconia-native-key-facts.json;
+implementation plan in /tmp/questpc-native-key-next.md (amend plan to reuse the
+existing source_bindings owner rather than create a parallel registry).
+Then party switches, first shared key/NPC exchange, and original reward composition.
+BR wiki/source/native conservative boundary is documented in CONTRACT-NOTES.md.
+
+BUILD: root32GB filled with25GB Cargo incremental cache. Removed only that
+rebuildable cache;24GB free recovered. After sourcing /workspace/oteryn-env/env.sh,
+export CARGO_INCREMENTAL=0 for subsequent Cargo commands to avoid recurrence.
+Focused verification was rerun successfully; no suite expansion or test weakening.
+
+## Shared map key durable writer GREEN — 2026-11-07
+Three real PostgreSQL18.6 cases RED10.96s / GREEN11.86s: silver3007,
+copper3008, golden3002. Key row and typed audit retain the source number;
+exact replay writes once, altered binding conflicts, competing command cannot
+take shared stock, unactivated reset epoch refuses, activated pointer replenishes.
+The activated pointer is fixture setup, not reset activation writer evidence.
+Existing unbound map MINT/capacity/replay PG regression and migration-number check
+pass5.17s. Three intent/validation units pass0.01s (pure units). fmt/check29.62s/
+strict clippy41.53s pass on dispatch+durability all targets/all features; pins
+unchanged2cabea56... . Full logs/hashes:cloud-map-key-validation.json.
+
+Adds migration1007 for same-transaction map MINT key admission, preserving both
+reward-claim paths and immutable key guards. Optional tagged intent suffix leaves
+old unbound intent bytes unchanged. Production wrapper still passes None: this
+is the reusable durable foundation, not a whole-title qualification.
+Counts remain60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED.
+
+NEXT: exact source key2967-2973 binding in BundleFacts/eligible map entry and
+real command9 pickup. Preserve all unrelated bound-attribute/house/content refusals,
+shared placement/reset stock and reconnect rehide. Add wire PG RED/GREEN for key
+pickup, crash replay and no-room refusal. Then Draconia party switches and rewards.
+Pinned XML/key-door URLs and conservative boundary in CONTRACT-NOTES.md.
+
+## Source-world bridge/current-predicate merge GREEN — 2026-11-07
+Merged remote f90b14f25 with local a01933b31 in a08555946, preserving all source-world
+bridge/native claim guards/reward bindings/occupant ejection, selector.positions,
+our object_conditions and Draconia exit. Incoming Life Ring qualification retained:
+counts60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED. Constructor conflicts
+were additive; all fields retained. No forced push or published rebase.
+
+Combined validationPASS: six fresh Draconia exit PG scenes269.94s (correct, four
+wrong states, live USE correction/re-entry, replay and zero Quest writes); six
+merged crates alltarget/allfeature check2m17s; strict clippy2m39s; current predicate
+and source-world binding units2/2,1.33s;19Python tests; source-world/callback/23packet
+checks; pin world digest unchanged2cabea56... . Full logs/hashes/parents in
+cloud-merge-predicates-validation.json. All input feature evidence retained too.
+
+NEXT: Draconia shared resettable keys and party switches, then all four source
+rewards. Existing command9 map pickup already has shared placement/reset_epoch
+MINT/rehide/replay ownership; reuse it. It currently refuses bound placements and
+map_item_mint_audit enforces key_number0 (old WORLD-INTERACTION policy), so first
+check qengine2/other lanes for the required exact bound-key support, then implement
+it generically here. Only exact known key archetypes plus trusted source bindings
+may acquire key numbers; do not reinterpret arbitrary actions/UIDs or replace
+shared stock with personal rewards. Missing-fact investigations capped10minutes;
+document conservative source rules and push each finished tested slice.
+
+## Concurrent source-world merge — combined validation pending
+Remote moved tof90b14f25 while this session prepareda01933b31. Merge preserves both:
+new source-world callbacks, claim guards, source reward binding and occupant ejection;
+plus generic object_conditions and exact Draconia current-lever exit. Constructor
+conflicts resolved by keeping all optional fields and selector.positions. Status
+union retains incoming qualification; counts60QUALIFIED/117UNFINISHED/1excluded.
+Run merged-crate checks and Draconia exit PG before publishing this merge. Inputs
+were independently green, but combined evidence is still pending. No forced push.
+
 ## Hidden Threats NPC batch qualified — 2026-11-07
 
 Three source components now have real PostgreSQL18.6 RED/GREEN evidence:
@@ -39,6 +192,40 @@ Local counts remain60QUALIFIED/117UNFINISHED/1excluded, with seven qengine2 A..M
 entries explicitly skipped. No source changed in this documentation merge.
 
 ---
+
+## Draconia current-lever exit green — 2026-11-07
+Generic object_conditions now implemented for stateless world callbacks: up to8
+unique position/appearance predicates, one current pinned callback/door snapshot,
+immutable Channel Base/Added objects only, checked under the runtime owner with
+no await before map/movement commit. Missing/unreadable/house/value placements
+fail. Existing callbacks default to no conditions. No storage/offering/XP/native
+reward combination can bypass a durable read-set with this stateless feature.
+
+UID35011 exact pattern at32802..32805,31584,z1 is2772,2773,2772,2773. Success
+32701,31639,z6; failure32803,31587,z1. Six realPG scenes PASS268.57s: correct;
+each individually wrong; third corrected through actual USE then successful
+re-entry, proving current changed facts are used. Replay/no Quest writes tested.
+RED3.45s unknown field after DB creation. Scene trigger coordinate is fixture-only;
+production selector is UID-only. Source hash/URL and details in CONTRACT-NOTES.md.
+
+All checksPASS: dispatch/content/quests alltarget/allfeature check2m50s; strict
+clippy2m56s; schema1unit0.01s; Python8+19;23source packet/40Native/callback checks;
+4Quest shards regenerated/check clean; pin world digest unchanged2cabea56... .
+Semantic audit: only new exit callback; no old callbacks/Native records changed;
+28Quest provenance leaves only; approval graph/core/immutable/compiler inputs
+unchanged. Full proof:cloud-draconia-exit-validation.json. cc36e6070 was the
+preceding evidence-only heartbeat; this batch publishes the implementation.
+Counts remain59QUALIFIED/118UNFINISHED/1excludedDawnportBLOCKED.
+
+NEXT: shared resettable Draconia keys and party floor switches. Existing command9
+map pickup owner already scopes claims by base digest/placement/reset_epoch and
+hides consumed placements, so reuse it; inspect key binding support before writing.
+Relevant files:gameplay_transport/loop_map_pickup.rs; world/map/facts.rs pickup_entry;
+durability/map_item_mint.rs and map_item_mint_audit.rs (currently mint key_number0).
+First check qengine2/other lanes for existing bound-key map-pickup support. Retain
+source key numbers, global stock/reset and exact party mechanics; do not substitute
+personal claims. Then compose all four original Draconia rewards. Ten-minute fact
+cap; document conservative source choices and push each finished tested slice.
 
 ## Exit six-scene PG proof — implementation push pending strict pipeline
 Six real PostgreSQL scenes PASS268.57s: correct2772/2773/2772/2773 pattern; each

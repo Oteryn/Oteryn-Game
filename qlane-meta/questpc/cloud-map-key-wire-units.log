@@ -1,0 +1,86 @@
+   Compiling oteryn-simulation-determinism v0.1.0 (/workspace/Oteryn-Game/crates/simulation-determinism)
+   Compiling oteryn-protocol-oteryn v0.1.0 (/workspace/Oteryn-Game/crates/protocol-oteryn)
+   Compiling oteryn-gameplay-content v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/content)
+   Compiling oteryn-world-bundle v0.1.0 (/workspace/Oteryn-Game/crates/world-bundle)
+   Compiling tokio v1.53.1 (/workspace/Oteryn-Game/vendor/tokio-1.53.1)
+   Compiling oteryn-gameplay-domain v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/domain)
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+   Compiling oteryn-error-codes v0.1.0 (/workspace/Oteryn-Game/crates/error-codes)
+   Compiling oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)
+   Compiling tokio-stream v0.1.19
+   Compiling sqlx-core v0.9.0 (/workspace/Oteryn-Game/vendor/sqlx-core-0.9.0)
+warning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14
+    |
+260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+warning: `tokio` (lib) generated 2 warnings (2 duplicates)
+warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)
+   Compiling sqlx-postgres v0.9.0 (/workspace/Oteryn-Game/vendor/sqlx-postgres-0.9.0)
+   Compiling oteryn-gameplay-foundation v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/foundation)
+warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)
+   Compiling tokio-rustls v0.26.6
+   Compiling oteryn-gameplay-admission-evidence v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/admission-evidence)
+   Compiling oteryn-gameplay-content-promotion v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/content-promotion)
+   Compiling oteryn-gameplay-native-admission-source v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/native-admission-source)
+   Compiling sqlx-macros-core v0.9.0
+   Compiling oteryn-gameplay-housing v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/housing)
+   Compiling oteryn-gameplay-economy v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/economy)
+   Compiling oteryn-gameplay-social-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social-rules)
+   Compiling sqlx-macros v0.9.0
+   Compiling oteryn-gameplay-character-recovery-fence v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/character-recovery-fence)
+   Compiling oteryn-gameplay-world-change v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world-change)
+   Compiling sqlx v0.9.0
+   Compiling oteryn-foundation v0.1.0 (/workspace/Oteryn-Game/crates/foundation)
+   Compiling oteryn-gameplay-node-files v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/node-files)
+   Compiling oteryn-gameplay-progression v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/progression)
+   Compiling oteryn-gameplay-items v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/items)
+   Compiling oteryn-gameplay-characters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/characters)
+   Compiling oteryn-gameplay-encounter-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounter-rules)
+   Compiling oteryn-gameplay-combat-rules v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat-rules)
+   Compiling oteryn-gameplay-entities v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/entities)
+   Compiling oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)
+   Compiling oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 31s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_world-a6252737ed090cb4)
+
+running 4 tests
+test map::overlay::pickup::map_overlay_pickup_tests::map_overlay_pickup_key_binding_keeps_all_other_refusals ... ok
+test map::overlay::pickup::map_overlay_pickup_tests::map_overlay_pickup_leaves_every_ineligible_kind_in_place ... ok
+test map::overlay::pickup::map_overlay_pickup_tests::map_overlay_pickup_reach_is_one_tile_on_the_same_floor ... ok
+test map::overlay::pickup::map_overlay_pickup_tests::map_overlay_pickup_takes_an_eligible_entry_whole ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 214 filtered out; finished in 0.00s

@@ -181,6 +181,57 @@ now-redundant intermediate shard; no callback is lost. The native source-world
 shard remains loaded with cross-shard uniqueness and the combined runtime cap.
 No source-fix approval or guard is weakened during this integration.
 
+Map-authored key materialization follows the pinned Crystal key Item types2967-2973
+(and only those exact native Item definitions in the map wrapper). Source XML:
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml
+Each declares type=key. Its source action number is the immutable carried key
+number, matching key-door comparison:
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/actions/doors/key_door.lua
+Retain base-digest/placement/channel/reset-epoch stock, not personal quest claims.
+Only one nonstackable noncontainer key may be bound; unrelated action/UID/door,
+house, contents, text, charges and teleport restrictions remain. The durable
+writer accepts a trusted binding, includes it in typed evidence and intent, and
+writes the immutable key row atomically with its map MINT receipt. Existing
+unbound intent bytes stay unchanged. This owner-authorized feature amends the
+older reward-claim-only restriction; it does not infer any quest key placement.
+Refreshed qengine2 and questpc6 have no map key binding implementation to reuse.
+
+Shared source-key wrapper uses only the seven standard key types2967-2973. The
+source also has a specialized wooden cage key31379; that item retains its own
+interaction owner and does not gain the standard door-key exception. Key actions
+are exempted only after the exact existing pickup wrapper admits the placement: a
+nonzero number and one item, no other binding, no house, nested contents, charges,
+text or teleport. The original source attributes remain available to owners.
+
+Draconia route facts were retrieved from
+https://www.tibiawiki.com.br/Draconia_Quest?action=raw
+after Fandom returned402. The route explicitly requires two players and keys
+that replenish at server save. One player holds the southern switch to admit
+the other to a second switch; holding the second admits the first to the portal
+leading to Key3007. Conservative rule for the missing complete switch script:
+occupancy is Channel-local and current; each gate is open only while its own
+plate has an occupant, closes on departure, and uses no personal quest claim.
+The native Draconia map has standard silver-key objects with source action
+attributes absent. Those need explicit reviewed/pinned source-number bindings
+in the next composition slice; an unbound inventory key is insufficient. This
+research stopped after the source/wiki/native comparison, without inventing
+production selector aliases or treating personal rewards as shared stock.
+
+Primary-source refinement for native Draconia stock: the pinned KeyDoorAction
+startup table explicitly lists each key object and its door, and Storage.Quest.Key
+resolves IDs3001-3008 to those exact numbers. This supersedes the earlier room-
+based wiki inference for the five existing native stock objects3003-3007. Sources:
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/door_key.lua
+https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/lib/core/storages.lua
+The new producer reuses questpc6's source custody/native-map pin pattern, verifies
+both source SHA256/git blob identity and the exact unique non-House native key,
+and emits only those five source action bindings. No binary map is rewritten.
+The runtime binder reuses questpc6@f91534062's source_bindings owner, restricted
+to this slice's capture; exact position/item/floor/house checks and conflicting
+native attributes remain authoritative. Effective startup attributes must pass
+the same closed pickup eligibility wrapper, including derived unique/action
+refusals, so a stale handle cannot materialize an entry the binder seals.
+
 Hidden Threats NPC programme uses the internally consistent Canary revision
 04b83b512114bfd888000d6e1433ed8ecaec7c5b. Ten exact NPC source hashes and fresh
 URLs are retained in samples/native-rewards/hidden-threats-npcs.json; the generator

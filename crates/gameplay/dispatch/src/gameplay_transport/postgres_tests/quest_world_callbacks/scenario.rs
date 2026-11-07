@@ -37,6 +37,7 @@ fn scenario_case(
     let devil = name.starts_with("devil-helmet-source");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
+    let draconia_exit = name.starts_with("draconia-exit-");
     let object_mutation = name.starts_with("object-mutation-");
     let mintwallin = name == "mintwallin-source";
     let monk = name.starts_with("monk-guidance");
@@ -65,6 +66,7 @@ fn scenario_case(
             || dropdown
             || devil
             || draconia_escape
+            || draconia_exit
         {
             "behemoth"
         } else if failure_landing {
@@ -260,7 +262,43 @@ fn scenario_case(
             count: 1,
         }];
     }
-    let world = if devil {
+    if draconia_exit {
+        callback.selector.unique = Some(35011);
+        callback.selector.position = None;
+        callback.selector.action = None;
+        callback.selector.appearance = Some(100);
+        callback.lever = None;
+        callback.passages = super::super::draconia_exit::pattern()
+            .into_iter()
+            .enumerate()
+            .map(|(i, (position, wanted))| {
+                oteryn_gameplay_quests::quest::world_callbacks::Passage {
+                    position,
+                    appearance: if super::super::draconia_exit::mismatch(name) == Some(i) {
+                        if wanted == 2772 { 2773 } else { 2772 }
+                    } else {
+                        wanted
+                    },
+                    replacement: None,
+                }
+            })
+            .collect();
+        callback.teleport = Some(Position {
+            x: 32701,
+            y: 31639,
+            floor: -6,
+        });
+    }
+    let world = if draconia_exit {
+        super::world_with_palette(
+            &callback,
+            trigger,
+            &[
+                (2772, oteryn_world_bundle::bundle::TerrainKind::Common),
+                (2773, oteryn_world_bundle::bundle::TerrainKind::Common),
+            ],
+        )?
+    } else if devil {
         super::world_with_palette(
             &callback,
             trigger,
@@ -283,7 +321,16 @@ fn scenario_case(
         } else {
             None
         };
-        let callback = if draconia_escape {
+        let callback = if draconia_exit {
+            println!("POSTGRES_CASE_STARTED draconia_exit database_created=true");
+            let authored = super::super::draconia_exit::authored()?;
+            let production = super::callback("draconia-exit-35011")?;
+            assert_eq!(
+                serde_json::to_value(&authored)?,
+                serde_json::to_value(&production)?
+            );
+            production
+        } else if draconia_escape {
             println!("POSTGRES_CASE_STARTED draconia_escape database_created=true");
             let production = super::callback("draconia-escape-35012")?;
             assert_eq!(
@@ -404,6 +451,19 @@ fn scenario_case(
             owner.quest_catalogue =
                 Some(super::super::draconia_escape::catalogue(&callback, name)?);
         }
+        if draconia_exit && name.ends_with("live") {
+            assert!(
+                owner
+                    .states
+                    .quest_callbacks
+                    .fixture
+                    .set(vec![
+                        callback.clone(),
+                        super::super::draconia_exit::live_lever(&callback)?
+                    ])
+                    .is_ok()
+            );
+        }
         if departure {
             let mut entry = callback.clone();
             entry.key = "oteryn:quest-callback/departure-entry-feedback".into();
@@ -496,7 +556,10 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if draconia_escape {
+        if draconia_exit {
+            super::super::draconia_exit::exercise(&owner, &mut admitted, &h, deps.actor, name)
+                .await?;
+        } else if draconia_escape {
             super::super::draconia_escape::exercise(
                 &owner,
                 &mut admitted,

@@ -46,7 +46,8 @@ pub struct EntryFacts {
     /// The entry's item definition is pickupable (ADR-0021 §4.4).
     pub pickupable: bool,
     /// The placement has an action, unique, door, depot or teleport binding, or an attribute the
-    /// pickup cannot represent (ADR-0021 §4.4).
+    /// pickup cannot represent (ADR-0021 §4.4). A trusted eligible key action is represented
+    /// by its immutable key number and does not seal pickup.
     pub bound: bool,
     /// `1..=100`.
     pub count: u32,

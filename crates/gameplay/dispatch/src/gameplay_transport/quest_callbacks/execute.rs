@@ -56,6 +56,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::StaleState;
         }
+        // Model validation keeps this predicate stateless. The runtime owner remains
+        // held, with no await between the current placement read-set and map/movement commit.
+        if !conditions::satisfied(map, &callback.object_conditions) {
+            return UseDisposition::NotPossible;
+        }
         if callback.objects.is_some() {
             let outcome = self.apply_callback_objects(map, callback, key, expected_revision, after);
             if outcome == UseDisposition::Committed {
