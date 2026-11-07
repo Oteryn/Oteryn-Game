@@ -160,6 +160,9 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                 keys.add(reward['item'])
                 keys.update(child['item'] for field in ('contents', 'backpack_outputs')
                             for child in reward.get(field, []))
+            carried = callback.get('effects', {}).get('carried_inputs', [])
+            authored_keys.update(item['item'] for item in carried)
+            keys.update(item['item'] for item in carried)
             for field in ('take', 'present', 'offerings'):
                 keys.update(item['item'] for item in callback.get(field, []))
                 authored_keys.update(item['item'] for item in callback.get(field, []))
@@ -237,6 +240,9 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     if set(definitions) != keys:
         raise ValueError('QUEST_CALLBACK_ITEM_MISSING')
     bindings = json.loads((root / 'imports/crystalserver/bindings/items.json').read_bytes())['bindings']
+    import authored_static_item_constructors
+    authored = json.loads(generated[authored_static_item_constructors.ADMISSIONS])
+    bindings.extend(row['binding'] for row in authored['records'])
     raw = (root / SOURCE).read_bytes()
     if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
         raise ValueError('QUEST_CALLBACK_SOURCE_DIGEST')

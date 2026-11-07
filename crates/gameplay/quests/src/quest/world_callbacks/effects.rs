@@ -13,6 +13,9 @@ pub enum Facing {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    /// Distinct carried definitions consumed atomically by the Quest receipt owner.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -90,6 +93,30 @@ pub struct Encounter {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    let inputs = &effects.carried_inputs;
+    let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
+    if inputs.len() > 8
+        || unique.len() != inputs.len()
+        || inputs.iter().any(|input| {
+            input.count == 0
+                || input.count > 100
+                || !super::super::valid_quest_key(&input.item)
+                || callback
+                    .item_on_target
+                    .as_ref()
+                    .is_some_and(|target| target.item == input.item)
+        })
+        || (!inputs.is_empty()
+            && (callback.trigger != Trigger::Use
+                || callback.storage.is_empty()
+                || callback.is_read_only()
+                || effects.scene.is_some()
+                || effects.portals.is_some()
+                || effects.encounter.is_some()
+                || effects.item_cycle.is_some()))
+    {
+        return false;
+    }
     if effects
         .scene
         .as_ref()
@@ -101,7 +128,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
         callback.trigger != Trigger::Use
             || callback.is_read_only()
             || !callback.offerings.is_empty()
-            || callback.item_on_target.is_some()
+            || callback.item_on_target.as_ref().is_some_and(|input| {
+                input.reusable || input.replacement.is_some() || input.target_replacement.is_some()
+            })
             || callback.storage.is_empty()
             || callback
                 .storage

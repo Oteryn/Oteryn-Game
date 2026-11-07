@@ -1,3 +1,21 @@
+# Compiling WIP published — exact assembly proof RED
+
+18of23active entries remain QUALIFIED,5remain. Full Mystery native route now
+passes introduction, all three collections, exploration, missing-third refusal
+and Premium refusal. Final assembly rolls back with PostgreSQL ERROR:
+"quest reward consumed an unauthored input". The existing give_world() owner
+hardcodes plan.take=[]; populate that list from the declared scalar and extra
+carried inputs. Keep the deferred exact-consumption guard intact.
+
+Current WIP compiles: the exact filtered libtest ran to this RED in108.89s.
+The corrected access regression passes PG71.970482066s; default check and strict
+Clippy passed before the latest test-only handle refresh. Five schema/tool and
+three constructor/reuse units pass,41file generation/drift and pins pass. No
+full Mystery qualification is claimed. After the proof fix, rerun that one PG
+case, refresh strict checks/evidence, push the green slice immediately, then
+continue Colours,Venore Daily,Winterlight,Wrath. Push at least every15minutes.
+Do not end while entries remain.
+
 # Source-verified access regression — full route GREEN building
 
 Actual PostgreSQL RED74.08s proved Lai accepted an incomplete dog cure. The

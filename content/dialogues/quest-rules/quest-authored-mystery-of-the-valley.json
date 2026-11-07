@@ -36,13 +36,13 @@
           "kind": "storage",
           "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/mission06",
           "op": "ge",
-          "value": 1
+          "value": 8
         },
         {
           "kind": "storage",
           "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
           "op": "ge",
-          "value": 22
+          "value": 23
         }
       ],
       "reply": [

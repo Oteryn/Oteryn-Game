@@ -59,7 +59,20 @@ pub(super) async fn exercise_intro(
             5112,
             "oteryn:quest-transition/quest/u8_54/the_new_frontier/questline/action_2",
         ),
+        (
+            5113,
+            "oteryn:quest-transition/quest/u8_0/the_ice_islands/mission06/npc_8",
+        ),
     ] {
+        if command == 5113 {
+            owner.admit_premium(super::fixture::id(40), admitted.game_session_id);
+            talk(owner, admitted, lai, 5107, "statue").await?;
+            assert_eq!(
+                progress(h).await?,
+                -1,
+                "accepting the cure task does not unlock the sled"
+            );
+        }
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
             .await

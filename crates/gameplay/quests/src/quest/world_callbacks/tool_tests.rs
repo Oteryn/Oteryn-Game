@@ -99,3 +99,70 @@ fn read_only_native_step_entry_has_no_unchecked_value_or_premium_effects() -> Re
     );
     Ok(())
 }
+
+#[test]
+fn carried_input_sets_are_bounded_unique_and_keep_legacy_hashes() -> Result<(), String> {
+    let mut value: serde_json::Value = serde_json::from_str::<serde_json::Value>(include_str!(
+        "../../../../../../content/quests/authored-world-callbacks.json"
+    ))
+    .map_err(|e| e.to_string())?["callbacks"][0]
+        .clone();
+    value["trigger"] = "use".into();
+    value["effects"] = serde_json::json!({"transform":null,"facing":null,"magic":null,"portals":null,"item_cycle":null,"encounter":null,"carried_inputs":[
+        {"item":"oteryn:item.tibia.i50336","count":1},
+        {"item":"oteryn:item.tibia.i50337","count":1},
+        {"item":"oteryn:item.tibia.i50338","count":1}
+    ]});
+    let doc = |c: &serde_json::Value| serde_json::json!({"schema":1,"callbacks":[c]}).to_string();
+    assert!(parse_with_provenance(&doc(&value), true).is_ok());
+    for case in 0..8 {
+        let mut bad = value.clone();
+        match case {
+            0=>bad["effects"]["carried_inputs"][0]["count"]=0.into(),
+            1=>bad["effects"]["carried_inputs"][0]["count"]=101.into(),
+            2=>bad["effects"]["carried_inputs"][0]["item"]="bad".into(),
+            3=>bad["effects"]["carried_inputs"][1]=bad["effects"]["carried_inputs"][0].clone(),
+            4=>bad["trigger"]="step_in".into(),
+            5=>bad["storage"]=serde_json::json!([]),
+            6=>bad["item_on_target"]=serde_json::json!({"item":"oteryn:item.tibia.i50336","count":1,"replacement":null,"target_replacement":null}),
+            _=>bad["effects"]["carried_inputs"] = serde_json::Value::Array((1..=9).map(|id|serde_json::json!({"item":format!("oteryn:item.tibia.i{id}"),"count":1})).collect()),
+        }
+        assert!(
+            parse_with_provenance(&doc(&bad), true).is_err(),
+            "carried input case {case}"
+        );
+    }
+    let legacy = CallbackEffects::default();
+    assert!(
+        serde_json::to_value(legacy)
+            .map_err(|e| e.to_string())?
+            .get("carried_inputs")
+            .is_none()
+    );
+    Ok(())
+}
+
+#[test]
+fn plain_carried_tool_and_reward_share_the_bounded_input_owner() -> Result<(), String> {
+    let original = load()?
+        .into_iter()
+        .find(|c| c.key == "oteryn:quest-callback/authored-mystery-assembly")
+        .ok_or("assembly")?;
+    let value = serde_json::to_value(original).map_err(|e| e.to_string())?;
+    let doc = |v: &serde_json::Value| serde_json::json!({"schema":1,"callbacks":[v]}).to_string();
+    assert!(parse_with_provenance(&doc(&value), true).is_ok());
+    for case in 0..4 {
+        let mut bad = value.clone();
+        match case {
+            0 => bad["item_on_target"]["reusable"] = true.into(),
+            1 => bad["item_on_target"]["replacement"] = "oteryn:item.tibia.i50336".into(),
+            2 => bad["item_on_target"]["target_replacement"] = 231.into(),
+            _ => bad["item_on_target"]["count"] = 0.into(),
+        }
+        assert!(
+            parse_with_provenance(&doc(&bad), true).is_err(),
+            "invalid crafting input {case}"
+        );
+    }
+    Ok(())
+}

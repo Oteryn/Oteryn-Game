@@ -2774,6 +2774,269 @@
         "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/snake_eye.lua",
         "OTERYN_CONSERVATIVE_NATIVE_BINDING: retained sole nearby box at32661,32192,-8 appearance2472ordinal1 is untagged; require exact literal source tile after Willard and Snake Eye, never fabricate UID."
       ]
+    },
+    {
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://www.tibiawiki.com.br/index.php?title=Mystery_of_the_Valley_Quest&action=raw",
+        "Oteryn contextual crafting USE: existing canonical Kha'zeel ground at33080,32704,z5, ordinal0; requires and consumes all three fragments. No source shrine/crystal object identity claim."
+      ],
+      "key": "oteryn:quest-callback/authored-mystery-assembly",
+      "trigger": "use",
+      "premium_required": true,
+      "completes": true,
+      "selector": {
+        "position": {
+          "x": 33080,
+          "y": 32704,
+          "floor": -5
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 231,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "effects": {
+        "carried_inputs": [
+          {
+            "item": "oteryn:item.tibia.i50337",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i50338",
+            "count": 1
+          }
+        ],
+        "item_reward": {
+          "item": "oteryn:item.tibia.i50335",
+          "count": 1,
+          "contents": []
+        },
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i50336",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "success_message": "You use the three fragments at the crystal landmark and assemble a guardian statue."
+    },
+    {
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://www.tibiawiki.com.br/index.php?title=Mystery_of_the_Valley_Quest&action=raw",
+        "Oteryn landmark USE bindings on existing canonical source ground; no claim of source Carved Shrine object identity."
+      ],
+      "key": "oteryn:quest-callback/authored-mystery-inukaya",
+      "trigger": "use",
+      "premium_required": true,
+      "completes": false,
+      "selector": {
+        "position": {
+          "x": 32459,
+          "y": 31093,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 799,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i50336",
+          "count": 1,
+          "contents": []
+        },
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "success_message": "You recover a statue fragment from the inukaya landmark."
+    },
+    {
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://www.tibiawiki.com.br/index.php?title=Mystery_of_the_Valley_Quest&action=raw",
+        "Oteryn landmark USE bindings on existing canonical source ground; no claim of source Carved Shrine object identity."
+      ],
+      "key": "oteryn:quest-callback/authored-mystery-muggy-plains",
+      "trigger": "use",
+      "premium_required": true,
+      "completes": false,
+      "selector": {
+        "position": {
+          "x": 33198,
+          "y": 31184,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 469,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i50337",
+          "count": 1,
+          "contents": []
+        },
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "success_message": "You recover a statue fragment from the muggy-plains landmark."
+    },
+    {
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://www.tibiawiki.com.br/index.php?title=Mystery_of_the_Valley_Quest&action=raw",
+        "Oteryn landmark USE bindings on existing canonical source ground; no claim of source Carved Shrine object identity."
+      ],
+      "key": "oteryn:quest-callback/authored-mystery-kilmaresh",
+      "trigger": "use",
+      "premium_required": true,
+      "completes": false,
+      "selector": {
+        "position": {
+          "x": 33834,
+          "y": 31697,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4408,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i50338",
+          "count": 1,
+          "contents": []
+        },
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "success_message": "You recover a statue fragment from the kilmaresh landmark."
+    },
+    {
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://www.tibiawiki.com.br/index.php?title=Mystery_of_the_Valley_Quest&action=raw",
+        "Oteryn landmark USE bindings on existing canonical source ground; no claim of source Carved Shrine object identity."
+      ],
+      "key": "oteryn:quest-callback/authored-mystery-crystal",
+      "trigger": "step_in",
+      "premium_required": true,
+      "completes": false,
+      "selector": {
+        "position": {
+          "x": 33080,
+          "y": 32704,
+          "floor": -5
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 231,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "success_message": "The crystal landmark resonates with the three fragments. Use the rock to assemble the statue."
     }
   ]
 }

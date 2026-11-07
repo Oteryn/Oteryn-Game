@@ -27,6 +27,8 @@ fn scenario_case(
         name,
         "catalogue-npc"
             | "authored-mystery-intro"
+            | "authored-mystery-assembly"
+            | "authored-mystery-geometry"
             | "authored-static-constructors"
             | "catalogue-npc-father"
             | "fathers-burden-handins"
@@ -82,7 +84,12 @@ fn scenario_case(
         if stateless_destination.is_some() {
             assert_eq!(callback.selector.position, Some(trigger));
         }
-        let world = if name == "authored-secret-library" {
+        let world = if matches!(
+            name,
+            "authored-mystery-geometry" | "authored-mystery-assembly"
+        ) {
+            super::super::questpc8_mystery_geometry::world()?
+        } else if name == "authored-secret-library" {
             super::super::questpc8_secret_library::world()?
         } else if name == "authored-treasure-island" {
             super::super::questpc8_treasure_island::world()?
@@ -371,6 +378,22 @@ fn scenario_case(
                 &h,
                 &authority,
                 name == "catalogue-npc-hero",
+            )
+            .await?;
+        } else if name == "authored-mystery-assembly" {
+            super::super::questpc8_mystery_assembly::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+            )
+            .await?;
+        } else if name == "authored-mystery-geometry" {
+            super::super::questpc8_mystery_geometry::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
             )
             .await?;
         } else if name == "authored-static-constructors" {
