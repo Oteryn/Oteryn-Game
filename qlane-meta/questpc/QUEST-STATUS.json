@@ -3,8 +3,8 @@
   "scope": "Pinned wiki titles A..M; no numeric or N..Z titles",
   "lifecycle": "AUTHORING on claude/happy-davinci-ijz3wy-questpc-pc2; green batch commits and fast-forward pushes authorized; no frozen integration candidate.",
   "counts": {
-    "QUALIFIED": 61,
-    "UNFINISHED": 116,
+    "QUALIFIED": 62,
+    "UNFINISHED": 115,
     "BLOCKED": 1
   },
   "owner_excluded_with_blocked_status": 1,
@@ -2202,36 +2202,55 @@
       "title": "Citizen Outfits Quest",
       "canonical": "oteryn:quest.outfit_and_addon_quests",
       "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/82/definition",
-      "status": "UNFINISHED",
-      "scope": "complete pinned quest path",
+      "status": "QUALIFIED",
+      "scope": "Complete mainland Citizen backpack and hat source paths on both creation sexes; only u7_8/citizen_outfits tracks, not other titles sharing the aggregate canonical key.",
       "reward_claims": [],
       "queued_stage_binding": {
         "stage": "s2",
-        "native_dispatch_binding": null,
-        "runtime_enabled": false
+        "native_dispatch_binding": "oteryn:quest-npc-program.citizen-mainland + oteryn:quest-reward/questpc-citizen-*",
+        "runtime_enabled": true
       },
-      "blocker": {
-        "missing_piece": "Citizen Outfits Quest: complete source objective/addon grant and durable outfit ownership (Minotaur Leather, Lubo) are not qualified through real NPC dispatch. A reward chest or cfg(test) planner does not prove this path.",
-        "evidence": [
-          "content/quests/definitions/quests-00100-00199.json:1#/records/82/definition",
-          "content/quests/missions/completion-binding-plan.json:1#/records/258",
-          "crates/gameplay/quests/src/quest/mod.rs:21",
-          "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:364"
+      "superseded_citizen_evidence": {
+        "blocker": {
+          "missing_piece": "Citizen Outfits Quest: complete source objective/addon grant and durable outfit ownership (Minotaur Leather, Lubo) are not qualified through real NPC dispatch. A reward chest or cfg(test) planner does not prove this path.",
+          "evidence": [
+            "content/quests/definitions/quests-00100-00199.json:1#/records/82/definition",
+            "content/quests/missions/completion-binding-plan.json:1#/records/258",
+            "crates/gameplay/quests/src/quest/mod.rs:21",
+            "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:364"
+          ],
+          "attempts": [
+            "Read this canonical definition and chosen recipe, including source references.",
+            "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
+            "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
+          ]
+        },
+        "first_unqualified_stage": {
+          "key": "s2",
+          "kind": "collect",
+          "objective": "Zbierz 100 Minotaur Leather i oddaj je Lubo.",
+          "targets": [
+            "Minotaur Leather",
+            "Lubo"
+          ]
+        }
+      },
+      "qualification": {
+        "proof": "cloud-citizen-native-story-proof.json",
+        "code_pushed": "50607c98d32b166efbeba56ff78d694475a94166",
+        "postgres": "18.6",
+        "cases": 2,
+        "duration_seconds": [
+          89.628812847,
+          89.676846885
         ],
-        "attempts": [
-          "Read this canonical definition and chosen recipe, including source references.",
-          "Reconciled current reward coverage and retained PG locators; did not reuse obsolete claim-native-lowering holds.",
-          "Checked per-quest native/source binding queues against the existing generic production consumer and test-only batch3 planner boundary."
-        ]
-      },
-      "first_unqualified_stage": {
-        "key": "s2",
-        "kind": "collect",
-        "objective": "Zbierz 100 Minotaur Leather i oddaj je Lubo.",
-        "targets": [
-          "Minotaur Leather",
-          "Lubo"
-        ]
+        "sex_order": [
+          "female hat then backpack",
+          "male backpack then hat"
+        ],
+        "source_scope": "primary Crystal201189 Lubo/Hanna;100 leathers, strict7201s elapsed, helmet1/feathers100/honeycombs50, account addons1+2 bothsex, exact refusal/replay",
+        "clock_fixture": "only timer arranged after early refusal; all other durable tracks asserted unchanged",
+        "global_remaining": "NPC13 predecessor issue and other quest ownership remain separate; no whole-aggregate promotion"
       }
     },
     {
@@ -7980,7 +7999,7 @@
       "first_unqualified_stage": {
         "key": "s10",
         "kind": "collect",
-        "objective": "Zdob\u0105d\u017a Winning Lottery Ticket do \u017ce\u0144skiego Mage potion belt.",
+        "objective": "Zdobądź Winning Lottery Ticket do żeńskiego Mage potion belt.",
         "targets": [
           "Winning Lottery Ticket"
         ]
@@ -8600,7 +8619,7 @@
       "first_unqualified_stage": {
         "key": "s2",
         "kind": "collect",
-        "objective": "Odszukaj \u015bwi\u0105tyni\u0119 Inukayi i odbierz pierwszy fragment statuy.",
+        "objective": "Odszukaj świątynię Inukayi i odbierz pierwszy fragment statuy.",
         "targets": [
           "Fragment of a Statue (1st)",
           "Inukaya Shrine"
@@ -10747,11 +10766,11 @@
   },
   "latest_count_report": {
     "total": 178,
-    "done_pushed": 61,
-    "in_progress": 46,
+    "done_pushed": 62,
+    "in_progress": 45,
     "not_started": 70,
     "excluded": 1,
-    "basis": "Entry-specific audit: shared aggregate canonical keys do not start unrelated display entries; Lions Rock has concrete callbacks; Citizen mainland is now in progress. OWNED107 names."
+    "basis": "Citizen mainland code+focused units+two real PostgreSQL source stories green on pushed50607c98; all other packet states unchanged."
   },
   "engine_requests": [
     {
@@ -10768,14 +10787,14 @@
     }
   ],
   "citizen_mainland_batch": {
-    "status": "WIP: introduction topics bound; PG routing request sent to qengine2; exact supply fixture corrected",
+    "status": "QUALIFIED: both source stories green on pushed50607c98",
     "sources": [
       "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/lubo.lua",
       "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/hanna.lua"
     ],
     "reuse": "Existing QENGINE exchanges, elapsed-time state operations, outfit grants and native NPC storage receipts; only local content registration helpers added",
-    "pg_credit": false,
-    "generated_batch_finalization": "pending; no global matrix, pin or placement regeneration during authoring",
+    "pg_credit": true,
+    "generated_batch_finalization": "PASS on50607c98: native/content-tree, placements, binding/matrix, audit/client lists, pins and independent pin-check",
     "owner_push_override": "2026-11-07: push compiling WIP after workspace all-targets check and fmt; full tests not required; every30minutes",
     "compile_gate": "PASS workspace all-targets check and fmt after source-pin and normal capability negotiation fixture corrections; focused PG rerun pending",
     "pg_red": [
@@ -10810,11 +10829,12 @@
       "green": "0.133 seconds",
       "proof": "cloud-citizen-intro-topic-proof.json"
     },
-    "engine_request": "Eligible native NPC programme must precede ineligible reward-keyword fallback, preserving topic guards",
-    "engine_checked_ref": "5c01deabb33b448fe7de795a3f9271477af05ea6"
+    "engine_request": "Resolved locally with main QNPCFX planner and24-line Citizen-only routing adapter; no generic engine implementation added",
+    "engine_checked_ref": "5c01deabb33b448fe7de795a3f9271477af05ea6",
+    "proof": "cloud-citizen-native-story-proof.json"
   },
   "current_citizen_fixture": {
-    "state": "fixed; own PostgreSQL rerun compiling",
+    "state": "PASS: preserved full catalogue/history; exact supply amounts and normal capabilities; source-native introduction adapter",
     "root_cause": "subset catalogue omitted other active NPC programme tracks",
     "fix": "test-support Citizen clock helper preserves full catalogue and additive history",
     "qualified": false
@@ -10844,7 +10864,7 @@
       "1295_quest_stateless_paid_receipts.sql",
       "1296_quest_paid_sale_mint_occurrences.sql"
     ],
-    "canonical_npc_migrations": "1310\u20131315 unchanged from main; duplicate lane NPC bootstrap, Marlin, item-source and Father proof removed",
+    "canonical_npc_migrations": "1310–1315 unchanged from main; duplicate lane NPC bootstrap, Marlin, item-source and Father proof removed",
     "atomic_father": "exact eleven-track acceptance retained in1290; value/XP proof consumed from main1315",
     "unit_run2": {
       "total": 346,
@@ -10867,5 +10887,54 @@
     ],
     "known_red": "historical NPC13 predecessor8c649465; unchanged and requested from qengine2",
     "qualification_credit": false
+  },
+  "hot_cuisine_source_followup": {
+    "source": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/jean_pierre.lua",
+    "sha256": "dd9e5a92688d4563e5bb5590f4d436f35db87b9adec435dfe543f3ea967518bf",
+    "resolved_by_main": [
+      "authoritative UTC calendar month",
+      "delayed1000ms conversation closure"
+    ],
+    "engine_request": "year/month comparison over stored timestamps and current-year write for annual dishes/first-menu bonus",
+    "existing_programme": {
+      "rules": 131,
+      "tracks": 50,
+      "item_grants": 0
+    },
+    "qualification_credit": false
+  },
+  "krailos_source_followup": {
+    "url": "https://www.tibiawiki.com.br/index.php?title=Krailos_Quest&oldid=445501",
+    "facts": [
+      "Larek starts Hungry New World",
+      "Ghorza Water depends on dry Salt Lake and updates shared refill/toxin state",
+      "Grubokk branch includes machinery sabotage",
+      "Thunder Tusk counts200 Ogre Savages/Brutes"
+    ],
+    "contract_boundary": "Chosen champion/ten-Goblin summary does not prove all real source tasks; no NPC stub dialogue invented",
+    "engine_request": "player-driven world state readable by NPC guards/item callbacks, fenced Salt Lake refill/toxin and object resets",
+    "qualification_credit": false
+  },
+  "yalahar_uid3091_source_followup": {
+    "source": "https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/world.otbm",
+    "sha256": "dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7",
+    "method": "Repository otbm_reader.read_tiles; decoded item attribute 5 equals 3091",
+    "decoded_tiles": 19325129,
+    "matching_items": 0,
+    "conclusion": "Pinned donor map also lacks UID3091. A raw byte coincidence is not an item attribute. Do not invent a native placement or replace the exact stored-UID selector with coordinates."
+  },
+  "main3032_pre_push_validation": {
+    "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+    "workspace_all_targets": "PASS4m42s",
+    "clippy_changed_crates": "PASS; final durability rerun1m26s",
+    "fmt_all": "PASS",
+    "pin_refresh_and_independent_check": "PASS",
+    "duplicate_migrations": "PASS",
+    "durability_units_before_inventory_regeneration": "617passed/1failed; strict inventory regenerated to include existing tutorial_viola.rs",
+    "pending": [
+      "regenerated audit inventory test rerun",
+      "dispatch unit suite"
+    ],
+    "cadence_exception": "PREPUSH-2 tests-pending exception; own Citizen PG stories passed89.6288s and89.6768s on PostgreSQL18.6"
   }
 }

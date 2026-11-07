@@ -598,3 +598,35 @@ programme's topic store. Source flag1 material offers use reward-callback topics
 This source-stage split requires no new engine schema or persistent latch and
 retains topic2 Lubo/topic1 Hanna acceptance guards. The two PG stories are the
 qualification gate; unit planner success alone earns no quest qualification.
+
+Hot Cuisine source follow-up (2026-11-07): main QNPCFX supplies actual UTC month
+and delayed1000ms closure, satisfying the earlier month/dismissal request.
+Primary Jean Pierre source is https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/jean_pierre.lua
+(SHA256 dd9e5a92688d4563e5bb5590f4d436f35db87b9adec435dfe543f3ea967518bf).
+Lines109–160 require year/month comparisons against each stored last-cooked
+Unix timestamp, a first-completed-menu bonusyear and per-dish bonusused flags.
+A365-day elapsed approximation would not preserve August/leap-year eligibility.
+Sent a narrower calendar-period/current-year-write ENGINE-REQUEST; remaining
+item/count/bonus bookkeeping can use existing bounded tracks and reward owners.
+The131 currently lowered rules contain menus/storage only, not dish item grants;
+therefore month/dismissal support alone does not qualify the full quest.
+
+Krailos review (2026-11-07): Fandom API returned402; retrieved
+https://www.tibiawiki.com.br/index.php?title=Krailos_Quest&oldid=445501 instead.
+Hungry New World starts with Larek (33658,31662,z7), not the banker-only Grubokk
+stub. Ghorza's Water route is available when the Salt Lake is dry and changes
+shared refill/toxin state; Survival of the Strongest includes Grubokk's machinery
+sabotage, while Vuzrog's Thunder Tusk objective counts200 Ogre Savages/Brutes.
+These facts differ materially from the chosen packet's abstract champion/ten-goblin
+summary. Do not certify the real seven-task quest with that approximation or attach
+invented quest lines to the Grubokk banking stub. Sent a shared world-state/NPC
+predicate and fenced refill/reset request; current main calendar registry has no
+Krailos/Salt Lake entry or player-action mutation bridge.
+
+## Yalahar UID3091 donor-map verification (2026-11-07)
+Source: https://github.com/zimbadev/crystalserver/blob/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/world.otbm
+SHA256 dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7.
+Repository otbm_reader.read_tiles decoded19,325,129 tiles and found zero items
+whose unique-ID attribute5 equals3091. A raw byte match cannot establish a
+source placement. Keep the held exact-UID callback unchanged; do not manufacture
+an object or substitute coordinates for the stored unique ID.

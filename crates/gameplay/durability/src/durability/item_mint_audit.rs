@@ -2056,43 +2056,30 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/character_inbox/reward_claim/mint.rs",
                 "crates/gameplay/durability/src/durability/consume_transform.rs",
                 "crates/gameplay/durability/src/durability/house_interior.rs",
-                // GEMX I19: shrine enchanting writes its outbox row from its Type2Transaction.
-                // production_sources() yields the item_craft/ directory before item_craft.rs,
-                // in path order, so enchanting.rs comes before the soulpit files.
                 "crates/gameplay/durability/src/durability/item_craft/enchanting.rs",
-                // W19 map harvest binds the caller's fenced Type2Transaction tuple.
                 "crates/gameplay/durability/src/durability/item_craft/harvest.rs",
-                // Soul Core conversion and the shared-transaction entry debit both bind
-                // their existing CRAFT audit envelope to the caller's Type2 transaction.
                 "crates/gameplay/durability/src/durability/item_craft/soulpit/entry.rs",
                 "crates/gameplay/durability/src/durability/item_craft/soulpit.rs",
                 "crates/gameplay/durability/src/durability/item_craft.rs",
                 "crates/gameplay/durability/src/durability/item_decay_retire.rs",
                 "crates/gameplay/durability/src/durability/item_fee_burn.rs",
-                // P18 zero-gold Forge events use the fenced transaction's selected tuple.
                 "crates/gameplay/durability/src/durability/item_forge_live/actions.rs",
-                // W19 seed drops share the move owner's Type2 transaction and tuple.
                 "crates/gameplay/durability/src/durability/item_loop_move/seed_drop.rs",
                 "crates/gameplay/durability/src/durability/item_mint.rs",
-                // C4 write-once text uses the same fenced Type2Transaction tuple.
                 "crates/gameplay/durability/src/durability/item_text/write_once.rs",
                 "crates/gameplay/durability/src/durability/item_timed_state.rs",
                 "crates/gameplay/durability/src/durability/item_transfer.rs",
-                // E12's native Inbox lamp burn uses the same fenced Type2 tuple.
                 "crates/gameplay/durability/src/durability/item_use/hireling_lamp.rs",
                 "crates/gameplay/durability/src/durability/item_use.rs",
                 "crates/gameplay/durability/src/durability/map_item_mint.rs",
                 "crates/gameplay/durability/src/durability/npc_trade.rs",
                 "crates/gameplay/durability/src/durability/player_death_items.rs",
                 "crates/gameplay/durability/src/durability/player_trade/storage.rs",
-                // NPC hand-ins bind the tuple selected by their Type2Transaction.
                 "crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs",
-                // W03 collection keeps the caller's Type2Transaction through delivery
-                // and binds its selected tuple in both the envelope and outbox.
                 "crates/gameplay/durability/src/durability/reward_claim_mint/boss_reward/delivery.rs",
-                // W15b container children bind the root transaction's selected Type2 tuple.
                 "crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs",
                 "crates/gameplay/durability/src/durability/reward_claim_mint.rs",
+                "crates/gameplay/durability/src/durability/tutorial_viola.rs",
             ]
         );
         // Every type-2 encoder writes the tuple it is given, never this module's compile-time

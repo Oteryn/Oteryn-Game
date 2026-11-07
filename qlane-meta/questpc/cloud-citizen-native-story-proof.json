@@ -1,0 +1,58 @@
+{
+  "title": "Citizen Outfits Quest",
+  "code_pushed": "50607c98d32b166efbeba56ff78d694475a94166",
+  "scope": "Complete mainland Citizen backpack and hat source paths on both creation sexes; only u7_8/citizen_outfits tracks, not other titles sharing the aggregate canonical key.",
+  "sources": [
+    {
+      "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/lubo.lua",
+      "sha256": "a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d"
+    },
+    {
+      "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/hanna.lua",
+      "sha256": "cd2ec86031b89bd244acbf43b9a4bfe3c63ef8165b9c7de24aed484f15bb3956"
+    }
+  ],
+  "postgres_version": "18.6 (Debian18.6-1.pgdg13+2)",
+  "log_sha256": "6ebb9ff2cfea73e0099b2e2f1f1407ca3641471bd2a10be83b1f9d2b9f47120e",
+  "cases": [
+    {
+      "marker": "qengine-rewards-questpc-citizen-female-story",
+      "duration_seconds": 89.628812847,
+      "success": true
+    },
+    {
+      "marker": "qengine-rewards-questpc-citizen-male-story",
+      "duration_seconds": 89.676846885,
+      "success": true
+    }
+  ],
+  "assertions": [
+    "literal NPC introductions and guarded yes acceptance",
+    "exact100 leathers consumed",
+    "early backpack claim refuses; strict7201s elapsed required",
+    "clock fixture changes no source objective or entitlement",
+    "exact hat ingredients1 helmet/100 feathers/50 honeycombs",
+    "49 honeycomb refusal consumes nothing",
+    "normal appearance catalogue mask3 in both addon orders",
+    "literal command replay and fresh repeat grant nothing extra"
+  ],
+  "native_source_cells": {
+    "lubo": [
+      32489,
+      32119,
+      7
+    ],
+    "hanna": [
+      32408,
+      32220,
+      7
+    ]
+  },
+  "placement_proof": "committed promotion candidates, explicit Global selection, converter/check and world pin check",
+  "unit_proof": {
+    "focused_tests": 5,
+    "result": "PASS",
+    "log_sha256": "e29e6375eeb9481e3f2afe9070a4fd7a9f07735e2594abdd3c49334e5fa957c5"
+  },
+  "global_check_boundary": "Historical NPC13 predecessor remains an unrelated known red; dispatch/durability complete unit runs still pending under owner cadence exception."
+}
