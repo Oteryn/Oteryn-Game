@@ -911,12 +911,12 @@ pending. No package QUALIFIED claim is made at this compiling WIP checkpoint.
 
 Full legacy materialization and Rust inventory repinning pass567.363s; NPC
 placement regeneration/check and converter tests pass0.147/0.151/0.266s.
-All12 changed crates pass all-target/all-feature check50.883s. The complete
+All12 changed crates pass all-target/all-feature check51.015s. The complete
 World owner test module now passes10 cases, including positive/negative main
 static Fury requirements. Furyosa keeps main's independently admitted, persisted
 static layer guard; full WVAR remains reverted. Node epoch, exit-only, undated
 and active-layer checks are retained, and WORLD's negative fixture chooses
-truly inactive Fury days.25 cosmetic compiler tests pass2.995s. Main's49
+truly inactive Fury days.25 cosmetic compiler tests pass2.99s. Main's49
 original item/base mappings and14 outfit records remain intact; additional
 Quest mappings have the closed QENGINE provenance.
 
@@ -924,3 +924,12 @@ Native registration now orders WCONTRIB after the accepted ITEMHOLD and QENGINE
 owners. Only exact matching custody/binding/admission facts may reuse14156 or
 21182; their existing presentation, semantics and provenance are preserved.
 New native/model outputs, final pins, Clippy and real PostgreSQL remain pending.
+
+### WCONTRIB producer encoding and lint checkpoint
+
+Clippy all12 changed crates/all targets/all features passes253.594s with
+`-D warnings`. The Quest reward producer now uses the shared native manifest
+encoder, keeping its output byte-identical to ordinary native regeneration.
+Its12 tests pass5.827s and all25 cosmetic compiler tests pass2.879s. This also
+retains main's bounded external cosmetics descriptor instead of embedding the
+large source shards. Final native model, pins and PG remain pending.

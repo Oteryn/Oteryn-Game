@@ -8475,7 +8475,7 @@
       "source": {
         "reference": "tools/content-schema/quest-authoring/qengine_rewards.py#merge_accepted_cosmetics",
         "revision": "wpkg-cosmetics-union-v1",
-        "sha256": "d1e78e42e13ecc1e141aa1fe11734ac2d074ca182bda66ce2599366026250393"
+        "sha256": "d79cd2c8a6a11a3ec53baf0faa78e32e6be4774361741f2e53674a3edeae0eee"
       }
     },
     {
