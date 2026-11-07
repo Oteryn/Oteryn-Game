@@ -767,3 +767,20 @@ PASS0.03s (build2m01s), covering2Instances, independent doors, bounded cells,
 parent preservation, stale scope and invalid Instance rejection. Independent
 source review found no concrete authority/aliasing defect. Native PostgreSQL
 regressions remain to rerun after1101; no full-row completion claimed.
+
+## SRVENC W17: native player modifier state
+
+Source: `docs/reference/tibia-manual/combat.md:271-272,274,276-278`.
+The actual PlayerSpellState owner now implements nonlethal current-HP
+percentage hits, fear2s/root3s/drunk10s, exact keyed incoming damage bonuses
+15/25/10percent, expiry/suppression and exit cleanup. The real ConditionStore
+and existing movement/fear cast gates remain authoritative; direct percentage
+hits preserve mana/shields and unrelated state. No persisted fields or IDs.
+
+Validation: full `oteryn-gameplay-spell` package324/324 passed18.47s,
+including5newDrome owner cases (actual shield ordering, exact expiry, cast
+gates, overflow/refusal and cleanup). Before implementation the public
+DromeStatus API was absent (compile-red). The real encounter engine/cadence
+uses these successors in the next step; its behavioral RED showed200HP
+where the source25percent corpse burst requires150HP. Full encounter
+PostgreSQL GREEN remains pending; this is not a full W17 completion claim.
