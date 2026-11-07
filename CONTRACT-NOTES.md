@@ -46,6 +46,28 @@ replay. The scoped 16-test dispatch run passed in 376.66 s, including the nine
 `srx2_charm` runtime cases, assignment progression and the source callback cases.
 No additional chance writer, migration or protocol/registry number is needed.
 
+## SRVWLD — W01c canonical callback closure
+
+The production canonical corpus on base `9668e0a04` already contains executable
+bodies for every canonical schedule. The regression
+`srvwld_canonical_schedules_resolve_every_callback_at_its_source_index` passed
+in 1.60 s: 1,863 canonical creatures, 7,201 attack/defense slots, 15 composed
+attack callback slots and eight healing-defense callback slots. It exercises
+the real native AI projection and verifies that every slot resolves without
+being dropped or renumbered. All 15 attack callback bodies also pass
+`ComposedSource::from_native_parts`, the parser called by production
+`monster_profile_cycle/physical_spell/composed.rs:27`.
+
+The compatibility nil-body branch is retained: the 33 unresolved slots belong
+to the seven retained `canary:` legacy/familiar records, not the canonical
+`oteryn:creature.*` source corpus. No executable behavior is inferred from an
+unqualified name. Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
+`src/creatures/monsters/monster.cpp:1201-1222`, likewise skips a null spell and
+executes resolved spells in source order. Existing native callback owner tests
+`nine_source_callbacks_actual_native_damage_delays_stages_and_replay` and
+`every_source_callback_missing_facts_provenance_scope_dead_parent_refuses`
+passed in the scoped dispatch run. No migration or public number is allocated.
+
 Package GPROD-PKG composes all three deliveries below on current main. The delivery
 sections retain their original scope/history; statements about another producer being
 absent describe that delivery's base, rather than this combined package.
