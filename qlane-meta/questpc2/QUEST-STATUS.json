@@ -2004,6 +2004,13 @@
       "version": 180006,
       "seconds": 88.74,
       "marker_ms": 10498
+    },
+    "final_regressions": {
+      "annihilator_postgres_seconds": 107.7,
+      "marker_ms": 107185,
+      "pin_check": "PASS",
+      "world_digest": "32170e60e0f946dd1ba74dc68e45399579b85e66e819259a7adfef3bc5ad8502",
+      "published_source_slice": "9ccbd3285"
     }
   }
 }

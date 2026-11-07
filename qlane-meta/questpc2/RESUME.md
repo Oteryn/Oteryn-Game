@@ -25,10 +25,9 @@ Fresh merged PG guard5.19s, defender2cases84.39s, atomicXP/objective77.97s
 (shared xmin+replay) all GREEN. Check4crates64s, alltarget/allfeatureclippy
 -Dwarnings146s, fmt PASS. No full workspace/PG suites.
 
-PENDING RIGHT NOW: session76640 earned Annihilator regression, log
-/tmp/questpc2-r2-traversal-annihilator-regression-pg.log; session11097 merged
-pin-refresh/check logs /tmp/questpc2-r2-traversal-pin-{refresh,check}.log.
-Finalize these proof facts, update batch/status/resume and push immediately.
+Final earned Annihilator PG GREEN107.70s, marker107185ms. Merged pin-refresh
+/check PASS, world32170e60e0f946dd1ba74dc68e45399579b85e66e819259a7adfef3bc5ad8502.
+Source slice9ccbd3285 is pushed; final evidence is recorded in the batch JSON.
 Then full Elvenbane: actual source basement activation of existing exact-goal
 cohort, real-client Dragon+five defenders, seven-item physical atomic treasure
 (Spellbook3059 documented choice), once/replay/exit/journal; qualify whole.
