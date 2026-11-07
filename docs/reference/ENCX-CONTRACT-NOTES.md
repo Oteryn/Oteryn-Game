@@ -866,3 +866,14 @@ regressions, not a positive Instance encounter-chain proof. The Rotten Blood
 case still explicitly preserves physical corpse refusals for unqualified bosses.
 A real tagged Instance death transaction and full production entry/fight/reward/
 exit remain to be demonstrated before either W10 or W11 is DONE.
+
+### Instance receipt integration fixture WIP
+
+A new real-handoff component case enters an assigned Instance through command
+178, then exercises the captured-death consumer seam for tagged receipt replay
+and Channel/Instance alias rejection. It does not seed a Primal catalogue row or
+claim a physical Primal fight. Existing Channel captured-death fixtures retain
+their default 52-byte key type; the helper now also accepts a tagged-key type.
+The new case compiles (test build 1m44s) and is still running at this checkpoint.
+The helper's known remaining Channel-only guard is `Err("channel fixture")`;
+the runtime red result has not yet been observed. No new numbers are allocated.

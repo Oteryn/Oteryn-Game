@@ -83,8 +83,8 @@ async fn talk(
 /// A test-side projection of a native captured death. The physical capture owner
 /// supplies these values; no client command carries or selects them.
 #[derive(Clone)]
-pub(super) struct CapturedEndgameDeath {
-    pub death_key: [u8; 52],
+pub(super) struct CapturedEndgameDeath<K = [u8; 52]> {
+    pub death_key: K,
     pub occurrence: [u8; 16],
     pub creature: String,
     pub raw_xp: i64,
@@ -95,9 +95,9 @@ pub(super) struct CapturedEndgameDeath {
 
 /// Existing native XP/death seam for source identities captured by another mounted
 /// fixture. This does not bypass or make a claim about physical corpse admission.
-pub(super) async fn settle_captured_endgame_death(
+pub(super) async fn settle_captured_endgame_death<K: AsRef<[u8]>>(
     owner: &ComposedFreshAdmission<'_, '_, '_>, pool: &sqlx::PgPool,
-    session: crate::foundation::GameSessionId, source: &CapturedEndgameDeath,
+    session: crate::foundation::GameSessionId, source: &CapturedEndgameDeath<K>,
 ) -> TestResult {
     use crate::durability::party_kill_xp::{PartyKillXpMember, PartyKillXpRequest};
     use crate::durability::character_progression::{ExperienceAwardRequest, ExperienceRewardOccurrence};
@@ -118,7 +118,7 @@ pub(super) async fn settle_captured_endgame_death(
         fence.runtime_scope, fence.scope_ownership_generation.get(),
     ).await.map_err(debug)?;
     let replay = crate::durability::party_kill_xp::reconcile_in_transaction(
-        &mut tx, &scope, &source.death_key, fence.character_id, &source.creature,
+        &mut tx, &scope, source.death_key.as_ref(), fence.character_id, &source.creature,
         source.raw_xp, (source.death_at_ms, source.death_at_us),
     ).await.map_err(debug)?;
     let awards = if let Some(awards) = replay {
@@ -128,7 +128,7 @@ pub(super) async fn settle_captured_endgame_death(
             &source.creature, source.raw_xp).await.map_err(debug)?;
         let binding = owner.progression_binding(session).ok_or("progression policy")?;
         let awards = crate::durability::party_kill_xp::commit_in_transaction(&mut tx, &scope, owner.holder, PartyKillXpRequest {
-            death_key: source.death_key.to_vec(), principal: fence.character_id, creature: source.creature.clone(), base_xp: source.raw_xp,
+            death_key: source.death_key.as_ref().to_vec(), principal: fence.character_id, creature: source.creature.clone(), base_xp: source.raw_xp,
             death_at_ms: source.death_at_ms, death_at_us: source.death_at_us, shared: false, party_id: None, party_revision: None,
             members: vec![PartyKillXpMember { fence,
                 request: ExperienceAwardRequest {
@@ -144,13 +144,13 @@ pub(super) async fn settle_captured_endgame_death(
         // repeated same-transaction calls must observe their accepted receipts.
         for _ in 0..2 {
             let participants = [(fence, source.damaged)];
-            apply_soul_war_kill_in_transaction(&mut tx, owner.holder, &source.death_key,
+            apply_soul_war_kill_in_transaction(&mut tx, owner.holder, source.death_key.as_ref(),
                 &source.creature, &participants).await.map_err(debug)?;
             crate::durability::quest_state::rotten_blood::apply_rotten_blood_kill_in_transaction(
-                &mut tx, owner.holder, &source.death_key, &source.creature, &participants,
+                &mut tx, owner.holder, source.death_key.as_ref(), &source.creature, &participants,
             ).await.map_err(debug)?;
             crate::durability::character_hazard::apply_hazard_kill_in_transaction(
-                &mut tx, owner.holder, &source.death_key, &source.creature, &participants,
+                &mut tx, owner.holder, source.death_key.as_ref(), &source.creature, &participants,
             ).await.map_err(debug)?;
         }
         awards

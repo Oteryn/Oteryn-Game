@@ -34,6 +34,8 @@ const BOSS: &str = "oteryn:boss.native_activity";
 const CREATURE: &str = "fixture:activity_boss";
 const TEMPLATE: &str = "oteryn:room.native_activity_fixture";
 
+#[path = "boss_activity/endgame_receipts.rs"]
+mod endgame_receipts;
 #[path = "boss_activity/nonreward.rs"]
 mod nonreward;
 #[path = "boss_activity/offline_death.rs"]
@@ -51,6 +53,7 @@ mod state_effects;
 enum Case {
     Entry,
     AwardContinuity,
+    EndgameReceipts,
     Rewards,
     LateRewards,
     NonRewardDefeat,
@@ -60,6 +63,11 @@ enum Case {
     CapabilityMismatch,
     OfflineDeathMismatch,
     OfflineDeathDeadline,
+}
+
+#[test]
+fn boss_activity_postgres_tagged_instance_primal_receipt_replay_and_scope_fences() -> TestResult {
+    run_scenario(Case::EndgameReceipts)
 }
 
 #[test]
@@ -133,9 +141,10 @@ fn run_scenario(case: Case) -> TestResult {
 
 fn scenario(case: Case) -> TestResult {
     run(async |admin| {
+        let with_live_progression = matches!(case, Case::AwardContinuity | Case::EndgameReceipts);
         let with_rewards = matches!(
             case,
-            Case::Rewards | Case::LateRewards | Case::AwardContinuity
+            Case::Rewards | Case::LateRewards | Case::AwardContinuity | Case::EndgameReceipts
         );
         let late = case == Case::LateRewards;
         let with_death = matches!(
@@ -145,14 +154,14 @@ fn scenario(case: Case) -> TestResult {
         reset();
         // Real progression cases let the current Character admission owner
         // initialize its pinned policy instead of seeding the harness XP table.
-        let initialized = !with_death && case != Case::AwardContinuity;
+        let initialized = !with_death && !with_live_progression;
         let h =
             Harness::create_with_admission_seed(admin, "native_activity_wire", initialized, false)
                 .await?;
         let evidence = super::house_transfer::RecoverySource::start(&h).await?;
         super::house_transfer::prepare_owned_session(&h).await?;
         let world = fixture::fence(1)?.runtime_scope.world_id();
-        let (controller, source_pin) = if case == Case::AwardContinuity {
+        let (controller, source_pin) = if with_live_progression {
             state_effects::generation(world, "content-1")?
         } else if with_rewards {
             crate::content::native_gameplay::test_support::activated_reward_boss_fixture(
@@ -237,7 +246,7 @@ fn scenario(case: Case) -> TestResult {
         if with_death {
             offline_death::prepare_source(&h, &mut owner, &mut admitted).await?;
         }
-        if case == Case::AwardContinuity {
+        if with_live_progression {
             state_effects::prepare_source(&h, &mut owner, &mut admitted).await?;
         } else {
             deps.initialize(&owner).await;
@@ -284,7 +293,7 @@ fn scenario(case: Case) -> TestResult {
             .ok_or("allocated Instance")?;
         // Two independent test activation invocations produce equal qualified
         // content. Production uses the consumed activity-template activation API.
-        let (_instance_controller, instance_pin) = if case == Case::AwardContinuity {
+        let (_instance_controller, instance_pin) = if with_live_progression {
             state_effects::generation(world, "content-1")?
         } else if with_rewards {
             crate::content::native_gameplay::test_support::activated_reward_boss_fixture(
@@ -587,6 +596,7 @@ fn scenario(case: Case) -> TestResult {
             }
         }
         match case {
+            Case::EndgameReceipts => endgame_receipts::assert_receipts(&h, &destination, admitted).await?,
             Case::Entry => {
                 state_continuity::assert_entry_and_timeout_return(
                     &h,
