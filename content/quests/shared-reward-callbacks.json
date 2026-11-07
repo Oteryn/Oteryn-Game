@@ -297,6 +297,45 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/bone-pit-lost-sample",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.muriel",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/into_the_bone_pit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I am so glad you are still alive. Benjamin found the container with the bone sample inside. Fortunately, I inscribe everything with my name, so he knew it was mine. ..."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc"
+      ],
+      "minimum_level": 35,
+      "failure_reply": [
+        "Indeed there is something to be done, but I need someone more experienced. Come back later if you want to."
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i131",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/deepling-helmet",
       "quest": "oteryn:quest.outfit_and_addon_quests",
       "npc": "oteryn:npc.navigator",
@@ -1899,10 +1938,20 @@
         "Excellent! Now I can try to put my theoretical thoughts into practice and find a cure for the symptoms of undead. Here, take this for your efforts."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:83:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc"
       ],
       "minimum_level": 35,
-      "experience": 1000
+      "experience": 1000,
+      "failure_reply": [
+        "Indeed there is something to be done, but I need someone more experienced. Come back later if you want to."
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i131",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ]
     },
     {
       "key": "oteryn:quest-reward/l2-bone-start",
@@ -1933,9 +1982,12 @@
         "Great! Here is the container for the bone. Once, I used it to collect ectoplasma of ghosts, but it will work here as well. ..."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:138:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/muriel.lua:sha256:7bd9180ba903509cb3a4a6fe01a7b73d9038eff99d15c68bf95fed5ec697d4cc"
       ],
-      "minimum_level": 35
+      "minimum_level": 35,
+      "failure_reply": [
+        "Indeed there is something to be done, but I need someone more experienced. Come back later if you want to."
+      ]
     },
     {
       "key": "oteryn:quest-reward/l2-botany-return",
@@ -4080,7 +4132,7 @@
       "next_topic": 0,
       "storage": [
         {
-          "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest/questline",
+          "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest",
           "minimum": 1,
           "maximum": 1,
           "set": 2
@@ -4119,13 +4171,13 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/default_start",
-          "minimum": -1,
+          "minimum": 0,
           "maximum": 1,
           "set": 1
         },
         {
-          "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest/questline",
-          "minimum": -1,
+          "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest",
+          "minimum": 0,
           "maximum": 0,
           "set": 1
         }
@@ -4138,7 +4190,7 @@
         "I knew you have the guts for that task! We presume the hideout of The Horned Fox somewhere in the south-west near the coast. Good luck!"
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/budrik.lua:106:sha256:0bad10f01b039dfb0a8f0460b36a0429c1eb498cb504b378ef4aaba005056aa5"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/budrik.lua:sha256:0bad10f01b039dfb0a8f0460b36a0429c1eb498cb504b378ef4aaba005056aa5"
       ]
     },
     {

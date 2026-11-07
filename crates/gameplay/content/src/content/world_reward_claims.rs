@@ -10,7 +10,7 @@ mod native_state;
 
 use crate::content::{
     ContentError, DefinitionFamily, DefinitionRevisionRef, PlacementKey, ProductionKey,
-    RewardClaimItem, RewardClaimPlacement, TypedDefinitionRef,
+    RewardClaimItem, RewardClaimPlacement, RewardClaimQuestRequirement, TypedDefinitionRef,
 };
 use oteryn_world_bundle::bundle;
 use serde_json::Value;
@@ -51,7 +51,7 @@ pub const REWARD_CLAIM_SHARDS: [&str; 5] = [
         "../../../../../content/interactions/reward_claims/reward-claims-00100-00199.json"
     ),
     include_str!(
-        "../../../../../content/interactions/reward_claims/reward-claims-00200-00230.json"
+        "../../../../../content/interactions/reward_claims/reward-claims-00200-00231.json"
     ),
     include_str!(
         "../../../../../content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
@@ -238,6 +238,7 @@ struct CandidatePlacement {
     item: TypedDefinitionRef,
     count: u32,
     quest_transition: Option<String>,
+    quest_requirements: Vec<RewardClaimQuestRequirement>,
     key_number: Option<u16>,
     achievement: Option<String>,
     contents: Vec<RewardContainerItem>,
@@ -266,9 +267,10 @@ const KEY_VARIANT_FIELDS: [&str; 5] = [
 const KEY_REWARD_LOWERING: &str = "KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED";
 /// The authored binding of a key reward: `canary:door-key/<decimal number>`.
 const KEY_BINDING_PREFIX: &str = "canary:door-key/";
-const PLACEMENT_FIELDS: [&str; 4] = [
+const PLACEMENT_FIELDS: [&str; 5] = [
     "appearance_tibia_id",
     "quest_transition",
+    "quest_requirements",
     "reward",
     "source_binding",
 ];
@@ -534,6 +536,7 @@ fn candidate_container_placement(
         &[
             "appearance_tibia_id",
             "quest_transition",
+            "quest_requirements",
             "reward",
             "source_binding",
             "achievement_grant",
@@ -950,6 +953,24 @@ fn candidate_placement(
         .get("quest_transition")
         .map(|key| key.as_str().map(str::to_owned).ok_or(bad.clone()))
         .transpose()?;
+    let quest_requirements: Vec<RewardClaimQuestRequirement> = placement
+        .get("quest_requirements")
+        .map(|rows| serde_json::from_value(rows.clone()).map_err(|_| bad.clone()))
+        .transpose()?
+        .unwrap_or_default();
+    let requirement_keys: std::collections::BTreeSet<_> =
+        quest_requirements.iter().map(|r| &r.track).collect();
+    if quest_requirements.len() > 8
+        || requirement_keys.len() != quest_requirements.len()
+        || quest_requirements.iter().any(|r| {
+            r.minimum > r.maximum
+                || r.track.len() > 128
+                || ProductionKey::new(&r.track).is_err()
+                || !r.track.starts_with("oteryn:quest-progress/")
+        })
+    {
+        return Err(bad);
+    }
     let position = binding.get("project_position").ok_or(bad)?;
     if reward.get("key_binding").and_then(Value::as_str) == Some("crystalserver:door-key/3002")
         && (crystal_unique_id != Some(6093)
@@ -965,6 +986,7 @@ fn candidate_placement(
         item,
         count,
         quest_transition,
+        quest_requirements,
         key_number,
         achievement: None,
         contents: Vec::new(),
@@ -1008,6 +1030,7 @@ fn bind_candidate(
                     }],
                     achievement: placement.achievement.clone(),
                     quest_transition: placement.quest_transition.clone(),
+                    quest_requirements: placement.quest_requirements.clone(),
                     key_number: placement.key_number,
                 },
                 cell,
@@ -1430,6 +1453,38 @@ mod container_tests {
                     .expect("decoded")
                     .is_err(),
                 "{mutation}"
+            );
+        }
+    }
+}
+
+#[cfg(test)]
+mod prerequisite_tests {
+    use super::*;
+    #[test]
+    fn malformed_claim_prerequisites_are_not_silently_discarded() {
+        let source = serde_json::json!({"appearance_tibia_id":2472,
+            "source_binding":{"project_position":{"x":32455,"y":31968,"z":14},
+                "legacy_unique_ids":[{"server":"crystalserver","unique_id":9226}]},
+            "reward":{"items":[{"item":{"family":"Item","key":"oteryn:item.tibia.i3397","revision":"definition-r1"},"count":1}]},
+            "quest_requirements":[{"track":"oteryn:quest-progress/quest/u7_5/sams_old_backpack/sams_old_backpack_npc","minimum":2,"maximum":2}]});
+        assert!(matches!(candidate_placement(&source, false), Ok(Some(_))));
+        for edit in 0..4 {
+            let mut bad = source.clone();
+            match edit {
+                0 => bad["quest_requirements"][0]["minimum"] = 3.into(),
+                1 => bad["quest_requirements"][0]["track"] = "unowned".into(),
+                2 => bad["quest_requirements"][0]["ignored"] = true.into(),
+                _ => {
+                    bad["quest_requirements"] = serde_json::json!([
+                        source["quest_requirements"][0],
+                        source["quest_requirements"][0]
+                    ])
+                }
+            }
+            assert!(
+                candidate_placement(&bad, false).is_err(),
+                "bad prerequisite {edit}"
             );
         }
     }

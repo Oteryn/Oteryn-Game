@@ -923,6 +923,15 @@ pub struct RewardClaimItem {
     pub count: u32,
 }
 
+/// An exact authored progress range required before a chest can mint.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RewardClaimQuestRequirement {
+    pub track: String,
+    pub minimum: i64,
+    pub maximum: i64,
+}
+
 /// One chest placement that shares the claim, with its own reward: claims with several chests
 /// may offer a different reward per chest, and taking any of them consumes the claim.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -939,6 +948,7 @@ pub struct RewardClaimPlacement {
     /// catalogue key `oteryn:quest-transition/<marker>/chest`. Boot refuses a key the loaded
     /// quest catalogue does not hold.
     pub quest_transition: Option<String>,
+    pub quest_requirements: Vec<RewardClaimQuestRequirement>,
     /// The key number of a key reward (KEY-1, WORLD-INTERACTION-0 §4.4), from the claim's
     /// `canary:door-key/<number>` binding; `None` for a reward that is not a key.
     pub key_number: Option<u16>,
@@ -2325,6 +2335,20 @@ fn validate_reward_claim_definition(
         }) {
             return Err(ContentError::InvalidArtifact(
                 "reference-playable reward claim achievement must be an oteryn:achievement/ key",
+            ));
+        }
+        let guarded: BTreeSet<_> = entry.quest_requirements.iter().map(|r| &r.track).collect();
+        if entry.quest_requirements.len() > 8
+            || guarded.len() != entry.quest_requirements.len()
+            || entry.quest_requirements.iter().any(|r| {
+                r.minimum > r.maximum
+                    || r.track.len() > 128
+                    || !r.track.starts_with("oteryn:quest-progress/")
+                    || ProductionKey::new(&r.track).is_err()
+            })
+        {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable claim prerequisites are malformed",
             ));
         }
         if entry.quest_transition.as_deref().is_some_and(|key| {

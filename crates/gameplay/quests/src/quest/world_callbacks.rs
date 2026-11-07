@@ -93,6 +93,8 @@ pub struct ItemOnTarget {
     pub count: u16,
     pub replacement: Option<String>,
     pub target_replacement: Option<u16>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub target_remove: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -345,6 +347,9 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             })
             || callback.item_on_target.as_ref().is_some_and(|item| {
                 item.target_replacement == Some(0)
+                    || (item.target_remove && (item.target_replacement.is_some()
+                        || callback.effects.transform.is_some() || callback.effects.portals.is_some()
+                        || callback.effects.item_cycle.is_some() || callback.effects.encounter.is_some()))
                     || (item.replacement.is_some() && item.count != 1)
                     || callback.storage.is_empty()
                     || callback.trigger != Trigger::Use

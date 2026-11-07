@@ -25,6 +25,46 @@ struct Offer {
     reply: Vec<String>,
     #[serde(default)]
     close_after: bool,
+    #[serde(default)]
+    minimum_level: Option<u32>,
+    #[serde(default)]
+    failure_reply: Vec<String>,
+}
+
+pub(super) fn needs_facts(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    runtime: &ChannelRuntimeV1,
+) -> bool {
+    let Some(context) = admission.states.npc_conversations.current_npc(
+        &admission.states.chat,
+        runtime,
+        actor,
+        command.game_session_id,
+        intent,
+    ) else {
+        return false;
+    };
+    let text = intent.text.trim().to_ascii_lowercase();
+    reward_callbacks::load().is_ok_and(|rows| {
+        rows.iter().any(|c| {
+            c.npc == context.2
+                && c.keywords.contains(&text)
+                && (!c.inventory.is_empty() || c.minimum_level.is_some())
+        })
+    }) || serde_json::from_str::<Offers>(include_str!(
+        "../../../../../../content/quests/shared-reward-offers.json"
+    ))
+    .is_ok_and(|rows| {
+        rows.schema == 1
+            && rows.offers.iter().any(|offer| {
+                offer.npc == context.2
+                    && offer.keywords.contains(&text)
+                    && offer.minimum_level.is_some()
+            })
+    })
 }
 
 pub(super) fn prepare(
@@ -33,6 +73,7 @@ pub(super) fn prepare(
     command: UseCommand,
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
+    inventory: Option<&super::reward_facts::RewardFacts>,
 ) -> Option<Step> {
     let callbacks = reward_callbacks::load().ok()?;
     let offers: Offers = serde_json::from_str(include_str!(
@@ -52,6 +93,9 @@ pub(super) fn prepare(
         runtime,
         |context, topic, _, tracks| {
             let text = intent.text.trim().to_ascii_lowercase();
+            let meets_level = |minimum: Option<u32>| {
+                minimum.is_none_or(|minimum| inventory.is_some_and(|facts| facts.level >= minimum))
+            };
             let eligible = |storage: &[Storage]| {
                 storage.iter().all(|s| {
                     catalogue.track(&s.track).is_some_and(|definition| {
@@ -75,11 +119,22 @@ pub(super) fn prepare(
                                 .iter()
                                 .all(|op| op.advisory_holds(catalogue, tracks))
                     })
+                    && c.inventory
+                        .iter()
+                        .all(|r| inventory.is_some_and(|facts| r.holds(&facts.quantities)))
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
             });
             if let Some(callback) = selected.next() {
                 if selected.next().is_some() {
                     return None;
+                }
+                if !meets_level(callback.minimum_level) {
+                    conclusion = (callback.close_after, Vec::new());
+                    return (!callback.failure_reply.is_empty()).then(|| Choice {
+                        transition: None,
+                        next_topic: Some(Topic::from(callback.next_topic)),
+                        reply: callback.failure_reply.clone(),
+                    });
                 }
                 conclusion = (callback.close_after, callback.failure_reply.clone());
                 return Some(Choice {
@@ -95,6 +150,14 @@ pub(super) fn prepare(
                     && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
             })?;
+            if !meets_level(offer.minimum_level) {
+                conclusion = (offer.close_after, Vec::new());
+                return (!offer.failure_reply.is_empty()).then(|| Choice {
+                    transition: None,
+                    next_topic: Some(Topic::from(0)),
+                    reply: offer.failure_reply.clone(),
+                });
+            }
             conclusion = (offer.close_after, Vec::new());
             Some(Choice {
                 transition: None,

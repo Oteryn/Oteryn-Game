@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "aliases": [
+    {
+      "position": [
+        32467,
+        31969,
+        5
+      ],
+      "action": 41492,
+      "from": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest/questline",
+      "to": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest",
+      "minimum": 1,
+      "sources": [
+        "repo:tools/content-schema/world-authoring/samples/quest-door-bindings.json:1486:sha256:da377ccc44d8d618b8921c79e2a78011016c971964eb6df3fca5addcda8012bb",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/budrik.lua:107:sha256:0bad10f01b039dfb0a8f0460b36a0429c1eb498cb504b378ef4aaba005056aa5"
+      ],
+      "rule": "The native Tibia Tales catalogue retains the parent storage identity. Its initial0 represents donor absence(-1); require the issued mission value1 or later to open this source door."
+    }
+  ]
+}

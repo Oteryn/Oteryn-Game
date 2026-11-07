@@ -168,7 +168,9 @@ fn questl2_bone_pit_full_player_journey() -> TestResult {
         eprintln!("POSTGRES_CASE_STARTED l2-bone-pit server_version={version}");
         let callbacks = oteryn_gameplay_quests::quest::world_callbacks::load()?;
         let bound = callbacks.iter().any(|c| c.key.ends_with("l2-bone-dig"))
-            && callbacks.iter().any(|c| c.key.ends_with("l2-bone-collect"));
+            && callbacks
+                .iter()
+                .any(|c| c.key.ends_with("bone-pit-collect"));
         h.cleanup().await?;
         eprintln!(
             "POSTGRES_BINDING_PROBE l2-bone-pit duration={:?}",

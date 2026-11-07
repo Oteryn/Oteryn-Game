@@ -309,6 +309,13 @@
           "minimum": 1,
           "maximum": 100000000
         },
+        "inventory": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/inventoryRequirement"
+          }
+        },
         "bulk": {
           "$ref": "#/$defs/bulk"
         },
@@ -564,6 +571,32 @@
               }
             }
           ]
+        }
+      }
+    },
+    "inventoryRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item",
+        "minimum",
+        "maximum"
+      ],
+      "properties": {
+        "item": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._:/-]+$",
+          "maxLength": 256
+        },
+        "minimum": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "maximum": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
         }
       }
     },

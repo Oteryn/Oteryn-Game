@@ -252,33 +252,17 @@ impl QuestStateCopy {
         }
         // The donor's numeric action names the same storage that quest authoring
         // normalizes to a named track. Resolve that identity before reading the copy.
-        #[derive(serde::Deserialize)]
-        struct Binding {
-            action: u16,
-            track: String,
-        }
-        #[derive(serde::Deserialize)]
-        struct Bindings {
-            bindings: Vec<Binding>,
-        }
-        static BINDINGS: std::sync::OnceLock<Vec<Binding>> = std::sync::OnceLock::new();
-        let bindings = BINDINGS.get_or_init(|| {
-            serde_json::from_str::<Bindings>(include_str!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../../tools/content-schema/world-authoring/samples/quest-door-bindings.json"
-            )))
-            .map(|document| document.bindings)
-            .unwrap_or_default()
-        });
-        bindings
-            .iter()
-            .find(|binding| binding.action == action)
-            .and_then(|binding| self.tracks.get(&binding.track))
-            .or_else(|| {
-                self.tracks
-                    .get(&format!("oteryn:quest-progress/storage/{action}"))
-            })
-            .is_some_and(|value| *value != -1)
+        static BINDINGS: std::sync::OnceLock<Vec<door_bindings::Binding>> = std::sync::OnceLock::new();
+        let bindings = BINDINGS.get_or_init(|| door_bindings::load(
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"),
+                "/../../../tools/content-schema/world-authoring/samples/quest-door-bindings.json")),
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"),
+                "/../../../tools/content-schema/world-authoring/quest-door-track-aliases.json")),
+        ).unwrap_or_default());
+        let binding=bindings.iter().find(|binding|binding.action==action);
+        binding.and_then(|binding|self.tracks.get(&binding.track))
+            .or_else(||self.tracks.get(&format!("oteryn:quest-progress/storage/{action}")))
+            .is_some_and(|value|binding.and_then(|b|b.minimum).map_or(*value != -1,|minimum|*value>=minimum))
     }
     /// Stored track values with supported read projections (including the Monk shrine count).
     /// A stored track without a row reads as its declared initial value.
@@ -542,6 +526,7 @@ pub(super) fn report_refused_experience(
 /// Insert the quest XP obligation of a committing transition: a fresh UUIDv7 occurrence (the
 /// transaction's statement time and database randomness), the amount and the quest's pin.
 pub(super) mod capacity;
+mod door_bindings;
 pub mod grizzly;
 pub mod grizzly_boss;
 mod hero_of_bounac;

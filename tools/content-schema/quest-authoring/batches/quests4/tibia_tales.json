@@ -2,7 +2,46 @@
   "schema": 1,
   "quest_directory": "tibia_tales",
   "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
-  "callbacks": [],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/bone-pit-collect",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 4206,
+        "appearance": 3133
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/into_the_bone_pit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4852",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i131",
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "remove_target": true
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_ectoplasm_container.lua:4-12:sha256:584ec08275530b23bfc4222e6294acfaf84d9a1235d1d0738f77a04306666e28"
+      ]
+    }
+  ],
   "runtime_exclusions": [],
   "npc_source": {
     "quest": "tibia_tales",

@@ -331,6 +331,7 @@ async fn mint(
         sim_revision,
         achievement: None,
         quest_transition: None,
+        quest_requirements: Vec::new(),
         key_number: None,
     };
     validate_request(&request).map_err(|_| DurabilityError::InvalidStoredState)?;

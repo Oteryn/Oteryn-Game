@@ -127,6 +127,8 @@ mod monk;
 pub(crate) mod quest;
 mod quest_participants;
 mod quest_bulk;
+mod quest_requirements;
+pub use quest_requirements::RewardClaimQuestRequirement;
 mod quest_decay;
 pub use quest::{QuestCarriedUse, QuestRewardAdmission, QuestRewardFeePayment};
 mod soul_war;
@@ -205,6 +207,8 @@ pub struct RewardClaimMintRequest {
     /// The chest's quest transition (an Oteryn key), recorded as a `PENDING`
     /// obligation with the claim; `None` records none.
     pub quest_transition: Option<String>,
+    /// Server-resolved prerequisites, rechecked under the Character root at both admission passes.
+    pub quest_requirements: Vec<RewardClaimQuestRequirement>,
     /// The key number of a key reward (WORLD-INTERACTION-0 §4.4), set once on the minted
     /// instance; `None` mints an item that is not a key.
     pub key_number: Option<u16>,
@@ -215,6 +219,8 @@ pub struct RewardClaimMintRequest {
 pub enum RewardClaimRefusal {
     /// The character already holds this `once` claim.
     AlreadyClaimed,
+    /// The source chest requires progress the current fenced character has not earned.
+    QuestPrerequisite,
     /// Another CommandRef's MINT of this claim is still pending
     /// (GAME-INTERACTION §17.2); resume or reconcile that CommandRef instead.
     ClaimPending,
@@ -1064,6 +1070,9 @@ async fn admit(
     .bind(&request.claim.production_key)
     .fetch_one(&mut **tx)
     .await?;
+    if !already_claimed && !quest_requirements::holds(tx, fence, &request.quest_requirements).await? {
+        return Ok(Err(RewardClaimMintError::Refused(RewardClaimRefusal::QuestPrerequisite)));
+    }
     // §17.2: a pending MINT of this claim under another CommandRef. It is
     // pending while it has no receipt, its RL-08 budget is not exhausted and
     // its GameSession is not terminal: only then can it still commit. The
@@ -1476,6 +1485,9 @@ fn decode_receipt(
 }
 
 fn validate_request(request: &RewardClaimMintRequest) -> Result<()> {
+    if !quest_requirements::valid(&request.quest_requirements) {
+        return Err(RewardClaimMintError::InvalidInput);
+    }
     mint_audit::check_technical_text(&request.claim.family)?;
     mint_audit::check_content_key(&request.claim.production_key)?;
     mint_audit::check_content_key(&request.claim.revision_ref)?;
@@ -1642,6 +1654,7 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
         push_text(&mut canonical, charges_plan.to_string().as_bytes())
             .map_err(from_transfer_input)?;
     }
+    quest_requirements::append_intent(&mut canonical, &request.quest_requirements)?;
     let mut out = [0_u8; 33];
     out[0] = INTENT_BINDING_VERSION;
     out[1..].copy_from_slice(&Sha256::digest(&canonical));
@@ -1888,6 +1901,7 @@ mod tests {
                 catalogue,
             }),
             quest_transition: None,
+            quest_requirements: Vec::new(),
             key_number: None,
         }
     }

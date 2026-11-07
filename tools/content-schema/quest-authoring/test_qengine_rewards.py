@@ -8,6 +8,23 @@ import qengine_rewards as q
 
 
 class QuestRewards(unittest.TestCase):
+    def test_inventory_predicates_reject_ambiguous_and_invalid_bounds(self):
+        source = next(c for c in self.callbacks['callbacks'] if c.get('inventory'))
+        for mutation in ('duplicate', 'inverted', 'negative', 'overflow', 'boolean'):
+            bad = copy.deepcopy(source)
+            if mutation == 'duplicate':
+                bad['inventory'].append(copy.deepcopy(bad['inventory'][0]))
+            elif mutation == 'inverted':
+                bad['inventory'][0].update(minimum=2, maximum=1)
+            elif mutation == 'negative':
+                bad['inventory'][0]['minimum'] = -1
+            elif mutation == 'overflow':
+                bad['inventory'][0]['maximum'] = 4294967296
+            else:
+                bad['inventory'][0]['minimum'] = True
+            with self.assertRaises((ValueError, ValidationError), msg=mutation):
+                q.validate_callbacks({'schema': 1, 'callbacks': [bad]})
+
     def test_exact_conditional_storage_rejects_overloaded_or_out_of_range_guards(self):
         document=copy.deepcopy(self.callbacks)
         callback=document['callbacks'][0]
@@ -192,14 +209,14 @@ class QuestRewards(unittest.TestCase):
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         callbacks=self.callbacks['callbacks']
         original = {c['key'].split('/')[-1] for c in callbacks
-                    if not c['key'].split('/')[-1].startswith(('l1-', 'l2-', 'l3-', 'l4-', 'l6-', 'token-', 'ape-', 'thieves-', 'draconia-', 'exchange-'))
-                    and c['key'].split('/')[-1] != 'sam-kroox'}
+                    if not c['key'].split('/')[-1].startswith(('l1-', 'l2-', 'l3-', 'l4-', 'l6-', 'token-', 'ape-', 'thieves-', 'draconia-', 'exchange-', 'bone-pit-'))
+                    and c['key'].split('/')[-1] not in ('sam-kroox', 'outfox-start')}
         self.assertEqual(original, {'pirate-sabre', 'knight-sword', 'deepling-helmet',
-                                   'hallowed-holy-water', 'outfox-helmet', 'outfox-start', 'sam-backpack'})
+                                   'hallowed-holy-water', 'outfox-helmet', 'sam-backpack'})
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),37)
         # Published QENGINE2 has13 non-outfit branches; L2 adds the pinned
         # Jorge37, Ape6, Thieves7, Kroox1, dragon2 and Quentin/Gamon2 source branches.
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),13 + 37 + 6 + 7 + 1 + 2 + 2 + 10 + 34)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),13 + 37 + 6 + 7 + 1 + 2 + 2 + 10 + 13 + 3 + 2 + 3 + 6 + 1 + 7)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

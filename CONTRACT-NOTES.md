@@ -73,11 +73,14 @@ participant; it does not independently qualify the complete Father quest.
 Source9f Sam111-117 (sha ed713aa63d597133355328a16e9c36d1b382c0e1d7e40dc199211f4fc4d14e6b)
 consumes3244 and refers the player to Kroox. Kroox63-67 (sha
 080ef330bea12ad63d9d9aecdf259e669df0eb448287907f583aa04fa5e64497) grants
-the mine permission and promises dwarven armor. The startup chest table74
+the mine permission and promises dwarven armor. The startup chest table3176-3178
 (sha0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca)
-locates the untagged chest at32455,31968,z14. Restore the promised native
-armor3397 there through the shared world reward participant and an internal
-once flag; no legacy unique id is fabricated. The native gate at32455,31967,z14
+locates chest9226 at32455,31968,z14. The shared world reward participant grants
+armor3397 there, requires the mine permission and NPC stage2, and atomically
+writes NPC stage3 with an internal once flag. The NPC completion follows
+`data-global/scripts/actions/other/others/quest_system2.lua:97-103,378`
+(sha04990d261d85479bf9a75de040f6c158bc6eb557018a7ad359374400c2a49635).
+The native gate at32455,31967,z14
 retains appearance1644/action40603 and its exact named storage.
 
 Budrik61-106 (sha0bad10f01b039dfb0a8f0460b36a0429c1eb498cb504b378ef4aaba005056aa5)

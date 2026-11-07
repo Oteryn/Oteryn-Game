@@ -69,13 +69,22 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
             name,
             source_position.unwrap_or(Position {
                 // Keep the longer NPC corridor away from Behemoth's five barriers.
-                x: if name == "qengine-rewards-paid-stake-priests" {
-                    33310
-                } else {
-                    33294
+                x: match name {
+                    "qengine-rewards-paid-stake-priests" => 33310,
+                    "qengine-rewards-l2-full-sam" => 32455,
+                    "qengine-rewards-l2-full-outfox" => 32467,
+                    _ => 33294,
                 },
-                y: 31677,
-                floor: -15,
+                y: match name {
+                    "qengine-rewards-l2-full-sam" => 31966,
+                    "qengine-rewards-l2-full-outfox" => 31968,
+                    _ => 31677,
+                },
+                floor: match name {
+                    "qengine-rewards-l2-full-sam" => -14,
+                    "qengine-rewards-l2-full-outfox" => -5,
+                    _ => -15,
+                },
             }),
             false,
         )
@@ -863,6 +872,12 @@ pub(super) async fn exercise(
     }
     if name.starts_with("qengine-rewards-l2-father-") {
         return super::questl2_world_rewards::exercise(owner, admitted, h, name).await;
+    }
+    if name.starts_with("qengine-rewards-l2-full-") {
+        return super::questl2_player_journeys::exercise(owner, admitted, h, authority, name).await;
+    }
+    if name.starts_with("qengine-rewards-l2-batch5-") {
+        return super::questl2_batch5_bindings::exercise(owner, admitted, h, name).await;
     }
     if name == "qengine-rewards-exchange-fixed" {
         return exchange_fixed::exercise(owner, admitted, h).await;

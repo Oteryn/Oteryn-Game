@@ -43,6 +43,9 @@ import sys
 from pathlib import Path
 
 import container_native
+import native_source_claims
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'quest-authoring'))
+import quest_claim_progress
 import charge_native
 
 HERE = Path(__file__).resolve().parent
@@ -550,7 +553,15 @@ def committed_errors() -> list[str]:
     plain = [r for r in records if r['definition'].get('definition_profile') != PROFILE]
     variants = [r for r in records if r['definition'].get('definition_profile') == PROFILE]
     items = load_items()
-    errors = validate(plain, items, index["source_checks"], source_claims)
+    extra_claims = native_source_claims.load(ROOT)[0]
+    extra_keys = {c['identity']['key'] for c in extra_claims}
+    extra_records = [r for r in plain if r['definition']['provenance']['pilot_key'] in extra_keys]
+    plain = [r for r in plain if r['definition']['provenance']['pilot_key'] not in extra_keys]
+    extra_ids = {r['definition']['identity']['key'] for r in extra_records}
+    checks = index['source_checks']
+    errors = validate(plain, items, [c for c in checks if c.get('claim') not in extra_ids], source_claims)
+    errors += validate(extra_records, native_source_claims.item_facts(ROOT, items, extra_claims),
+                       [c for c in checks if c.get('claim') in extra_ids], extra_claims)
     errors += validate_variants(variants, ROOT, items, stack_problem)
     if index.get('variant_source_checks') != legacy_uid_checks(records) + stack_normalization_checks():
         errors.append('variant legacy UID diagnostics are missing or stale')
@@ -564,15 +575,38 @@ def committed_errors() -> list[str]:
     return errors
 
 
+def runtime_shard_source(root, shards):
+    """The native include registry follows the generated family index."""
+    path = 'crates/gameplay/content/src/content/world_reward_claims.rs'
+    source = root / path
+    if not source.exists():
+        return {}
+    text = source.read_text()
+    block = f'pub const REWARD_CLAIM_SHARDS: [&str; {len(shards)}] = [\n'
+    for shard in shards:
+        block += '    include_str!(\n        "../../../../../' + shard + '"\n    ),\n'
+    block += '];'
+    updated, count = re.subn(r'pub const REWARD_CLAIM_SHARDS: \[&str; [0-9]+\] = \[.*?\n\];',
+                             lambda _: block, text, count=1, flags=re.S)
+    if count != 1:
+        raise ValueError('native claim shard registry anchor changed')
+    return {path: updated}
+
+
 def generate() -> dict[str, str]:
     claims_bytes = (ROOT / CLAIMS_REL).read_bytes()
     claims = json.loads(claims_bytes)
     claims = claims.get("claims", claims) if isinstance(claims, dict) else claims
     items = load_items()
-    records, source_checks = build_records(
-        claims, load_json(ROOT / MANIFEST_REL), items
-    )
+    extra_claims, extra_bindings, extra_audit = native_source_claims.load(ROOT)
+    records, source_checks = build_records(claims, load_json(ROOT / MANIFEST_REL), items)
     errors = validate(records, items, source_checks, claims)
+    extra_items = native_source_claims.item_facts(ROOT, items, extra_claims)
+    extra_records, extra_checks = build_records(extra_claims, {'entries': extra_bindings}, extra_items)
+    errors += validate(extra_records, extra_items, extra_checks, extra_claims)
+    quest_claim_progress.apply_claims(ROOT, extra_records, plain=True)
+    records += extra_records
+    source_checks += extra_checks
     if errors:
         raise ValueError("\n".join(errors))
     outputs = content_files(claims_bytes, records, source_checks)
@@ -586,6 +620,8 @@ def generate() -> dict[str, str]:
     records += variants
     family_index = json.loads(outputs[INDEX_PATH])
     family_index['variant_source_checks'] = legacy_uid_checks(records) + stack_normalization_checks()
+    if extra_audit is not None:
+        family_index['native_source_claims'] = extra_audit
     outputs[INDEX_PATH] = compact(family_index)
     names = ("project", "manifest", "content.lock")
     docs = [load_json(ROOT / f"content/{name}.json") for name in names]
@@ -601,6 +637,7 @@ def generate() -> dict[str, str]:
         )
         + "\n"
     )
+    outputs.update(runtime_shard_source(ROOT, family_index['shards']))
     return outputs
 
 

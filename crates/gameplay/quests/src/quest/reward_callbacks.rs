@@ -9,6 +9,9 @@ use std::collections::{BTreeMap, BTreeSet};
 mod state_ops;
 pub use state_ops::{StateCondition, StateMutation, StateOperation};
 
+mod inventory;
+pub use inventory::InventoryRequirement;
+
 pub const PROVENANCE: &str = "crystal-9f5a72c-quest-rewards-v1";
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -141,6 +144,8 @@ pub struct RewardCallback {
     pub creation_sex: Option<CreationSex>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires: Vec<TrackRequirement>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub inventory: Vec<InventoryRequirement>,
     pub take: Vec<ItemAmount>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fee: Option<MonetaryFee>,
@@ -406,6 +411,16 @@ fn parse_document(text: &str) -> Result<Document, String> {
                     || c.give.is_none()
                     || c.outfit.is_some()
                     || c.achievement.is_some()))
+            || c.inventory.len() > 8
+            || c.inventory
+                .iter()
+                .map(|r| &r.item)
+                .collect::<BTreeSet<_>>()
+                .len()
+                != c.inventory.len()
+            || c.inventory
+                .iter()
+                .any(|r| !slug(&r.item, "oteryn:item.", b"._/:-", 256) || r.minimum > r.maximum)
             || c.present.len() > 8
             || evidence.len() != c.present.len()
             || c.present
@@ -701,7 +716,11 @@ mod tests {
         let callbacks = load()?;
         let original = callbacks
             .iter()
-            .find(|c| !c.participants.is_empty())
+            .find(|c| {
+                c.participants
+                    .first()
+                    .is_some_and(|participant| !participant.storage.is_empty())
+            })
             .ok_or("participant source")?;
         for edit in 0..5 {
             let mut callback = serde_json::to_value(original).map_err(|e| e.to_string())?;
@@ -719,7 +738,15 @@ mod tests {
                         .ok_or("array")?
                         .push(p);
                 }
-                _ => callback["participants"][0]["storage"][0]["minimum"] = 2.into(),
+                _ => {
+                    let maximum = callback["participants"][0]["storage"][0]["maximum"]
+                        .as_i64()
+                        .ok_or("participant maximum")?;
+                    callback["participants"][0]["storage"][0]["minimum"] = maximum
+                        .checked_add(1)
+                        .ok_or("participant maximum overflow")?
+                        .into();
+                }
             }
             let doc = serde_json::json!({"schema":1,"callbacks":[callback]});
             assert!(

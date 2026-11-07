@@ -22,6 +22,7 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
+    let bone_journey = name.starts_with("qengine-rewards-l2-full-bone");
     let draconia = matches!(name, "draconia-player-journey" | "draconia-lever-exit");
     let draconia_journey = name == "draconia-player-journey";
     let failure_landing = name.starts_with("conditional-failure-");
@@ -46,7 +47,9 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if name == "qengine-rewards-l2-father-scale" {
+    let mut callback = callback(if bone_journey {
+        "bone-pit-collect"
+    } else if name == "qengine-rewards-l2-father-scale" {
         "l2-father-scale"
     } else if name == "qengine-rewards-l2-father-sinew" {
         "l2-father-sinew"
@@ -101,13 +104,27 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = if matches!(name,"qengine-rewards-l2-sam"|"qengine-rewards-l2-outfox"|"qengine-rewards-l2-bone"|"qengine-rewards-l2-botany"|"qengine-rewards-l2-vampire"|"qengine-rewards-l2-steal"|"qengine-rewards-l2-troll"|"qengine-rewards-l2-cartography") { None } else { Some(if draconia && !draconia_journey {
-        super::world_remote(&callback, trigger, 431, 0, Some(2772))?
-    } else if paired_plate {
-        super::world_ordinal(&callback, trigger, 431, 1)?
+    let world = if matches!(
+        name,
+        "qengine-rewards-l2-sam"
+            | "qengine-rewards-l2-outfox"
+            | "qengine-rewards-l2-bone"
+            | "qengine-rewards-l2-botany"
+            | "qengine-rewards-l2-vampire"
+            | "qengine-rewards-l2-steal"
+            | "qengine-rewards-l2-troll"
+            | "qengine-rewards-l2-cartography"
+    ) {
+        None
     } else {
-        world(&callback, trigger)?
-    }) };
+        Some(if draconia && !draconia_journey {
+            super::world_remote(&callback, trigger, 431, 0, Some(2772))?
+        } else if paired_plate {
+            super::world_ordinal(&callback, trigger, 431, 1)?
+        } else {
+            world(&callback, trigger)?
+        })
+    };
     run(async |admin| {
         let h = if qengine_reward || outfit_world {
             Harness::create_quest_reward(admin, "quest_rewards", !name.ends_with("pirate")).await
@@ -132,9 +149,36 @@ fn scenario_case(
             )?;
         let generation = controller.active().ok_or("generation")?;
         let world = match world {
-            Some(world)=>world,
-            None if matches!(name,"qengine-rewards-l2-steal"|"qengine-rewards-l2-troll"|"qengine-rewards-l2-cartography")=>super::super::qengine_rewards::questl2_delivery_journeys::world(name,generation.native_gameplay().ok_or("native delivery journey")?)?,
-            None=>super::super::qengine_rewards::questl2_journeys::world(name,generation.native_gameplay().ok_or("native journey")?)?,
+            Some(world) => world,
+            None if matches!(
+                name,
+                "qengine-rewards-l2-steal"
+                    | "qengine-rewards-l2-troll"
+                    | "qengine-rewards-l2-cartography"
+            ) =>
+            {
+                super::super::qengine_rewards::questl2_delivery_journeys::world(
+                    name,
+                    generation
+                        .native_gameplay()
+                        .ok_or("native delivery journey")?,
+                )?
+            }
+            None => super::super::qengine_rewards::questl2_journeys::world(
+                name,
+                generation.native_gameplay().ok_or("native journey")?,
+            )?,
+        };
+        let world = if matches!(
+            name,
+            "qengine-rewards-l2-full-sam" | "qengine-rewards-l2-full-outfox"
+        ) {
+            super::super::questl2_journey_world::world(
+                generation.native_gameplay().ok_or("native")?,
+                name.ends_with("sam"),
+            )?
+        } else {
+            world
         };
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())

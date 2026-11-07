@@ -3,6 +3,7 @@ import hashlib
 import re
 import questl2_exchange_prayers as prayers
 import questl2_exchange_recipes as recipes
+import questl2_journeys as journeys
 
 
 NPCS = tuple(sorted({'ahmet', 'jerom', 'chief_grarkharok', 'rotem_valos', 'amber', 'norma', 'storkus', 'the_bone_master', 'an_old_dragon_lord', 'dorian', 'gamon', 'hairycles', 'jorge', 'kroox', 'rabaz', *prayers.PRIESTS, *recipes.NPCS}))
@@ -105,6 +106,10 @@ def append(callbacks, offers, inputs, pin):
 
     prayers.append(add, state, callbacks, inputs)
     recipes.append(add, state, callbacks, offers, inputs)
+    journeys.append(add, state, callbacks, inputs)
+    for offer in offers:
+        if offer["npc"] == "oteryn:npc.muriel" and offer["storage"][0]["track"].endswith("into_the_bone_pit"):
+            offer.update(minimum_level=35, failure_reply=[journeys.BONE_PIT_LEVEL_REPLY])
 
     dragon = inputs['data-global/npc/an_old_dragon_lord.lua'].decode()
     refusal = "AHHHH THE PAIN OF AGESSS! I NEED MUSSSSHRROOOMSSS TO EASSSE MY PAIN! BRRRING ME MUSHRRROOOMSSS!"
@@ -125,16 +130,11 @@ def append(callbacks, offers, inputs, pin):
                    'storage': [{'track': track, 'minimum': 1, 'maximum': 1, 'set': 1}],
                    'reply': [held], 'close_after': True})
 
-    fox = 'u8_1/to_outfox_afox_quest/questline'
+    fox = 'u8_1/to_outfox_afox_quest'
     for callback in callbacks:
         if callback['key'] == 'oteryn:quest-reward/outfox-helmet':
             callback['storage'] = [state(fox,1,2)]
             callback['sources'].append('crystal:'+pin+':data-global/npc/budrik.lua:68:sha256:'+hashlib.sha256(inputs['data-global/npc/budrik.lua']).hexdigest())
-    add('outfox-start','tibia_tales','budrik',['yes'],
-        [state('u8_1/tibia_tales/default_start',-1,1,1),state(fox,-1,1,0)],
-        "I knew you have the guts for that task! We presume the hideout of The Horned Fox somewhere in the south-west near the coast. Good luck!",
-        topic=1,source_text='player:setStorageValue(Storage.Quest.U8_1.ToOutfoxAFoxQuest.Questline, 1)',
-        offer=(['mission','quest'],"It belonged to my father and before that to my grandfather. That helmet is at least 600 years old! I need it back. Are you willing to help me?"))
     botany='u8_6/an_interest_in_botany/'
     add('l2-botany-start','tibia_tales','rabaz',['yes'],
         [state('u8_1/tibia_tales/default_start',-1,1,1),state(botany+'questline',-1,1,0),state(botany+'chest_door',-1,0,0)],
@@ -147,17 +147,6 @@ def append(callbacks, offers, inputs, pin):
         offer=(['mission'],"Well fantastic work, you gathered both samples! Now I can continue my work on the almanach, thank you very much for your help indeed. Can I take a look at my book please?"))
     callbacks[-1]['give']['backpack_outputs']=[{'item':'oteryn:item.tibia.i3035','count':10}]
     callbacks[-1]['experience']=3000
-
-    bone = 'u8_1/tibia_tales/into_the_bone_pit'
-    add('l2-bone-start', 'tibia_tales', 'muriel', ['yes'], [state(bone,-1,1,0)],
-        "Great! Here is the container for the bone. Once, I used it to collect ectoplasma of ghosts, but it will work here as well. ...",
-        topic=1,give=(4852,1),source_text='player:addItem(4852, 1)',
-        offer=(['mission'],"Find that pit, dig for a well-preserved human skeleton and conserve a sample in a special container which you receive from me. Are you going to help me?"))
-    callbacks[-1]['minimum_level'] = 35
-    add('l2-bone-return','tibia_tales','muriel',['mission'],[state(bone,2,3)],
-        "Excellent! Now I can try to put my theoretical thoughts into practice and find a cure for the symptoms of undead. Here, take this for your efforts.",
-        take=[(131,1)],give=(6299,1),source_text='player:addItem(6299, 1)')
-    callbacks[-1].update(minimum_level=35,experience=1000)
 
     sam = 'u7_5/sams_old_backpack/'
     add('sam-kroox', 'sam_s_old_backpack_quest', 'kroox',

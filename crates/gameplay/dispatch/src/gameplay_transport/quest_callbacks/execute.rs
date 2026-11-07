@@ -54,11 +54,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             after = replacement;
         }
-        let projection =
+        let mut projection =
             match self.prepare_quest_projection(map, callback, key, pos, close, &mut after) {
                 Ok(projection) => projection,
                 Err(result) => return result,
             };
+        if callback
+            .item_on_target
+            .as_ref()
+            .is_some_and(|item| item.target_remove)
+        {
+            if projection.is_some() {
+                return UseDisposition::Rejected;
+            }
+            projection = Some(crate::map::facts::QuestCallbackProjection::ItemCycle {
+                position: pos,
+                remove: Some(key),
+                create: None,
+            });
+        }
         if let Some(appearance) = callback
             .item_on_target
             .as_ref()
