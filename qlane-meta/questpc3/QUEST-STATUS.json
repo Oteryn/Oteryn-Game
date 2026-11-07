@@ -1971,6 +1971,14 @@
         "scope": "Aurita vial, Taegen four-gem catcher, Valindara100-feather cloak; whole Threatened Dreams remains IN_PROGRESS.",
         "native_provider": "PASS15tests126.255s; shared NPC reward output/container closure and admitted input evidence reused by native provider; three mint policies restored",
         "recovery_regression": "PASS existing real NPC start/fences/topics/lost acknowledgement PostgreSQL125.89s; /tmp/questpc3-threatened-topic-recovery-regression.log"
+      },
+      "threatened_inventory_diagnosis_checkpoint": {
+        "status": "RESOLVED",
+        "actual_red": "108.08s; all three physical exchanges false and zero reward receipts",
+        "failed_first_green": "194.76s Unavailable(InvalidStoredState); not GREEN",
+        "verified_cause": "Native provider lacks25731/25733/25779. Shared profile importer omitted NPC rewards. Preserve already qualified native input policies such as7882; import missing inputs and all outputs through strict canonical checks.",
+        "scope": "Pilgrimage stays QUALIFIED; four quests active; three inventory exchanges delivered.",
+        "resolution": "Native policies and context-bound dialogue topics fixed; slice GREEN124571ms in745a9a273. Preserve the checkpoint as diagnosis history."
       }
     },
     "source_corrections": [
