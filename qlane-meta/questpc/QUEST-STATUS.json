@@ -9631,5 +9631,10 @@
       "Mage Outfits Quest"
     ],
     "rule": "Skip per current owner; this does not claim those implementations are merged here."
+  },
+  "cloud_dragonlord_progress": {
+    "phase": "actual PostgreSQL RED retained; implementation GREEN probes running",
+    "evidence": "qlane-meta/questpc/cloud-dragonlord-red-validation.json",
+    "whole_title_promoted": false
   }
 }

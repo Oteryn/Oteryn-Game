@@ -1,0 +1,63 @@
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+warning: `tokio` (lib) generated 2 warnings (2 duplicates)
+warning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14
+    |
+260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |
+
+warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)
+warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.25s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-b4f5a8b0ba0b5a59)
+
+running 1 test
+test gameplay_transport::monk_save::postgres_tests::draconia_dragonlord::draconia_dragonlord_final_track_failure_rolls_back_items ... POSTGRES_CASE_STARTED draconia-dragonlord-rollback server_version=18.6 (Debian 18.6-1.pgdg13+2) native_trigger=Position { x: 33294, y: 31677, floor: -15 }
+
+thread 'draconia-dragonlord-rollback' (127540) panicked at /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/draconia_dragonlord.rs:140:9:
+injected final write failure must not acknowledge an exchange
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+POSTGRES_CASE_FAILED draconia-dragonlord-rollback duration=84.140415822s
+Error: "composed PostgreSQL scenario thread panicked"
+FAILED
+
+failures:
+
+failures:
+    gameplay_transport::monk_save::postgres_tests::draconia_dragonlord::draconia_dragonlord_final_track_failure_rolls_back_items
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2595 filtered out; finished in 84.14s
+
+error: test failed, to rerun pass `-p oteryn-gameplay-dispatch --lib`

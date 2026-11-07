@@ -371,3 +371,16 @@ pinned position. Native38003 keeps its teleport; bundle floor byte is signed nat
 i8 reinterpreted asu8, distinct from B3 legacy z. Five new source PG cases and the
 native regression pass separately; initial fixture/registry/OOM failures are not PG
 proof. Final strict checks pass; no full-suite run or whole-title promotion.
+
+### Draconia Dragonlord greeting exchange (2026-11-07)
+Primary: https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/an_old_dragon_lord.lua#L59-L78
+SHA256: 85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052.
+The offline corpus contains byte-identical source (Git blob
+1edc28f6c6bbbb9e5ea2ef74b836151a8a21ead4), verified by the producer.
+Only exact Dragonfetish value 1 refuses another mushroom exchange. A qualifying
+hi/hello consumes one white mushroom3723 and grants dragonfetish3206 together
+with flag1. Every source greeting exits without retaining focus. Other admitted
+greeting words receive the source's LEAVE response. No new item definitions or
+NPC-specific transactional owner are necessary. The reviewed agreeing native
+placement is32796,31558,z2; PG transport uses a controlled scene separately.
+The original frozen NPC programme and greeting cohorts retain their boundaries.

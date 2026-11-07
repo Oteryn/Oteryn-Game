@@ -1,3 +1,12 @@
+## Dragonlord evidence checkpoint — 2026-11-07
+Three actual PostgreSQL18.6 RED probes retained (83.05/83.99/84.14s).
+No whole-title promotion. Implementation remains uncommitted pending GREEN.
+Source-bound four-rule greeting, atomic existing item-exchange owner, closed
+source custody and reviewed native placement authored. Check and strict Clippy
+PASS; source-substitution unit PASS. PG GREEN binary compiling in session68527,
+log /tmp/questpc-dragonlord-green.log. NPC unit queued in session85167.
+Push runtime slice immediately after GREEN, then level25/Elathriel/sharedstock.
+
 ## Draconia pressure/portal slice fully GREEN — 2026-11-07
 Five new native anchors and seven source movement callbacks now compose two
 pressure gates and three missing portals. Native38003 retains its real teleport
