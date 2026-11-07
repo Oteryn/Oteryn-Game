@@ -19,28 +19,6 @@ fn m06q_placed_quest_door_use_wire_requires_durable_storage() -> TestResult {
     Ok(())
 }
 
-/// Source action10102 overrides the ordinary "storage is set" quest-door rule.
-/// This proves the door mechanism, not the whole Annihilator journey.
-#[test]
-fn m06q_annihilator_source_door_uses_unclaimed_storage_and_teleports() -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
-        return Err("Annihilator source door requires PostgreSQL".into());
-    }
-    let started = std::time::Instant::now();
-    let result = std::thread::Builder::new()
-        .stack_size(256 << 20)
-        .spawn(|| scenario_for_door(false, false, false, None, true).map_err(|e| e.to_string()))?
-        .join()
-        .map_err(|_| "Annihilator source door panic".to_owned())
-        .and_then(|result| result);
-    eprintln!(
-        "ANNIHILATOR_SOURCE_DOOR POSTGRES_CASE_DURATION elapsed_ms={} success={}",
-        started.elapsed().as_millis(),
-        result.is_ok()
-    );
-    result.map_err(Into::into)
-}
-
 #[test]
 fn m06_close_quest_door_step_out_wire() -> TestResult {
     closing_case(false, false)
@@ -108,24 +86,8 @@ fn scenario(
     authored: bool,
     player_case: Option<PlayerGroundCase>,
 ) -> TestResult {
-    scenario_for_door(closing, with_item, authored, player_case, false)
-}
-
-fn scenario_for_door(
-    closing: bool,
-    with_item: bool,
-    authored: bool,
-    player_case: Option<PlayerGroundCase>,
-    annihilator: bool,
-) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "m06q_quest", true, false).await?;
-        if annihilator {
-            let version: String = sqlx::query_scalar("SHOW server_version_num")
-                .fetch_one(&harness.pool).await?;
-            assert_eq!(version, "180006");
-            eprintln!("ANNIHILATOR_SOURCE_DOOR POSTGRES_CASE_OBSERVED server_version_num={version}");
-        }
         eprintln!("START M06Q real placed-door USE wire PostgreSQL");
         let started = std::time::Instant::now();
         super::reset();
@@ -204,19 +166,11 @@ fn scenario_for_door(
             .get_mut(1)
             .ok_or("door entry")?;
         // Read the actual committed world placement, not a test-authored action id.
-        let source_bytes: &[u8] = if annihilator {
-            include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../../content/world/placements/region-z13-x129-y123.b3"
-            ))
-        } else {
+        let region = oteryn_world_bundle_compiler::b3::decode_region(
             include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
                 "/../../../content/world/placements/region-z14-x125-y124.b3"
-            ))
-        };
-        let region = oteryn_world_bundle_compiler::b3::decode_region(
-            source_bytes,
+            )),
             oteryn_world_bundle::bundle::TILE_LIMITS,
             &mut oteryn_world_bundle::sector::Budget {
                 tiles: 65536,
@@ -227,7 +181,7 @@ fn scenario_for_door(
             .sectors
             .iter()
             .flat_map(|(_, _, tiles)| tiles)
-            .find(|tile| if annihilator { tile.x == 33216 && tile.y == 31671 } else { tile.x == 32246 && tile.y == 31861 })
+            .find(|tile| tile.x == 32246 && tile.y == 31861)
             .ok_or("placed quest door")?;
         let palette: serde_json::Value = serde_json::from_str(include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
@@ -240,7 +194,7 @@ fn scenario_for_door(
                 palette["palette"][item.palette as usize]["source_item_id"].as_u64() == Some(5113)
             })
             .ok_or("source quest door")?;
-        assert_eq!(source.attrs.action, Some(if annihilator { 10102 } else { 10089 }));
+        assert_eq!(source.attrs.action, Some(10089));
         entry.attrs = source.attrs.clone();
         let bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
             &data.manifest,
@@ -356,35 +310,6 @@ fn scenario_for_door(
         owner.admit_quest_session(&admitted).await;
         let (next, result, _) =
             super::item_craft::exchange(&owner, admitted, 1, &payload, None).await?;
-        if annihilator {
-            assert_eq!(result, UseDisposition::Committed, "source unclaimed door must open");
-            assert!(map.enterable(station_pos));
-            let position = owner.runtime.lock().await.read_actor_position(deps.actor)
-                .map_err(debug)?.position();
-            assert_eq!(position, MovementLocalPosition { x: 6, y: 0, floor: 7 },
-                "source door USE teleports onto the doorway");
-            let track = "oteryn:quest-progress/quest/u7_24/the_annihilator/reward";
-            let quest = oteryn_gameplay_quests::quest::claim_storage::bindings().iter()
-                .find(|binding| binding.track == track).ok_or("source reward storage binding")?.quest;
-            let mut tx = harness.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
-            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,1,2)")
-                .bind(id(41).as_slice()).bind(track).bind(quest).execute(&mut *tx).await?;
-            tx.commit().await?;
-            owner.admit_quest_session(&next).await;
-            owner.clock_origin -= std::time::Duration::from_secs(1);
-            let blocked_payload = oteryn_protocol_oteryn::world_object::encode_use_intent(
-                &WorldObjectTarget { placement: target.placement.clone(), expected_revision: 1 }
-            ).map_err(debug)?;
-            let (_next, result, _) = super::item_craft::exchange(&owner, next, 2, &blocked_payload, None).await?;
-            assert_eq!(result, UseDisposition::Locked, "source Reward=1 seals both door actions");
-            assert_eq!(map.facts().doors().revision(crate::map::boot::tests::door_key()),1);
-            assert_eq!(owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),position);
-            drop(owner);
-            drop(authority);
-            drop(seal);
-            return harness.cleanup().await;
-        }
         assert_eq!(result, UseDisposition::Locked);
         assert!(!map.enterable(station_pos));
         assert_eq!(

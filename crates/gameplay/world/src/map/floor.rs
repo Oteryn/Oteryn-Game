@@ -28,7 +28,9 @@
 //! because the bundle carries no height facts.
 
 use super::floor_catalogue::{OBJECT, TERRAIN};
+mod door_displacement;
 mod house;
+pub use door_displacement::{prepare_quest_door_displacement, prepare_quest_door_opening};
 mod quest_callback;
 mod rope;
 use super::overlay::TilePos;
@@ -40,10 +42,7 @@ use crate::map::boot::BundleCollisionIndexExt;
 use crate::movement::{CardinalStep, MovementError};
 pub use house::resolve_house_step;
 use oteryn_world_bundle::bundle::Family;
-pub use quest_callback::{
-    prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing,
-    prepare_quest_door_opening,
-};
+pub use quest_callback::{prepare_quest_callback_teleport, prepare_quest_callback_teleport_facing};
 pub use rope::prepare_bundle_rope;
 use std::collections::{BTreeMap, BTreeSet};
 use {
@@ -180,15 +179,6 @@ pub struct BundleDoors<'a>(pub &'a super::door::DoorBook);
 impl CellBlocker for BundleDoors<'_> {
     fn blocks(&self, cell: LogicalCell) -> bool {
         pos(cell.x, cell.y, cell.z).is_some_and(|tile| self.0.blocks(tile))
-    }
-}
-
-/// A prepared source opening ignores only its exact door, not other doors on the tile.
-pub struct BundleDoorsExcept<'a>(pub &'a super::door::DoorBook, pub u64);
-
-impl CellBlocker for BundleDoorsExcept<'_> {
-    fn blocks(&self, cell: LogicalCell) -> bool {
-        pos(cell.x, cell.y, cell.z).is_some_and(|tile| self.0.blocks_except(tile, self.1))
     }
 }
 

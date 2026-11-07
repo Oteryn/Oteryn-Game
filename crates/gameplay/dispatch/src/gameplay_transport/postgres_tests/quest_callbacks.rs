@@ -29,6 +29,15 @@ pub(super) fn source_world_choices(
     choices: &[(u16, u16)],
     appearance: u16,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_choices_with_door(chest, choices, appearance, None)
+}
+
+pub(super) fn source_world_choices_with_door(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
@@ -45,6 +54,20 @@ pub(super) fn source_world_choices(
             ground_speed: None,
         }),
     });
+    if let Some(native) = native {
+        let reference = native
+            .item_index()
+            .and_then(|index| {
+                index.definition_ref("Item", "oteryn:item.tibia.i5113", "definition-r1")
+            })
+            .ok_or("native reward door definition")?;
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: "oteryn:item.tibia.i5113".into(),
+            family: bundle::Family::Item,
+            id: reference.get() - 1,
+            terrain: None,
+        });
+    }
     let ground = || sector::Item {
         palette: 0,
         depth: 0,
@@ -76,7 +99,19 @@ pub(super) fn source_world_choices(
             flags: 0,
             house: 0,
             zones: Vec::new(),
-            items: if let Some((_, unique)) = choices.iter().find(|(placed, _)| *placed == x) {
+            items: if native.is_some() && x == chest.0 - 1 {
+                vec![
+                    ground(),
+                    sector::Item {
+                        palette: 2,
+                        depth: 0,
+                        attrs: sector::Attrs {
+                            action: Some(10102),
+                            ..Default::default()
+                        },
+                    },
+                ]
+            } else if let Some((_, unique)) = choices.iter().find(|(placed, _)| *placed == x) {
                 vec![
                     ground(),
                     sector::Item {
@@ -118,14 +153,33 @@ pub(super) fn source_world_choices(
             map_revision: crate::map::overlay::map_revision(&base),
             bundle: pins,
             start: crate::map::overlay::TilePos {
-                x: chest.0 - 1,
+                x: if native.is_some() {
+                    chest.0
+                } else {
+                    chest.0 - 1
+                },
                 y: chest.1,
                 floor: chest.2,
             },
         },
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
         crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
-        |_| None,
+        |key| {
+            use crate::content::{ReferenceItemField, ReferenceItemType};
+            let native = native?;
+            let policy = native.item_policy(key, "definition-r1")?.record();
+            Some(crate::map::facts::ItemDefinition {
+                reference: native
+                    .item_index()?
+                    .definition_ref("Item", key, "definition-r1")?,
+                solid: policy.attributes.blocks_movement,
+                blocks_projectile: policy.attributes.blocks_projectile.unwrap_or(true),
+                pickupable: matches!(&policy.semantics.physical, ReferenceItemField::Known(p)
+                    if p.pickupable == ReferenceItemField::Known(true)),
+                door: matches!(&policy.semantics.classification, ReferenceItemField::Known(c)
+                    if c.item_type == ReferenceItemField::Known(ReferenceItemType::Door)),
+            })
+        },
     )
     .map_err(debug)
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Retain source-pinned physical group callbacks without rewriting other quests."""
+"""Verify the active shared encounter owner against retained source bytes."""
 import argparse
 import hashlib
 import io
@@ -15,8 +15,8 @@ REVISION = '04b83b512114bfd888000d6e1433ed8ecaec7c5b'
 SOURCE = 'data-otservbr-global/scripts/quests/the_annihilator/lever.lua'
 BLOB = '62e92e8acd676bad545a501c8431c983dcd4edfa'
 SOURCE_SHA = '02913ff4a52944f154e0d4148b6d0baf16c9999373fd699bf76a7dd577ed7fa2'
-CALLBACKS = 'content/quests/world-callbacks.json'
-KEY = 'oteryn:quest-callback/annihilator/group-entry'
+CALLBACKS = 'content/quests/shared-access-callbacks.json'
+KEY = 'oteryn:quest-callback/annihilator-entry'
 
 
 def verify_source(root=ROOT):
@@ -50,21 +50,23 @@ def annihilator():
     # Exact literals in the verified source: level/daily lines3-5, layout7-20,
     # player vacancy41-45, six native spawns47-50, one-way transform62-78.
     return {
-        'key': KEY, 'quest': 'oteryn:quest.the_annihilator_quest', 'trigger': 'use',
-        'selector': {'position': None, 'unique': 30025, 'action': None, 'appearance': 2772},
+        'key': KEY, 'quest': 'oteryn:quest.the_annihilator', 'trigger': 'use',
+        'selector': {'position': position(33226, 31671), 'unique': 30025, 'action': None, 'appearance': 2772},
         'lever': [2772, 2773], 'reversible': False, 'passages': [], 'teleport': None,
-        'group_encounter': {
-            'members': [{'source': position(x, 31671), 'destination': position(x - 3, 31659)}
+        'effects': {'transform': None, 'facing': None, 'magic': None, 'portals': None,
+                    'item_cycle': None, 'encounter': {
+            'players': [{'from': position(x, 31671), 'to': position(x - 3, 31659)}
                         for x in [33225, 33224, 33223, 33222]],
-            'creatures': [{'creature': 'oteryn:creature.angry_demon', 'position': position(x, y)}
+            'monsters': [{'creature': 'oteryn:creature.angry_demon', 'position': position(x, y)}
                           for x, y in [(33219, 31657), (33221, 31657), (33223, 31659),
                                        (33224, 31659), (33220, 31661), (33222, 31661)]],
-            'vacant_from': position(33217, 31655), 'vacant_to': position(33225, 31663),
+            'room_min': position(33217, 31655), 'room_max': position(33225, 31663),
             'minimum_level': 100,
-        },
-        'storage': [], 'offerings': [], 'item_on_target': None,
+        }},
+        'storage': [], 'offerings': [],
         'return_on_failure': False, 'failure_message': None,
-        'sources': [f'canary:{REVISION}:{SOURCE}:1-84#sha256:{SOURCE_SHA}'],
+        'sources': ['crystal:201189f871d23597b82caf88fd611454a2ddefb8:'
+                    'data-global/scripts/quests/the_annihilator/lever.lua:1-101'],
     }
 
 
@@ -76,17 +78,11 @@ def outputs(root=ROOT):
     callbacks = {row['key']: row for row in document['callbacks']}
     if len(callbacks) != len(document['callbacks']):
         raise ValueError('GROUP_ENCOUNTER_DUPLICATE_CALLBACK')
-    # The initial standalone authoring prototype omitted the required namespace.
-    # Migrate only its exact pinned output, never an unrelated or edited callback.
-    legacy = callbacks.pop('annihilator/group-entry', None)
-    if legacy is not None:
-        expected = annihilator()
-        expected['key'] = 'annihilator/group-entry'
-        if legacy != expected:
-            raise ValueError('GROUP_ENCOUNTER_LEGACY_CALLBACK_DRIFT')
-    callbacks[KEY] = annihilator()
-    document['callbacks'] = sorted(callbacks.values(), key=lambda row: row['key'])
-    return {CALLBACKS: (json.dumps(document, ensure_ascii=False, indent=2) + '\n').encode()}
+    # Shared effects.encounter is the published engine owner. Never append a
+    # parallel callback or silently replace a changed active encounter.
+    if callbacks.get(KEY) != annihilator():
+        raise ValueError('GROUP_ENCOUNTER_SHARED_OWNER_DRIFT')
+    return {CALLBACKS: (root / CALLBACKS).read_bytes()}
 
 
 def main():
@@ -94,14 +90,8 @@ def main():
     parser.add_argument('--root', type=Path, default=ROOT)
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
-    for path, raw in outputs(args.root).items():
-        destination = args.root / path
-        if args.check:
-            if destination.read_bytes() != raw:
-                raise ValueError('GROUP_ENCOUNTER_CALLBACK_DRIFT')
-        else:
-            destination.write_bytes(raw)
-    print('GROUP_ENCOUNTER_CALLBACKS', 'checked' if args.check else 'written', KEY)
+    outputs(args.root)
+    print('GROUP_ENCOUNTER_SHARED_OWNER_VERIFIED', KEY)
 
 
 if __name__ == '__main__':

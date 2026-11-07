@@ -75,3 +75,40 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
   This conservative atomic rule replaces the donor's sequential unchecked
   createMonster failure case; it never grants a cheaper partial encounter.
   A failed attempt must leave the lever, participant positions and actors intact.
+
+- Lane8d57515a1 already publishes effects.encounter and
+  commit_quest_encounter_entry. Reuse these; the local parallel group prototype
+  is retained only in a Git stash, not product code. The pinned group tool is
+  read-only and verifies the actual shared callback.
+- Annihilator door source: corpus blobs/1170e128e15ee05582db092987beea7a6935726a:4-18,
+  SHA25603c6833cf9c9e4c335e2d33716b1180159696eb45cf1772d9e09e6036ef50ca1,
+  Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b,
+  data-otservbr-global/scripts/quests/the_annihilator/door.lua. Read the real
+  shared Reward10102 claim: value1 seals against the player; closed5113
+  teleports onto the target and opens5114, closing checks occupancy.
+  The source defines no escape timer or all-six-kill reward predicate.
+
+- Corrected door-close interpretation: a present creature is displaced, not
+  automatically refused. Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b
+  data/libs/functions/creature.lua:174-210, retained
+  blob2ab1104989a5d1f50669dbb1e2d2aeef2f7c8dec, SHA256
+  a34f5bad153897359cd1f2499b6cf189d32c61e3d7ae18dd35a67eeedfd357c7:
+  query E,S,N,W with IGNOREBLOCKCREATURE, refuse if all fail, then teleport.
+  Game keeps native collision/PZ/owner fences, and refuses multiple occupants
+  rather than closing a solid tile over the remaining creatures.
+- Source data/scripts/movements/closing_door.lua:58-90, retained
+  blob1f977deb40366e3db24fbb3276fe84728778e268, SHA256
+  e81594eae44ae08a8ef0175fef4480359362c94c84ba2a3628debfe698b5fd78,
+  preserves generic quest-door step-out close after the player leaves.
+  Opening requires a sealed proof of the future open state of exactly the
+  selected door; bypassing the closed-door predicate alone cannot bypass the
+  actual movement-cell collision index. Other solids/doors stay blocking.
+
+- Continuous-route readback: existing content/world/placements/region-z13-x129-y123.b3
+  SHA256718d9825424eb18b97b9f593601e27eb918f7b112f42452b8604db641ecd3939
+  has closed door5113/action10102 at33216,31671,z13; lever2772/unique30025
+  at33226,31671,z13; chests2472 atx33227,33229,33231,33233/y31656/z13
+  with no unique attrs. The scripted door is in the entry corridor. The
+  isolated door PG fixture is a mechanic proof, not a source-room placement
+  claim. Implement source startup chest-selector binding and the continuous
+  native route next, using retained source startup tables; no invented kill flag.

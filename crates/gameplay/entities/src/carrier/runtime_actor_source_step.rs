@@ -17,23 +17,22 @@ pub trait SourceStepCommitProof: source_step_seal::Sealed {
     );
 }
 impl ChannelRuntimeV1 {
-    /// Publish a sealed relocation and its world projection in one owner turn.
-    /// Movement can also retire separated summons, so a refused projection restores
-    /// the complete carrier, including those actors and their ownership stores.
-    pub fn commit_source_step_with_projection<P: SourceStepCommitProof>(
+    /// Publish one sealed move together with a final projection CAS. Refusal
+    /// restores the full native carrier before the exclusive owner turn ends.
+    pub fn commit_source_step_and_project<P: SourceStepCommitProof>(
         &mut self,
         proof: P,
         project: impl FnOnce() -> bool,
     ) -> Result<MovementPositionSnapshot, CarrierError> {
         proof.validate_current(self)?;
         let before = self.carrier.clone();
-        let result = self.commit_source_step(proof).and_then(|snapshot| {
-            if project() {
-                Ok(snapshot)
-            } else {
-                Err(CarrierError::PlanConflict)
+        let result = (|| {
+            let snapshot = self.commit_source_step(proof)?;
+            if !project() {
+                return Err(CarrierError::PlanConflict);
             }
-        });
+            Ok(snapshot)
+        })();
         if result.is_err() {
             self.carrier = before;
         }
@@ -79,25 +78,34 @@ impl ChannelRuntimeV1 {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
-    use crate::carrier::tests::{runtime, session};
+    use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
+    use oteryn_gameplay_foundation::foundation::{ChannelId, NodeId, WorldId};
 
-    // Only the carrier transaction is under test; production supplies a World proof.
-    struct Proof(
-        ExactActorRef,
-        MovementPositionSnapshot,
-        MovementLocalPosition,
-    );
+    fn id(tag: u8) -> [u8; 16] {
+        [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]
+    }
+
+    struct Proof {
+        actor: ExactActorRef,
+        expected: MovementPositionSnapshot,
+        destination: MovementLocalPosition,
+        guard: Option<(ExactActorRef, MovementPositionSnapshot)>,
+    }
     impl source_step_seal::Sealed for Proof {}
     impl SourceStepCommitProof for Proof {
         fn validate_current(&self, runtime: &ChannelRuntimeV1) -> Result<(), CarrierError> {
-            if runtime.read_actor_position(self.0)? == self.1 {
-                Ok(())
-            } else {
-                Err(CarrierError::PositionSnapshotMismatch)
+            runtime.owner_fence()?;
+            if runtime.read_actor_position(self.actor)? != self.expected
+                || self.guard.is_some_and(|(actor, expected)| {
+                    runtime.read_actor_position(actor) != Ok(expected)
+                })
+            {
+                return Err(CarrierError::PositionSnapshotMismatch);
             }
+            Ok(())
         }
-
         fn parts(
             &self,
         ) -> (
@@ -106,51 +114,105 @@ mod tests {
             MovementLocalPosition,
             MovementFacing,
         ) {
-            (self.0, self.1, self.2, MovementFacing::South)
+            (
+                self.actor,
+                self.expected,
+                self.destination,
+                MovementFacing::South,
+            )
         }
     }
 
-    #[test]
-    fn source_step_projection_refusal_restores_position_and_retry_is_exact()
-    -> Result<(), CarrierError> {
-        let mut runtime = runtime(4);
-        let reservation = runtime.reserve_fresh_session(session(170))?;
-        let actor = runtime.commit_fresh_session(reservation)?;
-        let initial = runtime.initialize_pinned_test_position(
-            actor,
-            MovementLocalPosition {
-                x: 7,
-                y: 0,
-                floor: 7,
-            },
-        )?;
-        let destination = MovementLocalPosition {
-            x: 6,
-            y: 0,
-            floor: 7,
-        };
-        let before = runtime.carrier.slots.clone();
-        assert_eq!(
+    fn fixture() -> (ChannelRuntimeV1, [ExactActorRef; 2]) {
+        let world = WorldId::decode(&id(1)).unwrap();
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            ChannelId::decode(&id(2)).unwrap(),
+            NodeId::decode(&id(3)).unwrap(),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            4,
+            ChannelContentPin::test(world),
+        )
+        .unwrap();
+        let actors = [4, 5].map(|tag| {
+            let reserved = runtime
+                .reserve_fresh_session(GameSessionId::decode(&id(tag)).unwrap())
+                .unwrap();
+            let actor = runtime.commit_fresh_session(reserved).unwrap();
             runtime
-                .commit_source_step_with_projection(Proof(actor, initial, destination), || false),
-            Err(CarrierError::PlanConflict)
+                .initialize_pinned_test_position(
+                    actor,
+                    MovementLocalPosition {
+                        x: i32::from(tag),
+                        y: 0,
+                        floor: 0,
+                    },
+                )
+                .unwrap();
+            actor
+        });
+        (runtime, actors)
+    }
+
+    fn proofs(runtime: &ChannelRuntimeV1, actors: [ExactActorRef; 2]) -> Vec<Proof> {
+        actors
+            .into_iter()
+            .enumerate()
+            .map(|(i, actor)| Proof {
+                actor,
+                expected: runtime.read_actor_position(actor).unwrap(),
+                destination: MovementLocalPosition {
+                    x: 10 + i32::try_from(i).unwrap(),
+                    y: 0,
+                    floor: 0,
+                },
+                guard: None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn source_step_projection_refusal_restores_the_entire_carrier() {
+        let (mut runtime, actors) = fixture();
+        let before = runtime.carrier.clone();
+        let initial = runtime.read_actor_position(actors[0]).unwrap();
+        let proof = proofs(&runtime, actors).remove(0);
+        assert!(
+            runtime
+                .commit_source_step_and_project(proof, || false)
+                .is_err()
         );
-        assert_eq!(runtime.carrier.slots, before);
-        assert_eq!(runtime.read_actor_position(actor)?, initial);
-        let committed = runtime
-            .commit_source_step_with_projection(Proof(actor, initial, destination), || true)?;
-        assert_eq!(committed.position(), destination);
-        assert_eq!(committed.revision(), initial.revision() + 1);
+        assert_eq!(runtime.carrier, before);
+        let proof = proofs(&runtime, actors).remove(0);
+        let snapshot = runtime
+            .commit_source_step_and_project(proof, || true)
+            .unwrap();
+        assert_eq!(snapshot.position().x, 10);
+        assert_eq!(snapshot.revision(), initial.revision() + 1);
         let mut projected = false;
         assert_eq!(
-            runtime.commit_source_step_with_projection(Proof(actor, initial, destination), || {
-                projected = true;
-                true
-            }),
+            runtime.commit_source_step_and_project(
+                Proof {
+                    actor: actors[0],
+                    expected: initial,
+                    destination: snapshot.position(),
+                    guard: None,
+                },
+                || {
+                    projected = true;
+                    true
+                },
+            ),
             Err(CarrierError::PositionSnapshotMismatch)
         );
         assert!(!projected);
-        assert_eq!(runtime.read_actor_position(actor)?, committed);
-        Ok(())
+        assert_eq!(runtime.read_actor_position(actors[0]).unwrap(), snapshot);
+        assert_eq!(
+            runtime.read_actor_position(actors[1]).unwrap().position().x,
+            5
+        );
     }
 }

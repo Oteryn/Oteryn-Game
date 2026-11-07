@@ -20,7 +20,6 @@
 // Left out. These evaluators are not a second production conversation adapter.
 #[cfg(test)]
 pub mod batch3_a;
-pub mod claim_storage;
 pub mod classic_dialogue;
 pub mod classic_talk;
 pub mod cults_of_tibia;
@@ -43,7 +42,6 @@ pub mod rotten_blood;
 pub mod schrodinger_island;
 pub mod soul_war;
 pub mod soul_war_dialogue;
-pub mod source_doors;
 pub mod task_board;
 pub mod threatened_dreams;
 pub mod unnatural_selection;

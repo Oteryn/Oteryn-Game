@@ -228,7 +228,7 @@ def validate_native(callback, context):
 def validate_effects(callback, context):
     """The optional Channel effects share the Rust world_callbacks closed shape."""
     effects = callback.get('effects', {})
-    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward'}
+    allowed = {'transform', 'facing', 'magic', 'portals', 'item_cycle', 'encounter', 'outfit_reward', 'reward_door'}
     fields(effects, set(), allowed, context + ': effects')
     outfit = effects.get('outfit_reward')
     if outfit is not None:
@@ -253,11 +253,20 @@ def validate_effects(callback, context):
         fields(magic, {'position', 'effect'}, {'position', 'effect'}, context + ': magic')
         position(magic['position'], context + ': magic')
         require(integer(magic['effect'], 1, 65535), context + ': invalid magic effect')
-    operations = sum(effects.get(field) is not None for field in ('portals', 'item_cycle', 'encounter'))
+    operations = sum(effects.get(field) is not None for field in ('portals', 'item_cycle', 'encounter', 'reward_door'))
     require(operations <= 1 and (operations == 0 or callback['trigger'] == 'use'
             and callback.get('lever') is not None and not callback['storage']
             and not callback['passages'] and callback.get('teleport') is None),
             context + ': incompatible map effects')
+    reward_door = effects.get('reward_door')
+    if reward_door is not None:
+        fields(reward_door, {'claim'}, {'claim'}, context + ': reward door')
+        require(valid_key(reward_door['claim']) and reward_door['claim'].startswith('oteryn:reward-claim.')
+                and callback.get('reversible') is True and callback['selector'].get('action') is not None
+                and callback.get('item_on_target') is None and not callback['offerings']
+                and effects.get('outfit_reward') is None and effects.get('transform') is None
+                and effects.get('facing') is None and effects.get('magic') is None,
+                context + ': incompatible reward door')
     pair = effects.get('portals')
     if pair is not None:
         fields(pair, {'appearance', 'portals'}, {'appearance', 'portals', 'lifetime_us'}, context + ': pair')

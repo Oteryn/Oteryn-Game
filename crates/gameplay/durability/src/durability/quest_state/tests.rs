@@ -1,18 +1,6 @@
 use super::*;
 
 #[test]
-fn source_custom_door_uses_the_same_named_durable_reward_track() {
-    let mut copy = QuestStateCopy::default();
-    let track = "oteryn:quest-progress/quest/u7_24/the_annihilator/reward";
-    assert!(copy.meets_door_storage(10102));
-    for (value, allowed) in [(-1, true), (0, true), (1, false), (2, true)] {
-        copy.tracks.insert(track.into(), value);
-        assert_eq!(copy.meets_door_storage(10102), allowed);
-    }
-    assert!(!copy.meets_door_storage(10089));
-}
-
-#[test]
 fn quest_door_storage_uses_the_durable_track_and_absence_is_minus_one() {
     let mut copy = QuestStateCopy::default();
     assert!(!copy.meets_door_storage(4500));

@@ -107,27 +107,11 @@ impl DurabilityRoot {
                     .bind(bound(QUESTGATE0_RL_10))
                     .fetch_all(&mut *tx)
                     .await?;
-                    let claim_keys: Vec<String> = oteryn_gameplay_quests::quest::claim_storage::bindings()
-                        .iter().map(|binding| binding.claim.to_owned()).collect::<std::collections::BTreeSet<_>>()
-                        .into_iter().collect();
-                    if claim_keys.len() > QUESTSTATE0_RL_08_TRACKS {
-                        return Err(DurabilityError::InvalidStoredState);
-                    }
-                    // Once-claims hold this same Character root through their commit.
-                    // Pending reservations cannot appear in this earned-storage projection.
-                    let source_claims: Vec<String> = sqlx::query_scalar(
-                        "SELECT claim_production_key FROM game_reward_claims \
-                          WHERE character_id=encode($1,'hex')::uuid AND claim_family='RewardClaim' \
-                            AND claim_production_key=ANY($2::text[]) \
-                          ORDER BY claim_production_key LIMIT $3"
-                    ).bind(id).bind(&claim_keys).bind(bound(QUESTSTATE0_RL_08_TRACKS))
-                        .fetch_all(&mut *tx).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     if over(&tracks, QUESTSTATE0_RL_01.min(QUESTSTATE0_RL_08_TRACKS))
                         || over(&states, QUESTSTATE0_RL_05.min(QUESTSTATE0_RL_08_STATES))
                         || over(&obligations, QUESTSTATE0_RL_07)
                         || over(&xp_obligations, QUESTGATE0_RL_10)
-                        || source_claims.len() > claim_keys.len()
                     {
                         return Err(DurabilityError::InvalidStoredState);
                     }
@@ -145,10 +129,6 @@ impl DurabilityRoot {
                         copy.tracks
                             .insert(row.try_get("track_key")?, row.try_get("value")?);
                     }
-                    oteryn_gameplay_quests::quest::claim_storage::project(
-                        &source_claims.into_iter().collect(),
-                        &mut copy.tracks,
-                    );
                     oteryn_gameplay_quests::quest::monk_shrines::derive_count(&mut copy.tracks);
                     if copy.tracks.len() > QUESTSTATE0_RL_08_TRACKS {
                         return Err(DurabilityError::InvalidStoredState);

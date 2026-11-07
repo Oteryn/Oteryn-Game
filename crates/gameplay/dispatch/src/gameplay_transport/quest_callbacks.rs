@@ -7,6 +7,7 @@ use super::{
 mod effects;
 mod encounter;
 mod execute;
+mod reward_door;
 mod rewards;
 mod soul_war_reward;
 
@@ -341,7 +342,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(permit) = self.spell_lane_permit().await else {
                 return UseDisposition::Rejected;
             };
-            let fence = if callback.storage.is_empty() {
+            let fence = if callback.storage.is_empty() && callback.effects.reward_door.is_none() {
                 None
             } else {
                 self.current_quest_fence(command.game_session_id)
@@ -497,7 +498,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let cause = QuestCause::Step(command);
         let operation = async {
-            let fence = if callback.storage.is_empty() {
+            let fence = if callback.storage.is_empty() && callback.effects.reward_door.is_none() {
                 None
             } else {
                 self.current_quest_fence(session).await.ok().flatten()

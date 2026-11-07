@@ -14,6 +14,8 @@ pub enum Facing {
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reward_door: Option<RewardDoor>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::super::reward_callbacks::OutfitReward>,
     pub transform: Option<u16>,
     pub facing: Option<Facing>,
@@ -21,6 +23,12 @@ pub struct CallbackEffects {
     pub portals: Option<PortalPair>,
     pub item_cycle: Option<ItemCycle>,
     pub encounter: Option<Encounter>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct RewardDoor {
+    pub claim: String,
 }
 
 impl CallbackEffects {
@@ -115,13 +123,28 @@ pub(super) fn valid(callback: &Callback) -> bool {
     }
     let operations = usize::from(effects.portals.is_some())
         + usize::from(effects.item_cycle.is_some())
-        + usize::from(effects.encounter.is_some());
+        + usize::from(effects.encounter.is_some())
+        + usize::from(effects.reward_door.is_some());
     if operations > 1
         || (operations > 0
             && (!lever
                 || !callback.storage.is_empty()
                 || !callback.passages.is_empty()
                 || callback.teleport.is_some()))
+    {
+        return false;
+    }
+    if let Some(door) = &effects.reward_door
+        && (!super::super::valid_quest_key(&door.claim)
+            || !door.claim.starts_with("oteryn:reward-claim.")
+            || !callback.reversible
+            || callback.selector.action.is_none()
+            || !callback.offerings.is_empty()
+            || callback.item_on_target.is_some()
+            || effects.outfit_reward.is_some()
+            || effects.transform.is_some()
+            || effects.facing.is_some()
+            || effects.magic.is_some())
     {
         return false;
     }
@@ -180,4 +203,40 @@ pub(super) fn valid(callback: &Callback) -> bool {
         }
     }
     true
+}
+
+#[cfg(test)]
+mod reward_door_tests {
+    use super::*;
+
+    #[test]
+    fn reward_door_checks_the_claim_without_shadow_progress_or_other_effects() -> Result<(), String>
+    {
+        let callback = super::super::load()?
+            .into_iter()
+            .find(|row| row.key == "oteryn:quest-callback/annihilator-reward-door")
+            .ok_or("reward door")?;
+        assert!(valid(&callback));
+        for change in 0..5 {
+            let mut invalid = callback.clone();
+            match change {
+                0 => {
+                    invalid.effects.reward_door.as_mut().ok_or("door")?.claim =
+                        "oteryn:quest.shadow".into()
+                }
+                1 => invalid.reversible = false,
+                2 => invalid.selector.action = None,
+                3 => invalid.effects.transform = Some(5114),
+                _ => invalid.storage.push(Storage {
+                    track: "oteryn:quest.shadow".into(),
+                    minimum: 0,
+                    maximum: 1,
+                    set: 0,
+                    preserve: true,
+                }),
+            }
+            assert!(!valid(&invalid));
+        }
+        Ok(())
+    }
 }

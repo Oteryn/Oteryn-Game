@@ -11,6 +11,27 @@ class SharedEffectAuthoring(unittest.TestCase):
             if row['quest'] == 'oteryn:quest.thais_lighthouse_quest':
                 quest_batch4.validate_callback(row, 'thais_lighthouse')
 
+    def test_reward_door_matches_pinned_source_and_refuses_shadow_progress(self):
+        qengine_access.verify_reward_door_source()
+        source = next(row for row in qengine_access.document()['callbacks']
+                      if row['key'].endswith('annihilator-reward-door'))
+        self.assertEqual(source['lever'], [5113, 5114])
+        self.assertEqual(source['selector']['action'], 10102)
+        for change in ('foreign_claim', 'unknown_field', 'one_way', 'shadow_track', 'unbound_door'):
+            row = copy.deepcopy(source)
+            if change == 'foreign_claim':
+                row['effects']['reward_door']['claim'] = 'oteryn:quest.shadow'
+            elif change == 'unknown_field':
+                row['effects']['reward_door']['write'] = True
+            elif change == 'one_way':
+                row['reversible'] = False
+            elif change == 'shadow_track':
+                row['storage'] = [dict(track='oteryn:quest.shadow', minimum=0, maximum=1, set=0)]
+            else:
+                row['selector']['action'] = None
+            with self.assertRaises(ValueError, msg=change):
+                quest_batch4.validate_effects(row, row['key'])
+
     def test_invalid_shared_effects_are_refused(self):
         rows = qengine_access.document()['callbacks']
         portal = next(row for row in rows if row['key'].endswith('thais-lighthouse-portals'))

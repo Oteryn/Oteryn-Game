@@ -603,15 +603,6 @@ impl BundleCollisionData {
         scope: &EngineeringStaticCellScope,
         cell: LogicalCell,
     ) -> Result<CollisionClass, StaticCellEngineError> {
-        self.lookup_with_opening(scope, cell, None)
-    }
-
-    fn lookup_with_opening(
-        &self,
-        scope: &EngineeringStaticCellScope,
-        cell: LogicalCell,
-        opening: Option<u64>,
-    ) -> Result<CollisionClass, StaticCellEngineError> {
         if scope != &self.scope {
             return Err(StaticCellEngineError::ScopeMismatch);
         }
@@ -624,10 +615,7 @@ impl BundleCollisionData {
                 .map
                 .facts
                 .quest_callback_blocked(&self.base, pos, self.blocked.contains(&pos))
-                && !opening.map_or_else(
-                    || self.map.facts.doors().blocks(pos),
-                    |key| self.map.facts.doors().blocks_except(pos, key),
-                )
+                && !self.map.facts.doors().blocks(pos)
             {
                 CollisionClass::Walkable
             } else {
@@ -658,12 +646,6 @@ impl crate::content::native_cell_lookup::BundleCollisionLookup for BundleCollisi
 pub use crate::content::native_cell_lookup::BundleCollisionIndex;
 pub trait BundleCollisionIndexExt {
     fn map(&self) -> &BundleMap;
-    fn lookup_except_door(
-        &self,
-        scope: &EngineeringStaticCellScope,
-        cell: LogicalCell,
-        opening: u64,
-    ) -> Result<CollisionClass, StaticCellEngineError>;
 }
 
 impl BundleCollisionIndexExt for BundleCollisionIndex {
@@ -677,22 +659,6 @@ impl BundleCollisionIndexExt for BundleCollisionIndex {
             .downcast_ref::<BundleCollisionData>()
             .expect("bundle map owner")
             .map
-    }
-
-    #[expect(
-        clippy::expect_used,
-        reason = "the bundle port is constructed only here from BundleCollisionData"
-    )]
-    fn lookup_except_door(
-        &self,
-        scope: &EngineeringStaticCellScope,
-        cell: LogicalCell,
-        opening: u64,
-    ) -> Result<CollisionClass, StaticCellEngineError> {
-        (self.0.as_ref() as &dyn std::any::Any)
-            .downcast_ref::<BundleCollisionData>()
-            .expect("bundle collision owner")
-            .lookup_with_opening(scope, cell, Some(opening))
     }
 }
 
@@ -1614,6 +1580,73 @@ pub mod tests {
         door_world_with(door_items)
     }
 
+    #[test]
+    fn opening_door_collision_exception_keeps_other_solids_blocking() -> Result<(), Box<dyn Error>>
+    {
+        use crate::map::view::MapFacts;
+        let world = door_world()?;
+        let key = super::super::view::placement_key(DOOR_AT, 1).ok_or("door key")?;
+        assert!(world.map.facts.opening_door_enterable(world.base(), key));
+        assert!(
+            !world
+                .map
+                .facts
+                .opening_door_enterable(world.base(), key + 1)
+        );
+        let original = world
+            .map
+            .facts
+            .base_entry(DOOR_AT, 1, 0)
+            .ok_or("door facts")?;
+        assert!(
+            world
+                .map
+                .facts
+                .apply_quest_callback(key, 0, original, &[], &[], false, None)
+        );
+        assert!(
+            !world.map.facts.opening_door_enterable(world.base(), key),
+            "a different callback must not be bypassed by the native door owner"
+        );
+        let (bytes, mut load) =
+            bundle_with_items("oteryn:item.tibia.i1629", "oteryn:item.tibia.i1000");
+        let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
+        let blocker = data
+            .sectors
+            .iter()
+            .flat_map(|sector| &sector.tiles)
+            .find(|tile| tile.x == 7)
+            .and_then(|tile| tile.items.get(1))
+            .ok_or("blocker")?
+            .clone();
+        data.sectors
+            .iter_mut()
+            .flat_map(|sector| &mut sector.tiles)
+            .find(|tile| tile.x == 6)
+            .ok_or("door tile")?
+            .items
+            .push(blocker);
+        let bytes =
+            oteryn_world_bundle::writer::write(&data.manifest, &data.sectors, &Default::default())?;
+        load.digest = oteryn_world_bundle::bundle::read(&bytes)?.digest;
+        let world = boot(
+            &bytes,
+            &pins(load, 2),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            |key| {
+                let mut facts = door_items(key)?;
+                if key == "oteryn:item.tibia.i1000" {
+                    facts.solid = Some(true);
+                    facts.blocks_projectile = true;
+                }
+                Some(facts)
+            },
+        )?;
+        assert!(!world.map.facts.opening_door_enterable(world.base(), key));
+        Ok(())
+    }
+
     /// The door's tile.
     pub const DOOR_AT: TilePos = TilePos {
         x: 6,
@@ -1646,21 +1679,6 @@ pub mod tests {
         assert!(!world.enterable(DOOR_AT) && class() == Ok(CollisionClass::Blocked));
         let closed = world.facts().base_entry(DOOR_AT, 1, 0).ok_or("closed")?;
         assert_eq!(closed.appearance_id, 1629);
-        assert_eq!(world.facts().object_revision(key), 0);
-        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
-            cells.index()
-        else {
-            return Err("qualified bundle index".into());
-        };
-        assert_eq!(
-            index.lookup_except_door(cells.scope(), LogicalCell { x: 6, y: 0, z: 7 }, key),
-            Ok(CollisionClass::Walkable)
-        );
-        assert_eq!(
-            index.lookup_except_door(cells.scope(), LogicalCell { x: 6, y: 0, z: 7 }, key + 1),
-            Ok(CollisionClass::Blocked)
-        );
-        assert!(!world.enterable(DOOR_AT));
         assert_eq!(world.facts().object_revision(key), 0);
 
         // Open: walkable (live in the collision index too), the open item's facts, revision 1.

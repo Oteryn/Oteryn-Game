@@ -109,7 +109,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // current runtime generation; a stale slot or superseded session therefore contributes
         // neither a level nor a door mutation. Keep the guard through the toggle so a level-up,
         // death or actor replacement cannot race the predicate.
-        let mut spell_states = self.states.spell_states.lock().await;
+        let spell_states = self.states.spell_states.lock().await;
         if spell_states.is_dead(actor) {
             return UseOutcome::rejected();
         }
@@ -149,7 +149,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .is_some_and(|sessions| {
                         sessions
                             .get(&session)
-                            .is_some_and(|quest| quest.meets_door_storage(action))
+                            .and_then(|quest| quest.copy.as_ref())
+                            .is_some_and(|copy| copy.meets_door_storage(action))
                     })
             });
         // Admission is taken under the owner lock that also covers the commit below, and the
@@ -198,19 +199,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 disposition,
                 ..UseOutcome::rejected()
             };
-        }
-        if let Some(outcome) = self.open_source_quest_door(
-            &mut runtime,
-            &mut spell_states,
-            actor,
-            session,
-            map,
-            target,
-            actor_tile,
-            actor_level,
-            quest_storage_met,
-        ) {
-            return outcome;
         }
         map_door::use_door(
             &map.overlay,

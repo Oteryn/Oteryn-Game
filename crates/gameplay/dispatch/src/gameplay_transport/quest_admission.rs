@@ -18,41 +18,6 @@ pub struct QuestSession {
     pub retry_at: Option<std::time::Instant>,
 }
 
-impl QuestSession {
-    /// Negative source gates cannot treat an unverified stale absence as permission.
-    pub(super) fn meets_door_storage(&self, action: u16) -> bool {
-        if oteryn_gameplay_quests::quest::source_doors::rule(action).is_some()
-            && self.retry_at.is_some()
-        {
-            return false;
-        }
-        self.copy
-            .as_ref()
-            .is_some_and(|copy| copy.meets_door_storage(action))
-    }
-}
-
-#[cfg(test)]
-mod source_door_copy_tests {
-    use super::*;
-
-    #[test]
-    fn source_door_rejects_unclaimed_but_stale_or_missing_copy() {
-        let mut session = QuestSession {
-            copy: Some(crate::durability::quest_state::QuestStateCopy::default()),
-            experience_deferred: false,
-            version: 1,
-            retry_at: None,
-        };
-        assert!(session.meets_door_storage(10102));
-        session.retry_at = Some(std::time::Instant::now());
-        assert!(!session.meets_door_storage(10102));
-        session.retry_at = None;
-        session.copy = None;
-        assert!(!session.meets_door_storage(10102));
-    }
-}
-
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Reload the quest copy of `session` from the store and request its pending obligations
     /// again. A failed load or an attempt without an outcome is tried again after

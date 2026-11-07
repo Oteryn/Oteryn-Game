@@ -30,7 +30,7 @@ pub enum Trigger {
 mod effects;
 pub use effects::{
     CallbackEffects, Encounter, EncounterMonster, EncounterPlayer, Facing, ItemCycle, MagicEffect,
-    Portal, PortalPair,
+    Portal, PortalPair, RewardDoor,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -214,6 +214,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || !callback.sources.iter().any(|source| {
                 // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
                 source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
+                    || source.starts_with("canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:")
                     || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
                     || (callback.effects.outfit_reward.is_some()
                         && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
