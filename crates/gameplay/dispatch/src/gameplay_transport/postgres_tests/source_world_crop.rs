@@ -141,3 +141,73 @@ pub(super) fn world(
     )
     .map_err(debug)
 }
+
+/// Compile the actual source region when the route spans floors or includes
+/// teleport attributes. The repository compiler owns family parity, floor signs,
+/// source subareas and canonical definitions; no legacy attribute is hand-converted.
+pub(super) fn compiled_region(
+    minimum: crate::map::overlay::TilePos,
+    maximum: crate::map::overlay::TilePos,
+    start: crate::map::overlay::TilePos,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    use oteryn_world_bundle_compiler::{compile, project};
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    if minimum.x / 256 != maximum.x / 256
+        || minimum.y / 256 != maximum.y / 256
+        || minimum.floor > maximum.floor
+        || !(minimum.floor..=maximum.floor).contains(&start.floor)
+    {
+        return Err("invalid source region route bounds".into());
+    }
+    let project = source::project_regions(&root, &[(minimum.x / 256, minimum.y / 256)])?;
+    let (registry, palette) = source::registry(&root, &project)?;
+    let identity: bundle::Identity = serde_json::from_slice(&std::fs::read(
+        root.join("content/world/pins/oteryn.identity.json"),
+    )?)?;
+    let pins = crate::map::BundlePins {
+        digest: [0; 32],
+        project_format_version: identity.project_format_version.clone(),
+        world_schema_version: identity.world_schema_version.clone(),
+        content_revision: identity.content_revision.clone(),
+        production: false,
+    };
+    let compiled = compile::compile(
+        &compile::Input {
+            regions: &project.regions,
+            palette: &palette,
+            identity,
+            world: source::world_extent(&root)?,
+            build_class: bundle::BuildClass::NonProduction,
+            draft_areas: project::draft_areas(&project.index)?,
+            families: &project.families,
+        },
+        &registry,
+    )?;
+    assert!(
+        compiled
+            .diagnostics
+            .iter()
+            .all(|d| !(minimum.floor..=maximum.floor).contains(&d.floor)
+                || !(minimum.x..=maximum.x).contains(&d.x)
+                || !(minimum.y..=maximum.y).contains(&d.y)),
+        "unresolved source quest geometry"
+    );
+    let pins = crate::map::BundlePins {
+        digest: compiled.digest,
+        ..pins
+    };
+    let base = crate::map::load(&compiled.bytes, &pins).map_err(debug)?;
+    crate::map::boot::boot(
+        &compiled.bytes,
+        &crate::map::boot::BootPins {
+            map_revision: crate::map::overlay::map_revision(&base),
+            bundle: pins,
+            start,
+        },
+        crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
+        crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
+        |key| crate::map::boot::native_item_definition(Some(native), key),
+    )
+    .map_err(debug)
+}

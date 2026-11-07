@@ -240,9 +240,11 @@ fn snowbunny_transaction_scenario() -> TestResult {
             .await?;
         assert_eq!(steps, 0, "progress failure rolls the durable step back");
 
-        sqlx::query("DROP TRIGGER reject_snowbunny_progress ON game_character_achievement_progress")
-            .execute(&h.pool)
-            .await?;
+        sqlx::query(
+            "DROP TRIGGER reject_snowbunny_progress ON game_character_achievement_progress",
+        )
+        .execute(&h.pool)
+        .await?;
         let mut committed = h.pool.begin().await?;
         sqlx::query("INSERT INTO snowbunny_step_probe(event) VALUES($1)")
             .bind(event.as_slice())
@@ -633,7 +635,11 @@ async fn seed_backpack(
     Ok(())
 }
 
-pub(super) fn object(digest: [u8; 32], pos: TilePos, revision: u64) -> TestResult<WorldObjectTarget> {
+pub(super) fn object(
+    digest: [u8; 32],
+    pos: TilePos,
+    revision: u64,
+) -> TestResult<WorldObjectTarget> {
     let mut placement = digest.to_vec();
     placement.extend_from_slice(
         &crate::map::view::placement_key(pos, 1)
@@ -655,6 +661,22 @@ fn next(
         D::East => at.x += 1,
         D::South => at.y += 1,
         D::West => at.x -= 1,
+        D::NorthEast => {
+            at.x += 1;
+            at.y -= 1;
+        }
+        D::SouthEast => {
+            at.x += 1;
+            at.y += 1;
+        }
+        D::SouthWest => {
+            at.x -= 1;
+            at.y += 1;
+        }
+        D::NorthWest => {
+            at.x -= 1;
+            at.y -= 1;
+        }
     }
     at
 }

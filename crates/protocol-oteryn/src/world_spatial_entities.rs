@@ -164,10 +164,20 @@ pub fn lit_kind(kind: EntityKind) -> bool {
 
 fn validate_entity(entity: &WorldSpatialEntity) -> Result<(), WorldSpatialError> {
     match entity.detail {
-        EntityDetail::Actor { health_percent, .. }
-            if actor_kind(entity.kind)
-                && health_percent <= MAX_HEALTH_PERCENT
-                && (entity.kind != EntityKind::Npc || health_percent == MAX_HEALTH_PERCENT) =>
+        EntityDetail::Actor {
+            health_percent,
+            direction,
+            ..
+        } if actor_kind(entity.kind)
+            && matches!(
+                direction,
+                StepDirection::North
+                    | StepDirection::East
+                    | StepDirection::South
+                    | StepDirection::West
+            )
+            && health_percent <= MAX_HEALTH_PERCENT
+            && (entity.kind != EntityKind::Npc || health_percent == MAX_HEALTH_PERCENT) =>
         {
             Ok(())
         }
@@ -936,6 +946,24 @@ mod tests {
 
     fn at(x: i32) -> ActorPosition {
         ActorPosition { x, y: 7, floor: 7 }
+    }
+
+    #[test]
+    fn diagonal_intent_profile_never_widens_entity_facing() {
+        for direction in [
+            StepDirection::NorthEast,
+            StepDirection::SouthEast,
+            StepDirection::SouthWest,
+            StepDirection::NorthWest,
+        ] {
+            let mut entity = actor(EntityKind::Creature, 5);
+            entity.detail = EntityDetail::Actor {
+                direction,
+                appearance_ref: 1,
+                health_percent: 100,
+            };
+            assert!(encode_entity(&entity, false).is_err());
+        }
     }
 
     fn actor(kind: EntityKind, n: u32) -> WorldSpatialEntity {

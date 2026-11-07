@@ -121,6 +121,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     spell_catalog::CAPABILITY_ACTOR_SPELL_CATALOG_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_AMBIENT_SOUND_V1,
     skill_display::CAPABILITY_SKILL_DISPLAY_V1,
+    world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
