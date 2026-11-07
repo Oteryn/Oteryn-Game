@@ -101,3 +101,16 @@ campaign therefore checks the three successful report receipts, retaining the
 source rearm behavior. Its rank and once-only completion flag remain live storage
 predicates. The complete reward plan, including historical predicates and value
 outputs, is sealed into the quest definition hash by a non-executable marker.
+
+`give.backpack_outputs` is an optional list of up to19 additional direct backpack
+outputs. It is mutually exclusive with `give.contents`; the root plus every
+additional output must fit together. It reuses the existing MINT reservation,
+stable output identities, one-item audits and complete deferred custody proof.
+The layout is bound into the request, and quest source proof compares every
+output. Empty layouts preserve legacy request bindings. Split non-stackable
+quantities into separate one-item outputs and stack quantities at proven caps.
+
+Executable authored reward references close native Item admission during normal
+regeneration. Unknown canonical stack facts can borrow pinned client custody
+facts through `authored_quest_item_custody.py`; canonical records, accepted holds,
+non-custody facts and stateful instance-owner requirements remain authoritative.

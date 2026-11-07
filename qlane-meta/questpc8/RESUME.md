@@ -107,3 +107,13 @@ facts without canonical mutation; accepted holds and stateful items refuse.
 See cloud-smith-cache-proof.json. Final changed-crate checks, legacy PG and
 review are pending, so keep authoring status until they finish. L7 remains17
 unqualified (Smith is verification pending). Do not discard any current files.
+
+Review9bfd found one NPC parser layout validation gap; fixed using the same
+shared validator, RED/GREEN unit. Merged Smith PG37.6266s, nested Braindeath
+PG37.4845s and Father eleven-track atomic acceptance PG66.01s passed. Final
+checks running. Static population has no Giant Spider in the selected chamber;
+next add bounded guardian activation and update the PG case to fight its real
+spawn, before qualification. Work is author-owned and continuing.
+Git local author identity corrected; future divergent merges use --no-commit
+and an explicit attributed/trailered commit. Published9bfd retains the earlier
+default-identity merge; history will not be rewritten.

@@ -130,8 +130,6 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                     })
             })
     };
-    let item =
-        |item: &str, count| slug(item, "oteryn:item.", b"._/:-", 256) && (1..=100).contains(&count);
     if document.schema != 1 || document.callbacks.len() > 256 {
         return Err("reward callback bounds".into());
     }
@@ -170,11 +168,9 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.take
                 .iter()
                 .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
-            || c.give.as_ref().is_some_and(|r| {
-                !item(&r.item, r.count)
-                    || r.contents.len() > 20
-                    || r.contents.iter().any(|s| !item(&s.item, s.count))
-            })
+            || c.give
+                .as_ref()
+                .is_some_and(|reward| !valid_item_reward(reward))
             || c.outfit
                 .as_ref()
                 .is_some_and(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
@@ -443,6 +439,32 @@ mod tests {
         }
         super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;
+        Ok(())
+    }
+    #[test]
+    fn npc_rewards_reject_mixed_or_unbounded_backpack_outputs() -> Result<(), String> {
+        let mut document: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/shared-reward-callbacks.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        document["callbacks"][0]["outfit"] = serde_json::Value::Null;
+        let valid = serde_json::json!({"item":"oteryn:item.tibia.i2853","count":1,
+            "contents":[],"backpack_outputs":[{"item":"oteryn:item.tibia.i3034","count":1}]});
+        document["callbacks"][0]["give"] = valid.clone();
+        assert!(parse(&document.to_string()).is_ok());
+        let mut mixed = valid.clone();
+        mixed["contents"] = serde_json::json!([{"item":"oteryn:item.tibia.i3031","count":1}]);
+        let mut excessive = valid.clone();
+        excessive["backpack_outputs"] = serde_json::json!(vec![
+            serde_json::json!({"item":"oteryn:item.tibia.i3034","count":1});
+            20
+        ]);
+        let mut empty_quantity = valid;
+        empty_quantity["backpack_outputs"][0]["count"] = serde_json::json!(0);
+        for invalid in [mixed, excessive, empty_quantity] {
+            document["callbacks"][0]["give"] = invalid;
+            assert!(parse(&document.to_string()).is_err());
+        }
         Ok(())
     }
 }
