@@ -8512,12 +8512,9 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "name": "Merge source-world bridge with current object predicates",
-    "merge_heads": [
-      "a01933b31",
-      "f90b14f25"
-    ],
-    "validation": "Pending combined-crate and focused PG verification; each input feature has retained green evidence",
+    "name": "Validated source-world bridge/current-predicate merge",
+    "validation": "qlane-meta/questpc/cloud-merge-predicates-validation.json",
+    "qualified_titles_added": 0,
     "counts": {
       "QUALIFIED": 60,
       "UNFINISHED": 117,
@@ -9055,6 +9052,79 @@
         "crates/gameplay/quests/src/quest/world_callbacks/conditions.rs": "d17ad27a02a71e80c2b14ee125ac4c154b549e03840be571067365d468ac5981",
         "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/conditions.rs": "e12b6de2bad173b14474af90ba53a8c20c8a305ba59e3b6239f60153cb9aa98f",
         "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/draconia_exit.rs": "c1a4ba1abe8ad1421f26b576ae26d0e877ca7d4b8162c44a1270b5063ff47250"
+      }
+    },
+    "source_world_predicate_merge": {
+      "parents": [
+        "a01933b31",
+        "f90b14f25"
+      ],
+      "merge": "a08555946",
+      "result": "PASS",
+      "resolution": "Keep selector.positions, occupant ejection, required claim guards, source-world bridge and incoming Life Ring qualification; keep current-object conditions and Draconia exit; constructor fields unioned. All other merge changes retained.",
+      "pg": {
+        "passed_scenes": 6,
+        "failed": 0,
+        "total_seconds": 269.94,
+        "cases": {
+          "draconia-exit-correct": 45.120309708,
+          "draconia-exit-wrong-0": 44.578243796,
+          "draconia-exit-wrong-1": 44.427495148,
+          "draconia-exit-wrong-2": 44.094839985,
+          "draconia-exit-wrong-3": 44.20182294,
+          "draconia-exit-live": 47.512610426
+        }
+      },
+      "validation": {
+        "check": "PASS six merged crates all targets/all features2m17s",
+        "clippy": "PASS six merged crates all targets/all features,-D warnings2m39s",
+        "units": "PASS current object predicate schema and source-world binding2/2,1.33s; pure unit, not PG",
+        "python": "19 passed0.523s; pure unit, not PG",
+        "generation": "Source-world,callback,23packet checks clean",
+        "pin": "PASS unchanged world digest2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968"
+      },
+      "counts": {
+        "QUALIFIED": 60,
+        "UNFINISHED": 117,
+        "BLOCKED": 1
+      },
+      "logs": {
+        "check": {
+          "log": "qlane-meta/questpc/cloud-merge-predicates-check.log",
+          "sha256": "12c646bf3725f0b065010f9166cecd76b17709609e70218b93096d783c2da0b6"
+        },
+        "pg": {
+          "log": "qlane-meta/questpc/cloud-merge-predicates-pg.log",
+          "sha256": "d4151c08740d269437b315a88331675d9493677161db1be11df2875a9ecb6885"
+        },
+        "clippy": {
+          "log": "qlane-meta/questpc/cloud-merge-predicates-clippy.log",
+          "sha256": "96ddd433138691e960f0a05a9b483e51b013fee0a8d5c9ccebee2d18a81b9131"
+        },
+        "units": {
+          "log": "qlane-meta/questpc/cloud-merge-predicates-units.log",
+          "sha256": "097331680fe92b49bd274829eda5e49887405f10c9d304c12d8e0e6f8cfdd72e"
+        },
+        "source-check": {
+          "log": "qlane-meta/questpc/cloud-merge-predicates-source-check.log",
+          "sha256": "dd7e0de3e5608dcd0fad6a230f054663f3f8ef628c70aa43da6624113dcda02f"
+        },
+        "callback-check": {
+          "log": "qlane-meta/questpc/cloud-merge-predicates-callback-check.log",
+          "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+        },
+        "generated-check": {
+          "log": "qlane-meta/questpc/cloud-merge-predicates-generated-check.log",
+          "sha256": "9cf9f5e6beb9f15854cc65285097df5ae846f796dacd2edf3014b79914843557"
+        },
+        "python": {
+          "log": "qlane-meta/questpc/cloud-merge-predicates-python.log",
+          "sha256": "c2be37eae38f3826b0641d20091d52794e84f67324cb09d098ddd36ac3d04ed7"
+        },
+        "pin": {
+          "log": "qlane-meta/questpc/cloud-merge-predicates-pin.log",
+          "sha256": "819efa1fa679910f05f3e6f015bf582f68917fba97d28020e210e14376467f4a"
+        }
       }
     }
   },

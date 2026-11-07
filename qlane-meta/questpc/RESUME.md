@@ -1,3 +1,27 @@
+## Source-world bridge/current-predicate merge GREEN — 2026-11-07
+Merged remote f90b14f25 with local a01933b31 in a08555946, preserving all source-world
+bridge/native claim guards/reward bindings/occupant ejection, selector.positions,
+our object_conditions and Draconia exit. Incoming Life Ring qualification retained:
+counts60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED. Constructor conflicts
+were additive; all fields retained. No forced push or published rebase.
+
+Combined validationPASS: six fresh Draconia exit PG scenes269.94s (correct, four
+wrong states, live USE correction/re-entry, replay and zero Quest writes); six
+merged crates alltarget/allfeature check2m17s; strict clippy2m39s; current predicate
+and source-world binding units2/2,1.33s;19Python tests; source-world/callback/23packet
+checks; pin world digest unchanged2cabea56... . Full logs/hashes/parents in
+cloud-merge-predicates-validation.json. All input feature evidence retained too.
+
+NEXT: Draconia shared resettable keys and party switches, then all four source
+rewards. Existing command9 map pickup already has shared placement/reset_epoch
+MINT/rehide/replay ownership; reuse it. It currently refuses bound placements and
+map_item_mint_audit enforces key_number0 (old WORLD-INTERACTION policy), so first
+check qengine2/other lanes for the required exact bound-key support, then implement
+it generically here. Only exact known key archetypes plus trusted source bindings
+may acquire key numbers; do not reinterpret arbitrary actions/UIDs or replace
+shared stock with personal rewards. Missing-fact investigations capped10minutes;
+document conservative source rules and push each finished tested slice.
+
 ## Concurrent source-world merge — combined validation pending
 Remote moved tof90b14f25 while this session prepareda01933b31. Merge preserves both:
 new source-world callbacks, claim guards, source reward binding and occupant ejection;
