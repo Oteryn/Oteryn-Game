@@ -33,7 +33,7 @@ async fn count(h: &Harness, item: &str) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1").bind(item).fetch_one(&h.pool).await?)
 }
 async fn xp(h: &Harness) -> TestResult<i64> {
-    Ok(sqlx::query_scalar("SELECT experience::bigint FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?)
+    Ok(sqlx::query_scalar("SELECT total_experience::bigint FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?)
 }
 async fn say(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
