@@ -810,3 +810,12 @@ origin and dimensions from the protocol window constants, preserving the full
 eastern column and southern row. The corner regression failed on the previous
 origin and passes with all four corners, an edge creature and an edge effect;
 all nine final native cast tests pass (5.442 s wall). No wire or server rule changed.
+
+Post-review viewport repair gates passed: final fmt check 21.135 s, client
+`cargo check --all-features` 0.375 s, client all-target/all-feature clippy with
+`-D warnings` 25.489 s, and workspace architecture check 3.754 s.
+After workspace restoration, code head
+`4b5838f4aa68350deb7303eb1099df4f5921ec71` was verified unchanged locally and
+on the assigned remote branch. All nine focused native cast tests passed again
+(0.609 s wall), and workspace architecture validation passed again (4.184 s).
+This verification adds no implementation, allocation or migration changes.
