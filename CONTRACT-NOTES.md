@@ -23,6 +23,29 @@ markers. Scope was narrowed to W01c, W19b and P01 using audit branch
 `claude/happy-davinci-ijz3wy-aud1107` at
 `d531f725dc25c70c268c85c40ad14e63a7a9c7cd`. No work on removed rows was pushed.
 
+## SRVWLD — P01 Scavenge consumer verification
+
+The November 7 audit's unconfirmed `SkinningChanceBonus` consumer already
+exists on base `9668e0a04`. Production USE_WITH enters
+`item_craft.rs:64`, then `item_craft/skinning.rs:166` calls the fenced durable
+`skin_corpse` owner. In
+`crates/gameplay/durability/src/durability/item_craft/skinning.rs:172-196`,
+the persisted assignment is joined to the minted corpse's race, explicitly
+checks `CharmEffect::SkinningChanceBonus`, and consumes its unlocked stage
+value in the exact skinning probability. Corpse conversion, reward and replay
+proof remain in the existing item transaction.
+
+Donor evidence: Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446`,
+`data-otservbr-global/scripts/actions/tools/skinning.lua:200-208`, and the
+accepted positive-relative-chance rule documented in `docs/reference/SRX-2.md`.
+The existing production regression
+`srx2_scavenge_production_use_minted_corpse_atomic_replay_postgres` ran against
+PostgreSQL 18.6 in 44.951 s. It covers all three stages, fractional 11.2/13.3/15.4
+percent boundaries, exact source race, real corpse provenance, rollback and
+replay. The scoped 16-test dispatch run passed in 376.66 s, including the nine
+`srx2_charm` runtime cases, assignment progression and the source callback cases.
+No additional chance writer, migration or protocol/registry number is needed.
+
 Package GPROD-PKG composes all three deliveries below on current main. The delivery
 sections retain their original scope/history; statements about another producer being
 absent describe that delivery's base, rather than this combined package.
