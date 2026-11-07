@@ -45,6 +45,33 @@ class QuestCallbackProfiles(unittest.TestCase):
                        lambda r: r['production_definition']['production_key'],
                        lambda v: json.dumps(v, sort_keys=True).encode())
 
+    def test_npc_reward_input_evidence_and_child_closure_is_native(self):
+        wanted = {f'oteryn:item.tibia.i{i}' for i in (25731, 25733, 25779, 675, 676)}
+        self.document['records'] = [r for r in self.document['records']
+                                    if r['production_definition']['production_key'] not in wanted]
+        self.generated[PROFILE] = json.dumps(self.document).encode()
+        (self.root / 'content/quests/shared-reward-callbacks.json').write_text(json.dumps({
+            'callbacks': [
+                {'take': [{'item': 'oteryn:item.tibia.i675', 'count': 2}],
+                 'present': [{'item': 'oteryn:item.tibia.i676', 'count': 1}],
+                 'give': {'item': 'oteryn:item.tibia.i2854', 'count': 1,
+                          'contents': [{'item': 'oteryn:item.tibia.i25733', 'count': 1}]}},
+                {'give': {'item': 'oteryn:item.tibia.i25731', 'count': 1}},
+                {'give': {'item': 'oteryn:item.tibia.i25779', 'count': 1}},
+            ]}))
+        self.admit()
+        rows = {r['production_definition']['production_key']: r
+                for r in json.loads(self.generated[PROFILE])['records']}
+        self.assertTrue(wanted <= rows.keys())
+        for ident, weight in ((25731, 1200), (25733, 1200), (25779, 400)):
+            row = rows[f'oteryn:item.tibia.i{ident}']
+            self.assertEqual(row['admission'], {'materializable': True,
+                             'stack_class': 'NonStackable',
+                             'legal_destinations': ['CharacterInventory', 'Ground']})
+            self.assertEqual(row['production_binding']['disposition'], 'EXACT')
+            self.assertEqual(row['semantics']['physical']['value']['weight'],
+                             {'state': 'KNOWN', 'value': weight})
+
     def test_fish_key_is_rebuilt_with_portable_admission_and_manifest_digest(self):
         self.admit()
         rows = [r for r in json.loads(self.generated[PROFILE])['records']
@@ -96,7 +123,7 @@ class QuestCallbackProfiles(unittest.TestCase):
     def test_rapier_admission_preserves_facts_and_rejects_physical_drift(self):
         from questpc3_item_admission import apply_admissions
         key = 'oteryn:item.tibia.i3272'
-        selected = {f'oteryn:item.tibia.i{ident}' for ident in (3272, 3362, 3426, 3054, 3084, 637)}
+        selected = {f'oteryn:item.tibia.i{ident}' for ident in (3272, 3362, 3426, 3054, 3084, 637, 25731, 25733, 25779)}
         canonical_items = [row['definition']
                            for path in sorted((ROOT / 'content/items/definitions').glob('items-*.json'))
                            for row in json.loads(path.read_bytes())['records']

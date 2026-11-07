@@ -1666,6 +1666,149 @@
         "rulesets/character/blessings/catalogue.json:1 sha256=711e66f10180af340cc79083a4c70d4cc7642a969aa4d4f757726070956969b6",
         "owner:questpc3:2026-11-07:actual-blessings-with-chosen-route-and-20-platinum"
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/threatened/aurita-vial",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.aurita",
+      "keywords": [
+        "starlight vial",
+        "empty starlight vial"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission03/empty_starlight_vial",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission03_1",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i25731",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is the item you need. Thank you for helping Feyrist."
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/npc/aurita.lua:81-88 git-blob=ebaf7b39b5d59d1642d60a9dbe763219dda00724 sha256=d8a1fe20f4ec11245498191b0269ca76ca5949c92db529e640faacc87a57ea35"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/threatened/taegen-catcher",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.taegen",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission03/dark_sun_catcher",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission03_1",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i675",
+          "count": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i676",
+          "count": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i677",
+          "count": 2
+        },
+        {
+          "item": "oteryn:item.tibia.i678",
+          "count": 2
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i25733",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is the item you need. Thank you for helping Feyrist."
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/npc/taegen.lua:174-188 git-blob=bf435e06539adfba12820ba042310d76da4c630e sha256=cd1bd27585798ae5a732a30c5a6f96f4ec6e8400ad4e2854d1dda945b040e74f"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/threatened/valindara-cloak",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.valindara",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission05/swan_feather_cloak",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission03_1",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i26181",
+          "count": 100
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i25779",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is the item you need. Thank you for helping Feyrist."
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/npc/valindara.lua:75-90 git-blob=572697b6e855387cefc8e6336ea55dd6ee304678 sha256=8cd64f9b2e7d678e91a07485789f4b08c168b7f52d1c741ecb77cfca3fbeb4fa"
+      ]
     }
   ]
 }

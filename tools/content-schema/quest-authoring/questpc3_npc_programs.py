@@ -145,6 +145,8 @@ def main():
                     document[key] = value
         if field == "callbacks":
             document[field].sort(key=lambda record: record["key"])
+        elif field == "npcs":
+            document[field].sort(key=lambda record: record["npc"])
         text = json.dumps(document, indent=2) + "\n"
         target.parent.mkdir(parents=True, exist_ok=True)
         if not target.exists() or target.read_text() != text:

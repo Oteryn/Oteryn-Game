@@ -1,5 +1,9 @@
 //! Source NPC decisions through the actual dispatch trait and fenced QuestState writer.
-//! The test does not seed successful quest flags or call a pure decision in place of dispatch.
+//! The story test follows source NPC writes. Inventory cases seed only preceding story
+//! requirements and demand actual physical hand-ins, rewards and receipts through dispatch.
+#[path = "threatened_dreams/inventory.rs"]
+mod inventory;
+
 use super::classic_quests::{install, progress, talk};
 use super::fixture::Harness;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
