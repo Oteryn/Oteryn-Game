@@ -250,11 +250,11 @@ pub(super) async fn exercise(
             0 => "knight-passage-0",
             1 => "knight-passage-1",
             2 => "knight-passage-2",
-            3 | 4 | 5 => "knight-passage-4",
+            3 => "knight-passage-3",
+            4 | 5 => "knight-passage-4",
             6 => "zelos-passage",
             _ => "scarlett-passage",
         };
-        let name = if i == 3 { "knight-passage-3" } else { name };
         let c = callback(&rows, name)?;
         let exit = c.selector.position.ok_or("passage")?;
         if i == 4 {

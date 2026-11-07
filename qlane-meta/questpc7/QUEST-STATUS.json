@@ -1014,7 +1014,7 @@
       "scope": "Generic owner only; not this quest's route qualification"
     },
     "current_batch": {
-      "state": "Full native story GREEN; required14 focused validation gates pending",
+      "state": "Full PG GREEN and9 focused gates GREEN including strict clippy; pins/integration/fmt running",
       "red_seconds": 40.799342316,
       "red_log": "/tmp/questpc7-grave-red.log",
       "route": "12 physical grave visits; five Lich Knight encounters (both Sirs), Zelos, real Cobra access, Scarlett, base Hand of Inquisition plus achievement",

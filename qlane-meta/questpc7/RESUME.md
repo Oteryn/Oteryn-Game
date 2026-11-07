@@ -1111,3 +1111,13 @@ relaxed. Native armour after completion returns exact NothingToUse; repeat
 assertions now also verify no extra addons/grants/completion advance.
 Push tested step immediately under owner's rule, then14 focused gates via
 /tmp/questpc7-grave-validation.py. Still8 ACTIVE until all gates pass.
+
+## Grave strict checks green step pushed before15-minute deadline
+
+Full storyPG56.924504294s and retained FerumbrasPG52.552991663s GREEN;
+loader9/world-callback22/author25/item3, both generators, cargo check and
+strict all-target/all-feature clippy pass.9 focused gates complete. Pin refresh/
+check and content/world/fmt still run in validation session92603. Keep ACTIVE;
+push this tested step immediately, then finish remaining5 gates, qualification
+metadata and push. Test passage selection was simplified equivalently for
+clarity; all native story/destination/value checks retained.8 ACTIVE.

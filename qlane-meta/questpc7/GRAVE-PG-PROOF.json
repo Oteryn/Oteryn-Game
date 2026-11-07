@@ -42,5 +42,148 @@
     "exact command replay; inactive new-command use preserves native armour behavior with unchanged grants and completion revision",
     "ordinary appearance command selects earned base outfit"
   ],
-  "boundary": "Whole selected finite programme. Seven literal upstream grave coordinates; five documented conservative native grave bindings in named regions. Original raid/global/cooldown/party logic and optional corpse loot remain outside proof."
+  "boundary": "Whole selected finite programme. Seven literal upstream grave coordinates; five documented conservative native grave bindings in named regions. Original raid/global/cooldown/party logic and optional corpse loot remain outside proof.",
+  "validation": {
+    "state": "9 focused gates GREEN; pins/integration/fmt running",
+    "completed_gates": [
+      {
+        "check": "ferumbras-pg",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-dispatch",
+          "--lib",
+          "questpc7_ferumbras_full_native_seals_and_reward_bundle",
+          "--",
+          "--nocapture",
+          "--test-threads=1"
+        ],
+        "seconds": 102.704,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-ferumbras-pg.log"
+      },
+      {
+        "check": "loader-units",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-quests",
+          "--lib",
+          "loader::tests::"
+        ],
+        "seconds": 12.421,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-loader-units.log"
+      },
+      {
+        "check": "world-callback-units",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-quests",
+          "--lib",
+          "world_callbacks::"
+        ],
+        "seconds": 2.72,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-world-callback-units.log"
+      },
+      {
+        "check": "author",
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools/content-schema/quest-authoring",
+          "-p",
+          "test_qengine_rewards.py"
+        ],
+        "seconds": 16.317,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-author.log"
+      },
+      {
+        "check": "item-author",
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools/content-migration",
+          "-p",
+          "test_qengine_reward_item_profiles.py"
+        ],
+        "seconds": 0.224,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-item-author.log"
+      },
+      {
+        "check": "item-generation",
+        "command": [
+          "python3",
+          "tools/content-migration/register_spell_families.py",
+          "--check"
+        ],
+        "seconds": 70.865,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-item-generation.log"
+      },
+      {
+        "check": "generation",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/qengine_rewards.py",
+          "--check"
+        ],
+        "seconds": 9.571,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-generation.log"
+      },
+      {
+        "check": "check",
+        "command": [
+          "cargo",
+          "check",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-quests",
+          "-p",
+          "oteryn-gameplay-dispatch"
+        ],
+        "seconds": 85.01,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-check.log"
+      },
+      {
+        "check": "clippy",
+        "command": [
+          "cargo",
+          "clippy",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-quests",
+          "-p",
+          "oteryn-gameplay-dispatch",
+          "--all-targets",
+          "--all-features",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "seconds": 181.614,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-clippy.log"
+      }
+    ],
+    "retained_ferumbras_postgres_seconds": 52.552991663
+  }
 }
