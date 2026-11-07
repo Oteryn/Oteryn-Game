@@ -86,6 +86,7 @@ pub(super) async fn complete_parent_key(
                 }],
                 completes: true,
                 experience: None,
+        world_change: None,
             }],
         )
         .map_err(debug)?,

@@ -32,7 +32,13 @@
       ],
       "generic_owner": "bounded Add(1), original fenced input/MINT/fee owners and exact command-scoped claim proof; original one-shot MINT keys retained"
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Falconer Outfits Quest",
@@ -136,7 +142,13 @@
       "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
       "packet": "qlane-meta/questpc7/ENGINE-REQUESTS.json"
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Feral Trappers Quest",
@@ -264,7 +276,13 @@
       ],
       "validation": "14 focused gates GREEN; retained Hero PG53.248s, check/strict clippy3crates, repository generation/pins, content123/world5, fmt"
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Festive Outfits Quest",
@@ -298,7 +316,13 @@
       "batch_result": "3 full stories passed in95.79s",
       "source": "qlane-meta/qengine2/RESUME.md:44; case marker at:54"
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Fiend Slayer Outfits Quest",
@@ -335,7 +359,13 @@
       },
       "fixture_boundary": "Only the completed prerequisite is arranged through its fenced writer. This does not qualify that parent; all subject progress, token MINT/consumption and appearance facts start fresh."
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Fire from the Earth Mini World Change",
@@ -397,7 +427,13 @@
       "proof": "qlane-meta/questpc7/FIRE-PG-PROOF.json",
       "boundary": "Peer native Lava Lurker hunting/outfit programme is authoritative. Local independent Fire Elemental prototype discarded; its PG evidence does not claim shipped code."
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Forgotten Knowledge Quest",
@@ -560,7 +596,13 @@
         "content/quests/imbuement-knowledge.json"
       ]
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Formal Dress Outfits Quest",
@@ -607,7 +649,13 @@
       ],
       "generic_owner": "Fresh fenced world requirements reuse NPC bounds, semantic ownership and existing Current Premium authority; immediate committed quest copy supports world-to-NPC sequences."
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Formorgar Mines Hoist Quest",
@@ -685,7 +733,13 @@
         "boundary": "Original read-only guards and asymmetric remote lever effects retained."
       }
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Formorgar Mines Quest",
@@ -750,7 +804,13 @@
       "boundary": "External lane qualification is retained with its precise scope; no local whole-route PG claim is invented.",
       "ownership_decision": "QSPLIT L1 outfit entry is explicitly QUALIFIED at the same canonical/title on qengine2. Skip that entry under current owner rule. Peer proof covers the complete Norseman/Formorgar outfit path with other-parent prerequisites, not a new local certification of every Ice Islands recipe stage."
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Fury Gates Mini World Change",
@@ -893,7 +953,13 @@
       },
       "boundary": "External lane qualification is retained with its precise scope; no local whole-route PG claim is invented."
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Glooth Engineer Outfits Quest",
@@ -933,7 +999,13 @@
         "evidence": "3 full source outfit stories passed PostgreSQL18.6 in93.80s; exact per-case markers, source file:line/SHA and checks in batches[L1-03]."
       }
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Goblin Merchant Quest",
@@ -1013,6 +1085,12 @@
       ],
       "tests": "test_questpc7_rafzan_placement.py: absent-placement RED; both source attestations and native non-house cell GREEN",
       "whole_quest": "ACTIVE"
+    },
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
     }
   },
   {
@@ -1046,7 +1124,13 @@
       "source_contract": "qlane-meta/questpc7/CONTRACT-NOTES.md",
       "generated_pin_companion": "deploy/synology-game/preprod-topology.toml:46; pin-refresh updated both map_revision and world_bundle.digest to the checked world pin"
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Grave Danger Quest",
@@ -1083,7 +1167,13 @@
       "boundary": "Whole selected finite programme. Seven literal upstream grave coordinates; five documented conservative native grave bindings in named regions. Original raid/global/cooldown/party logic and optional corpse loot remain outside proof.",
       "validation": "14 focused gates GREEN; retained Ferumbras PG52.553s, check/strict clippy, repository generators/pins, content123/world5, fmt"
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Grimvale Mini World Change",
@@ -1157,7 +1247,13 @@
       ],
       "assumptions": "Personal botanical collection plots, selected inspection cells and native Feroxa objective are explicit conservative adaptations; see CONTRACT-NOTES.md. Original global full-moon, source form-chain and optional raid/corpse-loot fidelity are outside the pinned chosen programme."
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Hand of the Inquisition Outfits Quest",
@@ -1194,7 +1290,13 @@
       },
       "fixture_boundary": "Only the completed prerequisite is arranged through its fenced writer. This does not qualify that parent; all subject progress, token MINT/consumption and appearance facts start fresh."
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Heart of Destruction Quest",
@@ -1230,7 +1332,13 @@
         "content/quests/imbuement-knowledge.json"
       ]
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Hero of Rathleton Quest",
@@ -1261,7 +1369,13 @@
       "boundary": "Selected finite Oteryn recipe. Original source global machines/FastWay and optional ordinary corpse loot remain outside this programme proof. No new party entitlement is inferred.",
       "validation": "13 focused gates GREEN; check, strict clippy, repository generators/pins, content123/world5, fmt"
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Hidden Threats Quest",
@@ -1354,7 +1468,13 @@
       },
       "checks": "Focused retained PG,loader/world/reward/MINT units,author/generation,check,strict clippy,content123/world5,pins and fmt GREEN."
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Hive Born World Change",
@@ -1547,7 +1667,13 @@
       "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
       "packet": "qlane-meta/questpc7/ENGINE-REQUESTS.json"
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Hunter Outfits Quest",
@@ -1605,7 +1731,13 @@
       ],
       "boundary": "External complete source NPC story has native General outfit/addon ownership. This records the peer canonical Hunter ledger qualification and skips duplicate implementation; it does not claim this lane authored a new Hunter cache route or renamed the native owner."
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Hunting for Tokens Quest",
@@ -1640,7 +1772,13 @@
       ],
       "generic_owner": "Existing exact carried exchange/MINT/quest transaction; new canonical physical profiles19083/19151 and retained Jorge placement."
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Hydra Egg Quest",
@@ -1680,7 +1818,13 @@
       "checks": "All15 non-empty focused gates GREEN: retained Hidden PG44.066s; loader/callback/reward/pickup/codec/compiler/author units; generation/check/strictclippy; rebuilt compiler pins; content123/world5/fmt.",
       "verification_audit": "Two ancillary filters matched0 tests and are not evidence. Actual world pickup3 covers strict item zero/101 refusal; compiler bundle13 covers codec/export. HYDRA-PG-PROOF.json records the correction."
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   },
   {
     "title": "Illuminated Warrior Outfits Quest",
@@ -1748,6 +1892,12 @@
       "state": "REQUESTED_OWNER_ROUTED_TO_QENGINE2",
       "packet": "qlane-meta/questpc7/ENGINE-REQUESTS.json"
     },
-    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json"
+    "latest_integration_proof": "qlane-meta/questpc7/PUBLISH-PROOF.json",
+    "latest_main_integration": {
+      "main": "1138720b1f12b9b21f80afe7282aa89ed89f166d",
+      "state": "COMPILE_FMT_PASS_GENERATED",
+      "shared_migrations": "0999-1008 byte-exact main; own1280-1288 unchanged; QWORLD1320-1322 incoming",
+      "proof": "qlane-meta/questpc7/MAIN-1138720-INTEGRATION-PROOF.json"
+    }
   }
 ]

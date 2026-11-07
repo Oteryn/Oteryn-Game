@@ -738,3 +738,21 @@ a real mechanic RED; its pure source/recipe/price validation already passes.
   text or binary map was copied into this lane. The selected finite programme
   still charges for its explicit tool bundle; it does not claim source free
   mission tools, daily repetition, original per-task rewards or500-task award.
+
+- Main1138720b integration: QWORLD's optional `world_change` transition field
+  is explicitly None in nine existing lane/test constructors. This adds no
+  calendar/world-change semantics to these programmes and changes no assertion.
+- Source compiler receipt reconciliation used existing
+  `amend_itemhold_source_receipt.verify_source_view` and `outputs`: first prove
+  every frozen SOURCE core unchanged, then bind the exact incoming recorded
+  compiler pin040ca3c8813b98ef823181d3b957e60862a1f173c449bbec9db96c2586b49e0a
+  as the amendment's previous pin. The merged compiler is byte-identical to the
+  prior pushed lane compiler33932f1e4f9deb69f06d5994320eb4e1c00cf7d0c4df0e2a17e2f0cd34412daa.
+  No guard/test implementation was changed; all28 reviewed source changes
+  verify after regeneration. Rebuild derived quest views with repository tools.
+- Base World project inputs did not change in this merge. The broad materializer
+  was stopped during redundant reconstruction; use native-provider registration,
+  tree registration and final bundle pin-refresh. Do not claim the stopped broad
+  materializer as a passing check. Previous failed compile found and fixed all
+  observed missing optional transition fields; workspace all-target check then
+  passed3m33s. No full test suite or PG run is claimed for this integration.

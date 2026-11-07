@@ -6043,7 +6043,7 @@
     "content/quests/definitions/quests-00200-00299.json": "46422fadaad9def3b2abdf15595fcaf33e01941475773cb248e80d5500cfd1cf",
     "content/quests/definitions/quests-00300-00351.json": "4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
     "tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json": "2094dab48500311525539df30aefca60484909ed23da2647f8b2c1877f2d0a40",
-    "tools/content-schema/quest-authoring/samples/source_migration/bundle.json": "12771f0d11bdf8109a017c1e4c1d113f1966e031dfcf36fef1b917e505a8571d"
+    "tools/content-schema/quest-authoring/samples/source_migration/bundle.json": "5f9c5a6aa180e67f638adc7d234b84dcc2514ffb912495ee12fb0bf7cd81ed1e"
   },
   "quests": [
     {

@@ -79,7 +79,7 @@ pub(super) async fn exercise(
                 })
                 .collect(),
             completes: false,
-            experience: None,
+            experience: None, world_change: None,
         })
         .collect();
     let current_year: i64 =
@@ -102,7 +102,7 @@ pub(super) async fn exercise(
         })
         .collect(),
         completes: false,
-        experience: None,
+        experience: None, world_change: None,
     });
     let catalogue =
         Arc::new(QuestStateCatalogue::new("content-1", tracks, transitions).map_err(debug)?);

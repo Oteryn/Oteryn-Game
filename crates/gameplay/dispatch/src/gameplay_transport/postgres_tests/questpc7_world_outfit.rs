@@ -72,6 +72,7 @@ pub(super) async fn exercise(
             .collect(),
         completes: false,
         experience: None,
+        world_change: None,
     });
     let catalogue = std::sync::Arc::new(
         QuestStateCatalogue::new(

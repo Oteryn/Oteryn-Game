@@ -218,7 +218,7 @@
     },
     {
       "path": "inventory/inventory.json",
-      "sha256": "dcc6b65f8b4921b0268deb6c7155cb8419a33f58681d92311ee692964e67b1dd"
+      "sha256": "0b95642b6f3133c97bf6e8fba8b2bea2aeea38ee28cddbe0038be07c764a2024"
     },
     {
       "path": "inventory/unjoined-components.json",

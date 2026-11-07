@@ -80,7 +80,7 @@ use tokio::net::{TcpListener, UnixListener, UnixStream};
 use tokio::sync::Mutex;
 
 mod bundle_npcs;
-mod daily_world_changes;
+pub(crate) mod daily_world_changes;
 
 /// Registered protocol facts fixed by the build (D5).
 const PROTOCOL_MAJOR: u64 = 1;

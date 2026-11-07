@@ -1,3 +1,31 @@
+# Main1138720 integration ready to publish — 2026-11-07 21:13 UTC
+
+All27 derived JSON conflicts resolved and rebuilt with repository tooling.
+Nine existing constructors explicitly world_change:None; no assertion changes.
+Workspace all-target check PASS3m33s, fmt PASS, source28 reviewed changes verify
+with frozen cores unchanged, placement14 PASS0.576s and Goblin3 PASS10.675s.
+Native providers/tree registration and final bundle pin-refresh PASS. Broad
+World reconstruction stopped as redundant: base World package unchanged;
+do not report that stopped command as green. No new PG run or whole quest
+qualification is claimed. MAIN-1138720-INTEGRATION-PROOF.json captures the batch.
+Shared0999-1008 byte-exact main; own1280-1288 retained; incomingQWORLD1320-1322;
+duplicate migration check PASS. Commit/push merge immediately with owner trailers.
+Next quest-owned slice: three native sign sites from Task:Rafzan oldid401277,
+then native trunk/urine sites; preserve existing capture contract programme0,
+captures0..3. All4 engine requests remain routed to qengine2, not rebuilt here.
+
+# Main integration checkpoint — 2026-11-07 20:57 UTC
+
+Rafzan placement slice pushed ee4e39456c2fea1a74f6acd6a84c76617b715957.
+Merging main1138720b (QWORLD1320-1322 + public catalogue). Rust auto-merges;
+27 derived JSON conflicts combined structurally, then repository regeneration
+runs to replace provisional digest choices. No hand-maintained engine changes.
+Shared0999-1008 are byte-exact incoming main; own1280-1288 unchanged; no1200
+copies. Duplicate-migration script PASS. Large inactive lane-only dispatch/
+content incremental caches were removed; no active compile cache removed.
+Next: finish repo regeneration, workspace all-target check+fmt; commit/push
+merge immediately. Do not run full suites. Then own native sign job slice.
+
 # Rafzan live placement slice — 2026-11-07 20:48 UTC
 
 Added only owned Goblin contact Rafzan to the existing NPC placement scope.

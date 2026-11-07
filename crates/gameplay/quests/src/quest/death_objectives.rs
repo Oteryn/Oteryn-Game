@@ -158,12 +158,14 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             }],
             completes: false,
             experience: None,
+            world_change: None,
         });
         transitions.push(QuestTransition {
             key: objective.key.clone(),
             quest: objective.quest.clone(),
             completes: false,
             experience: None,
+            world_change: None,
             effects: vec![
                 QuestEffect {
                     track: objective.stage.clone(),

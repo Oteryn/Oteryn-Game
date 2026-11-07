@@ -111,6 +111,7 @@ pub(super) async fn exercise(
                 .collect(),
             completes: false,
             experience: None,
+        world_change: None,
         })
         .collect();
     if let Some(transition) = owner

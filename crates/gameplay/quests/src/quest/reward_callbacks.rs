@@ -636,6 +636,7 @@ fn extend_document(
                 return Err(format!("foreign participant operation {}", callback.key));
             }
             transitions.push(QuestTransition {
+                world_change: None,
                 key: participant_key(&callback.key, index),
                 quest: participant.quest.clone(),
                 effects: participant
@@ -685,6 +686,7 @@ fn extend_document(
             }
         }
         transitions.push(QuestTransition {
+            world_change: None,
             key: callback.key.clone(),
             quest: callback.quest.clone(),
             effects: callback

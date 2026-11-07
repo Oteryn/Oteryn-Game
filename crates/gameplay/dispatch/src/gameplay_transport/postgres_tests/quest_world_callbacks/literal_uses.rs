@@ -186,7 +186,7 @@ fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>
             }], vec![QuestTransition {
                 key: seed.into(), quest: callback.quest.clone(), effects: vec![QuestEffect {
                     track: storage.track.clone(), from: QuestComparison::Between(-1, 13), effect: QuestEffectKind::Set(stage),
-                }], completes: false, experience: None,
+                }], completes: false, experience: None, world_change: None,
             }]).map_err(debug)?);
             let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
             let seeded = slot.commit_quest_transition(owner.root, owner.character, owner.holder, fence,
