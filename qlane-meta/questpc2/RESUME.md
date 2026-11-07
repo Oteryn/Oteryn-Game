@@ -1,3 +1,24 @@
+# GREEN six source defenders: push, then four source treasures/exit/journal
+
+Actual PG180006 GREEN94.83s (route18508ms), log
+/tmp/questpc2-carpet-upper-six-green-pg.log. All six exact-origin credits and
+own upper counters1/1/1/2 asserted after actual wire combat/nativeXP drain.
+Original source basement/poison/ladder/stairs preserved; no fakeHP/flags/damage.
+Native9red-carpet profiles fix reachability, 3629existing unchanged ->3638;
+source5tests RED12.202s->GREEN12.977s, Native43write+43check PASS.
+Check18.84s, final alltargets/allfeatures clippy40.71s, fmt/duplicates PASS.
+Repo isolated pin-refresh/check PASS, world56275a3ba06db4611a016821d1c0194c261e320ef983fcb215631911b56bc306.
+Batch BATCH-native-carpet-reachability-2026-11-07.json. Whole Elvenbane still
+UNFINISHED; owned27remain, no final/end. Push green slice now, then add actual
+four source chest claims/replay/capacity, exit and journal case RED. Existing
+native filled-container MINT/once receipts support source bags2853; don't
+invent seven sibling roots. Inspect real source UID composition if claims
+fail to bind (raw B3 decode showed chest attrsNone, existing binder expects
+exact UID+position+appearance). Reuse source facts/tooling, no geometry edits.
+Fix own inherited chest.lua citations to real committed corpus when touching
+reward/source callback data. Check QENGINE/other lanes first for any missing
+shared mechanism; fresh QENGINE remains5a6de28c1 (only0999), no deferred owner.
+
 # WIP exact carpet source facts generated/compiled: push, then pins and PG
 
 Root reachability witness PG134.10s player32589,31642,z3 vs SkeletonEast

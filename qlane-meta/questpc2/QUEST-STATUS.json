@@ -384,7 +384,7 @@
       "title": "Elvenbane Quest",
       "mechanism": "native_source_origin_personal_kill_goals",
       "status": "UNFINISHED",
-      "blocker": "Earned source route and actual native wire Dragon1/ownphase3 GREEN; final Dragon+Monk2PGcases189.21s. Shared callback/capture publication closes60second stale eligibility gap. Next five upper defenders, four source treasure claims (two filled containers), exit and journal.",
+      "blocker": "Full earned source basement/poison/ladder/stairs/six native wire kills GREEN94.83s, native6 and own four counter caps asserted. Nine exact nonblocking carpet profiles added; old3629 unchanged; Native43 generation, pins/check/clippy/fmt green. Remaining four source treasure claims (two filled containers), once/replay/capacity, exit and journal.",
       "source_lane_checks": [
         {
           "lane": "questpc",
@@ -415,6 +415,19 @@
         "server_version_num": 180006,
         "cases": 2,
         "runtime_seconds": 100.92
+      },
+      "upper_defenders_pg_proof": {
+        "server_version_num": 180006,
+        "seconds": 94.83,
+        "native_origin_credits": 6,
+        "recipe_counter_caps": [
+          1,
+          1,
+          1,
+          2
+        ],
+        "world_digest": "56275a3ba06db4611a016821d1c0194c261e320ef983fcb215631911b56bc306",
+        "batch": "BATCH-native-carpet-reachability-2026-11-07.json"
       }
     },
     {
@@ -2069,7 +2082,7 @@
     "compile_seconds": 79,
     "pg_log": "/tmp/questpc2-elvenbane-native-wire-corrected-red-pg.log",
     "point": "New fixture requires six real projected source actors; normal runtime source activation is intentionally not installed yet. Observe actual PG RED then install production activation and drive real wire Dragon attack/XP/cohort progress.",
-    "next": "Finish final Dragon/Monk regression, push; then actual five upper defenders and four source treasure claims, exit and journal.",
+    "next": "Six actual native defenders now earned via full source route94.83s; continue four source treasure claims, exit and journal.",
     "red_postgres_seconds": 89.39,
     "latest_postgres_seconds": 89.39,
     "check_seconds": 19.24,
@@ -2087,7 +2100,7 @@
     "batch": "BATCH-callback-native-capture-2026-11-07.json"
   },
   "upper_defenders_authoring": {
-    "state": "WIP_EXACT_CARPETS_GENERATED_AND_COMPILED_PIN_PG_PENDING",
+    "state": "GREEN_EARNED_SOURCE_SIX_DEFENDERS",
     "red_postgres_version": 180006,
     "red_postgres_seconds": 88.7,
     "red_log": "/tmp/questpc2-upper-six-red-pg.log",
@@ -2099,7 +2112,7 @@
     "latest_log": "/tmp/questpc2-upper-six-corrected-green-pg.log",
     "latest_point": "Normal ladder and both floor transitions succeed; upper combats advance until one floor3 defender remains720HP through full budget. Target stays bound. Diagnose actual player/target positions and chase outcomes; preserve all native/own counter and damage/lethal assertions.",
     "check_seconds": 18.84,
-    "clippy_seconds": 37.47,
+    "clippy_seconds": 40.71,
     "compile_seconds": 79,
     "diagnostic_postgres_seconds": 134.1,
     "diagnostic_log": "/tmp/questpc2-upper-six-chase-diagnostic-pg.log",
@@ -2107,11 +2120,19 @@
     "source_test_red_seconds": 12.202,
     "source_test_green_seconds": 12.977,
     "source_test_cases": 5,
-    "next": "Push compiling WIP; isolate repo pin-refresh/check, then full six-defender PG and final clippy. Latest actual PG RED134.10s before new profiles.",
+    "next": "Four existing source chest claims incl two filled containers, once/replay/capacity, source exit and journal completion. Whole quest remains unfinished.",
     "generation": "Native43write+43check PASS",
     "existing_profiles_preserved": 3629,
     "added_profiles": 9,
     "total_profiles": 3638,
-    "preservation_log": "/tmp/questpc2-carpet-profile-preservation.json"
+    "preservation_log": "/tmp/questpc2-carpet-profile-preservation.json",
+    "green_postgres_version": 180006,
+    "green_postgres_seconds": 94.83,
+    "green_subcase_millis": 18508,
+    "green_log": "/tmp/questpc2-carpet-upper-six-green-pg.log",
+    "fmt": "PASS",
+    "duplicate_migrations": "HEAD PASS",
+    "pins": "repo refresh/check PASS",
+    "world_digest": "56275a3ba06db4611a016821d1c0194c261e320ef983fcb215631911b56bc306"
   }
 }

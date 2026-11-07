@@ -512,3 +512,11 @@ profiles for2572-2580. Reuse importer, no missing-engine deferral.
 Source5cases RED12.202s missing2572 ->GREEN12.977s with allnine exact flags;
 existing profiles preservation/conflict and original ladder tests unchanged.
 Native43write/check and world pins/full-source PG proof remain in progress.
+
+Final carpet/upper route proof: actual PG180006 GREEN94.83s, source route
+18508ms. Native6 exact-origin credits and own counter caps1/1/1/2 asserted
+after real wire lethal combat and nativeXP drains. Both Skeletons can move
+across source carpets; no geometry or damage injection. Native43write/check,
+check18.84s, final clippy40.71s, fmt/duplicates and isolated world pin-refresh/
+check PASS. World digest 56275a3ba06db4611a016821d1c0194c261e320ef983fcb215631911b56bc306. Whole quest
+remains pending four source chest claims, exit/journal and replay/capacity.
