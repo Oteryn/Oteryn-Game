@@ -643,6 +643,20 @@
       ],
       "log": "/tmp/questpc7-hoist-online.log",
       "validation_kind": "fresh baseline of inherited implementation; no new RED/GREEN implementation batch claimed"
+    },
+    "current_batch": {
+      "proof": "qlane-meta/questpc7/HOIST-STORY-PG-PROOF.json",
+      "red_seconds": 41.109126339,
+      "mechanisms": [
+        "generic exact native world selector bindings",
+        "generic once-only world callback completion"
+      ],
+      "assumptions": [
+        "Plan and instruction knowledge recovered from existing chest/fittings; legacy skeleton flag is knowledge, not a guessed Item identity.",
+        "Bind absent donor UIDs3059/3060/3061 to exact native platforms5770; preserve all legacy guards/effects."
+      ],
+      "checks": "Whole selected route PostgreSQL GREEN; retained and compiler/pin checks running.",
+      "green_seconds": 51.524086401
     }
   },
   {

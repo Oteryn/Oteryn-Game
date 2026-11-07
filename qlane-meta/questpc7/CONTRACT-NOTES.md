@@ -170,3 +170,24 @@ outside its qualification. Jorge's retained Canary/Crystal source candidates
 agree at(32204,32292,-6). Add that placement through existing tooling; qualify
 both physical items through the canonical accepted-first importer. Inputs in
 the PG fixture are carried resources, not a claim about raid/event acquisition.
+
+### Complete hoist programme and native selector bindings
+
+The selected recipe requires exploration,one floor plan,one instruction,use of
+the control,and hoist access. Existing native callbacks require two knowledge
+flags; no physical plan/instruction Item identity is supplied. Conservatively
+model acquired knowledge through a chest and the hoist fittings, not invented
+Item IDs. Source-native chest2472 is at(32154,31116,-9),fittings5772 at
+(32156,31125,-9),and the lower lever is2773 at(32156,31125,-10). The final
+control projects2773->2772 and completes the selected route. These acquisition
+locations are authored Oteryn adaptations,not claimed donor clue coordinates.
+
+All three admitted platform tiles(32157,31125,-9/-10/-11) contain drawbridge
+5770 and lack donorUID3059/3060/3061. Generic exact-selector bindings require
+the expected original UID selector before substituting the explicit native
+position/appearance. Guards,read-only storage,transport and asymmetric remote
+lever behavior remain original. No B3 binary is changed. The producer records
+all region SHA256s; authoring verifies real placed appearances and absent UIDs.
+The legacy skeleton/chest namespace is not inferred ownership; PG asserts the
+loaded typed tracks belong to the hoist. The Ice Islands completion stays a
+read-only prerequisite; only that foreign parent is a fenced test fixture.

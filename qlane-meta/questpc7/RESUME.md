@@ -727,3 +727,37 @@ route using qualified native death counters. Source world item_reward, completio
 and backpack outputs already exist on questpc8; reuse selectively, preserving
 our read-only hoist/remote transport, exact exchange/charge behavior, fee/counter
 proofs and Father eleven-track atomicity. Hydra Egg is ordinary nest pickup/reset.
+
+## Hoist whole route and generic world mechanisms in progress
+
+Tokens/Hunter source5f567f798 pushed06:35UTC.14 ACTIVE remain. Closed hoist
+investigation with documented knowledge-clue adaptation and admitted source
+objects; no more fact lookup needed. PG18.6 RED41.109126339s missing programme
+entry. Added four source callbacks, generic world completion and exact original
+selector->native position/appearance binding module. Platforms5770 are present
+at donor destinations but lack donorUIDs. Preserve source guards/remote effects.
+Current PG GREEN `/tmp/questpc7-hoist-story-green.log` is rebuilding; authoring20
+passes, Rust world/binding units queued in `/tmp/questpc7-hoist-story-world-units.log`.
+Shared world fixture now accepts explicit extra physical targets/palette refs;
+existing callers keep old blocked-passage behavior. Full story uses real native
+steps/USE, parent-only fenced fixture, fresh Premium refusal and exact replay.
+Finish PG,unit/check/clippy/content/pins and retained3floor transport, then
+qualify/push. Do not end turn or defer missing mechanisms.
+
+Hoist fixture repairs: bind normal native player lease before wire steps (same
+as retained hoist/death cases). Pacedrun49.871s and diagnostics51.323s prove
+flag1/1,typed ownership,durable read-only admission and native destination.
+Fixed step-count path was one tile north; replace with bounded native walk_to
+reading actual actor coordinates,never position seeds. Current rerun log
+`/tmp/questpc7-hoist-story-green-walked.log`.18 world/binding units pass; an
+additional completion-negative test is authored and runs in final matrix.
+Next timed push deadline07:05UTC; retain honest proof checkpoint if compiler
+checks remain pending. Do not stop or claim whole qualification prematurely.
+
+Hoist complete native story PG18.6 GREEN51.524086401s after bounded actual
+coordinate walking. Parent/Premium refusals,real clue USE,flag1/1,typed ownership,
+actual UID-free platform transport,control transform/completion,exact replay
+and read-only parent revision pass. Required matrix now starts via
+`/tmp/questpc7-hoist-story-validation.py`. Push metadata-only proof checkpoint
+to preserve cadence while source checks remain; keep ledger ACTIVE until all
+checks finish. Source remains reviewable in working tree.
