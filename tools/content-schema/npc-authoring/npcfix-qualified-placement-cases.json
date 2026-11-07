@@ -154,6 +154,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-03",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.oblivion",
+          "name": "Oblivion",
+          "expected": {
+            "x": 33023,
+            "y": 32309,
+            "floor": -10
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.omrabas",
+          "name": "Omrabas",
+          "expected": {
+            "x": 33020,
+            "y": 32453,
+            "floor": -9
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.a_dark_priestess",
+          "name": "A Dark Priestess",
+          "expected": {
+            "x": 33257,
+            "y": 31936,
+            "floor": -15
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.a_majestic_warwolf",
+          "name": "A Majestic Warwolf",
+          "expected": {
+            "x": 33353,
+            "y": 31992,
+            "floor": -8
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.albert",
+          "name": "Albert",
+          "expected": {
+            "x": 33312,
+            "y": 31762,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.alexander",
+          "name": "Alexander",
+          "expected": {
+            "x": 33256,
+            "y": 31839,
+            "floor": -3
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }

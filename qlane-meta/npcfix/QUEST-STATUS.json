@@ -300,8 +300,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/247",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-03",
+        "postgres_red_seconds": 28.47,
+        "postgres_green_seconds": 74.62,
+        "scope": "Previously authored placement/name rows; current canonical map admission, native coordinates/floor and exact identities. No additional quest/service claims."
+      }
     },
     {
       "npc": "Omrabas",
@@ -309,8 +315,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/253",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-03",
+        "postgres_red_seconds": 28.47,
+        "postgres_green_seconds": 74.62,
+        "scope": "Previously authored placement/name rows; current canonical map admission, native coordinates/floor and exact identities. No additional quest/service claims."
+      }
     },
     {
       "npc": "Petros",
@@ -360,8 +372,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/2",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-03",
+        "postgres_red_seconds": 28.47,
+        "postgres_green_seconds": 74.62,
+        "scope": "Previously authored placement/name rows; current canonical map admission, native coordinates/floor and exact identities. No additional quest/service claims."
+      }
     },
     {
       "npc": "A Majestic Warwolf",
@@ -369,8 +387,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/5",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-03",
+        "postgres_red_seconds": 28.47,
+        "postgres_green_seconds": 74.62,
+        "scope": "Previously authored placement/name rows; current canonical map admission, native coordinates/floor and exact identities. No additional quest/service claims."
+      }
     },
     {
       "npc": "A Swan",
@@ -387,8 +411,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/18",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-03",
+        "postgres_red_seconds": 28.47,
+        "postgres_green_seconds": 74.62,
+        "scope": "Previously authored placement/name rows; current canonical map admission, native coordinates/floor and exact identities. No additional quest/service claims."
+      }
     },
     {
       "npc": "Alexander",
@@ -396,8 +426,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/22",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-03",
+        "postgres_red_seconds": 28.47,
+        "postgres_green_seconds": 74.62,
+        "scope": "Previously authored placement/name rows; current canonical map admission, native coordinates/floor and exact identities. No additional quest/service claims."
+      }
     },
     {
       "npc": "Amanda",
@@ -3595,6 +3631,32 @@
       },
       "checks": "PASS fmt; dispatch alltargets/allfeatures check and strict clippy. No production authoring data or pin inputs changed. Also repaired39 compound lane evidence references to the current shard.",
       "next": "Immediately commit/fetch/merge/push, then restart placement helper from clean HEAD; retain all prior cumulative cases and respect workshop reservations."
+    },
+    {
+      "name": "retail-population-qualification-03",
+      "state": "QUALIFIED",
+      "entries": [
+        "Oblivion",
+        "Omrabas",
+        "A Dark Priestess",
+        "A Majestic Warwolf",
+        "Albert",
+        "Alexander"
+      ],
+      "scope": "Previously authored placement/name rows; current canonical map admission, native coordinates/floor and exact identities. No additional quest/service claims.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 28.47,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-03-red.log",
+        "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 74.62,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-03-green.log",
+        "cumulative_cases": 18
+      },
+      "checks": "fmt PASS; no changed Rust crates or production data. Verified exact apps/crates/content source identity with cdb695c30; reuse its all-target/all-feature check6m01s and strict clippy4m30s."
     }
   ],
   "owner_constraints": {
@@ -3609,7 +3671,7 @@
     "grants": "charge only on an exact match",
     "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
   },
-  "next_batch": "Immediately commit/fetch/merge/push, then restart placement helper from clean HEAD; retain all prior cumulative cases and respect workshop reservations.",
+  "next_batch": "Push green slice immediately, then continue remaining independent owned entries with cumulative PG proof.",
   "shared_engine_lookup": {
     "owner_rule": "Shared engine features are this lane’s responsibility when required. Never leave an entry unfinished for missing engine support.",
     "qengine2": {
@@ -3643,32 +3705,30 @@
     "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification."
   },
   "active_batch": {
-    "name": "retail-population-qualification-02",
+    "name": "retail-population-qualification-03",
     "state": "QUALIFIED",
     "entries": [
-      "Alkestios",
-      "Elvith",
-      "Enpa Rudra",
-      "Cerdras",
-      "Padreia",
-      "Elyen Ravenlock"
+      "Oblivion",
+      "Omrabas",
+      "A Dark Priestess",
+      "A Majestic Warwolf",
+      "Albert",
+      "Alexander"
     ],
-    "scope": "Previously authored placement-only rows. Current canonical map admission, native coordinates/floor and exact names; no additional quest/service claims.",
+    "scope": "Previously authored placement/name rows; current canonical map admission, native coordinates/floor and exact identities. No additional quest/service claims.",
     "red": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 29.32,
-      "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-02-red.log"
+      "seconds": 28.47,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-03-red.log",
+      "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
     },
-    "fixture_regression": "Cumulative current run72.67s exposed KeysNotAscending. Sort only constructed runtime table keys; production ordering guard and all case assertions retained.",
     "green": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 81.33,
-      "cumulative_cases": 12,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-02-final-green.log"
+      "seconds": 74.62,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-03-green.log",
+      "cumulative_cases": 18
     },
-    "checks": "PASS fmt; dispatch alltargets/allfeatures check and strict clippy. No production authoring data or pin inputs changed. Also repaired39 compound lane evidence references to the current shard.",
-    "next": "Immediately commit/fetch/merge/push, then restart placement helper from clean HEAD; retain all prior cumulative cases and respect workshop reservations."
+    "checks": "fmt PASS; no changed Rust crates or production data. Verified exact apps/crates/content source identity with cdb695c30; reuse its all-target/all-feature check6m01s and strict clippy4m30s."
   },
   "continuation_merge": {
     "note": "Preserved both histories; incoming state callers retained. Redundant npc_state catalogue compiler removed in consolidation. Superseded local caller draft remains stashed and must not be applied.",
