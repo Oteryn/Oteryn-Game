@@ -1,8 +1,9 @@
 //! Existing condition owner retains one item command until its durable outcome is known.
-//! Donor visual cues stay in the receipt while capability23 has no live consumer.
+//! Commit publishes the retained cues once through the live presentation journal.
 use super::*;
 use crate::durability::consume_transform::{ConsumeTransformRequest, ConsumeTransformResult};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
+use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::novelty_item_use::PendingItemEffect;
 use oteryn_gameplay_items::novelty_items::NoveltyEffects;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
@@ -19,6 +20,23 @@ pub(in crate::gameplay_transport) struct NoveltyEffectRequest<'a> {
 }
 
 impl ChannelSpellStates {
+    pub(in crate::gameplay_transport) fn publish_novelty_visuals(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        position: MovementLocalPosition,
+        effects: &NoveltyEffects,
+    ) {
+        for cue in &effects.cues {
+            self.sounds.record_item_effect(
+                runtime,
+                actor,
+                position,
+                cue.effect_id,
+                effects.require_player_target,
+            );
+        }
+    }
     pub(in crate::gameplay_transport) fn prepare_novelty_effect(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -95,8 +113,20 @@ impl ChannelSpellStates {
         self.pending_item_effects
             .try_reserve(1)
             .map_err(|_| UseDisposition::NotPossible)?;
-        // The captured presentation IDs remain durable data. The coordinator kept
-        // capability23 unoffered; no undrainable presentation hold is allocated.
+        // Capture the donor source/target position before the durable await. A reconnect
+        // or a moved target cannot relocate a committed visual to a different tile.
+        let cue_position = if let Some(ground) = &effects.ground {
+            MovementLocalPosition {
+                x: ground.x,
+                y: ground.y,
+                floor: ground.floor,
+            }
+        } else {
+            runtime
+                .read_actor_position(target.unwrap_or(actor))
+                .map_err(|_| UseDisposition::StaleState)?
+                .position()
+        };
         if native
             .item_policy_for_source_id(effects.source_item_id)
             .is_none_or(|policy| !policy.record().admission.materializable)
@@ -109,6 +139,7 @@ impl ChannelSpellStates {
             fence,
             request: request.clone(),
             effects,
+            cue_position,
             before_revision,
             after,
             death,
@@ -136,7 +167,7 @@ impl ChannelSpellStates {
         actor: ExactActorRef,
         request: &ConsumeTransformRequest,
         receipt: &ConsumeTransformResult,
-    ) -> Result<Option<NoveltyEffects>, ()> {
+    ) -> Result<Option<(NoveltyEffects, MovementLocalPosition)>, ()> {
         let Some(index) = self
             .pending_item_effects
             .iter()
@@ -197,7 +228,7 @@ impl ChannelSpellStates {
                 .push((actor, request.command.game_session_id(), death));
         }
         self.owner_wake.notify_one();
-        Ok(Some(memo.effects))
+        Ok(Some((memo.effects, memo.cue_position)))
     }
 }
 

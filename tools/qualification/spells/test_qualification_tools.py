@@ -3,6 +3,8 @@ import copy
 import importlib.util
 import hashlib
 import json
+import subprocess
+import sys
 from pathlib import Path
 import tempfile
 import unittest
@@ -100,6 +102,88 @@ class ProvisioningTests(unittest.TestCase):
 
 
 class StagingTests(unittest.TestCase):
+    def test_node_boot_stages_every_file_the_canonical_manifest_pins(self):
+        run_sh = (ROOT / 'tools/qualification/node_boot/run.sh').read_text()
+        script = run_sh.split("<<'PY_STAGE'\n", 1)[1].split('\nPY_STAGE', 1)[0]
+        manifest = ROOT / 'content/spells.manifest.json'
+        document = json.loads(manifest.read_bytes())
+        pinned = {k: v for k, v in document.items() if isinstance(v, dict) and 'sha256' in v}
+        with tempfile.TemporaryDirectory() as temp:
+            staged = Path(temp) / 'staged'
+            subprocess.run([sys.executable, '-', str(manifest), str(ROOT), str(staged)],
+                           input=script, text=True, capture_output=True, check=True)
+            for field, pin in pinned.items():
+                source = (manifest.parent / pin['path']).resolve()
+                target = staged / source.relative_to(ROOT.resolve())
+                self.assertTrue(target.is_file(), f'{field} is pinned but not staged by node boot')
+                self.assertEqual(hashlib.sha256(target.read_bytes()).hexdigest(), pin['sha256'])
+
+    def test_full_manifest_stages_cosmetics_authoring_and_source_shards(self):
+        manifest = ROOT / 'content/spells.manifest.json'
+        document = json.loads(manifest.read_bytes())
+        descriptor_path = manifest.parent / document['cosmetics']['path']
+        descriptor = json.loads(descriptor_path.read_bytes())
+        authoring = (descriptor_path.parent / descriptor['authoring']['path']).resolve()
+        source = (descriptor_path.parent / descriptor['source_manifest']['path']).resolve()
+        dependencies = [(authoring, descriptor['authoring']['sha256']),
+                        (source, descriptor['source_manifest']['sha256'])]
+        dependencies += [(source.parent / pin['path'], pin['sha256'])
+                         for pin in json.loads(source.read_bytes())['files']]
+        run_sh = (ROOT / 'tools/qualification/node_boot/run.sh').read_text()
+        script = run_sh.split("<<'PY_STAGE'\n", 1)[1].split('\nPY_STAGE', 1)[0]
+        for consumer in ('node_boot', 'deployment'):
+            with self.subTest(consumer=consumer), tempfile.TemporaryDirectory() as temp:
+                staged = Path(temp) / 'staged'
+                if consumer == 'node_boot':
+                    subprocess.run([sys.executable, '-', str(manifest), str(ROOT), str(staged)],
+                                   input=script, text=True, capture_output=True, check=True)
+                else:
+                    subprocess.run([sys.executable, str(ROOT / 'deploy/synology-game/stage_gameplay.py'),
+                                    str(manifest), str(ROOT), str(staged)], check=True)
+                for path, digest in dependencies:
+                    target = staged / path.relative_to(ROOT.resolve())
+                    self.assertTrue(target.is_file(), f'{consumer} omitted cosmetics dependency {path}')
+                    self.assertEqual(hashlib.sha256(target.read_bytes()).hexdigest(), digest)
+
+    def test_cosmetics_dependency_refusals_leave_no_staged_generation(self):
+        spec = importlib.util.spec_from_file_location(
+            'stage_gameplay', ROOT / 'deploy/synology-game/stage_gameplay.py')
+        stage = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(stage)
+        for mutation in ('authoring_digest', 'shard_digest', 'escape', 'symlink_escape', 'shard_path'):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp) / 'repo'
+                root.mkdir()
+                def pin(name, data):
+                    raw = json.dumps(data).encode()
+                    (root / name).write_bytes(raw)
+                    return {'path': name, 'sha256': hashlib.sha256(raw).hexdigest()}
+                authoring = pin('authoring.json', {})
+                shard = pin('shard.json', {})
+                if mutation == 'authoring_digest':
+                    authoring['sha256'] = '0' * 64
+                elif mutation == 'shard_digest':
+                    shard['sha256'] = '0' * 64
+                elif mutation in ('escape', 'symlink_escape'):
+                    outside = Path(temp) / 'outside.json'
+                    outside.write_bytes(b'{}')
+                    if mutation == 'escape':
+                        authoring['path'] = '../outside.json'
+                    else:
+                        (root / 'link.json').symlink_to(outside)
+                        authoring['path'] = 'link.json'
+                else:
+                    shard['path'] = '../shard.json'
+                source = pin('source.json', {'files': [shard]})
+                cosmetics = pin('cosmetics.json', {
+                    'schema': 'OTERYN_NATIVE_COSMETICS_INPUT/v1',
+                    'authoring': authoring, 'source_manifest': source,
+                })
+                (root / 'manifest.json').write_text(json.dumps({'cosmetics': cosmetics}))
+                with self.assertRaises(ValueError):
+                    stage.main(['stage', 'manifest.json', str(root), str(root / 'staged')])
+                self.assertFalse((root / 'staged').exists())
+
     def test_both_stagers_select_every_manifest_pin_including_item_keys(self):
         spec = importlib.util.spec_from_file_location(
             'stage_gameplay', ROOT / 'deploy/synology-game/stage_gameplay.py')

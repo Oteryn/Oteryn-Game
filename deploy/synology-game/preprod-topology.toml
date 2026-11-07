@@ -43,7 +43,7 @@ route_revision = "rt.1.e96ce705077bfb6fc1c580175115b4c0"
 runtime_observation_revision = "obs.1"
 ruleset_revision = "game.<GAME_COMMIT_12HEX>"
 content_revision = "game.<GAME_COMMIT_12HEX>"
-map_revision = "44b07980866858994e8316bbdf14a1f9a83fc31928964cfc115ea20a4bfdd17a"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
+map_revision = "1b1acb20b827e73d7ef6f7ad83e8cd6f3560ef5f8ec64cb93b36738512fc5944"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
 world_policy_revision = "wp.1"
 offer_revision = "offer.1"
 
@@ -55,7 +55,7 @@ offer_revision = "offer.1"
 # The file is the `world-bundle-*` artifact of the World bundle job, staged by the deploy workflow.
 enabled = true
 path = "<BASE>/world/world.otbundle"
-digest = "44b07980866858994e8316bbdf14a1f9a83fc31928964cfc115ea20a4bfdd17a"
+digest = "1b1acb20b827e73d7ef6f7ad83e8cd6f3560ef5f8ec64cb93b36738512fc5944"
 project_format_version = "OTERYN_WORLD_PROJECT_ROOT/v2"
 world_schema_version = "reference-schema-v1"
 content_revision = "e06-market-crystal-parity-20261031-r1"
@@ -69,7 +69,7 @@ start_floor = -7
 profile_revision = "profile.1"
 ruleset_revision = "game.<GAME_COMMIT_12HEX>"
 content_revision = "game.<GAME_COMMIT_12HEX>"
-starter_template_revision = "starter.1"
+starter_template_revision = "newhaven-starter-r1"
 
 [assignment]
 # Declared by Game ops, starts at 1, never decreases; equal in node.toml [platform.runtime_status]

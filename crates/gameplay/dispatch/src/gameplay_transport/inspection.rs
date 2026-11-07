@@ -69,6 +69,7 @@ pub(super) async fn inspect(
     }
     match request {
         Request::Item(handle) => {
+            let _permit = owner.spell_lane_permit().await?;
             let views = views?;
             let (definition, count, _) = super::item_look::observe_item(
                 owner,
@@ -135,8 +136,9 @@ pub(super) async fn inspect(
             })
         }
         Request::Trade { counter, index } => {
+            let permit = owner.spell_lane_permit().await?;
             let (instance, definition, count) = owner
-                .inspection_trade_item(admitted, id, counter, index)
+                .inspection_trade_item(&permit, admitted, id, counter, index)
                 .await?;
             let metadata = metadata(
                 owner,
@@ -147,7 +149,7 @@ pub(super) async fn inspect(
             )
             .await??;
             let after = owner
-                .inspection_trade_item(admitted, id, counter, index)
+                .inspection_trade_item(&permit, admitted, id, counter, index)
                 .await?;
             if after != (instance, definition.clone(), count) {
                 return None;
@@ -171,6 +173,8 @@ pub(super) async fn inspect(
             {
                 return Some(Reply::refused(6));
             }
+            // Keep background refreshes off the single DB holder for this read chain.
+            let _permit = owner.spell_lane_permit().await?;
             let equipment = super::equipment_move::read_current_equipment(owner, session).await?;
             let character = crate::domain::CharacterId::from_bytes(equipment.character).ok()?;
             let backpack = owner

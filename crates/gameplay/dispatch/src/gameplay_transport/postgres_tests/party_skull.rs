@@ -121,6 +121,7 @@ pub(super) async fn check(
     };
     admitted.continuity = ended.continuity;
     admitted.continuity.selected_capabilities = original;
+    super::party_effects::check(owner, admitted, targets, shields).await?;
     Ok(())
 }
 

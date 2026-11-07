@@ -27,7 +27,8 @@ fn packet() -> Result<Packet, ContentError> {
     }
     let packet: Packet =
         serde_json::from_slice(raw).map_err(|_| invalid("quest collectible proof"))?;
-    if packet.schema != 1 || packet.entries.is_empty() || packet.entries.len() > 32 {
+    // No fallback identities remain when ordinary native owners admit them all.
+    if packet.schema != 1 || packet.entries.len() > 32 {
         return Err(invalid("quest collectible proof bounds"));
     }
     Ok(packet)

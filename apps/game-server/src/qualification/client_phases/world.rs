@@ -7,9 +7,11 @@ use std::path::Path;
 
 include!("character_core.rs");
 include!("floor_journey.rs");
+include!("full_e2ef7_mount.rs");
+include!("full_e2ef5_mount.rs");
 #[path = "map_journey.rs"]
 mod map_journey;
-#[path = "provision.rs"]
+#[path = "full_e2ef1.rs"]
 mod provisioning;
 include!("quest_journal.rs");
 
@@ -239,6 +241,10 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
     ));
     // Keep the high-level fixture on the other Character: the original
     // progression/death journey must retain its ordinary starter build.
+    full_e2ef7::run_packet(clients).await;
+    include!("full_e2ef6_mount.rs");
+    full_e2ef5::run(clients, &world).await;
+    include!("full_e2ef4_mount.rs");
     let profile_result = profile_journey(clients, &world, &bytes, &metadata.spawns).await;
     let mut client = connect_world(clients, 0x71).await?;
     for capability in [17, 18, 151, 152, 153, 179, 230] {
@@ -261,6 +267,7 @@ pub(super) async fn journeys(clients: &SeamClients<'_>, path: &Path) -> TestResu
         return Err("town join served a different or empty World bundle".into());
     }
     client = character_core(client, clients, &world).await?;
+    client = include!("full_e2ef3_registration.rs");
     client = floor_journey(client, clients, &world).await?;
     client_guild::guild(&mut client).await?;
     client_party::party(&mut client).await?;

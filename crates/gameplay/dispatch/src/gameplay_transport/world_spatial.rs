@@ -472,8 +472,8 @@ impl SessionVisibility {
                 ),
             }
         }
-        // Health and display-name changes do not advance a position revision. Publish
-        // stationary changes through the same interest selection and entity record.
+        // Health, corpse Item and display-name changes do not advance a position revision.
+        // Publish stationary changes through the same interest selection and entity record.
         for entity in &selected {
             let identity = entity.entity.identity;
             let Some(prior) = self.entities.get(&identity) else {
@@ -481,7 +481,9 @@ impl SessionVisibility {
             };
             let health_changed = matches!((&prior.detail, &entity.detail),
                 (EntityDetail::Actor { health_percent: before, .. }, EntityDetail::Actor { health_percent: after, .. }) if before != after);
-            if (health_changed || prior.display_name != entity.display_name)
+            let corpse_changed = matches!((&prior.detail, &entity.detail),
+                (EntityDetail::Object { item_definition_ref: before, .. }, EntityDetail::Object { item_definition_ref: after, .. }) if before != after);
+            if (health_changed || corpse_changed || prior.display_name != entity.display_name)
                 && !delta
                     .enter
                     .iter()
@@ -1028,6 +1030,45 @@ mod tests {
         assert_eq!(creature.revision, 0);
         assert_eq!(
             view.refresh(&channel([creature]), &mut no_handles)
+                .expect("unchanged"),
+            VisibilityUpdate::Unchanged
+        );
+    }
+
+    #[test]
+    fn skinning_stationary_corpse_definition_is_sent_once_without_a_position_revision() {
+        let mut view = SessionVisibility::with_objects(true);
+        let mut corpse = at(
+            1,
+            VisibleKind::Corpse {
+                item_definition_ref: std::num::NonZeroU32::MIN,
+            },
+            101,
+            100,
+            7,
+        );
+        view.snapshot(&channel([corpse]), &mut no_handles)
+            .expect("snapshot");
+        corpse.kind = VisibleKind::Corpse {
+            item_definition_ref: std::num::NonZeroU32::new(2).expect("spent Item ref"),
+        };
+        let changed = view
+            .refresh(&channel([corpse]), &mut no_handles)
+            .expect("corpse Item update");
+        assert_eq!(update_ids(&changed), [id(1)]);
+        let VisibilityUpdate::Delta(delta) = changed else {
+            panic!("corpse Item delta")
+        };
+        assert!(matches!(
+            delta.update[0].detail,
+            EntityDetail::Object {
+                item_definition_ref: 2,
+                ..
+            }
+        ));
+        assert_eq!(corpse.revision, 0);
+        assert_eq!(
+            view.refresh(&channel([corpse]), &mut no_handles)
                 .expect("unchanged"),
             VisibilityUpdate::Unchanged
         );

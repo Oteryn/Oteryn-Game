@@ -2,7 +2,7 @@
 use oteryn_client_runtime::server_mechanic::ServerMechanicCommand;
 use oteryn_client_ui::hotkey_equip::{self, HotkeyEquipPanel};
 
-pub(super) fn submit(panel: &mut HotkeyEquipPanel, input: &str) -> Option<ServerMechanicCommand> {
+pub(in crate::play) fn submit(panel: &mut HotkeyEquipPanel, input: &str) -> Option<ServerMechanicCommand> {
     if panel.pending || !panel.selected {
         return None;
     }
@@ -14,7 +14,7 @@ pub(super) fn submit(panel: &mut HotkeyEquipPanel, input: &str) -> Option<Server
     hotkey_equip::control_request(panel)
 }
 
-pub(super) fn panel_text(panel: &HotkeyEquipPanel) -> String {
+pub(in crate::play) fn panel_text(panel: &HotkeyEquipPanel) -> String {
     if !panel.selected {
         return "Hotkey equip unavailable in this session".into();
     }

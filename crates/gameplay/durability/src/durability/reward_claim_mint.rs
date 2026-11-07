@@ -128,6 +128,7 @@ pub(crate) mod quest;
 mod quest_gates;
 pub use quest::{QuestCarriedUse, QuestRewardAdmission};
 mod soul_war;
+mod tibiadrome;
 mod viola_book;
 
 type Result<T> = std::result::Result<T, RewardClaimMintError>;

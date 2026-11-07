@@ -441,6 +441,13 @@ async fn exchange_with_boss_fences(
                     .bind(revisions[3])
                     .execute(&harness.pool)
                     .await?;
+                if index == 3 {
+                    // Registered historical starters are compatible under SRX-2.
+                    // This refusal specifically exercises an unregistered token.
+                    let removed = sqlx::query("DELETE FROM game_world_registered_starter_revisions WHERE world_id=encode($1,'hex')::uuid AND starter_template_revision='starter-1'")
+                        .bind(owner.world_id.as_bytes().as_slice()).execute(&harness.pool).await?;
+                    assert_eq!(removed.rows_affected(), 1);
+                }
                 let id = 2 + index as u64 * 2;
                 send(&mut client, id, COMMAND_TYPE_ITEM_MOVE_INTENT, &actual).await?;
                 let (_, payload) = command_result(&mut client, id).await?;

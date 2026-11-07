@@ -120,9 +120,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = &cells;
-        if case.ground() {
-            owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&bundle_room));
-        }
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&bundle_room));
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -271,19 +269,38 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 .ok_or("player")?
                 .vitals()
         };
+        let far_actor = if case == Case::VoodooFarTarget {
+            let mut runtime = owner.runtime.lock().await;
+            let session = crate::foundation::GameSessionId::decode(&id(67)).map_err(debug)?;
+            let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+            let other = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            runtime
+                .initialize_pinned_test_position(
+                    other,
+                    MovementLocalPosition {
+                        x: 10,
+                        y: 0,
+                        floor: 7,
+                    },
+                )
+                .map_err(debug)?;
+            Some(other)
+        } else {
+            None
+        };
         let target = if matches!(
             case,
-            Case::VoodooSuccess | Case::VoodooFailure | Case::GroundVoodoo
+            Case::VoodooSuccess | Case::VoodooFailure | Case::GroundVoodoo | Case::VoodooFarTarget
         ) {
             let runtime = owner.runtime.lock().await;
             let entities = runtime.visible_entities();
             let me = entities
                 .players
                 .iter()
-                .find(|player| player.actor == deps.actor)
-                .ok_or("self player")?;
+                .find(|player| player.actor == far_actor.unwrap_or(deps.actor))
+                .ok_or("target player")?;
             Some(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
-                identity: deps.actor.placement_identity(),
+                identity: me.actor.placement_identity(),
                 generation: me.generation,
             })
         } else {
@@ -294,13 +311,15 @@ pub(super) fn scenario(case: Case) -> TestResult {
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
         let capabilities: &[u32] = if case.nested() {
-            &[4, 6, 11, 12, 14, 15, 18]
+            &[4, 6, 11, 12, 14, 15, 18, 350]
         } else {
-            &[4, 6, 11, 12, 15, 18]
+            &[4, 6, 11, 12, 15, 18, 350]
         };
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), capabilities)
                 .ok_or("offers")?;
+        assert!(admitted.continuity.selected_capabilities.contains(350));
+        assert!(!admitted.continuity.selected_capabilities.contains(23));
         let intent = UseIntent {
             target: UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("handle")?),
             use_with: target,
@@ -316,19 +335,21 @@ pub(super) fn scenario(case: Case) -> TestResult {
             drop(seal);
             return harness.cleanup().await;
         }
-        let (mut end, result, actual) = super::super::rust_lottery::exchange(
-            &owner,
-            admitted,
-            command_id,
-            &payload,
-            reference(key),
-            None,
-        )
-        .await?;
+        let (mut end, result, actual, wire_cues) =
+            super::super::rust_lottery::exchange_with_visuals(
+                &owner,
+                admitted,
+                command_id,
+                &payload,
+                reference(key),
+            )
+            .await?;
         let current: (i64, i16) = sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(source.as_slice()).fetch_one(&harness.pool).await?;
         if case.refused() {
             if case == Case::VoodooWithoutTarget {
                 assert_eq!(result, UseDisposition::NoTarget);
+            } else if case == Case::VoodooFarTarget {
+                assert_eq!(result, UseDisposition::TooFar);
             } else {
                 assert_ne!(result, UseDisposition::Committed);
             }
@@ -434,8 +455,72 @@ pub(super) fn scenario(case: Case) -> TestResult {
         };
         assert!(
             first_cues.is_empty(),
-            "ANSWER A: exact source cues stay in the durable receipt until the native client consumer exists"
+            "item cues use the live presentation journal"
         );
+        let (visual_cursor, visuals) = owner
+            .observe_sounds(deps.actor, fence.game_session_id, 0)
+            .await
+            .ok_or("item presentation")?;
+        let actual_cues: Vec<_> = visuals
+            .iter()
+            .filter_map(|event| match event.kind {
+                oteryn_protocol_oteryn::presentation::PresentationEventKind::MagicEffect {
+                    effect_id,
+                    position,
+                    ..
+                } => Some((effect_id, position)),
+                _ => None,
+            })
+            .collect();
+        let position = effects.ground.as_ref().map_or(
+            oteryn_protocol_oteryn::world_spatial::ActorPosition {
+                x: 6,
+                y: 0,
+                floor: 7,
+            },
+            |ground| oteryn_protocol_oteryn::world_spatial::ActorPosition {
+                x: ground.x,
+                y: ground.y,
+                floor: ground.floor.abs(),
+            },
+        );
+        let expected_cues: Vec<_> = effects
+            .cues
+            .iter()
+            .filter(|_| !case.refused())
+            .map(|cue| (u32::from(cue.effect_id), position))
+            .collect();
+        assert_eq!(
+            actual_cues, expected_cues,
+            "committed donor cues reach the live observer"
+        );
+        let wire_ids: Vec<_> = wire_cues
+            .iter()
+            .filter_map(|event| match event.kind {
+                oteryn_protocol_oteryn::presentation::PresentationEventKind::MagicEffect {
+                    effect_id,
+                    position: at,
+                    ..
+                } => {
+                    assert_eq!(at.x, position.x);
+                    assert_eq!(at.y, position.y);
+                    assert_eq!(at.floor, position.floor.abs());
+                    Some(effect_id)
+                }
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            wire_ids,
+            effects
+                .cues
+                .iter()
+                .filter(|_| !case.refused())
+                .map(|cue| u32::from(cue.effect_id))
+                .collect::<Vec<_>>(),
+            "stationary USE sends the committed visuals over the real connection"
+        );
+
         if case == Case::Rocket {
             assert_eq!(vitals.health, before_vitals.health - 10);
         } else {
@@ -468,6 +553,15 @@ pub(super) fn scenario(case: Case) -> TestResult {
                     .await?;
             end = replayed_end;
             assert_eq!(replayed, UseDisposition::Committed);
+            assert!(
+                owner
+                    .observe_sounds(deps.actor, fence.game_session_id, visual_cursor)
+                    .await
+                    .ok_or("replay visuals")?
+                    .1
+                    .iter().all(|event| !matches!(event.kind, oteryn_protocol_oteryn::presentation::PresentationEventKind::MagicEffect { .. })),
+                "replay emits no item visual twice"
+            );
             {
                 let runtime = owner.runtime.lock().await;
                 let mut states = owner.states.spell_states.lock().await;

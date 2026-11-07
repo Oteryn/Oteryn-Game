@@ -135,10 +135,46 @@ pub struct PlatformConfig {
     /// character command consumer does not run. Endpoint, peer name and trust roots are
     /// those above.
     pub character_commands: Option<CharacterCommandsConfig>,
+    /// Dedicated Bazaar transport credentials. An omitted table is an
+    /// unconfigured deployment dependency, not a feature-off decision.
+    /// A configured producer defaults enabled; explicit false pauses new work.
+    pub bazaar: Option<BazaarConfig>,
     /// `OTERYN_GAME_PUBLIC_PROJECTIONS_V1` §3. Absent, or `enabled = false`
     /// (the default): the public-projection publisher does not run. Endpoint,
     /// peer name and trust roots are those above.
     pub public_projections: Option<PublicProjectionsConfig>,
+    /// Owner 2026-11-06: T94 runs by default; explicit enabled=false disables it.
+    #[serde(default = "default_t94_section")]
+    pub world_event_outcomes: Option<WorldEventOutcomesConfig>,
+}
+
+/// Purpose-separated T94 client. Paths identify deployment credentials, never embedded keys.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct WorldEventOutcomesConfig {
+    pub enabled: bool,
+    pub client_certificate_file: PathBuf,
+    pub client_key_file: PathBuf,
+    pub source_authority: String,
+    pub epoch_fence_file: PathBuf,
+    pub defaults: crate::native_admission_source::world_event_outcomes::ProducerDefaults,
+    pub resync_request_id: Option<String>,
+}
+impl Default for WorldEventOutcomesConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            client_certificate_file: "/etc/oteryn/credentials/t94-client.crt".into(),
+            client_key_file: "/etc/oteryn/credentials/t94-client.key".into(),
+            source_authority: "oteryn:game:primary".into(),
+            epoch_fence_file: "/var/lib/oteryn-fences/t94.epoch".into(),
+            defaults: Default::default(),
+            resync_request_id: None,
+        }
+    }
+}
+fn default_t94_section() -> Option<WorldEventOutcomesConfig> {
+    Some(WorldEventOutcomesConfig::default())
 }
 
 /// The node host's own runtime-status identity (never the evidence one).
@@ -169,9 +205,27 @@ pub struct AccountCharactersConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct CharacterCommandsConfig {
+    #[serde(default)]
+    pub account_deletion: crate::durability::character_command::account_deletion::Config,
     pub client_certificate_file: PathBuf,
     pub client_key_file: PathBuf,
     pub source_authority: String,
+}
+
+/// Dedicated Bazaar mTLS identity. Character receipts retain their separately
+/// configured Character command identity and source namespace.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BazaarConfig {
+    #[serde(default = "bazaar_enabled")]
+    pub enabled: bool,
+    pub client_certificate_file: PathBuf,
+    pub client_key_file: PathBuf,
+    pub source_authority: String,
+}
+
+const fn bazaar_enabled() -> bool {
+    true
 }
 
 /// The Game host's own public-projection identity (never the evidence,
@@ -257,10 +311,37 @@ pub struct PremiumActivationConfig {
     pub switch_over_us: i64,
 }
 
+/// Node-local durable ANL journal custody. Rotation bounds disk usage per source.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct AuditCollectorConfig {
+    pub enabled: bool,
+    pub directory: PathBuf,
+    pub batch_size: u16,
+    pub interval_ms: u64,
+    pub rotation_bytes: u64,
+    /// Total files per source, including the active journal.
+    pub rotation_count: u16,
+}
+impl Default for AuditCollectorConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            directory: "/var/lib/oteryn/audit".into(),
+            batch_size: 32,
+            interval_ms: 1_000,
+            rotation_bytes: 16 * 1024 * 1024,
+            rotation_count: 4,
+        }
+    }
+}
+
 /// `oteryn-game-server serve --config <path>`.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
+    #[serde(default)]
+    pub audit_collector: AuditCollectorConfig,
     /// Explicit disposable node-boot fixture opt-in; never enabled by default.
     #[serde(default)]
     pub qualification_fixture: bool,
@@ -436,6 +517,26 @@ impl NodeConfig {
     }
 
     fn validate(&self) -> Result<(), ConfigError> {
+        let audit = &self.audit_collector;
+        if audit.directory == std::path::Path::new("/")
+            || !outside(&audit.directory, &self.character)
+        {
+            return reject("audit_collector.directory");
+        }
+        if !(1..=64).contains(&audit.batch_size) {
+            return reject("audit_collector.batch_size");
+        }
+        if !(10..=60_000).contains(&audit.interval_ms) {
+            return reject("audit_collector.interval_ms");
+        }
+        // The largest inherited binary envelope is 256 KiB, before base64 and metadata.
+        if !(512 * 1024..=1024 * 1024 * 1024).contains(&audit.rotation_bytes) {
+            return reject("audit_collector.rotation_bytes");
+        }
+        if !(1..=32).contains(&audit.rotation_count) {
+            return reject("audit_collector.rotation_count");
+        }
+
         if let Some(activation) = &self.premium_activation {
             if activation.activation_id.trim().is_empty() {
                 return reject("premium_activation.activation_id");
@@ -607,6 +708,19 @@ impl NodeConfig {
             }
         }
         if let Some(commands) = &platform.character_commands {
+            if !outside(&commands.account_deletion.epoch_fence_file, &self.character)
+                || platform.account_characters.as_ref().is_some_and(|p| {
+                    p.epoch_fence_file == commands.account_deletion.epoch_fence_file
+                })
+                || platform.public_projections.as_ref().is_some_and(|p| {
+                    p.epoch_fence_file == commands.account_deletion.epoch_fence_file
+                })
+                || platform.world_event_outcomes.as_ref().is_some_and(|p| {
+                    p.epoch_fence_file == commands.account_deletion.epoch_fence_file
+                })
+            {
+                return reject("platform.character_commands.account_deletion.epoch_fence_file");
+            }
             let status = platform.runtime_status.as_ref();
             let projection = platform.account_characters.as_ref();
             for (key, path) in [
@@ -645,8 +759,75 @@ impl NodeConfig {
                 return reject("platform.character_commands.source_authority");
             }
         }
+        if let Some(bazaar) = &platform.bazaar {
+            if platform.character_commands.is_none() {
+                return reject("platform.bazaar.character_receipt_identity");
+            }
+            let mut taken = vec![&platform.client_certificate_file, &platform.client_key_file];
+            if let Some(status) = &platform.runtime_status {
+                taken.extend([&status.client_certificate_file, &status.client_key_file]);
+            }
+            if let Some(projection) = &platform.account_characters {
+                taken.extend([
+                    &projection.client_certificate_file,
+                    &projection.client_key_file,
+                ]);
+            }
+            if let Some(commands) = &platform.character_commands {
+                taken.extend([&commands.client_certificate_file, &commands.client_key_file]);
+            }
+            if let Some(public) = &platform.public_projections {
+                taken.extend([&public.client_certificate_file, &public.client_key_file]);
+            }
+            if let Some(league) = &platform.world_event_outcomes {
+                taken.extend([&league.client_certificate_file, &league.client_key_file]);
+            }
+            if !absolute(&bazaar.client_certificate_file)
+                || !absolute(&bazaar.client_key_file)
+                || bazaar.client_certificate_file == bazaar.client_key_file
+                || taken.contains(&&bazaar.client_certificate_file)
+                || taken.contains(&&bazaar.client_key_file)
+            {
+                return reject("platform.bazaar.client_certificate_file");
+            }
+            if !token(&bazaar.source_authority, 128, b"/")
+                || bazaar.source_authority == platform.source_authority
+                || bazaar.source_authority == readiness.source_authority
+                || bazaar.source_authority
+                    == crate::native_admission_source::bazaar::transport::PURPOSE
+            {
+                return reject("platform.bazaar.source_authority");
+            }
+        }
         if let Some(public) = &platform.public_projections {
             check_public_projections(platform, public, &self.character, readiness)?;
+        }
+        if let Some(league) = &platform.world_event_outcomes {
+            check_public_projections(
+                platform,
+                &PublicProjectionsConfig {
+                    enabled: league.enabled,
+                    client_certificate_file: league.client_certificate_file.clone(),
+                    client_key_file: league.client_key_file.clone(),
+                    source_authority: league.source_authority.clone(),
+                    epoch_fence_file: league.epoch_fence_file.clone(),
+                },
+                &self.character,
+                readiness,
+            )
+            .map_err(|_| ConfigError {
+                key: "platform.world_event_outcomes",
+            })?;
+            if league.source_authority
+                == crate::native_admission_source::world_event_outcomes::publisher::PURPOSE
+                || platform.public_projections.as_ref().is_some_and(|public| {
+                    public.client_certificate_file == league.client_certificate_file
+                        || public.client_key_file == league.client_key_file
+                        || public.epoch_fence_file == league.epoch_fence_file
+                })
+            {
+                return reject("platform.world_event_outcomes");
+            }
         }
         if platform.descriptor_revision == 0 {
             return reject("platform.descriptor_revision");
@@ -731,6 +912,9 @@ fn check_public_projections(
     }
     if let Some(commands) = &platform.character_commands {
         taken.extend([&commands.client_certificate_file, &commands.client_key_file]);
+    }
+    if let Some(bazaar) = &platform.bazaar {
+        taken.extend([&bazaar.client_certificate_file, &bazaar.client_key_file]);
     }
     for (key, path) in [
         (
@@ -872,6 +1056,52 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
 "#;
 
     #[test]
+    fn audit_collector_defaults_and_rejects_bad_values() {
+        let defaults = NodeConfig::parse(NODE.as_bytes()).expect("default audit collector");
+        assert!(defaults.audit_collector.enabled);
+        assert_eq!(defaults.audit_collector, AuditCollectorConfig::default());
+        let parse = |section: &str| {
+            NodeConfig::parse(format!("{NODE}\n[audit_collector]\n{section}\n").as_bytes())
+        };
+        assert!(parse("enabled = true").is_ok());
+        assert!(
+            !parse("enabled = false")
+                .expect("explicit disable")
+                .audit_collector
+                .enabled
+        );
+        for section in [
+            "directory = 'relative'",
+            "directory = '/'",
+            "directory = '/tmp/../audit'",
+            "batch_size = 0",
+            "batch_size = 65",
+            "batch_size = -1",
+            "interval_ms = 0",
+            "interval_ms = 60001",
+            "rotation_bytes = 524287",
+            "rotation_bytes = 1073741825",
+            "rotation_count = 0",
+            "rotation_count = 33",
+            "unknown = true",
+        ] {
+            assert!(parse(section).is_err(), "accepted {section}");
+        }
+        for section in [
+            "batch_size = 1",
+            "batch_size = 64",
+            "interval_ms = 10",
+            "interval_ms = 60000",
+            "rotation_bytes = 524288",
+            "rotation_bytes = 1073741824",
+            "rotation_count = 1",
+            "rotation_count = 32",
+        ] {
+            assert!(parse(section).is_ok(), "rejected {section}");
+        }
+    }
+
+    #[test]
     fn store_purchase_mode_defaults_accepts_both_values_and_fails_closed() {
         assert_eq!(
             NodeConfig::parse(NODE.as_bytes())
@@ -968,6 +1198,33 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
         ] {
             assert!(NodeConfig::parse(invalid.as_bytes()).is_err());
         }
+    }
+
+    #[test]
+    fn t94_node_default_on_explicit_disable_and_dedicated_identity() {
+        let c = NodeConfig::parse(NODE.as_bytes()).expect("valid node");
+        let t94 = c.platform.world_event_outcomes.expect("default T94");
+        assert!(t94.enabled);
+        assert_eq!(t94.source_authority, "oteryn:game:primary");
+        assert_eq!(t94.defaults.season_seconds, 86400);
+        let disabled = format!("{NODE}\n[platform.world_event_outcomes]\nenabled=false\n");
+        assert!(
+            !NodeConfig::parse(disabled.as_bytes())
+                .expect("disabled")
+                .platform
+                .world_event_outcomes
+                .expect("T94")
+                .enabled
+        );
+        let shared = format!(
+            "{NODE}\n[platform.world_event_outcomes]\nclient_certificate_file=\"/etc/oteryn/node/platform.crt\"\n"
+        );
+        let c = NodeConfig::parse(NODE.as_bytes()).expect("node");
+        let shared = shared.replace(
+            "/etc/oteryn/node/platform.crt",
+            c.platform.client_certificate_file.to_str().expect("path"),
+        );
+        assert!(NodeConfig::parse(shared.as_bytes()).is_err());
     }
 
     #[test]
@@ -1299,6 +1556,76 @@ source_authority = "oteryn:character-authority:primary"
 [launch]"#;
 
     #[test]
+    fn bazaar_section_defaults_on_and_requires_separate_receipt_identity() {
+        assert!(
+            NodeConfig::parse(NODE.as_bytes())
+                .expect("base")
+                .platform
+                .bazaar
+                .is_none()
+        );
+        let section = r#"
+[platform.bazaar]
+client_certificate_file = "/etc/oteryn/node/bazaar.crt"
+client_key_file = "/etc/oteryn/node/bazaar.key"
+source_authority = "oteryn:game:primary"
+
+[launch]"#;
+        let all = NODE
+            .replace("\n[launch]", COMMANDS)
+            .replace("\n[launch]", section);
+        assert!(
+            NodeConfig::parse(all.as_bytes())
+                .expect("configured")
+                .platform
+                .bazaar
+                .expect("Bazaar section")
+                .enabled
+        );
+        assert!(NodeConfig::parse(NODE.replace("\n[launch]", section).as_bytes()).is_err());
+        let paused = all.replace("[platform.bazaar]", "[platform.bazaar]\nenabled = false");
+        assert!(
+            !NodeConfig::parse(paused.as_bytes())
+                .expect("explicit pause")
+                .platform
+                .bazaar
+                .expect("Bazaar section")
+                .enabled
+        );
+        for invalid in [
+            all.replace("bazaar.crt", "commands.crt"),
+            all.replace("bazaar.key", "commands.key"),
+            all.replace("bazaar.key", "bazaar.crt"),
+            all.replace("oteryn:game:primary", "bad authority"),
+        ] {
+            assert!(NodeConfig::parse(invalid.as_bytes()).is_err());
+        }
+    }
+
+    #[test]
+    fn packaged_producers_reject_shared_identity_and_epoch_files() {
+        let bazaar = r#"
+[platform.bazaar]
+client_certificate_file = "/etc/oteryn/credentials/t94-client.crt"
+client_key_file = "/etc/oteryn/credentials/bazaar.key"
+source_authority = "oteryn:game:primary"
+
+[launch]"#;
+        let all = NODE
+            .replace("\n[launch]", COMMANDS)
+            .replace("\n[launch]", bazaar);
+        assert!(NodeConfig::parse(all.as_bytes()).is_err());
+        let distinct = all.replace("/credentials/t94-client.crt", "/credentials/bazaar.crt");
+        assert!(NodeConfig::parse(distinct.as_bytes()).is_ok());
+        let shared_key = distinct.replace("/credentials/bazaar.key", "/credentials/t94-client.key");
+        assert!(NodeConfig::parse(shared_key.as_bytes()).is_err());
+        let shared_fence = format!(
+            "{distinct}\n[platform.world_event_outcomes]\nepoch_fence_file = \"/var/lib/oteryn/account-closure/epoch-fence\"\n"
+        );
+        assert!(NodeConfig::parse(shared_fence.as_bytes()).is_err());
+    }
+
+    #[test]
     fn character_commands_section_is_optional_off_by_default_and_separate() {
         let config = NodeConfig::parse(NODE.as_bytes()).expect("valid configuration");
         assert!(config.platform.character_commands.is_none());
@@ -1311,6 +1638,7 @@ source_authority = "oteryn:character-authority:primary"
             .platform
             .character_commands
             .expect("section");
+        assert!(commands.account_deletion.enabled);
         // The projection and the command consumer are one Character Authority.
         assert_eq!(
             commands.source_authority,

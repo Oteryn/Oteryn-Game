@@ -156,6 +156,15 @@ where
         return None;
     };
     // The owning authority's decision is never cancelled midway.
+    if cast_observer::ingress(&frame) {
+        if let Some(node) = authority.cast_node() {
+            let _ = cast_observer::serve(stream, &frame, node, shutdown).await;
+        }
+        observer.ended(ConnectionEnd::AdmissionRefused(
+            connection::AdmissionRefusal::Unavailable,
+        ));
+        return None;
+    }
     let admitted = admit_frame(&mut stream, &frame, authority, identifiers).await;
     drop(unit);
     let (end, served) = match admitted {
@@ -186,6 +195,13 @@ where
             ),
         },
     };
+    if let ConnectionEnd::AdmittedThenClosed(session, _)
+    | ConnectionEnd::AdmittedThenDisconnected(session)
+    | ConnectionEnd::AdmittedThenControlLost(session)
+    | ConnectionEnd::AdmittedThenLoggedOut(session) = &end
+    {
+        authority.cast_end(*session).await;
+    }
     // Liveness proved the loss: record it now. A closed or failed transport alone is not
     // proof (FND-04B §4): control is lost once the detection window passes unanswered.
     let lost = match (&end, served) {

@@ -991,18 +991,63 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session: GameSessionId,
     ) -> Option<(String, [u8; 16], u32)> {
+        let retry = super::AdmissionRetryBudget::for_command(self.root);
+        self.chat_speaker_name_with_budget(session, &retry).await
+    }
+
+    /// Named visibility shares one budget across its bounded interest set. Only
+    /// holder contention retries; absent names and invalid authority fail closed.
+    pub(super) async fn chat_speaker_name_with_budget(
+        &self,
+        session: GameSessionId,
+        retry: &super::AdmissionRetryBudget<'_>,
+    ) -> Option<(String, [u8; 16], u32)> {
+        use super::connection::AdmissionRefusal;
+        use crate::durability::DurabilityError;
+        use crate::durability::character_authority::CharacterAuthorityError;
+        use crate::durability::character_progression::CharacterProgressionError;
+
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let (current, _) = store.current_session_at(session).await.ok()?;
+        let (current, _) = retry
+            .retry_unavailable(async || {
+                store
+                    .current_session_at(session)
+                    .await
+                    .map_err(|error| match error {
+                        DurabilityError::RootUnavailable => AdmissionRefusal::Unavailable,
+                        _ => AdmissionRefusal::Rejected,
+                    })
+            })
+            .await
+            .ok()?;
         let character = *current.commit().character_id().as_bytes();
         let character_id = domain::CharacterId::from_bytes(character).ok()?;
-        let name = self
-            .root
-            .read_character_chat_name(self.character, character_id)
+        let name = retry
+            .retry_unavailable(async || {
+                self.root
+                    .read_character_chat_name(self.character, character_id)
+                    .await
+                    .map_err(|error| match error {
+                        CharacterAuthorityError::Unavailable(DurabilityError::RootUnavailable) => {
+                            AdmissionRefusal::Unavailable
+                        }
+                        _ => AdmissionRefusal::Rejected,
+                    })
+            })
             .await
             .ok()??;
-        let level = self
-            .root
-            .read_character_progression(self.character, character_id)
+        let level = retry
+            .retry_unavailable(async || {
+                self.root
+                    .read_character_progression(self.character, character_id)
+                    .await
+                    .map_err(|error| match error {
+                        CharacterProgressionError::Unavailable(
+                            DurabilityError::RootUnavailable,
+                        ) => AdmissionRefusal::Unavailable,
+                        _ => AdmissionRefusal::Rejected,
+                    })
+            })
             .await
             .ok()?
             .map_or(1, |progression| progression.level);

@@ -107,6 +107,22 @@ fn bounded(value: &str) -> bool {
     !value.is_empty() && value.len() <= MAX_CONTEXT_BYTES
 }
 
+/// SRX-2 owner-approved exception for a registered historical starter token only.
+/// Current tokens retain their existing control-owned interpretation proof; older
+/// tokens require explicit registration for this World. Runtime cannot register them.
+pub(super) async fn starter_revision_is_current_or_registered(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    world: &[u8],
+    starter: &str,
+    current: &str,
+) -> std::result::Result<bool, DurabilityError> {
+    if starter == current {
+        return Ok(true);
+    }
+    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_registered_starter_revisions WHERE world_id=encode($1,'hex')::uuid AND starter_template_revision=$2)")
+        .bind(world).bind(starter).fetch_one(&mut **tx).await?)
+}
+
 impl DurabilityRoot {
     /// Reconcile an uncertain bootstrap outcome by its operation identity alone,
     /// without re-authorizing: the committed result, or `None` if nothing
@@ -144,7 +160,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
-            let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text FROM game_character_roots r JOIN game_character_creation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1").bind(character.as_slice()).fetch_optional(&mut *tx).await?;
+            let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text, o.account_id::text AS creation_account_id FROM game_character_roots r JOIN game_character_creation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1 AND NOT game_account_closure_detached(r.character_id)").bind(character.as_slice()).fetch_optional(&mut *tx).await?;
             let Some(row) = row else { return Ok(Err(CharacterAuthorityError::Rejected)); };
             let record = decode_current_row(&row)?;
             commit_semantic_transaction(tx, deadline).await?;
@@ -177,14 +193,10 @@ impl DurabilityRoot {
         })).await
     }
 
-    /// The interpretation stored on the active Character root `character_id`, under the
-    /// reconciled recovery fence: its profile, ruleset, content and starter template revisions.
-    /// A progression binding is built from the root's own revisions, never from the newest
-    /// global interpretation, which may have advanced since the Character was created
-    /// (ARCH-PROGRESSION-SOURCE-0 §1.3-§1.5). `Ok(None)` when the root's interpretation is not
-    /// the newest global interpretation (or none is configured): the gameplay fence of every
-    /// durable progression write refuses such a root with `ProgressionContextMismatch`
-    /// (§0.2), so it can hold no binding. `Rejected` when no active root exists. Read only.
+    /// Root-owned interpretation under the recovered authority. Profile, ruleset and
+    /// content remain current. Only an explicitly World-registered historical starter
+    /// revision may differ (owner-approved SRX-2); the root's tuple is never rewritten.
+    /// `Ok(None)` refuses an unregistered starter or any other context mismatch.
     pub async fn read_character_root_interpretation(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -199,7 +211,7 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let row = sqlx::query(
                         "SELECT profile_revision, ruleset_revision, content_revision, \
-                                starter_template_revision \
+                                starter_template_revision,uuid_send(world_id) AS world_bytes \
                            FROM game_character_roots \
                           WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1",
                     )
@@ -220,13 +232,22 @@ impl DurabilityRoot {
                         &text("starter_template_revision")?,
                     )
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
-                    // The same comparison as the gameplay fence (`assert_gameplay_fence`): all
-                    // four revisions against the newest global interpretation.
+                    // Keep the read and the durable mutation fence on the same narrow rule.
                     let current = current_interpretation(&mut tx).await?;
+                    let compatible = if let Some((_, current)) = current {
+                        let stored = interpretation.revisions();
+                        let latest = current.revisions();
+                        let world: Vec<u8> = row.try_get("world_bytes")?;
+                        stored[..3] == latest[..3]
+                            && starter_revision_is_current_or_registered(
+                                &mut tx, &world, stored[3], latest[3],
+                            )
+                            .await?
+                    } else {
+                        false
+                    };
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(current
-                        .is_some_and(|(_, current)| current == interpretation)
-                        .then_some(interpretation)))
+                    Ok(Ok(compatible.then_some(interpretation)))
                 })
             })
             .await?
@@ -360,6 +381,11 @@ impl DurabilityRoot {
         let record = recovery.record().clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            // Serialize successor admission against all command fence checks. Acquire
+            // this gate in a separate statement so the following READ COMMITTED
+            // snapshot includes any predecessor transaction that just completed.
+            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-recovery-admission', 0))")
+                .execute(&mut *tx).await?;
             let current: Option<String> = sqlx::query_scalar("SELECT recovery_generation::text FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1 FOR UPDATE")
                 .fetch_optional(&mut *tx).await?;
             let current = current.ok_or(DurabilityError::Unavailable)?.parse::<u64>().map_err(|_| DurabilityError::Unavailable)?;
@@ -489,6 +515,12 @@ pub(super) async fn assert_recovery_fence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     record: &CharacterRecoveryFenceV1,
 ) -> std::result::Result<(), DurabilityError> {
+    // A row lock alone cannot fence an append-only successor: a SELECT queued
+    // behind reconciliation can retain a snapshot containing only its predecessor.
+    // The shared transaction gate precedes the SELECT and stays held through commit.
+    sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('oteryn:character-recovery-admission', 0))")
+        .execute(&mut **tx)
+        .await?;
     let sql = "SELECT authority_scope_id, recovery_generation::text, recovery_event_id::text, predecessor_generation::text, predecessor_digest, issued_at::text, issuer_identity FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1 FOR SHARE";
     let row = sqlx::query(sql)
         .fetch_optional(&mut **tx)
@@ -551,7 +583,7 @@ pub(super) async fn load_current_character(
     character_id: [u8; 16],
 ) -> std::result::Result<Option<CharacterAuthorityRecord>, DurabilityError> {
     assert_recovery_fence(tx, recovery).await?;
-    let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text FROM game_character_roots r JOIN game_character_creation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1 FOR SHARE OF r")
+    let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text, o.account_id::text AS creation_account_id FROM game_character_roots r JOIN game_character_creation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1 FOR SHARE OF r")
         .bind(character_id.as_slice())
         .fetch_optional(&mut **tx)
         .await?;
@@ -576,7 +608,11 @@ fn decode_current_row(
         revision: CharacterRevision::new(revision).map_err(|_| DurabilityError::Unavailable)?,
         event_id: uuid_text(row.try_get("event_id")?)?,
         transaction_id: uuid_text(row.try_get("transaction_id")?)?,
-        payload: encode_bootstrap(&account, &character, &world),
+        payload: encode_bootstrap(
+            &uuid_text(row.try_get("creation_account_id")?)?,
+            &character,
+            &world,
+        ),
     })
 }
 fn read_record_row(
@@ -739,6 +775,7 @@ pub(super) async fn account_security(
 // UNION ALL arm order is irrelevant: the query checks only for the existence of an
 // invalid row; chain continuity and latest state are joined by Character revision.
 const RECEIPT_CHAIN_TABLES: &[&str] = &[
+    "game_bazaar_character_revision_chain",
     "game_character_bestiary_kill_receipts",
     "game_character_build_receipts",
     "game_character_charm_receipts",
@@ -840,6 +877,7 @@ async fn verify_character_integrity(
     super::offline_training_state::verify(tx).await?;
     super::npc_purchase::verify_purchase_integrity(tx).await?;
     creation_integrity::verify(tx).await?;
+    super::bazaar::recovery::verify(tx).await?;
     // P03 progression is optional at revision one because initialization is a
     // separate owner.  Once a Character advances, typed state and a complete,
     // gap-free immutable receipt chain must explain the global revision and the
@@ -871,8 +909,8 @@ async fn verify_character_integrity(
     let mut after = String::from("00000000-0000-0000-0000-000000000000");
     loop {
         let rows = sqlx::query(
-            "SELECT a.event_id::text, a.payload, r.account_id::text, r.character_id::text, r.world_id::text \
-               FROM game_character_audit_outbox a JOIN game_character_roots r USING (character_id) \
+            "SELECT a.event_id::text, a.payload, c.account_id::text, r.character_id::text, r.world_id::text \
+               FROM game_character_audit_outbox a JOIN game_character_roots r USING (character_id) JOIN game_character_creation_receipts c ON c.event_id=a.event_id \
               WHERE a.event_id > $1::uuid ORDER BY a.event_id LIMIT 256",
         )
         .bind(&after)

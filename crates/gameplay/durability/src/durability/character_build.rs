@@ -74,6 +74,16 @@ pub struct DurableBuildState {
     skills: [(u16, u64); 7],
 }
 
+/// The persisted progression and revision context for a complete skills display.
+#[derive(Debug, Clone)]
+pub struct SkillDisplayProgression {
+    pub level: u32,
+    pub experience: u64,
+    pub profile_revision: String,
+    pub ruleset_revision: String,
+    pub content_revision: String,
+}
+
 impl Default for DurableBuildState {
     /// The chain seed, which a Character without a build row has.
     fn default() -> Self {
@@ -973,6 +983,21 @@ impl DurabilityRoot {
         command: crate::foundation::CommandRef,
         content_digest: [u8; 32],
     ) -> Result<(DurableBuildState, u32)> {
+        let (build, points, _) = self
+            .read_skill_display_state(authority, node, fence, command, content_digest)
+            .await?;
+        Ok((build, points))
+    }
+
+    /// NX-7: level/XP, trained build and account loyalty from one fenced transaction.
+    pub async fn read_skill_display_state(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &super::item_transfer::CurrentCharacterItemFence,
+        command: crate::foundation::CommandRef,
+        content_digest: [u8; 32],
+    ) -> Result<(DurableBuildState, u32, Option<SkillDisplayProgression>)> {
         if content_digest == [0; 32] {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
@@ -1019,10 +1044,11 @@ impl DurabilityRoot {
                     }
                     let row = sqlx::query(concat!(
                         "SELECT b.vocation, ", family_columns!("b.", ""),
-                        ", COALESCE(l.loyalty_points,0)::bigint AS loyalty_points ",
+                        ", COALESCE(l.loyalty_points,0)::bigint AS loyalty_points, p.level, p.total_experience, p.profile_revision, p.ruleset_revision, p.content_revision ",
                         "FROM game_character_roots r ",
                         "LEFT JOIN game_character_build_state b USING(character_id) ",
                         "LEFT JOIN game_account_loyalty_projections l ON l.account_id=r.account_id ",
+                        "LEFT JOIN game_character_progression_state p USING(character_id) ",
                         "WHERE r.character_id=encode($1,'hex')::uuid"
                     )).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
                     let build = if row.try_get::<Option<String>, _>("vocation")?.is_some() {
@@ -1032,8 +1058,17 @@ impl DurabilityRoot {
                     };
                     let points = u32::try_from(row.try_get::<i64, _>("loyalty_points")?)
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    let progression = row.try_get::<Option<i64>, _>("level")?.map(|level| {
+                        Ok::<_, DurabilityError>(SkillDisplayProgression {
+                            level: u32::try_from(level).map_err(|_| DurabilityError::InvalidStoredState)?,
+                            experience: u64::try_from(row.try_get::<i64, _>("total_experience")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                            profile_revision: row.try_get("profile_revision")?,
+                            ruleset_revision: row.try_get("ruleset_revision")?,
+                            content_revision: row.try_get("content_revision")?,
+                        })
+                    }).transpose()?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok((build, points)))
+                    Ok(Ok((build, points, progression)))
                 })
             })
             .await?

@@ -2,23 +2,23 @@
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::depot_search::DepotSearchPanel;
 
-pub(super) const CONTROLS: &[(&str, &str, &str)] = &[
+pub(in crate::play) const CONTROLS: &[(&str, &str, &str)] = &[
     ("EDIT", "Item id", "100"),
     ("BUTTON", "Search", ""),
     ("EDIT", "Result row (starting at 0)", "0"),
     ("EDIT", "Tier", "0"),
     ("BUTTON", "Select result / details", ""),
 ];
-pub(super) struct Inputs(pub Vec<String>);
+pub(in crate::play) struct Inputs(pub Vec<String>);
 impl Default for Inputs {
     fn default() -> Self {
         Self(CONTROLS.iter().map(|c| c.2.to_owned()).collect())
     }
 }
-pub(super) fn enabled(panel: &DepotSearchPanel) -> bool {
+pub(in crate::play) fn enabled(panel: &DepotSearchPanel) -> bool {
     panel.selected && !panel.pending
 }
-pub(super) fn presentation(panel: &DepotSearchPanel) -> String {
+pub(in crate::play) fn presentation(panel: &DepotSearchPanel) -> String {
     let mut text = oteryn_client_ui::depot_search::panel_text(panel);
     if panel.pending {
         text.push_str("\nWaiting for server…");
@@ -26,10 +26,10 @@ pub(super) fn presentation(panel: &DepotSearchPanel) -> String {
 
     text
 }
-pub(super) fn submit(link: &PlayLink, inputs: &Inputs) {
+pub(in crate::play) fn submit(link: &PlayLink, inputs: &Inputs) {
     dispatch(link, inputs, false);
 }
-pub(super) fn dispatch(link: &PlayLink, inputs: &Inputs, detail: bool) {
+pub(in crate::play) fn dispatch(link: &PlayLink, inputs: &Inputs, detail: bool) {
     let mut mailbox = lock(&link.mailbox);
     let panel = &mut mailbox.depot_search;
     if !enabled(panel) {
@@ -117,10 +117,9 @@ mod windows {
                 run(weak, commands);
             })
             .is_err()
+            && let Some(shared) = rollback.upgrade()
         {
-            if let Some(shared) = rollback.upgrade() {
-                lock(&shared).depot_search.open = false;
-            }
+            lock(&shared).depot_search.open = false;
         }
     }
     fn run(

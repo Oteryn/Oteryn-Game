@@ -291,6 +291,7 @@ fn scenario() -> TestResult {
                     stale,
                     CharacterTitle::ChallengerOfTheIks,
                     1,
+                    None,
                     None
                 )
                 .await

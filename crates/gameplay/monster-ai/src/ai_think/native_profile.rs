@@ -114,3 +114,7 @@ impl CreatureAiTable {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "native_profile_tests.rs"]
+mod tests;

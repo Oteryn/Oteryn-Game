@@ -89,7 +89,7 @@
         "oteryn-authored:selected-recipe:legion-training-cave-source-hole-and-rope-spot",
         "oteryn:source-map:content/world/placements/region-z07-x125-y124.b3:sha256:66e2b4e44eb7f3994f6ab3e927124db8682c7b31a5d13e3f9b192132f5da452e",
         "oteryn:source-map:content/world/placements/region-z08-x125-y124.b3:sha256:c470089dbd8903d3be04a5c95ce9bcba46df5eda62ea1401452af54789c09828",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:0e9bf2893b18eb6bfc7914f1862f740daf775e6627d68d6a001ce637c7687f71"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:045895d90cfd1f23945887e2bf108f66db9a0079c0a5e50745806a6d50221058"
       ],
       "minimum_level": 1
     },
@@ -159,7 +159,7 @@
         "oteryn-authored:selected-recipe:legion-source-magic-forcefield-return",
         "oteryn:source-map:content/world/placements/region-z07-x125-y124.b3:sha256:66e2b4e44eb7f3994f6ab3e927124db8682c7b31a5d13e3f9b192132f5da452e",
         "oteryn:source-map:content/world/placements/region-z08-x125-y124.b3:sha256:c470089dbd8903d3be04a5c95ce9bcba46df5eda62ea1401452af54789c09828",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:0e9bf2893b18eb6bfc7914f1862f740daf775e6627d68d6a001ce637c7687f71"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:045895d90cfd1f23945887e2bf108f66db9a0079c0a5e50745806a6d50221058"
       ],
       "movement_origins": [
         {
@@ -287,7 +287,7 @@
         "oteryn:source-map:content/world/placements/region-z07-x125-y124.b3:sha256:66e2b4e44eb7f3994f6ab3e927124db8682c7b31a5d13e3f9b192132f5da452e",
         "oteryn:source-map:content/world/placements/region-z08-x125-y124.b3:sha256:c470089dbd8903d3be04a5c95ce9bcba46df5eda62ea1401452af54789c09828",
         "oteryn:source-map:content/world/placements/region-z07-x127-y126.b3:sha256:32f787d0400a876b3382cee79a19901c4193f65df19037657aaa385f34df3af3",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:0e9bf2893b18eb6bfc7914f1862f740daf775e6627d68d6a001ce637c7687f71"
+        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:045895d90cfd1f23945887e2bf108f66db9a0079c0a5e50745806a6d50221058"
       ],
       "minimum_level": 1
     },

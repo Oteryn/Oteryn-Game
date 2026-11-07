@@ -118,6 +118,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 item_fence,
                 now,
                 self.appearance_context().map(|(_, content)| content),
+                self.bundle_map().map(|map| &map.overlay.base().subareas),
             )
             .await;
         // PAR-P12b: badges share the trigger points (Crystal checks both at login).
@@ -128,7 +129,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// The actor-cadence leg of [`Self::refresh_session_titles`] for a Character marked by a
-    /// kill settlement (level, tracked creature or boss).
+    /// kill settlement (level, tracked creature or boss) or Task Board point change.
     pub(super) async fn refresh_marked_titles(
         &self,
         actor: crate::foundation::ExactActorRef,
@@ -189,6 +190,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         title,
                         now,
                         self.appearance_context().map(|(_, content)| content),
+                        self.bundle_map().map(|map| &map.overlay.base().subareas),
                     )
                     .await
                 {
@@ -255,6 +257,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fence,
                     now,
                     self.appearance_context().map(|(_, content)| content),
+                    self.bundle_map().map(|map| &map.overlay.base().subareas),
                 )
                 .await
                 .is_err()
@@ -278,6 +281,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 target,
                 now,
                 self.appearance_context().map(|(_, content)| content),
+                self.bundle_map().map(|map| &map.overlay.base().subareas),
             )
             .await
         {

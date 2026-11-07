@@ -169,3 +169,13 @@ impl DurabilityRoot {
         })).await?
     }
 }
+
+
+/// Read-only status projection. Caller holds the admitted Character root fence.
+pub(crate) async fn read_taint_count_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: crate::domain::CharacterId,
+    now_seconds: i64,
+) -> StoredResult<u8> {
+    Ok(storage::load(tx, character).await?.taint_count(now_seconds))
+}

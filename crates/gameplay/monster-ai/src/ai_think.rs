@@ -133,6 +133,8 @@ pub struct CreatureAiState {
     attack_observation: Option<movement_attack::AttackObservation>,
     forced_target: Option<(ExactActorRef, u64)>,
     forced_distance: Option<u64>,
+    /// Canary monster.cpp:1456-1462: Fatal Hold suppresses fleeing without changing targeting.
+    fatal_hold_until: u64,
     change_ticks_ms: u64,
     schedule: ProfileScheduleState,
     last: Option<ThinkReport>,
@@ -173,6 +175,7 @@ impl CreatureAiState {
             attack_observation: None,
             forced_target: None,
             forced_distance: None,
+            fatal_hold_until: 0,
             change_ticks_ms: 0,
             schedule: ProfileScheduleState::new(actor),
             last: None,
@@ -303,6 +306,15 @@ impl CreatureAiTable {
     #[must_use]
     pub fn state(&self, actor: ExactActorRef) -> Option<&CreatureAiState> {
         self.entry(actor).map(|entry| &entry.state)
+    }
+
+    /// The admitted charm hit retains one deadline on the existing creature incarnation.
+    pub fn apply_fatal_hold(&mut self, actor: ExactActorRef, until: u64) -> bool {
+        let Some(entry) = self.entry_mut(actor) else {
+            return false;
+        };
+        entry.state.fatal_hold_until = entry.state.fatal_hold_until.max(until);
+        true
     }
 
     /// The native melee owner consumes this recorded selection instead of independently

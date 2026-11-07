@@ -742,12 +742,29 @@ fn decode_delta(
     payload: &[u8],
     fields: EntityFields,
 ) -> Result<(WorldSpatialEntitiesDelta, EntityLights), WorldSpatialError> {
+    decode_world_spatial_entities_delta_with_icons(payload, fields)
+        .map(|(delta, lights, _)| (delta, lights))
+}
+
+/// Decode negotiated spatial fields while retaining an icons-only replacement bundle.
+pub fn decode_world_spatial_entities_delta_with_icons(
+    payload: &[u8],
+    fields: EntityFields,
+) -> Result<
+    (
+        WorldSpatialEntitiesDelta,
+        EntityLights,
+        Option<Vec<crate::party_skull::PartyIcon>>,
+    ),
+    WorldSpatialError,
+> {
     if payload.len() > payload_limit(fields) {
         return Err(WorldSpatialError::LimitExceeded);
     }
     let (mut cursor, mut header) = (0, (None, None));
     let (mut enter, mut update, mut leave) = (Vec::new(), Vec::new(), Vec::new());
     let (mut entries, mut lights) = (0_usize, EntityLights::new());
+    let mut party_icons = None;
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         if decode_header_field(key, payload, &mut cursor, &mut header)? {
@@ -757,8 +774,10 @@ fn decode_delta(
             if entries != 0 || cursor == payload.len() {
                 return Err(WorldSpatialError::Malformed);
             }
-            crate::party_skull::decode_party_icons(read_bytes(payload, &mut cursor)?)
-                .map_err(|_| WorldSpatialError::Malformed)?;
+            party_icons = Some(
+                crate::party_skull::decode_party_icons(read_bytes(payload, &mut cursor)?)
+                    .map_err(|_| WorldSpatialError::Malformed)?,
+            );
             // An icons-only delta cannot mix spatial changes or repeated icon bundles.
             if cursor != payload.len() {
                 return Err(WorldSpatialError::Malformed);
@@ -795,7 +814,7 @@ fn decode_delta(
         leave,
     };
     validate_delta(&delta)?;
-    Ok((delta, lights))
+    Ok((delta, lights, party_icons))
 }
 
 /// What a client decoded from a domain-1 snapshot, by the revision its negotiation selected.

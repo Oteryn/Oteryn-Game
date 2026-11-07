@@ -134,7 +134,7 @@ fn analyser_connection_sends_empty_snapshot_and_revisioned_delta_only_when_selec
                                     .expect("chunk");
                                 for domain in decode_snapshot_body(body).expect("domains") {
                                     if domain.domain_id == 15 {
-                                        assert_eq!(domain.revision, 0);
+                                        assert_eq!(domain.revision, 1);
                                         assert!(domain.payload.is_empty());
                                         snapshots += 1;
                                     }
@@ -145,7 +145,7 @@ fn analyser_connection_sends_empty_snapshot_and_revisioned_delta_only_when_selec
                                 if delta.domain_id == 15 {
                                     assert_eq!(
                                         (delta.base_revision, delta.new_revision, delta.delta_type),
-                                        (0, 1, 1)
+                                        (1, 2, 1)
                                     );
                                     assert_eq!(
                                         wire::decode_analyser_facts(delta.payload).expect("facts"),
@@ -159,6 +159,39 @@ fn analyser_connection_sends_empty_snapshot_and_revisioned_delta_only_when_selec
                             (snapshots, deltas, authority.snapshots.get()),
                             if selected { (1, 1, 1) } else { (0, 0, 0) }
                         );
+                        if selected {
+                            let mut recovered = admitted;
+                            recovered.continuity.analyser_revision = 2;
+                            let mut domains = Vec::new();
+                            assert!(
+                                snapshot(&authority, &mut recovered, &mut domains)
+                                    .await
+                                    .is_ok(),
+                                "empty recovery snapshot"
+                            );
+                            assert_eq!(domains[0].revision, 2);
+                            authority.streams.push(
+                                actor,
+                                session,
+                                wire::AnalyserFact::Kill { race: None },
+                            );
+                            domains.clear();
+                            assert!(
+                                snapshot(&authority, &mut recovered, &mut domains)
+                                    .await
+                                    .is_ok(),
+                                "discard queued facts"
+                            );
+                            assert_eq!(domains[0].revision, 3);
+                            domains.clear();
+                            assert!(
+                                snapshot(&authority, &mut recovered, &mut domains)
+                                    .await
+                                    .is_ok(),
+                                "repeated recovery snapshot"
+                            );
+                            assert_eq!(domains[0].revision, 3);
+                        }
                     }
                 });
         })

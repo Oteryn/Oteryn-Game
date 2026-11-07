@@ -128,7 +128,7 @@ impl ChannelActorCarrier {
                     .reentry
                     .is_none_or(|(previous, _)| epoch > previous) =>
             {
-                lifecycle.control_loss = None;
+                lifecycle.clear_control_loss()?;
                 spell_combat.reentry = Some((epoch, until));
                 Ok(())
             }

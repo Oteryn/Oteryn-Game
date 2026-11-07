@@ -4692,3 +4692,95 @@ fn monster_chain_factory_receives_frozen_origin_and_exact_step_under_supplied_wo
     );
     assert_eq!(called, 2);
 }
+
+#[test]
+fn srx2_charm_native_glyph_resolver_inverts_empty_mana_and_replays() {
+    let (mut runtime, mut states, source, proposal, mut world, fence, stamp) =
+        setup_named("an_astral_glyph", 3);
+    qualify_hazard_monster(
+        &mut runtime,
+        proposal.issuer,
+        "oteryn:creature.an_astral_glyph",
+    );
+    let session = world.facts.attack.session;
+    runtime
+        .bind_attacker_lease(
+            proposal.target,
+            session,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(&test_uuid(0x72)).expect("character"),
+                1,
+            )
+            .expect("lease"),
+        )
+        .expect("bind actual charm principal");
+    states
+        .apply_attack_mana_drain(
+            &mut runtime,
+            proposal.target,
+            session,
+            90,
+            "srx2:glyph-empty",
+            SemanticTimeMicros::from_micros(0),
+        )
+        .expect("empty native MP");
+    let mut owner = DamageSpellOwner::default();
+    let hit = states
+        .with_source_charm_test(
+            &mut runtime,
+            proposal.issuer,
+            proposal.target,
+            session,
+            "void_inversion",
+            |runtime, vitals| {
+                owner.execute(
+                    runtime,
+                    &fence,
+                    stamp,
+                    vitals,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(2_000_000),
+                )
+            },
+        )
+        .expect("native glyph resolver");
+    let mana = hit.targets[0]
+        .1
+        .as_ref()
+        .expect("target")
+        .mana
+        .expect("MP receipt");
+    assert_eq!((mana.mana_before, mana.mana_after), (0, 90));
+    let replay = states
+        .with_source_charm_test(
+            &mut runtime,
+            proposal.issuer,
+            proposal.target,
+            session,
+            "void_inversion",
+            |runtime, vitals| {
+                owner.execute(
+                    runtime,
+                    &fence,
+                    stamp,
+                    vitals,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(9_000_000),
+                )
+            },
+        )
+        .expect("native glyph replay");
+    assert_eq!(replay, hit);
+    let (_, vitals) = crate::gameplay_transport::actor_spell::observe_vitals(
+        &runtime,
+        &states,
+        proposal.target,
+        session,
+    )
+    .expect("native client vitals");
+    assert_eq!((vitals.health, vitals.mana), (185, 90));
+}

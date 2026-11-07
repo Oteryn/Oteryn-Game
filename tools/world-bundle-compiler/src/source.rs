@@ -188,6 +188,7 @@ fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Proj
     }
     add_npc_families(root, &mut families)?;
     families.subareas = compile::subareas::Source::load(root)?;
+    families.layers = compile::layers::Source::load(root)?;
     Ok(Project {
         index,
         regions,

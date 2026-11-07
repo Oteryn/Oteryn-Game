@@ -529,6 +529,13 @@ fn exercise_with_dropped_remote(
             owner.quest_catalogue = Some(catalogue);
         }
         if dropped_remote {
+            let version: String = sqlx::query_scalar("SHOW server_version")
+                .fetch_one(&h.pool)
+                .await?;
+            eprintln!(
+                "POSTGRES_CASE_STARTED dropped_remote server_version={version} duration={:?}",
+                started.elapsed()
+            );
             let remote = callback.remote_teleport.as_ref().ok_or("remote")?;
             super::input_item(
                 &owner,

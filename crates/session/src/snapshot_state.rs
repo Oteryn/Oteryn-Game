@@ -53,7 +53,7 @@ impl SnapshotState {
                     world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
                     world_spatial_entities::SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2,
                 ) if entities_selected => {
-                    let (snapshot, _) =
+                    let (snapshot, lights) =
                         world_spatial_entities::decode_world_spatial_entities_snapshot_with_fields(
                             domain.payload,
                             world_spatial_entities::EntityFields::selected(selected_capabilities),
@@ -62,7 +62,7 @@ impl SnapshotState {
                         content_generation: snapshot.content_generation,
                         actor_position: snapshot.actor_position,
                     });
-                    state.entities = Some(WorldEntities::from_snapshot(&snapshot));
+                    state.entities = Some(WorldEntities::from_snapshot(&snapshot, lights));
                     state.spatial_revision = domain.revision;
                 }
                 (

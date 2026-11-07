@@ -33,6 +33,7 @@ macro_rules! test_support_pub {
 pub mod activity_transfer;
 mod actor_memos;
 mod arena_match;
+mod tibiadrome;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
@@ -113,6 +114,7 @@ mod owner_views;
 mod party_reward_occurrence_tests;
 
 mod player_control;
+pub use player_control::RuntimeSessionAbsence;
 
 mod positions;
 

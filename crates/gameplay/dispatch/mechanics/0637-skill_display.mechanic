@@ -1,0 +1,8 @@
+name=skill_display
+commands=640
+transport=skill_display
+composed=skill_display
+authority=skill_display
+offer=636,skill_display::offered,skill_display_available
+[route]
+routing::skill_display::route(authority, &session.admitted, command).await

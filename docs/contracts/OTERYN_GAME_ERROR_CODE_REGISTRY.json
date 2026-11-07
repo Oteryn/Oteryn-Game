@@ -410,6 +410,15 @@
       "hint": "NotDelivered unavailable: Platform answered 503 or another status, or the transport failed.",
       "status": "ACTIVE"
     },
+    {"code":5008,"name":"CHAR_CMD_BAZAAR_STALE_REVISION","category":"CONFLICT","progression":"TERMINAL","owner":"PLAT3-CONTRACTS","contract":"oteryn-game-bazaar-authority-v1","hint":"Bazaar expected custody or eligibility revision is stale.","status":"ACTIVE"},
+    {"code":5009,"name":"CHAR_CMD_BAZAAR_OBLIGATION","category":"CONFLICT","progression":"TERMINAL","owner":"PLAT3-CONTRACTS","contract":"oteryn-game-bazaar-authority-v1","hint":"Resolve the authoritative guild, market, housing or cooldown obligation before a new attempt.","status":"ACTIVE"},
+    {"code":5010,"name":"CHAR_CMD_BAZAAR_ITEM_NOT_TRANSFERABLE","category":"INVALID_INPUT","progression":"TERMINAL","owner":"PLAT3-CONTRACTS","contract":"oteryn-game-bazaar-authority-v1","hint":"The instance, attributes or quantity cannot be conserved by this Bazaar profile.","status":"ACTIVE"},
+    {"code":5011,"name":"CHAR_CMD_BAZAAR_DESTINATION_UNAVAILABLE","category":"CONFLICT","progression":"TERMINAL","owner":"PLAT3-CONTRACTS","contract":"oteryn-game-bazaar-authority-v1","hint":"The exact durable destination cannot receive; escrow remains unchanged.","status":"ACTIVE"},
+    {"code":5012,"name":"CHAR_CMD_BAZAAR_HOLD_CONFLICT","category":"CONFLICT","progression":"TERMINAL","owner":"PLAT3-CONTRACTS","contract":"oteryn-game-bazaar-authority-v1","hint":"Gold availability, seller headroom or hold disposition forbids this operation.","status":"ACTIVE"},
+    {"code":5013,"name":"CHAR_CMD_BAZAAR_PAYOUT_INVALID","category":"INVALID_INPUT","progression":"TERMINAL","owner":"PLAT3-CONTRACTS","contract":"oteryn-game-bazaar-authority-v1","hint":"The delivery binding or exact payout arithmetic is invalid; no gold effect.","status":"ACTIVE"},
+    {"code":5014,"name":"CHAR_CMD_ACCOUNT_CLOSE_STALE_GENERATION","category":"STALE_GENERATION","progression":"TERMINAL","owner":"PLAT3-CONTRACTS","contract":"oteryn-game-account-deletion-finalization-v1","hint":"Reconcile the account lifecycle and Game recovery generation before issuing a new close attempt.","status":"ACTIVE"},
+    {"code":5015,"name":"CHAR_CMD_ACCOUNT_CLOSE_OBLIGATION","category":"CONFLICT","progression":"TERMINAL","owner":"PLAT3-CONTRACTS","contract":"oteryn-game-account-deletion-finalization-v1","hint":"An owning domain cannot safely detach or finalize this account.","status":"ACTIVE"},
+    {"code":5016,"name":"CHAR_CMD_ACCOUNT_CLOSE_RESOLUTION_CONFLICT","category":"CONFLICT","progression":"TERMINAL","owner":"PLAT3-CONTRACTS","contract":"oteryn-game-account-deletion-finalization-v1","hint":"A different terminal cancellation or finalization already won for this termination.","status":"ACTIVE"},
     {
       "code": 6001,
       "name": "OPS_USAGE",

@@ -152,6 +152,7 @@ pub(super) struct Mailbox {
     pub(super) highscores_shutdown: bool,
     pub(super) depot_search: oteryn_client_ui::depot_search::DepotSearchPanel,
     pub(super) hotkey_equip: oteryn_client_ui::hotkey_equip::HotkeyEquipPanel,
+    pub(super) potion_durations: oteryn_client_ui::potion_durations::PotionDurationsPanel,
     pub(super) item_forge: oteryn_client_ui::item_forge::ItemForgePanel,
     pub(super) store: oteryn_client_ui::store::StorePanel,
     pub(super) vip_presence: oteryn_client_ui::vip_presence::VipPresencePanel,
@@ -162,6 +163,13 @@ pub(super) struct Mailbox {
     pub(super) wheel: oteryn_client_ui::wheel_allocation::WheelPanel,
     pub(super) wheel_shutdown: bool,
     pub(super) exiva: oteryn_client_ui::exiva_settings::ExivaPanel,
+    pub(super) mechanics_status: oteryn_client_ui::mechanics_status::MechanicsStatusPanel,
+    pub(super) condition_status: oteryn_client_ui::condition_status::ConditionStatusPanel,
+    pub(super) rest_status: oteryn_client_ui::rest_status::RestStatusPanel,
+    pub(super) battle_instinct_status:
+        oteryn_client_ui::battle_instinct_status::BattleInstinctStatusPanel,
+    pub(super) skill_progress: oteryn_client_ui::skill_progress::SkillProgressPanel,
+    pub(super) party_effects: oteryn_client_ui::party_effects::PartyEffectsPanel,
     pub(super) loyalty_skills: oteryn_client_ui::loyalty_skills::LoyaltySkillsPanel,
     pub(super) quest: oteryn_client_ui::quest_log::QuestPanel,
     pub(super) quest_pending: bool,
@@ -276,6 +284,7 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         super::feature_0060_player_trade::protocol::reduce(&mut mailbox.player_trade, &events);
         super::feature_local_spell_action_bar::protocol::vitals_events(&mut mailbox, &events);
+        mailbox.death_protection_events(&events);
         mailbox.dialogue_events(&events);
         mailbox.npc_shop_events(&events);
         for event in &events {
@@ -293,6 +302,10 @@ impl Outbox {
             }
         }
         super::feature_0010_analyser::protocol::reduce(&mut mailbox, &events);
+        super::feature_0134_party_skull::protocol::reduce(
+            &mut mailbox.properties.party_skull,
+            &events,
+        );
         super::feature_0287_actor_spell_catalog::protocol::reduce(&mut mailbox, &events);
         mailbox.coalesce_events(events);
         mailbox.check_server_messages();
@@ -352,6 +365,7 @@ impl Outbox {
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);
+        mailbox.arena.end();
         mailbox.discovery.end();
         mailbox.properties.end();
         mailbox.analyser = Default::default();
@@ -373,8 +387,17 @@ impl Outbox {
         mailbox.npc_shop = Default::default();
         mailbox.dialogue = Default::default();
         mailbox.dialogue_shutdown = true;
+        mailbox.chat_public.speech_selected = false;
+        mailbox.chat_public.pending = false;
         mailbox.animus = Default::default();
         mailbox.loyalty_skills = Default::default();
+        mailbox.condition_status = Default::default();
+        mailbox.mechanics_status = Default::default();
+        mailbox.rest_status = Default::default();
+        mailbox.battle_instinct_status = Default::default();
+        mailbox.skill_progress = Default::default();
+        mailbox.party_effects = Default::default();
+        mailbox.potion_durations = Default::default();
         mailbox.ended.get_or_insert(PlayEvent::Ended(class));
     }
 
@@ -382,6 +405,7 @@ impl Outbox {
         self.inventory_end();
         self.container_end();
         let mut mailbox = lock(&self.0);
+        mailbox.arena.end();
         mailbox.properties.end();
         mailbox.analyser = Default::default();
         mailbox.spell_catalog = Default::default();
@@ -402,8 +426,17 @@ impl Outbox {
         mailbox.npc_shop = Default::default();
         mailbox.dialogue = Default::default();
         mailbox.dialogue_shutdown = true;
+        mailbox.chat_public.speech_selected = false;
+        mailbox.chat_public.pending = false;
         mailbox.animus = Default::default();
         mailbox.loyalty_skills = Default::default();
+        mailbox.condition_status = Default::default();
+        mailbox.mechanics_status = Default::default();
+        mailbox.rest_status = Default::default();
+        mailbox.battle_instinct_status = Default::default();
+        mailbox.skill_progress = Default::default();
+        mailbox.party_effects = Default::default();
+        mailbox.potion_durations = Default::default();
         mailbox.ended.get_or_insert(PlayEvent::LoggedOut);
     }
 }

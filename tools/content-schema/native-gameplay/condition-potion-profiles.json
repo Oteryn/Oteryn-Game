@@ -10,7 +10,7 @@
   "canonical_inputs": [
     {
       "path": "content/items/definitions/items-21000-21499.json",
-      "sha256": "1c958bdab7716c91d3d6f4c0f77a8621a4c3178b05a949d7a532aca27705bbd3"
+      "sha256": "09d3b5409a8a5098cedaf47777a2d050e3faeee4f200139e5ae8a9da5d4a91d8"
     },
     {
       "path": "content/items/definitions/items-27000-27499.json",

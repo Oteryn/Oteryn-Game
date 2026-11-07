@@ -44,7 +44,11 @@ def digest(root, relative):
 
 def claim_catalogue(root):
     index = read(root, CLAIM_INDEX)
-    claims = [row['definition'] for shard in index['shards'] for row in read(root, shard)['records']]
+    # Native authored leaves are already canonical; they are not donor pilot
+    # identities and must not manufacture SOURCE joins or close source holds.
+    claims = [row['definition'] for shard in index['shards'] for row in read(root, shard)['records']
+              if row['definition'].get('definition_profile') not in
+              {'native_source_leaf_v1', 'selected_native_leaf_v1'}]
     # completion242 is a pinned SOURCE qualification, not the live MINT
     # admission. QUEST-FINISH promotes these exact full-charge Item identities
     # through the existing timed owner; retain their historical SOURCE holds,
@@ -55,12 +59,30 @@ def claim_catalogue(root):
     charge_leaves = {row['pilot_key'] for row in charge_source['rewards']
                      if row['source_count_argument'] == row['source_default_charges']}
     for claim in claims:
-        if (claim['provenance']['pilot_key'] in charge_leaves and claim['readiness'] == 'ready'):
+        if (claim.get('provenance', {}).get('pilot_key') in charge_leaves and claim['readiness'] == 'ready'):
             claim['readiness'] = 'waiting_item_semantics'
         claim['_source_baseline_item_hold'] = any(
             binding.get('canonical_item', {}).get('key') in full_charge_items
             for binding in claim.get('source_variant', {}).get('item_bindings', [])
             if binding.get('canonical_item'))
+        if claim['identity']['key'] in ('oteryn:reward-claim.kv.madmageroom3',
+                                        'oteryn:reward-claim.kv.powerring2'):
+            # W15b and ITEMHOLD-Q lower normalized full-charge amulets through the
+            # live RewardClaim owner. Keep completion242's historical SOURCE
+            # witness independent of that native admission, just as the variant
+            # claims retain their SOURCE holds beside native_contents.
+            if claim['readiness'] == 'ready':
+                claim['readiness'] = 'waiting_item_semantics'
+        # completion242 records the historical SOURCE frame, independently of
+        # ITEMHOLD-Q's live Item/charge admissions. Keep canonical holds and native
+        # contents intact; only the SOURCE compiler consumes this private view.
+        historical = {
+            'oteryn:reward-claim.kv.ornamentedshield': ['item', 'source'],
+            'oteryn:reward-claim.kv.present_box': ['item'],
+            'oteryn:reward-claim.kv.triangletower': ['item'],
+        }.get(claim['identity']['key'])
+        if historical is not None:
+            claim['_source_hold_categories'] = historical
     return claims
 
 
@@ -123,6 +145,7 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
                 categories = {hold['category'] for hold in claim['data_holds']}
                 if claim.get('_source_baseline_item_hold'):
                     categories.add('item')
+                categories.update(claim.get('_source_hold_categories', []))
                 for category in sorted(categories):
                     code = {'source': 'claim_source_data_missing', 'item': 'claim_item_semantics_missing'}[category]
                     issues.append({'code': code, 'source_key': ref['key']})

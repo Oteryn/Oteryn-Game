@@ -1,0 +1,20 @@
+{
+  "owner_contract": "OTERYN_GAME_WORLD_EVENT_OUTCOMES_AND_GUILD_SEASON_V1.md",
+  "configurable_range": {
+    "minimum": 4096,
+    "maximum": 4096
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounded T94 authority work; overflow refuses without truncating authority.",
+  "client_visible": false,
+  "boundary_tests": [
+    "t94_guild_season_real_kill_dispatch_membership_cut"
+  ],
+  "id": "T94-CORRECTION-BYTES",
+  "resource": "T94-CORRECTION-BYTES",
+  "unit": "bytes",
+  "hard_maximum": 4096,
+  "consumers": [
+    "crates/gameplay/durability/src/durability/world_event_outcomes/season.rs"
+  ]
+}

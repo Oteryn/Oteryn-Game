@@ -85,6 +85,17 @@ impl GroundActionContext {
         };
         Ok(Self { source, house })
     }
+    pub(super) async fn dispenser_row(&self, tx: &mut crate::durability::item_mint_audit::Type2Transaction<'_>, fence: CurrentCharacterItemFence, item: [u8;16]) -> Result<Option<sqlx::postgres::PgRow>, DurabilityError> {
+        if item != self.source.item || self.source.scope != fence.runtime_scope
+            || self.source.generation != fence.scope_ownership_generation.get() { return Ok(None); }
+        sqlx::query("SELECT item_instance_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid FOR UPDATE")
+            .bind(item.as_slice()).fetch_optional(&mut ***tx).await?;
+        let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))")
+            .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).execute(&mut ***tx).await?;
+        sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,decode(repeat('00',16),'hex') AS parent,g.stack_ordinal::text AS ordinal,3::integer AS source_kind,to_jsonb(g) AS ground_location FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 AND i.quantity=1 AND to_jsonb(i)=$2 AND to_jsonb(g)=$3 FOR UPDATE OF i")
+            .bind(item.as_slice()).bind(&self.source.before).bind(&self.source.location).fetch_optional(&mut ***tx).await.map_err(Into::into)
+    }
     pub fn in_house(&self) -> bool { self.house.is_some() }
     pub fn effect_position(&self) -> GroundEffect {
         GroundEffect { x: self.source.position.x, y: self.source.position.y, floor: self.source.position.floor }
@@ -136,6 +147,17 @@ impl DurabilityRoot {
     }
 
     #[allow(clippy::too_many_arguments)]
+    pub async fn consume_dispenser_on_ground<C: ItemLoopContent>(
+        &self, permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>, node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence, request: ConsumeTransformRequest,
+        native: &NativeGameplayState, content: &C, target: &GroundActionContext,
+    ) -> Result<Option<ConsumeTransformResult>, DurabilityError> {
+        self.consume_transform_inner(permit, recovery, node, fence, request, native, content, false, None,
+            ActionContext::DispenserTarget(target)).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
     pub async fn consume_transform_on_ground<C: ItemLoopContent>(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
@@ -143,7 +165,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence, request: ConsumeTransformRequest,
         native: &NativeGameplayState, content: &C, source: &GroundActionContext,
     ) -> Result<Option<ConsumeTransformResult>, DurabilityError> {
-        self.consume_transform_inner(permit, recovery, node, fence, request, native, content, false, None, Some(source)).await
+        self.consume_transform_inner(permit, recovery, node, fence, request, native, content, false, None, ActionContext::Ground(source)).await
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -156,12 +178,13 @@ impl DurabilityRoot {
         premium: Option<&dyn crate::durability::consume_transform_cosmetics::ItemCosmeticPremium>,
     ) -> Result<Option<ConsumeTransformResult>, DurabilityError> {
         self.consume_transform_inner(permit, recovery, node, fence, request, native, content,
-            false, premium, Some(source)).await
+            false, premium, ActionContext::Ground(source)).await
     }
 }
 
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn write<C: ItemLoopContent>(
+    permit: &crate::durability::spell_owner_commit::SpellLanePermit,
     tx: &mut crate::durability::item_mint_audit::Type2Transaction<'_>,
     fence: CurrentCharacterItemFence,
     request: &ConsumeTransformRequest,
@@ -171,6 +194,7 @@ pub(super) async fn write<C: ItemLoopContent>(
     premium: Option<&dyn crate::durability::consume_transform_cosmetics::ItemCosmeticPremium>,
     ground_fences: &ActionGroundFences<'_>,
 ) -> Result<ConsumeTransformResult, DurabilityError> {
+    permit.check_scope(fence.runtime_scope)?;
     let source = &context.source;
     if source.item != request.source || source.scope != fence.runtime_scope
         || source.generation != fence.scope_ownership_generation.get()
@@ -261,7 +285,7 @@ pub(super) async fn write<C: ItemLoopContent>(
         // original bounded wire intent while the primary Ground receipt remains unary.
         committed_request.target = None;
     }
-    persist_action(tx, fence, &committed_request, native, &plan, &source.before, None, None, 3,
+    persist_action(Some(ground_fences.permit), tx, fence, &committed_request, native, &plan, &source.before, None, None, 3,
         &source_ordinal, 20, &outputs, &location, None).await
 }
 
@@ -361,7 +385,7 @@ async fn write_reward<C: ItemLoopContent>(
     }
     let source_ordinal = source.location.get("stack_ordinal").and_then(Value::as_i64)
         .filter(|ordinal| *ordinal > 0).ok_or(DurabilityError::InvalidStoredState)?.to_string();
-    persist_action(tx, fence, request, native, &plan, &source.before, None, parent.as_deref(), 3,
+    persist_action(Some(ground_fences.permit), tx, fence, request, native, &plan, &source.before, None, parent.as_deref(), 3,
         &source_ordinal, capacity, &outputs, &source.location, ground.then_some((ground_fences, context))).await
 }
 

@@ -55,6 +55,10 @@ def capture(root=ROOT):
     for item, name, weight, quest, path in SELECTIONS:
         key = f'oteryn:item.tibia.i{item}'
         definition, canonical_path, canonical_sha = definitions[key]
+        # A source-qualified canonical admission supersedes this fallback.
+        # Its ordinary native producer retains the exact binding and facts.
+        if definition.get('materializable') is True:
+            continue
         obj = objects[item]
         flags = obj['flags']
         if (obj.get('name', '').lower() != name or flags.get('flags.take') is not True

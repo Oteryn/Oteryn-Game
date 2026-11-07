@@ -23,7 +23,6 @@
     "Document": 1609,
     "Effect": 5797,
     "Encounter": 108,
-    "Encounter.Raid": 239,
     "Formula": 6126,
     "Item": 34111,
     "Loot": 1290,
@@ -234,7 +233,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 3719,
+          "record_count": 3715,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -242,7 +241,20 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "478a3a0ee4f5f078cdba2ca83f485961ec3d7e8b97ad76c2b366194f5cd48078"
+          "sha256": "cf2002187cb4dcfed76e541e188de9188b8fa0ed3116202f66b411030de68d8e"
+        },
+        {
+          "creates_canonical_identities": false,
+          "path": "content/items/definitions/starting-loadout-profiles.json",
+          "record_count": 10,
+          "representation": "native_profile_overlay",
+          "runtime_activation": false,
+          "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
+          "schema_contract": {
+            "kind": "rust_serde",
+            "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
+          },
+          "sha256": "4d2bf471ff0992dcc19ffd11e6ad42f691421a4521158dd9f7897473c39f566a"
         }
       ],
       "Presentation": [

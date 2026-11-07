@@ -269,6 +269,24 @@ pub trait PlayerLethalVitals {
         None
     }
 
+    /// Retain the independently admitted creature source for race-specific mana inversion.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source and current target/session remain independent owner inputs"
+    )]
+    fn apply_source_mana_drain(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        _source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<PlayerManaDrainReceipt> {
+        self.apply_attack_mana_drain(runtime, target, session, magnitude, occurrence, now)
+    }
+
     /// An admitted secondary-only effect, with no primary HP receipt or synthetic hit.
     /// Owners without a condition store explicitly refuse.
     // Keep apply_attack_conditions ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
@@ -326,6 +344,25 @@ pub trait PlayerLethalVitals {
         } else {
             None
         }
+    }
+
+    /// Preserve the admitted creature identity for the lethal hit's Bless selection.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source identity is separate from target/session authority"
+    )]
+    fn apply_source_typed_attack_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        _source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        kind: PlayerHitKind,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<PlayerDamageReceipt> {
+        self.apply_typed_attack_damage(runtime, target, session, magnitude, kind, occurrence, now)
     }
 
     /// Element-aware forwarding through the same damage/receipt owner.

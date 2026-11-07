@@ -2,7 +2,7 @@
   "counts": {
     "dispatch_pg_qualified": 172,
     "not_playable": 2,
-    "supported_unqualified": 162
+    "supported_unqualified": 163
   },
   "qualification": "Only dispatch_pg_qualified has a real source-placement PostgreSQL USE test. That status certifies reward granting, not every later Item consumer. Other supported shapes need per-World binding, Item admission and qualification. No deployed World or full-quest completion is certified.",
   "quests": [
@@ -5399,13 +5399,13 @@
               "sources": [
                 {
                   "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1470",
-                  "reward_matches_current_source": true,
+                  "reward_matches_current_source": false,
                   "server": "canary",
                   "unique_id": 6151
                 },
                 {
                   "citation": "crystal:data-global/startup/tables/chest.lua:1755",
-                  "reward_matches_current_source": true,
+                  "reward_matches_current_source": false,
                   "server": "crystalserver",
                   "unique_id": 6151
                 }
@@ -10421,6 +10421,33 @@
         }
       ],
       "quest": "crystalserver:quest/targuna_quest"
+    },
+    {
+      "chests": [
+        {
+          "claim": "oteryn:reward-claim.source.formorgar_hoist_skeleton",
+          "placements": [
+            {
+              "position": {
+                "x": 32211,
+                "y": 31273,
+                "z": 10
+              },
+              "sources": [
+                {
+                  "missing_in_current_source": true,
+                  "server": "crystalserver",
+                  "unique_id": 20003
+                }
+              ]
+            }
+          ],
+          "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+          "reason": "requires exact World binding and native Item admission",
+          "status": "supported_unqualified"
+        }
+      ],
+      "quest": "oteryn:quest.formogar_mine_hoist"
     },
     {
       "chests": [

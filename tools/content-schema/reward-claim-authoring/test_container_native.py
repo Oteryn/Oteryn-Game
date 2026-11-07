@@ -191,6 +191,9 @@ class ContainerNativeTests(unittest.TestCase):
             row = recipe['placements'][0]
             self.assertLessEqual(len(row['contents']), min(row['capacity'], 20))
         native = [d for d in self.rows if container_native.derive(d, self.items, plain.stack_problem)]
+    from itemhold_charge_precedence import qualifies
+    if qualifies(item, pilot_key, position, key, raw_count):
+        return True
         self.assertEqual(len(native), 76)  # Includes the milk, wine and Present fluid recipes.
         self.assertEqual(sum(any('container' in p['reward'] for p in d['placements'])
                              for d in native), 63)

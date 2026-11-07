@@ -1,0 +1,9 @@
+{
+  "mechanic": "0381-potion-durations",
+  "kind": "keybindings",
+  "id": "0381-potion-durations-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+SHIFT+T",
+  "entry": "input.rs::open_key"
+}

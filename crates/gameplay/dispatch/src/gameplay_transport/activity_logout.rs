@@ -31,6 +31,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.logout_activity_intent(admitted, None).await
     }
 
+    /// Account closure has its own durable authority and no inactivity deadline.
+    /// Activity departure and the exact actor/session release checks still apply.
+    pub(super) async fn logout_activity_closure(&self, admitted: AdmittedSession) -> LogoutReply {
+        self.logout_activity_intent(admitted, None).await
+    }
+
     async fn logout_activity_intent(
         &self,
         admitted: AdmittedSession,

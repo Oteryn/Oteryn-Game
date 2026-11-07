@@ -1,4 +1,4 @@
-//! C26: production task, mailbox, view and atlas light projection.
+//! C26: production task, mailbox, view and scene ambient light projection.
 use oteryn_client::play::{PlayView, play_channel, run_session};
 use oteryn_renderer::TileCoord;
 use oteryn_session::{AppliedDelta, SessionEvent, world_clock::WorldClock};
@@ -39,7 +39,7 @@ fn native_clock_update_reaches_status_and_scene()
                         outbox,
                     ));
                     let mut view = PlayView::new(TileCoord::new(0, 0), 0, &[])?;
-                    let original = view.scene().atlas().clone();
+                    let original = view.scene().sprites().lighting.ambient;
                     for (revision, minute) in [(1, 1439), (2, 0)] {
                         send.send(SessionEvent::WorldClock(AppliedDelta {
                             server_sequence: revision,
@@ -64,7 +64,7 @@ fn native_clock_update_reaches_status_and_scene()
                         })
                         .await??;
                         assert!(view.hud_status().contains(expected));
-                        assert_ne!(view.scene().atlas(), &original);
+                        assert_ne!(view.scene().sprites().lighting.ambient, original);
                     }
                     task.abort();
                     Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())

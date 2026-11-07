@@ -1,0 +1,7 @@
+{
+  "mechanic": "0277-rest-status",
+  "kind": "panels",
+  "id": "0277-rest-status-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

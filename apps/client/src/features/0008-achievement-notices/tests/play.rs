@@ -94,7 +94,8 @@ fn achievement_notices_play_input_live_push_reopen_and_session_cleanup() -> Resu
                     assert!(link.achievement_notices_input(std::slice::from_ref(&key)));
                     if !selected {
                         assert!(
-                            notices_panel_text(&link.achievement_notices_panel()).contains("unavailable")
+                            notices_panel_text(&link.achievement_notices_panel())
+                                .contains("unavailable")
                         );
                         link.request_logout();
                         task.await?;
@@ -105,7 +106,8 @@ fn achievement_notices_play_input_live_push_reopen_and_session_cleanup() -> Resu
                         continue;
                     }
                     assert!(
-                        notices_panel_text(&link.achievement_notices_panel()).contains("Achievements: 0")
+                        notices_panel_text(&link.achievement_notices_panel())
+                            .contains("Achievements: 0")
                     );
                     for n in 1..=2 {
                         sender.send(vec![SessionEvent::AchievementEarned(AppliedDelta {
@@ -148,4 +150,70 @@ fn achievement_notices_play_input_live_push_reopen_and_session_cleanup() -> Resu
         })?
         .join()
         .map_err(|_| "achievement scenario panicked")?
+}
+
+#[test]
+fn nx6_wayfarer_server_payload_reaches_native_notice_panel() -> Result<(), Error> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), Error> {
+            oteryn_client_runtime::ClientRuntime::new()?.block_on(async {
+                // Domain 13/type 1 payload for the actual catalogue key, name and
+                // three points. Decode the server bytes before entering play.
+                let earned = oteryn_session::achievement_notices::AchievementEarned {
+                    key: "oteryn:achievement/wayfarer".into(),
+                    name: "Wayfarer".into(),
+                    watermark: AchievementWatermark {
+                        fact_count: 1,
+                        total_points: 3,
+                    },
+                };
+                let payload =
+                    b"\x0a\x1boteryn:achievement/wayfarer\x12\x08Wayfarer\x18\x01\x20\x03";
+                let decoded =
+                    oteryn_session::achievement_notices::decode_achievement_earned(payload)
+                        .map_err(|e| format!("{e:?}"))?;
+                let (sender, incoming) = unbounded_channel();
+                let (link, commands, outbox) = play_channel();
+                let task = tokio::spawn(run_session(
+                    Peer {
+                        selected: true,
+                        incoming,
+                        queued: vec![],
+                    },
+                    commands,
+                    outbox,
+                ));
+                sender.send(vec![])?;
+                ready(&link, |p| p.watermark.is_some()).await?;
+                let key = NormalizedInputEvent::Key {
+                    code: KeyCode::new(16)?,
+                    state: ButtonState::Pressed,
+                    modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
+                    repeat: false,
+                };
+                assert!(link.achievement_notices_input(&[key]));
+                sender.send(vec![SessionEvent::AchievementEarned(AppliedDelta {
+                    server_sequence: 41,
+                    base_revision: 0,
+                    new_revision: 1,
+                    value: decoded,
+                })])?;
+                let panel = ready(&link, |p| p.recent.len() == 1).await?;
+                assert!(panel.open);
+                assert_eq!(panel.recent.front(), Some(&earned));
+                let text = notices_panel_text(&panel);
+                assert!(text.contains("Wayfarer"));
+                assert!(text.contains("Total points: 3"));
+                link.request_logout();
+                task.await?;
+                assert_eq!(
+                    link.achievement_notices_panel(),
+                    AchievementNoticesPanel::default()
+                );
+                Ok::<(), Error>(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "Wayfarer play thread panicked")?
 }
