@@ -1,9 +1,9 @@
 {
   "state": "Compiling WIP",
-  "postgres_duration_seconds": 106.49945674,
+  "postgres_duration_seconds": 109.560418934,
   "postgres_marker": "POSTGRES_CASE_FINISHED questpc8_venore_native_daily_circuit",
-  "log_sha256": "27449c3e7be342d9cba1c4c86f321c2e784cb7dc941b5ab57a30b68ebb54541b",
-  "exact_red_point": "The first construction-job request correctly rejects missing held prerequisites, but the new test accidentally used the all-accepted wire helper. Use the existing explicit talk_refused helper for negative commands, preserve those rejection assertions, then reach the missing first machine callback.",
+  "log_sha256": "e3b045c1913b9d31d1e29ca9c2946b16b352cb5e152ece1a54e42d8e71db1d55",
+  "exact_red_point": "Native missing-tool refusals and initial Norman supply grant pass. At stage1, the native second machine33016,32025,z6 ordinal2 has no authored binding and returns NothingToUse; the required guarded out-of-order result is Rejected. Preserve this assertion and mount the nine exact selectors.",
   "native_walkable_chamber_cells": [
     [
       33008,
@@ -39,5 +39,6 @@
     ]
   ],
   "qualified_l7": 19,
-  "remaining_l7": 4
+  "remaining_l7": 4,
+  "next_slice": "Complete first native circuit, then add reusable occurrence-bound MINT for recurring report/restart rewards before qualification."
 }

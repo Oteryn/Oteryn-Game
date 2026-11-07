@@ -1,3 +1,24 @@
+# Actual Venore binding RED109.560418934s — mount the circuit now
+
+Correct explicit negative NPC wire helpers pass: Norman refuses missing
+rope/shovel, then grants all three supplies through the real reward owner.
+The next native machine33016,32025,z6 ordinal2 returns NothingToUse because
+its authored binding is absent; the test correctly requires guarded Rejected
+for an out-of-order machine. Mount /tmp/questpc8-author-venore-circuit.py and
+the five corym guardians, preserve this assertion and run the native circuit.
+
+Use known walkable guardian cells33016,32147;33017,32147;33017,32148;
+33013,32130;33012,32130,z8. Fixture player arrival33019,32146,z8 is also
+source-verified walkable. Source geometry is not fabricated.
+
+Daily recurrence also needs a generic reward fix: existing MINT claims are
+once per Character+claim key. Reuse shared game_quest_reward_mint_claim_key
+with an explicit occurrence option, fenced same-transaction changed-state
+receipt and original unsigned command nonce. Extend in1303, leaving shared
+0999-1006 byte-identical. Prove nonce separation and no-op/source refusals;
+do not qualify Venore after only one successful circuit.19of23remain
+QUALIFIED; four remain. Keep pushing at least every15minutes; do not end.
+
 # Full native Venore test compiles; explicit refusal helper needs correction
 
 Actual PG106.49945674s reached the native Norman programme. The initial

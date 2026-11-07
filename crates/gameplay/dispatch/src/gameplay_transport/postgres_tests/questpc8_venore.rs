@@ -99,28 +99,14 @@ pub(super) async fn exercise(
         .collect::<Vec<_>>();
     eprintln!("VENORE_NATIVE_CHAMBER_WALKABLE {chamber:?}");
     let mut command = 1;
-    say(
-        owner,
-        admitted,
-        norman,
-        &mut command,
-        &["hi", "construction jobs"],
-    )
-    .await?;
+    say_refused(owner, admitted, norman, &mut command, "construction jobs").await?;
     assert_eq!(
         progress(h, "stage").await?,
         -1,
         "held rope and shovel required"
     );
     carry(owner, admitted, 3003, 710).await?;
-    say(
-        owner,
-        admitted,
-        norman,
-        &mut command,
-        &["hi", "construction jobs"],
-    )
-    .await?;
+    say_refused(owner, admitted, norman, &mut command, "construction jobs").await?;
     assert_eq!(progress(h, "stage").await?, -1, "shovel still required");
     carry(owner, admitted, 3457, 711).await?;
     say(
@@ -281,14 +267,8 @@ pub(super) async fn exercise(
         10,
         "1000gold in native platinum denomination"
     );
-    say(
-        owner,
-        admitted,
-        norman,
-        &mut command,
-        &["hi", "construction report", "construction jobs"],
-    )
-    .await?;
+    say_refused(owner, admitted, norman, &mut command, "construction report").await?;
+    say_refused(owner, admitted, norman, &mut command, "construction jobs").await?;
     assert_eq!(
         progress(h, "stage").await?,
         13,
@@ -302,14 +282,7 @@ pub(super) async fn exercise(
         .map_err(|_| "quest cache")?
         .remove(&admitted.game_session_id);
     owner.admit_quest_session(admitted).await;
-    say(
-        owner,
-        admitted,
-        norman,
-        &mut command,
-        &["hi", "construction jobs"],
-    )
-    .await?;
+    say_refused(owner, admitted, norman, &mut command, "construction jobs").await?;
     assert_eq!(
         progress(h, "stage").await?,
         13,
@@ -422,6 +395,26 @@ async fn carry(
     .await
 }
 
+async fn say_refused(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    command: &mut u64,
+    text: &str,
+) -> TestResult {
+    refresh(owner, admitted).await;
+    let confirmation = command.checked_add(1).ok_or("command")?;
+    super::grizzly_npc::wire::talk_refused(
+        owner,
+        admitted,
+        npc,
+        &[(*command, "hi"), (confirmation, text)],
+    )
+    .await?;
+    *command = confirmation.checked_add(1).ok_or("command")?;
+    Ok(())
+}
+
 async fn say(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -456,9 +449,6 @@ async fn refresh(owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &Admitted
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
 }
-
-/// Fixture travel between genuine objective areas uses the existing sealed teleport
-/// proof, as classic_quests does; it never seeds or advances any quest track.
 
 async fn install_npcs(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
