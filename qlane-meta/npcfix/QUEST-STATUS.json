@@ -3184,5 +3184,17 @@
     },
     "scope": "Selective code/schema/tool reuse only. Keep NPCFIX340 placements, exclude donor binary world outputs and foreign authored world changes. Cranky Lizard Crone Wayfarer already QUALIFIED in qengine2: do not redo.",
     "next": "Add focused PG RED cases for exact-cost item-only and repeatable exchanges; import reusable engine; author owned source callbacks. Al Dee, Wandering Soul and Fading Memory source facts are captured in /tmp/npcfix-evidence and notes."
+  },
+  "active_reward_delivery": {
+    "entries": [
+      "Al Dee",
+      "A Wandering Soul",
+      "A Weakened Forest Fury"
+    ],
+    "state": "IMPLEMENTED_FINAL_VALIDATION",
+    "source_delivery": "pending green batch checks; no new NPC qualification claimed in this metadata checkpoint",
+    "evidence": "ACTIVE-REWARD-DELIVERY.md",
+    "upstream_to_merge": "2a871a435",
+    "avoid_duplicate_work": true
   }
 }
