@@ -268,6 +268,13 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // tools/content-migration/condition_potion_profiles.py IDS from Crystal potions.lua.
     // Neither has a speed override, so both keep speed_bonus=0.
     ("I14-POTIONS", 2),
+    // SRVENC W02: thirteen new keys among the 22 captured Sugar Daddy corpse/loot
+    // profiles (boss-reward-item-profiles.json; boss_reward_item_profiles.py).
+    // Canary47df data-otservbr-global/monster/bosses/sugar_daddy.lua:21-25,76-132:
+    // 45639..=45643, 48114, 48249..=48251, 48253, 48254, 48256 and corpse 48416.
+    // Each retains captured speed_bonus=0; the raw-attribute loop and the exact
+    // independently pinned unknown-speed set below remain unchanged.
+    ("SRVENC-W02", 13),
     // SRVGAP-C1: eight pinned Canary starter profiles have no speed override.
     ("SRVGAP-C1", 8),
     // The pinned dispenser-item-profiles.json adds 22 source-qualified dispenser

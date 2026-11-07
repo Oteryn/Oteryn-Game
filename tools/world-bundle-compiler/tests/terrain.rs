@@ -630,21 +630,21 @@ fn source_projectile_known_false_true_and_unknown_are_distinct() -> TestResult {
     assert_eq!(
         sealed
             .terrain_of("terrain:transparent")?
-            .unwrap()
+            .ok_or("missing transparent terrain")?
             .blocks_projectile,
         Some(false)
     );
     assert_eq!(
         sealed
             .terrain_of("terrain:opaque")?
-            .unwrap()
+            .ok_or("missing opaque terrain")?
             .blocks_projectile,
         Some(true)
     );
     assert_eq!(
         sealed
             .terrain_of("terrain:legacy")?
-            .unwrap()
+            .ok_or("missing legacy terrain")?
             .blocks_projectile,
         None
     );
