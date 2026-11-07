@@ -8736,6 +8736,14 @@
         "toffee first buyback: refused Rejected"
       ],
       "cause": "PostgreSQL game_npc_trades_check1 requires side=1 even when fluid_subtype NULL, rejecting ordinary SELL rows. Explicit new migration1239 drafted; prior tagged-fluid guard remains mandatory."
+    },
+    "native_admission": {
+      "result": "GENERATED; REPRODUCTION_RUNNING",
+      "existing_records_unchanged": 3628,
+      "added_records": 5,
+      "canonical_item_shards_unchanged": true,
+      "guard_tests": 9,
+      "guard_seconds": 66.227
     }
   },
   "prepared_full_anchor_ground": {
@@ -8750,6 +8758,12 @@
     ],
     "anchors": 14,
     "cause": "Anaztassja compiled2 placements versus all5 explicitly captured anchors; all5 retained, ground repairs required",
-    "fixture": "npcfix-reviewed-full-anchor-ground-45"
+    "fixture": "npcfix-reviewed-full-anchor-ground-45",
+    "engine_work": {
+      "state": "PYTHON_GUARDS_GREEN; NOT_YET_MATERIALIZED; NPC_PG_REMAINS_RED",
+      "mechanism": "bound_ground.record projects pinned official ground and preserves exact existing canonical Item binding; Summer.outputs still rejects Item-bound ground",
+      "focused_ground_tests": 17,
+      "duration_seconds": 34.872
+    }
   }
 }

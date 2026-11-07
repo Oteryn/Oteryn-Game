@@ -19,7 +19,8 @@ APPEARANCES_SHA256 = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5
 MARKER_NOTE = " Additionally one decision-21 appearance-only Summer ground; total 8613 Terrain records."
 
 
-def outputs(root=ROOT, *, identifier=IDENTIFIER, expected_speed=150, shard=SHARD, note=MARKER_NOTE):
+def official_ground_record(root, identifier, expected_speed):
+    """Project pinned official ground facts without assigning Item custody."""
     key = f"oteryn:terrain.tibia.i{identifier}"
     manifest = json.loads(
         (root / "imports/official/client-assets/15.30/manifest.json").read_bytes()
@@ -40,11 +41,6 @@ def outputs(root=ROOT, *, identifier=IDENTIFIER, expected_speed=150, shard=SHARD
     appearance = appearances[identifier]
     if "bank" not in appearance.flags or appearance.speed != expected_speed:
         raise ValueError("Summer ground differs from the accepted appearance")
-    bindings = json.loads(
-        (root / "imports/crystalserver/bindings/items.json").read_bytes()
-    )
-    if any(row["external_id"] == str(identifier) for row in bindings["bindings"]):
-        raise ValueError("appearance-only ground unexpectedly has an Item binding")
     admitted = json.loads(
         (root / "imports/official/appearance-membership/admitted.json").read_bytes()
     )
@@ -109,6 +105,17 @@ def outputs(root=ROOT, *, identifier=IDENTIFIER, expected_speed=150, shard=SHARD
             },
         },
     }
+    return record
+
+
+def outputs(root=ROOT, *, identifier=IDENTIFIER, expected_speed=150, shard=SHARD, note=MARKER_NOTE):
+    bindings = json.loads(
+        (root / "imports/crystalserver/bindings/items.json").read_bytes()
+    )
+    if any(row["external_id"] == str(identifier) for row in bindings["bindings"]):
+        raise ValueError("appearance-only ground unexpectedly has an Item binding")
+    record = official_ground_record(root, identifier, expected_speed)
+    key = f"oteryn:terrain.tibia.i{identifier}"
     index_path = "content/world/placements/index.json"
     index = json.loads((root / index_path).read_bytes())
     selected = [row for row in index["palette"] if row["source_item_id"] == identifier]

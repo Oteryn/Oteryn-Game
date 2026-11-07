@@ -363,7 +363,8 @@
                 "profile": {
                   "enum": [
                     "OTERYN_OFFICIAL_CLIENT_WORLD_APPEARANCE/v1",
-                    "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1"
+                    "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1",
+                    "OTERYN_OFFICIAL_CLIENT_BOUND_ITEM_GROUND/v1"
                   ]
                 },
                 "client_version": {
@@ -707,6 +708,16 @@
                     },
                     "profile": {
                       "const": "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "engine": {
+                      "const": "official_client"
+                    },
+                    "profile": {
+                      "const": "OTERYN_OFFICIAL_CLIENT_BOUND_ITEM_GROUND/v1"
                     }
                   }
                 }

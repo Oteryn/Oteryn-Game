@@ -503,6 +503,10 @@ def validate_record(record):
     errors = schema_errors(family, record)
     if errors:
         return errors
+    import bound_ground
+
+    if record["provenance"]["source"].get("profile") == bound_ground.PROFILE:
+        return bound_ground.validate_record(record)
     if "item_pointer" not in record["provenance"]:
         import book_world_ground
         import grizzly_ground
