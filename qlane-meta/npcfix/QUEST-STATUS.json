@@ -1471,6 +1471,108 @@
       "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at 0fc546da09e407e4d346cab34c89c355f1005f2b; details in verification_components.latest_checked_source. Source identity checked before each slice",
       "test_code_commit": "0fc546da09e407e4d346cab34c89c355f1005f2b",
       "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+    },
+    {
+      "name": "retail-service-and-placement-qualification-23",
+      "state": "QUALIFIED",
+      "entries": [
+        "Benjamin",
+        "Robson",
+        "A Ghostly Guardian",
+        "Romella",
+        "Pugwah"
+      ],
+      "scope": "Existing authored retail placements with exact native identity plus matching previously green PostgreSQL service components; full source repair declarations were independently checked by the content catalogue test.",
+      "service_component": {
+        "state": "QUALIFIED_COMPONENTS",
+        "npc_keys": [
+          "oteryn:npc.benjamin",
+          "oteryn:npc.liane",
+          "oteryn:npc.ray",
+          "oteryn:npc.robson",
+          "oteryn:npc.alesar",
+          "oteryn:npc.nah_bob",
+          "oteryn:npc.rashid",
+          "oteryn:npc.kasmir",
+          "oteryn:npc.albinius",
+          "oteryn:npc.a_ghostly_guardian",
+          "oteryn:npc.flint",
+          "oteryn:npc.romella",
+          "oteryn:npc.pugwah"
+        ],
+        "test": "npcfix_postgres_dispatch_services_and_replay",
+        "postgres_markers": 13,
+        "duration_seconds": 941.85,
+        "log": "/tmp/npcfix-evidence/npcfix-existing-service-proof.log",
+        "log_sha256": "bb1cf3cbbfe2212db5b479c842d792a063562dfa2e4a31fd5b93006e0e5fbc9c",
+        "binary_source": "9fd5ca426",
+        "scope": "Native command/ordinary chat, shop windows, durable trades, quest/rank restrictions, default charge/state purchases, healing and exact replay as asserted by the existing thirteen-case fixture. Physical cell qualification remains separate.",
+        "source_reuse": "Original13 keys and every assertion retained; only suite parameterization and three exact item+Buy-side selector strengthenings. Core NPC trade/service paths unchanged. New5 postal cases PASS456.20s verifies the shared strengthened postal branch. New quest-only1146/1147 validated independently upstream; no original migrations rewritten.",
+        "additional_travel_component": {
+          "state": "QUALIFIED_COMPONENTS",
+          "source": "e2615554b; production source identical through current data-only slices",
+          "test": "npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
+          "duration_seconds": 127.59,
+          "marker": "POSTGRES_STARTED TRAVEL npc_paid_travel",
+          "routes": [
+            "captain_bluebear yalahar fare=200 arrival=(32816, 31272, 6)",
+            "captain_fearless yalahar fare=185 arrival=(32816, 31272, 6)",
+            "captain_greyhound yalahar fare=185 arrival=(32816, 31272, 6)",
+            "captain_max calassa fare=200 arrival=(31911, 32710, 6)",
+            "captain_max yalahar fare=400 arrival=(32804, 31270, 6)",
+            "captain_sinbeard yalahar fare=230 arrival=(32816, 31272, 6)",
+            "captain_seahorse oramond fare=200 arrival=(33479, 31985, 7)",
+            "charles liberty_bay fare=50 arrival=(32285, 32892, 6)",
+            "jack_fate goroma fare=0 arrival=(32161, 32558, 6)",
+            "karith ab'dendriel fare=160 arrival=(32734, 31668, 6)",
+            "captain_waverider peg leg fare=50 arrival=(32346, 32625, 7)",
+            "captain_waverider passage fare=200 arrival=(32131, 32913, 7)",
+            "captain_jack_rat safe fare=0 arrival=(33839, 31222, 5)",
+            "captain_seahorse venore fare=40 arrival=(32954, 32022, 6)",
+            "petros ankrahmun fare=100 arrival=(33092, 32883, 6)",
+            "petros issavi fare=130 arrival=(33902, 31462, 6)",
+            "tarak_inner monument tower fare=50 arrival=(32939, 31182, 7)",
+            "tarak_sunken passage fare=0 arrival=(32916, 31199, 7)"
+          ],
+          "log": "/tmp/npcfix-evidence/npcfix-existing-travel-proof.log",
+          "log_sha256": "134394de26bd32fd1daaa24345b7fad0294d26f4af5b1ce66f9089dd3941e507",
+          "scope": "Existing generic travel real-command coverage, durable fare/arrival/replay and refusal assertions. No extra availability, destination or physical source-cell qualification inferred."
+        },
+        "source_comparison": {
+          "source_commit": "0fd218694172109f2e2fb90835c6efd78029f468",
+          "source_path": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_postage.rs",
+          "original_case_count": 13,
+          "original_keys_preserved": true,
+          "all_original_assertions_preserved": true,
+          "normalized_body_identical": true,
+          "normalization": "Only remove the new parcel/letter reference lookup and reverse three strict identity+Buy-side predicate additions. Every other original scenario byte retained.",
+          "selector_strengthening": "Nelly has other merchandise at postal prices; both parcel price lookups and discounted letter assertion now also require the exact item reference and Buy side.",
+          "compiled_fixture_sha256": "80f76d0edc15c3addf86bba5ecff73b069d985c689a3a45196f0aefe3a39d83b",
+          "scenario_body_sha256": "ae300b429fae797bd98e4084785b02853908564494c80d93f22fa07119c656ae",
+          "new_case_keys": [
+            "olrik",
+            "chemar",
+            "chrystal",
+            "fyodor",
+            "nelly"
+          ]
+        }
+      },
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 47.22,
+        "log": "/tmp/npcfix-evidence/retail-service-and-placement-qualification-23-red.log",
+        "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 104.81,
+        "log": "/tmp/npcfix-evidence/retail-service-and-placement-qualification-23-green.log",
+        "cumulative_cases": 136
+      },
+      "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at 0fc546da09e407e4d346cab34c89c355f1005f2b; details in verification_components.latest_checked_source. Source identity checked before each slice",
+      "test_code_commit": "0fc546da09e407e4d346cab34c89c355f1005f2b",
+      "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
     }
   ],
   "incoming_six_cells": {
@@ -1823,15 +1925,14 @@
     }
   },
   "active_batch": {
-    "name": "retail-service-and-placement-qualification-22",
+    "name": "retail-service-and-placement-qualification-23",
     "state": "QUALIFIED",
     "entries": [
-      "Alesar",
-      "Liane",
-      "Kasmir",
-      "Ray",
-      "Flint",
-      "Albinius"
+      "Benjamin",
+      "Robson",
+      "A Ghostly Guardian",
+      "Romella",
+      "Pugwah"
     ],
     "scope": "Existing authored retail placements with exact native identity plus matching previously green PostgreSQL service components; full source repair declarations were independently checked by the content catalogue test.",
     "service_component": {
@@ -1911,15 +2012,15 @@
     },
     "red": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 45.97,
-      "log": "/tmp/npcfix-evidence/retail-service-and-placement-qualification-22-red.log",
+      "seconds": 47.22,
+      "log": "/tmp/npcfix-evidence/retail-service-and-placement-qualification-23-red.log",
       "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
     },
     "green": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 104.23,
-      "log": "/tmp/npcfix-evidence/retail-service-and-placement-qualification-22-green.log",
-      "cumulative_cases": 131
+      "seconds": 104.81,
+      "log": "/tmp/npcfix-evidence/retail-service-and-placement-qualification-23-green.log",
+      "cumulative_cases": 136
     },
     "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at 0fc546da09e407e4d346cab34c89c355f1005f2b; details in verification_components.latest_checked_source. Source identity checked before each slice",
     "test_code_commit": "0fc546da09e407e4d346cab34c89c355f1005f2b",
@@ -1927,9 +2028,9 @@
   },
   "counts": {
     "PENDING": 16,
-    "QUALIFIED": 142,
+    "QUALIFIED": 147,
     "EXCLUDED": 24,
-    "AUTHORED; QUALIFICATION PENDING": 135,
+    "AUTHORED; QUALIFICATION PENDING": 130,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -4960,8 +5061,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored. Ordinary Letter8/Parcel15; completed Postman5/10, with current durable rank validation.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/42; content/services/trade/trade-00000-00326.json:1#/records/33",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; npcfix_postgres_dispatch_services_and_replay; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-service-and-placement-qualification-23",
+        "postgres_red_seconds": 47.22,
+        "postgres_green_seconds": 104.81,
+        "scope": "Existing authored retail placements with exact native identity plus matching previously green PostgreSQL service components; full source repair declarations were independently checked by the content catalogue test."
+      }
     },
     {
       "npc": "Deseus",
@@ -5339,8 +5446,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored. Parcel15 and Label1 service; parcel/label keyword aliases; no Postman discount.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/290; content/dialogues/definitions/dialogues-00500-00838.json:1#/records/148; content/services/trade/trade-00000-00326.json:1#/records/247",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; npcfix_postgres_dispatch_services_and_replay; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-service-and-placement-qualification-23",
+        "postgres_red_seconds": 47.22,
+        "postgres_green_seconds": 104.81,
+        "scope": "Existing authored retail placements with exact native identity plus matching previously green PostgreSQL service components; full source repair declarations were independently checked by the content catalogue test."
+      }
     },
     {
       "npc": "Stone Temple Parrot",
@@ -5408,8 +5521,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored. Retail greeting/name substitution, farewell and eight keyword aliases; preserve all multipart lines through command and ordinary chat.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/4; content/dialogues/definitions/dialogues-00000-00499.json:1#/records/13",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay; npcfix_guardian_chat_preserves_name_and_multipart_source_order",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; npcfix_postgres_dispatch_services_and_replay; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-service-and-placement-qualification-23",
+        "postgres_red_seconds": 47.22,
+        "postgres_green_seconds": 104.81,
+        "scope": "Existing authored retail placements with exact native identity plus matching previously green PostgreSQL service components; full source repair declarations were independently checked by the content catalogue test."
+      }
     },
     {
       "npc": "A Strange Fellow",
@@ -5701,8 +5820,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored. Add three exercise-wrap offers; qualify full default charge purchases.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/291; content/services/trade/trade-00000-00326.json:1#/records/250",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; npcfix_postgres_dispatch_services_and_replay; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-service-and-placement-qualification-23",
+        "postgres_red_seconds": 47.22,
+        "postgres_green_seconds": 104.81,
+        "scope": "Existing authored retail placements with exact native identity plus matching previously green PostgreSQL service components; full source repair declarations were independently checked by the content catalogue test."
+      }
     },
     {
       "npc": "Shiantis",
@@ -5818,8 +5943,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored. Sell empty Mug4 using the existing default empty state.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/277; content/services/trade/trade-00000-00326.json:1#/records/233",
-      "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; npcfix_postgres_dispatch_services_and_replay; npcfix_retail_services_and_greeting_match_the_audited_repairs",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-service-and-placement-qualification-23",
+        "postgres_red_seconds": 47.22,
+        "postgres_green_seconds": 104.81,
+        "scope": "Existing authored retail placements with exact native identity plus matching previously green PostgreSQL service components; full source repair declarations were independently checked by the content catalogue test."
+      }
     },
     {
       "npc": "Tarak (Inner)",

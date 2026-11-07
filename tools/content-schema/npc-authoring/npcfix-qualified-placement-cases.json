@@ -1484,6 +1484,63 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-service-and-placement-qualification-23",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.benjamin",
+          "name": "Benjamin",
+          "expected": {
+            "x": 32350,
+            "y": 32219,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.robson",
+          "name": "Robson",
+          "expected": {
+            "x": 32526,
+            "y": 32021,
+            "floor": -13
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.a_ghostly_guardian",
+          "name": "A Ghostly Guardian",
+          "expected": {
+            "x": 32755,
+            "y": 32346,
+            "floor": -14
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.romella",
+          "name": "Romella",
+          "expected": {
+            "x": 32913,
+            "y": 32117,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.pugwah",
+          "name": "Pugwah",
+          "expected": {
+            "x": 32809,
+            "y": 31251,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
