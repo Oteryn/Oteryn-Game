@@ -39,13 +39,14 @@ class EngineNavigationTests(unittest.TestCase):
     def test_real_closed_batch_and_existing_rows_take_precedence(self):
         before = copy.deepcopy(self.definitions)
         rows = nav.build_navigation(self.definitions, self.client, set())
-        self.assertEqual(len(rows), 265)
+        self.assertEqual(len(self.entries), 265, "the sealed source cohort is unchanged")
+        self.assertEqual(len(rows), 262)
         self.assertEqual(
             Counter(r["family_profile"] for r in rows),
             {
-                "material_valuable": 36,
+                "material_valuable": 34,
                 "document": 5,
-                "container": 28,
+                "container": 27,
                 "tool": 5,
                 "decoration": 131,
                 "light_source": 28,
@@ -105,7 +106,32 @@ class EngineNavigationTests(unittest.TestCase):
                 row["source_evidence"]["family_basis"],
                 entries[row["target"]["key"]]["basis"],
             )
-        self.assertEqual(absent, 123)
+        self.assertEqual(absent, 120)
+
+    def test_native_admission_has_precedence_without_losing_identity_guards(self):
+        native = {
+            entry["target"]["key"]
+            for entry in self.entries
+            if self.definitions[entry["target"]["key"]]["materializable"]
+        }
+        self.assertEqual(native, {
+            "oteryn:item.tibia.i4301", "oteryn:item.tibia.i4302", "oteryn:item.tibia.i4303"
+        })
+        rows = nav.build_navigation(self.definitions, self.client, set())
+        self.assertEqual(
+            {row["target"]["key"] for row in rows},
+            {entry["target"]["key"] for entry in self.entries} - native,
+        )
+        for key in native:
+            self.assertEqual(self.definitions[key]["stack_class"], "NonStackable")
+        for mutation in (
+            lambda d: d.update(stack_class="Unknown"),
+            lambda d: d["identity"].update(key="oteryn:item.tibia.i1"),
+        ):
+            definitions = copy.deepcopy(self.definitions)
+            mutation(definitions["oteryn:item.tibia.i4301"])
+            with self.assertRaisesRegex(ValueError, "IDENTITY_OR_PRECEDENCE"):
+                nav.build_navigation(definitions, self.client, set())
 
     def test_scope_seal_and_current_artifact_membership(self):
         with tempfile.TemporaryDirectory() as directory:

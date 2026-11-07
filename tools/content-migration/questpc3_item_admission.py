@@ -1,4 +1,4 @@
-"""Admit quest rewards from their exact existing portable Item facts.
+"""Retain source-qualified quest Item facts through tree regeneration.
 
 Crystal201189f rookgaard/rapier_quest.lua:4-11 grants one 3272. Canonical Item
 facts already prove its 15 oz weight, portability and nonstackability. Preserve
@@ -6,6 +6,7 @@ all existing equipment/weapon facts and reject contradictory core facts.
 """
 
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 
@@ -100,6 +101,14 @@ def apply_admissions(definitions):
             raise ValueError(f'Threatened reward core facts changed: {key}')
         reward['materializable'] = True
         reward['stack_class'] = 'NonStackable'
+
+    # Tutorial corpse/food facts share this retained Item materializer seam.
+    spec = importlib.util.spec_from_file_location(
+        'questpc3_tutorial_item_admission',
+        Path(__file__).with_name('questpc3_tutorial_item_admission.py'))
+    tutorial = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(tutorial)
+    tutorial.apply_admissions(definitions)
 
 
 def refresh_tree(root, check=False):

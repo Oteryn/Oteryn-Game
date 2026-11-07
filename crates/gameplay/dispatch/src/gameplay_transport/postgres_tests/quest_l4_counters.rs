@@ -6,6 +6,8 @@ use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use std::sync::Arc;
 
+#[path = "quest_l4_counters/physical.rs"]
+mod physical;
 #[path = "quest_l4_counters/tutorial.rs"]
 mod tutorial;
 
@@ -16,9 +18,14 @@ enum CounterMode {
     WithoutQuestCatalogue,
     Tutorial,
     TutorialBurst,
+    Physical,
 }
 
 impl CounterMode {
+    fn no_quest(self) -> bool {
+        matches!(self, Self::WithoutQuestCatalogue | Self::Physical)
+    }
+
     fn tutorial(self) -> bool {
         matches!(self, Self::Tutorial | Self::TutorialBurst)
     }
@@ -126,6 +133,13 @@ fn counter_scenario(
             super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
         let generation = controller.active().ok_or("generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice())
+            .bind(pin.identity().server_artifact_digest().as_slice())
+            .bind(pin.identity().client_artifact_digest().as_slice())
+            .bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
         let room = pin.qualified_room().clone();
         let deps = Dependencies::with_content_and_capacity(
             pin.into_channel_pin(),
@@ -187,7 +201,7 @@ fn counter_scenario(
                 .map_err(debug)?,
             )
             .map_err(debug)?;
-        if mode != CounterMode::WithoutQuestCatalogue {
+        if !mode.no_quest() {
             let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
             let begun = slot
                 .commit_quest_transition(
@@ -218,7 +232,7 @@ fn counter_scenario(
                 .refresh_source_party_presence(deps.actor, session)
                 .await
         );
-        if mode == CounterMode::WithoutQuestCatalogue {
+        if mode.no_quest() {
             owner.quest_catalogue = None;
             assert!(owner.quest_catalogue.is_none());
         }
@@ -288,11 +302,14 @@ fn counter_scenario(
                 started.elapsed().as_millis()
             );
             // Santiago consumes three physical legs (santiago.lua:88-96).
-            // A death without ordinary corpse admission cannot invent those Items
-            // or complete the hand-in through a synthetic scalar counter.
-            if creature == "oteryn:creature.cockroach" && !mode.tutorial() {
-                // Once the creature has a native binding, an ineligible death
-                // may enter the known-empty queue. It must drain without value.
+            // Ordinary source loot remains distinct from the fenced quest hand-in;
+            // physical drops cannot manufacture an unstarted mission gate.
+            if creature == "oteryn:creature.cockroach"
+                && !mode.tutorial()
+                && mode != CounterMode::Physical
+            {
+                // An ineligible quest recipient may still have ordinary corpse loot.
+                // Draining must not grant quest progress or hand-in rewards.
                 assert_eq!(
                     owner.drain_kill_rewards(session).await,
                     DrainOutcome::Drained
@@ -313,8 +330,8 @@ fn counter_scenario(
                 let legs: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i7882' AND lifecycle=1")
                     .fetch_one(&h.pool).await?;
                 assert_eq!(
-                    legs, 0,
-                    "counter admission cannot fabricate physical hand-in items"
+                    legs, ordinal as i64,
+                    "ordinary source loot is distinct from an unstarted quest hand-in"
                 );
                 continue;
             }
@@ -379,18 +396,17 @@ fn counter_scenario(
                 .map_err(debug)?;
             assert_eq!(
                 copy.tracks().get(track).copied().unwrap_or(0),
-                if mode == CounterMode::WithoutQuestCatalogue {
-                    0
-                } else {
-                    ordinal as i64
-                },
+                if mode.no_quest() { 0 } else { ordinal as i64 },
                 "one native occurrence, one increment"
             );
             if mode.tutorial() {
                 tutorial::assert_goal(copy.tracks(), ordinal);
             }
+            if mode == CounterMode::Physical {
+                physical::assert_custody(&h, creature, ordinal).await?;
+            }
         }
-        if mode != CounterMode::WithoutQuestCatalogue {
+        if !mode.no_quest() {
             // A dialogue/USE command cannot substitute for a native death occurrence.
             let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
             let forged = slot
@@ -423,9 +439,7 @@ fn counter_scenario(
         .await?;
         assert_eq!(
             receipts,
-            if (creature == "oteryn:creature.cockroach" && !mode.tutorial())
-                || mode == CounterMode::WithoutQuestCatalogue
-            {
+            if (creature == "oteryn:creature.cockroach" && !mode.tutorial()) || mode.no_quest() {
                 0
             } else {
                 3

@@ -322,6 +322,14 @@ def build_navigation(definitions, client, excluded):
         for entry in document["records"]
         if entry["target"]["key"] in definitions
         and entry["target"]["key"] not in excluded
+        # Native Item ownership supersedes this navigation-only fallback. Keep
+        # derive_row's source-only guards strict for every remaining candidate.
+        and not (
+            definitions[entry["target"]["key"]].get("identity") == entry["target"]
+            and definitions[entry["target"]["key"]].get("materializable") is True
+            and definitions[entry["target"]["key"]].get("stack_class")
+            in ("NonStackable", "StackCapable")
+        )
     ]
     if not entries:
         return []
