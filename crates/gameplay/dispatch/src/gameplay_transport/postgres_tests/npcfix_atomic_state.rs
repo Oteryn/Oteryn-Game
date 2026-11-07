@@ -10,7 +10,7 @@ use oteryn_gameplay_quests::quest::{
 use std::sync::Arc;
 
 const QUEST: &str = "oteryn:quest.a_father_s_burden_quest";
-const KEY: &str = "oteryn:quest-transition/state/a_father_s_burden_quest/tereban_functions/mission-accept";
+const KEY: &str = "oteryn:quest-transition/npcfix/fathers-burden/accept";
 
 fn acceptance(failure: Option<QuestRefusal>) -> TestResult<Arc<QuestStateCatalogue>> {
     // Existing normalized source, Crystal 201189f, tereban_functions.lua:173-184.

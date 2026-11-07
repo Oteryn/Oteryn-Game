@@ -3105,6 +3105,25 @@
         "self_review": "Source guards remain durable predicates; existing track owners/defaults/bounds retained; unknown inventory/actor/clock/reward facts cannot select a state branch. No new schema or fence semantics."
       },
       "next": "Finish the separate NPC caller integration, then continue remaining NPCs; no NPC row qualified by this mechanism prerequisite."
+    },
+    {
+      "name": "Consolidate state stories after remote continuation merge",
+      "state": "QUALIFIED",
+      "classification": "Refactor; preserve the incoming source-story callers and remove unused duplicate compiler only.",
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX eleven-track acceptance",
+        "seconds": 28.02,
+        "result": "Production incoming acceptance key, exact replay, and both late rollback cases pass",
+        "log": "/tmp/npcfix-evidence/consolidation-pg.log"
+      },
+      "checks": {
+        "quest_unit": "253 passed, 13.92s",
+        "check": "PASS quests all targets/features",
+        "clippy": "PASS quests all targets/features -D warnings",
+        "fmt": "PASS",
+        "diff": "PASS",
+        "review": "One source-story catalogue owner; no caller, guard, receipt or track-bound weakening."
+      }
     }
   ],
   "owner_constraints": {
@@ -3152,8 +3171,18 @@
     "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification."
   },
   "continuation_merge": {
-    "note": "Remote 2df0986bb completed the same state callers while this continuation built the planner prerequisite. Reuse the remote callers and qualified rows; do not apply the superseded local caller stash. Preserve both histories. Consolidate the redundant npc_state compiler into remote state_dialogue before further engine authoring.",
+    "note": "Preserved both histories; incoming state callers retained. Redundant npc_state catalogue compiler removed in consolidation. Superseded local caller draft remains stashed and must not be applied.",
     "local_green_commit": "604b1b670",
     "caller_draft": "Preserved in git stash; superseded by remote implementation, not part of publication."
+  },
+  "active_batch": {
+    "name": "Reuse generic atomic NPC reward support",
+    "state": "AUTHORING",
+    "donors": {
+      "qengine2": "aae647c63b9022860699a5e2d31764881f38c472",
+      "questl2": "bfb4a5c6c2ece41600c3deebb9832703f22f093b"
+    },
+    "scope": "Selective code/schema/tool reuse only. Keep NPCFIX340 placements, exclude donor binary world outputs and foreign authored world changes. Cranky Lizard Crone Wayfarer already QUALIFIED in qengine2: do not redo.",
+    "next": "Add focused PG RED cases for exact-cost item-only and repeatable exchanges; import reusable engine; author owned source callbacks. Al Dee, Wandering Soul and Fading Memory source facts are captured in /tmp/npcfix-evidence and notes."
   }
 }
