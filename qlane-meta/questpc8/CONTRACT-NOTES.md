@@ -517,3 +517,39 @@ input in that list. The exact-count/extra-input SQL guard is unchanged. This
 binds the combined BURN/MINT proof without a second inventory writer or schema
 exception. Standalone corrected Lai access passes PG71.970482066s; all final
 strict/generated checks are recorded in mystery-route-validation.json.
+
+## Venore daily circuit: native source facts and next executable slice
+
+The chosen canonical recipe deliberately uses one sequential daily circuit.
+Use one saw, one wooden treadmill and one crane at each of the three native
+construction sites, in north-to-south order. Within a site, saw, treadmill,
+crane is the explicit Oteryn ordering; it is not a claimed donor quest order.
+The B3 source objects are (x,y,z; appearance; ordinal):
+33015,32022,6;17405;1 —33016,32025,6;17515;2 —33017,32041,6;17407;1;
+33030,32099,6;17406;2 —33016,32097,6;17515;1 —33013,32095,6;17408;2;
+33016,32142,6;17406;2 —33015,32138,6;17515;1 —33022,32147,6;17407;3.
+These are existing native objects, not newly fabricated machine placements.
+
+The pinned Canary XML (SHA256
+1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2)
+defines17513 can of oil,17514 pathfinder kit and17617 grind stone, weighing
+1900,1800 and400 centi-ounces respectively. None has charges/duration/decay;
+the oil can remains a reusable tool. Its nine exact quest matches must not
+consume or charge it. Rope3003 and shovel3457 remain held prerequisites.
+Reuse existing fenced NPC rewards for the three supplies and exact delivery
+BURNs, world callbacks for machine matches, captured native death credit for
+five Little Corym Charlatans, and the transactional clock for daily reuse.
+The source explicitly has20-hour jobs; retain72000seconds for the chosen
+aggregate circuit rather than inventing a midnight reset or24-hour delay.
+Aggregate reward is1000XP and1000gold (ten platinum coins), once per circuit.
+
+The three current Canary NPC files contain greetings only, no task logic.
+Their original native placement/outfit candidates are already in
+tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json;
+reuse them rather than inventing NPC identities or coordinates.
+Sources: https://tibia.fandom.com/index.php?curid=61789&oldid=845862 ;
+https://tibia.fandom.com/index.php?curid=61790&oldid=856089 ;
+https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/norman_the_foreman.lua ;
+https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/scott_the_scout.lua ;
+https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/frank_the_plank.lua .
+Fresh qengine2 head69609ef78 has no Venore circuit to reuse.

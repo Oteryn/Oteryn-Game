@@ -1,3 +1,17 @@
+# Venore native supply regression in progress
+
+19of23active L7entries remain QUALIFIED; four remain. Mystery qualification
+and incoming four-route qualifications are preserved. Venore now has a
+focused PostgreSQL test which calls the real MINT/carry owner for oil17513,
+kit17514 and grind stone17617 and refuses invented charge/timer state.
+The test is building; no new GREEN or Venore qualification is claimed.
+Nine existing B3 machine selectors and all three original NPC placement
+candidates are resolved; see CONTRACT-NOTES. Reuse72000-second source job
+cooldown for the aggregate daily circuit, not an invented calendar reset.
+Next: run this regression RED, admit the three source-backed supplies through
+the existing authored callback pipeline, then drive the full NPC/USE/kill
+circuit. Push every compiling WIP/green slice at least every15minutes.
+
 # Mystery of the Valley QUALIFIED —19of23,4remain
 
 Complete chosen native progression passes actual PostgreSQL in111.881352291s:
