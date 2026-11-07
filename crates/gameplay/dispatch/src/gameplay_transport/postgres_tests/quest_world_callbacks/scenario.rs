@@ -25,8 +25,15 @@ fn scenario_case(
     let small_ruby = name.starts_with("l6-small-ruby");
     let carried_step = name.starts_with("l6-tomb-carried-");
     let mead = name == "l6/waterskin-of-mead";
-    let native_crop = small_ruby || mead;
-    let start = if mead {
+    let spirit = name == "qengine-rewards-questpc4-spirit";
+    let native_crop = small_ruby || mead || spirit;
+    let start = if spirit {
+        Position {
+            x: 33081,
+            y: 31159,
+            floor: -8,
+        }
+    } else if mead {
         Position {
             x: trigger.x,
             y: trigger.y + 1,
@@ -185,6 +192,12 @@ fn scenario_case(
                     .native_gameplay()
                     .ok_or("native pickup policies")?,
             )?
+        } else if spirit {
+            super::super::l6_spirit::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native Spirit policies")?,
+            )?
         } else if mead {
             super::super::l6_mead::world(
                 generation.native_gameplay().ok_or("native Mead policies")?,
@@ -261,7 +274,7 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let premium = if name.contains("l6-beggar-") {
+        let premium = if name.contains("l6-beggar-") || spirit {
             use crate::gameplay_transport::spell_premium_coordinator::{
                 SpellPremiumCoordinator, purchase_fixture,
             };

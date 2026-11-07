@@ -637,6 +637,9 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    if name == "qengine-rewards-questpc4-spirit" {
+        return super::l6_spirit::exercise(owner, admitted, h, authority).await;
+    }
     if name.starts_with("qengine-rewards-l2-") || name.starts_with("qengine-rewards-l3-") || name.starts_with("qengine-rewards-l4-") || name.starts_with("qengine-rewards-l5-") || name.starts_with("qengine-rewards-l6-") {
         return super::qengine_outfit_stories::exercise(owner, admitted, h, authority, name).await;
     }

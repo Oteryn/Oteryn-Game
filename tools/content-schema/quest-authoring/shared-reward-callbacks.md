@@ -145,3 +145,14 @@ evidence keep their closed item/count shape until exact fluid matching is
 implemented. NPC requirements use `requires_premium`; world callbacks reuse
 the complete MINT with their existing world reward admission. Missing optional
 fields preserve existing JSON/receipt bindings.
+
+Authored NPC story shards are merged with the generated donor packet before the
+same closed validation runs. Duplicate callback keys, duplicated declarations,
+foreign owners and the combined256-entry bounds still fail closed. The initial
+shard is `content/quests/npc-callbacks/l6-stories.json`; editing it does not modify
+the generated donor packet.
+
+`completes` is an optional boolean, omitted when false. A true value lowers to
+the existing owning Quest completion transition. Its source proof must match
+the same transaction's Quest receipt and completed revision, enforced by
+`1064_quest_reward_completion.sql`. It grants no outfit or item by itself.

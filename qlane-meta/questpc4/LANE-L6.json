@@ -206,7 +206,7 @@
       "canonical": "oteryn:quest.the_spirit_will_get_you_quest",
       "title": "The Spirit Will Get You Quest",
       "from_lane": "questpc4",
-      "status": "IN_PROGRESS",
+      "status": "QUALIFIED",
       "mechanism": "conditional_npc_story_access",
       "titles": [
         "The Spirit Will Get You Quest"
@@ -214,30 +214,19 @@
       "from_lanes": [
         "questpc4"
       ],
-      "blocker": {
-        "missing_piece": "Cranky Lizard Crone's spirit interaction and final award lack an exact native conditional/delivery binding; its chosen-source targets remain evidence only.",
-        "source": ".questpc4/evidence/wiki/The Spirit Will Get You Quest_Spoiler.wiki:8",
-        "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
-        "canonical_json_pointer": "/records/42/definition",
-        "native_evidence": [],
-        "tried": [
-          "Read retained source at .questpc4/evidence/wiki/The Spirit Will Get You Quest_Spoiler.wiki:8; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/42/definition).",
-          "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
-          "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
-        ],
-        "native_callbacks_present": [],
-        "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
-        "kind": null,
-        "dependency": null
-      },
+      "blocker": null,
       "sources": [
         {
           "title": "The Spirit Will Get You Quest",
           "canonical": "oteryn:quest.the_spirit_will_get_you_quest",
           "canonical_resolution": "input canonical",
           "from_lane": "questpc4",
-          "status": "ACTIONABLE",
-          "blocker": {
+          "status": "QUALIFIED",
+          "blocker": null,
+          "source": "in/questpc4.json#/quests/49",
+          "evidence": null,
+          "first_unqualified_stage": null,
+          "historical_blocker": {
             "missing_piece": "Cranky Lizard Crone's spirit interaction and final award lack an exact native conditional/delivery binding; its chosen-source targets remain evidence only.",
             "source": ".questpc4/evidence/wiki/The Spirit Will Get You Quest_Spoiler.wiki:8",
             "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
@@ -253,9 +242,7 @@
             "kind": null,
             "dependency": null
           },
-          "source": "in/questpc4.json#/quests/49",
-          "evidence": null,
-          "first_unqualified_stage": null
+          "qualification_scope": "Whole selected Oteryn Spirit recipe: acceptance, three distinct native box/chest discoveries, three retained wills, confession completion and earned conversation. PG mounts the source NPC identity beside the native crop; no full intervening world-navigation or original historical source-closure claim."
         }
       ],
       "other_observed_mechanisms": [],
@@ -264,7 +251,96 @@
       "additional_mechanism_dependencies": [],
       "classification_evidence_sources": [
         "in/questpc4.json#/quests/49"
-      ]
+      ],
+      "historical_blocker": {
+        "missing_piece": "Cranky Lizard Crone's spirit interaction and final award lack an exact native conditional/delivery binding; its chosen-source targets remain evidence only.",
+        "source": ".questpc4/evidence/wiki/The Spirit Will Get You Quest_Spoiler.wiki:8",
+        "canonical_location": "content/quests/definitions/quests-00200-00299.json:1",
+        "canonical_json_pointer": "/records/42/definition",
+        "native_evidence": [],
+        "tried": [
+          "Read retained source at .questpc4/evidence/wiki/The Spirit Will Get You Quest_Spoiler.wiki:8; checked the selected canonical definition at content/quests/definitions/quests-00200-00299.json:1 (/records/42/definition).",
+          "Compared the current native callback registry: 0 callbacks for this canonical quest; preserved any separately-qualified source reward cohort.",
+          "Inspected NPC linkage for the canonical quest (1 source/authored records); identity candidates and conditional reply text are not treated as committed inventory, appearance or travel effects."
+        ],
+        "native_callbacks_present": [],
+        "qualification_scope": "Whole quest; separately passed chest cohorts remain reward-path evidence only.",
+        "kind": null,
+        "dependency": null
+      },
+      "whole_qualification": {
+        "status": "QUALIFIED",
+        "scope": "Whole selected Oteryn Spirit recipe: acceptance, three distinct native box/chest discoveries, three retained wills, confession completion and earned conversation. PG mounts the source NPC identity beside the native crop; no full intervening world-navigation or original historical source-closure claim.",
+        "classification": "OTERYN_AUTHORED_APPROXIMATION / CHOSEN_OTERYN_RECIPE_ONLY",
+        "source_rule": "content/quests/authoring/spirit-wills.md",
+        "assumption": "Exact historical will positions are not supplied by the pinned donor. Select two existing native box piles and one adjacent chest in the same world region as the Crone; one personal once flag per position. Preserve all native map bytes.",
+        "red": {
+          "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+          "duration_seconds": 53.791300572,
+          "marker": "POSTGRES_DATABASE_READY l6_spirit",
+          "error": "missing selected Spirit acceptance callback",
+          "log": "/tmp/questpc4-spirit-red.log"
+        },
+        "additional_feature_red": {
+          "postgres": "18.6",
+          "duration_seconds": 93.353921244,
+          "log": "/tmp/questpc4-spirit-flow-pg.log",
+          "error": "Out-of-order wills keyword returned ordinary-chat Ok instead of explicit quest refusal",
+          "repair": "Keep eligible callbacks/offers precedence; otherwise recognized callback keyword is rechecked by owning writer, which refuses failed progress guards. Strict test assertion retained."
+        },
+        "green": {
+          "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+          "duration_seconds": 99.663924626,
+          "log": "/tmp/questpc4-spirit-flow-refusal-pg.log",
+          "result": "1 passed / 0 failed / 0 ignored",
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-questpc4-spirit success=true",
+          "assertions": [
+            "native40-tile crop and literal STEP/USE",
+            "before-acceptance refusal",
+            "recognized out-of-order quest keyword explicit refusal",
+            "premium authority required for fresh source and final conversation",
+            "full backpack rollback without flag/MINT/audit",
+            "one will per distinct position; duplicate object in same pile refuses",
+            "three discovered and retained nonstackable11544 papers",
+            "missing carried will after actual drop refuses; pickup restores eligibility",
+            "owning state completion and source receipt same PostgreSQL xmin",
+            "zero outfit grants and zero paper consumptions",
+            "exact durable receipt replay after completion writes nothing",
+            "repeated final request refuses",
+            "completed-stage confession reply is read-only"
+          ]
+        },
+        "checks": [
+          "native regeneration and freshness:42 files",
+          "22 shared authoring units in8.781s",
+          "own NPC shard closed JSON schema",
+          "world pin-refresh unchanged7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37",
+          "7 reward callback unit tests PASS in1.32s, including authored shard closure/completion and legacy plan bytes",
+          "all-target/all-feature dispatch,durability,quests cargo check PASS3m50s",
+          "all-target/all-feature dispatch,durability,quests clippy-Dwarnings PASS6m16s",
+          "cargo fmt --all -- --check and explicit mounted-leaf fmt PASS",
+          "World pin-check PASS7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37,31102360 bytes",
+          "Legacy regression PG18.6 PASS4/0 in251.77s: Mead104.079526299s, Nobleman159.106783818s, Norseman101.694223183s, Citizen92.665213813s; /tmp/questpc4-spirit-regression-pg.log"
+        ],
+        "generic_contract": "qlane-meta/questpc4/NPC-STORY-CONTRACT.md",
+        "callbacks": [
+          "oteryn:quest-reward/l6-spirit-accept",
+          "oteryn:quest-reward/l6-spirit-confession",
+          "oteryn:quest-callback/l6/spirit-will-1",
+          "oteryn:quest-callback/l6/spirit-will-2",
+          "oteryn:quest-callback/l6/spirit-will-3"
+        ],
+        "native_profile_preservation": {
+          "old_count": 3623,
+          "new_count": 3624,
+          "changed_existing": 0,
+          "missing_existing": 0,
+          "added": [
+            "oteryn:item.tibia.i11544"
+          ],
+          "proof": "/tmp/questpc4-spirit-profile-audit.json"
+        }
+      }
     },
     {
       "canonical": "oteryn:quest.in_service_of_yalahar_quest",

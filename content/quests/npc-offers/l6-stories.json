@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "keywords": [
+        "confession"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l6/spirit/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "You know my confession now. Keep the three wills as a reminder that the past cannot be erased."
+      ]
+    }
+  ]
+}

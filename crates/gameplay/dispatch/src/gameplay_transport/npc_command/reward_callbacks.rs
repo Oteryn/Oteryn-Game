@@ -33,11 +33,22 @@ pub(super) fn prepare(
     runtime: &ChannelRuntimeV1,
 ) -> Option<Step> {
     let callbacks = reward_callbacks::load().ok()?;
-    let offers: Offers = serde_json::from_str(include_str!(
+    let mut offers: Offers = serde_json::from_str(include_str!(
         "../../../../../../content/quests/shared-reward-offers.json"
     ))
     .ok()?;
-    if offers.schema != 1 || offers.offers.iter().any(|o| o.requires.len() > 8) {
+    let authored: Offers = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/npc-offers/l6-stories.json"
+    ))
+    .ok()?;
+    if authored.schema != 1 {
+        return None;
+    }
+    offers.offers.extend(authored.offers);
+    if offers.schema != 1
+        || offers.offers.len() > 512
+        || offers.offers.iter().any(|o| o.requires.len() > 8)
+    {
         return None;
     }
     let catalogue = admission.quest_catalogue.as_deref()?;
@@ -84,17 +95,29 @@ pub(super) fn prepare(
                     reply: callback.reply.clone(),
                 });
             }
-            let offer = offers.offers.iter().find(|c| {
+            if let Some(offer) = offers.offers.iter().find(|c| {
                 c.npc == context.2
                     && c.topic == topic.number
                     && c.keywords.contains(&text)
                     && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
+            }) {
+                return Some(Choice {
+                    transition: None,
+                    next_topic: Some(Topic::from(offer.next_topic)),
+                    reply: offer.reply.clone(),
+                });
+            }
+            // A recognized quest keyword must not silently succeed as ordinary chat
+            // when every authored progress guard fails. The owning writer rechecks
+            // the complete bounded transition and returns its ordinary refusal.
+            let callback = callbacks.iter().find(|c| {
+                c.npc == context.2 && c.topic == topic.number && c.keywords.contains(&text)
             })?;
             Some(Choice {
-                transition: None,
-                next_topic: Some(Topic::from(offer.next_topic)),
-                reply: offer.reply.clone(),
+                transition: Some(callback.key.clone()),
+                next_topic: Some(Topic::from(callback.next_topic)),
+                reply: callback.reply.clone(),
             })
         },
     )
