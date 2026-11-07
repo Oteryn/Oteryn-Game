@@ -1,3 +1,18 @@
+# Active integration checkpoint
+
+Both scoped runs finished:2537/2546 and507/510passed;12failures collected,
+including one transient manifest failure during the aborted merge. Exact full
+lists and source hashes: prepush2-failure-inventory.json.
+Main f641d8d6c QNPCFX integration and grouped fixes are preserved in the local
+/workspace/questpc8-qnpcfx-integration checkout, branch
+questpc8-qnpcfx-integration-20261107, merge960ed0267 and saved stash.
+Publish branch stays on its last compiling baseline under the owner fallback.
+The additive merge duplicated whole NPC modules (79 compile diagnostics);
+reuse canonical main implementations and preserve only required authored
+programme adapters, then check all targets before merging this work back.
+No integration work was lost. Never force-push or rebase published commits.
+The opening PG proof remains217.555976812s GREEN; whole Wrath not complete.
+
 # Active checkpoint: Wrath opening PG GREEN
 
 Real native opening passed PostgreSQL217.555976812s, marker
