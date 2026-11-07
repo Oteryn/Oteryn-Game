@@ -79,7 +79,10 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = if name == "qengine-rewards-newhaven-route" {
+    let world = if matches!(
+        name,
+        "qengine-rewards-newhaven-route" | "qengine-rewards-newhaven-legion-contacts"
+    ) {
         super::super::questpc5_newhaven_route::source_world()?
     } else if name == "qengine-rewards-newhaven-native-goal" {
         super::super::questpc5_newhaven_native_goal::source_world()?

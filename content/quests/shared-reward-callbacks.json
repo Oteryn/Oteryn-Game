@@ -444,6 +444,64 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/legion-contact-gustavo",
+      "quest": "oteryn:quest.newhaven_legion_helmet_quest",
+      "npc": "oteryn:npc.gustavo_the_guard",
+      "keywords": [
+        "helmet",
+        "legion"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/legion-helmet/gustavo",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The helmet route leads through the training cave. Speak to both of us, descend to the equipment room, search the dead human, then return through the magic forcefield."
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:0e9bf2893b18eb6bfc7914f1862f740daf775e6627d68d6a001ce637c7687f71"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/legion-contact-viola",
+      "quest": "oteryn:quest.newhaven_legion_helmet_quest",
+      "npc": "oteryn:npc.viola",
+      "keywords": [
+        "helmet",
+        "legion"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/legion-helmet/viola",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The helmet route leads through the training cave. Speak to both of us, descend to the equipment room, search the dead human, then return through the magic forcefield."
+      ],
+      "sources": [
+        "oteryn:selected-recipe:content/quests/definitions/quests-00000-00099.json:/records/62/definition:sha256:0e9bf2893b18eb6bfc7914f1862f740daf775e6627d68d6a001ce637c7687f71"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/newhaven-guardian",
       "quest": "oteryn:quest.newhaven_quest",
       "npc": "oteryn:npc.gustavo_the_guard",

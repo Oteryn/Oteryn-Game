@@ -171,3 +171,6 @@ fixture; no world tile is changed. Stage0 and minimumlevel2 gate both once-only
 visit flags. The complete route fixture starts level2 through the normal XP
 owner and seeds no quest flags, counters, reward items or completion. It must
 recover its actual Book through the existing source chest USE before hand-in.
+
+
+Legion Helmet route contacts (2026-11-07): selected recipe content/quests/definitions/quests-00000-00099.json:/records/62/definition explicitly chooses BOTH Gustavo and Viola, minimum level zero, and no prior quest prerequisites. The two authored helmet/legion conversations record independent once-only personal contact tracks, grant no item/XP and complete no quest. This is the chosen Oteryn adaptation, not a claim that original optional source contacts were mandatory. Native fixtures use their committed placement declarations (Gustavo32560,32488,7; Viola32571,32507,7). Existing original UID6006 reward claim and source placement remain unchanged by this contact slice.

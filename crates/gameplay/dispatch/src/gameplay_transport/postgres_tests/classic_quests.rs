@@ -49,6 +49,23 @@ pub(super) async fn install<const N: usize>(
     admitted: &AdmittedSession,
     keys: [&str; N],
 ) -> TestResult<[EntityRef; N]> {
+    install_placements(owner, admitted, keys, false).await
+}
+
+pub(super) async fn install_source<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: [&str; N],
+) -> TestResult<[EntityRef; N]> {
+    install_placements(owner, admitted, keys, true).await
+}
+
+async fn install_placements<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: [&str; N],
+    source_placements: bool,
+) -> TestResult<[EntityRef; N]> {
     let catalogue = NpcDataCatalogue::load(
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
         std::ffi::OsStr::new("world"),
@@ -101,14 +118,32 @@ pub(super) async fn install<const N: usize>(
         .into_iter()
         .enumerate()
         .map(|(i, key)| {
-            Ok(NpcPlacements {
-                key: key.into(),
-                placements: vec![NpcPlacement {
+            let placement = if source_placements {
+                let declaration = super::source_npc_placements::declaration(key)?;
+                let cell = &declaration["cell"];
+                NpcPlacement {
+                    x: u16::try_from(cell["x"].as_u64().ok_or("source x")?)?,
+                    y: u16::try_from(cell["y"].as_u64().ok_or("source y")?)?,
+                    floor: -i8::try_from(cell["floor"].as_i64().ok_or("source floor")?)?,
+                    direction: match declaration["direction"].as_str() {
+                        Some("north") => MovementFacing::North,
+                        Some("east") => MovementFacing::East,
+                        Some("west") => MovementFacing::West,
+                        Some("south") => MovementFacing::South,
+                        _ => return Err("source facing".into()),
+                    },
+                }
+            } else {
+                NpcPlacement {
                     x: u16::try_from(at.x + i32::try_from(i)?)?,
                     y: u16::try_from(at.y + 1)?,
                     floor: -i8::try_from(at.floor)?,
                     direction: MovementFacing::South,
-                }],
+                }
+            };
+            Ok(NpcPlacements {
+                key: key.into(),
+                placements: vec![placement],
             })
         })
         .collect::<TestResult<Vec<_>>>()?;

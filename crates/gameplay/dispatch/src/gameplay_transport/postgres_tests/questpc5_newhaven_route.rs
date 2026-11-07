@@ -11,6 +11,79 @@ use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 fn questpc5_newhaven_complete_tutor_exploration_native_kills_and_book_route() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-newhaven-route")
 }
+#[test]
+fn questpc5_legion_both_route_contacts_use_durable_npc_callbacks() -> TestResult {
+    super::qengine_rewards::scenario("qengine-rewards-newhaven-legion-contacts")
+}
+
+pub(super) async fn legion_contacts(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    let started = std::time::Instant::now();
+    let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
+    for name in ["gustavo", "viola"] {
+        assert!(
+            callbacks
+                .iter()
+                .any(|c| c.key == format!("oteryn:quest-reward/legion-contact-{name}")),
+            "missing Legion contact {name}"
+        );
+    }
+    let [gustavo, viola] = super::classic_quests::install_source(
+        owner,
+        admitted,
+        ["oteryn:npc.gustavo_the_guard", "oteryn:npc.viola"],
+    )
+    .await?;
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.extend([3, 6, 25]);
+    selected.sort_unstable();
+    selected.dedup();
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+            .ok_or("capabilities")?;
+    for (name, npc, approach) in [
+        ("gustavo", gustavo, p(32559, 32488)),
+        ("viola", viola, p(32570, 32507)),
+    ] {
+        at(owner, admitted, approach).await?;
+        assert_eq!(
+            say(owner, admitted, npc, "helmet").await?,
+            NpcIntentDisposition::Ok
+        );
+        let track = format!("oteryn:quest-progress/legion-helmet/{name}");
+        let value: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(id(41).as_slice()).bind(&track).fetch_one(&h.pool).await?;
+        assert_eq!(value, 1);
+        let _ = say(owner, admitted, npc, "helmet").await?;
+        let values: Vec<i64> = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(id(41).as_slice()).bind(&track).fetch_all(&h.pool).await?;
+        assert_eq!(
+            values,
+            vec![1],
+            "contact cannot repeat or advance unrelated quest"
+        );
+    }
+    let rewards: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3374'").fetch_one(&h.pool).await?;
+    assert_eq!(
+        rewards, 0,
+        "contacts grant no helmet before cave and corpse USE"
+    );
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED legion_both_contacts duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
 fn p(x: u16, y: u16) -> Position {
     Position { x, y, floor: -7 }
 }
@@ -407,6 +480,7 @@ pub(super) fn source_world() -> TestResult<crate::map::boot::BundleWorld> {
     for (x, y) in [
         (32570, 32506),
         (32570, 32507),
+        (32571, 32507),
         (32568, 32489),
         (32567, 32489),
         (32613, 32419),

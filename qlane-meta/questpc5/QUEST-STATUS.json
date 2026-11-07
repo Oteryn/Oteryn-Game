@@ -47,8 +47,8 @@
       "pointer": "/records/62/definition"
     },
     "current_item_facts": {
-      "guardian_ring_52732": "Served client appearance exists and matches the canonical portable ring; canonical weight90. Native admission remains to implement.",
-      "scarf_3572": "Existing native custody/equipment overlay is admitted; canonical item remains nonmaterializable. Reconcile the existing source overlay before completing prerequisite item/XP flows."
+      "guardian_ring_52732": "Canonical/native admission and real PostgreSQL mint proven by cloud-newhaven-items-proof.json; whole Newhaven route earns ring.",
+      "scarf_3572": "Canonical/native admission proven; whole Newhaven route earns scarf, atomically consumes Book and grants selected XP."
     },
     "item_admission_progress": {
       "items": [
@@ -60,6 +60,11 @@
       "postgres_native_mint_seconds": 53.100254427,
       "proof": "cloud-newhaven-items-proof.json",
       "whole_recipe_qualified": false
+    },
+    "route_contacts_progress": {
+      "postgres_green_seconds": 91.643903393,
+      "proof": "cloud-legion-contacts-proof.json",
+      "scope": "Both source NPC contacts and once-only personal tracks; no prerequisite quests, rewards or quest completion seeded. Cave/corpse/forcefield remain active."
     }
   },
   {
@@ -77,8 +82,8 @@
       "pointer": "/records/78/definition"
     },
     "current_item_facts": {
-      "guardian_ring_52732": "Served client appearance exists and matches the canonical portable ring; canonical weight90. Native admission remains to implement.",
-      "scarf_3572": "Existing native custody/equipment overlay is admitted; canonical item remains nonmaterializable. Reconcile the existing source overlay before completing prerequisite item/XP flows."
+      "guardian_ring_52732": "Canonical/native admission and real PostgreSQL mint proven by cloud-newhaven-items-proof.json; whole Newhaven route earns ring.",
+      "scarf_3572": "Canonical/native admission proven; whole Newhaven route earns scarf, atomically consumes Book and grants selected XP."
     },
     "item_admission_progress": {
       "items": [
