@@ -2,6 +2,7 @@
 use super::fixture::{Harness, debug, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::{MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements};
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
@@ -45,6 +46,10 @@ pub(super) async fn exercise(
     h: &Harness,
 ) -> TestResult {
     eprintln!("POSTGRES_CASE_STARTED questpc8_wrath_opening after PostgreSQL fixture initialization");
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(), &[3],
+        ).ok_or("NPC capability")?;
     let npc = install(owner, admitted).await?;
     super::questpc8_mystery_geometry::arrive(owner, admitted,
         TilePos { x: 33353, y: 31410, floor: -8 }).await?;

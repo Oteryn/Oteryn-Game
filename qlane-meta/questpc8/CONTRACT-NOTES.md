@@ -737,3 +737,16 @@ and refusal on either changed canonical data or changed XML.
   A27-line local adapter reuses only its exact SHA256-pinned native stack at the
   callback boundary, preserving canonical bytes and rejecting source drift.
   No admission check is weakened; three nails remain mandatory.
+
+- PREPUSH-2 unit failure decisions: the existing Corruptor fixture's explicit
+  SeamRooms::new(None, Some(combat)) preserves the bundle qualified-room boundary;
+  register that reviewed construction without broadening the source census.
+  The equipment census retains exactly3663 baseline composed identities at
+  main1ae39c7fb and gains173, with zero removals. Generate an exact added-key
+  packet from hash-checked manifest inputs, retain the old baseline/cohort and
+  every raw-attribute assertion, and validate the added identities explicitly.
+  Generator draft is /tmp/questpc8-refresh-equipment-custody.py; do not apply
+  either fix until both scoped unit runs finish collecting all failures.
+- Wrath's wire fixture must select NPC capability3, matching qualified Venore's
+  native wire fixture, and import FreshAdmissionAuthority for that selection.
+  Keep real lease binding, collision-checked source landing and all assertions.
