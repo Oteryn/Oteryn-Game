@@ -48,6 +48,8 @@ pub(super) struct PendingCallbacks {
     soul_rewards:
         std::sync::Mutex<std::collections::HashMap<GameSessionId, soul_war_reward::Pending>>,
     #[cfg(test)]
+    pub(super) fixture_clock_ms: std::sync::atomic::AtomicU64,
+    #[cfg(test)]
     pub(super) fixture: OnceLock<Vec<Callback>>,
     #[cfg(test)]
     pub(super) interrupt_after_commit: std::sync::atomic::AtomicBool,
