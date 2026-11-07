@@ -8439,7 +8439,7 @@
     "cumulative_npcs": 232
   },
   "active_name_work": {
-    "state": "COMPILES; LEGACY11_AND_CANONICAL_NAMES_MATERIALIZED; GATES_RUNNING",
+    "state": "POSTGRES_GREEN; GAME_SERVER_CHECK_PASS; FINAL_GENERATION_CLIPPY_PIN_GATES_RUNNING",
     "entries": [
       "Guardian of the Deep Seas",
       "Hemor, the guard",
@@ -8469,6 +8469,57 @@
     },
     "compile_proof": "Current cargo-run materializer executable is running against predecessor and output temporary roots after packet60/digest refresh. No Rust behavior change beyond repo-generated packet digest/count; canonical name RED162.13s retained; authoring tests and full generation active.",
     "authoring_tests": "4 exact-before/atomicity tests PASS0.22s",
-    "materialization": "All protected predecessor stages and eleven legacy documents completed; inventory pins refreshed through repository tooling. Six canonical names emitted; prey-model build and remaining generation/check/Clippy gates running."
+    "materialization": "All protected predecessor stages and eleven legacy documents completed; inventory pins refreshed through repository tooling. Six canonical names emitted; prey-model build and remaining generation/check/Clippy gates running.",
+    "postgres_green": {
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "seconds": 111.62,
+      "log": "/tmp/npcfix-evidence/six-name-pg-green.log",
+      "sha256": "c810f32a37c60f33e17b94e8c8735974eee84c2e7f5f2e78a75e7183d7662f3b"
+    },
+    "content_delta": {
+      "items": {
+        "records": 34111,
+        "preserved_exactly": true
+      },
+      "trade": {
+        "records": 327,
+        "preserved_exactly": true
+      },
+      "creatures": {
+        "records": 1863,
+        "preserved_exactly": true
+      },
+      "spawns": {
+        "records": 54684,
+        "preserved_exactly": true
+      },
+      "placements": {
+        "records": 345,
+        "preserved_exactly": true
+      },
+      "native": {
+        "records": 3628,
+        "preserved_exactly": true
+      },
+      "fluid_items": {
+        "records": 2,
+        "preserved_exactly": true
+      },
+      "terrain": {
+        "records": 8618,
+        "preserved_exactly": true
+      },
+      "npcs": {
+        "records": 1290,
+        "changed_only_display_name": [
+          "oteryn:npc.guardian_of_the_deep_seas",
+          "oteryn:npc.hemor_the_guard",
+          "oteryn:npc.humnog_the_guard",
+          "oteryn:npc.lesser_messenger_of_heaven",
+          "oteryn:npc.nah_bob",
+          "oteryn:npc.one_eyed_joe"
+        ]
+      }
+    }
   }
 }
