@@ -130,6 +130,10 @@ fn client_placement_pin_text(text: &str, digest: &str) -> Result<String, Error> 
     Ok(output)
 }
 
+fn write(path: &Path, text: &str) -> Result<(), Error> {
+    fs::write(path, text).map_err(|e| Error::Format(format!("{}: {e}", path.display())))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -154,8 +158,4 @@ mod tests {
         );
         Ok(())
     }
-}
-
-fn write(path: &Path, text: &str) -> Result<(), Error> {
-    fs::write(path, text).map_err(|e| Error::Format(format!("{}: {e}", path.display())))
 }
