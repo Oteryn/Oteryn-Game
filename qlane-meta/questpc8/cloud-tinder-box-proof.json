@@ -64,5 +64,11 @@
   "clean_green": {
     "duration_seconds": 36.814023825,
     "passed": 1
+  },
+  "scene_merge_revalidation": {
+    "duration_seconds": 26.193199456,
+    "proof": "native-scenes-validation.json",
+    "marker": "POSTGRES_CASE_COMPLETED questpc8_tinder_box_summit_and_once_reward",
+    "checks": "merged world units, all-feature check, strict all-target/all-feature Clippy and fmt passed"
   }
 }

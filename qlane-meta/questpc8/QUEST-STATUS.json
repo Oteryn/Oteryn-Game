@@ -1231,12 +1231,21 @@
       }
     ],
     "blocker": {
-      "missing_piece": "UID lever self-removal, two wall creations, nine wall removals and floor-reset restoration are not implemented by the eight-effect symmetric callback."
+      "missing_piece": "The source scene is PG-qualified. The Ruby cache at32591,32097,14 appearance2472 ordinal1 has no native UID6138; its explicit placement alias is being implemented against the existing once-only claim."
     },
     "disposition": "authoring",
     "qualified_elsewhere": [],
     "mechanism": "asymmetric_map_effects_multi_actor_moves",
-    "round": "L7"
+    "round": "L7",
+    "qualified_components": [
+      {
+        "scope": "native source lever, eleven wall edits, collision, self-removal, replay and source-floor reconstruction",
+        "test": "questpc8_mintwallin_lever_edits_all_walls_once_and_restores_with_floor",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_mintwallin_scene",
+        "duration_seconds": 25.397996587,
+        "proof": "native-scenes-validation.json"
+      }
+    ]
   },
   {
     "title": "Mystery of the Valley Quest",

@@ -41,6 +41,9 @@ fn scenario_case(
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
             .await?;
+        if name == "mintwallin-cyclops-scene" {
+            eprintln!("POSTGRES_CASE_STARTED mintwallin-cyclops-scene after PostgreSQL fixture initialization");
+        }
         if name.starts_with("authored-") {
             eprintln!("POSTGRES_CASE_STARTED {name} after PostgreSQL fixture initialization");
         }
@@ -84,6 +87,8 @@ fn scenario_case(
             )?
         } else if name == "authored-tinder-box" {
             super::super::quest_callbacks::source_world((32085, 31025, -1), 0, 4285, 0)?
+        } else if name == "mintwallin-cyclops-scene" {
+            super::super::questpc8_native_scenes::world()?
         } else {
             world(&callback, trigger)?
         };
@@ -256,6 +261,8 @@ fn scenario_case(
                 &h,
             )
             .await?;
+        } else if name == "mintwallin-cyclops-scene" {
+            super::super::questpc8_native_scenes::exercise(&mut owner, &mut admitted, &world).await?;
         } else if name == "giant-smithhammer-asymmetric" {
             super::super::quest_l7_asymmetric::exercise(
                 &mut owner,

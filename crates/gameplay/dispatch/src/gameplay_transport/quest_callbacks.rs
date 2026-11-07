@@ -8,6 +8,7 @@ mod effects;
 mod encounter;
 mod execute;
 mod rewards;
+mod scene;
 mod soul_war_reward;
 
 use super::paced_movement::underwater_drown::underwater;

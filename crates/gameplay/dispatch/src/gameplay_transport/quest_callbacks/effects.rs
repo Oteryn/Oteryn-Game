@@ -21,6 +21,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         close: bool,
         after: &mut EntryFacts,
     ) -> Result<Option<QuestCallbackProjection>, UseDisposition> {
+        if callback.effects.scene.is_some() {
+            return self.prepare_quest_scene(map, callback, close);
+        }
         if let Some(pair) = &callback.effects.portals {
             let facts = map
                 .facts
