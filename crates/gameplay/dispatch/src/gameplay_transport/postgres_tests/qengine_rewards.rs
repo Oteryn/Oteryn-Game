@@ -22,12 +22,47 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let started = std::time::Instant::now();
     eprintln!("POSTGRES_CASE_STARTED {name}");
     let source_position = match name {
-        "qengine-rewards-l2-sam" => Some(Position{x:32455,y:31967,floor:-14}),
-        "qengine-rewards-l2-outfox" => Some(Position{x:32467,y:31969,floor:-5}),
-        "qengine-rewards-l2-bone" => Some(Position{x:32408,y:32107,floor:-10}),
-        "qengine-rewards-l2-vampire" => Some(Position{x:32953,y:31460,floor:-9}),
-        "qengine-rewards-l2-botany" => Some(Position{x:33007,y:31536,floor:-10}),
-        _=>None,
+        "qengine-rewards-l2-sam" => Some(Position {
+            x: 32455,
+            y: 31967,
+            floor: -14,
+        }),
+        "qengine-rewards-l2-outfox" => Some(Position {
+            x: 32467,
+            y: 31969,
+            floor: -5,
+        }),
+        "qengine-rewards-l2-bone" => Some(Position {
+            x: 32408,
+            y: 32107,
+            floor: -10,
+        }),
+        "qengine-rewards-l2-vampire" => Some(Position {
+            x: 32953,
+            y: 31460,
+            floor: -9,
+        }),
+        "qengine-rewards-l2-botany" => Some(Position {
+            x: 33007,
+            y: 31536,
+            floor: -10,
+        }),
+        "qengine-rewards-l2-steal" => Some(Position {
+            x: 33131,
+            y: 32661,
+            floor: -7,
+        }),
+        "qengine-rewards-l2-troll" => Some(Position {
+            x: 33241,
+            y: 31758,
+            floor: -7,
+        }),
+        "qengine-rewards-l2-cartography" => Some(Position {
+            x: 32209,
+            y: 32297,
+            floor: -7,
+        }),
+        _ => None,
     };
     let outcome = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
@@ -184,6 +219,9 @@ mod questl2_botany;
 #[path = "qengine_rewards/questl2_carried_use.rs"]
 mod questl2_carried_use;
 
+#[path = "qengine_rewards/questl2_delivery_journeys.rs"]
+pub(super) mod questl2_delivery_journeys;
+
 #[path = "qengine_rewards/questl2_journeys.rs"]
 pub(super) mod questl2_journeys;
 
@@ -272,8 +310,23 @@ async fn talk(
 }
 
 fn offer_words(key: &str) -> &'static [&'static str] {
-    if key.ends_with("/l2-carried-join") {return &["join", "yes"]; }
-    if key.contains("/l2-vampire-tier-") {return &["vampire lord token"]; }
+    if key.ends_with("/l2-steal-start")
+        || key.ends_with("/l2-steal-return")
+        || key.ends_with("/l2-troll-start")
+        || key.ends_with("/l2-cartography-start")
+        || key.ends_with("/l2-cartography-return")
+    {
+        return &["mission"];
+    }
+    if key.ends_with("/l2-troll-necklace") {
+        return &["kill", "lady", "yes"];
+    }
+    if key.ends_with("/l2-carried-join") {
+        return &["join", "yes"];
+    }
+    if key.contains("/l2-vampire-tier-") {
+        return &["vampire lord token"];
+    }
     match key.rsplit('/').next().unwrap_or(key) {
         "l2-botany-start" | "l2-botany-return" => &["mission"],
         "l2-bone-start" => &["mission"],
@@ -307,7 +360,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l4-royal-costume-base" => &["outfit", "yes", "armor"],
         "l4-royal-costume-shield" => &["outfit", "yes", "shield"],
         "l4-royal-costume-crown" => &["outfit", "yes", "crown"],
-        "l6-citizen-rook-backpack-start" => &["addon","backpack"],
+        "l6-citizen-rook-backpack-start" => &["addon", "backpack"],
         "l6-citizen-rook-backpack-materials" => &["backpack"],
         "l6-citizen-rook-hat-start" | "l6-citizen-rook-hat" => &["hat"],
         "l4-pirate-sabre-start" => &["task", "yes"],
@@ -784,20 +837,29 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
-    if name=="qengine-rewards-l2-engine-carried" {
-        return questl2_carried_use::exercise(owner,admitted,h).await;
+    if matches!(
+        name,
+        "qengine-rewards-l2-steal" | "qengine-rewards-l2-troll" | "qengine-rewards-l2-cartography"
+    ) {
+        return questl2_delivery_journeys::exercise(owner, admitted, h, name).await;
     }
-    if name=="qengine-rewards-l2-vampire" {
-        return questl2_vampire::exercise(owner,admitted,h).await;
+    if name == "qengine-rewards-l2-engine-carried" {
+        return questl2_carried_use::exercise(owner, admitted, h).await;
     }
-    if name=="qengine-rewards-l2-engine-shared" {
-        return questl2_shared_engine::exercise(owner,admitted,h).await;
+    if name == "qengine-rewards-l2-vampire" {
+        return questl2_vampire::exercise(owner, admitted, h).await;
     }
-    if name=="qengine-rewards-l2-botany" {
-        return questl2_botany::exercise(owner,admitted,h).await;
+    if name == "qengine-rewards-l2-engine-shared" {
+        return questl2_shared_engine::exercise(owner, admitted, h).await;
     }
-    if matches!(name,"qengine-rewards-l2-sam"|"qengine-rewards-l2-outfox"|"qengine-rewards-l2-bone") {
-        return questl2_journeys::exercise(owner,admitted,h,authority,name).await;
+    if name == "qengine-rewards-l2-botany" {
+        return questl2_botany::exercise(owner, admitted, h).await;
+    }
+    if matches!(
+        name,
+        "qengine-rewards-l2-sam" | "qengine-rewards-l2-outfox" | "qengine-rewards-l2-bone"
+    ) {
+        return questl2_journeys::exercise(owner, admitted, h, authority, name).await;
     }
     if name.starts_with("qengine-rewards-l2-father-") {
         return super::questl2_world_rewards::exercise(owner, admitted, h, name).await;

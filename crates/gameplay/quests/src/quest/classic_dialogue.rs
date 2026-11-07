@@ -75,6 +75,36 @@ pub fn reply(npc: &str, key: &str) -> Option<&'static [String]> {
         .map(|branch| branch.reply.as_slice())
 }
 
+const TRACK_OVERLAYS: [&str; 3] = [
+    include_str!("../../../../../content/quests/dawnport-starts.json"),
+    include_str!("../../../../../content/quests/troll-sabotage-starts.json"),
+    include_str!("../../../../../content/quests/rottin-wood-starts.json"),
+];
+
+/// Canonical owner declarations are also used by callbacks loaded before overlays.
+pub(super) fn declared_track(key: &str) -> Result<Option<super::QuestTrack>, String> {
+    static TRACKS: OnceLock<Result<std::collections::BTreeMap<String, super::QuestTrack>, String>> =
+        OnceLock::new();
+    let tracks = TRACKS.get_or_init(|| {
+        let mut tracks = std::collections::BTreeMap::new();
+        for source in TRACK_OVERLAYS {
+            let overlay = super::loader::parse_quest_state(source, "classic-track-declarations")
+                .map_err(|e| format!("{e:?}"))?;
+            for (key, track) in &overlay.catalogue().tracks {
+                if tracks.get(key).is_some_and(|existing| existing != track) {
+                    return Err(format!("classic quest track conflict: {key}"));
+                }
+                tracks.insert(key.clone(), track.clone());
+            }
+        }
+        Ok(tracks)
+    });
+    tracks
+        .as_ref()
+        .map(|tracks| tracks.get(key).cloned())
+        .map_err(Clone::clone)
+}
+
 /// Merge source-owned overlays using the existing QuestState reader and evaluator.
 /// An existing track must match exactly; this never widens or renames another lane's track.
 pub(super) fn extend(
@@ -82,11 +112,7 @@ pub(super) fn extend(
 ) -> Result<super::QuestStateCatalogue, String> {
     let mut tracks = catalogue.tracks.clone();
     let mut transitions = catalogue.transitions.clone();
-    for source in [
-        include_str!("../../../../../content/quests/dawnport-starts.json"),
-        include_str!("../../../../../content/quests/troll-sabotage-starts.json"),
-        include_str!("../../../../../content/quests/rottin-wood-starts.json"),
-    ] {
+    for source in TRACK_OVERLAYS {
         let overlay = super::loader::parse_quest_state(source, catalogue.content_revision())
             .map_err(|e| format!("{e:?}"))?;
         for (key, track) in &overlay.catalogue().tracks {

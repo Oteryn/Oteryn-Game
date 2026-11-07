@@ -4,6 +4,7 @@
   "npcs": [
     "oteryn:npc.a_seagull",
     "oteryn:npc.a_sweaty_cyclops",
+    "oteryn:npc.ahmet",
     "oteryn:npc.al_dee",
     "oteryn:npc.aldo",
     "oteryn:npc.amanda",
@@ -21,6 +22,7 @@
     "oteryn:npc.budrik",
     "oteryn:npc.cael",
     "oteryn:npc.carlos",
+    "oteryn:npc.chief_grarkharok",
     "oteryn:npc.cipfried",
     "oteryn:npc.cledwyn",
     "oteryn:npc.cranky_lizard_crone",
@@ -35,6 +37,7 @@
     "oteryn:npc.hyacinth",
     "oteryn:npc.irmana",
     "oteryn:npc.isimov",
+    "oteryn:npc.jerom",
     "oteryn:npc.jorge",
     "oteryn:npc.kasmir",
     "oteryn:npc.kepar",
@@ -54,6 +57,7 @@
     "oteryn:npc.rabaz",
     "oteryn:npc.rahkem",
     "oteryn:npc.raymond_striker",
+    "oteryn:npc.rotem_valos",
     "oteryn:npc.sam",
     "oteryn:npc.santiago",
     "oteryn:npc.seymour",
@@ -137,6 +141,13 @@
         "x": 33009,
         "y": 31532,
         "z": 10
+      }
+    ],
+    "oteryn:npc.chief_grarkharok": [
+      {
+        "x": 33231,
+        "y": 31754,
+        "z": 1
       }
     ]
   }

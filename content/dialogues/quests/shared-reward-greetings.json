@@ -13,6 +13,17 @@
       ]
     },
     {
+      "npc": "oteryn:npc.ahmet",
+      "greet": "Be mourned pilgrim in flesh. I'm selling general goods. Just ask me for a {trade}.",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ahmet.lua:182:sha256:7141a6ed014f4ca77031a6c83f41f7ff9603bf35a645004be53754e7bfa62797",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
       "npc": "oteryn:npc.amanda",
       "greet": "Welcome, young |PLAYERNAME|! If you are heavily wounded or poisoned, I can {heal} you for free.",
       "farewell": "May the gods bless you, |PLAYERNAME|!",
@@ -109,6 +120,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/cael.lua:392:sha256:4d4d0c4aa36722ebb85925c685b7631471889dd1f51e641711cee51568336dcd",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.chief_grarkharok",
+      "greet": "Me Chief Grarkharok! No do {nothing}!",
+      "farewell": "Grarkharok be {chief}!",
+      "walkaway": "Grarkharok be {chief}!",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/chief_grarkharok.lua:166:sha256:4e2c0d750d572355b89e4b2cad56e2def8cff3e527ea666bc6aece91a538df09",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/chief_grarkharok.lua:167:sha256:4e2c0d750d572355b89e4b2cad56e2def8cff3e527ea666bc6aece91a538df09",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/chief_grarkharok.lua:168:sha256:4e2c0d750d572355b89e4b2cad56e2def8cff3e527ea666bc6aece91a538df09"
       ]
     },
     {
@@ -219,6 +241,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/isimov.lua:169:sha256:83fc7dd789475bdc5cb3c49c04141c49469cb674537bac2d33343a221f8a4d10",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/isimov.lua:171:sha256:83fc7dd789475bdc5cb3c49c04141c49469cb674537bac2d33343a221f8a4d10",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/isimov.lua:170:sha256:83fc7dd789475bdc5cb3c49c04141c49469cb674537bac2d33343a221f8a4d10"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.jerom",
+      "greet": "Hello. Sorry, but I'm not in the best {mood} today.",
+      "farewell": "Bye.",
+      "walkaway": "Bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/jerom.lua:134:sha256:8f300ec0a5d3e609aee8772993cb8df06d4c1d510c432c662f706969690535b3",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/jerom.lua:132:sha256:8f300ec0a5d3e609aee8772993cb8df06d4c1d510c432c662f706969690535b3",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/jerom.lua:133:sha256:8f300ec0a5d3e609aee8772993cb8df06d4c1d510c432c662f706969690535b3"
       ]
     },
     {
@@ -384,6 +417,17 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/raymond_striker.lua:217:sha256:9788635e604e865c0b06091cc9c4bff3c58aa5bc0c752e433790e00f52d4fab8",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/raymond_striker.lua:218:sha256:9788635e604e865c0b06091cc9c4bff3c58aa5bc0c752e433790e00f52d4fab8",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/raymond_striker.lua:219:sha256:9788635e604e865c0b06091cc9c4bff3c58aa5bc0c752e433790e00f52d4fab8"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rotem_valos",
+      "greet": "Greetings, |PLAYERNAME|.",
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:82:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
       ]
     },
     {

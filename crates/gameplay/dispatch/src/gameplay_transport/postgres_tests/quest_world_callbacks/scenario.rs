@@ -101,7 +101,7 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = if matches!(name,"qengine-rewards-l2-sam"|"qengine-rewards-l2-outfox"|"qengine-rewards-l2-bone"|"qengine-rewards-l2-botany"|"qengine-rewards-l2-vampire") { None } else { Some(if draconia && !draconia_journey {
+    let world = if matches!(name,"qengine-rewards-l2-sam"|"qengine-rewards-l2-outfox"|"qengine-rewards-l2-bone"|"qengine-rewards-l2-botany"|"qengine-rewards-l2-vampire"|"qengine-rewards-l2-steal"|"qengine-rewards-l2-troll"|"qengine-rewards-l2-cartography") { None } else { Some(if draconia && !draconia_journey {
         super::world_remote(&callback, trigger, 431, 0, Some(2772))?
     } else if paired_plate {
         super::world_ordinal(&callback, trigger, 431, 1)?
@@ -133,6 +133,7 @@ fn scenario_case(
         let generation = controller.active().ok_or("generation")?;
         let world = match world {
             Some(world)=>world,
+            None if matches!(name,"qengine-rewards-l2-steal"|"qengine-rewards-l2-troll"|"qengine-rewards-l2-cartography")=>super::super::qengine_rewards::questl2_delivery_journeys::world(name,generation.native_gameplay().ok_or("native delivery journey")?)?,
             None=>super::super::qengine_rewards::questl2_journeys::world(name,generation.native_gameplay().ok_or("native journey")?)?,
         };
         let cells = world

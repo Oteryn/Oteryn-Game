@@ -276,6 +276,24 @@ pub(super) async fn consume(
             return Ok(false);
         }
     }
+    for required in &callback.effects.equipped {
+        let present:Option<sqlx::types::Uuid>=sqlx::query_scalar("SELECT i.item_instance_id FROM game_character_equipment_slots e JOIN game_item_instances i USING(item_instance_id) WHERE e.character_id=encode($1,'hex')::uuid AND e.world_id=encode($2,'hex')::uuid AND e.slot=$3 AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=ANY($4::text[]) FOR SHARE OF i")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice())
+            .bind(i16::from(required.slot)).bind(&required.items).fetch_optional(&mut **tx).await?;
+        if present.is_none() {
+            return Ok(false);
+        }
+    }
+    if let Some(window) = &callback.effects.fresh_within {
+        let clock:Option<(i64,i64)>=sqlx::query_as("SELECT value,floor(extract(epoch FROM now()))::bigint FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 AND track_key=$3 FOR SHARE")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(&callback.quest).bind(&window.track).fetch_optional(&mut **tx).await?;
+        if !clock.is_some_and(|(stamp, now)| {
+            now.checked_sub(stamp)
+                .is_some_and(|age| (0..=i64::from(window.seconds)).contains(&age))
+        }) {
+            return Ok(false);
+        }
+    }
     for required in &callback.effects.present {
         let rows = sqlx::query(
             "SELECT i.quantity,i.item_instance_id::text AS item,c.location,c.kind FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c \

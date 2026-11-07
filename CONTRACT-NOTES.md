@@ -200,3 +200,50 @@ locked while checking negative ownership. A separate bounded claim preserves
 one-time document bookkeeping under the same quest transaction. This is a
 focused shared-mechanism proof; it does not qualify another lane's full outfit
 quest. The player starts with no Brotherhood quest progress or outfit grants.
+
+L2 delivery batch source contract: Ahmet follows Crystal9f
+`data-global/npc/ahmet.lua:118-159`, SHA256
+`7141a6ed014f4ca77031a6c83f41f7ff9603bf35a645004be53754e7bfa62797`.
+The source bag 235 hand-in grants 100 gold 3031 and 100 brown mushrooms 3725.
+`data-global/scripts/quests/others/actions_steal_from_thieves.lua:4-16`, SHA256
+`cf029fb4b5f0d9a8adb119c1cae81da2eef80a6d9f768e25e3af28cd8dcbc9ec`,
+checks UID19910 but registers AID19910; the donor map report cannot find that ID.
+Under the owner's documented-choice instruction, restore this at the served
+Darama box appearance2473 at (33131,32661,7), verified in `content/world/placements/region-z07-x129-y127.b3`
+SHA256 `3d8be37fc38619e95490267428993d658fac808cbd8eb64e82beb3f26d3108de`.
+This is an explicit restoration choice, not a claim that the source ID existed
+on that box. The selector uses its exact native position and appearance.
+
+Troll Sabotage follows Jerom67-84 SHA8f300ec0a5d3e609aee8772993cb8df06d4c1d510c432c662f706969690535b3
+and Chief Grarkharok73-116 SHA4e2c0d750d572355b89e4b2cad56e2def8cff3e527ea666bc6aece91a538df09
+in the pinned `data-global/npc/*.lua` sources. The arbitrary lady name is
+restored as the explicit dialogue word `grubokk`. The chief issues necklace7754;
+Jerom consumes it and grants elvenhair rope646. Native equipment gates query
+the held Character's durable slot edges under the Character root lock, not
+a supplied inventory assertion. Head slot1 admits the source three diving
+helmets; durable feet slot4 requires boots3079. Source movement script1-76 SHA
+6f804525bdbe061efb3172968183a7724e318d077c2d85105fe375eb5096c870 and
+startup tile table2032-2041 SHA f6e1d120063105d19303c9e9c8a57b40a6419cc51c4998be58984c42dc67a2a7
+bind the six exact trigger cells. A server-time stamp plus age<=1 second is
+equivalent to the source JumpTimer=now+1 and JumpTimer>=now check. Future
+stamps and expired stamps refuse. The vortex1949 at (33229,31770,9) already
+returns to (33235,31748,7) through the imported native teleport owner.
+
+Cartography101's donor Rotem Valos NPC is a registered shell. This lane binds
+the existing authored68 three-landmark recipe, map22107 (adventurer's map),
+and the existing Cartography101 achievement. Exact named landmark coordinates
+come from `content/world/areas/hunting-places/hunting-places-00000-00444.json:1`, SHA256
+`cafc1aa9f937f5e07b794e1a297732aee616f6c85beb1a333f4c45d945489652`. Each native landmark
+USE requires the carried issued map and writes only its own one-time survey
+mark. The final NPC hand-in requires all three marks and consumes that map.
+These are chosen Oteryn bindings; the source NPC shell is not presented as
+original quest logic. PG fixtures compress only unrelated walking/climbing
+with ordinary fixture teleports; quest gates retain their actual coordinates.
+World callbacks loaded before classic NPC overlays reuse the overlay owner's
+exact track declaration. The later overlay merge still rejects any mismatch;
+callback guards never widen a canonical owner's domain. Test-world extents are
+derived from the fixture tiles with half-open upper bounds and sorted floors.
+The shared PG harness initializes players one tile west of its anchor. L2 delivery
+anchors account for that offset, and every journey asserts its initial player cell
+before issuing commands. Equipment predicates use durable semantic slot codes
+from `crates/protocol-oteryn/src/item_view.rs:210`, rather than wire ordinals.

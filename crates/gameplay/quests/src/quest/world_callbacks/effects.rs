@@ -20,6 +20,14 @@ pub struct CallbackEffects {
     /// Read-only carried evidence, locked with the quest transition.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<super::super::reward_callbacks::ItemAmount>,
+    /// Durable equipment evidence checked under the Character root lock.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub equipped: Vec<EquippedRequirement>,
+    /// Replace the named declared storage effect with the authoritative transaction clock.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stamp_now: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fresh_within: Option<ClockWindow>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub temporary_item: Option<TemporaryItem>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
@@ -36,6 +44,22 @@ impl CallbackEffects {
     pub(super) fn is_empty(&self) -> bool {
         self == &Self::default()
     }
+}
+
+/// One native equipment slot and its bounded set of accepted Item definitions.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct EquippedRequirement {
+    pub slot: u8,
+    pub items: Vec<String>,
+}
+
+/// A previously stamped quest clock must be neither future nor expired.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ClockWindow {
+    pub track: String,
+    pub seconds: u32,
 }
 
 /// A bounded, source-bound object added at the selected target's tile.
@@ -104,6 +128,48 @@ pub struct Encounter {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.equipped.len() > 4
+        || effects
+            .equipped
+            .iter()
+            .map(|r| r.slot)
+            .collect::<BTreeSet<_>>()
+            .len()
+            != effects.equipped.len()
+        || effects.equipped.iter().any(|r| {
+            !(1..=10).contains(&r.slot)
+                || r.slot == 9
+                || r.items.is_empty()
+                || r.items.len() > 8
+                || r.items.iter().collect::<BTreeSet<_>>().len() != r.items.len()
+                || r.items
+                    .iter()
+                    .any(|key| !super::super::valid_quest_key(key))
+        })
+        || ((!effects.equipped.is_empty()
+            || effects.stamp_now.is_some()
+            || effects.fresh_within.is_some())
+            && (callback.is_read_only()
+                || callback.storage.is_empty()
+                || callback.native_rule.is_some()))
+        || effects.stamp_now.as_ref().is_some_and(|key| {
+            !callback
+                .storage
+                .iter()
+                .any(|s| s.track == *key && s.set == 0 && !s.preserve && !s.read_only)
+        })
+        || effects.fresh_within.as_ref().is_some_and(|window| {
+            window.seconds == 0
+                || window.seconds > 86400
+                || !callback
+                    .storage
+                    .iter()
+                    .any(|s| s.track == window.track && (s.preserve || s.read_only))
+        })
+    {
+        return false;
+    }
+
     if effects.item_reward.as_ref().is_some_and(|reward| {
         callback.trigger != Trigger::Use
             || callback.is_read_only()

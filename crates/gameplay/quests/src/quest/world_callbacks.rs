@@ -29,8 +29,8 @@ pub enum Trigger {
 
 mod effects;
 pub use effects::{
-    CallbackEffects, Encounter, EncounterMonster, EncounterPlayer, Facing, ItemCycle, MagicEffect,
-    Portal, PortalPair, TemporaryItem,
+    CallbackEffects, ClockWindow, Encounter, EncounterMonster, EncounterPlayer,
+    EquippedRequirement, Facing, ItemCycle, MagicEffect, Portal, PortalPair, TemporaryItem,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -439,6 +439,16 @@ fn extend_callbacks(
                         callback.key, storage.track
                     ));
                 }
+                if let Some(track) = super::classic_dialogue::declared_track(&storage.track)? {
+                    if track.quest != callback.quest {
+                        return Err(format!(
+                            "callback {} uses a foreign owner track {}",
+                            callback.key, storage.track
+                        ));
+                    }
+                    tracks.push(track);
+                    continue;
+                }
                 tracks.push(QuestTrack {
                     key: storage.track.clone(),
                     quest: callback.quest.clone(),
@@ -468,6 +478,9 @@ fn extend_callbacks(
                     from: QuestComparison::Between(s.minimum, s.maximum),
                     effect: match callback.native_rule {
                         Some(rule) => QuestEffectKind::Native(rule),
+                        None if callback.effects.stamp_now.as_deref() == Some(s.track.as_str()) => {
+                            QuestEffectKind::SetNow
+                        }
                         None if s.preserve => QuestEffectKind::Add(0),
                         None => s.set_if.map_or(QuestEffectKind::Set(s.set), |equals| {
                             QuestEffectKind::SetIf {

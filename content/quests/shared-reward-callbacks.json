@@ -2128,6 +2128,94 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l2-cartography-return",
+      "quest": "oteryn:quest.authored.cartography_101_quest",
+      "npc": "oteryn:npc.rotem_valos",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l2/cartography/mission",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/l2/cartography/asura",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l2/cartography/dryad",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l2/cartography/crypt",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i22107",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/cartography_101",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rotem_valos.lua:1-62:sha256:0fc954c54b57186282755d9c882dd46ea5e2ba6f19756d895c14279b19e7d750",
+        "repo:tools/content-schema/quest-authoring/samples/authored68/recipes.json:1:sha256:7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-cartography-start",
+      "quest": "oteryn:quest.authored.cartography_101_quest",
+      "npc": "oteryn:npc.rotem_valos",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l2/cartography/mission",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i22107",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rotem_valos.lua:1-62:sha256:0fc954c54b57186282755d9c882dd46ea5e2ba6f19756d895c14279b19e7d750",
+        "repo:tools/content-schema/quest-authoring/samples/authored68/recipes.json:1:sha256:7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/l2-elementalist-base",
       "quest": "oteryn:quest.elementalist_outfits_quest",
       "npc": "oteryn:npc.broken_servant_sentry",
@@ -2484,6 +2572,175 @@
           "item": "oteryn:item.tibia.i25088",
           "count": 3
         }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-steal-return",
+      "quest": "oteryn:quest.steal_from_thieves_quest",
+      "npc": "oteryn:npc.ahmet",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/steal_from_thieves",
+          "minimum": 1,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i235",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3031",
+        "count": 100,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i3725",
+            "count": 100
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ahmet.lua:149-159:sha256:7141a6ed014f4ca77031a6c83f41f7ff9603bf35a645004be53754e7bfa62797"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-steal-start",
+      "quest": "oteryn:quest.steal_from_thieves_quest",
+      "npc": "oteryn:npc.ahmet",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/steal_from_thieves",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ahmet.lua:118-148:sha256:7141a6ed014f4ca77031a6c83f41f7ff9603bf35a645004be53754e7bfa62797"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-troll-necklace",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "npc": "oteryn:npc.chief_grarkharok",
+      "keywords": [
+        "grubokk"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7754",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/chief_grarkharok.lua:73-116:sha256:4e2c0d750d572355b89e4b2cad56e2def8cff3e527ea666bc6aece91a538df09"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-troll-return",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "npc": "oteryn:npc.jerom",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7754",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i646",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/jerom.lua:75-78:sha256:8f300ec0a5d3e609aee8772993cb8df06d4c1d510c432c662f706969690535b3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-troll-start",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "npc": "oteryn:npc.jerom",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/jerom.lua:67-84:sha256:8f300ec0a5d3e609aee8772993cb8df06d4c1d510c432c662f706969690535b3"
       ]
     },
     {

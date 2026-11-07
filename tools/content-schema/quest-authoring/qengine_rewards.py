@@ -16,6 +16,7 @@ import xml.etree.ElementTree as ET
 from jsonschema import Draft202012Validator
 import questl2_rewards
 import questl2_shared_engine
+import questl2_deliveries
 import questl2_carried_use
 import questl2_vampire
 
@@ -367,6 +368,7 @@ def build():
     questl2_shared_engine.append(add, storage, callbacks, offers, declarations, inputs, PIN, sha)
     questl2_vampire.append(callbacks, offers, declarations, inputs, PIN)
     questl2_carried_use.append(add, storage, callbacks, offers, declarations, inputs, PIN)
+    questl2_deliveries.append(add, storage, callbacks, offers, declarations, inputs, PIN)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})

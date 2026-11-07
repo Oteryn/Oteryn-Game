@@ -10078,6 +10078,503 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/actions_mission5_ray_of_light.lua:1-13"
       ],
       "success_message": "A ray of sunlight comes down from the heaven and hits the crystal. Wow. That probably means Fasuon is supporting."
+    },
+    {
+      "key": "oteryn:quest-callback/l2-steal-chest",
+      "quest": "oteryn:quest.steal_from_thieves_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33131,
+          "y": 32661,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2473
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/steal_from_thieves",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i235",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/others/actions_steal_from_thieves.lua:4-16:sha256:cf029fb4b5f0d9a8adb119c1cae81da2eef80a6d9f768e25e3af28cd8dcbc9ec",
+        "owner:restore-unregistered-19910-at-native-oasis-box:content/world/placements/region-z07-x129-y127.b3:sha256:3d8be37fc38619e95490267428993d658fac808cbd8eb64e82beb3f26d3108de"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-troll-surface-1",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33234,
+          "y": 31748,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33247,
+        "y": 31771,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "minimum": -1,
+          "maximum": 3,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "effects": {
+        "equipped": [
+          {
+            "slot": 1,
+            "items": [
+              "oteryn:item.tibia.i5460",
+              "oteryn:item.tibia.i11585",
+              "oteryn:item.tibia.i13995"
+            ]
+          }
+        ]
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/troll_sabotage/movements_teleport.lua:1-76:sha256:6f804525bdbe061efb3172968183a7724e318d077c2d85105fe375eb5096c870",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/tile.lua:2032-2041:sha256:f6e1d120063105d19303c9e9c8a57b40a6419cc51c4998be58984c42dc67a2a7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-troll-surface-2",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33234,
+          "y": 31749,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33247,
+        "y": 31771,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "minimum": -1,
+          "maximum": 3,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "effects": {
+        "equipped": [
+          {
+            "slot": 1,
+            "items": [
+              "oteryn:item.tibia.i5460",
+              "oteryn:item.tibia.i11585",
+              "oteryn:item.tibia.i13995"
+            ]
+          }
+        ]
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/troll_sabotage/movements_teleport.lua:1-76:sha256:6f804525bdbe061efb3172968183a7724e318d077c2d85105fe375eb5096c870",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/tile.lua:2032-2041:sha256:f6e1d120063105d19303c9e9c8a57b40a6419cc51c4998be58984c42dc67a2a7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-troll-deep",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33241,
+          "y": 31772,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33228,
+        "y": 31771,
+        "floor": -9
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "minimum": -1,
+          "maximum": 3,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "effects": {
+        "equipped": [
+          {
+            "slot": 1,
+            "items": [
+              "oteryn:item.tibia.i5460",
+              "oteryn:item.tibia.i11585",
+              "oteryn:item.tibia.i13995"
+            ]
+          }
+        ]
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/troll_sabotage/movements_teleport.lua:1-76:sha256:6f804525bdbe061efb3172968183a7724e318d077c2d85105fe375eb5096c870",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/tile.lua:2032-2041:sha256:f6e1d120063105d19303c9e9c8a57b40a6419cc51c4998be58984c42dc67a2a7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-troll-jump-ready",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33231,
+          "y": 31765,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "minimum": -1,
+          "maximum": 3,
+          "set": -1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/jump_timer",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": 0
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "effects": {
+        "stamp_now": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/jump_timer"
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/troll_sabotage/movements_teleport.lua:1-76:sha256:6f804525bdbe061efb3172968183a7724e318d077c2d85105fe375eb5096c870",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/tile.lua:2032-2041:sha256:f6e1d120063105d19303c9e9c8a57b40a6419cc51c4998be58984c42dc67a2a7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-troll-jump-north",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33231,
+          "y": 31762,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33231,
+        "y": 31759,
+        "floor": -2
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "minimum": -1,
+          "maximum": 3,
+          "set": -1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/jump_timer",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "effects": {
+        "equipped": [
+          {
+            "slot": 4,
+            "items": [
+              "oteryn:item.tibia.i3079"
+            ]
+          }
+        ],
+        "fresh_within": {
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/jump_timer",
+          "seconds": 1
+        }
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/troll_sabotage/movements_teleport.lua:1-76:sha256:6f804525bdbe061efb3172968183a7724e318d077c2d85105fe375eb5096c870",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/tile.lua:2032-2041:sha256:f6e1d120063105d19303c9e9c8a57b40a6419cc51c4998be58984c42dc67a2a7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-troll-jump-south",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33231,
+          "y": 31760,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33231,
+        "y": 31763,
+        "floor": -2
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "minimum": -1,
+          "maximum": 3,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "effects": {
+        "equipped": [
+          {
+            "slot": 4,
+            "items": [
+              "oteryn:item.tibia.i3079"
+            ]
+          }
+        ]
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/troll_sabotage/movements_teleport.lua:1-76:sha256:6f804525bdbe061efb3172968183a7724e318d077c2d85105fe375eb5096c870",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/startup/tables/tile.lua:2032-2041:sha256:f6e1d120063105d19303c9e9c8a57b40a6419cc51c4998be58984c42dc67a2a7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-cartography-asura",
+      "quest": "oteryn:quest.authored.cartography_101_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32953,
+          "y": 32685,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l2/cartography/mission",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l2/cartography/asura",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "present": [
+          {
+            "item": "oteryn:item.tibia.i22107",
+            "count": 1
+          }
+        ]
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rotem_valos.lua:1-62:sha256:0fc954c54b57186282755d9c882dd46ea5e2ba6f19756d895c14279b19e7d750",
+        "repo:tools/content-schema/quest-authoring/samples/authored68/recipes.json:1:sha256:7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc",
+        "repo:content/world/areas/hunting-places/hunting-places-00000-00444.json:1:sha256:cafc1aa9f937f5e07b794e1a297732aee616f6c85beb1a333f4c45d945489652"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-cartography-dryad",
+      "quest": "oteryn:quest.authored.cartography_101_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33264,
+          "y": 32014,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l2/cartography/mission",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l2/cartography/dryad",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "present": [
+          {
+            "item": "oteryn:item.tibia.i22107",
+            "count": 1
+          }
+        ]
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rotem_valos.lua:1-62:sha256:0fc954c54b57186282755d9c882dd46ea5e2ba6f19756d895c14279b19e7d750",
+        "repo:tools/content-schema/quest-authoring/samples/authored68/recipes.json:1:sha256:7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc",
+        "repo:content/world/areas/hunting-places/hunting-places-00000-00444.json:1:sha256:cafc1aa9f937f5e07b794e1a297732aee616f6c85beb1a333f4c45d945489652"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/l2-cartography-crypt",
+      "quest": "oteryn:quest.authored.cartography_101_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33109,
+          "y": 31722,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/l2/cartography/mission",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/l2/cartography/crypt",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "present": [
+          {
+            "item": "oteryn:item.tibia.i22107",
+            "count": 1
+          }
+        ]
+      },
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rotem_valos.lua:1-62:sha256:0fc954c54b57186282755d9c882dd46ea5e2ba6f19756d895c14279b19e7d750",
+        "repo:tools/content-schema/quest-authoring/samples/authored68/recipes.json:1:sha256:7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc",
+        "repo:content/world/areas/hunting-places/hunting-places-00000-00444.json:1:sha256:cafc1aa9f937f5e07b794e1a297732aee616f6c85beb1a333f4c45d945489652"
+      ]
     }
   ]
 }
