@@ -1,20 +1,39 @@
-# Active r2: canonical basement runtime GREEN, final pins pending
+# Active r2: selector/activation full slice GREEN, native wire combat next
 
-BATCH-basement-selector-alias-2026-11-07.json: actualPG180006 sourceRED75.36
-->GREEN85.60s/10615ms marker. Nativephase0+ownphase1 same xmin/revision at
-actual basement53; original41 remains canonical alias, closed -1->0 guard
-untouched. Exact goals2cases99.30s and atomic/stale2cases166.36s GREEN.
-Check78s, clippy185s alltargets/allfeatures-Dwarnings, fmt, alias6unit,
-closed-goal2unit, qengine_access write/check, native43write/check PASS.
-Cold build3m44s after new ABI native incremental OOM20/kill9; no test skip.
-Current executable/READY positive, helper caches restored, source stable.
+BATCH-basement-selector-alias-2026-11-07.json finalized: PG180006 source
+RED75.36s ->GREEN85.60s, phase flags same xmin/revision; goal2cases99.30s and
+atomic/stale2cases166.36s GREEN. Check78s, clippy185s, fmt, alias6unit,
+closed-goal2unit, qengine_access and native43write/check PASS. Isolated pin
+refresh/check PASS, world32170e60e0f946dd1ba74dc68e45399579b85e66e819259a7adfef3bc5ad8502,
+inputs53806f56d1ee04d4b4ba877e419fd8c3be1ff83d9b58c03505a4906382d5ac5c;
+unchanged geometry/pin data. Prior proof e7163c164 pushed, finalize metadata now.
 
-IMMEDIATE: session6237 final pin-refresh/check; logs
-/tmp/questpc2-basement-selector-alias-pin-{refresh,check}.log. Finalize proof
-and push, then full wire source six-defender combat and atomic seven physical
-rewards, source exit/journal; whole Elvenbane remains unfinished. No final while
-owned27 remain. Push everygreen and within15min. Native latest source1327ef861.
-No tests/SQL guards weakened, no new migration. Range1240–44 unchanged.
+NEXT IMMEDIATELY: full wire combat fixture using source-native six defenders.
+Production API found: BundleWorld.activation_spawns + runtime.begin_activation_spawn_sources/
+realize_activation_spawn_window; serve.rs2445-2471. SourceWorld project.families
+contains actual SpawnSource.points {creature,cell,direction,respawn_ms}; select
+only six pinned goal origins in the new combat fixture before compilation;
+assert exactly6 actual projected/realized native source actors. No qualification
+spawn helper/fake HP/deaths/flags in whole-quest proof. Activate before Fresh
+players as production does, retain actual actor references even if AI moves.
+Start from earned basement/poison/Dragon-floor route, then actual protocol attack
+and autoattack/nativeAI drains (existing annihilator_combat driver reusable),
+ordinary XP/corpse/loot settlement, exact native counters. Then generic atomic
+seven-item backpack reward/capacity/replay + source exit/journal; qualify full
+Elvenbane only after whole driver. Keep owned27 unfinished until then.
+
+Resource: overlapping pins killed137/OOM21kill10; isolated pin tools now passed.
+To restore positive native incremental after pins, read
+/tmp/questpc2-selector-alias-positive-native-ready.json, extract its archive into
+/tmp/questpc2-dispatch-native-incremental (contains saved directory), retain READY.
+Positive selector executable backup in cache hold ledger
+/tmp/questpc2-cache-hold-basement-five-pg-before-pin.json. Restore it or let cargo
+rebuild; no native executable currently. Cache helper/index under/tmp; only
+restore clippy/check after native build finishes. Current inactive caches archived.
+Root2.4GBfree/tmp1.4GB at13:20; fixture33idle DB cleanup freed1.4GiB. New early
+return cleanup verified by source/atomic PG cases. No broad clean/profile flags/
+credential reads. Push target10min to guarantee owner15min maximum; everygreen
+step immediately. Beforeeachpush fetch ownbranch/merge remote ifmoved.
 
 Branch claude/happy-davinci-ijz3wy-questpc2; AUTHORING. Owned29:
 2QUALIFIED (Desert/Annihilator),27UNFINISHED,6world titles SKIPPED_OTHER_LANE

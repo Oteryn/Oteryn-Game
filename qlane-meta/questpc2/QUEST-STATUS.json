@@ -2046,13 +2046,13 @@
     "state": "GREEN_MIGRATION_RENUMBER_SLICE"
   },
   "basement_cohort_authoring": {
-    "state": "GREEN_RUNTIME_FINAL_PINS_PENDING",
+    "state": "GREEN_SELECTOR_AND_ACTIVATION_SLICE",
     "red_postgres_seconds": 75.36,
     "red": "Actual basement landing earns ownphase1 but cohort absent, expected0.",
     "rejected_attempt_postgres_seconds": 75.39,
     "rejected_attempt": "Catalogue native goal run may reopen; reverted attempt, keep closed activation guard.",
     "check": "quests+dispatch PASS41.79s; fixture early-return cleanup compiles.",
-    "next": "Finalize session6237 pins then full wire six defenders, atomic seven-item treasure/source exit/journal.",
+    "next": "World source native6 activation + actual protocol attacks, atomic7-item treasure/exit/journal.",
     "check_seconds": 78,
     "alias_unit_cases": 6,
     "closed_goal_tests": 2,
@@ -2060,6 +2060,7 @@
     "batch": "BATCH-basement-selector-alias-2026-11-07.json",
     "source_pg_seconds": 85.6,
     "atomic_pg_seconds": 166.36,
-    "goal_pg_seconds": 99.3
+    "goal_pg_seconds": 99.3,
+    "pins": "isolated refresh/check PASS"
   }
 }
