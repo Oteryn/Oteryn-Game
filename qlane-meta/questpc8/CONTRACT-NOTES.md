@@ -419,3 +419,20 @@ A capacity-view-only check was rejected during implementation and is not the
 published contract. Existing NPC root/sequencer APIs delegate to NoGrizzlyPremium;
 the composed NPC owner passes QuestPremium explicitly. Replay remains historical,
 while fresh mutations without a current participant refuse unchanged.
+
+Mystery static-item construction: accepted client/canonical identities50335
+(statue) and50336..50338(fragments) have no certified imported donor binding or
+constructor in the inspected Canary/Crystal XML snapshots, including Crystal
+Summer00ce02a57ca5a12e48f32a3476e37471167e4c3f/items.xml SHA256
+13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece.
+Declare explicit first-party static constructors in the separate
+oteryn/static_item_constructor namespace; do not claim a donor server-ID match.
+Use the accepted portable/nonstack client facts and choose1000weight units for
+each as a conservative Oteryn physical policy. No equip, spell, charge, timer,
+teleport or trade behavior is inferred. Noncustody canonical semantics and
+original definitions/holds remain intact. Every resulting native row is bound
+byte-for-byte to the generated first-party admission packet, and cannot replace
+an imported binding. The recipe, canonical identity, role and pinned official
+client facts must all match before generation. Sources: the recipe's retained
+Fandom references and the existing official15.30 appearance file with SHA256
+2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.

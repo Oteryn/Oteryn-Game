@@ -321,6 +321,10 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
     grizzly_debris_profiles.admit(
         root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
         NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import authored_static_item_constructors
+    authored_static_item_constructors.admit(
+        root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+        NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import loop_training_profiles
     loop_training_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import timed_item_profiles

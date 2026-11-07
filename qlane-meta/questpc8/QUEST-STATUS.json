@@ -1298,7 +1298,7 @@
         "qlane-meta/questpc8/RESUME.md",
         "qlane-meta/questpc8/continuation-validation.json"
       ],
-      "reuse": "Incoming70a0d92af native Lai introduction/Premium/placement is already green; retain and extend it for the remaining three fragments, exploration and assembly."
+      "reuse": "Incoming37aa8adda admits exact existing canonical GuardianStatue50335/fragments50336..50338; reuse native constructors and incoming Lai programme/placement, finish selected full graph."
     },
     "first_unqualified_stage": {
       "key": "s2",
@@ -1333,6 +1333,14 @@
         "duration_seconds": 69.175308851,
         "red_duration_seconds": 69.96,
         "proof": "mystery-introduction-validation.json"
+      },
+      {
+        "scope": "Plain constructor MINT/carried custody for statue and all three fragments; quest collection/assembly still active authoring",
+        "test": "questpc8_static_constructors_mint_and_carry_four_plain_items_without_timers",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_static_constructors_mint_and_carry_four_plain_items_without_timers duration=38.512744657s",
+        "duration_seconds": 38.512744657,
+        "red_duration_seconds": 37.85,
+        "proof": "static-constructor-validation.json"
       }
     ]
   },

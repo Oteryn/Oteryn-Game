@@ -33,8 +33,9 @@ class AcceptedOverlayTests(unittest.TestCase):
         self.assertEqual(len(looks['item_appearances']),6)
     def test_registration_replays_all_current_outputs(self):
         actual=registration.outputs(ROOT)
-        # PREY-DIFF registers the generated tier and slot-value tables below.
-        self.assertEqual(len(actual),40)
+        # Includes the exact first-party static-constructor admission packet.
+        self.assertEqual(len(actual),41)
+        self.assertIn('content/items/authored-static-admissions.json',actual)
         self.assertIn('content/creatures/prey-tiers.json',actual)
         self.assertIn('content/creatures/prey-slot-values.json',actual)
         self.assertIn('content/items/readable-profiles.json',actual)

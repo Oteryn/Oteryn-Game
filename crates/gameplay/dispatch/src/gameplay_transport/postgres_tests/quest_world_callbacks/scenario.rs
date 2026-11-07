@@ -27,6 +27,7 @@ fn scenario_case(
         name,
         "catalogue-npc"
             | "authored-mystery-intro"
+            | "authored-static-constructors"
             | "catalogue-npc-father"
             | "fathers-burden-handins"
             | "catalogue-npc-hero"
@@ -372,6 +373,9 @@ fn scenario_case(
                 name == "catalogue-npc-hero",
             )
             .await?;
+        } else if name == "authored-static-constructors" {
+            super::super::questpc8_static_constructors::exercise(&mut owner, &mut admitted, &h)
+                .await?;
         } else if name == "authored-mystery-intro" {
             super::super::questpc8_mystery::exercise_intro(
                 &mut owner,

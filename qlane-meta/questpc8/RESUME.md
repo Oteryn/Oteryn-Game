@@ -1,3 +1,11 @@
+Constructor convergence GREEN: four-route commit f767dfc42 merged with37aa8adda.
+Actual merged PostgreSQL constructors25.632640192s and Anniversary56.214057144s;
+productioncheck/strictClippy/fmt/fullrepositoryfreshness/pins pass. Existing26
+Item profiles unchanged; four canonical first-party constructors added. Output
+count is now41 with explicit admission-packet assertion. See
+constructor-convergence-validation.json. Retain18/23 active qualifications and
+continue five remaining programmes after authorized fast-forward publication.
+
 # Current continuation checkpoint
 
 Parent70a0d92af incorporates incoming authored NPC/Premium/Lai introduction.
