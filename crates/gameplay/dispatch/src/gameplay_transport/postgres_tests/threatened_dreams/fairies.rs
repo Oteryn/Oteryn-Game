@@ -110,6 +110,7 @@ fn scenario()->TestResult{
         let counter=progress(&owner,&admitted,&authority,COUNTER).await?;
         let mut flags=0;for i in 0..5{flags+=usize::from(progress(&owner,&admitted,&authority,&flag(i)).await?==1);}
         let mut restored=0;
+        eprintln!("THREATENED_FAIRIES BEFORE_TIMER entries={released} flags={flags} counter={counter} scheduled={scheduled}");
         if let Some(due)=world.facts().next_movement_decay_time(){
             assert_eq!(world.facts().expire_movement_items(due.saturating_sub(1)),0,"the earliest timer must not restore before its exact deadline");
             owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(31)).ok_or("clock")?;
@@ -117,8 +118,8 @@ fn scenario()->TestResult{
             let cycles=owner.run_source_owner_cycles(&stop);
             let stopping=async{tokio::time::sleep(std::time::Duration::from_millis(150)).await;stop.cancel();};
             use std::future::{Future,poll_fn};
-            let mut cycles=std::pin::pin!(cycles);let mut stopping=std::pin::pin!(stopping);
-            tokio::time::timeout(std::time::Duration::from_secs(5),poll_fn(|cx|{let _=stopping.as_mut().poll(cx);cycles.as_mut().poll(cx)})).await?;
+            let mut cycles=std::pin::pin!(cycles);let mut stopping=std::pin::pin!(stopping);let mut stopped=false;
+            tokio::time::timeout(std::time::Duration::from_secs(5),poll_fn(|cx|{if !stopped && stopping.as_mut().poll(cx).is_ready(){stopped=true;}cycles.as_mut().poll(cx)})).await?;
             for at in TARGETS{let key=oteryn_world_bundle::bundle::placement_key(at.floor,at.x,at.y,1).ok_or("key")?;restored+=usize::from(appearance(at)?==25796 && world.facts().object_revision(key)>=2);}
         }
         eprintln!("THREATENED_FAIRIES POSTGRES_EVIDENCE entries={released} flags={flags} counter={counter} scheduled={scheduled} restored={restored}");
