@@ -111,7 +111,9 @@
       "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
       "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
       "scope": "Generic owner only; not this quest's route qualification"
-    }
+    },
+    "current_batch": "Compiling shared bounded-USE checkpoint: actual PG18.6 schema RED41.717713297s\u2192GREEN42.656947790s;24 world-callback units PASS including exact cap20 and15 negatives. This does NOT qualify native settlement or the quest. Next source-backed authored static props and real native sampling settlement, then whole route. Reuse core checked Add; no SQL migration.",
+    "assumptions": "Feaster contact/quest/Thaian facts closed using Wiki revisions419674,368970,421868,445240; exact XML items retained. See RESUME and forthcoming source/prop contracts."
   },
   {
     "title": "Feral Trappers Quest",

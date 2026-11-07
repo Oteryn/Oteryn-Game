@@ -1,3 +1,41 @@
+# Bounded native USE compiling checkpoint — 2026-11-07 15:00 UTC
+
+Forgotten QUALIFIED/pushedc29700027. Four ACTIVE remain. Feaster PG18.6
+schema RED41.717713297s→GREEN42.656947790s after SHOW server_version.
+This is schema admission, NOT real USE settlement or quest qualification.
+All24 world-callback units pass: exact20 additions and21st refusal plus15
+malformed-rule cases, all22 prior tests retained. Optional Storage.add1 uses
+existing checked QuestEffectKind::Add; set remains terminal max+1. Explicit
+matching USE activation, min>=0/max<10000, no preserve/read_only/native_rule/
+reversible or second additive track. No new SQL or weakened old reward guards.
+Push compiling WIP now (next cadence deadline15:01), continue real settlement.
+
+Next implement reusable authored static world props as pinned JSON overlay
+applied IN MEMORY to existing B3 regions by world-bundle-compiler source::project,
+using existing sector::encode and zstd. Never commit binary region changes.
+This is needed: native palette lacks32173 ulcer/32537 crystal; none near expected
+source sites. Machine21573/8995 exist elsewhere but can be authored near lab.
+Admit exact static Ground-only Item profiles through existing source.profile
+qualifier (already supports Ground-only); peer static constructor is portable
+only and does not apply. Root placement index optional authored_props array of
+pinned per-lane JSON files; each binds canonical quest recipe and source facts.
+Re-encode touched regions in memory so existing parity/equivalence, collision,
+NPC and map bounds remain unchanged. Append palette keys in memory only.
+Source refs/selected regions/house/duplicate/count/bounds must fail closed.
+Then real PG prefix can obtain Bell/Scalpel from actual Para Norbert and prove
+20 native samples with tool/Premium/refusal/replay/cap and real items. Extend
+prefix through source purification20 and later entire23-stage Feaster.
+
+Feaster normalized facts/temp plans: /tmp/questpc7-feaster-item-facts.json,
+feaster-native-objects.json (no nearby machine/ulcer/crystal), feaster-source-
+facts.json, feaster-wiki-quest-facts.json. Public API verified quest421868 and
+NPC419674/368970; boss Thaian445240 HP50000, absent native/corpus. Generic
+first-party creature authoring may be needed; source facts closed, no hold.
+Site draft /tmp/questpc7-prepare-feaster-sites.py currently fails FearFeaster
+anchor33784,31539,-14 (no clear tile within15); pick another documented clear
+cell in retained Zarganash instead of investigating. Other7 bosses/contact/
+bell steps in draft. Add source-backed overlay props for real missing objects.
+
 # Forgotten Knowledge QUALIFIED — 2026-11-07
 
 Actual PG18.6 RED42.191567216s→GREEN88.533725484s. Whole eleven-stage

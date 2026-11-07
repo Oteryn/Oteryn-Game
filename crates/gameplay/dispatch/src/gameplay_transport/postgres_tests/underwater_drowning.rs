@@ -440,6 +440,7 @@ fn scenario_in_world(
                         set: 1,
                         preserve: false,
                         read_only: false,
+            add: None,
                     }]
                 } else {
                     vec![]

@@ -608,3 +608,7 @@ alternative only for its three source-named powerful families. Basic/intricate
 recipes and other established access rules retain their existing treatment.
 
 The selected father stage also requires actual A Strange Chalice dialogue: chalice, daughter, story, disguised, thirsty, learned. Existing canonical identity and retained candidate33419,31125,-9 are reused. Source data-global/npc/a_strange_chalice.lua:60-113 SHA2567eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea identifies the father and provides zzubaran; Ivalisse alone does not finish that stage.
+
+## Bounded repeated native USE
+
+Optional Storage.add=1 explicitly opts into checked Add1, retaining set as the terminal maximum+1. The finite range is nonnegative and below10000; one additive track requires a matching USE activation and forbids preserve/read_only/native/reversible combinations. Existing reward and completion guards stay intact. Core quest evaluation and durable callback transaction already own checked addition, cause replay and coherent fencing; no SQL is added. The initial PG proof is schema admission only; real native settlement and complete Feaster qualification remain ACTIVE until proven.

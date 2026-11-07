@@ -638,6 +638,7 @@ pub(super) async fn exercise(
             set: 2,
             preserve: true,
             read_only: false,
+            add: None,
         });
     }
     seed(owner, admitted, &setup, 9000).await?;

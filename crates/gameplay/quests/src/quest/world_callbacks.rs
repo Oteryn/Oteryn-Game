@@ -63,6 +63,9 @@ pub struct Storage {
     pub minimum: i64,
     pub maximum: i64,
     pub set: i64,
+    /// Explicit bounded repetition: `set` is the terminal cap, not the per-use value.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub add: Option<i64>,
     /// Preserve the track value within a receipt-bearing quest transition.
     #[serde(default, skip_serializing_if = "is_false")]
     pub preserve: bool,
@@ -223,6 +226,23 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || unique_offerings.len() != callback.offerings.len()
             || unique_passages.len() != callback.passages.len()
             || unique_storage.len() != callback.storage.len()
+            || callback.storage.iter().filter(|s| s.add.is_some()).count() > 1
+            || callback.storage.iter().any(|s| {
+                s.add.is_some_and(|add| {
+                    add != 1
+                        || s.minimum < 0
+                        || s.maximum >= 10_000
+                        || s.maximum.checked_add(add) != Some(s.set)
+                        || s.preserve
+                        || s.read_only
+                        || callback.native_rule.is_some()
+                        || callback.trigger != Trigger::Use
+                        || callback.reversible
+                        || !callback.activation.as_ref().is_some_and(|a| {
+                            a.track == s.track && a.minimum == s.minimum && a.maximum == s.maximum
+                        })
+                })
+            })
             || (callback.storage.iter().any(|storage| storage.read_only)
                 && (!callback.is_read_only()
                     || callback.teleport.is_none()
@@ -437,6 +457,7 @@ fn extend_callbacks(
                     effect: match callback.native_rule {
                         Some(rule) => QuestEffectKind::Native(rule),
                         None if s.preserve => QuestEffectKind::Add(0),
+                        None if s.add.is_some() => QuestEffectKind::Add(1),
                         None => QuestEffectKind::Set(s.set),
                     },
                 })
@@ -453,6 +474,8 @@ mod rewards;
 
 #[cfg(test)]
 mod batch4_tests;
+#[cfg(test)]
+mod bounded_tests;
 #[cfg(test)]
 mod outfit_tests;
 
