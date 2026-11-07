@@ -1417,6 +1417,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-service-and-placement-qualification-22",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.alesar",
+          "name": "Alesar",
+          "expected": {
+            "x": 33048,
+            "y": 32621,
+            "floor": -5
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.liane",
+          "name": "Liane",
+          "expected": {
+            "x": 32332,
+            "y": 31786,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.kasmir",
+          "name": "Kasmir",
+          "expected": {
+            "x": 33212,
+            "y": 32452,
+            "floor": -1
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.ray",
+          "name": "Ray",
+          "expected": {
+            "x": 32621,
+            "y": 32747,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.flint",
+          "name": "Flint",
+          "expected": {
+            "x": 33635,
+            "y": 31883,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.albinius",
+          "name": "Albinius",
+          "expected": {
+            "x": 32335,
+            "y": 32091,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }
