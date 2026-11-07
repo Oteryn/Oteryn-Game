@@ -1,5 +1,8 @@
 use super::*;
 
+mod world_projection;
+pub use world_projection::WorldSpawnProjection;
+
 /// A content-authored spawn source's small stable ordinal within its scope (content input,
 /// §4.8; never decoded from a client handle).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -26,6 +29,9 @@ pub struct SpawnDefinition {
 /// SPAWN-1b: what one spawn point realizes and when it respawns.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct SpawnPointDefinition {
+    base_creature: String,
+    enabled: bool,
+    world_change: Option<(String, u64)>,
     /// Oteryn default, not Reference-qualified: standalone area factor (no event composition).
     /// Assigned only by the admitted map owner.
     cyclopedia_improved: bool,
@@ -71,6 +77,9 @@ impl SpawnDefinition {
                     (
                         cell,
                         SpawnPointDefinition {
+                            base_creature: creature_target_identity.clone(),
+                            enabled: true,
+                            world_change: None,
                             cyclopedia_improved: false,
                             respawn_delay_micros,
                             creature_target_identity: creature_target_identity.clone(),
@@ -144,6 +153,9 @@ impl SpawnDefinition {
                     Ok((
                         cell,
                         SpawnPointDefinition {
+                            base_creature: creature.clone(),
+                            enabled: true,
+                            world_change: None,
                             cyclopedia_improved: false,
                             respawn_delay_micros: activation_micros(respawn_delay_ms)?,
                             creature_target_identity: creature,
@@ -672,7 +684,10 @@ impl ChannelRuntimeV1 {
                 source: spawn.source.0,
                 ordinal: u8::try_from(cell).map_err(|_| CarrierError::CapacityExceeded)?,
             };
-            if gone && self.spawn_schedule.pending(point).is_none() {
+            if gone
+                && spawn.definition.points[cell].enabled
+                && self.spawn_schedule.pending(point).is_none()
+            {
                 // W05d: a scheduled event spawn rate shortens or lengthens the respawn delay
                 // (Crystal `spawn_monster.cpp:443-458`).
                 let mut timing = spawn.definition.timing(cell)?;

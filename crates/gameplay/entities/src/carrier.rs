@@ -229,6 +229,7 @@ pub use spawn_realization::SpawnDriveReport;
 use spawn_realization::SpawnDriveWindow;
 use spawn_realization::SpawnRealization;
 pub use spawn_realization::SpawnSourceId;
+pub use spawn_realization::WorldSpawnProjection;
 
 /// Authority supplied by a future, independently accepted assignment consumer.
 ///
@@ -1521,7 +1522,8 @@ impl ChannelRuntimeV1 {
                         y: cell.y,
                         floor: cell.floor,
                     };
-                    let occupied = self.carrier.cell_occupied(context, local);
+                    let occupied = !self.spawn_point_enabled(point)?
+                        || self.carrier.cell_occupied(context, local);
                     if !occupied {
                         let actor = match self.carrier.respawn_into_free_cell(
                             &self.continuity,

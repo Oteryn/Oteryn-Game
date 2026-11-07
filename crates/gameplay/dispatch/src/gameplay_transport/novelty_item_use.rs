@@ -42,6 +42,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         visible_target: bool,
     ) -> Result<Option<UseOutcome>, ()> {
+        if intent.use_with.is_none()
+            && intent.use_with_map_item.is_none()
+            && intent.use_with_position.is_none()
+            && let Some(outcome) = self
+                .use_shared_callback_handle(actor, command, source, None)
+                .await
+        {
+            return Ok(Some(outcome));
+        }
         if let Some(outcome) = self
             .use_map_harvest_handle(actor, command, &intent, source)
             .await?

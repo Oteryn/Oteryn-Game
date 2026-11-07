@@ -182,7 +182,7 @@ pub(super) async fn trade(
         return Err(Box::new(NpcTradeStep::rejected()));
     }
     let now = unix_ms_now();
-    let (offer, coins) = {
+    let (offer, coins, yasir_position) = {
         let runtime = admission.runtime.lock().await;
         let index = pinned_index(&runtime, admission.active_generation);
         let offer = match admission.states.npc_conversations.trade_in(
@@ -215,6 +215,29 @@ pub(super) async fn trade(
         if !available {
             return Err(Box::new(NpcTradeStep::rejected()));
         }
+        let yasir_position = if offer.npc_key == "oteryn:npc.yasir" {
+            let source = runtime
+                .visible_entities()
+                .npcs
+                .iter()
+                .find(|npc| {
+                    npc.actor.placement_identity() == intent.npc_actor.identity
+                        && npc.generation == intent.npc_actor.generation
+                })
+                .and_then(|npc| {
+                    Some((
+                        u16::try_from(npc.position.x).ok()?,
+                        u16::try_from(npc.position.y).ok()?,
+                        i8::try_from(npc.position.floor).ok()?,
+                    ))
+                });
+            let Some(source) = source else {
+                return Err(Box::new(NpcTradeStep::rejected()));
+            };
+            Some(source)
+        } else {
+            None
+        };
         let coin = |coin: Coin| {
             let production_key = coin.production_key();
             index
@@ -237,6 +260,7 @@ pub(super) async fn trade(
                 platinum,
                 crystal,
             },
+            yasir_position,
         )
     };
     // Crystal npc.cpp590-595: source23721 invokes the actual LootPouch sweep.
@@ -366,6 +390,18 @@ pub(super) async fn trade(
                 fence,
                 request,
                 selection,
+                sell_all,
+            )
+            .await
+    } else if let Some(source) = yasir_position {
+        admission
+            .root
+            .commit_yasir_trade(
+                admission.character,
+                admission.holder,
+                fence,
+                request,
+                source,
                 sell_all,
             )
             .await

@@ -53,16 +53,27 @@ fn worldchg_catalogue_covers_content_and_held_titles_never_qualify()
             assert!(is_active(&all, key), "{key}");
         } else if entry["status"] == "QUALIFIED" {
             qualified += 1;
-            assert_eq!(key, "stampede");
-            assert_eq!(entry["binding"]["raid_key"], "raid:porthope.stampede");
-            assert!(is_active(&all, key));
+            assert!(entry["binding"].is_object(), "{key}");
+            let mut active = all;
+            if let Some(kind) = oteryn_gameplay_world_change::counter::CounterKind::from_key(key) {
+                use oteryn_gameplay_world_change::counter::CounterKind as K;
+                active.counter_stages[kind.index()] = match kind {
+                    K::FireFeathered => 3,
+                    K::Overhunting => 2,
+                    _ => 1,
+                };
+            }
+            if key == "stampede" {
+                assert_eq!(entry["binding"]["raid_key"], "raid:porthope.stampede");
+            }
+            assert!(is_active(&active, key), "{key}");
         } else {
             assert_eq!(entry["status"], "HELD");
             assert!(!is_active(&all, key), "{key}");
         }
     }
-    assert_eq!(ready, 4);
-    assert_eq!(qualified, 1);
+    assert_eq!((ready, qualified), (4, 6));
+    assert_eq!(entries.len(), 43);
     for key in [
         "river_runs_deep",
         "spider_nest",
@@ -114,8 +125,9 @@ fn worldchg_selection_replays_and_snapshot_retains_the_committed_epoch()
     assert_eq!(select(7), select(7));
     let bytes = serde_json::to_vec(&select(7))?;
     let mut immutable = select(7);
-    immutable.counter_stages = [0; 7];
-    immutable.counter_generations = [0; 7];
+    immutable.counter_stages = [0; 8];
+    immutable.counter_generations = [0; 8];
+    immutable.counter_progress = [[0; 3]; 8];
     // The current phase projection is read separately from its durable owner.
     assert_eq!(
         serde_json::from_slice::<DailyWorldChanges>(&bytes)?,
@@ -253,4 +265,16 @@ fn worldchg_portal_candidates_preserve_sourced_pairs_without_claiming_native_adm
     assert_eq!(records[0]["return_marker"]["action_id"], 9715);
     assert_eq!(records[1]["return_marker"]["unique_id"], 35020);
     Ok(())
+}
+
+#[test]
+fn worldchg_phase_query_keeps_unselected_voice_inactive() {
+    use oteryn_gameplay_world_change::{daily::DailyWorldChanges, owner::is_active};
+    let day = DailyWorldChanges::roll(7, 1, 1, |_| u64::MAX);
+    assert!(!day.their_masters_voice);
+    assert!(!is_active(&day, "their_masters_voice"));
+    assert!(!is_active(&day, "their_masters_voice@1"));
+    let mut selected = day;
+    selected.their_masters_voice = true;
+    assert!(is_active(&selected, "their_masters_voice@1"));
 }

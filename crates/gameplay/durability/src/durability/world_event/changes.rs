@@ -11,6 +11,7 @@ use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 use sha2::{Digest, Sha256};
+pub mod callbacks;
 pub mod counters;
 
 /// The day after the reset `reset_epoch` of `world`, on the UTC calendar at `unix_ms`.
@@ -82,6 +83,12 @@ fn authored_candidates() -> Result<DailyCandidates, DurabilityError> {
                 if fire_earth.is_none() {
                     return Err(DurabilityError::InvalidStoredState);
                 }
+                continue;
+            }
+            Some(key)
+                if key != "their_masters_voice"
+                    && counters::CounterKind::from_key(key).is_some() =>
+            {
                 continue;
             }
             Some("thawing") => 0,
@@ -160,10 +167,19 @@ pub fn raid_requirements() -> Result<std::collections::BTreeMap<String, String>,
             .as_str()
             .filter(|raid| !raid.is_empty() && raid.len() <= 512)
             .ok_or(DurabilityError::InvalidStoredState)?;
-        if requirements
-            .insert(raid.to_owned(), key.to_owned())
-            .is_some()
-        {
+        let requirement = if let Some(stage) = binding.get("stage") {
+            let stage = stage
+                .as_u64()
+                .filter(|stage| (1..=5).contains(stage))
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            if counters::CounterKind::from_key(key).is_none() {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            format!("{key}@{stage}")
+        } else {
+            key.to_owned()
+        };
+        if requirements.insert(raid.to_owned(), requirement).is_some() {
             return Err(DurabilityError::InvalidStoredState);
         }
     }

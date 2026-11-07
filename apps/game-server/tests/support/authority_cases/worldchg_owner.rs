@@ -243,8 +243,9 @@ async fn run(h: &fixture::Harness) -> fixture::TestResult {
         .bind(world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
     // The immutable daily fields persist; current counter stages are a separate,
     // fenced projection and are intentionally omitted from the decision JSON.
-    let mut immutable_next=next;
-    immutable_next.counter_stages=[0;7]; immutable_next.counter_generations=[0;7];
+    let mut immutable_next = next;
+    immutable_next.counter_stages = [0; 8];
+    immutable_next.counter_generations = [0; 8];
     assert_eq!(
         serde_json::from_value::<oteryn_gameplay_world_change::daily::DailyWorldChanges>(day)?,
         immutable_next

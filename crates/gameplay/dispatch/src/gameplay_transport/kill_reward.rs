@@ -1366,13 +1366,43 @@ pub fn record_creature_kill(
     }
     let world_change = if wild {
         runtime.world_change_cycles().and_then(|(epoch, cycles)| {
-            let credits = world_change_credits(&creature, facts.corpse);
+            let mut credits = world_change_credits(&creature, facts.corpse);
+            let cohort = runtime.world_spawn_cohort(target);
+            use crate::durability::world_event::changes::counters::{CounterKind, Credit};
+            if let Some((key, _, home)) = cohort {
+                if let Some(wave) = key
+                    .strip_prefix("their_masters_voice.wave.")
+                    .and_then(|wave| wave.parse::<u8>().ok())
+                    && let Some(ordinal) =
+                        oteryn_gameplay_world::terrain_tools::voice_servant_ordinal((
+                            home.x, home.y, home.floor,
+                        ))
+                    && (1..=25).contains(&wave)
+                {
+                    credits.push((
+                        CounterKind::TheirMastersVoice,
+                        Credit::VoiceServant { wave, ordinal },
+                    ));
+                } else if key == "their_masters_voice.mage" {
+                    credits.push((CounterKind::TheirMastersVoice, Credit::VoiceMage));
+                }
+            }
             if credits.is_empty() {
                 return None;
             }
-            let mut generations = [0; 7];
+            let mut generations = [0; 8];
             for kind in crate::durability::world_event::changes::counters::CounterKind::ALL {
                 generations[kind.index()] = *cycles.get(kind.key())?;
+            }
+            if let Some((key, generation, _)) = cohort {
+                let kind = if key.starts_with("their_masters_voice.") {
+                    Some(CounterKind::TheirMastersVoice)
+                } else {
+                    CounterKind::from_key(key)
+                };
+                if let Some(kind) = kind {
+                    generations[kind.index()] = generation;
+                }
             }
             Some((
                 *epoch,
@@ -2389,6 +2419,12 @@ struct DurableKillSettle<'s, 'a, 'f, 'g> {
 }
 impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
     async fn settle(&self, entry: &PendingKillSettlement, inflight_before: usize) -> SettleReport {
+        if !super::hive_shared_kills::settle(self.admission, entry, self.fence).await {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        }
         let report = super::grizzly_kills::settle(
             self.admission,
             entry,

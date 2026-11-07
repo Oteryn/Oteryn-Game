@@ -126,9 +126,13 @@ pub struct DailyWorldChanges {
     pub world_counters: bool,
     /// Current counter projection, loaded through the owner; not an immutable daily draw.
     #[serde(skip)]
-    pub counter_stages: [u8; 7],
+    pub counter_stages: [u8; 8],
     #[serde(skip)]
-    pub counter_generations: [u64; 7],
+    pub counter_generations: [u64; 8],
+    #[serde(skip)]
+    pub counter_progress: [[u64; 3]; 8],
+    #[serde(skip)]
+    pub shared_used_sources_mask: u8,
 }
 
 impl DailyWorldChanges {
@@ -174,8 +178,10 @@ impl DailyWorldChanges {
             stampede,
             fire_from_the_earth,
             world_counters: true,
-            counter_stages: [1, 3, u8::from(fire_from_the_earth), 1, 1, 1, 1],
-            counter_generations: [1; 7],
+            counter_stages: [1, 3, u8::from(fire_from_the_earth), 1, 1, 1, 1, 1],
+            counter_generations: [1; 8],
+            counter_progress: [[0; 3]; 8],
+            shared_used_sources_mask: 0,
             reset_epoch,
             thawing,
             their_masters_voice,
@@ -246,8 +252,10 @@ mod tests {
                 stampede: true,
                 fire_from_the_earth: false,
                 world_counters: true,
-                counter_stages: [1, 3, 0, 1, 1, 1, 1],
-                counter_generations: [1; 7],
+                counter_stages: [1, 3, 0, 1, 1, 1, 1, 1],
+                counter_generations: [1; 8],
+                counter_progress: [[0; 3]; 8],
+                shared_used_sources_mask: 0,
             }
         );
         let none = roll([u64::MAX; 5], 5, 12);

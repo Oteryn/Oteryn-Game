@@ -239,6 +239,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/credited-kills.json",
+          "locator": "deeplings; source mechanics and explicit native geometry/parameters"
         }
       ],
       "source_refs": [
@@ -262,13 +266,17 @@
       "reason": "Individual boss gates exist, but shared stage accumulation, stage-save transition and map/spawn stage membership are not established.",
       "missing_facts": [
         "Individual boss gates exist, but shared stage accumulation, stage-save transition and map/spawn stage membership are not established."
-      ]
+      ],
+      "binding": {
+        "counter_key": "deeplings",
+        "counter_bindings": "content/encounters/world-changes/credited-kills.json"
+      }
     },
     {
       "key": "demon_wars",
       "title": "Demon Wars World Change",
       "quest": "oteryn:quest.authored.demon_wars_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -281,6 +289,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/credited-kills.json",
+          "locator": "demon_wars; source mechanics and explicit native geometry/parameters"
         }
       ],
       "source_refs": [
@@ -301,10 +313,11 @@
           "url": "https://tibia.fandom.com/index.php?curid=54700&oldid=880733"
         }
       ],
-      "reason": "World kill differences 100/400 are known; native credited faction counters and five-state spawn/map transitions at server save are not bound.",
-      "missing_facts": [
-        "World kill differences 100/400 are known; native credited faction counters and five-state spawn/map transitions at server save are not bound."
-      ]
+      "reason": "Shared durable credited-kill counter, native current-world callbacks and phase projection through the existing Spawn/map owners; explicit native adaptations are recorded in WORLDCHG-Q.md.",
+      "binding": {
+        "counter_key": "demon_wars",
+        "counter_bindings": "content/encounters/world-changes/credited-kills.json"
+      }
     },
     {
       "key": "devovorga_s_essence",
@@ -412,7 +425,7 @@
       "key": "fire_from_the_earth",
       "title": "Fire from the Earth Mini World Change",
       "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -429,6 +442,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/credited-kills.json",
+          "locator": "fire_from_the_earth; source mechanics and explicit native geometry/parameters"
         }
       ],
       "source_refs": [
@@ -449,14 +466,15 @@
           "url": "https://tibia.fandom.com/index.php?curid=76221&oldid=887143"
         }
       ],
-      "reason": "W 15 fixes 199 permille. Eruption layer/spawn membership and fifty-credited-kill attribution are absent.",
-      "missing_facts": [
-        "W 15 fixes 199 permille. Eruption layer/spawn membership and fifty-credited-kill attribution are absent."
-      ],
+      "reason": "Shared durable credited-kill counter, native current-world callbacks and phase projection through the existing Spawn/map owners; explicit native adaptations are recorded in WORLDCHG-Q.md.",
       "trigger": {
         "kind": "at_reset",
         "chance_permille": 199,
-        "duration": "until_next_reset"
+        "classification": "CHOSEN_OTERYN_NATIVE_CANDIDATE"
+      },
+      "binding": {
+        "counter_key": "fire_from_the_earth",
+        "counter_bindings": "content/encounters/world-changes/credited-kills.json"
       }
     },
     {
@@ -579,6 +597,11 @@
       "trigger": {
         "kind": "calendar",
         "day": 13
+      },
+      "binding": {
+        "kind": "raid",
+        "raid_key": "raid:edron.feroxa",
+        "native_callbacks": "WORLDCHG-Q scoped native callbacks"
       }
     },
     {
@@ -598,6 +621,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/credited-kills.json",
+          "locator": "hive_born; source mechanics and explicit native geometry/parameters"
         }
       ],
       "source_refs": [
@@ -621,7 +648,11 @@
       "reason": "200 daily task actions, 3/5-day resets and 7-day permit are known. Native shared accumulator, stage transition, timed access and map/spawn stage bindings are absent.",
       "missing_facts": [
         "200 daily task actions, 3/5-day resets and 7-day permit are known. Native shared accumulator, stage transition, timed access and map/spawn stage bindings are absent."
-      ]
+      ],
+      "binding": {
+        "counter_key": "hive_born",
+        "counter_bindings": "content/encounters/world-changes/credited-kills.json"
+      }
     },
     {
       "key": "hive_outpost",
@@ -1094,13 +1125,16 @@
           "carlin",
           "libertybay"
         ]
+      },
+      "binding": {
+        "native_callbacks": "WORLDCHG-Q scoped native callbacks"
       }
     },
     {
       "key": "overhunting",
       "title": "Overhunting World Change",
       "quest": "oteryn:quest.overhunting_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00100-00199.json",
@@ -1113,6 +1147,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/credited-kills.json",
+          "locator": "overhunting; source mechanics and explicit native geometry/parameters"
         }
       ],
       "source_refs": [
@@ -1133,10 +1171,14 @@
           "url": "https://tibia.fandom.com/index.php?curid=54864&oldid=1084984"
         }
       ],
-      "reason": "Trap component exists; credited population actions, native population thresholds and save/spawn transitions are not established.",
-      "missing_facts": [
-        "Trap component exists; credited population actions, native population thresholds and save/spawn transitions are not established."
-      ]
+      "reason": "Shared durable credited-kill counter, native current-world callbacks and phase projection through the existing Spawn/map owners; explicit native adaptations are recorded in WORLDCHG-Q.md.",
+      "binding": {
+        "kind": "raid",
+        "raid_key": "raid:abdendriel.whitedeers",
+        "stage": 1,
+        "counter_key": "overhunting",
+        "counter_bindings": "content/encounters/world-changes/credited-kills.json"
+      }
     },
     {
       "key": "poacher_caves",
@@ -1635,13 +1677,16 @@
       "trigger": {
         "kind": "at_reset",
         "chance_percent": 10
+      },
+      "binding": {
+        "native_callbacks": "WORLDCHG-Q scoped native callbacks"
       }
     },
     {
       "key": "the_fire_feathered_serpent",
       "title": "The Fire-Feathered Serpent World Change",
       "quest": "oteryn:quest.authored.the_fire_feathered_serpent_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00300-00351.json",
@@ -1654,6 +1699,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/credited-kills.json",
+          "locator": "the_fire_feathered_serpent; source mechanics and explicit native geometry/parameters"
         }
       ],
       "source_refs": [
@@ -1674,16 +1723,17 @@
           "url": "https://tibia.fandom.com/index.php?curid=85785&oldid=1078002"
         }
       ],
-      "reason": "1000/2000 serpents and 2000 renegadequaras are known. Native credited kills, phased spawns and mission/world transitions are absent.",
-      "missing_facts": [
-        "1000/2000 serpents and 2000 renegadequaras are known. Native credited kills, phased spawns and mission/world transitions are absent."
-      ]
+      "reason": "Shared durable credited-kill counter, native current-world callbacks and phase projection through the existing Spawn/map owners; explicit native adaptations are recorded in WORLDCHG-Q.md.",
+      "binding": {
+        "counter_key": "the_fire_feathered_serpent",
+        "counter_bindings": "content/encounters/world-changes/credited-kills.json"
+      }
     },
     {
       "key": "the_mage_s_tower",
       "title": "The Mage's Tower World Change",
       "quest": "oteryn:quest.the_mages_tower_world_change",
-      "status": "HELD",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "path": "content/quests/definitions/quests-00200-00299.json",
@@ -1696,6 +1746,10 @@
         {
           "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
           "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/credited-kills.json",
+          "locator": "the_mage_s_tower; source mechanics and explicit native geometry/parameters"
         }
       ],
       "source_refs": [
@@ -1716,10 +1770,11 @@
           "url": "https://tibia.fandom.com/index.php?curid=55046&oldid=1095409"
         }
       ],
-      "reason": "250 personal/2000 worldYielothax are known. Credited kills, portal timing, phase transition and collapse projection are not bound.",
-      "missing_facts": [
-        "250 personal/2000 worldYielothax are known. Credited kills, portal timing, phase transition and collapse projection are not bound."
-      ]
+      "reason": "Shared durable credited-kill counter, native current-world callbacks and phase projection through the existing Spawn/map owners; explicit native adaptations are recorded in WORLDCHG-Q.md.",
+      "binding": {
+        "counter_key": "the_mage_s_tower",
+        "counter_bindings": "content/encounters/world-changes/credited-kills.json"
+      }
     },
     {
       "key": "the_mummy_s_curse",
@@ -1804,6 +1859,9 @@
       "trigger": {
         "kind": "at_reset",
         "chance_percent": 20
+      },
+      "binding": {
+        "native_callbacks": "WORLDCHG-Q scoped native callbacks"
       }
     },
     {

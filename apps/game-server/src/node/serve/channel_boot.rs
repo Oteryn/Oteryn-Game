@@ -277,6 +277,14 @@ pub(super) async fn prepare_channel(
     // W05b: the server save's daily world changes, rolled once per reset epoch.
     let daily_npcs =
         daily_world_changes::apply(&mut channel_runtime, npc_boot, &daily, bundle.as_ref());
+    if let Some(world) = &bundle {
+        crate::node::raid_scheduler::world_changes::project_map_parts(
+            world.facts(),
+            world.base(),
+            &daily,
+        )
+        .map_err(|_| BootError::Readiness("world change map projection"))?;
+    }
     let daily_items =
         daily_world_changes::apply_items(bundle.as_ref().map(|world| world.facts()), &daily);
     event(&format!(
@@ -313,6 +321,8 @@ pub(super) async fn prepare_channel(
             (realized, u64::from(realized > 0))
         }
     };
+    crate::node::raid_scheduler::world_changes::project(&mut channel_runtime, &daily)
+        .map_err(|_| BootError::Readiness("world change spawn projection"))?;
     event(&format!(
         "event=creature_spawns state=realized spawned_monsters={spawned_monsters} windows={spawn_windows}"
     ));
@@ -356,8 +366,10 @@ fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldC
         stampede: false,
         fire_from_the_earth: false,
         world_counters: false,
-        counter_stages: [0; 7],
-        counter_generations: [0; 7],
+        counter_stages: [0; 8],
+        counter_generations: [0; 8],
+        counter_progress: [[0; 3]; 8],
+        shared_used_sources_mask: 0,
     }
 }
 #[cfg(test)]

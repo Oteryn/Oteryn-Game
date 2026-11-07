@@ -35,15 +35,19 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
+#[path = "benevola.rs"]
+mod benevola;
 mod classic_quests;
 mod coin_exchange;
 mod dark_trails;
 mod endgame;
+mod fire_feathered;
 mod grizzly;
 mod grizzly_shop;
 mod hero_of_bounac;
 #[path = "hireling_services.rs"]
 pub(super) mod hireling_services;
+mod hive_shared;
 mod isle_of_evil;
 mod liquid_black;
 mod monk;
@@ -54,6 +58,8 @@ mod service_context;
 mod session_transfer;
 mod threatened_dreams;
 mod wrath_sleeping_dragon;
+#[path = "yeo.rs"]
+mod yeo;
 pub(super) use premium_purchase::resume_npc_talk;
 
 /// What the server holds of one session's NPC state.
@@ -71,6 +77,10 @@ struct SessionNpc {
     vocation: Option<super::vocation_choice::NpcVocationConversation>,
     bank: Option<PendingBank>,
     exchange: Option<coin_exchange::Pending>,
+    benevola: Option<benevola::Pending>,
+    yeo: Option<yeo::Pending>,
+    #[cfg(test)]
+    yeo_last_request: Option<crate::durability::npc_trade::NpcTradeRequest>,
     grizzly: grizzly::Conversation,
     premium: Option<premium_purchase::PendingPurchase>,
     monk: Option<monk::Pending>,
@@ -315,7 +325,11 @@ impl NpcConversations {
         let talking_to = chat.engaged(session);
         let opened = (outcome.disposition == NpcIntentDisposition::Ok
             && talking_to.is_some_and(|npc| npc.placement_identity() == intent.npc_actor.identity)
-            && ChatText::parse(&intent.text).is_ok_and(|text| asks_to_trade(&text)))
+            && ChatText::parse(&intent.text).is_ok_and(|text| {
+                service_context::live_npc(runtime, actor, session, intent.npc_actor).is_some_and(
+                    |npc| oteryn_gameplay_npc::npc_talk::asks_to_trade_for(&npc.key, text.as_str()),
+                )
+            }))
         .then(|| self.open_window(chat, runtime, session, intent.npc_actor, items))
         .flatten();
         outcome.window = match opened {
@@ -618,6 +632,12 @@ pub(super) async fn npc_bank_talk(
     use super::bank_npc::{self, BankNpcIntent};
     use crate::durability::bank::{BankError, BankNpcSource};
     use crate::foundation::{CommandId, CommandRef};
+    if let Some(outcome) = yeo::resume(admission, actor, command, &intent).await {
+        return outcome;
+    }
+    if let Some(outcome) = benevola::resume(admission, actor, command, &intent).await {
+        return outcome;
+    }
     if let Some(outcome) = hireling_services::resume(admission, command, &intent).await {
         return outcome;
     }
@@ -707,6 +727,16 @@ pub(super) async fn npc_bank_talk(
         }
         runtime = admission.runtime.lock().await;
     }
+    if let Some(step) = yeo::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit.take());
+        return yeo::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = benevola::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit.take());
+        return benevola::apply(admission, actor, command, intent, step).await;
+    }
     if let Some(step) = coin_exchange::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         return coin_exchange::apply(
@@ -728,6 +758,16 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
+    }
+    if let Some(step) = fire_feathered::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = hive_shared::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = dark_trails::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

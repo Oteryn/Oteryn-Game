@@ -51,7 +51,25 @@ pub(super) fn apply(
             })
         })
         .map(|town| ("oteryn:npc.yasir", town.yasir_position()));
-    for (key, (x, y, z)) in changes.npcs().chain(trader) {
+    use oteryn_gameplay_world_change::{counter::CounterKind as K, owner::counter_admitted};
+    // Retained NPC anchors for Orockle/Benevola; adjacent admitted Navigator tile
+    // and the audited Seacrest Guardian are explicit native geometry choices.
+    let shared_npcs = [
+        (K::HiveBorn, "oteryn:npc.orockle", (33448, 31309, 7)),
+        (K::Overhunting, "oteryn:npc.benevola", (32596, 31745, 7)),
+        (K::Deeplings, "oteryn:npc.navigator", (33638, 31377, 9)),
+        // Explicit native barter station, not an asserted donor Yeo coordinate.
+        (K::FireFeathered, "oteryn:npc.yeo", (33554, 31624, 14)),
+        (
+            K::FireFeathered,
+            "oteryn:npc.guardian_of_the_deep_seas",
+            (33553, 31624, 14),
+        ),
+    ]
+    .into_iter()
+    .filter(|(kind, _, _)| changes.world_counters && counter_admitted(*kind))
+    .map(|(_, key, at)| (key, at));
+    for (key, (x, y, z)) in changes.npcs().chain(trader).chain(shared_npcs) {
         if !npc_boot.is_some_and(|boot| boot.admits(key)) {
             continue;
         }

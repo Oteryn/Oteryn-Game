@@ -9,7 +9,8 @@
     "deepling_points": "Native binding:200 World points; retained reference does not specify the stage-one threshold.",
     "deer_kills": "Native binding:1000 deer kills per save; source explicitly leaves numeric threshold unknown.",
     "wolf_recovery": "Native binding:100 weighted recovery credits per save;1 trapped-wolf return equals10 kills, as sourced.",
-    "geometry": "Explicit native bounded eligibility regions. Seacrest Grounds uses retained discovery_geometry.lua:1307. Demon and Mage bounds cover the retained native populations with eight-cell margins. Goroma volcano footprint and Overhunting hunting region are native-authored bindings rather than claimed donor polygons."
+    "geometry": "Explicit native bounded eligibility regions. Seacrest Grounds uses retained discovery_geometry.lua:1307. Demon and Mage bounds cover the retained native populations with eight-cell margins. Goroma volcano footprint and Overhunting hunting region are native-authored bindings rather than claimed donor polygons.",
+    "spawn_composition": "Native phase composition over bounded existing source points: Demon faction strength replaces the same points by prince/lord/base/lord/prince; Seacrest Grounds aquatic population becomes Seacrest Serpents then Renegade Quara; Hive stage-two admits Kollos/Spidris and stage-three admits Elite. These point-to-phase assignments are explicit native authoring, not a claim that donor inventory encoded stage membership. Existing source delays/caps remain owned by Spawn."
   },
   "definitions": [
     {
@@ -930,6 +931,762 @@
           "binding_status": "UNKNOWN"
         }
       ]
+    },
+    {
+      "key": "their_masters_voice",
+      "kind": "their_masters_voice",
+      "sources": []
+    }
+  ],
+  "spawn_rules": [
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.fire_elemental",
+      "area": [
+        32073,
+        32073,
+        32603,
+        32603,
+        2,
+        2
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.dragonling",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "demon_wars",
+      "creature": "oteryn:creature.askarak_demon",
+      "area": [
+        33240,
+        33240,
+        31920,
+        31920,
+        12,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.askarak_prince",
+        "oteryn:creature.askarak_demon",
+        "oteryn:creature.askarak_demon",
+        "oteryn:creature.shaburak_demon",
+        "oteryn:creature.shaburak_prince"
+      ]
+    },
+    {
+      "kind": "demon_wars",
+      "creature": "oteryn:creature.shaburak_demon",
+      "area": [
+        33240,
+        33240,
+        31920,
+        31920,
+        12,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.askarak_prince",
+        "oteryn:creature.askarak_demon",
+        "oteryn:creature.shaburak_demon",
+        "oteryn:creature.shaburak_demon",
+        "oteryn:creature.shaburak_prince"
+      ]
+    },
+    {
+      "kind": "demon_wars",
+      "creature": "oteryn:creature.askarak_demon",
+      "area": [
+        33218,
+        33307,
+        31911,
+        31959,
+        12,
+        14
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.askarak_lord",
+        "oteryn:creature.askarak_demon",
+        "oteryn:creature.askarak_demon",
+        "oteryn:creature.shaburak_demon",
+        "oteryn:creature.shaburak_lord"
+      ]
+    },
+    {
+      "kind": "demon_wars",
+      "creature": "oteryn:creature.shaburak_demon",
+      "area": [
+        33218,
+        33307,
+        31911,
+        31959,
+        12,
+        14
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.askarak_lord",
+        "oteryn:creature.askarak_demon",
+        "oteryn:creature.shaburak_demon",
+        "oteryn:creature.shaburak_demon",
+        "oteryn:creature.shaburak_lord"
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.young_sea_serpent",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_constrictor",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.sea_serpent",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_constrictor",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.blood_crab",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_constrictor",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.shark",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_constrictor",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.blood_beast",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_constrictor",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.quara_hydromancer",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_hydromancer",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.quara_pincher",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_pincher",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.quara_mantassin",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_mantassin",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_feathered",
+      "creature": "oteryn:creature.quara_predator",
+      "area": [
+        33502,
+        33592,
+        31587,
+        31677,
+        13,
+        15
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.seacrest_serpent",
+        "oteryn:creature.renegade_quara_predator",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "mages_tower",
+      "creature": "oteryn:creature.energized_raging_mage",
+      "area": [
+        33144,
+        33144,
+        31529,
+        31529,
+        2,
+        2
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.energized_raging_mage",
+        "oteryn:creature.raging_mage",
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "deeplings",
+      "creature": "oteryn:creature.tanjis",
+      "area": [
+        33645,
+        33645,
+        31239,
+        31239,
+        11,
+        11
+      ],
+      "stages": [
+        null,
+        null,
+        null,
+        "oteryn:creature.tanjis",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "deeplings",
+      "creature": "oteryn:creature.obujos",
+      "area": [
+        33437,
+        33437,
+        31265,
+        31265,
+        11,
+        11
+      ],
+      "stages": [
+        null,
+        null,
+        null,
+        "oteryn:creature.obujos",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "deeplings",
+      "creature": "oteryn:creature.jaul",
+      "area": [
+        33545,
+        33545,
+        31274,
+        31274,
+        11,
+        11
+      ],
+      "stages": [
+        null,
+        null,
+        null,
+        "oteryn:creature.jaul",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "hive_born",
+      "creature": "oteryn:creature.kollos",
+      "area": [
+        33001,
+        33700,
+        30900,
+        31400,
+        0,
+        15
+      ],
+      "stages": [
+        null,
+        null,
+        "oteryn:creature.kollos",
+        "oteryn:creature.kollos",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "hive_born",
+      "creature": "oteryn:creature.spidris",
+      "area": [
+        33001,
+        33700,
+        30900,
+        31400,
+        0,
+        15
+      ],
+      "stages": [
+        null,
+        null,
+        "oteryn:creature.spidris",
+        "oteryn:creature.spidris",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "hive_born",
+      "creature": "oteryn:creature.spidris_elite",
+      "area": [
+        33001,
+        33700,
+        30900,
+        31400,
+        0,
+        15
+      ],
+      "stages": [
+        null,
+        null,
+        null,
+        "oteryn:creature.spidris_elite",
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "overhunting",
+      "creature": "oteryn:creature.deer",
+      "area": [
+        32440,
+        32770,
+        31670,
+        31950,
+        7,
+        7
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.deer",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "overhunting",
+      "creature": "oteryn:creature.starving_wolf",
+      "area": [
+        32440,
+        32770,
+        31670,
+        31950,
+        7,
+        7
+      ],
+      "stages": [
+        null,
+        null,
+        "oteryn:creature.starving_wolf",
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.stone_golem",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.stone_golem",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.fire_elemental",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.fire_elemental",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.fire_devil",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.fire_devil",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.demon",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.demon",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.diabolic_imp",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.diabolic_imp",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.dragon",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.dragon",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.dragon_hatchling",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.dragon_hatchling",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.dragon_lord",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.dragon_lord",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.dragon_lord_hatchling",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.dragon_lord_hatchling",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.dragonling",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.dragonling",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "kind": "fire_earth",
+      "creature": "oteryn:creature.hellfire_fighter",
+      "area": [
+        32030,
+        32090,
+        32585,
+        32680,
+        0,
+        12
+      ],
+      "stages": [
+        null,
+        "oteryn:creature.hellfire_fighter",
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  ],
+  "spawn_sources": [
+    {
+      "kind": "mages_tower",
+      "source": "oteryn:spawn.x33141_y31531_z2",
+      "point": {
+        "cell": {
+          "floor": 2,
+          "x": 33144,
+          "y": 31529
+        },
+        "creature": "oteryn:creature.energized_raging_mage",
+        "direction": "north",
+        "respawn_ms": 90000
+      },
+      "evidence": "content/world/spawns/held-bosses.json; exact retained native placement admitted by shared World counter phase"
+    },
+    {
+      "kind": "deeplings",
+      "source": "oteryn:spawn.x33645_y31240_z11",
+      "point": {
+        "cell": {
+          "floor": 11,
+          "x": 33645,
+          "y": 31239
+        },
+        "creature": "oteryn:creature.tanjis",
+        "direction": "north",
+        "respawn_ms": 1800000
+      },
+      "evidence": "content/world/spawns/held-bosses.json; exact retained native placement admitted by shared World counter phase"
+    },
+    {
+      "kind": "deeplings",
+      "source": "oteryn:spawn.x33437_y31266_z11",
+      "point": {
+        "cell": {
+          "floor": 11,
+          "x": 33437,
+          "y": 31265
+        },
+        "creature": "oteryn:creature.obujos",
+        "direction": "north",
+        "respawn_ms": 1800000
+      },
+      "evidence": "content/world/spawns/held-bosses.json; exact retained native placement admitted by shared World counter phase"
+    },
+    {
+      "kind": "deeplings",
+      "source": "oteryn:spawn.x33545_y31275_z11",
+      "point": {
+        "cell": {
+          "floor": 11,
+          "x": 33545,
+          "y": 31274
+        },
+        "creature": "oteryn:creature.jaul",
+        "direction": "north",
+        "respawn_ms": 1800000
+      },
+      "evidence": "content/world/spawns/held-bosses.json; exact retained native placement admitted by shared World counter phase"
+    }
+  ],
+  "native_choices": [
+    {
+      "kind": "fire_earth",
+      "binding": "one sourced volcano Fire Elemental home (32073,32603,2) supplies the active Dragonling opportunity; chosen Oteryn population composition, not a retained donor spawn rule",
+      "evidence": "content/world/spawns exact retained Fire Elemental placement; canonical Dragonling native profile; wiki Fire from Earth opportunity"
     }
   ]
 }

@@ -1,5 +1,11 @@
 //! World-owned credits join one existing semantic transaction. A receipt and all
 //! affected counters commit together; callbacks never commit the caller's transaction.
+pub mod benevola;
+mod fire_earth;
+pub(crate) mod fire_feathered;
+pub(super) mod shared_objects;
+pub(crate) mod shared_progress;
+
 use super::*;
 use crate::durability::character_progression::assert_runtime_scope_fence;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
@@ -33,7 +39,7 @@ pub struct CreditEvent {
     pub source_kind: u8,
     pub occurrence: Vec<u8>,
     pub credits: Vec<(CounterKind, Credit)>,
-    pub counter_generations: [u64; 7],
+    pub counter_generations: [u64; 8],
     pub occurred_at_ms: u64,
     pub character: Option<CharacterId>,
 }
@@ -101,21 +107,21 @@ async fn states(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
     lock: bool,
-) -> Result<[CounterState; 7], DurabilityError> {
+) -> Result<[CounterState; 8], DurabilityError> {
     let statement = if lock {
-        "SELECT change_key,reset_epoch::text,state FROM game_world_change_counters WHERE world_id=encode($1,'hex')::uuid ORDER BY change_key LIMIT 8 FOR UPDATE"
+        "SELECT change_key,reset_epoch::text,state FROM game_world_change_counters WHERE world_id=encode($1,'hex')::uuid ORDER BY change_key LIMIT 9 FOR UPDATE"
     } else {
-        "SELECT change_key,reset_epoch::text,state FROM game_world_change_counters WHERE world_id=encode($1,'hex')::uuid ORDER BY change_key LIMIT 8"
+        "SELECT change_key,reset_epoch::text,state FROM game_world_change_counters WHERE world_id=encode($1,'hex')::uuid ORDER BY change_key LIMIT 9"
     };
     let rows = sqlx::query(statement)
         .bind(world.as_bytes().as_slice())
         .fetch_all(&mut **tx)
         .await?;
-    if rows.len() != 7 {
+    if rows.len() != 8 {
         return Err(DurabilityError::InvalidStoredState);
     }
-    let mut values = [CounterState::new(CounterKind::Deeplings, 0, false); 7];
-    let mut seen = [false; 7];
+    let mut values = [CounterState::new(CounterKind::Deeplings, 0, false); 8];
+    let mut seen = [false; 8];
     for row in rows {
         let key: String = row.try_get("change_key")?;
         let kind = CounterKind::from_key(&key).ok_or(DurabilityError::InvalidStoredState)?;
@@ -182,13 +188,24 @@ pub(super) async fn project(
     if !day.world_counters {
         return Ok(());
     }
+    let now_ms: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint")
+            .fetch_one(&mut **tx)
+            .await?;
+    let now_ms = u64::try_from(now_ms).map_err(|_| DurabilityError::InvalidStoredState)?;
+    day.shared_used_sources_mask =
+        shared_objects::used_sources_mask(tx, world, day.reset_epoch).await?;
     let values = states(tx, world, false).await?;
     for kind in CounterKind::ALL {
         let value = values[kind.index()];
         if value.epoch != day.reset_epoch {
             return Err(DurabilityError::InvalidStoredState);
         }
+        let value = value
+            .tick(kind, now_ms)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
         day.counter_stages[kind.index()] = value.stage;
+        day.counter_progress[kind.index()] = value.counts;
         day.counter_generations[kind.index()] = value.credit_generation;
     }
     Ok(())
@@ -203,7 +220,7 @@ pub async fn credit(
     if !(1..=5).contains(&event.source_kind)
         || !(16..=128).contains(&event.occurrence.len())
         || event.credits.is_empty()
-        || event.credits.len() > 7
+        || event.credits.len() > 8
         || !authority.current(tx).await?
     {
         return Ok(CreditOutcome::Refused);
@@ -211,16 +228,17 @@ pub async fn credit(
     let source_matches = event.credits.iter().all(|(_, credit)| {
         matches!(
             (event.source_kind, credit),
-            (1, Credit::Kill(_))
-                | (
-                    2,
-                    Credit::Task(_)
-                        | Credit::HeartDestroyed
-                        | Credit::SoulNetDestroyed
-                        | Credit::CoralPathCompleted
-                        | Credit::StairPathCompleted
-                )
-                | (3, Credit::TrappedWolves(_))
+            (
+                1,
+                Credit::Kill(_) | Credit::VoiceServant { .. } | Credit::VoiceMage
+            ) | (
+                2,
+                Credit::Task(_)
+                    | Credit::HeartDestroyed
+                    | Credit::SoulNetDestroyed
+                    | Credit::CoralPathCompleted
+                    | Credit::StairPathCompleted
+            ) | (3, Credit::TrappedWolves(_))
                 | (4, Credit::MissionComplete)
         )
     });
@@ -291,11 +309,18 @@ pub async fn credit(
     if !authority.current(tx).await? {
         return Ok(CreditOutcome::Refused);
     }
-    let mut seen = [false; 7];
+    let current_ms: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
+            .fetch_one(&mut **tx)
+            .await?;
+    let current_ms = u64::try_from(current_ms).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let mut seen = [false; 8];
     let mut changed = false;
     for &(kind, credit) in &event.credits {
         let index = kind.index();
-        let before = values[index];
+        let before = values[index]
+            .tick(kind, current_ms)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
         if seen[index]
             || before.epoch != authority.epoch
             || before.credit_generation != event.counter_generations[index]
@@ -307,7 +332,7 @@ pub async fn credit(
         else {
             return Ok(CreditOutcome::Refused);
         };
-        changed |= after.phase_version != before.phase_version;
+        changed |= after.phase_version != values[index].phase_version;
         values[index] = after;
     }
     sqlx::query("INSERT INTO game_world_change_credit_receipts(world_id,source_kind,occurrence,reset_epoch,binding_digest) VALUES(encode($1,'hex')::uuid,$2,$3,$4::text::numeric,$5)")
@@ -321,8 +346,18 @@ pub async fn credit(
         {
             let result:Option<String>=sqlx::query_scalar("INSERT INTO game_world_change_personal_counters(world_id,change_key,character_id,counter) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,1) ON CONFLICT(world_id,change_key,character_id) DO UPDATE SET counter=game_world_change_personal_counters.counter+1 RETURNING counter::text")
                 .bind(world.as_bytes().as_slice()).bind(kind.key()).bind(character.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
-            if result.is_none() {
-                return Err(DurabilityError::InvalidStoredState);
+            let personal_count = result
+                .ok_or(DurabilityError::InvalidStoredState)?
+                .parse::<u64>()
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            if kind == CounterKind::FireEarth {
+                fire_earth::observe_personal_credit(
+                    tx,
+                    character,
+                    personal_count,
+                    &event.occurrence,
+                )
+                .await?;
             }
         }
     }
@@ -369,4 +404,84 @@ impl DurabilityRoot {
             })
             .await
     }
+}
+
+impl DurabilityRoot {
+    /// Physical projections run under the same current World transaction. The synchronous
+    /// callback may briefly try-lock the runtime; no runtime mutex spans a database await.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "current authority and caller-owned physical context remain explicit"
+    )]
+    pub async fn project_world_change_counters<C: Send>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        scope: RuntimeScopeRefV1,
+        generation: ScopeOwnershipGeneration,
+        epoch: u64,
+        context: &mut C,
+        project: fn(&mut C, &DailyWorldChanges) -> Result<(), DurabilityError>,
+    ) -> Result<bool, DurabilityError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run_with_context(context, move |holder, deadline, context| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let Some(current) =
+                        authorize(&mut tx, &recovery, &node, scope, generation, epoch).await?
+                    else {
+                        return Ok(false);
+                    };
+                    let values = states(&mut tx, scope.world_id(), true).await?;
+                    let now: i64 = sqlx::query_scalar(
+                        "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint",
+                    )
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    let now =
+                        u64::try_from(now).map_err(|_| DurabilityError::InvalidStoredState)?;
+                    if !current.current(&mut tx).await? {
+                        return Ok(false);
+                    }
+                    for kind in CounterKind::ALL {
+                        let before = values[kind.index()];
+                        let after = before
+                            .tick(kind, now)
+                            .map_err(|_| DurabilityError::InvalidStoredState)?;
+                        if after != before {
+                            store(&mut tx, scope.world_id(), kind, after).await?;
+                        }
+                    }
+                    let Some(day) = super::load(&mut tx, scope.world_id(), epoch).await? else {
+                        return Ok(false);
+                    };
+                    project(context, &day)?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(true)
+                })
+            })
+            .await
+    }
+}
+
+/// Observe the 25-use qualification only for the current shared encounter period.
+/// The caller retains its existing Character/Channel authority; this read grants none.
+pub async fn voice_eligible(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    epoch: u64,
+    character: CharacterId,
+) -> Result<bool, DurabilityError> {
+    if !super::load(tx, world, epoch).await?.is_some_and(|day| {
+        oteryn_gameplay_world_change::owner::is_active(&day, "their_masters_voice")
+    }) {
+        return Ok(false);
+    }
+    sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_change_personal_counters p JOIN game_world_change_counters c USING(world_id,change_key) WHERE p.world_id=encode($1,'hex')::uuid AND p.change_key='their_masters_voice' AND p.character_id=encode($2,'hex')::uuid AND c.reset_epoch=$3::text::numeric AND p.counter>=25 AND p.period_deadline_ms=(c.state->>'deadline_ms')::bigint AND p.period_deadline_ms>floor(extract(epoch FROM clock_timestamp())*1000)::bigint LIMIT 1)")
+        .bind(world.as_bytes().as_slice()).bind(character.as_bytes().as_slice()).bind(epoch.to_string())
+        .fetch_one(&mut **tx).await.map_err(Into::into)
 }

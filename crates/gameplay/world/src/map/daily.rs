@@ -62,8 +62,18 @@ impl Projection {
                 .find(|p| palette_appearance(&p.key) == Some(12065))
                 .and_then(|p| p.terrain)
         {
-            for appearance in 12059..=12063 {
-                needed.insert(appearance, Some(ground));
+            // Pinned Crystal items.xml / official appearance source: preserve each
+            // fungus's native ground speed, independently of the cleared ground's100.
+            for (appearance, speed) in [
+                (12059, 110),
+                (12060, 130),
+                (12061, 150),
+                (12062, 150),
+                (12063, 130),
+            ] {
+                let mut fungus = ground;
+                fungus.ground_speed = Some(speed);
+                needed.insert(appearance, Some(fungus));
             }
         }
         if let Some(town) = daily.trader {

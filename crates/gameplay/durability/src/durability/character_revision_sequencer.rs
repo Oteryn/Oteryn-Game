@@ -448,6 +448,36 @@ impl RevisionSlot {
         .await
     }
 
+    /// Benevola uses the same Quest receipt revision cursor as ordinary NPC quests.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_benevola_handover(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        handover: super::world_event::changes::counters::benevola::BenevolaHandover,
+        catalogue: Arc<QuestStateCatalogue>,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_benevola_handover(
+                    authority,
+                    node,
+                    fence,
+                    permit,
+                    handover.clone(),
+                    Arc::clone(&catalogue),
+                )
+            },
+        )
+        .await
+    }
+
     /// Generated Task Board state and its quest receipts share this revision slot.
     #[allow(clippy::too_many_arguments)]
     pub async fn commit_task_board(
