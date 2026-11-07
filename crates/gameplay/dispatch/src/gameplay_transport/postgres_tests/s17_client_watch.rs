@@ -112,17 +112,17 @@ fn scenario(case: u8) -> TestResult {
                     if case==2 {
                         let mut picture=oteryn_client_runtime::cast_view::Picture::default();
                         picture.apply(Message::Ready{epoch:watching.epoch(),chat:watching.chat_allowed(),delay:watching.delay()},std::time::Instant::now())?;
-                        tokio::time::timeout(Duration::from_secs(10),async {while picture.floor.is_none(){picture.apply(watching.next().await?,std::time::Instant::now())?;}Ok::<(),Box<dyn std::error::Error>>(())}).await??;
+                        tokio::time::timeout(Duration::from_secs(10),async {while picture.floor.is_none(){picture.apply(watching.next().await.map_err(|e|format!("CLCAST map: {e}"))?,std::time::Instant::now())?;}Ok::<(),Box<dyn std::error::Error>>(())}).await??;
                         assert!(picture.tiles.values().any(|items|items.contains(&1629)),"actual donor door appearance reaches native view");
                         assert!(!picture.actors.is_empty(),"caster creature picture is projected");
                         let text="Hello from the caster";
                         let speech=oteryn_protocol_oteryn::chat::encode_chat_intent(&oteryn_protocol_oteryn::chat::ChatIntent::Say{mode:oteryn_protocol_oteryn::chat::ChatSpeechMode::Say,text:text.into()}).map_err(debug)?;
                         let (status,_)=peer.exchange(13,&speech).await?;assert_eq!(status,oteryn_protocol_oteryn::CommandStatus::Accepted);
-                        tokio::time::timeout(Duration::from_secs(10),async {loop{let message=watching.next().await?;let found=matches!(&message,Message::Media{media:PublicMedia::Speech{text:heard,..},..} if heard==text);picture.apply(message,std::time::Instant::now())?;if found{break;}}Ok::<(),Box<dyn std::error::Error>>(())}).await??;
+                        tokio::time::timeout(Duration::from_secs(10),async {loop{let message=watching.next().await.map_err(|e|format!("CLCAST speech: {e}"))?;let found=matches!(&message,Message::Media{media:PublicMedia::Speech{text:heard,..},..} if heard==text);picture.apply(message,std::time::Instant::now())?;if found{break;}}Ok::<(),Box<dyn std::error::Error>>(())}).await??;
                         assert!(picture.speech.iter().any(|line|line==text));
                         let position=oteryn_protocol_oteryn::world_spatial::ActorPosition{x:before.x,y:before.y,floor:before.floor};
                         owner.cast_public_effects(admitted,&[oteryn_protocol_oteryn::presentation::PresentationEvent{decision_ordinal:1,emission_ordinal:1,kind:oteryn_protocol_oteryn::presentation::PresentationEventKind::MagicEffect{position,effect_id:1,source:oteryn_protocol_oteryn::presentation::PresentationSource::Global}}]).await;
-                        tokio::time::timeout(Duration::from_secs(10),async {loop{let message=watching.next().await?;let found=matches!(&message,Message::Media{media:PublicMedia::Effects(_),..});picture.apply(message,std::time::Instant::now())?;if found{break;}}Ok::<(),Box<dyn std::error::Error>>(())}).await??;
+                        tokio::time::timeout(Duration::from_secs(10),async {loop{let message=watching.next().await.map_err(|e|format!("CLCAST effects: {e}"))?;let found=matches!(&message,Message::Media{media:PublicMedia::Effects(_),..});picture.apply(message,std::time::Instant::now())?;if found{break;}}Ok::<(),Box<dyn std::error::Error>>(())}).await??;
                         assert!(!picture.effects.is_empty());
                         watching.leave().await?;let _=observer.await?;
                     }else{
@@ -130,7 +130,7 @@ fn scenario(case: u8) -> TestResult {
                         watching.chat("Live viewer text at D300").await?;
                         peer.text("Live viewer text at D300").await?;
                         let output=Arc::new(std::sync::Mutex::new(Vec::new()));let captured=output.clone();
-                        service.apply(Operation::Flush(ObserverId::from_handle(handle),Box::new(move |_,content|{if !matches!(content,oteryn_gameplay_social::cast::Content::Clear){if let Ok(mut rows)=captured.lock(){rows.push(content.clone());}}true}))).await?;
+                        service.apply(Operation::Flush(ObserverId::from_handle(handle),Box::new(move |_,content|{if !matches!(content,oteryn_gameplay_social::cast::Content::Clear)&& let Ok(mut rows)=captured.lock(){rows.push(content.clone());}true}))).await?;
                         assert!(output.lock().map_err(|_|"capture lock")?.is_empty(),"viewer content remains delayed while caster text is live");
                         peer.cast(504,Message::Reply("Live caster reply".into())).await?;peer.text("Live caster reply").await?;
                         assert_eq!(peer.gameplay_lines,0,"cast chat never enters gameplay chat");

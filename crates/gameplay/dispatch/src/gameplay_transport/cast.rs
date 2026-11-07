@@ -131,6 +131,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         admitted: connection::AdmittedSession,
     ) -> Option<oteryn_gameplay_social::spectate::TargetFacts> {
+        // Canary livestream.cpp:486 keeps a live cast while refreshing its picture.
+        // NODEBOOT-1: a busy shared holder is not evidence that the caster is gone.
+        // All read/install callers use the same bounded gate before deciding Gone.
+        AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || {
+                self.cast_facts_once(admitted)
+                    .await
+                    .ok_or(connection::AdmissionRefusal::Unavailable)
+            })
+            .await
+            .ok()
+    }
+    async fn cast_facts_once(
+        &self,
+        admitted: connection::AdmittedSession,
+    ) -> Option<oteryn_gameplay_social::spectate::TargetFacts> {
         let actor = admitted.runtime_actor?;
         let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
             .current_session_at(admitted.game_session_id)
@@ -175,14 +191,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // additionally bounds retries of these read/install gates while the privacy
         // worker owns the shared holder. The cast operation itself is never retried.
         let budget = AdmissionRetryBudget::for_command(self.root);
-        let facts = budget
-            .retry_unavailable(async || {
-                self.cast_facts(admitted)
-                    .await
-                    .ok_or(connection::AdmissionRefusal::Unavailable)
-            })
-            .await
-            .ok()?;
+        let facts = self.cast_facts(admitted).await?;
         if kind == 503 {
             let change = match request {
                 Message::ConsentSet { revision, allowed } => {
@@ -406,16 +415,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .service
             .apply(Operation::CasterRoster(admitted.game_session_id))
             .await
+            && let Ok(payload) = (Message::CasterRoster { revision, subjects }).encode()
         {
-            if let Ok(payload) = (Message::CasterRoster { revision, subjects }).encode() {
-                frames.insert(
-                    0,
-                    (
-                        oteryn_protocol_oteryn::cast::DELTA_TYPE_CAST_ROSTER,
-                        payload,
-                    ),
-                );
-            }
+            frames.insert(
+                0,
+                (
+                    oteryn_protocol_oteryn::cast::DELTA_TYPE_CAST_ROSTER,
+                    payload,
+                ),
+            );
         }
         frames
     }
