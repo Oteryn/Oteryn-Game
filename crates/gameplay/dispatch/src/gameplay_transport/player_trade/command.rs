@@ -373,19 +373,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Some(ResultCode::PartnerBusy);
         }
         let lives = self.trade_lives(&record)?;
-        let preflight = async {
+        let preflight = super::preflight::read_retry(self.root, async || {
             if record.binding != runtime.binding()
                 || record.digest != runtime.content_pin().server_artifact_digest()
             {
-                return Err(ResultCode::Stale);
+                return Err(ResultCode::Stale.into());
             }
             self.trade_pair(permit, runtime, &lives, command)
-                .await
-                .map_err(ResultCode::from)?;
-            let fences = self.trade_fences(&lives).await.map_err(ResultCode::from)?;
+                .await?;
+            let fences = self.trade_fences(&lives).await?;
             self.trade_unchanged(&record, fences)
-                .await
-                .map_err(ResultCode::from)?;
+                .await?;
             let pair = record.pair.ok_or(ResultCode::Stale)?;
             let native = self
                 .active_generation
@@ -406,13 +404,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &NativeItemWeights(native).with_wheel(self.premium_coordinator),
                 )
                 .await
-                .map_err(|_| ResultCode::Rejected)?
+                .map_err(CheckError::from)?
                 .map_err(result)?;
             if record.offers != leaves.clone().map(Some) {
-                return Err(ResultCode::Stale);
+                return Err(ResultCode::Stale.into());
             }
             Ok((fences, leaves, pair))
-        }
+        })
         .await;
         let (fences, leaves, pair) = match preflight {
             Ok(v) => v,
