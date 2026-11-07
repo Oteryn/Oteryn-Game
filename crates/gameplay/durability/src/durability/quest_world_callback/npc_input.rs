@@ -1,5 +1,5 @@
 //! NPC hand-ins own carried inputs; ground mutation retains its spell-lane gate.
-use super::{DurabilityError, Input, apply_input_locked};
+use super::{DurabilityError, Input, apply_input_rows};
 
 pub(super) async fn apply(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -10,5 +10,5 @@ pub(super) async fn apply(
     if input.kind == "ground" {
         return Err(DurabilityError::InvalidStoredState);
     }
-    apply_input_locked(tx, input, transaction).await
+    apply_input_rows(tx, input, transaction).await
 }
