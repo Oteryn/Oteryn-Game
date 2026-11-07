@@ -2336,8 +2336,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/115",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-28",
+        "scope": "All6 original audited cells/floors/exact names retained; add7 source-proven missing passive profiles through existing importer, preserving every old native record and all canonical custody/conflict guards. Strict compiler/runtime admission unchanged.",
+        "postgres_red_seconds": 48.81,
+        "postgres_green_seconds": 191.07
+      }
     },
     {
       "npc": "Fillias",
@@ -2742,8 +2748,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/9",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-28",
+        "scope": "All6 original audited cells/floors/exact names retained; add7 source-proven missing passive profiles through existing importer, preserving every old native record and all canonical custody/conflict guards. Strict compiler/runtime admission unchanged.",
+        "postgres_red_seconds": 48.81,
+        "postgres_green_seconds": 191.07
+      }
     },
     {
       "npc": "Baltim",
@@ -2826,8 +2838,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/90",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-28",
+        "scope": "All6 original audited cells/floors/exact names retained; add7 source-proven missing passive profiles through existing importer, preserving every old native record and all canonical custody/conflict guards. Strict compiler/runtime admission unchanged.",
+        "postgres_red_seconds": 48.81,
+        "postgres_green_seconds": 191.07
+      }
     },
     {
       "npc": "Freezhild",
@@ -2895,8 +2913,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/178",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-28",
+        "scope": "All6 original audited cells/floors/exact names retained; add7 source-proven missing passive profiles through existing importer, preserving every old native record and all canonical custody/conflict guards. Strict compiler/runtime admission unchanged.",
+        "postgres_red_seconds": 48.81,
+        "postgres_green_seconds": 191.07
+      }
     },
     {
       "npc": "Kjesse",
@@ -3225,8 +3249,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/102",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-28",
+        "scope": "All6 original audited cells/floors/exact names retained; add7 source-proven missing passive profiles through existing importer, preserving every old native record and all canonical custody/conflict guards. Strict compiler/runtime admission unchanged.",
+        "postgres_red_seconds": 48.81,
+        "postgres_green_seconds": 191.07
+      }
     },
     {
       "npc": "Emilie",
@@ -3805,8 +3835,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/141",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres; native42 reproduction;9 profile/canonical conflict cases",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "reviewed-passive-cells-28",
+        "scope": "All6 original audited cells/floors/exact names retained; add7 source-proven missing passive profiles through existing importer, preserving every old native record and all canonical custody/conflict guards. Strict compiler/runtime admission unchanged.",
+        "postgres_red_seconds": 48.81,
+        "postgres_green_seconds": 191.07
+      }
     },
     {
       "npc": "Guide Elena",
@@ -5709,6 +5745,65 @@
       "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at 9bca5359f4c44b5cf5219600385df8a0017866a2; details in verification_components.latest_checked_source. Source identity checked before each slice",
       "test_code_commit": "9bca5359f4c44b5cf5219600385df8a0017866a2",
       "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+    },
+    {
+      "name": "reviewed-passive-cells-28",
+      "state": "QUALIFIED",
+      "entries": [
+        "A Starving Dog",
+        "Eirik",
+        "Emiliana",
+        "Fayla",
+        "Gnommander",
+        "Jessica"
+      ],
+      "scope": "All6 original audited cells/floors/exact names retained; add7 source-proven missing passive profiles through existing importer, preserving every old native record and all canonical custody/conflict guards. Strict compiler/runtime admission unchanged.",
+      "red": {
+        "seconds": 48.81,
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "log": "/tmp/npcfix-evidence/passive-six-red.log",
+        "sha256": "777c4707618d12ffe2b58a32921855f0665f3c279da49324860dc5226796d723"
+      },
+      "green": {
+        "seconds": 191.07,
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "log": "/tmp/npcfix-evidence/passive-six-green.log",
+        "sha256": "53d12b89f4e68d65f44766da6c1e24d7ea55edbf4f659323d2fe44ee8e5d7fb0"
+      },
+      "cumulative_native_cases": 162,
+      "source_xml_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+      "xml_line_witnesses": {
+        "1855": "imports/canary/items-xml/items.xml:3878",
+        "14117": "imports/canary/items-xml/items.xml:32460",
+        "1867": "imports/canary/items-xml/items.xml:3881",
+        "17396": "imports/canary/items-xml/items.xml:35308",
+        "14783": "imports/canary/items-xml/items.xml:32916",
+        "15854": "imports/canary/items-xml/items.xml:33692",
+        "5593": "imports/canary/items-xml/items.xml:15246"
+      },
+      "existing_profile_comparison": {
+        "source_commit": "ce893d6b19fe4305a1f9d94778365e62977b156e",
+        "existing_records": 3609,
+        "preserved_exactly": true,
+        "added_keys": [
+          "oteryn:item.tibia.i14117",
+          "oteryn:item.tibia.i14783",
+          "oteryn:item.tibia.i15854",
+          "oteryn:item.tibia.i17396",
+          "oteryn:item.tibia.i1855",
+          "oteryn:item.tibia.i1867",
+          "oteryn:item.tibia.i5593"
+        ],
+        "compiler_source_equivalence": "World compiler/content/world-bundle Rust unchanged from the retained release tool source."
+      },
+      "checks": "Repository native-provider42 generation and independent --check PASS; all9 profile/conflict/weight units PASS31.513s; fmt PASS; repository staged-input pin-refresh and independent pin-check PASS. No changed Rust crates; reuse source-equivalent entities/dispatch all-target/all-feature check5m42s and strict clippy14m16s from9bca5359f. Actual PG consumes the new provider.",
+      "world_pin": {
+        "bytes": 32008798,
+        "digest": "526ab4c033888e90986a38f40b3b443c47470b9700815bdd18deda9a752baa11",
+        "world": "oteryn"
+      },
+      "review": "Only7 new profiles; every old native profile exactly preserved. No canonical identity, NPC coordinate, creature balance, compiler/collision exception, workflow/repository-tool or binary change."
     }
   ],
   "owner_constraints": {
@@ -6324,14 +6419,14 @@
     }
   },
   "counts": {
-    "QUALIFIED": 172,
+    "QUALIFIED": 178,
     "PENDING": 8,
     "EXCLUDED": 24,
-    "AUTHORED; QUALIFICATION PENDING": 113,
+    "AUTHORED; QUALIFICATION PENDING": 107,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
-  "last_publication": "Green Book World source9e616eba0 joined with all incoming qualifications and safe landing sourcece893d6b1; fast-forward push now.",
+  "last_publication": "All Book World and incoming safe-landing/passive joins fully green; source9e616eba0 plus incominga493dee7c publishing now.",
   "active_bulk_batch": {
     "state": "GREEN and PUSHED4d34d0efd; do not redo",
     "red": "PostgreSQL case npcfix-reward-workshop-soul-orbs FAILED95.56852851s; exact yes left2 orbs instead of0. POSTGRES_STARTED and POSTGRES_CASE_COMPLETED retained in soul-orbs-red-retry.log. Prior No space left build did not execute tests and is not RED proof.",
@@ -6661,5 +6756,82 @@
     "check": "PASS changed dispatch/entities alltargets/allfeatures8m28s",
     "clippy": "PASS -D warnings changed dispatch/entities4m54s",
     "world_pin": "483097258d0597917f5e52d30f3f19d884d8bb8bcd43990ef63923efdcd855c9 unchanged by travel-only merge"
+  },
+  "active_physical_batch": {
+    "name": "reviewed-passive-cells-28",
+    "state": "QUALIFIED",
+    "entries": [
+      "A Starving Dog",
+      "Eirik",
+      "Emiliana",
+      "Fayla",
+      "Gnommander",
+      "Jessica"
+    ],
+    "scope": "All6 original audited cells/floors/exact names retained; add7 source-proven missing passive profiles through existing importer, preserving every old native record and all canonical custody/conflict guards. Strict compiler/runtime admission unchanged.",
+    "red": {
+      "seconds": 48.81,
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "log": "/tmp/npcfix-evidence/passive-six-red.log",
+      "sha256": "777c4707618d12ffe2b58a32921855f0665f3c279da49324860dc5226796d723"
+    },
+    "green": {
+      "seconds": 191.07,
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "log": "/tmp/npcfix-evidence/passive-six-green.log",
+      "sha256": "53d12b89f4e68d65f44766da6c1e24d7ea55edbf4f659323d2fe44ee8e5d7fb0"
+    },
+    "cumulative_native_cases": 162,
+    "source_xml_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+    "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+    "xml_line_witnesses": {
+      "1855": "imports/canary/items-xml/items.xml:3878",
+      "14117": "imports/canary/items-xml/items.xml:32460",
+      "1867": "imports/canary/items-xml/items.xml:3881",
+      "17396": "imports/canary/items-xml/items.xml:35308",
+      "14783": "imports/canary/items-xml/items.xml:32916",
+      "15854": "imports/canary/items-xml/items.xml:33692",
+      "5593": "imports/canary/items-xml/items.xml:15246"
+    },
+    "existing_profile_comparison": {
+      "source_commit": "ce893d6b19fe4305a1f9d94778365e62977b156e",
+      "existing_records": 3609,
+      "preserved_exactly": true,
+      "added_keys": [
+        "oteryn:item.tibia.i14117",
+        "oteryn:item.tibia.i14783",
+        "oteryn:item.tibia.i15854",
+        "oteryn:item.tibia.i17396",
+        "oteryn:item.tibia.i1855",
+        "oteryn:item.tibia.i1867",
+        "oteryn:item.tibia.i5593"
+      ],
+      "compiler_source_equivalence": "World compiler/content/world-bundle Rust unchanged from the retained release tool source."
+    },
+    "checks": "Repository native-provider42 generation and independent --check PASS; all9 profile/conflict/weight units PASS31.513s; fmt PASS; repository staged-input pin-refresh and independent pin-check PASS. No changed Rust crates; reuse source-equivalent entities/dispatch all-target/all-feature check5m42s and strict clippy14m16s from9bca5359f. Actual PG consumes the new provider.",
+    "world_pin": {
+      "bytes": 32008798,
+      "digest": "526ab4c033888e90986a38f40b3b443c47470b9700815bdd18deda9a752baa11",
+      "world": "oteryn"
+    },
+    "review": "Only7 new profiles; every old native profile exactly preserved. No canonical identity, NPC coordinate, creature balance, compiler/collision exception, workflow/repository-tool or binary change."
+  },
+  "book_world_passive_join": {
+    "incoming": "a493dee7c",
+    "result": "QUALIFIED",
+    "source_preservation": "Incoming passive profiles and all actor cases preserved; no Rust production delta after the earlier merged actor/travel/check/clippy validation",
+    "postgres": {
+      "actors": 165,
+      "duration_seconds": 76.79,
+      "marker": true,
+      "log": "book-world-passive-merged-actors-pg.log"
+    },
+    "python": "9 passed20.647s including known-weight and known-custody conflict negatives",
+    "pin": {
+      "bytes": 32009227,
+      "digest": "628fa42e40b649db4c83b76c4991ad5ca5516c0bc07b16dfd6f37a7b4f317422",
+      "world": "oteryn"
+    },
+    "generated": "Conflicting pins resolved only by repo compiler pin-refresh and independent pin-check"
   }
 }
