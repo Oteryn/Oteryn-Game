@@ -428,6 +428,7 @@ fn scenario_in_world(
                 lever: None,
                 reversible: false,
                 passages: vec![],
+                objects: None,
                 teleport: Some(position(destination)),
                 storage: if refused {
                     vec![Storage {

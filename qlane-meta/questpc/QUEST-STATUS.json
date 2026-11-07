@@ -8381,7 +8381,7 @@
     "earlier_snapshot_merged": "6c09e0365110db6683f938dd08d5d584744cbf37",
     "merge_resolution": "Retained the current newer tree in all 86 overlapping paths. Earlier snapshot retained in ancestry.",
     "owner_rule": "All shared engine features remain in scope; historical outside-lane engine blockers are nonterminal and must be implemented or reused.",
-    "active": "StepOut slice published, strict clippy/schema/format/pin checks passed. Next: focused object mutation RED, then reusable atomic source create/remove support.",
+    "active": "Publish PG-green object slice now under owner pressure; complete targeted strict-check pipeline, then compose exact Mintwallin source callback and reward path.",
     "concurrent_remote_head": "4e12ac30e",
     "validation": {
       "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal -- --nocapture",
@@ -8476,6 +8476,50 @@
         }
       },
       "log_normalization": "Trailing blank lines removed from archived command output; hashes cover archived bytes. Test/marker/result lines preserved."
+    },
+    "source_objects": {
+      "scope": "Atomic immovable non-floor-changing source object slice; no whole-title promotion.",
+      "pg": {
+        "result": "1 passed; 0 failed",
+        "duration_seconds": 134.325328355,
+        "marker": "POSTGRES_CASE_COMPLETED source_object_mutations_are_atomic_bounded_and_idempotent duration=134.325328355s",
+        "checks": [
+          "trigger and wall removal plus wall creation",
+          "missing creation facts refuse without any prefix",
+          "repeat creates exactly one wall",
+          "created wall blocks collision",
+          "no durable quest receipts"
+        ]
+      },
+      "red": {
+        "result": "1 passed; 1 failed",
+        "duration_seconds": 50.15,
+        "missing_field": "objects",
+        "stepout_regression_seconds": 46.394965541
+      },
+      "checks": {
+        "python": "16 passed",
+        "generation": "21 packets regenerated and checked; no drift",
+        "cargo_check_clippy_schema": "active targeted pipeline; follow-up evidence to be pushed immediately"
+      },
+      "logs": {
+        "red": {
+          "log": "qlane-meta/questpc/cloud-objects-red.log",
+          "sha256": "a5ccab13cad904c38a21a8de19fe31f811c298387c36a6089239b83f53d5c5ce"
+        },
+        "green": {
+          "log": "qlane-meta/questpc/cloud-objects-green.log",
+          "sha256": "a0f6ad64723d05106f41b947787eaff666f15ce634cf6881a4ee23dccc53d0d9"
+        },
+        "python-red": {
+          "log": "qlane-meta/questpc/cloud-objects-python-red.log",
+          "sha256": "e9a038dad0215fd641f66f6964e8309b1871dfa303a32cfaccac93ca51549aa7"
+        },
+        "python-green": {
+          "log": "qlane-meta/questpc/cloud-objects-python-green.log",
+          "sha256": "08a39e572a4862de11962ef854e89fcb8f692ccfb0c87618ca43e95a23696848"
+        }
+      }
     }
   }
 }

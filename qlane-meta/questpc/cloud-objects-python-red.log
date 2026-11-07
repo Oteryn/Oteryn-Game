@@ -1,0 +1,19 @@
+E
+======================================================================
+ERROR: test_source_objects_are_bounded_and_cannot_write_durable_value (__main__.QuestBatch4Tests.test_source_objects_are_bounded_and_cannot_write_durable_value)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/Oteryn-Game/tools/content-schema/quest-authoring/test_quest_batch4.py", line 51, in test_source_objects_are_bounded_and_cannot_write_durable_value
+    tool.validate_callback(source, 'thais_lighthouse')
+  File "/workspace/Oteryn-Game/tools/content-schema/quest-authoring/quest_batch4.py", line 225, in validate_callback
+    fields(callback, CALLBACK_REQUIRED, CALLBACK_FIELDS, context)
+  File "/workspace/Oteryn-Game/tools/content-schema/quest-authoring/quest_batch4.py", line 151, in fields
+    require(required <= value.keys() <= allowed, context + ': missing or unknown fields')
+  File "/workspace/Oteryn-Game/tools/content-schema/quest-authoring/quest_batch4.py", line 117, in require
+    raise ValueError(message)
+ValueError: thais_lighthouse callback: missing or unknown fields
+
+----------------------------------------------------------------------
+Ran 1 test in 0.003s
+
+FAILED (errors=1)

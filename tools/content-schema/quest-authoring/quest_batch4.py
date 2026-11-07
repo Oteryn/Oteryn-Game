@@ -62,7 +62,7 @@ CALLBACK_FIELDS = {
     'key', 'quest', 'trigger', 'selector', 'lever', 'reversible', 'passages',
     'teleport', 'storage', 'minimum_level', 'experience', 'monk_reward',
     'offerings', 'item_on_target', 'return_on_failure', 'failure_message',
-    'success_message', 'native_rule', 'sources',
+    'success_message', 'native_rule', 'sources', 'objects',
 }
 CALLBACK_REQUIRED = {
     'key', 'quest', 'trigger', 'selector', 'reversible', 'passages',
@@ -228,6 +228,28 @@ def validate_callback(callback, directory):
     require(QUEST_OWNERS[directory] is not None and callback['quest'] == QUEST_OWNERS[directory],
             key + ': foreign quest owner or owner not qualified')
     require(callback['trigger'] in ('use', 'step_in', 'step_out'), key + ': invalid trigger')
+    objects = callback.get('objects')
+    if objects is not None:
+        fields(objects, {'consume_trigger', 'mutations'}, {'consume_trigger', 'mutations'}, key + ': objects')
+        require(type(objects['consume_trigger']) is bool and isinstance(objects['mutations'], list),
+                key + ': invalid object effects')
+        require(0 < len(objects['mutations']) + int(objects['consume_trigger']) <= 16
+                and (not objects['consume_trigger'] or callback['trigger'] == 'use'), key + ': object bounds')
+        require(callback.get('lever') is None and not callback['passages']
+                and callback.get('teleport') is None and not callback['storage'] and not callback['offerings']
+                and callback.get('item_on_target') is None and callback.get('minimum_level') is None
+                and callback.get('experience') is None and callback.get('monk_reward') is None
+                and callback.get('native_rule') is None, key + ': objects cannot write durable value')
+        seen_objects = set()
+        for mutation in objects['mutations']:
+            fields(mutation, {'position'}, {'position', 'remove', 'create'}, key + ': object mutation')
+            location = position(mutation['position'], key + ': object position')
+            remove, create = mutation.get('remove'), mutation.get('create')
+            require(location not in seen_objects and (remove is not None or create is not None)
+                    and (remove is None or integer(remove, 1, 65535))
+                    and (create is None or integer(create, 1, 65535))
+                    and (remove is None or remove != create), key + ': invalid object mutation')
+            seen_objects.add(location)
     if callback['trigger'] == 'step_out':
         require(callback['reversible'] and callback.get('teleport') is None
                 and not callback['storage'] and not callback['offerings']

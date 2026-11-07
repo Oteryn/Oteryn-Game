@@ -7,6 +7,13 @@ struct MovementDecay {
     restore: EntryFacts,
 }
 
+/// Prepared under the Channel runtime owner, then atomically staged with the trigger.
+pub struct QuestObjectMutation {
+    pub position: TilePos,
+    pub remove: Option<view::EntrySource>,
+    pub create: Option<(EntryFacts, bool)>,
+}
+
 #[derive(Clone, Debug, Default)]
 pub(super) struct CallbackStates {
     pub(super) changed: BTreeMap<u64, (u64, EntryFacts)>,
@@ -17,6 +24,7 @@ pub(super) struct CallbackStates {
     pub(super) movement_effects: std::collections::VecDeque<(u64, TilePos, u16)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
+    solid_objects: BTreeSet<EntryId>,
 }
 
 impl CallbackStates {
@@ -37,12 +45,117 @@ impl CallbackStates {
             + self.movement_decays.len()
             + self.movement_effects.len()
             + self.movement_speech.len()
+            + self.solid_objects.len()
             + self.movement_items.values().map(Vec::len).sum::<usize>();
         used.saturating_add(additional) < super::super::overlay::OVERLAY_BUDGET_BYTES / 512
     }
 }
 
 impl BundleFacts {
+    /// Source objects require one pinned, immovable palette definition.
+    pub fn quest_object_facts(&self, appearance: u16) -> Option<(EntryFacts, bool)> {
+        let mut found = self
+            .palette
+            .iter()
+            .enumerate()
+            .filter(|(_, entry)| entry.facts.appearance_id == appearance);
+        let (index, entry) = found.next()?;
+        if found.next().is_some() || entry.facts.pickupable {
+            return None;
+        }
+        Some((entry.facts, self.blocks(u32::try_from(index).ok()?)))
+    }
+
+    /// Reuses QENGINE2's cloned-state staging: no prefix is published on refusal.
+    pub fn apply_quest_objects(
+        &self,
+        key: u64,
+        expected: u64,
+        after: EntryFacts,
+        operations: &[QuestObjectMutation],
+    ) -> bool {
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if operations.len() > 16
+            || expected == u64::MAX
+            || states
+                .changed
+                .get(&key)
+                .map_or(0, |(revision, _)| *revision)
+                != expected
+            || !states.has_capacity(1 + operations.len() * 3)
+        {
+            return false;
+        }
+        let mut staged = (**states).clone();
+        for operation in operations {
+            if self.house_tile(operation.position) {
+                return false;
+            }
+            match operation.remove {
+                Some(view::EntrySource::Base {
+                    ordinal,
+                    placement_key: removed,
+                    ..
+                }) => {
+                    if view::placement_of(removed) != Some((operation.position, ordinal))
+                        || !staged.hidden.insert(removed)
+                    {
+                        return false;
+                    }
+                }
+                Some(view::EntrySource::Added(id)) => {
+                    let Some(entries) = staged.movement_items.get_mut(&operation.position) else {
+                        return false;
+                    };
+                    let Some(index) = entries
+                        .iter()
+                        .position(|entry| entry.source == view::EntrySource::Added(id))
+                    else {
+                        return false;
+                    };
+                    if entries[index].facts.pickupable {
+                        return false;
+                    }
+                    entries.remove(index);
+                    if entries.is_empty() {
+                        staged.movement_items.remove(&operation.position);
+                    }
+                    staged.solid_objects.remove(&id);
+                }
+                Some(_) => return false,
+                None => {}
+            }
+            if let Some((facts, solid)) = operation.create {
+                if facts.pickupable {
+                    return false;
+                }
+                let Some(sequence) = staged.movement_sequence.checked_add(1) else {
+                    return false;
+                };
+                let Some(id) = EntryId::callback(sequence) else {
+                    return false;
+                };
+                staged.movement_sequence = sequence;
+                staged
+                    .movement_items
+                    .entry(operation.position)
+                    .or_default()
+                    .push(view::ComposedEntry {
+                        source: view::EntrySource::Added(id),
+                        facts,
+                    });
+                if solid {
+                    staged.solid_objects.insert(id);
+                }
+            }
+        }
+        staged.changed.insert(key, (expected + 1, after));
+        *states = Arc::new(staged);
+        true
+    }
+
     /// Records a committed monster step for the dispatch-owned trap pass.
     pub fn record_monster_step(&self, step: MonsterStep) -> bool {
         let Ok(mut steps) = self.monster_steps.lock() else {
@@ -415,6 +528,9 @@ impl BundleFacts {
         let Ok(states) = self.callbacks.lock() else {
             return true;
         };
+        if states.movement_items.get(&pos).is_some_and(|entries| entries.iter().any(|entry| {
+            matches!(entry.source, view::EntrySource::Added(id) if states.solid_objects.contains(&id))
+        })) { return true; }
         let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {
             return true;
         };

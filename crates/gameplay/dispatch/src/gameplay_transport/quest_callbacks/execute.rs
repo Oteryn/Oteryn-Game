@@ -54,6 +54,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if map.facts.object_revision(key) != expected_revision {
             return UseDisposition::StaleState;
         }
+        if callback.objects.is_some() {
+            let outcome = self.apply_callback_objects(map, callback, key, expected_revision, after);
+            if outcome == UseDisposition::Committed {
+                if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
+                    pending.remove(&session);
+                }
+                if let Some(message) = &callback.success_message {
+                    self.states.chat.push_quest_feedback(session, message);
+                }
+            }
+            return outcome;
+        }
         let close = match callback.trigger {
             Trigger::Use => callback
                 .lever

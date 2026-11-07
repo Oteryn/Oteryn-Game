@@ -44,6 +44,31 @@ def packet(directory):
 
 
 class QuestBatch4Tests(unittest.TestCase):
+    def test_source_objects_are_bounded_and_cannot_write_durable_value(self):
+        source = callback('thais_lighthouse', 'objects')
+        source.update(trigger='use', teleport=None,
+                      objects={'consume_trigger': True, 'mutations': []})
+        tool.validate_callback(source, 'thais_lighthouse')
+        source['objects']['mutations'] = [
+            {'position': {'x': 100, 'y': 200, 'floor': -7}, 'remove': 1791},
+            {'position': {'x': 101, 'y': 200, 'floor': -7}, 'create': 1270},
+        ]
+        tool.validate_callback(source, 'thais_lighthouse')
+        changes = [
+            {'objects': {'consume_trigger': False, 'mutations': []}},
+            {'objects': {'consume_trigger': True, 'mutations': [
+                {'position': {'x': x, 'y': 200, 'floor': -7}, 'create': 1270}
+                for x in range(16)]}},
+            {'storage': [{'track': 'oteryn:quest-track/test', 'minimum': -1, 'maximum': 1, 'set': 1}]},
+            {'objects': {'consume_trigger': False, 'mutations': [
+                {'position': {'x': 100, 'y': 200, 'floor': -7}, 'create': 0}]}},
+        ]
+        for change in changes:
+            invalid = copy.deepcopy(source)
+            invalid.update(change)
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                tool.validate_callback(invalid, 'thais_lighthouse')
+
     def test_departure_callbacks_restore_only_stateless_map_effects(self):
         source = callback('thais_lighthouse', 'departure')
         source.update(trigger='step_out', reversible=True, teleport=None, lever=[431, 430])

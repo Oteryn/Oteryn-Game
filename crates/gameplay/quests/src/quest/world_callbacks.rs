@@ -10,6 +10,8 @@ pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-cal
 // Static callbacks and the dynamic altar share the same boot bound.
 pub const MAX_CALLBACKS: usize = 512;
 pub const MAX_EFFECTS: usize = 8;
+mod objects;
+pub use objects::{ObjectEffects, ObjectMutation};
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]
@@ -106,6 +108,8 @@ pub struct Callback {
     pub lever: Option<[u16; 2]>,
     pub reversible: bool,
     pub passages: Vec<Passage>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub objects: Option<ObjectEffects>,
     pub teleport: Option<Position>,
     pub storage: Vec<Storage>,
     /// Checked against the progression owner in the same fenced quest transaction.
@@ -173,6 +177,7 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 && selector.action.is_none())
             || selector.position.is_some_and(|p| !valid_pos(p))
             || callback.teleport.is_some_and(|p| !valid_pos(p))
+            || !objects::valid(callback)
             || unique_offerings.len() != callback.offerings.len()
             || unique_passages.len() != callback.passages.len()
             || unique_storage.len() != callback.storage.len()

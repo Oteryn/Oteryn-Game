@@ -33,6 +33,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let departure = name == "departure-map-regression";
+    let object_mutation = name.starts_with("object-mutation-");
     let monk = name.starts_with("monk-guidance");
     let classic_npc = matches!(
         name,
@@ -51,7 +52,7 @@ fn scenario_case(
     );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if classic_npc || departure {
+    let mut callback = callback(if classic_npc || departure || object_mutation {
         "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
@@ -107,6 +108,18 @@ fn scenario_case(
         callback.selector.appearance = None;
         callback.reversible = true;
     }
+    if object_mutation {
+        callback
+            .passages
+            .push(oteryn_gameplay_quests::quest::world_callbacks::Passage {
+                position: Position {
+                    x: trigger.x + 6,
+                    ..trigger
+                },
+                appearance: 1270,
+                replacement: None,
+            });
+    }
     let world = if departure {
         super::world_ordinal(&callback, trigger, 2772, 1)?
     } else {
@@ -115,6 +128,23 @@ fn scenario_case(
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
             .await?;
+        let callback = if object_mutation {
+            println!("POSTGRES_CASE_STARTED quest_object_mutations database_created=true");
+            let mut value = serde_json::to_value(&callback)?;
+            value["lever"] = serde_json::Value::Null;
+            value["passages"] = serde_json::json!([]);
+            value["objects"] = serde_json::json!({
+                "consume_trigger": name != "object-mutation-repeat",
+                "mutations": [
+                    {"position": callback.passages[0].position, "remove":1791, "create":null},
+                    {"position": {"x":trigger.x+1,"y":trigger.y,"floor":trigger.floor},
+                     "remove":null,"create":if name == "object-mutation-refusal" {65535} else {1270}}
+                ]
+            });
+            serde_json::from_value::<Callback>(value)?
+        } else {
+            callback.clone()
+        };
         let departure_callback = if departure {
             println!("POSTGRES_CASE_STARTED quest_departure database_created=true");
             let mut value = serde_json::to_value(&callback)?;
@@ -220,7 +250,7 @@ fn scenario_case(
                     ])
                     .is_ok()
             );
-        } else if lever_fixture || target_swap {
+        } else if lever_fixture || target_swap || object_mutation {
             assert!(
                 owner
                     .states
@@ -276,7 +306,10 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if departure {
+        if object_mutation {
+            super::super::quest_object_mutations::exercise(&owner, &admitted, &h, name, trigger)
+                .await?;
+        } else if departure {
             super::super::quest_departure::exercise(
                 &owner,
                 &mut admitted,

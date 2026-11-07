@@ -29,3 +29,18 @@ Sources:
 Limit each future investigation to ten minutes; record the conservative decision
 here and continue. Preserve the atomic eleven-track Father's Burden write and
 exact-match charge grants.
+
+## Atomic source objects
+
+- At most16 trigger/object effects; immutable pinned palette facts only. Unknown,
+  ambiguous, pickupable, durable Ground/House objects refuse the entire batch.
+- Stage a clone of the existing callback state, then publish removals, creations,
+  trigger revision and collision together. No durable item or Quest writer.
+- Create only when that appearance is absent; missing removals are no-ops. This
+  conservative rule avoids duplicate static walls and matches conditional sewer
+  creation. Mintwallin's consumed trigger still makes its normal branch one-shot.
+- Floor-changing creation currently refuses. Add composed-floor resolution before
+  enabling435; rendering a hole without descent is not an accepted fallback.
+- Mintwallin's201189 source is byte-identical to retained9f5a72c6 (SHA25661944b37...).
+  Bind its exact AID30008; no arbitrary source-coordinate alias.
+  https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua

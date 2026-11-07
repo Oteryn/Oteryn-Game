@@ -5,6 +5,7 @@ use super::{
     connection::{UseCommand, UseOutcome},
 };
 mod execute;
+mod objects;
 mod rewards;
 mod soul_war_reward;
 

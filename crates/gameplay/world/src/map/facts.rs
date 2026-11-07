@@ -36,6 +36,7 @@ use std::sync::{Arc, Mutex};
 
 mod quest_callbacks;
 use quest_callbacks::CallbackStates;
+pub use quest_callbacks::QuestObjectMutation;
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
 

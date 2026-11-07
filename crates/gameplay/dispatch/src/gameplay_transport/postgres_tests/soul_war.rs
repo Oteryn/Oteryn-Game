@@ -369,7 +369,7 @@ fn scenario() -> TestResult {
         let world = super::quest_world_callbacks::world(&Callback {
             key: "oteryn:quest-callback/soul-war-final-reward".into(), quest: "oteryn:quest/soul-war".into(),
             trigger: Trigger::Use, selector: Selector { position: Some(trigger), unique: None, action: None, appearance: None },
-            lever: None, reversible: false, passages: vec![], teleport: None, storage: vec![],
+            lever: None, reversible: false, passages: vec![], objects: None, teleport: None, storage: vec![],
             minimum_level: None, experience: None, monk_reward: None, offerings: vec![], item_on_target: None,
             return_on_failure: false, failure_message: None, success_message: None,
             native_rule: None, sources: vec![],

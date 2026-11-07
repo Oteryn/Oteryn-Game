@@ -1,3 +1,29 @@
+## Atomic source objects — 2026-11-07
+New reusable stateless objects field: consumed triggers and <=16 total immovable
+object mutations. Uses QENGINE2 cloned callback-state staging and the existing
+Channel map owner; no separate persistence writer. Visible creation and solid
+collision update together. Ground/House durable items and pickupable objects
+are refused; unknown/ambiguous creation facts refuse the whole batch. Creation
+is idempotent. Added-field constructors updated in Rotten Blood, Soul War and
+underwater fixture; no other semantic changes there.
+PG GREEN134.325328355s: three scenarios(atomic success/refusal/repeat), realUSE,
+collision, no receipt writes. RED reached PG and failed unknownobjects; exact
+post-scope StepOut regression also passed46.394965541s. Python16/16; generation
+21 source packets regenerated/checked with no drift. Cargo check/clippy/schema
+unit pipeline currently active; push its evidence immediately when complete.
+No whole title promoted. Source floor-changing objects are deliberately refused
+until composed-floor support is added; never publish a visual-only sewer hole.
+
+NEXT: exact Mintwallin source composition first. Fresh normal GitHub read of
+201189f871d23597b82caf88fd611454a2ddefb8 actions_devil_helmet_lever.lua has SHA256
+61944b37d0a86201ad45759b7abddf2e7b80389d4b0a04efe4a54db257d4742c, identical to
+retained9f5a72c6 source. No provenance guess needed. Add mintwallin_quest to the
+existing quest_batch4 source packets/owners and regenerate; use AID30008 exactly,
+consume trigger, create1270 at32592,32105/32106,z14 and remove1271 at32593..32601,
+32104,z14. Qualify lever effects plus existing mintwallincyclops reward claim.
+Do not invent a trigger coordinate: the source registers only AID30008.
+Source scratch is /tmp/questpc-mintwallin-201189.lua; do not commit donor copy.
+
 ## Check follow-up — 2026-11-07
 StepOut slice pushed asf924cb424. Strict clippy nowPASS(alltargets/allfeatures,
 -Dwarnings,2m47s); Rust schema unit1/1PASS; cargo fmt and mounted rustfmtPASS.
