@@ -7292,7 +7292,7 @@
       "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
     }
   },
-  "next_batch": "Complete current-data PG RED, run repository materialization and registered checks, validate only2 Item fluid groups/one service change, run fresh PG GREEN and focused oil/replay/refusal checks, finish strict Clippy then qualify Ahmet.",
+  "next_batch": "Complete registry renumber/checks and source-equivalent fluid generation; rebuild fresh PG tests with1230-1238, verify Father11 atomicity and Ahmet, regenerate pins, commit and push.",
   "active_batch": {
     "name": "reviewed-passive-cells-35",
     "state": "QUALIFIED",
@@ -7477,6 +7477,84 @@
       "sha256": "6771057e93b31a49f19f8b6e508bb37cb6f695d865cfa2d92a801d8038448d63"
     },
     "source_effect_unit": "PASS1/0.01s; pure unit, not a PostgreSQL proof: oil7 restores nothing, mana10/life11 map to their source effects.",
-    "regeneration": "Materializer compiled and completed all97 legacy package documents; store refresh PASS. Canonical tree emission and registered checks still running. Runtime source unchanged from compiled8369545b0."
+    "regeneration": "Materializer compiled and completed all11 legacy package documents; store refresh PASS. Canonical tree emission and registered checks still running. Runtime source unchanged from compiled8369545b0.",
+    "package_document_count": 11,
+    "migration": "1238_npc_trade_fluid_mints.sql",
+    "source_commit": "8369545b0"
+  },
+  "migration_registry": {
+    "lane": "npcfix",
+    "range": "1230-1239",
+    "renames": [
+      {
+        "old": "1140_quest_atomic_track_capacity.sql",
+        "new": "1230_quest_atomic_track_capacity.sql",
+        "sha256": "2980e59396009db00a24a350ec9bbf1c71d971c4f3e1bb0f4312e5eabd0ebd8f",
+        "content_unchanged": true
+      },
+      {
+        "old": "1141_quest_costed_repeat_occurrences.sql",
+        "new": "1231_quest_costed_repeat_occurrences.sql",
+        "sha256": "7f07f88c4e42c91831e6742591660269a5473ba8d369a2700ff268592b8bd8b5",
+        "content_unchanged": true
+      },
+      {
+        "old": "1142_quest_repeat_achievement_once.sql",
+        "new": "1232_quest_repeat_achievement_once.sql",
+        "sha256": "29b84c30278840c1fd848a279197fdb734887a6a7c26d492daa09e3e4b4084cd",
+        "content_unchanged": true
+      },
+      {
+        "old": "1143_quest_reward_absolute_deadlines.sql",
+        "new": "1233_quest_reward_absolute_deadlines.sql",
+        "sha256": "373fccd785b07116932e046735786fab4f3978785640bba0e1e3691e823c1cb6",
+        "content_unchanged": true
+      },
+      {
+        "old": "1144_quest_cooldown_repeat_occurrences.sql",
+        "new": "1234_quest_cooldown_repeat_occurrences.sql",
+        "sha256": "11b92464a3587d36054f80b4ba3f89d454f50c91f0bc92ccce1bbf1c2d399b57",
+        "content_unchanged": true
+      },
+      {
+        "old": "1145_quest_reward_workshop_clocks.sql",
+        "new": "1235_quest_reward_workshop_clocks.sql",
+        "sha256": "42bf156388e4be8d038e26fa4d446f803154cd2e33b700229c55c35e32a10178",
+        "content_unchanged": true
+      },
+      {
+        "old": "1146_quest_reward_backpack_outputs.sql",
+        "new": "1236_quest_reward_backpack_outputs.sql",
+        "sha256": "ffc7094ae396ef1ca0ec4d9186b907500813ab5c690279e3b3574f0060a65e5f",
+        "content_unchanged": true
+      },
+      {
+        "old": "1147_quest_reward_bulk_draws.sql",
+        "new": "1237_quest_reward_bulk_draws.sql",
+        "sha256": "2bb33341159c64bb71c09784950019821e55cb19e160ce7aabcab7567b33eeaa",
+        "content_unchanged": true
+      },
+      {
+        "old": "1148_npc_trade_fluid_mints.sql",
+        "new": "1238_npc_trade_fluid_mints.sql",
+        "sha256": "5f07fae2248a5b2cc28961c8c3300aea01bbaaf4022ab0189950f6da7113d250",
+        "content_unchanged": true
+      }
+    ],
+    "operational_references_updated": [],
+    "shared_qengine2": [
+      {
+        "file": "0999_quest_reward_callbacks.sql",
+        "sha256": "971451326e9473f01ab8587c18040f69d39740b6af944f62ac6b3df04ae9f294",
+        "canonical_qengine2": true
+      },
+      {
+        "file": "1000_quest_reward_payments.sql",
+        "sha256": "a041c1f4ad97c8642a81d0a06d2e834b10ae54a55bed7d93b98ec1141dbd9311",
+        "canonical_qengine2": true
+      }
+    ],
+    "qbase_files_carried": [],
+    "verification_state": "RENAMED_BYTE_IDENTICAL; DUPLICATE_CHECK_PASS; FRESH_PG_BUILD_RUNNING"
   }
 }
