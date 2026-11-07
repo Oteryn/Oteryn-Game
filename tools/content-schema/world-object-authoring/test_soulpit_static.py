@@ -1,7 +1,9 @@
 """W07 source geometry must retain exact admitted appearance identities and flags."""
 import copy
+import hashlib
 import json
 import unittest
+from unittest.mock import patch
 
 import soulpit_static
 import world_objects
@@ -57,6 +59,13 @@ class SoulpitStaticTests(unittest.TestCase):
         new = json.loads(generated['content/world/placements/index.json'])
         self.assertEqual([row['source_item_id'] for row in old['palette']],
                          [row['source_item_id'] for row in new['palette']])
+        digest = hashlib.sha256(generated['content/world/placements/index.json']).hexdigest()
+        self.assertIn(digest.encode(), generated['crates/client-assets/src/world.rs'])
+        pin_source = generated['crates/client-assets/src/world.rs'].decode()
+        for invalid_source in ['', pin_source + '\n' + pin_source]:
+            with patch.object(soulpit_static.Path, 'read_text', return_value=invalid_source):
+                with self.assertRaisesRegex(ValueError, 'SOULPIT_CLIENT_PLACEMENT_PIN_COUNT'):
+                    soulpit_static.outputs()
         for path, raw in generated.items():
             self.assertEqual((soulpit_static.ROOT / path).read_bytes(), raw, path)
 

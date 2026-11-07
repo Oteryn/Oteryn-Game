@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 from functools import lru_cache
 from pathlib import Path
@@ -121,9 +122,21 @@ def outputs(root=ROOT):
     marker = json.loads((root / marker_path).read_bytes())
     marker['notes'] = marker['notes'].removesuffix(NOTE) + NOTE
     encode = lambda value: (json.dumps(value, indent=2, ensure_ascii=False) + '\n').encode()
+    index_bytes = (json.dumps(index, sort_keys=True, separators=(',', ':')) + '\n').encode()
+    pin_path = 'crates/client-assets/src/world.rs'
+    pin = (root / pin_path).read_text(encoding='utf-8')
+    pin, count = re.subn(
+        r'(^pub const PLACEMENT_INDEX_SHA256: &str =\s*")[0-9a-f]{64}(";)',
+        lambda match: match[1] + hashlib.sha256(index_bytes).hexdigest() + match[2],
+        pin,
+        flags=re.MULTILINE,
+    )
+    if count != 1:
+        raise ValueError('SOULPIT_CLIENT_PLACEMENT_PIN_COUNT')
     return {SHARD: encode({'family': 'Terrain', 'records': rows}),
-            index_path: (json.dumps(index, sort_keys=True, separators=(',', ':')) + '\n').encode(),
-            marker_path: encode(marker)}
+            index_path: index_bytes,
+            marker_path: encode(marker),
+            pin_path: pin.encode()}
 
 
 def main():
