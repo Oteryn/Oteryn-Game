@@ -1,3 +1,31 @@
+# Heart of Destruction QUALIFIED — 2026-11-07
+
+Whole native PG18.6 RED42.197816668s→GREEN81.696754812s: all6 bosses,
+source lever, Yana,5 Gold Tokens, achievement, completion/repeat and actual
+250000-gold Powerful Strike. Unearned apply with valid equipment/materials/
+fee/shrine refuses without burns; learned apply consumes the exact source
+materials and writes72000000ms. Coherent Character revision checks bind the
+learning decision to the same durable fence. No subject seeds, no new SQL.
+All18 focused gates PASS; proof records real basic-imbuing and Grimvale PG
+regressions, units, source generation, strict check/clippy, pins/content/world/fmt.
+128 bounded objective descriptions and32 live guardians are independent.
+
+Commit/push qualification now. Five ACTIVE remain:
+- Feaster of Souls Quest
+- Forgotten Knowledge Quest
+- Goblin Merchant Quest
+- Hot Cuisine Quest
+- Illuminated Warrior Outfits Quest
+
+Continue Forgotten Knowledge next using the native learning mechanism.
+Its11 stages: Ivalisse/Halls of Hope,1 Heavy Old Tome, Lloyd, Lady Tenebris,
+Dragon Mother egg, Thorn Knight, Ivalisse/father, Dragon King, Time Guardian,
+Last Lore Keeper, complete. Min0 Current Premium. Reward is native powerful
+imbuing knowledge; qualify actual service, not just a flag. Read retained
+source and bind only proven families/alternatives; extend data rules generically.
+Use the reusable native hunt bootstrap and original source arenas. Never end
+while ACTIVE remains; push compiling/green slices at least every15 minutes.
+
 # Heart validation checkpoint — 2026-11-07 14:00 UTC
 
 Full Heart PG remains GREEN81.696754812s. Basic imbuing PG40.901043364s and Grimvale PG93.001633257s pass. Strict Clippy rejected three expect() calls in objective tests; new objective/knowledge tests now propagate errors and both focused unit groups pass. Cargo check passed before this test-only correction. Remaining: rerun strict Clippy, pins, content/world and fmt. Heart remains ACTIVE pending all gates. Push compiling checkpoint now; continue immediately.

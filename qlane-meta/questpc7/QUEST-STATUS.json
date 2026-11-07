@@ -1111,38 +1111,36 @@
     "title": "Heart of Destruction Quest",
     "canonical": "oteryn:quest.heart_of_destruction_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/57/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "queued_stage_binding": {
-      "stage": "s1",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "explore",
-      "objective": "Enter the Otherworld through the chosen Zao breach.",
-      "targets": [
-        "Zao Steppe Otherworld breach"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Compose boss-room admission, frozen participant capture, room death/vortex effects and encounter settlement through their existing owners; wire the pinned quest progression and qualify the full route.",
-      "evidence": [
-        "content/quests/definitions/quests-00100-00199.json:1#/records/57/definition",
-        "content/quests/native-death-bindings/quest-batch3-c-heart_of_destruction.json:1",
-        "content/quests/heart-of-destruction-deaths.json:1",
-        "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
+    "qualification": {
+      "kind": "complete selected Heart of Destruction expedition and actual native powerful learning",
+      "proof": "qlane-meta/questpc7/HEART-PG-PROOF.json",
+      "test": "questpc7_heart_whole_native_breaches_and_rewards",
+      "postgres": "18.6",
+      "red_seconds": 42.197816668,
+      "green_seconds": 81.696754812,
+      "scope": [
+        "source Zao/Farmine entry; fresh Current Premium refusal",
+        "actual8911\u21928912 destabilizer USE and bound travel",
+        "all6 distinct native bosses in retained arenas with duplicate-death safeguards",
+        "typed progress and once-only native Yana report",
+        "exact5 carried Gold Tokens, Ender of the End, durable completion; repeat unchanged",
+        "actual native Powerful Strike refused with valid gear/materials/gold/shrine before completion; no burns",
+        "fresh Premium still required after learning",
+        "real native Powerful Strike after learning:250000 gold and all source materials burned, slot0/category0,72000000ms",
+        "no subject quest/tool/reward seeds"
       ],
-      "attempts": [
-        "Read all six exact room-death rules and their scope block; traced the existing kill-settlement interface and checked that no production native-death consumer loads this packet. Kept runtime_enabled=false."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
-    },
-    "current_batch": "Whole PG GREEN81.696754812s; strict Clippy expect_used corrected in tests, objective/knowledge units pass; final strict/pins/content/world/fmt pending."
+      "assumptions": "Selected fixed once-only source-arena sequence; source Anomaly lever8911 is the selected Destruction Destabilizer; retained Farmine/Zao entry binds the chosen regional breach; no original party/lockout/form fidelity claimed. See CONTRACT-NOTES.md.",
+      "bindings": [
+        "content/quests/questpc7-world-callbacks.json",
+        "content/quests/questpc7-death-objectives.json",
+        "content/quests/shared-reward-callbacks.json",
+        "content/quests/imbuement-knowledge.json"
+      ]
+    }
   },
   {
     "title": "Hero of Rathleton Quest",
