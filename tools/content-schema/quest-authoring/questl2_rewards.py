@@ -5,6 +5,7 @@ import questl2_exchange_prayers as prayers
 import questl2_exchange_recipes as recipes
 import questl2_journeys as journeys
 import questl2_passages as passages
+import questl2_djinn as djinn
 
 
 NPCS = tuple(sorted({'zalamon', 'curos', 'yonan', 'ahmet', 'jerom', 'chief_grarkharok', 'rotem_valos', 'amber', 'norma', 'storkus', 'the_bone_master', 'an_old_dragon_lord', 'dorian', 'gamon', 'hairycles', 'jorge', 'kroox', 'rabaz', *prayers.PRIESTS, *recipes.NPCS}))
@@ -28,7 +29,8 @@ ITEMS = {
 
 ITEMS |= recipes.ITEMS
 ITEMS |= passages.ITEMS
-NPCS = tuple(sorted(set(NPCS) | set(passages.NPCS)))
+ITEMS |= djinn.ITEMS
+NPCS = tuple(sorted(set(NPCS) | set(passages.NPCS) | set(djinn.NPCS)))
 
 def append(callbacks, offers, inputs, pin):
     def state(track, before, after, maximum=None, preserve=False):

@@ -9,6 +9,8 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use std::sync::OnceLock;
 
+mod native_fields;
+
 const SOURCE: &str = include_str!("../../../../../../content/quests/shared-quest-shops.json");
 
 #[derive(Debug, Clone, Deserialize)]
@@ -26,19 +28,15 @@ pub struct Offer {
     pub item: ProjectV2DefinitionRef,
     pub direction: ProjectV2ServiceOfferDirection,
     pub unit_price: u64,
+    #[serde(default)]
+    pub count: Option<u32>,
+    #[serde(default)]
+    pub sub_type: Option<u16>,
     pub requirements: Vec<Requirement>,
 }
 impl Offer {
     fn project(&self) -> ProjectV2ServiceOffer {
-        ProjectV2ServiceOffer {
-            item: self.item.clone(),
-            direction: self.direction,
-            unit_price: self.unit_price,
-            currency: None,
-            count: Some(1),
-            sub_type: None,
-            parity_pending: false,
-        }
+        native_fields::project(self)
     }
 }
 #[derive(Debug, Clone, Deserialize)]
@@ -82,6 +80,7 @@ fn parse(source: &str) -> Result<Vec<Shop>, &'static str> {
             if offer.item.family != ProjectV2Family::Item
                 || !offer.item.key.starts_with("oteryn:item.")
                 || offer.item.revision.is_empty()
+                || !native_fields::valid(offer)
                 || offer.unit_price == 0
                 || offer.unit_price > u64::MAX / 100
                 || !items.insert((&offer.item, offer.direction))
@@ -129,7 +128,10 @@ pub fn required<'a>(
     shop.offers
         .iter()
         .find(|o| {
-            o.item == *item && o.direction == direction && o.unit_price == price && count == 1
+            o.item == *item
+                && o.direction == direction
+                && o.unit_price == price
+                && count == o.count.unwrap_or(1)
         })
         .map(Some)
         .ok_or("unknown protected quest shop offer")
@@ -259,6 +261,48 @@ mod tests {
             )
             .is_err()
         );
+        Ok(())
+    }
+    #[test]
+    fn quest_shops_native_fields_preserve_charge_count_and_exact_offer_match()
+    -> Result<(), &'static str> {
+        let source = r#"{"schema":1,"shops":[{"npc":"oteryn:npc.yaman","service":"oteryn:service.quest_shop.yaman","sources":["fixture:source"],"offers":[{"item":{"family":"Item","key":"oteryn:item.tibia.i3085","revision":"definition-r1"},"direction":"SellToPlayer","unit_price":1000,"count":200,"sub_type":null,"requirements":[{"quest":"oteryn:quest.the_djinn_war_efreet_faction","track":"oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03","initial":0,"minimum":3,"maximum":3}]}]}]}"#;
+        let catalogue = parse(source)?;
+        let offer = &catalogue[0].offers[0];
+        let projected = offer.project();
+        assert_eq!(projected.count, Some(200));
+        assert_eq!(projected.sub_type, None);
+        assert!(
+            required(
+                &catalogue,
+                "oteryn:npc.yaman",
+                &offer.item,
+                offer.direction,
+                1000,
+                200
+            )?
+            .is_some()
+        );
+        assert!(
+            required(
+                &catalogue,
+                "oteryn:npc.yaman",
+                &offer.item,
+                offer.direction,
+                1000,
+                1
+            )
+            .is_err()
+        );
+        assert!(!eligible(offer, |_| Some(2)));
+        assert!(eligible(offer, |_| Some(3)));
+        let fluid = source.replace(
+            "\"count\":200,\"sub_type\":null",
+            "\"count\":1,\"sub_type\":6",
+        );
+        assert_eq!(parse(&fluid)?[0].offers[0].project().sub_type, Some(6));
+        assert!(parse(&source.replace("\"count\":200", "\"count\":0")).is_err());
+        assert!(parse(&source.replace("\"sub_type\":null", "\"sub_type\":256")).is_err());
         Ok(())
     }
 }

@@ -3528,8 +3528,20 @@
       "Finish collecting changed-crate unit failures; retry disk-exhaustion failures after cleanup",
       "Fix source reward-boss fixture regression without weakening source loot checks",
       "qengine2 reconciliation of main1314 receipt cap versus existing1210",
-      "Author Djinn bindings and complete both physical player journeys",
+      "Run both authored physical Djinn player journeys and fix any native failures",
       "Final Clippy rerun"
-    ]
+    ],
+    "binding_slice": {
+      "state": "IN_PROGRESS",
+      "npc_callbacks": 17,
+      "dialogue_offers": 15,
+      "physical_callbacks": 3,
+      "source_shop_menus": 4,
+      "shop_field_unit": "RED before adapter; GREEN 1 passed via cargo test -p oteryn-gameplay-content --lib quest_shops_native_fields",
+      "journeys": "Full physical fixtures authored; native PG verification pending.",
+      "main_merged": "47db34f09",
+      "prepush_workspace": "PASS cargo check --workspace --all-targets, 188s, /tmp/l2-djinn-workspace-final.log",
+      "main_merge_commit": "02ebc5ffa"
+    }
   }
 }

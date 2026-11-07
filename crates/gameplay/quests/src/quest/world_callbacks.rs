@@ -199,6 +199,9 @@ struct Document {
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/questl2-djinn-world.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-access-callbacks.json"
     ))?);
     callbacks.extend(parse(include_str!(

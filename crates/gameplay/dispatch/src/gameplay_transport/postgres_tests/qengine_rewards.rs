@@ -242,6 +242,9 @@ mod questl2_carried_use;
 #[path = "qengine_rewards/questl2_delivery_journeys.rs"]
 pub(super) mod questl2_delivery_journeys;
 
+#[path = "qengine_rewards/questl2_djinn_journeys.rs"]
+mod questl2_djinn_journeys;
+
 #[path = "qengine_rewards/questl2_journeys.rs"]
 pub(super) mod questl2_journeys;
 #[path = "qengine_rewards/questl2_knowledge_journeys.rs"]
@@ -335,6 +338,17 @@ async fn talk(
 }
 
 fn offer_words(key: &str) -> &'static [&'static str] {
+    if key.contains("/l2-efreet-") || key.contains("/l2-marid-") {
+        return match key.rsplit('/').next().unwrap_or(key) {
+            "l2-efreet-thief-report" => &["mission", "yes"],
+            "l2-marid-cookbook" => &["cookbook"],
+            "l2-marid-spy-report-issue" => &["spyreport"],
+            "l2-efreet-lamp-issue" | "l2-marid-lamp-issue" => &["lamp"],
+            "l2-efreet-supplies" | "l2-marid-spy-mission" | "l2-marid-cheese-request" => &[],
+            _ => &["mission"],
+        };
+    }
+
     if key.contains("/l2-cael-tome-") {
         return &["tome"];
     }
@@ -1027,6 +1041,9 @@ pub(super) async fn exercise(
     }
     if name == "qengine-rewards-l1-legacy-decaying" {
         return legacy_decaying(owner, admitted, h).await;
+    }
+    if name.starts_with("qengine-rewards-l2-djinn-") {
+        return questl2_djinn_journeys::exercise(owner, admitted, h, name).await;
     }
     if name == "qengine-rewards-atomic-eleven" {
         return atomic_tracks::exercise(owner, admitted, h).await;

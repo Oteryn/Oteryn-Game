@@ -307,6 +307,42 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 .iter()
                 .find(|binding| binding.creature.key == policy.definition_key)
                 .ok_or("source reward-boss loot binding")?;
+            if policy.definition_key == "oteryn:creature.renegade_orc" {
+                let bound = binding.loot.as_ref().ok_or("Renegade Orc source loot")?;
+                assert_eq!(
+                    row.loot_table_ref,
+                    LootDefinitionRef::new(&bound.family, &bound.key, &bound.revision)
+                );
+                let table = loot
+                    .tables
+                    .iter()
+                    .find(|table| table.identity == *bound)
+                    .ok_or("Renegade Orc pinned loot table")?;
+                assert_eq!(
+                    row.loot_table.algorithm,
+                    LootSelectionAlgorithm::IndependentBernoulliPpm
+                );
+                assert_eq!(row.loot_table.entries.len(), table.entries.len());
+                assert!(!table.entries.is_empty());
+                for (actual, expected) in row.loot_table.entries.iter().zip(&table.entries) {
+                    assert_eq!(
+                        actual.item,
+                        LootDefinitionRef::new(
+                            &expected.item.family,
+                            &expected.item.key,
+                            &expected.item.revision
+                        )
+                    );
+                    assert_eq!(actual.min_count, expected.min_count);
+                    assert_eq!(actual.max_count, expected.max_count);
+                    assert_eq!(actual.probability_ppm, expected.probability_ppm);
+                    assert_eq!(actual.details.subtype, expected.subtype);
+                    assert_eq!(actual.details.unique, expected.unique);
+                    assert!(actual.details.children.is_empty());
+                    assert!(expected.children.is_empty());
+                }
+                continue;
+            }
             assert!(binding.loot.is_none(), "source boss has no authored loot");
             assert_eq!(row.loot_table_ref, row.corpse_item);
             assert_eq!(
@@ -329,8 +365,15 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             policy.definition_key
         );
     }
-    assert_eq!((missing, inadmissible, admitted.len()), (52, 329, 1));
-    assert_eq!(admitted, ["oteryn:creature.the_primal_menace"]);
+    assert_eq!((missing, inadmissible, admitted.len()), (52, 328, 2));
+    admitted.sort_unstable();
+    assert_eq!(
+        admitted,
+        [
+            "oteryn:creature.renegade_orc",
+            "oteryn:creature.the_primal_menace"
+        ]
+    );
     shared_body.sort_unstable();
     assert_eq!(
         shared_body,

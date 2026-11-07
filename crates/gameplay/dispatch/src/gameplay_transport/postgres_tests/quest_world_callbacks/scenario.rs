@@ -171,6 +171,9 @@ fn scenario_case(
                         .ok_or("native delivery journey")?,
                 )?
             }
+            None if name.starts_with("qengine-rewards-l2-djinn-") => {
+                super::super::questl2_djinn_world::world()?
+            }
             None => super::super::qengine_rewards::questl2_journeys::world(
                 name,
                 generation.native_gameplay().ok_or("native journey")?,

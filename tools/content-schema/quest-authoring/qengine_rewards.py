@@ -41,7 +41,9 @@ def donor_inputs():
     paths += ['data-global/scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua', 'data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
               'data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
-              'data-global/startup/tables/item.lua']
+              'data-global/startup/tables/item.lua',
+              'data-global/scripts/actions/other/others/quest_system2.lua',
+              'data-global/scripts/quests/the_djinn_war_quest/action_water_fountain.lua']
     result = {}
     with tarfile.open(ROOT / 'tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz') as corpus:
         manifest = json.load(corpus.extractfile('corpus-manifest.json'))
@@ -900,6 +902,7 @@ def build():
     questl2_deliveries.append(add, storage, callbacks, offers, declarations, inputs, PIN)
     questl2_knowledge.append(add, callbacks, offers, declarations, inputs, PIN)
     questl2_rewards.passages.append(add, storage, callbacks, offers, inputs, PIN)
+    questl2_rewards.djinn.append(add, storage, callbacks, offers, inputs, PIN)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'tracks':declarations,'callbacks':callbacks})
@@ -930,7 +933,10 @@ def build():
         'bags':[{'constant':'QENGINE_GNOMISH_SUPPLY','bag':'oteryn:item.tibia.i15698','playable':True,
             'selection':'weighted','picks':1,'roll_max':10001,'donor':f'crystal:{PIN}:{random_path}:49-80:sha256:{sha(inputs[random_path])}',
             'rewards':rewards}]})
-    generated['content/quests/shared-quest-shops.json']=encoded(questl2_knowledge.shops(inputs,PIN))
+    shop_document = questl2_knowledge.shops(inputs,PIN)
+    shop_document['shops'].extend(questl2_rewards.djinn.shops(inputs,PIN))
+    generated['content/quests/shared-quest-shops.json']=encoded(shop_document)
+    generated['content/quests/questl2-djinn-world.json']=encoded(questl2_rewards.djinn.world_callbacks(inputs,PIN))
     generated['content/quests/shared-kill-callbacks.json']=encoded(questl2_knowledge.kill_bindings(inputs,PIN))
     greetings=[]
     for npc in sorted({c['npc'] for c in callbacks}):
