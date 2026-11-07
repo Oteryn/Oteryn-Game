@@ -79,9 +79,18 @@ fn binding(
     hash_field(&mut hash, b"native-activity-enter-v1");
     if let Some(context) = soulpit {
         hash_field(&mut hash, &context.request.source);
-        hash_field(&mut hash, context.request.source_definition.family.as_bytes());
-        hash_field(&mut hash, context.request.source_definition.production_key.as_bytes());
-        hash_field(&mut hash, context.request.source_definition.revision_ref.as_bytes());
+        hash_field(
+            &mut hash,
+            context.request.source_definition.family.as_bytes(),
+        );
+        hash_field(
+            &mut hash,
+            context.request.source_definition.production_key.as_bytes(),
+        );
+        hash_field(
+            &mut hash,
+            context.request.source_definition.revision_ref.as_bytes(),
+        );
         hash_field(&mut hash, &context.request.intent);
     }
     for text in [&r.activity_key, &r.template_revision, &r.content_revision] {
@@ -307,6 +316,7 @@ pub(super) async fn enter_in_transaction(
     // debit in this transaction, before any source session becomes terminal.
     if let Some(context) = soulpit {
         match super::super::soulpit::write_shared_entry(
+            root,
             tx,
             context.recovery,
             node,

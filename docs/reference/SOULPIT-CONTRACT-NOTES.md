@@ -784,7 +784,16 @@ repository-content tests (158.48 seconds execution), and 123 server content test
 with `-D warnings` (166.078 seconds); formatting (14.934 seconds), architecture
 (3.942 seconds), and pin-check (32.071 seconds) also pass.
 
-The final parity sweep identified a remaining production capture to repair before
-closing W07: the donor GM level exemption must use the existing current Game staff
-projection rather than a hardcoded false flag. The staff producer remains outside
-this lane; the Soulpit consumer must prove the current group at its locked entry.
+The final parity sweep repaired the donor GM level exemption using the existing
+current Game staff projection. The staff producer remains outside this lane;
+the Soulpit consumer proves the current group at its locked entry. Focused GM,
+forged-hint and revocation proof is being validated separately.
+
+- Crystal `201189f` `data-global/scripts/quests/soulpit/soulpit_fight.lua:54-61`
+  exempts current gamemasters from the level-8 entry requirement. The shared entry
+  transaction resolves each participant's group from the configured trusted environment,
+  activation and current roster, joined to the current control head. It share-locks that
+  projection through the core debit and session handoff. The caller's compatibility
+  `game_master` hint grants no authority; absent, revoked or mismatched staff proof is
+  ordinary-player status. This is a read of existing Game staff authority, with no
+  Platform identity or staff-configuration mutation.

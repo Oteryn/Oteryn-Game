@@ -3,6 +3,36 @@ use super::*;
 use crate::domain::AccountId;
 
 impl DurabilityRoot {
+    /// A rule exemption inside an already fenced gameplay transaction. The caller
+    /// has independently proven the participant's current source session. Staff
+    /// authority comes only from this root's configured trust and current roster,
+    /// never a caller-supplied group or a historical staff operation.
+    pub(crate) async fn staff_group_in_transaction(
+        &self,
+        tx: &mut PgConnection,
+        character: crate::domain::CharacterId,
+    ) -> Result<u8, DurabilityError> {
+        let Some(trust) = self.staff_trust() else {
+            return Ok(0);
+        };
+        let group: Option<i16> = sqlx::query_scalar(
+            "SELECT g.group_id FROM game_staff_character_groups g \
+             JOIN game_staff_control_heads h ON h.environment=g.environment AND h.activation_sha256=g.activation_sha256 \
+             JOIN game_staff_rosters r ON r.environment=g.environment AND r.activation_sha256=g.activation_sha256 AND r.principal=g.principal \
+             WHERE g.environment=$1 AND g.character_id=encode($2,'hex')::uuid \
+               AND g.activation_sha256=$3 AND r.roster_sha256=$4 \
+               AND g.group_id=CASE r.role WHEN 'GM' THEN 4 WHEN 'SENIOR_GM' THEN 5 WHEN 'ADMIN' THEN 6 END \
+             ORDER BY g.group_id DESC LIMIT 1 FOR SHARE OF g,h,r",
+        )
+        .bind(trust.environment())
+        .bind(character.as_bytes().as_slice())
+        .bind(trust.activation())
+        .bind(trust.current_roster())
+        .fetch_optional(tx)
+        .await?;
+        u8::try_from(group.unwrap_or(0)).map_err(|_| DurabilityError::InvalidStoredState)
+    }
+
     pub async fn staff_live_status(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,

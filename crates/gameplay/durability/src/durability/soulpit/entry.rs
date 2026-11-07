@@ -9,6 +9,7 @@ use crate::durability::item_craft::soulpit::burn_entry_core;
 use crate::durability::item_mint::uuid_text;
 
 pub(super) async fn write(
+    root: &DurabilityRoot,
     tx: &mut Type2Transaction<'_>,
     recovery: &CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
@@ -117,7 +118,13 @@ pub(super) async fn write(
         entry_facts.push(EntryParticipant {
             slot,
             level,
-            game_master: facts[0].game_master,
+            // Crystal 201189f soulpit_fight.lua:54-61 exempts current GMs. Resolve
+            // the trusted projection in this transaction; a captured hint cannot
+            // grant an exemption or survive roster/activation revocation.
+            game_master: root
+                .staff_group_in_transaction(&mut ***tx, facts[0].character)
+                .await?
+                >= 4,
         });
         if character == *fence.character_id.as_bytes() {
             if uuid_text(participant.try_get("source_game_session_id")?)?

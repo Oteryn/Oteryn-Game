@@ -85,6 +85,7 @@ pub(super) async fn shared_returning(
 }
 
 pub(super) async fn write_shared_entry(
+    root: &DurabilityRoot,
     tx: &mut Type2Transaction<'_>,
     recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
@@ -93,16 +94,17 @@ pub(super) async fn write_shared_entry(
     native: &NativeGameplayState,
 ) -> Result<SoulpitEntryWritten, SoulpitWriteError> {
     assert_recovery_fence(tx, recovery).await?;
-    entry::write(tx, recovery, node, fence, request, native).await
+    entry::write(root, tx, recovery, node, fence, request, native).await
 }
 
 pub const SOULPIT_ACTIVITY_KEY: &str = "oteryn:activity.soulpit";
 
-/// The shared admission owner authenticates GM exemption; level and position are read from
-/// its locked participant provenance and existing progression state, never from this struct.
+/// Level, position and current trusted staff group are independently read inside the shared
+/// transaction. The compatibility hint is not authority for a level exemption.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SoulpitParticipantFact {
     pub character: CharacterId,
+    /// Non-authoritative compatibility hint; the entry writer always resolves current staff.
     pub game_master: bool,
 }
 
@@ -235,7 +237,7 @@ impl DurabilityRoot {
             .map_err(|_| SoulpitWriteError::AuthorityRejected)?;
         assert_recovery_fence(tx, &recovery).await?;
         permit.check_scope(fence.runtime_scope)?;
-        entry::write(tx, &recovery, node, fence, request, native).await
+        entry::write(self, tx, &recovery, node, fence, request, native).await
     }
 
     /// A retry returns its exact retained transition before live actor/fence checks. A new
