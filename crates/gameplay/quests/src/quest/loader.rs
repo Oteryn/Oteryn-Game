@@ -205,6 +205,14 @@ pub fn load_embedded_quest_state(
         super::monk_shrines::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::threatened_dreams::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    // Native overlays retain their declared source aliases as well as executable tracks.
+    let native_sources = parse_quest_state(
+        include_str!("../../../../../content/quests/threatened-dreams-npc.json"),
+        content_revision,
+    )?;
+    for (key, source) in native_sources.source_tracks {
+        lowered.source_tracks.entry(key).or_insert(source);
+    }
     lowered.catalogue =
         super::classic_dialogue::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
@@ -228,6 +236,31 @@ pub fn load_embedded_quest_state(
     lowered.catalogue = super::stampede::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    // Source-authored world callbacks can declare flags absent from the scalar
+    // NPC lowering. Retain their normalized source identities without replacing
+    // any alias already qualified by a lowered document.
+    for callback in super::world_callbacks::load().map_err(QuestLoadError::Json)? {
+        let backend = callback
+            .sources
+            .iter()
+            .find_map(|source| super::world_callbacks::source_backend(source))
+            .ok_or_else(|| QuestLoadError::Json("world callback lacks source authority".into()))?;
+        for storage in callback.storage {
+            let path = storage
+                .track
+                .strip_prefix("oteryn:quest-progress/")
+                .ok_or_else(|| {
+                    QuestLoadError::Json("world callback lacks source track identity".into())
+                })?;
+            let (backend, path) = path
+                .strip_prefix("crystalserver/")
+                .map_or((backend, path), |path| ("crystalserver", path));
+            lowered
+                .source_tracks
+                .entry(storage.track.clone())
+                .or_insert_with(|| format!("{backend}:quest-progress/{path}"));
+        }
+    }
     lowered.source_tracks.insert(
         super::rotten_blood::ACCESS_TRACK.into(),
         "kv:rotten-blood-quest:access".into(),

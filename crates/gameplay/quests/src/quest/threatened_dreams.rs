@@ -649,6 +649,32 @@ pub(super) fn extend(
             effect: E::Add(0),
         },
     ];
+    // Retained chest.lua:1346-1360, blob ea2ef1963395a479ed927481bc3a14065b125a3f.
+    // Existing once-claim MINT captures these native source storage obligations.
+    for (suffix, flag) in [
+        (
+            "mission01/poacher_chest",
+            "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01/poacher_chest",
+        ),
+        ("mission02/dark_moon_mirror", MOON_MIRROR),
+    ] {
+        let key = format!("oteryn:quest-transition/quest/u11_40/threatened_dreams/{suffix}/chest");
+        let track = tracks.get(flag).ok_or("missing source chest flag")?;
+        let transition = super::QuestTransition {
+            key: key.clone(),
+            quest: track.quest.clone(),
+            effects: vec![QuestEffect {
+                track: flag.into(),
+                from: C::Le(0),
+                effect: E::Set(1),
+            }],
+            completes: false,
+            experience: None,
+        };
+        if transitions.insert(key, transition).is_some() {
+            return Err("duplicate source chest obligation".into());
+        }
+    }
     super::QuestStateCatalogue::new(
         catalogue.content_revision,
         tracks.into_values().collect(),
@@ -660,6 +686,44 @@ pub(super) fn extend(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn source_chest_flags_are_once_guarded_without_completing_the_quest() -> Result<(), String> {
+        let source = super::super::loader::load_embedded_quest_state("threatened-source-chests")
+            .map_err(|e| format!("{e:?}"))?;
+        for (suffix, flag) in [
+            (
+                "mission01/poacher_chest",
+                "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01/poacher_chest",
+            ),
+            ("mission02/dark_moon_mirror", MOON_MIRROR),
+        ] {
+            let key =
+                format!("oteryn:quest-transition/quest/u11_40/threatened_dreams/{suffix}/chest");
+            let track = source.catalogue().track(flag).ok_or("flag")?;
+            assert_eq!((track.initial, track.min, track.max), (-1, -1, 1));
+            let transition = source
+                .catalogue()
+                .transition(&key)
+                .ok_or("native source chest")?;
+            assert!(!transition.completes);
+            assert_eq!(transition.experience, None);
+            let changes = source
+                .catalogue()
+                .evaluate(transition, &BTreeMap::new(), 0)
+                .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(changes.len(), 1);
+            assert_eq!(changes[0].track, flag);
+            assert_eq!((changes[0].before, changes[0].after), (-1, 1));
+            assert!(
+                source
+                    .catalogue()
+                    .evaluate(transition, &BTreeMap::from([(flag.into(), 1)]), 0)
+                    .is_err()
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn threatened_keyword_handler_lore_cannot_open_or_confirm_a_mission() -> Result<(), String> {

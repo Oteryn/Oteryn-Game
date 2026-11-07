@@ -200,8 +200,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 return UseDisposition::Rejected;
             };
-            let outcome = slot
-                .commit_world_callback(
+            let outcome = if callback.effects.item_reward.is_some() {
+                let Some(native) = self
+                    .active_generation
+                    .and_then(|generation| generation.native_gameplay())
+                else {
+                    return UseDisposition::Rejected;
+                };
+                let weights =
+                    crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
+                        .with_wheel(self.premium_coordinator);
+                slot.commit_world_reward(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    QuestTransitionRequest {
+                        transition_key: callback.key.clone(),
+                        cause,
+                    },
+                    std::sync::Arc::clone(catalogue),
+                    permit,
+                    context,
+                    crate::durability::reward_claim_mint::QuestRewardAdmission {
+                        native,
+                        weights: &weights,
+                        fee_payment: None,
+                    },
+                )
+                .await
+            } else {
+                slot.commit_world_callback(
                     self.root,
                     self.character,
                     self.holder,
@@ -214,8 +243,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     permit,
                     context,
                 )
-                .await;
+                .await
+            };
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
+            if callback.effects.item_reward.is_some()
+                && matches!(
+                    &outcome,
+                    Ok(QuestTransitionOutcome::Committed(_)
+                        | QuestTransitionOutcome::AlreadyCommitted(_))
+                )
+            {
+                self.states.loop_ground.invalidate();
+            }
             match outcome {
                 Ok(
                     QuestTransitionOutcome::Committed(ref committed)
@@ -265,14 +304,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // Dryad watersplash54 is source metadata only until a live Item
         // presentation consumer exists; the existing teleport owner still commits.
-        if !map.facts.apply_quest_callback(
-            key,
-            expected_revision,
-            after,
-            &passages,
-            &replacements,
-            close,
-        ) {
+        // A pure per-character gift has no map projection. The transform owner
+        // increments object revisions even for identical facts; retain the
+        // source object's identity and revision for every other player.
+        if callback.effects.item_reward.is_none()
+            && !map.facts.apply_quest_callback(
+                key,
+                expected_revision,
+                after,
+                &passages,
+                &replacements,
+                close,
+            )
+        {
             return UseDisposition::Rejected;
         }
         if let Some(proof) = teleport {

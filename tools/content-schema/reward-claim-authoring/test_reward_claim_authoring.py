@@ -395,6 +395,10 @@ def test_the_committed_content_binds_exactly_the_declared_chest_transitions() ->
     bound = {r["identity"]["key"]: {p["quest_transition"] for p in r["placements"]}
              for r in records if any("quest_transition" in p for p in r["placements"])}
     assert bound == {
+        "oteryn:reward-claim.quest.u11_40.threatened_dreams.mission01.poacher_chest":
+            {"oteryn:quest-transition/quest/u11_40/threatened_dreams/mission01/poacher_chest/chest"},
+        "oteryn:reward-claim.quest.u11_40.threatened_dreams.mission02.dark_moon_mirror":
+            {"oteryn:quest-transition/quest/u11_40/threatened_dreams/mission02/dark_moon_mirror/chest"},
         "oteryn:reward-claim.kv.beginning_coat":
             {"oteryn:quest-transition/kv/beginning_coat/chest"},
         "oteryn:reward-claim.quest.u7_8.the_shattered_isles.dragahs_spellbook":

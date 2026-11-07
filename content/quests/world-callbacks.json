@@ -9135,6 +9135,53 @@
       "success_message": "A ray of sunlight comes down from the heaven and hits the crystal. Wow. That probably means Fasuon is supporting."
     },
     {
+      "key": "oteryn:quest-transition/questpc3/threatened-acquisition/poacher-notes",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 20002,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01/poacher_notes",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You have found notes of a poacher.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i25242",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:content/quests/threatened-dreams-npc.json canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/action_poacher_notes.lua:1-14 git-blob=2814b532928717adb6630c84d384923f3d199328 sha256=9e8b533913ce6e8df365c1ccf9ea9b280f28a2189408c95b849ffaf703736626"
+      ]
+    },
+    {
       "key": "oteryn:quest-transition/questpc3/threatened-barrier/moon-pos01-charges1",
       "quest": "oteryn:quest.threatened_dreams_quest",
       "trigger": "use_carried_on_target",

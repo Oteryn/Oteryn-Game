@@ -45,6 +45,26 @@ class QuestCallbackProfiles(unittest.TestCase):
                        lambda r: r['production_definition']['production_key'],
                        lambda v: json.dumps(v, sort_keys=True).encode())
 
+    def test_world_reward_root_and_contents_rebuild_exact_native_admission(self):
+        wanted={'oteryn:item.tibia.i25242','oteryn:item.tibia.i2854'}
+        self.document['records']=[r for r in self.document['records']
+                                 if r['production_definition']['production_key'] not in wanted]
+        self.generated[PROFILE]=json.dumps(self.document).encode()
+        self.callbacks['callbacks'].append({'offerings':[], 'effects':{'item_reward':{
+            'item':'oteryn:item.tibia.i2854','count':1,
+            'contents':[{'item':'oteryn:item.tibia.i25242','count':1}]}}})
+        self.admit()
+        rows={r['production_definition']['production_key']:r
+              for r in json.loads(self.generated[PROFILE])['records']}
+        self.assertTrue(wanted <= rows.keys())
+        for key in wanted:
+            self.assertTrue(rows[key]['admission']['materializable'])
+            self.assertEqual(rows[key]['production_binding']['disposition'],'EXACT')
+        self.assertEqual(rows['oteryn:item.tibia.i25242']['semantics']['physical']['value']['weight'],
+                         {'state':'KNOWN','value':200})
+        self.assertEqual(json.loads(self.generated[MANIFEST])['item_profiles']['sha256'],
+                         hashlib.sha256(self.generated[PROFILE]).hexdigest())
+
     def test_npc_reward_input_evidence_and_child_closure_is_native(self):
         wanted = {f'oteryn:item.tibia.i{i}' for i in (25731, 25733, 25779, 675, 676)}
         self.document['records'] = [r for r in self.document['records']

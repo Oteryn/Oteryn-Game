@@ -73,6 +73,16 @@ fn is_false(value: &bool) -> bool {
     !*value
 }
 
+pub(super) fn source_backend(source: &str) -> Option<&'static str> {
+    if source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:") {
+        Some("crystalserver")
+    } else if source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:") {
+        Some("canary")
+    } else {
+        None
+    }
+}
+
 mod native;
 use native::valid_native_callback;
 
@@ -96,9 +106,24 @@ pub struct MonkReward {
     pub final_shrine: bool,
 }
 
+/// Bounded native reward output; absent effects retain every published binding.
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct CallbackEffects {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub item_reward: Option<super::reward_callbacks::ItemReward>,
+}
+impl CallbackEffects {
+    fn is_empty(&self) -> bool {
+        self.item_reward.is_none()
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Callback {
+    #[serde(default, skip_serializing_if = "CallbackEffects::is_empty")]
+    pub effects: CallbackEffects,
     pub key: String,
     pub quest: String,
     pub trigger: Trigger,
@@ -172,6 +197,7 @@ fn valid_carried(callback: &Callback) -> bool {
         && callback.native_rule.is_none()
         && callback.experience.is_none()
         && callback.monk_reward.is_none()
+        && callback.effects.is_empty()
         && !callback.return_on_failure
         && !callback.storage.is_empty()
         && callback.item_on_target.as_ref().is_some_and(|item| {
@@ -217,6 +243,21 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback
                 .minimum_level
                 .is_some_and(|level| level == 0 || callback.storage.is_empty())
+            || callback.effects.item_reward.as_ref().is_some_and(|reward| {
+                !super::reward_callbacks::valid_item_reward(reward)
+                    || callback.trigger != Trigger::Use
+                    || callback.storage.is_empty()
+                    || callback.reversible
+                    || callback.lever.is_some()
+                    || !callback.passages.is_empty()
+                    || callback.teleport.is_some()
+                    || !callback.offerings.is_empty()
+                    || callback.item_on_target.is_some()
+                    || callback.carried_use.is_some()
+                    || callback.native_rule.is_some()
+                    || callback.monk_reward.is_some()
+                    || callback.experience.is_some()
+            })
             || callback.offerings.len() > MAX_EFFECTS
             || callback
                 .experience
@@ -239,11 +280,10 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             })
             || (!callback.offerings.is_empty() && callback.storage.is_empty())
             || callback.sources.is_empty()
-            || !callback.sources.iter().any(|source| {
-                // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
-                source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
-                    || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")
-            })
+            || !callback
+                .sources
+                .iter()
+                .any(|source| source_backend(source).is_some())
             || callback.item_on_target.as_ref().is_some_and(|item| {
                 item.target_replacement == Some(0)
                     || (item.replacement.is_some() && item.count != 1)
@@ -394,6 +434,47 @@ mod batch4_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn world_item_rewards_are_bounded_and_cannot_enter_carried_or_unfenced_modes()
+    -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.effects.item_reward.is_some())
+            .ok_or("world reward")?;
+        let document = |c: &Callback| serde_json::json!({"schema":1,"callbacks":[c]}).to_string();
+        assert!(parse(&document(&callback)).is_ok());
+        let mut absent = callback.clone();
+        absent.effects = Default::default();
+        assert!(
+            serde_json::to_value(&absent)
+                .map_err(|e| e.to_string())?
+                .get("effects")
+                .is_none(),
+            "legacy binding must omit empty effects"
+        );
+        for mode in 0..8 {
+            let mut bad = callback.clone();
+            match mode {
+                0 => bad.trigger = Trigger::StepIn,
+                1 => bad.trigger = Trigger::UseCarried,
+                2 => bad.trigger = Trigger::UseCarriedOnTarget,
+                3 => bad.storage.clear(),
+                4 => bad.reversible = true,
+                5 => bad.effects.item_reward.as_mut().ok_or("reward")?.count = 0,
+                6 => bad.effects.item_reward.as_mut().ok_or("reward")?.count = 101,
+                _ => {
+                    bad.effects.item_reward.as_mut().ok_or("reward")?.item =
+                        "unqualified:item".into()
+                }
+            }
+            assert!(
+                parse(&document(&bad)).is_err(),
+                "world reward mode{mode} must refuse"
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn dryad_garden_uses_source_unique_ids_in_both_directions() -> Result<(), String> {

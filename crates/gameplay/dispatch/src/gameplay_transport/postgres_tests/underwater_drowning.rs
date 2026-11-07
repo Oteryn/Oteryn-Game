@@ -415,7 +415,7 @@ fn scenario_in_world(
             let position = |x| Position { x, y: 0, floor: -7 };
             // The production callback selector and movement proof operate on real bundle
             // ground. An unknown storage track refuses before any callback mutation.
-            let fixture = Callback { carried_use: None,
+            let fixture = Callback { effects: Default::default(), carried_use: None,
                 key: "fixture:underwater-callback".into(),
                 quest: "fixture:underwater".into(),
                 trigger: Trigger::StepIn,

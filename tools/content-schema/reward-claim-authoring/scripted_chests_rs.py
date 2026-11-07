@@ -54,7 +54,11 @@ def beginning_source_claim():
 
 def native_chest_transitions():
     """Closed counterparts of the source chest bindings in the native catalogue."""
-    return {'oteryn:quest-transition/kv/beginning_coat/chest'}
+    return {
+        'oteryn:quest-transition/kv/beginning_coat/chest',
+        'oteryn:quest-transition/quest/u11_40/threatened_dreams/mission01/poacher_chest/chest',
+        'oteryn:quest-transition/quest/u11_40/threatened_dreams/mission02/dark_moon_mirror/chest',
+    }
 
 
 def derive(manifest, items, build_records):

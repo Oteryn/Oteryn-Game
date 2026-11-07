@@ -15,6 +15,8 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 #[derive(Clone, Copy)]
 enum Case {
     BeginningCoat,
+    PoacherChest,
+    DarkMoonMirror,
     Bear,
     Key,
     Choice,
@@ -110,6 +112,30 @@ fn quest_demon_helmet_chests_demon_shield_once_and_replay() -> TestResult {
     execute(Case::DemonShield, "QUESTS3_DEMON_SHIELD")
 }
 
+#[test]
+fn threatened_acquisition_poacher_chest_sets_source_flag_and_mints_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("THREATENED_POACHER_CHEST POSTGRES_SKIPPED no_admin_url");
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result = execute(Case::PoacherChest, "THREATENED_POACHER_CHEST");
+    eprintln!("THREATENED_POACHER_CHEST POSTGRES_CASE_COMPLETED duration_ms={} success={}", started.elapsed().as_millis(), result.is_ok());
+    result
+}
+
+#[test]
+fn threatened_acquisition_dark_moon_mirror_sets_source_flag_and_mints_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("THREATENED_MOON_MIRROR POSTGRES_SKIPPED no_admin_url");
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result = execute(Case::DarkMoonMirror, "THREATENED_MOON_MIRROR");
+    eprintln!("THREATENED_MOON_MIRROR POSTGRES_CASE_COMPLETED duration_ms={} success={}", started.elapsed().as_millis(), result.is_ok());
+    result
+}
+
 fn definition(key: &str) -> TypedDefinitionRef {
     TypedDefinitionRef {
         family: "Item".into(),
@@ -120,6 +146,20 @@ fn definition(key: &str) -> TypedDefinitionRef {
 
 fn scenario(case: Case) -> TestResult {
     let (claim, chest, unique, root_key, expected) = match case {
+        Case::PoacherChest => (
+            "oteryn:reward-claim.quest.u11_40.threatened_dreams.mission01.poacher_chest",
+            (32787, 31975, -11),
+            6100,
+            "oteryn:item.tibia.i25235",
+            vec![],
+        ),
+        Case::DarkMoonMirror => (
+            "oteryn:reward-claim.quest.u11_40.threatened_dreams.mission02.dark_moon_mirror",
+            (33594, 32214, -9),
+            6101,
+            "oteryn:item.tibia.i25729",
+            vec![],
+        ),
         Case::BeginningCoat => (
             "oteryn:reward-claim.kv.beginning_coat",
             (32032, 32276, -5),
@@ -238,6 +278,8 @@ fn scenario(case: Case) -> TestResult {
                 Case::Text | Case::RootText => 4240,
                 Case::CrystalKey => 2474,
                 Case::BeginningCoat => 7757,
+                Case::PoacherChest => 12764,
+                Case::DarkMoonMirror => 25762,
                 _ => 2472,
             };
             source_world(chest, unique, appearance, 0)?
@@ -522,7 +564,7 @@ fn scenario(case: Case) -> TestResult {
                 owner.active_generation = Some(generation);
                 owner.movement_cells = &cells;
                 owner.admit_progression_session(&mut admitted).await;
-                if matches!(case, Case::BeginningCoat) {
+                if matches!(case, Case::BeginningCoat | Case::PoacherChest | Case::DarkMoonMirror) {
                     owner.quest_catalogue = Some(std::sync::Arc::new(
                         oteryn_gameplay_quests::quest::loader::load_embedded_quest_state(
                             "content-1",
@@ -533,7 +575,7 @@ fn scenario(case: Case) -> TestResult {
                     ));
                 }
                 deps.initialize(&owner).await;
-                if matches!(case, Case::BeginningCoat) {
+                if matches!(case, Case::BeginningCoat | Case::PoacherChest | Case::DarkMoonMirror) {
                     owner.admit_quest_session(&admitted).await;
                 }
                 if cold_replay {
@@ -585,6 +627,20 @@ fn scenario(case: Case) -> TestResult {
                         receipts, 1,
                         "cold replay cannot duplicate the source chest milestone"
                     );
+                }
+                if matches!(case, Case::PoacherChest | Case::DarkMoonMirror) {
+                    owner.refresh_quest_session(admitted.game_session_id, false).await;
+                    let state = harness.root.read_character_quest_state(&authority, fence.character_id).await.map_err(debug)?;
+                    let track = if matches!(case, Case::PoacherChest) {
+                        "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01/poacher_chest"
+                    } else {
+                        "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/dark_moon_mirror"
+                    };
+                    let value = state.tracks().get(track).copied();
+                    let physical: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1").bind(root_key).fetch_one(&harness.pool).await?;
+                    eprintln!("THREATENED_ACQUISITION POSTGRES_EVIDENCE claim={claim} cold_replay={cold_replay} physical={physical} flag={value:?}");
+                    assert_eq!(physical,1,"the actual source chest must mint exactly one item");
+                    assert_eq!(value, Some(1), "source chest storage must accompany its physical once reward");
                 }
                 let bag = harness
                     .root

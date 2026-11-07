@@ -153,6 +153,10 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                  'oteryn:item.tibia.i3091', 'oteryn:item.tibia.i3587',
                  'oteryn:item.tibia.i3466'))
     for callback in callbacks['callbacks']:
+        reward = callback.get('effects', {}).get('item_reward')
+        if reward:
+            keys.add(reward['item'])
+            keys.update(item['item'] for item in reward.get('contents', []))
         item = callback.get('item_on_target')
         if item:
             keys.add(item['item'])

@@ -89,6 +89,26 @@ pub struct RewardCallback {
     pub sources: Vec<String>,
 }
 
+/// The same bounded complete Item output is admitted for NPC and world rewards.
+pub(crate) fn valid_item_reward(reward: &ItemReward) -> bool {
+    let item = |key: &str, count: u16| {
+        key.len() <= 256
+            && key.strip_prefix("oteryn:item.").is_some_and(|tail| {
+                !tail.is_empty()
+                    && tail.bytes().all(|b| {
+                        b.is_ascii_lowercase() || b.is_ascii_digit() || b"._/:-".contains(&b)
+                    })
+            })
+            && (1..=100).contains(&count)
+    };
+    item(&reward.item, reward.count)
+        && reward.contents.len() <= 20
+        && reward
+            .contents
+            .iter()
+            .all(|entry| item(&entry.item, entry.count))
+}
+
 fn is_false(value: &bool) -> bool {
     !*value
 }
@@ -173,8 +193,6 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                     })
             })
     };
-    let item =
-        |item: &str, count| slug(item, "oteryn:item.", b"._/:-", 256) && (1..=100).contains(&count);
     if document.schema != 1 || document.callbacks.len() > 256 {
         return Err("reward callback bounds".into());
     }
@@ -247,11 +265,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.take
                 .iter()
                 .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
-            || c.give.as_ref().is_some_and(|r| {
-                !item(&r.item, r.count)
-                    || r.contents.len() > 20
-                    || r.contents.iter().any(|s| !item(&s.item, s.count))
-            })
+            || c.give.as_ref().is_some_and(|r| !valid_item_reward(r))
             || c.outfit
                 .as_ref()
                 .is_some_and(|r| !slug(&r.outfit, "oteryn:outfit.", b"_", 160) || r.addons > 3)
