@@ -1,0 +1,395 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY; owner authorizes conservative pinned source behaviour",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/npcfix/exchanges/al_dee",
+      "quest": "oteryn:quest.npc_exchanges",
+      "initial": 0,
+      "min": 0,
+      "max": 0,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/al_dee.lua#L154-L164:sha256:f736cca3c8ca404c402dc41d7062aff496dedf43ab3a8e104eaac424b4713097"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/npcfix/blood_brothers/ghost_tear_cooldown",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_fading_memory.lua#L5-L117:sha256:52a0b2db473a0a538493eeb2ba641fe7dd2243898cf0048f2615d09acd4dbafb"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/npcfix-al-dee-pick",
+      "quest": "oteryn:quest.npc_exchanges",
+      "npc": "oteryn:npc.al_dee",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/npcfix/exchanges/al_dee",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3462",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3456",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Splendid! Here, take your pick."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/al_dee.lua#L48-L180:sha256:f736cca3c8ca404c402dc41d7062aff496dedf43ab3a8e104eaac424b4713097"
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/npcfix-blood-crystal",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "npc": "oteryn:npc.a_wandering_soul",
+      "keywords": [
+        "blood crystal"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission05",
+          "minimum": 2,
+          "maximum": 4,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i8453",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i8225",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/ghostwhisperer",
+      "reply": [
+        "What the...? I don't know anything about that... still... the pain felt a little less intense for a second... relieving... but will never be gone."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_wandering_soul.lua#L48-L125:sha256:64ba822c579cdb12dc27bf26e2830409432b1d335a52ad01b32142056a2b9427"
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/npcfix-ghost-tear",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "awaken"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i8746",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "... to awake him... I don't know but... he once truly loved me... maybe there is still something left... somewhere... here... take this from me....and thank you for listening..."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_fading_memory.lua#L48-L125:sha256:52a0b2db473a0a538493eeb2ba641fe7dd2243898cf0048f2615d09acd4dbafb"
+      ],
+      "repeatable": true,
+      "cooldown": {
+        "track": "oteryn:quest-progress/npcfix/blood_brothers/ghost_tear_cooldown",
+        "seconds": 72000
+      }
+    }
+  ],
+  "offers": [
+    {
+      "npc": "oteryn:npc.al_dee",
+      "keywords": [
+        "pick",
+        "small axe"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "Picks are hard to come by. I trade them only in exchange for high quality small axes. Would you like to make that deal?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "kala"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... yes! That's my name... how come you know that?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "kala"
+      ],
+      "topic": 1,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... yes! That's my name... how come you know that?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "kala"
+      ],
+      "topic": 2,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... yes! That's my name... how come you know that?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "kala"
+      ],
+      "topic": 3,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... yes! That's my name... how come you know that?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "kala"
+      ],
+      "topic": 4,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... yes! That's my name... how come you know that?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "kala"
+      ],
+      "topic": 5,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... yes! That's my name... how come you know that?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "diary"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... you... read Marziel's diary and know our story...?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... then... tell me... I'm so sad... was it my fault? Why did he leave me... Arthei..?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "vampire"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... so there is nothing I could have done...? He's a vampire now... what can we do..."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "keywords": [
+        "free soul"
+      ],
+      "topic": 4,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission10",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "... he can't be freed from his curse that easily... he must be awaken first..."
+      ]
+    }
+  ],
+  "owns": [
+    "oteryn:npc.al_dee",
+    "oteryn:npc.a_wandering_soul",
+    "oteryn:npc.a_fading_memory"
+  ],
+  "npcs": [
+    {
+      "npc": "oteryn:npc.al_dee",
+      "greet": "Hello, hello, |PLAYERNAME|! Please come in, look, and buy! I'm a specialist for all sorts of {tools}. Just ask me for a {trade} to see my offers! You can also ask me for general {hints} about the game. ...",
+      "greet_more": [
+        "You can also ask me about each {citizen} of the isle."
+      ],
+      "farewell": "Bye, bye |PLAYERNAME|.",
+      "walkaway": "Bye, bye.",
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/al_dee.lua#L1-L179:sha256:f736cca3c8ca404c402dc41d7062aff496dedf43ab3a8e104eaac424b4713097"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_wandering_soul",
+      "greet": "I saw you... who are you... what do you want from me...?",
+      "greet_more": [],
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_wandering_soul.lua#L1-L118:sha256:64ba822c579cdb12dc27bf26e2830409432b1d335a52ad01b32142056a2b9427"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_fading_memory",
+      "greet": "Ohh...",
+      "greet_more": [],
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "walkaway": "Good bye.",
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_fading_memory.lua#L1-L128:sha256:52a0b2db473a0a538493eeb2ba641fe7dd2243898cf0048f2615d09acd4dbafb"
+      ]
+    }
+  ]
+}

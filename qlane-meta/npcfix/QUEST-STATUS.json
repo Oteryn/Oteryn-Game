@@ -3124,6 +3124,14 @@
         "diff": "PASS",
         "review": "One source-story catalogue owner; no caller, guard, receipt or track-bound weakening."
       }
+    },
+    {
+      "name": "Independently reproducible NPCFIX reward source authoring",
+      "state": "QUALIFIED_AUTHORING_ONLY",
+      "scope": "Authoring producer/schema/three source-bound inputs only; no runtime registration or quest/NPC qualification is part of this commit.",
+      "red": "Two fresh-checkout producer cases failed with missing output files; /tmp/npcfix-evidence/authoring-red.log",
+      "green": "Two producer tests pass: all three pinned recipes/cooldown, preserving unrelated lane records, deterministic reproduction; --check PASS. /tmp/npcfix-evidence/authoring-green.log",
+      "runtime_evidence": "Runtime unchanged in this commit; prior unchanged atomic PG proof remains28.02s. New economic PG RED: three markers and three missing-callback failures39.578s; GREEN runtime work remains separate and unpublished."
     }
   ],
   "owner_constraints": {
@@ -3183,6 +3191,7 @@
       "questl2": "bfb4a5c6c2ece41600c3deebb9832703f22f093b"
     },
     "scope": "Selective code/schema/tool reuse only. Keep NPCFIX340 placements, exclude donor binary world outputs and foreign authored world changes. Cranky Lizard Crone Wayfarer already QUALIFIED in qengine2: do not redo.",
-    "next": "Add focused PG RED cases for exact-cost item-only and repeatable exchanges; import reusable engine; author owned source callbacks. Al Dee, Wandering Soul and Fading Memory source facts are captured in /tmp/npcfix-evidence and notes."
+    "next": "Add focused PG RED cases for exact-cost item-only and repeatable exchanges; import reusable engine; author owned source callbacks. Al Dee, Wandering Soul and Fading Memory source facts are captured in /tmp/npcfix-evidence and notes.",
+    "progress": "Source producer/input/schema published independently. Reused runtime engine remains staged/unpublished pending check and real PG GREEN. Preserve spell-lane proof through consumption; acquire before revision slot. No foreign world/outfit exports imported."
   }
 }
