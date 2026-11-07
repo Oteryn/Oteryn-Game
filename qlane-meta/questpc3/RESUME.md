@@ -104,3 +104,17 @@ check3crates passed31.99s; strict Clippy3crates/all features/all targets passed3
 Final Maelyrra regression GREEN53.42s/53417ms. Cockroach-goal-01 is fully GREEN; all selected checks complete. Publish now; next actual PG RED is Zirella six source instruction callbacks with no fabricated ground delivery/XP. Scratch test /tmp/questpc3-zirella-lessons.rs and producer /tmp/questpc3-zirella-producer.py are NOT applied. All five whole quests remain active.
 
 Integrated remote44e16fc73 metadata-only Clippy completion proof. Source remains exactly the tested262618b3c cockroach batch; no new gameplay validation required for this proof-only merge.
+
+## Zirella-lessons-01 RED running
+
+Cockroach implementation262618b3c merged proof44e16fc73 and PUSHED/REMOTE-VERIFIED54b7759e64e8feeec3dd3d48a8df39f8a1c6e363. New test questpc3_zirella_lessons.rs, cargo session27254, log /tmp/questpc3-zirella-lessons-red.log. Real NPC_TALK from unstarted Zirella; six instructions must atomically set greet/log1..6; no fabricated delivery or50XP. Reopen/re-explain leaves receipt count unchanged. Implementation not yet applied; /tmp/questpc3-zirella-producer.py prepared from current producer, must await true PG RED. Existing shared parser+writer handles state callbacks; no new engine necessary here.
+
+Zirella actual PG RED100.38s marker100092ms, first lesson progress0 vs1. Applied six callbacks/source-based returning offers; GREEN log /tmp/questpc3-zirella-lessons-green.log session72409. Native source facts and next physical follow-up recorded in source_research_2026_11_06.tutorial_physical_followup. Canonical five-Wood count must survive ground/cart binding. Legs are source nonstackable; strengthen future hand-in fixture to distinct instances, preserve exact-count/shortfall/replay assertions. Latest qengine2/pc2/l2 heads refreshed by explicit tracking refspec (plain branch fetch only updated FETCH_HEAD); source reuse notes recorded. No whole quest qualified.
+
+Zirella PG GREEN98.27s markers96228/98268ms: all6lessons paired,6receipt rows,0XP, read-onlyreopen/explain. Check4crates50.95s, strict Clippy4/alltargets1m13s, parser1/1.49s, fmt and producer/check passed. NPCbook+native regen/pin session49939; content123/repository5 session37380 stillrunning. Commit/push immediately when all selected checks pass; five whole owned quests remain.
+
+Zirella NPCbook1/43.87s, native regeneration/registry checks PASS with no output drift, content123/4.76s and repository5/79.78s. Only pin-check pending. Independently prepared next physical batch test-only changes in quest_l4_counters.rs and new child physical.rs, UNSTAGED; cargo RED session71338 /tmp/questpc3-tutorial-corpse-red.log. No Item admission implementation before true RED. These two files must NOT enter the Zirella instruction commit. Publish that staged batch after pin check; then continue physical source admissions. Source/fixture strengthening and pin reuse notes in status.
+
+## Zirella instruction batch fully GREEN
+
+Final pin-check PASS with unchanged e0223414 input/e4b3e414 package digests,31101874bytes. All selected validation complete; hashes and evidence checks.zirella_lessons_01. Commit only the4staged Zirella files plus3lane metadata files, fetch explicit tracking refspec and push. Native physical test-only parent+child remain UNSTAGED and RED is still running. Continue those next; no final summary while five whole quests remain.

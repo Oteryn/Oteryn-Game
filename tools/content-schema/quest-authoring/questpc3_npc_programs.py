@@ -60,6 +60,20 @@ def documents():
                  npc="oteryn:npc.zirella", greet=ZIRELLA_GREET, log=ZIRELLA_LOG,
                  source=ZIRELLA_SOURCE, experience=50),
     ]
+    for stage, line, reply in [
+        (1, 107, "I need firewood for my oven. Will you help me?"),
+        (2, 112, "Find a dead tree without leaves in the forest to the south."),
+        (3, 117, "Use the dead tree to break a branch from it."),
+        (4, 122, "Move the branch across the ground, then use it with my cart."),
+        (5, 127, "Drag and drop the branch across the grass until it is near my cart."),
+        (6, 139, "Use a dead tree, drag its branch across the map, and use that ground branch with my cart."),
+    ]:
+        before = (-1, 0) if stage == 1 else (stage - 1, stage - 1)
+        callbacks.append(callback(
+            f"zirella-lesson-{stage}", ["yes", "quest", "ok"], stage, stage + 1,
+            before, stage, before, stage, line, reply,
+            npc="oteryn:npc.zirella", greet=ZIRELLA_GREET, log=ZIRELLA_LOG,
+            source=ZIRELLA_SOURCE))
     offers = [{"npc": "oteryn:npc.santiago", "keywords": ["yes", "right", "ok"],
                "topic": 0, "next_topic": 1, "storage": [storage(GREET, 1, 1, 1)],
                "reply": ["Visit my house to the south and look in the upstairs chest. May I first explain your quest log?"]}]
@@ -80,6 +94,23 @@ def documents():
                    "topic": 0, "next_topic": 8,
                    "storage": [storage(ZIRELLA_GREET, 7, 7, 7)],
                    "reply": ["That is enough firewood for my oven. Are you ready for your reward?"]})
+    for stage in range(0, 7):
+        low = -1 if stage == 0 else stage
+        offers.append({"npc": "oteryn:npc.zirella", "keywords": ["hi", "hello", "greetings"],
+                       "topic": 0, "next_topic": 0 if stage == 0 else stage + 1,
+                       "storage": [storage(ZIRELLA_GREET, low, stage, stage)],
+                       "reply": ["Could you help me with a quest?" if stage == 0 else
+                                 "Welcome back. Shall I explain the firewood task?"]})
+    offers.extend([
+        {"npc": "oteryn:npc.zirella", "keywords": ["yes", "quest", "ok"],
+         "topic": 0, "next_topic": 1,
+         "storage": [storage(ZIRELLA_GREET, -1, 0, 0)],
+         "reply": ["Quest is a keyword used to ask NPCs about tasks. Are you listening?"]},
+        {"npc": "oteryn:npc.zirella", "keywords": ["yes", "quest", "ok", "explain"],
+         "topic": 7, "next_topic": 0,
+         "storage": [storage(ZIRELLA_GREET, 6, 6, 6)],
+         "reply": ["Use a dead tree, drag the branch along the ground to my cart, then use it with the cart."]},
+    ])
     greetings = {"schema": 1, "npcs": [{"npc": "oteryn:npc.santiago",
                   "greet": "Welcome to Rookgaard, |PLAYERNAME|. Can you help me?",
                   "farewell": "Take care, |PLAYERNAME|.",

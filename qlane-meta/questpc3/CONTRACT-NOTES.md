@@ -23,3 +23,7 @@ Selected migration number1096 was checked against origin/main91afbe0ba1 and open
 ## Tutorial native occurrence bridge
 
 Pinned Crystal201189f Santiago.lua:88 consumes three physical cockroach legs at Greet6; no donor hook writing5to6 was recovered in the bounded source investigation. Authored conservative rule: three eligible native Cockroach kill-credit occurrences after the club lesson (Greet5) advance Greet6. Deaths never mint legs, claim hand-in log5 or pay100XP. The existing native lethal queue captures membership and mission revision; the same fenced quest writer deduplicates occurrences. A generic bounded SetWhenAtLeast effect references another original locked effect value, preserving its own value until threshold. Other native counters retain existing hashes and stage1 gates. The physical hand-in remains a separate exact3legs transaction.
+
+## Zirella instruction path
+
+Crystal201189f data-global/npc/zirella.lua:104-143 provides six paired progress writes after the keyword introduction. Shared NPC callbacks now preserve that sequence, resume the right topic from each stage, and repeat the stage6 instructions without a receipt or XP. The delivery and50XP reward remain separate operations. The canonical Oteryn recipe selects five Wood; the eventual authored ground-branch/cart binding must retain that selected count while following the source ground custody instructions. No tree/cart source IDs or placement were recovered, so author them explicitly through the existing World/Item owners.
