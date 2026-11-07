@@ -680,3 +680,28 @@ Read-only donor evidence fetched successfully:
 - https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/creature/raids.cpp
 
 Fury Gates selects/realizes at startup; donor content is not an accepted Game realization receipt or an advance prediction window. Wiki checks: **wiki-pending**. NEED-FETCH: none.
+
+## WPKG — WORLDCHG-Q merged and focused validation complete (2026-11-07)
+
+Merged source `ebc53bc6e` as merge commit `718b199fb`; follow-up `d9dacb214` repairs native-model generation order. Main's Fury/Nightmare layers and Flower/Stampede raid test branches are retained. The captured-wolf profile reuses main's canonical owner: 40 new native profiles, no removed or duplicate keys, and the existing wolf record is byte-semantically unchanged. All eleven lane-owned titles remain QUALIFIED (the catalogue total of twelve includes the existing Stampede).
+
+Source conflicts were resolved in daily-state persistence/layer projection, boot loading and raid announcement fixtures. Derived content, manifests, callbacks, native providers, Grizzly room input pins, Prey model/reports and world pins were regenerated with repository tools. The Prey producer now writes generated loot admission before hashing its model input; its regression requires the generated closure to be visible. No generated file was hand-edited.
+
+Focused validation (command wall durations; logs retained under `/tmp/wpkg-*` in this workspace):
+
+- `worldchg-fmt`: PASS, 17.036s.
+- `worldchg-check`: PASS, 27.052s.
+- `worldchg-clippy`: PASS, 259.540s.
+- `worldchg-quest-final`: PASS, 384.840s.
+- `worldchg-native-check-final`: PASS, 83.119s.
+- `worldchg-prey-tests`: PASS, 0.170s.
+- `worldchg-pin-refresh-final`: PASS, 134.012s.
+- `worldchg-pin-check-final`: PASS, 169.874s.
+- `worldchg-content-integration`: PASS, 36.863s.
+- `worldchg-content-world`: PASS, 86.877s.
+- `worldchg-owner-pg`: PASS, 98.752s.
+- `worldchg-dispatch-pg-focused`: PASS, 268.137s.
+
+Content integration passed 123 tests (3.12s actual tests); world repository passed five (84.09s). All six owner PostgreSQL cases executed and passed (14.94s actual tests). The dispatch filter passed fourteen tests (193.16s actual tests), including thirteen native PostgreSQL cases with WORLDCHG-Q/RAIDS_GLOBAL execution markers. Case markers include Thawing51.776–71.725s, Voice54.880/68.648s, Grimvale45.743/57.326s, Hive66.131s, Benevola96.635s, Yasir102.670s and Yeo81.307s. The queued duplicate Cargo invocation was cancelled before any case executed; the actual run used six workers. No full PostgreSQL suite ran. The optional broader daily-map module was not run.
+
+The fresh pin-refresh and pin-check bind digest `7d31c6eb0395cafda888178a0d5e204bad469be754430172a2f396c5e330daaa` (32,839,521 bytes). All 93 quest-authoring modules passed. Rust checks cover all targets/features of the eleven changed crates; Rust source remained unchanged after them. No PR is opened. WVAR follows next; its completed Fury Gates qualification must be composed with main's existing native layer/raid path.
