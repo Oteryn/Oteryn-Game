@@ -1,12 +1,18 @@
 {
   "note": "Original entry-level lane state is absent from available history. Recovered NPC audit rows preserve unfinished work; no prior authored row has been requalified without fresh evidence.",
   "continuation_merge": {
-    "state": "GREEN_COMPONENT_PROOFS_PRESERVED",
-    "incoming": "b8ae61b115aad1a1d49afb5f93472b992c45ee89",
-    "our_batch": "retail-population-qualification-29; actual historical PG RED57.08s/current GREEN131.74s,168 NPCs169 actors, fmt/check/strict Clippy PASS",
-    "incoming_proof": "Published BookWorld ground and display changes: final PG77.55s147 actors; merged actor/travel2PG115.61s, dispatch/entities check8m28 and strict Clippy4m54; later165actor PG76.79s/native9 tests and independent pin-check628fa42e. Preserve these scoped upstream proofs; do not call the union a fresh compiled PG pass.",
-    "review": "New18 classified authored ground cells never overwrite captured tiles; current prior343 placement records preserved; added source pages distinguish BookWorld cells; explicit display names still win. Our fixture still requires every explicitly listed anchor and actual native coordinates.",
-    "next": "Push both green component histories immediately. Compile the merged source for the next six-profile RED/GREEN batch, retaining all unioned physical cases. Ahmet fluid authoring active in the other writer; continue the independent NPC/profile queue."
+    "state": "QUALIFIED_CURRENT_UNION",
+    "incoming": "93b8e279554e2aede03157e4c3d0deb3e17899b6",
+    "scope": "Incoming changes only lane records, source-only fluid handoff patch and3 existing actor cases. No incoming runtime, production content, compiler or pin change. Preserve our6 qualified native/profile/source-repair proofs, incoming Zebron/Oliver qualifications and Ahmet physical component; whole Ahmet remains pending until the saved fluid implementation is applied and fully checked.",
+    "next": "Run actual combined PG205 actors, commit/fetch/push the green merge immediately, then review/apply and complete the saved generic fluid implementation without forbidden repository-tool edits.",
+    "postgres": {
+      "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+      "seconds": 157.12,
+      "npcs": 204,
+      "actors": 205,
+      "log": "/tmp/npcfix-evidence/fluid-handoff-union-actors-green.log",
+      "sha256": "3ab7a28821d1205c2de31c726748e88f42b4acc70082e0d8c45ca52eedcec6f1"
+    }
   },
   "active_book_world_batch": {
     "state": "QUALIFIED",
@@ -356,10 +362,10 @@
     "final_pg_log": "/tmp/npcfix-evidence/refusal-final-paid-clock-pg.log"
   },
   "counts": {
-    "QUALIFIED": 214,
+    "QUALIFIED": 216,
     "PENDING": 8,
     "EXCLUDED": 24,
-    "AUTHORED; QUALIFICATION PENDING": 71,
+    "AUTHORED; QUALIFICATION PENDING": 69,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -445,7 +451,7 @@
       "npc": "Ahmet",
       "town": "Ankrahmun",
       "audit_status": "DIFF",
-      "work": "Retail placement authored. Oil-filled Vial20 is not executable: fluid mint provenance and subtype trade support need the existing fluid owner contract; this package adds placement only.",
+      "work": "Retail actor component PG-qualified (RED39.42s -> GREEN88.20s). Filled-fluid implementation is preserved as an unapplied source-only patch in qlane-meta/npcfix/R2-FLUID-CONTINUATION.patch for replacement thread r2; its full patched checkout passed shop PG131.39s, oil-consumption PG54.59s and all-five-crate check. Final clippy, compatibility tests and world pin refresh remain for r2.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/16",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
@@ -454,6 +460,14 @@
         "sha256": "7141a6ed014f4ca77031a6c83f41f7ff9603bf35a645004be53754e7bfa62797",
         "class": "OTS_HYPOTHESIS_ONLY",
         "assumption": "Use pinned donor behavior conservatively where the recovered audit supplies no retail detail; owner follow-up authorizes this rule."
+      },
+      "physical_proof": {
+        "test": "npcfix_fading_and_retained_placements_postgres",
+        "red_seconds": 39.42,
+        "green_seconds": 88.2,
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "scope": "Native retail actor, exact captured cell and displayed identity; 174 NPCs/175 anchors in tested source manifest",
+        "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
       }
     },
     {
@@ -4622,10 +4636,18 @@
       "npc": "Zebron",
       "town": "Venore",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
+      "work": "Audited retail actor exists at its captured native cell with the exact displayed identity; actual PostgreSQL RED39.42s -> GREEN88.20s. No collision or map changes.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/333",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "status": "QUALIFIED",
+      "physical_proof": {
+        "test": "npcfix_fading_and_retained_placements_postgres",
+        "red_seconds": 39.42,
+        "green_seconds": 88.2,
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "scope": "Native retail actor, exact captured cell and displayed identity; 174 NPCs/175 anchors in tested source manifest",
+        "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      }
     },
     {
       "npc": "Chuckles",
@@ -4682,10 +4704,18 @@
       "npc": "Oliver",
       "town": "Yalahar",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
+      "work": "Audited retail actor exists at its captured native cell with the exact displayed identity; actual PostgreSQL RED39.42s -> GREEN88.20s. No collision or map changes.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/252",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "status": "QUALIFIED",
+      "physical_proof": {
+        "test": "npcfix_fading_and_retained_placements_postgres",
+        "red_seconds": 39.42,
+        "green_seconds": 88.2,
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "scope": "Native retail actor, exact captured cell and displayed identity; 174 NPCs/175 anchors in tested source manifest",
+        "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      }
     },
     {
       "npc": "Ortheus",
@@ -6819,6 +6849,23 @@
       },
       "source_proof": "imports/canary/items-xml/items.xml:3007,3284,3880,4698,14040,26130,17643,43330 sha2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2; appearances2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2. Frozen retail-placement packet SHA recorded in case manifest.",
       "checks": "fmt PASS; changed world compiler all-target/all-feature check and strict Clippy -D warnings PASS. Release compiler rebuilt; independent refreshed pin-check PASS. Freshly rebuilt dispatch physical test runs against the combined compiler source; own dispatch Rust unchanged, prior scoped checks retained. Seven native profiles generated/reproduced42,9 canonical guards passed and all3620 prior native records identical including872."
+    },
+    {
+      "id": "npcfix-stop-retained-actor-components",
+      "npcs": [
+        "Ahmet",
+        "Zebron",
+        "Oliver"
+      ],
+      "proof": {
+        "test": "npcfix_fading_and_retained_placements_postgres",
+        "red_seconds": 39.42,
+        "green_seconds": 88.2,
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "scope": "Native retail actor, exact captured cell and displayed identity; 174 NPCs/175 anchors in tested source manifest",
+        "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      },
+      "note": "Owner STOP: replacement r2 takes all further work. Zebron/Oliver fully qualify; Ahmet actor component qualifies, fluid patch intentionally unapplied pending remaining publication checks."
     }
   ],
   "shared_engine_lookup": {
@@ -7245,7 +7292,7 @@
       "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
     }
   },
-  "next_batch": "Push immediately, refresh parity/source certificate, continue all remaining owned NPCs in small green batches. Preserve concurrent Ahmet fluid work and all existing actor/quest proofs.",
+  "next_batch": "Push green current union immediately; then review/apply saved R2 fluid source, regenerate through repo tooling, finish strict Clippy and focused PG/catalogue/repository gates. Continue remaining scope without a final turn.",
   "active_batch": {
     "name": "reviewed-passive-cells-35",
     "state": "QUALIFIED",
@@ -7326,5 +7373,92 @@
     "fathers_burden": "11-track acceptance is one atomic write",
     "grants": "charge only on an exact match",
     "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
+  },
+  "r2_fluid_handoff": {
+    "state": "UNAPPLIED_SOURCE_CHECKPOINT",
+    "patch": "qlane-meta/npcfix/R2-FLUID-CONTINUATION.patch",
+    "patch_base": "199f309b0ab0d61722d539de2745fff3ef2186fe",
+    "evidence": {
+      "state": "FLUID_REFERENCE_FACTS_REPAIR",
+      "npc": "Ahmet",
+      "entries": [
+        "oil vial2874/subtype7/20gold",
+        "water vial2874/subtype1/40gold",
+        "water waterskin2901/subtype1/40gold"
+      ],
+      "test": "npcfix_postgres_ahmet_filled_fluid_mints_exact_matching_and_replay",
+      "scope": "Generic native NPC trade filled-container MINT using existing fluid owner, exact quoted offer/price, replay once, forged fluid mutation refusal",
+      "source": "Crystal201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ahmet.lua:51-59; original audit already names oil20",
+      "lookup": "Existing0560/0597 fluid state and loot MINT proof; ItemUse fluid classification tests outer Known(fluid) even when inner fluid_type is NOT_APPLICABLE. Vial2874 and waterskin2901 have Known fluid group, temporalN_A and classificationUNKNOWN; do not mistake static fluid-source type for container support.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX postage ahmet",
+        "duration_seconds": 94.35,
+        "failure": "postal talk entry ahmet; failed before filled-offer assertion; do not claim fluid-specific RED yet"
+      },
+      "implementation": "Generic explicit subtype offers; frozen offer/request binding; one physical nonstackable purchase; immutable receipt subtype and same-transaction native MINT-line proof using existing fluid-state owner. Source generation active; no GREEN or qualification yet.",
+      "reuse_check": "Refreshed origin/claude/happy-davinci-ijz3wy-qengine2; no NPC trade fluid subtype in its npc_trade.rs or npc_command.rs. Reuse existing migrations0560/0597 fluid owner and NPC trade owner.",
+      "fluid_enum_resolution": {
+        "source": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/utils/utils_definitions.hpp#L438-L451",
+        "sha256": "03ebfc0da66b01cdef46dca4195c4f1a0132a0fce058d6c670cb401bcc35ae7d",
+        "facts": {
+          "oil": 7,
+          "mana": 10,
+          "life": 11
+        },
+        "repair": "Native drink_restore had copied legacy data-crystal numeric literals. Correct it to matching global enum; retain positive mana/life unit assertions, strengthen existing PostgreSQL oil drink with drained mana and unchanged health/mana assertions; do not renumber persisted fluid subtype bytes."
+      },
+      "npcs": [
+        "Ahmet",
+        "Zebron",
+        "Oliver"
+      ],
+      "specific_red": {
+        "marker": "POSTGRES_STARTED NPCFIX postage ahmet",
+        "duration_seconds": 98.27,
+        "failure": "Ahmet must offer the exact sourced filled container; canonical reference fluid group is UNKNOWN while qualified native group is KNOWN empty-container"
+      },
+      "actor_red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "duration_seconds": 39.42,
+        "failure": "oteryn:npc.ahmet not admitted: []",
+        "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+        "historical_points_verified": true
+      },
+      "resolution": "Author the two canonical fluid-container facts from pinned Crystal items.xml primarytype=fluid containers, preserving all unrelated facts and existing fail-closed/live policy checks. Generic exact-before fact application validates all targets before writes.",
+      "actor_green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "duration_seconds": 88.2,
+        "npcs": 174,
+        "anchors": 175,
+        "cases": [
+          "Ahmet",
+          "Zebron",
+          "Oliver"
+        ],
+        "rust_binary": "oteryn_gameplay_dispatch-b07c00d46acdf173",
+        "manifest_read_at_runtime": true
+      },
+      "oil_consumer_green": {
+        "marker": "GAP-SV2/I10 PostgreSQL: two full-vessel refusals preserved both fluids and transition history",
+        "duration_seconds": 54.59,
+        "assertions": "oil7 consumed through live item-use owner with mana explicitly drained; health and mana unchanged; existing pour/replay/full-vessel assertions preserved"
+      },
+      "authoring_units": {
+        "passed": 4,
+        "duration_seconds": 0.15,
+        "includes": "late second Item fluid fact drift leaves all Items and NPC declarations unchanged"
+      }
+    },
+    "shop_green_seconds": 131.39,
+    "all_five_crate_check_seconds": 336,
+    "native_provider_check": "42 PASS",
+    "canonical_to_native_validation": "PASS",
+    "remaining": [
+      "Apply source-only patch; recheck migration1148 availability and resolve source conflicts",
+      "Regenerate canonical/native outputs with repository tools; generated files intentionally omitted from patch",
+      "Complete strict clippy and focused compatibility/source repository tests; prior clippy run cancelled only because owner STOP",
+      "Rebuild release world compiler, refresh/check pins using repository tooling; qualify Ahmet and publish after validation"
+    ],
+    "local_full_checkpoint": "git stash entry npcfix owner STOP: preserve local fluid source and generated checkpoint"
   }
 }
