@@ -8627,40 +8627,28 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "scope": "native Curos source acceptance and closed greeting extension",
+    "scope": "Curos native-death report and crystal briefing",
     "status": "GREEN",
     "validation": {
-      "cargo_check": "PASS NPC/quests/durability/dispatch1m20s",
-      "strict_clippy": "PASS four production crates8m16s, final dispatch all-targets/all-features after fixture refresh5m18s",
-      "fmt": "PASS cargo fmt and explicit mounted rustfmt",
-      "greeting_unit": "PASS one source identity/hash/literal rejection unit; non-PG 0.00s is not PostgreSQL proof",
-      "generator": "PASS source generator --check and placement converter --check",
+      "check": "PASS quests/dispatch1m22s",
+      "strict_clippy": "PASS quests/dispatch all-targets/all-features -D warnings8m23s including build lock wait",
+      "fmt": "PASS cargo fmt and mounted rustfmt",
+      "source_generator": "PASS --check exact source report and briefing literals/guards",
       "pin_refresh": {
         "inputs_digest": "bf7cb49f4e74d0007703c8beb6db559f6f4bb739bd2a9f2600db7b570df97867",
         "pins": [
           {
             "digest": "909676ba6b038ac4d7b89d4aa2be2c7267ce6b4c2442f43bce4aa3814d631bb9",
-            "previous": "174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62",
+            "previous": "909676ba6b038ac4d7b89d4aa2be2c7267ce6b4c2442f43bce4aa3814d631bb9",
             "world": "oteryn"
           }
         ]
-      },
-      "pin_check": {
-        "inputs_digest": "bf7cb49f4e74d0007703c8beb6db559f6f4bb739bd2a9f2600db7b570df97867",
-        "pins": [
-          {
-            "bytes": 31102047,
-            "digest": "909676ba6b038ac4d7b89d4aa2be2c7267ce6b4c2442f43bce4aa3814d631bb9",
-            "world": "oteryn"
-          }
-        ]
-      },
-      "old_greeting_path_regression": "ActualPG Dragonlord exchange/replay/exact flag PASS106.606954443s"
+      }
     },
     "whole_title_promoted": false
   },
   "continuation": {
-    "next": "Refresh other-lane ownership; continue Curos later source stages/exact10217grant, native door/boss source route, crystal40030 with10-second revert. Reuse existing world mutation owner; qworld supplies calendar decisions, not this timed object transform.",
+    "next": "Crystal40030 native source33155,31297,z3: bind verified startup action, sourcequestline3->4, reuse revision-checked movement decay10s. Then exact tome10217/finalmission and native door/boss route.",
     "runtime_change_since_4f151ba81": true,
     "red_point": null,
     "source": "Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data-global/scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua, blob 8d1ecd7810b863df6f44e9e4aead98264fe50395",
@@ -8717,9 +8705,9 @@
       "pin_check": "Running before corrected acceptance rerun"
     },
     "curos_later_stages": {
-      "status": "WIP_REPORT_BRIEF_COMPILE_FINAL_PG_PENDING",
-      "proof": "cloud-uneasy-curos-stage-progress.json",
-      "red_point": "NPC start commits two flags and real native Renegade death changes door0->1; mission report leaves questline1 instead of2 because source report/brief rules absent."
+      "status": "REPORT_BRIEF_GREEN",
+      "proof": "cloud-uneasy-curos-stage-validation.json",
+      "red_point": null
     }
   },
   "engine_progress": {
@@ -9352,6 +9340,11 @@
       "status": "QUALIFIED_SOURCE_COMPONENT",
       "proof": "cloud-uneasy-curos-validation.json",
       "whole_title_promoted": false
+    },
+    "uneasy_curos_progress": {
+      "status": "QUALIFIED_SOURCE_COMPONENT",
+      "proof": "cloud-uneasy-curos-stage-validation.json",
+      "whole_title_promoted": false
     }
   },
   "cross_lane_qualified_elsewhere": {
@@ -9385,6 +9378,7 @@
       "Festive Outfits Quest",
       "Fiend Slayer Outfits Quest",
       "Fire-Fighter Outfits Quest",
+      "Forgotten Knowledge Quest",
       "Formal Dress Outfits Quest",
       "Formorgar Mines Hoist Quest",
       "Formorgar Mines Quest",
@@ -9394,6 +9388,7 @@
       "Grave Danger Quest",
       "Grimvale Quest",
       "Hand of the Inquisition Outfits Quest",
+      "Heart of Destruction Quest",
       "Hero of Rathleton Quest",
       "Hidden Threats Quest",
       "Hunter Outfits Quest",
@@ -9444,6 +9439,7 @@
       "Triangle Tower Quest",
       "Troll Cave Quest",
       "Vampire Shield Quest",
+      "Venore Daily Tasks Quest",
       "Voodoo Doll Quest",
       "Warmaster Outfits Quest",
       "Waterfall Quest",
@@ -9453,8 +9449,8 @@
       "Yalaharian Outfits Quest"
     ],
     "rule": "Skip QUALIFIED titles in every recorded owner snapshot; this records ownership and does not claim implementations merged here.",
-    "qualified_count": 93,
-    "local_overlap_count": 43,
+    "qualified_count": 96,
+    "local_overlap_count": 45,
     "sources": {
       "The Annihilator Quest": {
         "ref": "origin/claude/happy-davinci-ijz3wy-questpc2",
@@ -10151,7 +10147,7 @@
     "owner_snapshots": {
       "questpc2": {
         "ref": "origin/claude/happy-davinci-ijz3wy-questpc2",
-        "sha": "abab42d136b1f9affaa695137de3f306bd49c8a2",
+        "sha": "a8f86f4a1ad2a31e60e30d0ab27c19fab87d7841",
         "path": "qlane-meta/questpc2/QUEST-STATUS.json",
         "qualified_count": 2,
         "titles": [
@@ -10161,7 +10157,7 @@
       },
       "questpc3": {
         "ref": "origin/claude/happy-davinci-ijz3wy-questpc3",
-        "sha": "6bcf558f937e96b43b77856977a65261b985a1f6",
+        "sha": "9fdae561b1c85ad0c031007c20522712136d6354",
         "path": "qlane-meta/questpc3/QUEST-STATUS.json",
         "qualified_count": 2,
         "titles": [
@@ -10171,7 +10167,7 @@
       },
       "questpc4": {
         "ref": "origin/claude/happy-davinci-ijz3wy-questpc4",
-        "sha": "806b8370e13c9fcb9eef8445c98ca8a173dba903",
+        "sha": "fab5b397f8e45f5a09d215e89bfccabd3357b296",
         "path": "qlane-meta/questpc4/QUEST-STATUS.json",
         "qualified_count": 11,
         "titles": [
@@ -10190,7 +10186,7 @@
       },
       "questpc5": {
         "ref": "origin/claude/happy-davinci-ijz3wy-questpc5",
-        "sha": "7bde610e5ffa1920893d525170bfbda4a8941f00",
+        "sha": "4ad254d0b2dfbd3eeb562820150ce7d4d3edcab6",
         "path": "qlane-meta/questpc5/QUEST-STATUS.json",
         "qualified_count": 10,
         "titles": [
@@ -10217,15 +10213,16 @@
       },
       "questpc7": {
         "ref": "origin/claude/happy-davinci-ijz3wy-questpc7",
-        "sha": "6872620d732c367534f58ad2fd7b2c91625f4080",
+        "sha": "5ef83a4af5494660880563d430c7245c193e9581",
         "path": "qlane-meta/questpc7/QUEST-STATUS.json",
-        "qualified_count": 19,
+        "qualified_count": 21,
         "titles": [
           "Exchange Quests",
           "Ferumbras' Ascension Quest",
           "Festive Outfits Quest",
           "Fiend Slayer Outfits Quest",
           "Fire-Fighter Outfits Quest",
+          "Forgotten Knowledge Quest",
           "Formal Dress Outfits Quest",
           "Formorgar Mines Hoist Quest",
           "Formorgar Mines Quest",
@@ -10235,6 +10232,7 @@
           "Grave Danger Quest",
           "Grimvale Quest",
           "Hand of the Inquisition Outfits Quest",
+          "Heart of Destruction Quest",
           "Hero of Rathleton Quest",
           "Hidden Threats Quest",
           "Hunter Outfits Quest",
@@ -10244,9 +10242,9 @@
       },
       "questpc8": {
         "ref": "origin/claude/happy-davinci-ijz3wy-questpc8",
-        "sha": "00c8ca4015a997b10347d545856c2f873b9c4fed",
+        "sha": "6369709fd705e57cbcd6c8bfa9072186bfbddc97",
         "path": "qlane-meta/questpc8/QUEST-STATUS.json",
-        "qualified_count": 20,
+        "qualified_count": 21,
         "titles": [
           "Killing in the Name of... Quest",
           "Kingdom of Kormarak Quest",
@@ -10264,6 +10262,7 @@
           "Tibia Anniversary",
           "Tinder Box Quest",
           "Treasure Island Quest",
+          "Venore Daily Tasks Quest",
           "Torch Quest",
           "Vampire Shield Quest",
           "Voodoo Doll Quest",
@@ -10272,7 +10271,7 @@
       },
       "qengine2": {
         "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
-        "sha": "9328159ab69580ab90d496986a95debaf1796e4a",
+        "sha": "30f05e4584ed0c80565ad8df7e21329b88937eb0",
         "path": "qlane-meta/qengine2/QUEST-STATUS.json",
         "qualified_count": 44,
         "titles": [

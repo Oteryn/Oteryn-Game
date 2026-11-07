@@ -1,3 +1,25 @@
+## Curos report/brief GREEN — 2026-11-07
+ActualPG18.6 report109.14939318s,brief121.686876488s,no-kill109.117748647s.
+ActualNPCstart ->nativeRenegade lethalowner ->Door1 ->missionQL2 ->briefQL3.
+No fakekill flag; no-killdenies. Boundedscene/sourceNPCcoord, notsourceOrcspawn
+orcontinuousworldwalk. OriginalRED retained. Check1m22s/strict8m23s/fmt/source
+PASS; regeneratedworldpin9096/inputbf7 unchanged. No newSQL. Wholecounts61/116/1
+excluded; sourcecomponentproof cloud-uneasy-curos-stage-validation.json.
+NEXT crystal source33155,31297,z3, base10186 ordinal/rootattrscapture
+/tmp/questpc-crystal-native-capture.json(one native object,attrsNone,house0,
+mapregion-z03-x129-y122 SHAe20191b6). Primary startup item.lua action40030
+blob2fc7af8495a2fd5166ef2fb6ebfa9d04b8c27654 SHA677bffd2, itemIdfalse,
+itemPossourceexact. Needgenericstartupactionbinding; source_bindings.rs already
+accepts unique/action. Extendexistingcaptureproducer insteadofsyntheticattrs.
+Existing map/facts/quest_callbacks.rs start_movement_decay andsource_item_cycle
+owner-fencedidleexpiry alreadygeneric10s restore/exactrevision; reuse/extend
+withcallback preflight/CAS, no parallel timerowner. CrystalLua blobf892ddad
+source3->4, transform10186->10187, addEvent10000revert. Then Curosfinal4->5
+item10217 (materializable,knownphysical1500) andnativequestdoor/Orcspawn path.
+Freshotherlanes96QUALIFIED;45localunfinishedSKIP,owned71.
+Neverhandoffmissingengine; continue. Max15minpush, exactfetch/mergeFETCH_HEAD,
+no force/rebase/main/PR. PR3020 lastOPEN14:36, recheckbefore nextbatch.
+
 ## Curos report/brief compiled WIP — 2026-11-07
 ActualPG18.6 report86.370237549s andbrief86.8107452s RED: actualNPCstart
 setsDoor0/QL1, realnativeRenegade deathsetsDoor1, butreportleavesQL1expected2.

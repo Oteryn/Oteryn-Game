@@ -1,0 +1,48 @@
+{
+  "status": "QUALIFIED_REPORT_BRIEF_COMPONENT",
+  "production_rules_commit": "bf73eb846",
+  "postgres": "PostgreSQL18.6",
+  "cases_seconds": {
+    "no-kill": 109.117748647,
+    "report": 109.14939318,
+    "brief": 121.686876488
+  },
+  "flow": "Native Curos start -> real native Renegade Orc damage/death -> durable source door1 credit -> NPC mission report questline2 -> next mission briefing questline3. No-kill source refusal retains questline1.",
+  "boundary": "Curos has his committed native source coordinate on a bounded scene; the creature is a native owner-admitted actor in that scene, not proof of its source spawn route. Foreign prerequisite is controlled fenced fixture data, not New Frontier qualification. No continuous full-world traversal claim.",
+  "validation": {
+    "check": "PASS quests/dispatch1m22s",
+    "strict_clippy": "PASS quests/dispatch all-targets/all-features -D warnings8m23s including build lock wait",
+    "fmt": "PASS cargo fmt and mounted rustfmt",
+    "source_generator": "PASS --check exact source report and briefing literals/guards",
+    "pin_refresh": {
+      "inputs_digest": "bf7cb49f4e74d0007703c8beb6db559f6f4bb739bd2a9f2600db7b570df97867",
+      "pins": [
+        {
+          "digest": "909676ba6b038ac4d7b89d4aa2be2c7267ce6b4c2442f43bce4aa3814d631bb9",
+          "previous": "909676ba6b038ac4d7b89d4aa2be2c7267ce6b4c2442f43bce4aa3814d631bb9",
+          "world": "oteryn"
+        }
+      ]
+    }
+  },
+  "original_red": "cloud-uneasy-curos-progress-red.log: report86.370237549s/brief86.8107452s leftQL1 despite real door1 credit; no-kill88.837396923s passed.",
+  "whole_title_promoted": false,
+  "logs": {
+    "cloud-uneasy-curos-stage-green.log": {
+      "raw_sha256": "90427e17791c9df34299b2565d6fff016264af5f79701e93830bea6c8d7c716e",
+      "stored_sha256": "09df9ea5c56d3c07844f5d3190df6aaf2abdd241450ab2494c163f2bb526f502"
+    },
+    "cloud-uneasy-curos-stage-check.log": {
+      "raw_sha256": "d57a32a46326f2b2be686cd273a2d03341ccc37edc5061c528aefef5d5205a66",
+      "stored_sha256": "d57a32a46326f2b2be686cd273a2d03341ccc37edc5061c528aefef5d5205a66"
+    },
+    "cloud-uneasy-curos-stage-clippy.log": {
+      "raw_sha256": "45269881de66b78ec49a42a7c125d59aa69277c741e285cd79eefe30d2bd3b2a",
+      "stored_sha256": "45269881de66b78ec49a42a7c125d59aa69277c741e285cd79eefe30d2bd3b2a"
+    },
+    "cloud-uneasy-curos-stage-pins.log": {
+      "raw_sha256": "20fe540abb9b06b76a59418b10ada9a0ff57fdf9d21220c3495d2fb68bbfd388",
+      "stored_sha256": "20fe540abb9b06b76a59418b10ada9a0ff57fdf9d21220c3495d2fb68bbfd388"
+    }
+  }
+}
