@@ -1012,6 +1012,17 @@
       "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
       "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
       "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "current_batch": {
+      "state": "Compiling WIP; actual PG54.06573s reaches all12 visits and8 native deaths, then test helper continues after short Scarlett teleport",
+      "red_seconds": 40.799342316,
+      "red_log": "/tmp/questpc7-grave-red.log",
+      "route": "12 physical grave visits; five Lich Knight encounters (both Sirs), Zelos, real Cobra access, Scarlett, base Hand of Inquisition plus achievement",
+      "assumptions": "Seven literal upstream grave coordinates pinned to Canary666a60f; other five selected native graves within the named regions, not asserted as exact donor haunted-grave coordinates. Native personal solo route; original raid logic untouched.",
+      "engine": "Reuses published native death objectives, earned world callbacks and fenced outfit/achievement owners; no new migration or effect-bound increase.",
+      "exact_red": "questpc7_grave_whole_native_journey_and_reward -> questpc7_ferumbras.rs:123 step assertion Blocked != Moved after valid short reward teleport",
+      "compilation": "cargo test built dispatch successfully in1m13s before real PostgreSQL runtime assertion; no compile errors",
+      "expanded_red_seconds": 54.06573
     }
   },
   {

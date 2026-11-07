@@ -1494,6 +1494,1410 @@
         "count": 5,
         "contents": []
       }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-entry",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33221,
+          "y": 31670,
+          "floor": -7
+        },
+        "appearance": 103,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You sense twelve haunted graves. Examine this grave to follow the chosen spectral trail.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x129-y123.b3:1:sha256:09d1f548322ea9c618d2fadff59fac78aaa7666b09bfbccd5dd4ac4bccec9b44",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-survey-0",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33222,
+          "y": 31670,
+          "floor": -7
+        },
+        "appearance": 1980,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32643,
+        "y": 32394,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You have visited the haunted grave in Edron north. The spectral trail continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x129-y123.b3:1:sha256:09d1f548322ea9c618d2fadff59fac78aaa7666b09bfbccd5dd4ac4bccec9b44",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-survey-1",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32644,
+          "y": 32394,
+          "floor": -8
+        },
+        "appearance": 31112,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32189,
+        "y": 31816,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You have visited the haunted grave in Dark Cathedral. The spectral trail continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z08-x127-y126.b3:1:sha256:da0a3174ca0b9208b95f4f01b9478a6d57b2c44562bbfe87c3aadb7de6b30771",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-survey-2",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32190,
+          "y": 31816,
+          "floor": -8
+        },
+        "appearance": 31116,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33262,
+        "y": 31984,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You have visited the haunted grave in Ghostlands. The spectral trail continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z08-x125-y124.b3:1:sha256:c470089dbd8903d3be04a5c95ce9bcba46df5eda62ea1401452af54789c09828",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-survey-3",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33262,
+          "y": 31983,
+          "floor": -8
+        },
+        "appearance": 31109,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32541,
+        "y": 31846,
+        "floor": -6
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You have visited the haunted grave in Cormaya. The spectral trail continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z08-x129-y124.b3:1:sha256:a3fdfadb42b96372256f5672fbbcdd4de109501da834741e1c004747af1f7014",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-survey-4",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32542,
+          "y": 31846,
+          "floor": -6
+        },
+        "appearance": 31104,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33375,
+        "y": 32806,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You have visited the haunted grave in Femor Hills. The spectral trail continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z06-x127-y124.b3:1:sha256:5e3aa6796ec4ac19ff73372d298189e3503be68a5bdfba08c1fdf8d9f42a2d91",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-survey-5",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33376,
+          "y": 32806,
+          "floor": -8
+        },
+        "appearance": 31112,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33812,
+        "y": 31624,
+        "floor": -9
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You have visited the haunted grave in isle northeast of Ankrahmun. The spectral trail continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z08-x130-y128.b3:1:sha256:724df7c4659c21072cfc6e6f6a36652c8b326235fb5bcd19f0eb1ba2392084fe",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-survey-6",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33813,
+          "y": 31624,
+          "floor": -9
+        },
+        "appearance": 31104,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32958,
+        "y": 31534,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You have visited the haunted grave in Kilmaresh. The spectral trail continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z09-x132-y123.b3:1:sha256:5c66f4a7b9c6ddf863e8f4ef57a2e87f40b1f436669750384194287aca801429",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-survey-7",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32959,
+          "y": 31534,
+          "floor": -7
+        },
+        "appearance": 31100,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33244,
+        "y": 32472,
+        "floor": -11
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You have visited the haunted grave in Vengoth. The spectral trail continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x128-y123.b3:1:sha256:865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-survey-8",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33244,
+          "y": 32471,
+          "floor": -11
+        },
+        "appearance": 1982,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32347,
+        "y": 32170,
+        "floor": -12
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You have visited the haunted grave in Darashia. The spectral trail continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z11-x129-y126.b3:1:sha256:1481abb99b49aa0df46fed1c06c739a30eba7587355f90c6f13aee902c8d1591",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-survey-9",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32347,
+          "y": 32169,
+          "floor": -12
+        },
+        "appearance": 31109,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32775,
+        "y": 31817,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You have visited the haunted grave in old Thais temple. The spectral trail continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z12-x126-y125.b3:1:sha256:b804a50853f29a23247161ffd69503448bd912e46dc3b30fa641ffbf300d53c2",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-survey-10",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32776,
+          "y": 31817,
+          "floor": -8
+        },
+        "appearance": 31116,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32011,
+        "y": 31558,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You have visited the haunted grave in Orclands entrance. The spectral trail continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z08-x128-y124.b3:1:sha256:9257fe82a1acfed935706a403828d2b3f65471b07bb9ef4e323b8cbebcda1c7e",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-survey-11",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32012,
+          "y": 31558,
+          "floor": -7
+        },
+        "appearance": 31116,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33456,
+        "y": 31437,
+        "floor": -13
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/passages",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/boss_0",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You have visited the haunted grave in southern Ice Islands. The spectral trail continues.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x125-y123.b3:1:sha256:c3b33f29be0264ac9e82205321606fd44cc69c627d584a2b65a27b4ddd83b2a4",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-knight-passage-0",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33455,
+          "y": 31437,
+          "floor": -13
+        },
+        "appearance": 11424,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33456,
+        "y": 31476,
+        "floor": -13
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 12,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/passages",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/boss_0",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/boss_1",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The Lich Knight encounter is settled. Your expedition may continue.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-knight-passage-1",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33455,
+          "y": 31476,
+          "floor": -13
+        },
+        "appearance": 416,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33488,
+        "y": 31444,
+        "floor": -13
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 12,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/passages",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/boss_1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/boss_2",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The Lich Knight encounter is settled. Your expedition may continue.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-knight-passage-2",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33487,
+          "y": 31444,
+          "floor": -13
+        },
+        "appearance": 6593,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33424,
+        "y": 31476,
+        "floor": -13
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 12,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/passages",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/boss_2",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/boss_3",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The Lich Knight encounter is settled. Your expedition may continue.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-knight-passage-3",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33423,
+          "y": 31476,
+          "floor": -13
+        },
+        "appearance": 500,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33422,
+        "y": 31434,
+        "floor": -13
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 12,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/passages",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/boss_3",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/boss_4",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/boss_5",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The Lich Knight encounter is settled. Your expedition may continue.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-knight-passage-4",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33421,
+          "y": 31434,
+          "floor": -13
+        },
+        "appearance": 4394,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33443,
+        "y": 31548,
+        "floor": -13
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/visits",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 12,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/passages",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/boss_4",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/boss_5",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/boss_6",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_20/grave_danger/bosses/king_zelos_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The Lich Knight encounter is settled. Your expedition may continue.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-zelos-passage",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33442,
+          "y": 31548,
+          "floor": -13
+        },
+        "appearance": 410,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33385,
+        "y": 32627,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/passages",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/boss_6",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "King Zelos is defeated. Investigate the Cobra Bastion.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z13-x130-y123.b3:1:sha256:fdd5e457c35b1a3622485103aa9006e2dbb33a622cba968fe792260c1cdac26e",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-cobra",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33384,
+          "y": 32627,
+          "floor": -7
+        },
+        "appearance": 16489,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33396,
+        "y": 32646,
+        "floor": -6
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u12_20/grave_danger/cobra_bastion/access",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/boss_7",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "You have investigated the Cobra Bastion. Confront Scarlett Etzel.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z07-x130-y127.b3:1:sha256:dda5c6165990fc024b707fc6dcaca826b830a2d2b083ce98d19d0df470d3e127",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/grave/programme",
+        "minimum": 2,
+        "maximum": 2
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-scarlett-passage",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33395,
+          "y": 32646,
+          "floor": -6
+        },
+        "appearance": 23897,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33398,
+        "y": 32639,
+        "floor": -6
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/passages",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/boss_7",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "Scarlett is defeated. Examine the armour to close the investigation.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z06-x130-y127.b3:1:sha256:142b1af54e3bf9b22aca5afe41607c43b56b7fc46c34390437a773ee43934978",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-grave-reward",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33398,
+          "y": 32640,
+          "floor": -6
+        },
+        "appearance": 31482,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/programme",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/passages",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/grave/boss_7",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_20/grave_danger/bosses/inquisition_outfit_received",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "minimum_level": null,
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "requirements": {
+        "min_level": 250,
+        "premium": true,
+        "completed_quests": []
+      },
+      "success_message": "The twelve graves, Lich Knights, Zelos and Cobra threat are resolved. You earn Hand of the Inquisition and Inquisition's Hand.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z06-x130-y127.b3:1:sha256:142b1af54e3bf9b22aca5afe41607c43b56b7fc46c34390437a773ee43934978",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ],
+      "completes": true,
+      "outfit_reward": {
+        "outfit": "oteryn:outfit.hand_of_the_inquisition",
+        "addons": 0
+      },
+      "achievements": [
+        "oteryn:achievement/inquisition_s_hand"
+      ],
+      "activation": {
+        "track": "oteryn:quest-progress/questpc7/grave/programme",
+        "minimum": 3,
+        "maximum": 3
+      }
     }
   ]
 }

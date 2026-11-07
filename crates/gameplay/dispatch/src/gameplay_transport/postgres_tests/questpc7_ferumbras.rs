@@ -84,7 +84,7 @@ pub(super) fn objects() -> Vec<(Position, u16)> {
     }
     rows
 }
-async fn value(
+pub(super) async fn value(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     a: &AdmittedSession,
     key: &str,
@@ -101,7 +101,7 @@ async fn value(
         .map_err(debug)?;
     Ok(state.tracks().get(key).copied().unwrap_or(-1))
 }
-async fn step(
+pub(super) async fn step(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     a: &mut AdmittedSession,
     d: oteryn_protocol_oteryn::world_spatial::StepDirection,
@@ -126,7 +126,7 @@ async fn step(
     );
     Ok(())
 }
-async fn walk(
+pub(super) async fn walk(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     a: &mut AdmittedSession,
     target: Position,
@@ -173,7 +173,7 @@ async fn walk(
     }
     Err("bounded walk".into())
 }
-async fn use_at(
+pub(super) async fn use_at(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     a: &mut AdmittedSession,
     p: Position,
@@ -185,7 +185,7 @@ async fn use_at(
     let reply = super::quest_world_callbacks::wire(owner, a, n, 2, payload).await?;
     oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)
 }
-async fn guardian(
+pub(super) async fn guardian(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     p: Position,
 ) -> TestResult<Option<crate::foundation::ExactActorRef>> {

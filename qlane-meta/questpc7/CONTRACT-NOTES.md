@@ -392,3 +392,43 @@ are bounded to64 bytes (gameplay/progression/src/account_achievement.rs:6,68),
 but the new world hook supplied raw serialized occurrence data. Hash that
 stable occurrence to32 bytes with existing SHA-256; retain the64-byte bound,
 existing NPC event bytes and all transaction/rollback guards unchanged.
+
+
+## Grave Danger twelve native regions and combat route
+
+Selected recipe:12 grave visits, five Lich Knight encounters, Zelos, Cobra
+investigation, Scarlett, base Hand of the Inquisition and Inquisition's Hand.
+Minimum250/currentPremium, no parent. Real PG18.6 RED40.799342316s proves
+missing complete native journey. No quest-state seeds in the story.
+
+Seven exact grave positions are upstream references verified against retained
+map tiles: https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua :1-38, sha256 5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5.
+The other five use explicit selected native graves in the named regions:
+Edron(33222,31670,-7)1980; Ghostlands(32190,31816,-8)31116;
+Cormaya(33262,31983,-8)31109; Darashia(33244,32471,-11)1982;
+old Thais temple(32347,32169,-12)31109. These five are conservative Oteryn
+bindings, not claimed as exact donor haunted-grave coordinates. Native
+placement paths/digests are generated per callback; region positions and
+existing physical objects were checked in repo. Brazil wiki returned403;
+no protection bypass attempted or further exact-coordinate lookup required.
+
+A personal spectral trail connects the twelve actual sites and real boss
+arenas. All actor spawn/arrival/exit cells are admitted clear native floors.
+Five Lich Knight encounters require Count Vlarkorth, Duke Krule, Earl Osam,
+Lord Azaram and BOTH Sirs; one Sir cannot stand in for the other. King Zelos
+is unavailable before the fifth encounter. Earn real same-quest Zelos-door
+entitlement. Original Cobra access STEP stays intact; new programme USE
+inspection requires its earned flag before Scarlett. Old activation remains
+USE-only: an initial invalid STEP authoring run7.966ms was rejected before
+PG and is NOT counted as PostgreSQL evidence. Final outfit/achievement and
+completion reuse the published fenced world value owner. Base outfit only;
+separate Hand outfit addon programme remains independent. Source raid party/
+cooldowns, global mechanics and optional corpse loot are not certified here.
+
+Arena anchor data-global/scripts/quests/grave_danger/actions_count_vlarkorth_lever.lua:1-22, Crystal9f, sha256 922080f0439540f839a84919936b708f70befe57c6916dee3d1617745764ece7.
+Arena anchor data-global/scripts/quests/grave_danger/actions_duke_krule_lever.lua:1-22, Crystal9f, sha256 88f0501371c85b690db03686c7e2da8efcded8b5cbbfc4851f4b882a052c24d4.
+Arena anchor data-global/scripts/quests/grave_danger/actions_earl_osam_lever.lua:1-22, Crystal9f, sha256 70e52dcada604e3444abd4ed46ec11043a4c270f41e5799abcb56a2b4d731f03.
+Arena anchor data-global/scripts/quests/grave_danger/actions_king_zelos_lever.lua:1-22, Crystal9f, sha256 f6e3b16fdf34ff1542ce1957b4ae7536f4875fb0ad92d2d610837f97bfa54bd6.
+Arena anchor data-global/scripts/quests/grave_danger/actions_lord_azaram_lever.lua:1-22, Crystal9f, sha256 61767895e2331b8c03f0e031846af8f4dc761f8554c120ba13787440f2b56649.
+Arena anchor data-global/scripts/quests/grave_danger/actions_sir_baeloc_sir_nictros_lever.lua:1-22, Crystal9f, sha256 74d75d91cefa47e03d6f93f79fe3283e0229924f0482ef5dd108c356465a9f14.
+Arena anchor data-global/scripts/quests/grave_danger/cobra_bastion/actions_scarlett.lua:1-22, Crystal9f, sha256 7cf1f42e77e0f20423eae7cc8d898200cd7f739e6c4fa0bc57cad08398f9ac2c.

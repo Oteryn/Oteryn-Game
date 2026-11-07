@@ -431,6 +431,262 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/ferumbras_ascension/actions_ferumbras_lever.lua:1:sha256:da25bca87561d9f917f90ce7bc50c4e7fc7f0357e7146516a2713212057b18c2",
         "content/world/placements/region-z14-x130-y122.b3:1:sha256:e4dcf7855b7d22e9d1464e8e7661399f9d4f933dcd516fdce363a9caca5ddc13"
       ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grave-count_vlarkorth",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "creature": "oteryn:creature.count_vlarkorth",
+      "stage": "oteryn:quest-progress/questpc7/grave/passages",
+      "stage_value": 0,
+      "counter": "oteryn:quest-progress/questpc7/grave/boss_0",
+      "required": 1,
+      "minimum": {
+        "x": 33448,
+        "y": 31426,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33464,
+        "y": 31442,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33456,
+          "y": 31434,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grave-duke_krule",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "creature": "oteryn:creature.duke_krule",
+      "stage": "oteryn:quest-progress/questpc7/grave/passages",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/questpc7/grave/boss_1",
+      "required": 1,
+      "minimum": {
+        "x": 33448,
+        "y": 31465,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33464,
+        "y": 31481,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33456,
+          "y": 31473,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grave-earl_osam",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "creature": "oteryn:creature.earl_osam",
+      "stage": "oteryn:quest-progress/questpc7/grave/passages",
+      "stage_value": 2,
+      "counter": "oteryn:quest-progress/questpc7/grave/boss_2",
+      "required": 1,
+      "minimum": {
+        "x": 33480,
+        "y": 31433,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33496,
+        "y": 31449,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33488,
+          "y": 31441,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grave-lord_azaram",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "creature": "oteryn:creature.lord_azaram",
+      "stage": "oteryn:quest-progress/questpc7/grave/passages",
+      "stage_value": 3,
+      "counter": "oteryn:quest-progress/questpc7/grave/boss_3",
+      "required": 1,
+      "minimum": {
+        "x": 33416,
+        "y": 31465,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33432,
+        "y": 31481,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33424,
+          "y": 31473,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grave-sir_baeloc",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "creature": "oteryn:creature.sir_baeloc",
+      "stage": "oteryn:quest-progress/questpc7/grave/passages",
+      "stage_value": 4,
+      "counter": "oteryn:quest-progress/questpc7/grave/boss_4",
+      "required": 1,
+      "minimum": {
+        "x": 33414,
+        "y": 31423,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33430,
+        "y": 31439,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33422,
+          "y": 31431,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grave-sir_nictros",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "creature": "oteryn:creature.sir_nictros",
+      "stage": "oteryn:quest-progress/questpc7/grave/passages",
+      "stage_value": 4,
+      "counter": "oteryn:quest-progress/questpc7/grave/boss_5",
+      "required": 1,
+      "minimum": {
+        "x": 33419,
+        "y": 31423,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33435,
+        "y": 31439,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33427,
+          "y": 31431,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z13-x130-y122.b3:1:sha256:c4114f9f3e0ad968fee23d5c52176b3cb0ab04c85d0c7c81f45df506f4fb2d04",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grave-king_zelos",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "creature": "oteryn:creature.king_zelos",
+      "stage": "oteryn:quest-progress/questpc7/grave/passages",
+      "stage_value": 5,
+      "counter": "oteryn:quest-progress/questpc7/grave/boss_6",
+      "required": 1,
+      "minimum": {
+        "x": 33435,
+        "y": 31537,
+        "floor": -13
+      },
+      "maximum": {
+        "x": 33451,
+        "y": 31553,
+        "floor": -13
+      },
+      "guardian": {
+        "position": {
+          "x": 33443,
+          "y": 31545,
+          "floor": -13
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z13-x130-y123.b3:1:sha256:fdd5e457c35b1a3622485103aa9006e2dbb33a622cba968fe792260c1cdac26e",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-death/questpc7-grave-scarlett_etzel",
+      "quest": "oteryn:quest.grave_danger_quest",
+      "creature": "oteryn:creature.scarlett_etzel",
+      "stage": "oteryn:quest-progress/questpc7/grave/programme",
+      "stage_value": 3,
+      "counter": "oteryn:quest-progress/questpc7/grave/boss_7",
+      "required": 1,
+      "minimum": {
+        "x": 33388,
+        "y": 32635,
+        "floor": -6
+      },
+      "maximum": {
+        "x": 33404,
+        "y": 32651,
+        "floor": -6
+      },
+      "guardian": {
+        "position": {
+          "x": 33396,
+          "y": 32643,
+          "floor": -6
+        },
+        "respawn_ms": 60000
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/53/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "content/world/placements/region-z06-x130-y127.b3:1:sha256:142b1af54e3bf9b22aca5afe41607c43b56b7fc46c34390437a773ee43934978",
+        "https://raw.githubusercontent.com/opentibiabr/canary/666a60f6fef803b043cbaf1c7b5fab219da9bfa9/data-otservbr-global/scripts/quests/grave_danger_quest/actions_grave_sanctify.lua:1-38:sha256:5d9d35aaabacfdd4242860446852e76474b4281194afb2352a119f57f3e024a5"
+      ]
     }
   ]
 }

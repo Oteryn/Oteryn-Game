@@ -1069,3 +1069,18 @@ Danger findings/explicit conservative coordinate rule are in
 /tmp/questpc7-grave-next-plan.txt. Do not repeat missing-coordinate lookup;
 owner says choose documented native placements and proceed. Other remaining
 recipes also need whole native routes. No ownership questions or deferrals.
+
+## Owner fifteen-minute push rule; compiling Grave WIP
+
+Owner now authorizes compiling WIP pushes and requires pushes at least every
+15minutes. Push all current product as WIP now. Cargo test built successfully
+in1m13s; actual PG18.6 RED54.06573s reaches all12 grave visits, six Lich Knight
+actors (both Sirs), Zelos, retained real Cobra step/inspection and Scarlett.
+Exact red: questpc7_grave_whole_native_journey_and_reward fails in reused
+questpc7_ferumbras.rs:123, Blocked != Moved. Its walk helper only recognizes
+teleports farther than8 tiles, so it continues walking after a valid short
+Scarlett-to-armour teleport. Fix helper to compare observed position to the
+one commanded step, retaining each caller's exact destination assertion.
+Then run full GREEN,14 focused gates, mark QUALIFIED/push. Still8 ACTIVE;
+no completion claim, no engine deferral. Keep pushing each green step and
+at most15minutes. No binaries or raw reference copies in this WIP.
