@@ -221,6 +221,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-04",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "cases": [
+        {
+          "npc": "oteryn:npc.amanda",
+          "name": "Amanda",
+          "expected": {
+            "x": 33222,
+            "y": 31814,
+            "floor": -8
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.an_ominous_bat",
+          "name": "An Ominous Bat",
+          "expected": {
+            "x": 33264,
+            "y": 31786,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.beatrice",
+          "name": "Beatrice",
+          "expected": {
+            "x": 33214,
+            "y": 31803,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.chief_grarkharok",
+          "name": "Chief Grarkharok",
+          "expected": {
+            "x": 33232,
+            "y": 31755,
+            "floor": -1
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.eliza",
+          "name": "Eliza",
+          "expected": {
+            "x": 33267,
+            "y": 31848,
+            "floor": -6
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.eremo",
+          "name": "Eremo",
+          "expected": {
+            "x": 33322,
+            "y": 31883,
+            "floor": -7
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }

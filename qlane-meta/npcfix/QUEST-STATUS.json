@@ -8,7 +8,7 @@
       "npc": "A Sweaty Cyclops",
       "town": "Ab'Dendriel",
       "audit_status": "DIFF",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/12",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/13",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
       "source": {
@@ -55,7 +55,7 @@
       "town": "Ab'Dendriel",
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/248; content/services/trade/trade-00000-00326.json:1#/records/221",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/251; content/services/trade/trade-00000-00326.json:1#/records/221",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -64,7 +64,7 @@
       "town": "Ankrahmun",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Oil-filled Vial20 is not executable: fluid mint provenance and subtype trade support need the existing fluid owner contract; this package adds placement only.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/14",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/16",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
       "source": {
@@ -79,7 +79,7 @@
       "town": "Ankrahmun",
       "audit_status": "DIFF",
       "work": "Retail placement authored. 29 retail offers, including a full-state Ice Rapier purchase; existing Efreet mission03=3 gate enforced in window and durable trade.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/19; content/services/trade/trade-00000-00326.json:1#/records/6",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/21; content/services/trade/trade-00000-00326.json:1#/records/6",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -97,7 +97,7 @@
       "town": "Ankrahmun",
       "audit_status": "MISSING",
       "work": "Retail placement authored. Add exact displayed identity.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/116; content/npcs/definitions/npcs-00000-00499.json:1#/records/440",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/119; content/npcs/definitions/npcs-00000-00499.json:1#/records/440",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -164,7 +164,7 @@
       "town": "Boss Lairs",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/325",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/328",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -173,7 +173,7 @@
       "town": "Carlin",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Tibia return depends on Costello permission and monastery fines; no qualified native predicate. Quest-lane repair required.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/49",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/51",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
       "source": {
@@ -203,7 +203,7 @@
       "town": "Carlin",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Ordinary Letter8/Parcel15; completed Postman5/10, with current durable rank validation.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/192; content/services/trade/trade-00000-00326.json:1#/records/181",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/195; content/services/trade/trade-00000-00326.json:1#/records/181",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -226,7 +226,7 @@
       "npc": "Altar",
       "town": "Darashia",
       "audit_status": "DIFF",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/23",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/25",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
       "source": {
@@ -243,7 +243,7 @@
       "town": "Darashia",
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/64; content/services/trade/trade-00000-00326.json:1#/records/60",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/66; content/services/trade/trade-00000-00326.json:1#/records/60",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING",
       "physical_admission": {
@@ -272,7 +272,7 @@
       "town": "Darashia",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Heal to40 and cure fire/poison/energy through the canonical vitals/condition owner.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/182; crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:760",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/185; crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:760",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -281,7 +281,7 @@
       "town": "Darashia",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Connect existing native bank service and source dialogue.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/226",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/229",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -290,7 +290,7 @@
       "town": "Darashia",
       "audit_status": "DIFF",
       "work": "Retail placement authored. 32 retail offers including default-state Ice Rapier buyback; existing Marid mission03=3 gate enforced in window and durable sale.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/229; content/services/trade/trade-00000-00326.json:1#/records/207",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/232; content/services/trade/trade-00000-00326.json:1#/records/207",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -329,7 +329,7 @@
       "town": "Darashia",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Wiki fares and destinations for eight ordinary routes; carried scarab-cheese guard. Travora source row retained held. Eight ordinary destinations repaired. Travora remains held: daily ticket and Captain Tiberius last-port return owner are absent.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/269; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2179; content/services/travel/travel-00000-00058.json:1#/records/44",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/272; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2179; content/services/travel/travel-00000-00058.json:1#/records/44",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
       "status": "PENDING",
       "source": {
@@ -362,7 +362,7 @@
       "town": "Darashia",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/327",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/330",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -401,7 +401,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/11",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/12",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -440,25 +440,37 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/25",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/27",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-04",
+        "postgres_red_seconds": 30.13,
+        "postgres_green_seconds": 75.53,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "An Ominous Bat",
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/29",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/31",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-04",
+        "postgres_red_seconds": 30.13,
+        "postgres_green_seconds": 75.53,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Anaztassja Moroia",
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/30",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/36",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -476,16 +488,22 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/39",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/41",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-04",
+        "postgres_red_seconds": 30.13,
+        "postgres_green_seconds": 75.53,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Captain Seahorse",
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Enable Venore40 with carried scarab-cheese guard.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/54; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:811",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/56; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:811",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -494,16 +512,22 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/65",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/67",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-04",
+        "postgres_red_seconds": 30.13,
+        "postgres_green_seconds": 75.53,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Chrystal",
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/68; content/services/trade/trade-00000-00326.json:1#/records/64",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/70; content/services/trade/trade-00000-00326.json:1#/records/64",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -512,9 +536,15 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/92",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/95",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-04",
+        "postgres_red_seconds": 30.13,
+        "postgres_green_seconds": 75.53,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Emberwing",
@@ -531,9 +561,15 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/105",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/108",
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-04",
+        "postgres_red_seconds": 30.13,
+        "postgres_green_seconds": 75.53,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Grovebeast Npc",
@@ -550,7 +586,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/151",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/154",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -559,7 +595,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/152",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/155",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -568,7 +604,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/160",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/163",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -577,7 +613,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/169",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/172",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -586,7 +622,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/188",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/191",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -595,7 +631,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/189",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/192",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -604,7 +640,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/190",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/194",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -613,7 +649,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/205",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/208",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -622,7 +658,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/208",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/211",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -631,7 +667,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/223",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/226",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -640,7 +676,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/224",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/227",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -649,7 +685,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/227",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/230",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -658,7 +694,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/253",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/260",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -667,7 +703,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/259",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/262",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -676,7 +712,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/265",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/268",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -685,7 +721,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/270",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/273",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -694,7 +730,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/273",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/276",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -703,7 +739,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/290",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/293",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -712,7 +748,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/291",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/294",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -730,7 +766,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/302",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/305",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -739,7 +775,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/306",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/309",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -748,7 +784,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/311",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/314",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -757,7 +793,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/316",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/319",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -766,7 +802,7 @@
       "town": "Edron",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/319",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/322",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -824,7 +860,7 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/7",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/8",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -878,7 +914,7 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/62",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/64",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -887,7 +923,7 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/67",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/69",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -930,7 +966,7 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/107",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/110",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -939,7 +975,7 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/158",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/161",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -948,7 +984,7 @@
       "town": "Farmine",
       "audit_status": "MISSING",
       "work": "Retail placement authored. Add exact displayed identity.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/198; content/npcs/definitions/npcs-00500-00999.json:1#/records/240; content/dialogues/definitions/dialogues-00000-00499.json:1#/records/487",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/201; content/npcs/definitions/npcs-00500-00999.json:1#/records/240; content/dialogues/definitions/dialogues-00000-00499.json:1#/records/487",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -957,7 +993,7 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/199",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/202",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -966,7 +1002,7 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Connect native bank service alongside postal shop; conditional postage. Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/225; content/services/trade/trade-00000-00326.json:1#/records/206",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/228; content/services/trade/trade-00000-00326.json:1#/records/206",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -975,7 +1011,7 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/252",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/255",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -984,7 +1020,7 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Add ten Wiki-confirmed ammunition, weapon and flag offers.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/272; content/services/trade/trade-00000-00326.json:1#/records/232",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/275; content/services/trade/trade-00000-00326.json:1#/records/232",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -993,7 +1029,7 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/326",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/329",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1002,7 +1038,7 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/333",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/336",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1011,7 +1047,7 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/334",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/337",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1020,7 +1056,7 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/337",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/340",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1029,7 +1065,7 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/338",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/341",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1038,7 +1074,7 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/339",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/342",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1047,7 +1083,7 @@
       "town": "Feyrist",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/207",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/210",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1056,7 +1092,7 @@
       "town": "Feyrist",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Add seven candy buyback offers, including Pastry Dragon95000.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/308; content/services/trade/trade-00000-00326.json:1#/records/291",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/311; content/services/trade/trade-00000-00326.json:1#/records/291",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1064,7 +1100,7 @@
       "npc": "Alyxo",
       "town": "Issavi",
       "audit_status": "DIFF",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/24",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/26",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
       "source": {
@@ -1081,7 +1117,7 @@
       "town": "Issavi",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/50",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/52",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1105,7 +1141,7 @@
       "town": "Issavi",
       "audit_status": "MISSING",
       "work": "Retail placement authored. Add exact displayed identity.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/110; content/npcs/definitions/npcs-00000-00499.json:1#/records/410",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/113; content/npcs/definitions/npcs-00000-00499.json:1#/records/410",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1114,7 +1150,7 @@
       "town": "Issavi",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/301",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/304",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1123,7 +1159,7 @@
       "town": "Issavi",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/324",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/327",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1150,7 +1186,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/108",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/111",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1158,7 +1194,7 @@
       "npc": "Gnomission",
       "town": "Kazordoon",
       "audit_status": "DIFF",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/137",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/140",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
       "source": {
@@ -1175,7 +1211,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/139",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/145",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1184,7 +1220,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/163",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/166",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1193,7 +1229,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/166",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/169",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1202,7 +1238,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer. Connect the native postal service (Letter, Parcel and Label).",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/201; content/services/trade/trade-00000-00326.json:1#/records/184",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/204; content/services/trade/trade-00000-00326.json:1#/records/184",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1211,7 +1247,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/204",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/207",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1220,7 +1256,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/209",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/212",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1229,7 +1265,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/220",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/223",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1238,7 +1274,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/222",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/225",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1247,7 +1283,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/235",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/238",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1256,7 +1292,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/275",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/278",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1265,7 +1301,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/276",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/279",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1274,7 +1310,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/285",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/288",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1283,7 +1319,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/295",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/298",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1292,7 +1328,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/296",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/299",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1301,7 +1337,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/303",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/306",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1310,7 +1346,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/305",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/308",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1319,7 +1355,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/310",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/313",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1328,7 +1364,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/313; content/services/trade/trade-00000-00326.json:1#/records/308",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/316; content/services/trade/trade-00000-00326.json:1#/records/308",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1337,7 +1373,7 @@
       "town": "Kazordoon",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/320",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/323",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1346,7 +1382,7 @@
       "town": "Liberty Bay",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Yalahar400 route with started-Yalahar quest gate; correct scene identities; no Postman discount.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/52; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:625; content/services/travel/travel-00000-00058.json:1#/records/12",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/54; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:625; content/services/travel/travel-00000-00058.json:1#/records/12",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1355,7 +1391,7 @@
       "town": "Liberty Bay",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/55",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/58",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1364,7 +1400,7 @@
       "town": "Liberty Bay",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/59",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/61",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1373,7 +1409,7 @@
       "town": "Liberty Bay",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/61",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/63",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1382,7 +1418,7 @@
       "town": "Liberty Bay",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/66",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/68",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1391,7 +1427,7 @@
       "town": "Liberty Bay",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/79",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/82",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1400,7 +1436,7 @@
       "town": "Liberty Bay",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/91",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/94",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1409,7 +1445,7 @@
       "town": "Liberty Bay",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/176",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/179",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1418,7 +1454,7 @@
       "town": "Liberty Bay",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/212",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/215",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1441,7 +1477,7 @@
       "town": "Liberty Bay",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/251",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/254",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1450,7 +1486,7 @@
       "town": "Liberty Bay",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/271",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/274",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1459,7 +1495,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/28",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/30",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1468,7 +1504,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/36",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/38",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1477,7 +1513,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/44",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/46",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1486,7 +1522,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/46",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/48",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1495,7 +1531,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/75",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/77",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1504,7 +1540,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/123",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/126",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1513,7 +1549,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/129",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/132",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1538,7 +1574,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/154",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/157",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1547,7 +1583,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/168",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/171",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1556,7 +1592,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/172",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/175",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1565,7 +1601,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/173",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/176",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1574,7 +1610,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/183",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/186",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1583,7 +1619,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/228",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/231",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1592,7 +1628,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/231",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/234",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1601,7 +1637,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/237",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/240",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1610,7 +1646,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/238",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/241",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1619,7 +1655,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/239",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/242",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1628,7 +1664,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/249",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/252",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1637,7 +1673,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/267",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/270",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1646,7 +1682,7 @@
       "town": "Marapur",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/332",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/335",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1655,7 +1691,7 @@
       "town": "Mistrock (Wiki city Yalahar; scene association verified by transcript)",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/214",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/217",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1664,7 +1700,7 @@
       "town": "Port Hope",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/60",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/62",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1673,7 +1709,7 @@
       "town": "Port Hope",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Ordinary Letter8/Parcel15; completed Postman5/10, with current durable rank validation.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/284; content/services/trade/trade-00000-00326.json:1#/records/242",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/287; content/services/trade/trade-00000-00326.json:1#/records/242",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1682,7 +1718,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/0",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/0",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1691,7 +1727,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/63",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/65",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1700,7 +1736,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/81",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/84",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1709,7 +1745,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/85",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/88",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1718,7 +1754,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/89",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/92",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1727,7 +1763,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/93",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/96",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1736,7 +1772,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/101",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/104",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1745,7 +1781,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/111",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/114",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1754,7 +1790,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/112",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/115",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1763,7 +1799,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/115",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/118",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1772,7 +1808,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Add three exercise-wrap offers and buy Sword25; qualify full default charge purchases.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/117; content/services/trade/trade-00000-00326.json:1#/records/103",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/120; content/services/trade/trade-00000-00326.json:1#/records/103",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1781,7 +1817,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/122; content/services/trade/trade-00000-00326.json:1#/records/111",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/125; content/services/trade/trade-00000-00326.json:1#/records/111",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1790,7 +1826,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/128",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/131",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1799,7 +1835,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/145",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/148",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1808,7 +1844,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/147",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/150",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1817,7 +1853,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/149",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/152",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1835,7 +1871,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/165",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/168",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1844,7 +1880,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/177",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/180",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1853,7 +1889,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/186",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/189",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1862,7 +1898,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/187",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/190",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1871,7 +1907,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/217",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/220",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1880,7 +1916,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/219",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/222",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1889,7 +1925,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/236",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/239",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1898,7 +1934,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/242",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/245",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1916,7 +1952,7 @@
       "town": "Rathleton",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/266",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/269",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1951,7 +1987,7 @@
       "town": "Rookgaard",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Buy Chain Helmet from player for17 instead of12.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/76; content/services/trade/trade-00000-00326.json:1#/records/78",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/78; content/services/trade/trade-00000-00326.json:1#/records/78",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1969,7 +2005,7 @@
       "town": "Roshamuul",
       "audit_status": "MISSING",
       "work": "Retail placement authored. Add exact displayed identity.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/94; content/npcs/definitions/npcs-00000-00499.json:1#/records/385",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/97; content/npcs/definitions/npcs-00000-00499.json:1#/records/385",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -1978,7 +2014,7 @@
       "town": "Roshamuul",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/51",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/53",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2001,7 +2037,7 @@
       "town": "Roshamuul",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/90",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/93",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2010,7 +2046,7 @@
       "town": "Roshamuul",
       "audit_status": "MISSING",
       "work": "Retail placement authored. Add exact displayed identity.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/130; content/npcs/definitions/npcs-00000-00499.json:1#/records/489",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/133; content/npcs/definitions/npcs-00000-00499.json:1#/records/489",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2019,7 +2055,7 @@
       "town": "Roshamuul",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/193",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/196",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2028,7 +2064,7 @@
       "town": "Roshamuul",
       "audit_status": "MISSING",
       "work": "Retail placement authored. Add exact displayed identity.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/318; content/npcs/definitions/npcs-01000-01289.json:1#/records/241",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/321; content/npcs/definitions/npcs-01000-01289.json:1#/records/241",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2037,7 +2073,7 @@
       "town": "Roshamuul",
       "audit_status": "MISSING",
       "work": "Retail placement authored. Add exact displayed identity.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/323; content/npcs/definitions/npcs-01000-01289.json:1#/records/260",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/326; content/npcs/definitions/npcs-01000-01289.json:1#/records/260",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2067,7 +2103,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/8",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/9",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2076,7 +2112,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/38",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/40",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2085,7 +2121,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/41",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/43",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2094,7 +2130,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/45",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/47",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2103,7 +2139,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/48",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/50",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2112,7 +2148,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/73",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/75",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2121,7 +2157,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/87",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/90",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2130,7 +2166,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/120",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/123",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2139,7 +2175,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/121",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/124",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2148,7 +2184,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/161",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/164",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2157,7 +2193,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/171",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/174",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2166,7 +2202,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/175",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/178",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2175,7 +2211,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/185",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/188",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2184,7 +2220,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/206",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/209",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2193,7 +2229,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.  Ordinary Letter8/Parcel15; completed Postman5/10 through the current-rank trade writer.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/233; content/services/trade/trade-00000-00326.json:1#/records/209",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/236; content/services/trade/trade-00000-00326.json:1#/records/209",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2202,7 +2238,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/240",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/243",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2211,7 +2247,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored. 155 retail offers including seven default-state amulet buybacks; mission07 gate and seven weekday placements matching the existing runtime selector.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/277; content/services/trade/trade-00000-00326.json:1#/records/240",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/286; content/services/trade/trade-00000-00326.json:1#/records/240",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2220,7 +2256,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/286",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/289",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2229,7 +2265,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/289",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/292",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2238,7 +2274,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/297",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/300",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2247,7 +2283,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/298",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/301",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2256,7 +2292,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/307",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/310",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2265,7 +2301,7 @@
       "town": "Svargrond",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/336",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/339",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2283,7 +2319,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Buy Heavy Old Tome30; compose its existing canonical policy into the active provider, preserving the gated blank-scroll purchase.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/17; content/services/trade/trade-00000-00326.json:1#/records/4",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/19; content/services/trade/trade-00000-00326.json:1#/records/4",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2291,7 +2327,7 @@
       "npc": "Anna",
       "town": "Thais",
       "audit_status": "DIFF",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/35",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/37",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
       "source": {
@@ -2308,7 +2344,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Ordinary Letter8/Parcel15; completed Postman5/10, with current durable rank validation.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/40; content/services/trade/trade-00000-00326.json:1#/records/33",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/42; content/services/trade/trade-00000-00326.json:1#/records/33",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2326,7 +2362,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/77",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/80",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2350,7 +2386,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/83",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/86",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2373,7 +2409,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/86",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/89",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2382,7 +2418,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/88",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/91",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2391,7 +2427,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/98",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/102",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2400,7 +2436,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/100",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/103",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2418,7 +2454,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/113",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/116",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2427,7 +2463,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/114",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/117",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2445,7 +2481,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/124",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/127",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2454,7 +2490,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/125",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/128",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2463,7 +2499,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/126",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/129",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2482,7 +2518,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/144",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/147",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2491,7 +2527,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/146",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/149",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2500,7 +2536,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/150",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/153",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2509,7 +2545,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/156",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/159",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2527,7 +2563,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/157",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/160",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2536,7 +2572,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/159",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/162",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2545,7 +2581,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/162",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/165",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2554,7 +2590,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/164",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/167",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2573,7 +2609,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/179",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/182",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2582,7 +2618,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/180",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/183",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2591,7 +2627,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/181",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/184",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2600,7 +2636,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/200",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/203",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2609,7 +2645,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Sell Torch for2.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/203; content/services/trade/trade-00000-00326.json:1#/records/185",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/206; content/services/trade/trade-00000-00326.json:1#/records/185",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2618,7 +2654,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/216",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/219",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2627,7 +2663,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/218",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/221",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2663,7 +2699,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/262",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/265",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2672,7 +2708,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/263",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/266",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2681,7 +2717,7 @@
       "town": "Thais",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Parcel15 and Label1 service; parcel/label keyword aliases; no Postman discount.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/287; content/dialogues/definitions/dialogues-00500-00838.json:1#/records/148; content/services/trade/trade-00000-00326.json:1#/records/247",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/290; content/dialogues/definitions/dialogues-00500-00838.json:1#/records/148; content/services/trade/trade-00000-00326.json:1#/records/247",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2733,7 +2769,7 @@
       "npc": "A Behemoth",
       "town": "Venore",
       "audit_status": "DIFF",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/1",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/1",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
       "source": {
@@ -2750,7 +2786,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Retail greeting/name substitution, farewell and eight keyword aliases; preserve all multipart lines through command and ordinary chat.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/3; content/dialogues/definitions/dialogues-00000-00499.json:1#/records/13",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/4; content/dialogues/definitions/dialogues-00000-00499.json:1#/records/13",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay; npcfix_guardian_chat_preserves_name_and_multipart_source_order",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2758,7 +2794,7 @@
       "npc": "A Strange Fellow",
       "town": "Venore",
       "audit_status": "DIFF",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/10",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/11",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "PENDING",
       "source": {
@@ -2792,7 +2828,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/22",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/24",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2801,7 +2837,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/47",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/49",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2810,7 +2846,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/74",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/76",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2819,7 +2855,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/80",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/83",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2828,7 +2864,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/109",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/112",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2837,7 +2873,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/118",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/121",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2846,7 +2882,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/119",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/122",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2855,7 +2891,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/127",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/130",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2864,7 +2900,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/131",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/139",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2873,7 +2909,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/138",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/141",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2882,7 +2918,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/148",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/151",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2891,7 +2927,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/153",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/156",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2929,7 +2965,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/174",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/177",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2938,7 +2974,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/178",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/181",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2956,7 +2992,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/194",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/197",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2965,7 +3001,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/197",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/200",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2974,7 +3010,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/202",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/205",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -2983,7 +3019,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/211",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/214",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3002,7 +3038,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/230",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/233",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3011,7 +3047,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/232",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/235",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3034,7 +3070,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/246",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/249",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3043,7 +3079,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Add three exercise-wrap offers; qualify full default charge purchases.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/288; content/services/trade/trade-00000-00326.json:1#/records/250",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/291; content/services/trade/trade-00000-00326.json:1#/records/250",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3052,7 +3088,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Add sixteen Wiki-confirmed pillow/pick offers.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/294; content/services/trade/trade-00000-00326.json:1#/records/265",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/297; content/services/trade/trade-00000-00326.json:1#/records/265",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3070,7 +3106,7 @@
       "town": "Venore",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/328",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/331",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3079,7 +3115,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/69",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/71",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3088,7 +3124,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/102",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/105",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3097,7 +3133,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/196",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/199",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3106,7 +3142,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/213",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/216",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3115,7 +3151,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/215",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/218",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3124,7 +3160,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/247",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/250",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3133,7 +3169,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/258",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/261",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3142,7 +3178,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/261",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/264",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3151,7 +3187,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/268",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/271",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3160,7 +3196,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Sell empty Mug4 using the existing default empty state.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/274; content/services/trade/trade-00000-00326.json:1#/records/233",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/277; content/services/trade/trade-00000-00326.json:1#/records/233",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npcfix_postgres_dispatch_services_and_replay",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3169,7 +3205,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Monument Tower50 route; passage/trip keyword aliases; displayed name Tarak.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/299; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2596; content/services/travel/travel-00000-00058.json:1#/records/50",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/302; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2596; content/services/travel/travel-00000-00058.json:1#/records/50",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3178,7 +3214,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Free return passage; displayed name Tarak.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/300; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2609; content/services/travel/travel-00000-00058.json:1#/records/51",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/303; crates/gameplay/content/src/content/npc_catalogue/travel_routes.json:2609; content/services/travel/travel-00000-00058.json:1#/records/51",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs; npc_paid_travel_postgres_dispatch_atomic_payment_arrival_replay_and_refusals",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3187,7 +3223,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/321",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/324",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3196,7 +3232,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/322",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/325",
       "test": "test_npcfix_retail_population_has_each_audited_cell",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3205,7 +3241,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Add the recorded sacred-place greeting.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/331; content/dialogues/definitions/dialogues-00500-00838.json:1#/records/330",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/334; content/dialogues/definitions/dialogues-00500-00838.json:1#/records/330",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     },
@@ -3214,7 +3250,7 @@
       "town": "Yalahar",
       "audit_status": "DIFF",
       "work": "Retail placement authored. Connect existing native bank service and source dialogue.",
-      "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/335",
+      "evidence": "content/world/npc-placements/placements-00000-00342.json:1#/records/338",
       "test": "test_npcfix_retail_population_has_each_audited_cell; npcfix_retail_services_and_greeting_match_the_audited_repairs",
       "status": "AUTHORED; QUALIFICATION PENDING"
     }
@@ -3685,6 +3721,34 @@
         "cumulative_cases": 18
       },
       "checks": "fmt PASS; no changed Rust crates or production data. Verified exact apps/crates/content source identity with cdb695c30; reuse its all-target/all-feature check6m01s and strict clippy4m30s."
+    },
+    {
+      "name": "retail-population-qualification-04",
+      "state": "QUALIFIED",
+      "entries": [
+        "Amanda",
+        "An Ominous Bat",
+        "Beatrice",
+        "Chief Grarkharok",
+        "Eliza",
+        "Eremo"
+      ],
+      "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 30.13,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-04-red.log",
+        "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 75.53,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-04-green.log",
+        "cumulative_cases": 24
+      },
+      "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse 9fd5ca426 upstream3787a419a all-target/all-feature check5m53s and strict clippy5m05s plus local combined PG18/79.06s; source identity checked before each slice",
+      "test_code_commit": "bf56eaabdc2919e9ca5ebf7cacc23a72b8af2ea8",
+      "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
     }
   ],
   "owner_constraints": {
@@ -3699,7 +3763,7 @@
     "grants": "charge only on an exact match",
     "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
   },
-  "next_batch": "Push merged green18-actor proof immediately, then continue independent data-only placement qualification batches; retain all cumulative assertions.",
+  "next_batch": "Continue remaining owned entries immediately; preserve all cumulative PG cases. No final turn until all owned scope qualified and pushed.",
   "shared_engine_lookup": {
     "owner_rule": "Shared engine features are this lane’s responsibility when required. Never leave an entry unfinished for missing engine support.",
     "qengine2": {
@@ -3733,30 +3797,32 @@
     "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification."
   },
   "active_batch": {
-    "name": "retail-population-qualification-03",
+    "name": "retail-population-qualification-04",
     "state": "QUALIFIED",
     "entries": [
-      "Oblivion",
-      "Omrabas",
-      "A Dark Priestess",
-      "A Majestic Warwolf",
-      "Albert",
-      "Alexander"
+      "Amanda",
+      "An Ominous Bat",
+      "Beatrice",
+      "Chief Grarkharok",
+      "Eliza",
+      "Eremo"
     ],
-    "scope": "Previously authored placement/name rows; current canonical map admission, native coordinates/floor and exact identities. No additional quest/service claims.",
+    "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
     "red": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 28.47,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-03-red.log",
+      "seconds": 30.13,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-04-red.log",
       "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
     },
     "green": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 74.62,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-03-green.log",
-      "cumulative_cases": 18
+      "seconds": 75.53,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-04-green.log",
+      "cumulative_cases": 24
     },
-    "checks": "fmt PASS; no changed Rust crates or production data. Verified exact apps/crates/content source identity with cdb695c30; reuse its all-target/all-feature check6m01s and strict clippy4m30s."
+    "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse 9fd5ca426 upstream3787a419a all-target/all-feature check5m53s and strict clippy5m05s plus local combined PG18/79.06s; source identity checked before each slice",
+    "test_code_commit": "bf56eaabdc2919e9ca5ebf7cacc23a72b8af2ea8",
+    "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
   },
   "continuation_merge": {
     "ours": "535109142",
