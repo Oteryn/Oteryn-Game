@@ -421,7 +421,7 @@ async fn consume_inputs(
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn consume_native_npc_one(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    _permit: &SpellLanePermit,
+    permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     command: crate::foundation::CommandRef,
@@ -465,7 +465,7 @@ pub(crate) async fn consume_native_npc_one(
         .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
         .bind(&request.transition_key).bind(&input.before).bind(proof).bind(&input.location).bind(&input.kind)
         .execute(&mut **tx).await?;
-    apply_input(tx, &input, &transaction).await?;
+    apply_input(tx, permit, fence, &input, &transaction).await?;
     Ok(true)
 }
 
@@ -515,21 +515,16 @@ async fn lock_location(
     Ok(())
 }
 
-async fn apply_input(
+mod input_authority;
+
+async fn apply_input<'a>(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    permit: &SpellLanePermit,
+    permit: impl Into<input_authority::InputPermit<'a>>,
     fence: CurrentCharacterGameplayFence,
     input: &Input,
     transaction: &str,
 ) -> Result<(), DurabilityError> {
-    let crate::foundation::RuntimeScopeRefV1::Channel {
-        world_id,
-        channel_id,
-    } = fence.runtime_scope
-    else {
-        return Err(DurabilityError::InvalidStoredState);
-    };
-    permit.check_channel(world_id, channel_id)?;
+    permit.into().check(fence)?;
     let changed = sqlx::query(
         "UPDATE game_item_instances SET \
          quantity=CASE WHEN $4::text IS NULL THEN quantity-$2 ELSE quantity END, \
@@ -562,7 +557,7 @@ async fn apply_input(
 
 pub(super) async fn consume_npc_inputs(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    _permit: &super::quest_state::npc_program::NpcItemPermit,
+    permit: &super::quest_state::npc_program::NpcItemPermit,
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     plan: &oteryn_gameplay_quests::quest::npc_rules::NpcRulePlan,
@@ -643,7 +638,7 @@ pub(super) async fn consume_npc_inputs(
         }
         sqlx::query("INSERT INTO game_quest_callback_consumptions(transaction_id,item_instance_id,character_id,cause_id,cause_ordinal,transition_key,before_item,before_ground,quantity,proof,proof_sha256,before_location,location_kind) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6,$7,NULL,$8,$9,sha256($9),$10,$11)")
             .bind(&transaction).bind(&input.item).bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(&input.before).bind(i32::from(input.count)).bind(proof).bind(&input.location).bind(&input.kind).execute(&mut **tx).await?;
-        apply_input(tx, &input, &transaction).await?;
+        apply_input(tx, permit, fence, &input, &transaction).await?;
     }
     Ok(true)
 }

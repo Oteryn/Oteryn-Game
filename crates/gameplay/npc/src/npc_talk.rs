@@ -856,7 +856,20 @@ mod tests {
                 ("oteryn:item.tibia.i14255", 200),
             ])
         );
-        assert!(book.get("oteryn:npc.sam").is_none());
+        // Sam is independently admitted by QENGINE2's bounded reward callbacks.
+        // Alesar remains an unqualified Dialogue-backed merchant.
+        assert!(reward_callback_npc("oteryn:npc.sam"));
+        let sam = book
+            .get("oteryn:npc.sam")
+            .ok_or("qualified Sam reward NPC")?;
+        assert!(sam.dialogue_keywords.is_empty());
+        assert!(
+            model
+                .npcs()
+                .iter()
+                .any(|(key, npc)| { key.key == "oteryn:npc.alesar" && npc.dialogue.is_some() })
+        );
+        assert!(book.get("oteryn:npc.alesar").is_none());
         assert!(!asks_to_trade_for(OROCKLE, "ariki"));
         Ok(())
     }
@@ -889,7 +902,20 @@ mod tests {
             .collect();
         assert_eq!(entry.offers(), offers.as_slice());
         // The closed branch must not admit another Dialogue-backed merchant incidentally.
-        assert!(book.get("oteryn:npc.sam").is_none());
+        // Sam is independently admitted by QENGINE2's bounded reward callbacks.
+        // Alesar remains an unqualified Dialogue-backed merchant.
+        assert!(reward_callback_npc("oteryn:npc.sam"));
+        let sam = book
+            .get("oteryn:npc.sam")
+            .ok_or("qualified Sam reward NPC")?;
+        assert!(sam.dialogue_keywords.is_empty());
+        assert!(
+            model
+                .npcs()
+                .iter()
+                .any(|(key, npc)| { key.key == "oteryn:npc.alesar" && npc.dialogue.is_some() })
+        );
+        assert!(book.get("oteryn:npc.alesar").is_none());
         assert_eq!(
             entry.render_source_text(&entry.greeting_reply, "Hero"),
             "Greetings, Hero."

@@ -49,6 +49,7 @@ pub(super) fn prepare(
     let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
     let state = sessions.get_mut(&command.game_session_id)?;
     let pending = state.marriage.take();
+    let had_pending = pending.is_some();
     let text = intent.text.trim_matches(' ');
     let now = admission.owner_now().get();
     if ["hi", "hello", "greetings", "no"]
@@ -136,10 +137,11 @@ pub(super) fn prepare(
             return Some(Step::Execute(action, Box::new(pending)));
         }
     }
-    // Lynda's quest/addon callbacks stay closed: this admission is marriage only.
-    Some(Step::Reply(
-        "Ask me about marry, celebration, remove proposal, or divorce.".into(),
-    ))
+    // Only an active marriage conversation owns unrelated replies. Without one,
+    // Lynda's independently admitted quest and addon handlers must see the input.
+    had_pending.then(|| {
+        Step::Reply("Ask me about marry, celebration, remove proposal, or divorce.".into())
+    })
 }
 
 fn completed(intent: &NpcTalkIntent, receipt: &MarriageReceipt) -> NpcTalkOutcome {
