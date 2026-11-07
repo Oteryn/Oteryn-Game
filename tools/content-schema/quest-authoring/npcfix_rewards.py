@@ -3,7 +3,7 @@ import hashlib
 import re
 
 NPCS = ('al_dee', 'a_weakened_forest_fury', 'a_wandering_soul')
-ITEMS = {3456, 8225, 8453, 8746, 23812, 43854, 43855, 7528, 7529, 7530, 7531, 7532}
+ITEMS = {3560,12804,3456, 8225, 8453, 8746, 23812, 43854, 43855, 7528, 7529, 7530, 7531, 7532}
 
 
 def append(callbacks, offers, inputs, pin):
@@ -115,7 +115,14 @@ def append(callbacks, offers, inputs, pin):
     ]
     fading = json.loads(INPUT.read_text())
     workshop = json.loads(INPUT.with_name('npcfix_workshop.json').read_text())
-    callbacks.extend(workshop['callbacks'])
+    existing = {row['key']: row for row in callbacks}
+    for row in workshop['callbacks']:
+        if row['key'] in existing:
+            if existing[row['key']] != row:
+                raise ValueError('NPCFIX_REUSED_CALLBACK_CONFLICT:' + row['key'])
+        else:
+            callbacks.append(row)
+            existing[row['key']] = row
     offers.extend(workshop['offers'])
     greetings.update({row['npc']: row for row in fading['npcs']})
     # Explicit conservative defaults for uncustomized farewells, with source provenance.

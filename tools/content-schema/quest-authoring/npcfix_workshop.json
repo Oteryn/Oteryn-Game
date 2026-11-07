@@ -143,6 +143,311 @@
       "cooldown_reply": [
         "Big Ben still hammering! Come back in |REMAINING|!"
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-crude-iron",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3281",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i5892",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:179:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-draconian-steel",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3416",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i5889",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:143:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-gear-wheel",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 11,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/exchange/friends_and_traders/metalwork",
+          "minimum": -1,
+          "maximum": 9223372036854775807,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5880",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i8775",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:242:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-gold-melt",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 10,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/exchange/friends_and_traders/metalwork",
+          "minimum": -1,
+          "maximum": 9223372036854775807,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i9058",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i12804",
+        "count": 1,
+        "contents": [],
+        "decay": {
+          "duration_millis": 36000000,
+          "target": null
+        }
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Whoooosh There!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:225:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-hell-steel",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3356",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i5888",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:161:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-royal-steel",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3381",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i5887",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:133:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-skirts",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3560",
+          "count": 3
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Good good! Woman happy will be. Now me happy too and help you."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/exchange-cyclops-start",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Me need gift for woman. We dance, so me want to give her bast skirt. But she big is. So I need many to make big one. Bring three okay? Me wait."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
+      ]
     }
   ],
   "offers": [
@@ -244,6 +549,203 @@
       "reply": [
         "Lil' one already has mighty amulet. Big Ben no make another!"
       ]
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "uth'lokr"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Firy steel it is. Need green ones' breath to melt. Or red even better. Me can make from shield. Lil' one want to trade?"
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Wait. Me work no cheap is. Do favour for me first, yes?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "uth'lokr"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Lil' one bring three bast skirts."
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "uth'kean"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Very noble. Shiny. Me like. But breaks so fast. Me can make from shiny armour. Lil' one want to trade?"
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "uth'lokr"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Firy steel it is. Need green ones' breath to melt. Or red even better. Me can make from shield. Lil' one want to trade?"
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "za'ralator"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Hellsteel is. Cursed and evil. Dangerous to work with. Me can make from evil helmet. Lil' one want to trade?"
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "uth'prta"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Good iron is. Me friends use it much for fight. Me can make from weapon. Lil' one want to trade?"
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "melt"
+      ],
+      "topic": 0,
+      "next_topic": 10,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/exchange/friends_and_traders/metalwork",
+          "minimum": -1,
+          "maximum": 9223372036854775807,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Can melt gold ingot for li'l one. You want?"
+      ],
+      "any_topic": true
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "gear whell"
+      ],
+      "topic": 0,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/exchange/friends_and_traders/metalwork",
+          "minimum": -1,
+          "maximum": 9223372036854775807,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Want to make gear wheel from iron ore?"
+      ],
+      "any_topic": true
     }
   ]
 }

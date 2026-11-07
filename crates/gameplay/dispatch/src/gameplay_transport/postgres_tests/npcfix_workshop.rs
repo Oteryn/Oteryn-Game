@@ -54,6 +54,12 @@ fn npcfix_workshop_postgres_sweaty_preserves_delayed_craft() -> TestResult {
     scenario("npcfix-reward-workshop-sweaty")
 }
 
+#[test]
+fn npcfix_workshop_postgres_smithing_exchanges_require_friendship_and_exact_acceptance()
+-> TestResult {
+    scenario("npcfix-reward-workshop-smithing")
+}
+
 const READY: &str = "oteryn:quest-transition/npcfix-workshop-fixture-ready";
 const ELAPSED: &str = "oteryn:quest-transition/npcfix-workshop-fixture-elapsed";
 
@@ -196,6 +202,87 @@ pub(super) async fn exercise(
         .collect();
     assert!(!callbacks.is_empty());
     let [actor] = install(owner, admitted, [npc]).await?;
+    if name.ends_with("smithing") {
+        talk(owner, admitted, actor, 100, "hi").await?;
+        for (i, word) in ["uth'lokr", "yes", "yes"].iter().enumerate() {
+            talk(owner, admitted, actor, 101 + u64::try_from(i)?, word).await?;
+        }
+        talk(owner, admitted, actor, 104, "uth'lokr").await?;
+        declined(owner, admitted, actor, 105, "yes").await?;
+        let position = Position {
+            x: 33293,
+            y: 31677,
+            floor: -15,
+        };
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|_| "fence")?
+            .ok_or("fence")?;
+        for offset in 0..3 {
+            super::quest_world_callbacks::input_item(
+                owner,
+                fence.item_fence(),
+                &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                    position,
+                    item: "oteryn:item.tibia.i3560".into(),
+                    count: 1,
+                },
+                200 + offset,
+                true,
+            )
+            .await?;
+        }
+        talk(owner, admitted, actor, 106, "uth'lokr").await?;
+        talk(owner, admitted, actor, 107, "yes").await?;
+        assert_eq!(count(h, 3560).await?, 0);
+        for (i, (word, input, output)) in [
+            ("uth'kean", 3381, 5887),
+            ("uth'lokr", 3416, 5889),
+            ("za'ralator", 3356, 5888),
+            ("uth'prta", 3281, 5892),
+            ("melt", 9058, 12804),
+            ("gear whell", 5880, 8775),
+        ]
+        .into_iter()
+        .cycle()
+        .take(12)
+        .enumerate()
+        {
+            let ordinal = 300 + u64::try_from(i)? * 10;
+            talk(owner, admitted, actor, ordinal, word).await?;
+            declined(owner, admitted, actor, ordinal + 1, "yes").await?;
+            let fence = owner
+                .current_quest_fence(admitted.game_session_id)
+                .await
+                .map_err(|_| "fence")?
+                .ok_or("fence")?;
+            super::quest_world_callbacks::input_item(
+                owner,
+                fence.item_fence(),
+                &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                    position,
+                    item: format!("oteryn:item.tibia.i{input}"),
+                    count: 1,
+                },
+                ordinal + 2,
+                true,
+            )
+            .await?;
+            super::qengine_rewards::talk(owner, admitted, actor, ordinal + 3, "yes please").await?;
+            assert_eq!(count(h, input).await?, 1, "inexact acceptance keeps input");
+            assert_eq!(count(h, output).await?, i64::try_from(i / 6)?);
+            talk(owner, admitted, actor, ordinal + 4, "yes").await?;
+            assert_eq!(count(h, input).await?, 0);
+            assert_eq!(count(h, output).await?, i64::try_from(i / 6 + 1)?);
+        }
+        let deadlines: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_temporal_schedules p JOIN game_reward_claim_mint_receipts m ON m.transaction_id=p.source_transaction_id WHERE p.definition_production_key='oteryn:item.tibia.i12804' AND p.duration_millis=36000000 AND p.target_production_key IS NULL AND p.expires_at_unix_ms=m.occurred_at+36000000").fetch_one(&h.pool).await?;
+        assert_eq!(
+            deadlines, 2,
+            "both molten gold gifts retain the source ten-hour decay"
+        );
+        return Ok(());
+    }
     if name.ends_with("sweaty-missing") {
         let callback = callbacks.iter().find(|c| c.fee.is_some()).ok_or("fee")?;
         super::guild_bank::bank_seed::balance(
@@ -302,7 +389,12 @@ pub(super) async fn exercise(
         return Ok(());
     }
     if name.ends_with("sweaty") {
-        install_clock_fixture(owner, &callbacks, 86402)?;
+        let amulet: Vec<_> = callbacks
+            .iter()
+            .filter(|c| c.quest == "oteryn:quest.koshei_the_deathless_quest")
+            .cloned()
+            .collect();
+        install_clock_fixture(owner, &amulet, 86402)?;
     }
     let callback = callbacks
         .iter()
