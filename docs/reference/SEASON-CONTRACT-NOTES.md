@@ -1027,3 +1027,24 @@ feature drafts are follow-up work; they are not represented as completed rules.
 
 Publication gates passed on this checkpoint: `cargo check --workspace --all-targets`
 243.796s; `cargo fmt --check` 15.405s. Duplicate migration numbers: none.
+
+### Time-bounded checkpoint after upstream movement
+
+Fetched origin/main at e1ca3e003. A merge produced conflicts in the seasonal
+world-event test, durability world-event and reset activation, and session chat
+tests; aborted under the owner's ten-minute checkpoint direction. Integration
+remains pending. Native Santa/Baker test assertions now print the disposition,
+unknown-commit flag and conversation to distinguish early refusal from an
+ambiguous write or source dialogue. Their inventory-change assertions remain
+strict. Regeneration and changed-crate unit/own-PG reruns are pending for this
+checkpoint under the owner's explicit PREPUSH-2 steps 2-3 exception.
+
+The seasonal native-NPC fixture omitted first-entry runtime Character lease
+binding after replacing its runtime. Santa and Baker both enforce that lease
+before their inventory writer. The fixture now binds the exact current item
+fence Character/generation through the production runtime API, matching
+`monk_save_postgres_tests.rs` first-entry setup. Native refusal guards and all
+inventory assertions remain unchanged; own PG confirmation is pending.
+
+Timed publication gates: workspace/all-targets check passed 162.149s;
+fmt --all --check passed 14.314s.

@@ -194,6 +194,22 @@ fn scenario(epochs: u64, seasonal: Option<&str>) -> TestResult {
         item_fence.scope_ownership_generation =
             ScopeOwnershipGeneration::new(epochs + 1).map_err(debug)?;
         deps.admitted.item_fence = Some(item_fence);
+        // Match production first-entry admission: inventory services require the
+        // runtime actor to carry the same durable Character lease as its fence.
+        deps.runtime
+            .lock()
+            .await
+            .bind_attacker_lease(
+                actor,
+                deps.admitted.game_session_id,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(item_fence.character_id.as_bytes())
+                        .map_err(debug)?,
+                    item_fence.character_lease_generation,
+                )
+                .map_err(debug)?,
+            )
+            .map_err(debug)?;
         let mut admitted = deps.admitted;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = controller.active();
@@ -677,7 +693,11 @@ async fn santa_present_scenario(
     let failed = owner
         .npc_talk(actor, command(empty_command), intent("present"))
         .await;
-    assert!(failed.inventory_changed);
+    assert!(
+        failed.inventory_changed,
+        "native Santa present must change inventory: disposition={:?}, unknown={}, conversation={:?}",
+        failed.disposition, failed.unknown, failed.conversation
+    );
     assert_eq!(failed.disposition, NpcIntentDisposition::Ok);
     assert!(
         failed.conversation.is_none(),
@@ -818,7 +838,8 @@ async fn cake_baker_scenario(
     let delivered = owner.npc_talk(actor, command(101), intent("deliver")).await;
     assert!(
         delivered.inventory_changed,
-        "native Baker topic must reach the physical burn owner"
+        "native Baker topic must reach the physical burn owner: disposition={:?}, unknown={}, conversation={:?}",
+        delivered.disposition, delivered.unknown, delivered.conversation
     );
     assert_eq!(
         delivered
