@@ -55,6 +55,8 @@ pub(super) struct PendingCallbacks {
     pub(super) fixture: OnceLock<Vec<Callback>>,
     #[cfg(test)]
     pub(super) interrupt_after_commit: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub(super) shared_switch_occurred_test: std::sync::Mutex<Option<i64>>,
 }
 
 fn callbacks() -> &'static [Callback] {

@@ -3451,7 +3451,7 @@
     },
     "scope_note": "All LANE-L6 input source blockers remain obligations. Differences from selected recipe approximations are not authority to drop a blocker. Historical qengine ownership language is not treated as a reason to defer work now owned by L6.",
     "publication_branch": "claude/happy-davinci-ijz3wy-questpc4",
-    "latest_batch": "cloud-shared-switch-gates-13",
+    "latest_batch": "cloud-shared-switch-timers-14",
     "mechanisms": {
       "reusable_tools_and_atomic_counters": {
         "status": "QUALIFIED",
@@ -4007,6 +4007,57 @@
           ]
         },
         "clock": "One PG statement snapshot with count+next expiry, current scope fences before/after, conservative pre-RPC monotonic bridge; no caller clocks/counts and no service-error-as-zero"
+      },
+      "shared_world_switch_physical_expiry": {
+        "status": "QUALIFIED",
+        "scope": "Exact-revision restoration of three source switch groups at original20min lease deadlines through existing Channel owner; personal treasure and native counterparts remain current consecutive obligations, not whole-quest qualification",
+        "postgres": {
+          "status": "GREEN",
+          "version": "18.6 (Debian18.6-1.pgdg13+2)",
+          "result": "6 passed/0 failed159.98s",
+          "cases": [
+            {
+              "marker": "l6-tomb-switch-timer-expired-12123",
+              "duration_seconds": 82.912179028
+            },
+            {
+              "marker": "l6-tomb-switch-timer-fresh-12121",
+              "duration_seconds": 101.732229945
+            },
+            {
+              "marker": "l6-tomb-switch-timer-expired-12122",
+              "duration_seconds": 103.40480733
+            },
+            {
+              "marker": "l6-tomb-switch-timer-expired-12121",
+              "duration_seconds": 107.316281202
+            },
+            {
+              "marker": "l6-tomb-switch-timer-forged-12121",
+              "duration_seconds": 68.988677452
+            },
+            {
+              "marker": "l6-tomb-switch-timer-repeat-12121",
+              "duration_seconds": 58.243372356
+            }
+          ],
+          "log": "/tmp/questpc4-switch-timer-final-green.log"
+        },
+        "replay": {
+          "status": "GREEN",
+          "version": "18.6",
+          "duration_seconds": 91.286906902,
+          "log": "/tmp/questpc4-switch-timer-final-replay.log",
+          "marker": "SHARED_SWITCH_DURABLE_REPLAY_VERIFIED",
+          "result": "Original transaction/deadline/count and wrong intent refusal PASS"
+        },
+        "checks": {
+          "fmt": "PASS cargo fmt all check and explicit mounted leaves",
+          "check": "PASS changed world/durability/dispatch all targets/features7m32s including compiler lock wait",
+          "clippy": "PASS same changed crates/all targets/features -D warnings2m55s",
+          "duplicates_diff": "PASS schema numbers and staged/unstaged diff",
+          "pins": "No generated/native/world input change; existing pin unchanged"
+        }
       }
     },
     "active_counts": {
@@ -5355,9 +5406,9 @@
       }
     ],
     "last_pushed_batch": {
-      "head": "6d7cd8cc05fd65796b7a8ca7ec3e77fd6d7e9b80",
+      "head": "bd42f09bb3f56e58c7876a7a4d5069c9cbe68032",
       "status": "PUSHED",
-      "scope": "Green shared lease activation plus preserved incoming NPC/world puzzle engine, PG8/unit12/fmt/check/clippy"
+      "scope": "Shared gate predicates8/7/5 and original movement/11 cues/replay; PG7,units12,fmt/check/clippy green"
     },
     "native_portal_batch_10": {
       "status": "GREEN",
@@ -5460,6 +5511,82 @@
       "check": "PASS quests/world/dispatch all targets/features2m48s",
       "clippy": "PASS quests/world/dispatch all targets/features -D warnings; Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 51s",
       "pin_check": "PASS; World7b26dffdfcfe03e41f64b638a5723340813a2c729b1b4f5e73b204b4913b5c37 unchanged"
+    },
+    "switch_timer_batch_14": {
+      "status": "GREEN",
+      "stage": "All focused gates green; commit and fresh-fetch fast-forward push immediately",
+      "scope": "Three original20min physical switch restorations via existing Channel decay owner; keep original absolute deadline on replay",
+      "last_green_pushed": "bd42f09bb3f56e58c7876a7a4d5069c9cbe68032",
+      "log": "/tmp/questpc4-switch-timer-red.log",
+      "whole_entry_qualified": false,
+      "red": {
+        "version": "18.6 (Debian18.6-1.pgdg13+2)",
+        "duration_seconds": 52.59,
+        "marker": "POSTGRES_DATABASE_READY l6_switch_timer",
+        "observed": "Expired PostgreSQL lease leaves2773 instead of exact source2772",
+        "log": "/tmp/questpc4-switch-timer-red.log"
+      },
+      "implementation": [
+        "Generic staged TimedTransform projection uses existing current-owner cycle",
+        "Current PostgreSQL receipt observation including replay; original absolute expiry never renewed",
+        "Reserve projection and restoration revision capacity before durable write",
+        "Wake existing source owner on timer scheduling"
+      ],
+      "green_log": "/tmp/questpc4-switch-timer-final-green.log",
+      "intermediate": {
+        "log": "/tmp/questpc4-switch-timer-green.log",
+        "result": "5passed/1failed157.63s",
+        "failure": "Future test-only occurrence aborted SQL; literal command had no result instead of Rejected",
+        "repair": "Explicit PostgreSQL statement-clock admission before durable write, retain independent immutable SQL constraint and original Rejected assertion",
+        "interrupted_obsolete_gates": "Prior check stopped143; not counted green; rerun all gates after repair"
+      },
+      "replay_regression": {
+        "status": "GREEN",
+        "version": "18.6",
+        "duration_seconds": 91.286906902,
+        "log": "/tmp/questpc4-switch-timer-final-replay.log",
+        "marker": "SHARED_SWITCH_DURABLE_REPLAY_VERIFIED",
+        "result": "Original transaction/deadline/count and wrong intent refusal PASS"
+      },
+      "postgres": {
+        "status": "GREEN",
+        "version": "18.6 (Debian18.6-1.pgdg13+2)",
+        "result": "6 passed/0 failed159.98s",
+        "cases": [
+          {
+            "marker": "l6-tomb-switch-timer-expired-12123",
+            "duration_seconds": 82.912179028
+          },
+          {
+            "marker": "l6-tomb-switch-timer-fresh-12121",
+            "duration_seconds": 101.732229945
+          },
+          {
+            "marker": "l6-tomb-switch-timer-expired-12122",
+            "duration_seconds": 103.40480733
+          },
+          {
+            "marker": "l6-tomb-switch-timer-expired-12121",
+            "duration_seconds": 107.316281202
+          },
+          {
+            "marker": "l6-tomb-switch-timer-forged-12121",
+            "duration_seconds": 68.988677452
+          },
+          {
+            "marker": "l6-tomb-switch-timer-repeat-12121",
+            "duration_seconds": 58.243372356
+          }
+        ],
+        "log": "/tmp/questpc4-switch-timer-final-green.log"
+      },
+      "checks": {
+        "fmt": "PASS cargo fmt all check and explicit mounted leaves",
+        "check": "PASS changed world/durability/dispatch all targets/features7m32s including compiler lock wait",
+        "clippy": "PASS same changed crates/all targets/features -D warnings2m55s",
+        "duplicates_diff": "PASS schema numbers and staged/unstaged diff",
+        "pins": "No generated/native/world input change; existing pin unchanged"
+      }
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",

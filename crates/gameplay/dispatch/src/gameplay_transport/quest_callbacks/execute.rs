@@ -63,6 +63,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if close && callback.lever.is_some() && !callback.reversible {
             return UseDisposition::NothingToUse;
         }
+        let before = after;
         if let Some(pair) = callback.lever {
             after.appearance_id = pair[usize::from(!close)];
         }
@@ -72,7 +73,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             after = replacement;
         }
-        let projection = match self.prepare_quest_projection(map, callback, close, &mut after) {
+        let mut projection = match self.prepare_quest_projection(map, callback, close, &mut after) {
             Ok(projection) => projection,
             Err(result) => return result,
         };
@@ -357,6 +358,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Exhausted;
         }
         if oteryn_gameplay_quests::quest::shared_switches::recipe(&callback.key).is_some() {
+            if expected_revision.checked_add(2).is_none()
+                || !map.facts.quest_callback_capacity(key, expected_revision, 8)
+            {
+                return UseDisposition::Exhausted;
+            }
             let (Some(fence), QuestCause::Use(command), Some(native)) = (
                 fence,
                 cause,
@@ -403,16 +409,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fence,
                     command,
                     native,
-                    crate::durability::quest_world_callback::shared_switch::Request {
-                        recipe: callback.key.clone(),
-                        placement,
-                        object_revision: expected_revision,
-                        context,
+                    {
+                        #[allow(unused_mut)]
+                        let mut request =
+                            crate::durability::quest_world_callback::shared_switch::Request::new(
+                                callback.key.clone(),
+                                placement,
+                                expected_revision,
+                                context,
+                            );
+                        #[cfg(test)]
+                        if let Some(occurred) = self
+                            .states
+                            .quest_callbacks
+                            .shared_switch_occurred_test
+                            .lock()
+                            .ok()
+                            .and_then(|v| *v)
+                        {
+                            request = request.for_test_occurrence(occurred);
+                        }
+                        request
                     },
                 )
                 .await;
             match result {
-                Ok(Some(_)) => {
+                Ok(Some(receipt)) => {
+                    // The response observation is current even on replay. Anchor after
+                    // the RPC so transport latency cannot restore the lever early.
+                    let remaining = receipt
+                        .expires_at_unix_ms
+                        .saturating_sub(receipt.observed_at_unix_ms)
+                        .max(0);
+                    let Some(due) = u64::try_from(remaining)
+                        .ok()
+                        .and_then(|ms| ms.checked_mul(1_000))
+                        .and_then(|us| self.owner_now().get().checked_add(us))
+                    else {
+                        return UseDisposition::Rejected;
+                    };
+                    projection = Some(crate::map::facts::QuestCallbackProjection::TimedTransform {
+                        due,
+                        restore: before,
+                    });
                     #[cfg(test)]
                     if self
                         .states
@@ -606,7 +645,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return UseDisposition::Rejected;
         }
-        if callback
+        if matches!(
+            projection,
+            Some(crate::map::facts::QuestCallbackProjection::TimedTransform { .. })
+        ) || callback
             .effects
             .portals
             .as_ref()

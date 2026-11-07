@@ -17,6 +17,8 @@ struct DynamicPortal {
 
 /// Already qualified facts for one atomic, Channel-local callback projection.
 pub enum QuestCallbackProjection {
+    /// Restore exactly this revision at an original source deadline.
+    TimedTransform { due: u64, restore: EntryFacts },
     Portals {
         endpoints: [(TilePos, TilePos, EntryFacts); 2],
         expires: Option<u64>,
@@ -65,6 +67,23 @@ impl CallbackStates {
 
     fn project(&mut self, owner: u64, projection: &QuestCallbackProjection, close: bool) -> bool {
         match projection {
+            QuestCallbackProjection::TimedTransform { due, restore } => {
+                let Some(revision) = self
+                    .changed
+                    .get(&owner)
+                    .map_or(0, |(r, _)| *r)
+                    .checked_add(1)
+                else {
+                    return false;
+                };
+                self.movement_decays.insert(
+                    (*due, owner),
+                    MovementDecay {
+                        revision,
+                        restore: *restore,
+                    },
+                );
+            }
             QuestCallbackProjection::Portals { endpoints, expires } => {
                 if close {
                     if endpoints

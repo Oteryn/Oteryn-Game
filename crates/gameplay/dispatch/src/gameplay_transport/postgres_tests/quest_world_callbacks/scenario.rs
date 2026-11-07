@@ -583,6 +583,15 @@ fn scenario_case(
                 name,
             )
             .await?;
+        } else if shared_switch && name.contains("-timer-") {
+            super::super::l6_shared_switch_timers::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                trigger,
+                name,
+            )
+            .await?;
         } else if shared_switch {
             super::super::l6_shared_switches::exercise(&owner, &mut admitted, &h, trigger).await?;
         } else if carried_step {
