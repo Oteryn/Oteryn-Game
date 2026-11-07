@@ -64,7 +64,7 @@
       ],
       "status": "IN_PROGRESS",
       "implementation_owner": "questpc3",
-      "next_actions": "Admit the regular blessing Services and implement the ordered journey, exact quotes/debits, held blessings/progress and guide rewards through reusable fenced Service/Quest composition.",
+      "next_actions": "Full production-catalogue journey PG GREEN282.59s:18 placements,5 blessings,20 coins,8 receipts,one completion and replay. Final cargo check and Clippy are running; mark QUALIFIED after those pass. No implementation gap remains in this quest.",
       "lane_inventory_key": "unresolved:questpc2:pilgrimage_of_ashes_quest",
       "original_identity": "unresolved:questpc2:pilgrimage_of_ashes_quest",
       "identity_evidence": "content/quests/definitions/quests-00100-00199.json:1#/records/85/definition/identity @ 5e72a3f0b0e16803bc5cd999298e4ec83f05eed9"
@@ -1679,6 +1679,43 @@
         },
         "postgres": "Premerge blessing participant GREEN327.03s; next full-route test reruns the merged path. Whole quests remain IN_PROGRESS.",
         "clippy": "Premerge blessing implementation passed allfeatures/alltargets 13m56s; repeat after next production slice."
+      },
+      "pilgrimage_route_03": {
+        "status": "PG_GREEN_FINAL_CHECKS_RUNNING",
+        "red": {
+          "log": "/tmp/questpc3-pilgrimage-route-red-and-merge-green-fixed.log",
+          "marker": "QUEST_L4_PILGRIMAGE_FULL_ROUTE POSTGRES_ASSERTION_REACHED source_placements=0 persisted=0",
+          "run_duration_seconds": 209.15,
+          "result": "1 passed,1 failed; Norf136.777s GREEN, full route missing18 placements RED (~72.37s)"
+        },
+        "green": {
+          "log": "/tmp/questpc3-pilgrimage-route-green.log",
+          "duration_seconds": 282.59,
+          "marker": "QUEST_L4_PILGRIMAGE_FULL_ROUTE POSTGRES_FINAL_ASSERTIONS blessings=5 coins=20 receipts=8 completed=1",
+          "passed": 1,
+          "seeded_progress": false,
+          "catalogue": "full production catalogue",
+          "negative": "out-of-order Eremo preserves stage and zero blessings; repeated visits preserve state; exact final receipt replay is AlreadyCommitted"
+        },
+        "placements": {
+          "npcs": 50,
+          "records": 51,
+          "added": 18,
+          "held": 0,
+          "generator": "tools/content-schema/npc-authoring/convert_placements.py",
+          "tests": "8 passed0.807s /tmp/questpc3-pilgrimage-placement-tests.log"
+        },
+        "tutorial_regression": "PASS actualPG1passed116.66s /tmp/questpc3-pilgrimage-merged-tutorial-rewards-pg.log",
+        "norf_merged_regression": "PASS actualPG136.78s in RED run",
+        "pin_refresh": {
+          "status": "PASS",
+          "log": "/tmp/questpc3-pilgrimage-route-pin-refresh.log",
+          "inputs_digest": "0ca7514abf2475a843d639938fd3f564d7d720e3c5c9a78bd64e71afca6e899c",
+          "world_digest": "27d29a545e8b3b03501958ffb76f68998597e1713ab0102adec837aec0629bdb"
+        },
+        "fmt": "PASS cargo fmt --all -- --check",
+        "check": "RUNNING /tmp/questpc3-pilgrimage-route-check.log",
+        "clippy": "QUEUED /tmp/questpc3-pilgrimage-route-clippy.log"
       }
     },
     "source_corrections": [

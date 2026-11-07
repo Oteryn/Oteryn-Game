@@ -26,15 +26,24 @@ const BLESSING: &str = "oteryn:blessing.the_spiritual_shielding";
 
 #[test]
 fn quest_l4_pilgrimage_free_regular_blessing_is_fenced_and_once() -> TestResult {
+    run_case(false)
+}
+
+#[test]
+fn quest_l4_pilgrimage_full_route_grants_five_blessings_and_once_reward() -> TestResult {
+    run_case(true)
+}
+
+fn run_case(full_route: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         eprintln!("QUEST_L4_PILGRIMAGE_POSTGRES_SKIPPED no_admin_url");
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| {
+        .spawn(move || {
             let started = std::time::Instant::now();
-            let result = scenario();
+            let result = scenario(full_route);
             eprintln!(
                 "QUEST_L4_PILGRIMAGE POSTGRES_CASE_COMPLETED duration_ms={} success={}",
                 started.elapsed().as_millis(),
@@ -47,7 +56,7 @@ fn quest_l4_pilgrimage_free_regular_blessing_is_fenced_and_once() -> TestResult 
     Ok(())
 }
 
-fn scenario() -> TestResult {
+fn scenario(full_route: bool) -> TestResult {
     run(async |admin| {
         let h =
             Harness::create_with_admission_seed(admin, "quest_l4_pilgrimage", false, false).await?;
@@ -134,10 +143,195 @@ fn scenario() -> TestResult {
             )
             .map_err(debug)?,
         ));
+        if full_route {
+            owner.quest_catalogue = Some(Arc::new(source.catalogue().clone()));
+        }
         deps.initialize(&owner).await;
         let mut admitted = deps.admitted;
         owner.admit_progression_session(&mut admitted).await;
         owner.admit_quest_session(&admitted).await;
+        if full_route {
+            let placements: serde_json::Value = serde_json::from_slice(&std::fs::read(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/world/npc-placements/index.json"
+            ))?)?;
+            let mut native_npcs = std::collections::BTreeSet::new();
+            for shard in placements["shards"].as_array().ok_or("placement shards")? {
+                let shard = shard.as_str().ok_or("placement shard")?;
+                let rows: serde_json::Value = serde_json::from_slice(&std::fs::read(
+                    std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../.."))
+                        .join(shard),
+                )?)?;
+                for row in rows["records"].as_array().ok_or("placement records")? {
+                    native_npcs.insert(
+                        row["declaration"]["npc"]
+                            .as_str()
+                            .ok_or("placement NPC")?
+                            .to_owned(),
+                    );
+                }
+            }
+            let callbacks =
+                oteryn_gameplay_quests::quest::reward_callbacks::load().map_err(debug)?;
+            let required: std::collections::BTreeSet<_> = callbacks
+                .iter()
+                .filter(|c| c.quest == QUEST)
+                .map(|c| c.npc.as_str())
+                .collect();
+            let placed = required
+                .iter()
+                .filter(|npc| native_npcs.contains(**npc))
+                .count();
+            let persisted: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_quest_tracks WHERE quest_key=$1",
+            )
+            .bind(QUEST)
+            .fetch_one(&h.pool)
+            .await?;
+            eprintln!(
+                "QUEST_L4_PILGRIMAGE_FULL_ROUTE POSTGRES_ASSERTION_REACHED source_placements={placed} persisted={persisted}"
+            );
+            assert_eq!(
+                placed, 18,
+                "every source guide and blesser must have a native placement"
+            );
+            assert_eq!(persisted, 0, "the journey starts without seeded progress");
+            super::item_look::seed_main_backpack(&h, &[]).await?;
+            owner.premium_coordinator = Some(&premium);
+            owner.admit_premium(id(40), admitted.game_session_id);
+            let actors = super::classic_quests::install_at(
+                &owner,
+                &admitted,
+                [
+                    "oteryn:npc.guide_luke",
+                    NORF,
+                    "oteryn:npc.humphrey",
+                    "oteryn:npc.edala",
+                    "oteryn:npc.kawill",
+                    "oteryn:npc.pydar",
+                    "oteryn:npc.eremo",
+                ],
+                [(0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2), (0, 3)],
+            )
+            .await?;
+            let mut command = 9600;
+            let mut completion_command = None;
+            for (npc, index, next_stage) in [
+                ("oteryn:npc.guide_luke", 0, 1),
+                (NORF, 1, 2),
+                ("oteryn:npc.humphrey", 2, 3),
+                ("oteryn:npc.edala", 3, 4),
+                ("oteryn:npc.kawill", 4, 5),
+                ("oteryn:npc.pydar", 5, 6),
+                ("oteryn:npc.eremo", 6, 7),
+                ("oteryn:npc.guide_luke", 0, 8),
+            ] {
+                let actor = actors[index];
+                let greeting = say(&mut owner, &admitted, actor, command, "hi").await?;
+                assert!(!greeting.unknown);
+                command += 1;
+                let result = say(&mut owner, &admitted, actor, command, "pilgrimage").await?;
+                assert_eq!(
+                    result.disposition,
+                    oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Ok,
+                    "{npc}"
+                );
+                assert!(!result.unknown);
+                if next_stage == 8 {
+                    completion_command = Some(command);
+                }
+                assert_eq!(
+                    progress(&owner, &admitted, &authority, STAGE).await?,
+                    next_stage
+                );
+                command += 1;
+                say(&mut owner, &admitted, actor, command, "pilgrimage").await?;
+                assert_eq!(
+                    progress(&owner, &admitted, &authority, STAGE).await?,
+                    next_stage
+                );
+                command += 1;
+                say(&mut owner, &admitted, actor, command, "bye").await?;
+                command += 1;
+                if next_stage == 1 {
+                    say(&mut owner, &admitted, actors[6], command, "hi").await?;
+                    command += 1;
+                    say(&mut owner, &admitted, actors[6], command, "pilgrimage").await?;
+                    command += 1;
+                    assert_eq!(progress(&owner, &admitted, &authority, STAGE).await?, 1);
+                    let premature: i64 =
+                        sqlx::query_scalar("SELECT count(*) FROM game_character_blessings")
+                            .fetch_one(&h.pool)
+                            .await?;
+                    assert_eq!(premature, 0, "out-of-order Eremo cannot grant or advance");
+                    say(&mut owner, &admitted, actors[6], command, "bye").await?;
+                    command += 1;
+                }
+            }
+            let fence = owner
+                .current_quest_fence(admitted.game_session_id)
+                .await
+                .map_err(|()| "fence")?
+                .ok_or("fence")?;
+            let native = owner
+                .active_generation
+                .and_then(|g| g.native_gameplay())
+                .ok_or("native")?;
+            let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
+                .with_wheel(owner.premium_coordinator);
+            let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+            let replay = slot
+                .commit_quest_reward(
+                    owner.root,
+                    owner.character,
+                    owner.holder,
+                    fence,
+                    QuestTransitionRequest {
+                        transition_key: "oteryn:quest-reward/questpc3/pilgrimage/guide_luke-finish"
+                            .into(),
+                        cause: QuestCause::Command(CommandRef::new(
+                            admitted.game_session_id,
+                            CommandId::new(completion_command.ok_or("completion command")?)
+                                .map_err(debug)?,
+                        )),
+                    },
+                    Arc::clone(owner.quest_catalogue.as_ref().ok_or("catalogue")?),
+                    crate::durability::reward_claim_mint::QuestRewardAdmission {
+                        native,
+                        weights: &weights,
+                    },
+                    &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
+                )
+                .await
+                .map_err(debug)?;
+            assert!(matches!(
+                replay,
+                QuestTransitionOutcome::AlreadyCommitted(_)
+            ));
+            drop(slot);
+            let held: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_blessings")
+                .fetch_one(&h.pool)
+                .await?;
+            assert_eq!(held, 5);
+            let coins: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3035' AND lifecycle=1").fetch_one(&h.pool).await?;
+            assert_eq!(coins, 20);
+            let complete: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_states WHERE quest_key=$1 AND completed_character_revision IS NOT NULL").bind(QUEST).fetch_one(&h.pool).await?;
+            assert_eq!(complete, 1);
+            let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_quest_reward_sources WHERE transition_key LIKE 'oteryn:quest-reward/questpc3/pilgrimage/%'").fetch_one(&h.pool).await?;
+            assert_eq!(receipts, 8);
+            let paid: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_character_npc_purchase_receipts")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(paid, 0);
+            eprintln!(
+                "QUEST_L4_PILGRIMAGE_FULL_ROUTE POSTGRES_FINAL_ASSERTIONS blessings=5 coins=20 receipts=8 completed=1"
+            );
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
             .await
@@ -259,7 +453,10 @@ fn scenario() -> TestResult {
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(held, 1);
-        Ok(())
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
     })
 }
 

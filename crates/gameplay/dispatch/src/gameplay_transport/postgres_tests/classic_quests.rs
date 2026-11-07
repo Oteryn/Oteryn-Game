@@ -39,43 +39,97 @@ pub(super) async fn install<const N: usize>(
     admitted: &AdmittedSession,
     keys: [&str; N],
 ) -> TestResult<[EntityRef; N]> {
+    let offsets = (0..N)
+        .map(|i| Ok((i32::try_from(i)?, 1)))
+        .collect::<TestResult<Vec<_>>>()?;
+    install_at(
+        owner,
+        admitted,
+        keys,
+        offsets.try_into().map_err(|_| "NPC offsets")?,
+    )
+    .await
+}
+
+pub(super) async fn install_at<const N: usize>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    keys: [&str; N],
+    offsets: [(i32, i32); N],
+) -> TestResult<[EntityRef; N]> {
     let catalogue = NpcDataCatalogue::load(
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
-        std::ffi::OsStr::new("world"), npc_catalogue_preproduction_limits(),
-    ).map_err(debug)?;
+        std::ffi::OsStr::new("world"),
+        npc_catalogue_preproduction_limits(),
+    )
+    .map_err(debug)?;
     let model = catalogue.service_model_for_project().map_err(debug)?;
-    owner.states.chat.install_npc_talk(std::sync::Arc::new(NpcTalkBook::from_model(&model)));
-    owner.states.chat.admit(admitted.game_session_id, "Quest witness", owner.owner_now());
+    owner
+        .states
+        .chat
+        .install_npc_talk(std::sync::Arc::new(NpcTalkBook::from_model(&model)));
+    owner
+        .states
+        .chat
+        .admit(admitted.game_session_id, "Quest witness", owner.owner_now());
     owner.states.chat.set_npc_service(admitted.game_session_id);
-    let fence = owner.current_quest_fence(admitted.game_session_id).await
-        .map_err(|()| "fence")?.ok_or("fence")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
     let mut runtime = owner.runtime.lock().await;
     let actor = admitted.runtime_actor.ok_or("actor")?;
-    runtime.bind_attacker_lease(actor, admitted.game_session_id,
-        crate::foundation::CharacterLease::new(
-            crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
-            fence.character_lease_generation,
-        ).map_err(debug)?).map_err(debug)?;
-    let at = runtime.read_actor_position(actor).map_err(debug)?.position();
-    let mut placements = keys.into_iter().enumerate().map(|(i,key)| {
-            Ok(NpcPlacements { key: key.into(), placements: vec![NpcPlacement {
-                x: u16::try_from(at.x + i32::try_from(i)?)?,
-                y: u16::try_from(at.y + 1)?,
-                floor: -i8::try_from(at.floor)?,
-                direction: MovementFacing::South,
-            }]})
-        }).collect::<TestResult<Vec<_>>>()?;
+    runtime
+        .bind_attacker_lease(
+            actor,
+            admitted.game_session_id,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                    .map_err(debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
+    let at = runtime
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position();
+    let mut placements = keys
+        .into_iter()
+        .enumerate()
+        .map(|(i, key)| {
+            Ok(NpcPlacements {
+                key: key.into(),
+                placements: vec![NpcPlacement {
+                    x: u16::try_from(at.x + offsets[i].0)?,
+                    y: u16::try_from(at.y + offsets[i].1)?,
+                    floor: -i8::try_from(at.floor)?,
+                    direction: MovementFacing::South,
+                }],
+            })
+        })
+        .collect::<TestResult<Vec<_>>>()?;
     placements.sort_by(|left, right| left.key.cmp(&right.key));
-    runtime.place_npcs(&NpcPlacementTable {
-        npcs: placements,
-    }, |_| true, true).map_err(debug)?;
+    runtime
+        .place_npcs(&NpcPlacementTable { npcs: placements }, |_| true, true)
+        .map_err(debug)?;
     let mut found = Vec::new();
     for key in keys {
-        found.push(runtime.visible_entities().npcs.into_iter().find_map(|npc| {
-            (runtime.npc_key(npc.actor) == Some(key)).then_some(EntityRef {
-                identity: npc.actor.placement_identity(), generation: npc.generation,
-            })
-        }).ok_or("placed source NPC")?);
+        found.push(
+            runtime
+                .visible_entities()
+                .npcs
+                .into_iter()
+                .find_map(|npc| {
+                    (runtime.npc_key(npc.actor) == Some(key)).then_some(EntityRef {
+                        identity: npc.actor.placement_identity(),
+                        generation: npc.generation,
+                    })
+                })
+                .ok_or("placed source NPC")?,
+        );
     }
     found.try_into().map_err(|_| "exact NPC refs".into())
 }
