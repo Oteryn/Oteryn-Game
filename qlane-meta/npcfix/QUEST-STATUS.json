@@ -749,8 +749,8 @@
       "town": "Farmine",
       "audit_status": "DIFF",
       "evidence": ".npcaudit/research/a-wandering-soul.md:1",
-      "test": "Source review",
-      "status": "PENDING",
+      "test": "npcfix_endpoint_postgres_ plus strict converter/source provenance and pin-check",
+      "status": "QUALIFIED",
       "source": {
         "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_wandering_soul.lua",
         "sha256": "64ba822c579cdb12dc27bf26e2830409432b1d335a52ad01b32142056a2b9427",
@@ -758,8 +758,15 @@
         "assumption": "Conservative pinned donor behavior under owner follow-up authorization when retail details are unavailable."
       },
       "historical_note": "Blood Crystal enchantment is a Blood Brothers quest transaction; excluded quest-lane repair required.",
-      "work": "Exchange component qualified: Mission05>=2 preserved, exact8453->8225 paid repeats, once-only achievement, original seven-day decay, source voices and physical-lane protection. Whole NPC qualification continues immediately with source-map anchor repair; existing donor point is BlockSolid.",
-      "component_qualification": "PostgreSQL RED114.13s; held-lane non-yes RED96.33s; final three GREEN128.74s. Source-backed native generation and actual compiler parity independently checked. Shared Hallowed regression101.08s; quests259, NPC25, chat1; seven changed crates all-target/all-feature check and clippy -D warnings; fmt and repository regeneration/pins passed."
+      "work": "Qualified physical endpoint within captured radius2, together with previously pushed mission-gated exact crystal conversion, paid repeats, one achievement, seven-day native deadline, source voices and physical-lane custody protection.",
+      "component_qualification": "PostgreSQL RED114.13s; held-lane non-yes RED96.33s; final three GREEN128.74s. Source-backed native generation and actual compiler parity independently checked. Shared Hallowed regression101.08s; quests259, NPC25, chat1; seven changed crates all-target/all-feature check and clippy -D warnings; fmt and repository regeneration/pins passed.",
+      "qualification": {
+        "postgres": "RED3/28.51s then GREEN3/84.05s; all PostgreSQL and completion markers; actual canonical map admissions and named native runtime actors",
+        "authoring": "12 passing source/coordinate tests; all old assertions retained",
+        "pin": "ddaa993dfb6776971ed3f521d770142e52ea01b451bf0373f894d2d1d1353a3a",
+        "checks": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 15s; Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 24s",
+        "scope": "Actual canonical compiler admission, native-to-runtime placement and exact displayed identity; Wandering exchange component already PG-qualified in pushed batch3. Doctor and Goldro audit entries concern physical identity/placement, not wholesale implementation of every donor quest."
+      }
     },
     {
       "npc": "Chartan",
@@ -1404,10 +1411,17 @@
       "npc": "Goldro",
       "town": "Marapur",
       "audit_status": "DIFF",
-      "work": "Retail placement authored.",
+      "work": "Qualified canonical Goldro identity and strict real-map placement one cell from the immutable donor anchor, within its radius1; original audited observation preserved.",
       "evidence": "content/world/npc-placements/placements-00000-00339.json:1#/records/143",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_endpoint_postgres_ plus strict converter/source provenance and pin-check",
+      "status": "QUALIFIED",
+      "qualification": {
+        "postgres": "RED3/28.51s then GREEN3/84.05s; all PostgreSQL and completion markers; actual canonical map admissions and named native runtime actors",
+        "authoring": "12 passing source/coordinate tests; all old assertions retained",
+        "pin": "ddaa993dfb6776971ed3f521d770142e52ea01b451bf0373f894d2d1d1353a3a",
+        "checks": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 15s; Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 24s",
+        "scope": "Actual canonical compiler admission, native-to-runtime placement and exact displayed identity; Wandering exchange component already PG-qualified in pushed batch3. Doctor and Goldro audit entries concern physical identity/placement, not wholesale implementation of every donor quest."
+      }
     },
     {
       "npc": "Haani",
@@ -2573,11 +2587,18 @@
       "npc": "Doctor Marrow",
       "town": "Thalassara",
       "audit_status": "MISSING",
-      "work": "Add exact displayed identity. Identity added; D17 map-owner conflict remains between Wiki and reviewed map coordinates. Placement is held, not guessed.",
+      "work": "Qualified exact Doctor Marrow NPC identity and primary audited Wiki coordinate. All prior conflicting observations retained; no relocation within stationary donor radius is claimed.",
       "evidence": "content/npcs/definitions/npcs-00000-00499.json:1#/records/330",
-      "test": "npcfix_retail_services_and_greeting_match_the_audited_repairs",
-      "status": "PENDING",
-      "next_action": "Check exact foreign ownership and implemented world/NPC bindings. Reuse existing lane mechanisms; implement any missing shared feature here if this entry remains owned. No engine-support deferral."
+      "test": "npcfix_endpoint_postgres_ plus strict converter/source provenance and pin-check",
+      "status": "QUALIFIED",
+      "next_action": "Check exact foreign ownership and implemented world/NPC bindings. Reuse existing lane mechanisms; implement any missing shared feature here if this entry remains owned. No engine-support deferral.",
+      "qualification": {
+        "postgres": "RED3/28.51s then GREEN3/84.05s; all PostgreSQL and completion markers; actual canonical map admissions and named native runtime actors",
+        "authoring": "12 passing source/coordinate tests; all old assertions retained",
+        "pin": "ddaa993dfb6776971ed3f521d770142e52ea01b451bf0373f894d2d1d1353a3a",
+        "checks": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 15s; Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 24s",
+        "scope": "Actual canonical compiler admission, native-to-runtime placement and exact displayed identity; Wandering exchange component already PG-qualified in pushed batch3. Doctor and Goldro audit entries concern physical identity/placement, not wholesale implementation of every donor quest."
+      }
     },
     {
       "npc": "Testserver Assistant",
@@ -3342,6 +3363,34 @@
         "pin_check": "PASS fbc730aa6e986b2efb0949d610235fc1d6e12fd7d3c9f5acbb37ce35f8dfb2a9",
         "self_review": "No findings; original captured anchors and retail observations retained; strict map/compiler limits unchanged; no binary, workflow or repository-tool edits."
       }
+    },
+    {
+      "name": "native physical endpoints for three remaining NPCs",
+      "entries": [
+        "A Wandering Soul",
+        "Doctor Marrow",
+        "Goldro"
+      ],
+      "state": "GREEN",
+      "session": 19401,
+      "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib npcfix_endpoint_postgres_ -- --nocapture",
+      "log": "/tmp/npcfix-evidence/endpoint-red.log",
+      "scope": "Actual canonical compiler admission, native-to-runtime placement and exact displayed identity; Wandering exchange component already PG-qualified in pushed batch3. Doctor and Goldro audit entries concern physical identity/placement, not wholesale implementation of every donor quest.",
+      "source_rules": {
+        "Wandering": "Delivered npc-anchors command selects32915,31489,7 within captured radius2; original32914,31490,7 retained.",
+        "Doctor": "Use primary audited Wiki34009,32643,6 when strictly admitted; preserve all old conflict observations. Donor is stationary radius0, so do not claim relocation within its donor radius.",
+        "Goldro": "Strictly admitted34055,32504,7 is one cell from donor34055,32503,7, within source radius1 (Crystal00ce goldro.lua:11 sha394da3c41a2e81fb8b2cb5ee637a95e4bb50393de1069a338452a1ab89ab15f8)."
+      },
+      "constraint": "No production authoring data changed before actual PG RED; no map admission guard weakened.",
+      "red": "3 failed28.51s; all three DB markers and per-case durations26.329s/26.470s/28.505s. Doctor absent; Goldro/Wandering BlockSolid.",
+      "green": "3 passed84.05s; all DB/completion markers. Doctor76.162s, Goldro84.016s, Wandering84.049s. Exact canonical-to-runtime actor identities, coordinates and floor conversion.",
+      "authoring": "12 passed; all previous assertions retained and added source-preservation/stationary-policy checks.",
+      "pin": "PASS refreshed and independently checked ddaa993dfb6776971ed3f521d770142e52ea01b451bf0373f894d2d1d1353a3a",
+      "implementation": "Source-backed authoring changes only: Wandering within captured radius2; Goldro within immutable donor radius1; Doctor uses strictly admitted primary audited Wiki cell, preserving all three alternate observations and stationary radius0 evidence. Original compiler guards unchanged.",
+      "check": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 15s",
+      "clippy": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 24s",
+      "fmt": "PASS cargo fmt --all and explicit mounted-file rustfmt",
+      "push": "Commit and fast-forward push follows; fetch/merge any remote movement."
     }
   ],
   "owner_constraints": {
@@ -3356,7 +3405,7 @@
     "grants": "charge only on an exact match",
     "publication": "commit as blakinio with required trailers; fetch and fast-forward push each green batch; no main, force push or PR"
   },
-  "next_batch": "Resolve Wandering Soul, Doctor Marrow and Goldro physical admission with the delivered source-anchor tooling, then integrate Fading Memory cooldown and remaining owned scope. Restless Soul and four incoming placement-only entries are already qualified; do not redo.",
+  "next_batch": "Continue owned state/reward/access NPC entries using delivered core and any newer lane work; Fading Memory needs the existing SetNow/ElapsedAtLeast timer composed into shared rewards. Do not redo now-qualified physical entries.",
   "shared_engine_lookup": {
     "owner_rule": "Shared engine features are this lane\u2019s responsibility when required. Never leave an entry unfinished for missing engine support.",
     "qengine2": {
@@ -3390,109 +3439,32 @@
     "qualified_elsewhere_candidate": "qengine2 proves Wayfarer Outfits Quest QUALIFIED. Reuse its Cranky Lizard Crone callbacks and run affected integration PG before recording native NPC qualification."
   },
   "active_batch": {
-    "name": "source-backed costed NPC exchanges",
+    "name": "native physical endpoints for three remaining NPCs",
     "entries": [
-      "A Weakened Forest Fury",
-      "Al Dee",
-      "A Wandering Soul"
+      "A Wandering Soul",
+      "Doctor Marrow",
+      "Goldro"
     ],
-    "state": "GREEN; PUSHED",
-    "session": 71904,
-    "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib npcfix_reward_postgres_ -- --nocapture",
-    "log": "/tmp/npcfix-evidence/reward-guard-final-pg.log",
-    "reuse": "Delivered source-only mechanisms from qengine2 9d3c3869f and questl2 7e16b64ee. Original shared physical helper guard restored and composed with matching-scope reward participant. No foreign B3 or placement output imported.",
-    "red_result": "3 failed, 114.13s; all three POSTGRES_STARTED markers, exact NoConversation at hi; per-case completion markers 90.73s/114.09s and wandering marker in reward-red.log",
-    "implementation": "Selective QENGINE2 reward and shared callback source reuse, preserving NPCFIX state stories and generated placement cohort. QUESTL2 capacity and costed-repeat semantics reused. Added explicit once-only achievements on costed repeats, native-matched original absolute reward deadlines, bounded carried evidence for conditional voices, canonical initial-value eligibility, and source-backed NPCFIX authoring module. Factored native lifetime qualification from spell-field classification. Source |TIME| uses the existing wire World clock in both NPC command and ordinary chat; unavailable evidence drops the unresolved line. Conditional read failure closes only the exact newly engaged NPC.",
-    "assumptions": [
-      "Forest Fury cage acceptance is guarded by its existing issued-cage flag; the source replacement dialogue explicitly declines another free cage.",
-      "Al Dee uses a preserved internal receipt track for its source-stateless costed exchange; it grants no invented quest progress."
-    ],
-    "validation_notes": [
-      "First diagnostic check found one foreign test RewardCallback constructor requiring new repeat flags; fixed with false defaults.",
-      "Authoring suite retained all original wardrobe/source assertions; extended original-composition cohort check with a separate exact three-callback NPCFIX assertion.",
-      "Native source revealed charged blood crystal seven-day expiry; implemented original absolute Item schedule rather than stripping its timer.",
-      "Stopped builds before removing only disposable /workspace/oteryn-env/target/debug/incremental after disk dropped to 5 GB free; sources/PG/dependencies retained.",
-      "Source-authoring suite PASS12,7.114s; retains all original wardrobe target and source assertions. Added command crystal voice, exact seven-day deadline, unpaid refusal and exact recipe replay checks. First GREEN compile attempt stopped on missing adapter import, now fixed; no PG result claimed."
-    ],
-    "first_postgres_result": "2 passed (Wandering104.59s; Fury104.67s), Al Dee failed112:yes due Pick temporal UNKNOWN; all DB markers present, total107.19s",
-    "repair": "Pinned item capture now fills only unknown temporal facts on existing native profiles, rejecting all known semantic conflicts and retaining other owner fields. Pick3456 is source-proven non-timed. No runtime refusal or test predicate weakened.",
-    "next": "After Al Dee GREEN: full repository regeneration, all-three fresh PG plus focused common-engine regression, relevant unit/content checks, physical parity, strict changed-crate checks, then commit and fast-forward push.",
-    "isolated_al_dee_green": "PASS, POSTGRES_STARTED and POSTGRES_CASE_COMPLETED,96.502s; two paid exchanges, exact words, unpaid refusal, exact replay",
-    "metadata_checkpoint": "371b5ed38 pushed fast-forward on current remote2a871a435 via isolated sparse metadata worktree; published ACTIVE-REWARD-DELIVERY.md to prevent duplicate caller work while source validation continues.",
-    "source_profile_tests": "PASS2,15.841s; unknown lifetime enrichment preserves every other existing field and known weight conflicts reject.",
-    "regeneration": "Completed repository generation; exact 42-output registration and all original 41 outputs retained. All Python checks passed. Repository integration 5 passed in56.17s. Pin b2c1f0d77b22c96cb32de336768475913406451924a1ec92e7f45885eac782f8 refreshed and checked with repository compiler.",
-    "physical_admission": {
-      "Al Dee": "ADMITTED",
-      "A Weakened Forest Fury": "ADMITTED",
-      "A Wandering Soul": "Source cell32914,31490,7 is BlockSolid. Exchange proof does not qualify placement. Resolve in immediate following source-map placement batch; do not weaken terrain admission."
+    "state": "GREEN",
+    "session": 19401,
+    "command": "cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib npcfix_endpoint_postgres_ -- --nocapture",
+    "log": "/tmp/npcfix-evidence/endpoint-red.log",
+    "scope": "Actual canonical compiler admission, native-to-runtime placement and exact displayed identity; Wandering exchange component already PG-qualified in pushed batch3. Doctor and Goldro audit entries concern physical identity/placement, not wholesale implementation of every donor quest.",
+    "source_rules": {
+      "Wandering": "Delivered npc-anchors command selects32915,31489,7 within captured radius2; original32914,31490,7 retained.",
+      "Doctor": "Use primary audited Wiki34009,32643,6 when strictly admitted; preserve all old conflict observations. Donor is stationary radius0, so do not claim relocation within its donor radius.",
+      "Goldro": "Strictly admitted34055,32504,7 is one cell from donor34055,32503,7, within source radius1 (Crystal00ce goldro.lua:11 sha394da3c41a2e81fb8b2cb5ee637a95e4bb50393de1069a338452a1ab89ab15f8)."
     },
-    "final_pg": "PASS3,128.74s; all DB markers; Wandering110.941s, Al Dee122.558s, Fury128.742s. Physical lane blocks both yes and non-yes hand-ins, preserves input custody and prevents minting while held. All prior exact-match/cost/replay/voice/achievement/original-deadline assertions retained.",
-    "number_check": "Repository next-free-numbers.py checked origin/main91afbe0ba1 plus open PR changed-file numbers:1140-1143 not reserved;0999 source reuse also unreserved.",
-    "review_finding": "Reused qengine source removed existing SpellLanePermit arguments from shared location helpers. Restore original guard and thread a matching permit through QuestRewardAdmission; NPC adapter must acquire physical lane before revision slot, honor player-trade physical-service exclusion and drop lane before refresh.",
-    "guard_regression": "Al Dee held-lane PG PASS97.17s because the outer NPC bank handler already briefly acquires a permit for words containing yes, then drops it before quest dispatch. Added equivalent real non-yes Wandering blood crystal assertion; current reward-nonyes-physical-red.log. Actual missing inner guard must be tested there before applying /tmp/npcfix-evidence/restore-physical-guard.py.",
-    "npc_units": "24 passed,1 failed139.35s: imported test requires no scripted dialogue keywords. Original assertion preserved; static source headers now projected into separate text-only tuples, never scripted keyword records. Rerun full25 after repair.",
-    "guard_red": "FAIL against PostgreSQL,96.33s, POSTGRES_STARTED and completion96.324s; exact assertion a non-yes reward must wait for the physical lane. No guard repair applied until this failure.",
-    "guard_repair": "Restored original SpellLanePermit helper signatures and all existing world callers; reward participant now requires and validates matching-scope permit. Adapter acquires physical lane before Character revision slot, honors existing player-trade physical_service exclusion and drops permit before refresh. Original no-script unit assertion unchanged; static headers use separate text-only records.",
-    "final_guard_pg": "PASS3,128.74s; all DB markers; Wandering110.941s, Al Dee122.558s, Fury128.742s. Physical lane blocks both yes and non-yes hand-ins, preserves input custody and prevents minting while held. All prior exact-match/cost/replay/voice/achievement/original-deadline assertions retained.",
-    "checks": {
-      "quest_units": "259 passed12.73s before Rust-only permit/header repair; no quest crate changes since",
-      "npc_units": "25 passed145.47s after repair, original no-script assertion retained",
-      "shared_reward_postgres": "Hallowed Ground PASS101.08s after repair, POSTGRES_CASE_COMPLETED101.076s",
-      "generation": "All Python checks PASS; repository integration5 passed56.17s; pin-refresh/pin-check PASS",
-      "source_authoring": "12 passed7.114s",
-      "native_source_closure": "2 passed15.841s",
-      "ordinary_chat": "1 passed38.61s after repair",
-      "world_time": "1 pure unit passed; actual time response also checked by Al Dee PostgreSQL case",
-      "cargo_check": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 56s",
-      "clippy": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 3m 33s",
-      "fmt": "PASS cargo fmt --all --check; mounted helpers explicitly rustfmt",
-      "self_review": "PASS after repairing proved non-yes physical-lane bypass and preserving original no-script assertion; see REVIEW-BATCH3.md",
-      "npc_style_check": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 46s",
-      "number_allocation": "Repository next-free-numbers.py main/open-PR lookup: new1140-1143 and reused0999 unreserved"
-    },
-    "native_fact_citations": [
-      {
-        "item": 3456,
-        "source": "imports/canary/items-xml/items.xml:10819",
-        "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
-        "temporal_fields": []
-      },
-      {
-        "item": 8225,
-        "source": "imports/canary/items-xml/items.xml:22837",
-        "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
-        "temporal_fields": [
-          "imports/canary/items-xml/items.xml:22840 <attribute key=\"duration\" value=\"604800\"/>",
-          "imports/canary/items-xml/items.xml:22841 <attribute key=\"decayTo\" value=\"8453\"/>"
-        ]
-      },
-      {
-        "item": 8453,
-        "source": "imports/canary/items-xml/items.xml:23064",
-        "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
-        "temporal_fields": []
-      },
-      {
-        "item": 23812,
-        "source": "imports/canary/items-xml/items.xml:47125",
-        "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
-        "temporal_fields": []
-      }
-    ],
-    "pre_review_pg": "PASS3,111.13s; all POSTGRES_STARTED and completion markers. Al Dee103.595s, Wandering108.389s, Fury111.127s; paid repeats/exact words/unpaid refusal/replay/voices/original timer/one achievement verified.",
-    "commit": "12b2b40d233b0d07177bc2d9576eea168bdcc420",
-    "push": "PASS origin exact NPCFIX branch639aae92f..c9a648fa9; source12b2b40d2, source merge d5469285d, metadata merge c9a648fa9.",
-    "merge_head": "0cbb57db2",
-    "merge_pin": "d622a839c5638cfdf3d3f81fa696f8cbe6ddab7152f3d8816e0705f8bceabd4a",
-    "merged_checks": {
-      "quest_units": "260 passed12.46s",
-      "atomic_postgres": "1 passed14.72s; three POSTGRES_STARTED markers; production acceptance, replay, late predicate and arithmetic rollback",
-      "source_authoring": "16 passed20.369s; strict byte comparison retained; canonical manifest serialization aligned with existing repository writer",
-      "placements": "11 passed0.616s",
-      "pin_check": "PASS d622a839c5638cfdf3d3f81fa696f8cbe6ddab7152f3d8816e0705f8bceabd4a",
-      "cargo_check": "PASS eight changed crates, all targets/features,4m47s",
-      "clippy": "PASS same eight crates -D warnings,5m09s"
-    }
+    "constraint": "No production authoring data changed before actual PG RED; no map admission guard weakened.",
+    "red": "3 failed28.51s; all three DB markers and per-case durations26.329s/26.470s/28.505s. Doctor absent; Goldro/Wandering BlockSolid.",
+    "green": "3 passed84.05s; all DB/completion markers. Doctor76.162s, Goldro84.016s, Wandering84.049s. Exact canonical-to-runtime actor identities, coordinates and floor conversion.",
+    "authoring": "12 passed; all previous assertions retained and added source-preservation/stationary-policy checks.",
+    "pin": "PASS refreshed and independently checked ddaa993dfb6776971ed3f521d770142e52ea01b451bf0373f894d2d1d1353a3a",
+    "implementation": "Source-backed authoring changes only: Wandering within captured radius2; Goldro within immutable donor radius1; Doctor uses strictly admitted primary audited Wiki cell, preserving all three alternate observations and stationary radius0 evidence. Original compiler guards unchanged.",
+    "check": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 15s",
+    "clippy": "Finished `dev` profile [unoptimized + debuginfo] target(s) in 4m 24s",
+    "fmt": "PASS cargo fmt --all and explicit mounted-file rustfmt",
+    "push": "Commit and fast-forward push follows; fetch/merge any remote movement."
   },
   "continuation_merge": {
     "note": "Preserved both histories; incoming state callers retained. Redundant npc_state catalogue compiler removed in consolidation. Superseded local caller draft remains stashed and must not be applied.",

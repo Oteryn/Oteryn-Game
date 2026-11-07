@@ -801,7 +801,45 @@
       "revid": 1195614
     },
     "audit_slug": "doctor_marrow",
-    "held_reason": "POSITION_CONFLICT"
+    "position_conflict_resolution": {
+      "policy": "STRICTLY_ADMITTED_PRIMARY_AUDITED_WIKI_CELL",
+      "previous_observations": [
+        {
+          "wiki": {
+            "title": "Doctor Marrow (NPC)",
+            "revid": 1195614
+          },
+          "cell": {
+            "x": 34009,
+            "y": 32643,
+            "z": 6
+          }
+        },
+        {
+          "source": "NPC authoring D17 map-owner hold",
+          "cell": {
+            "x": 33992,
+            "y": 32662,
+            "z": 6
+          }
+        },
+        {
+          "source": "Crystal SU26 hypothesis",
+          "cell": {
+            "x": 34010,
+            "y": 32641,
+            "z": 6
+          }
+        }
+      ],
+      "note": "Primary audited Wiki coordinate is strictly admitted by the existing compiler. Preserve all conflicting observations; do not claim relocation within the stationary donor radius.",
+      "stationary_donor": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/doctor_marrow.lua",
+        "line": 11,
+        "sha256": "af1ff19264525f2b0726211c05f54ec4e244eee797d4fa919ed8dfd82a874135",
+        "walk_radius": 0
+      }
+    }
   },
   {
     "npc": "oteryn:npc.dorian",
@@ -1616,12 +1654,42 @@
     "npc": "oteryn:npc.goldro",
     "position": {
       "x": 34055,
-      "y": 32503,
+      "y": 32504,
       "z": 7
     },
     "wiki": {
       "title": "Goldro",
       "revid": 1195637
+    },
+    "origin": "native",
+    "captured_spawn_anchor": {
+      "x": 34055,
+      "y": 32503,
+      "z": 7
+    },
+    "audited_roaming_position": {
+      "x": 34055,
+      "y": 32503,
+      "z": 7
+    },
+    "walk_radius": 1,
+    "native_source": {
+      "repository": "Oteryn/Oteryn-Game",
+      "revision": "7178e767e0ffee72fe352c3f8f708182149e2884",
+      "path": "tools/content-schema/npc-authoring/samples/npcfix-retail-placements.json",
+      "sha256": "2b674b748a859d9b2121144a932fd9f35a43a156dd1895cc1207d7f00c018767",
+      "note": "Strictly admitted one-cell neighbor within immutable donor walk radius1. Original observed anchor retained.",
+      "donor_world": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/world-npc.xml",
+        "line": 2137,
+        "sha256": "23ecce2bb4c11fdeed4c9b06933dd616d3ceb111b440d19f4a7a7336eeed88f9"
+      },
+      "donor_movement": {
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/goldro.lua",
+        "line": 11,
+        "sha256": "394da3c41a2e81fb8b2cb5ee637a95e4bb50393de1069a338452a1ab89ab15f8",
+        "walk_radius": 1
+      }
     }
   },
   {
@@ -3819,6 +3887,34 @@
     "wiki": {
       "title": "Zurak",
       "revid": 1116731
+    }
+  },
+  {
+    "npc": "oteryn:npc.a_wandering_soul",
+    "position": {
+      "x": 32915,
+      "y": 31489,
+      "z": 7
+    },
+    "wiki": {
+      "pageid": 31790,
+      "revid": 1116697
+    },
+    "origin": "native",
+    "captured_spawn_anchor": {
+      "x": 32914,
+      "y": 31490,
+      "z": 7
+    },
+    "walk_radius": 2,
+    "native_source": {
+      "repository": "Oteryn/Oteryn-Game",
+      "revision": "7178e767e0ffee72fe352c3f8f708182149e2884",
+      "path": "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json",
+      "sha256": "1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a",
+      "record_pointer": "/candidates/42/placements/0/position",
+      "donor_npc_sha256": "64ba822c579cdb12dc27bf26e2830409432b1d335a52ad01b32142056a2b9427",
+      "note": "Nearest strictly admitted same-floor cell within captured walk radius2; preserve the original exact spawn anchor. Selected by delivered npc-anchors command; no map guard changed."
     }
   }
 ]
