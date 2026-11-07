@@ -3819,7 +3819,7 @@
     },
     "current_batch": {
       "batch": "threatened_acquisition_13",
-      "phase": "All3 real PG RED confirmed; production core/source callback/chest links now APPLIED locally. Native41, authoring2 and initial core check PASS; units/final checks/pins/PGGREEN pending. No runtime publication.",
+      "phase": "Real PG GREEN3/3 and Irmana regression PASS;15domainunits and all other checks PASS; strictClippy running. DOC checkpoint only, acquisition runtime still unpublished.",
       "previous_published": "4785fb242",
       "entries": [
         "poacher chest actual item plus source storage flag",
@@ -3851,7 +3851,28 @@
         "authoring": "PASS2/0.027s",
         "core_check": "PASS2m58s before final units/source updates"
       },
-      "publication": "DOC-ONLY source/RED checkpoint; all production/data/tests remain LOCAL UNPUBLISHED pending GREEN."
+      "publication": "DOC-ONLY progress checkpoint; do not claim runtime published until strictClippy finishes and implementation is committed/pushed.",
+      "checks": {
+        "units": "worldreward1/0.02s,chestflags1/2.79s,rewardbindings7/1.77s PASS",
+        "profile_closure": "PASS1/10.845s includes full root+child and canonicalweight200",
+        "authoring": "PASS2/0.027s",
+        "claims": "PASS exact declared set + generator --check",
+        "native": "PASS41 generation and --check; one new25242 profile, all old unchanged",
+        "pins": "repo pin-refresh exit0; digest remains1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f, no deploymirror drift",
+        "cargo_check": "Latest PASS35.72s after source witness metadata repair; no further runtime changes",
+        "domain_final": "World7/1.65s,chest1/1.50s,reward7/1.44s PASS; source witness test was not altered and now passes"
+      },
+      "map_noop": "Existing map.facts.apply_quest_callback always increments revision; pure per-character ItemReward bypasses projection. Domain validation forbids map effects on that mode; test asserts original object revision0. Context-free caller must fail before MINT/flag.",
+      "postgres_green_pending_lint": {
+        "mirror_ms": 73855,
+        "poacher_chest_ms": 70147,
+        "notes_ms": 59115,
+        "irmana_ms": 128154,
+        "notes": "physical1/flag1/Animals7/receipt1; context-free denial, wrong-stage/target and replay pass; object revision0",
+        "chests": "physical1/flag1 including cold replay",
+        "sha256": "ff4a177fac13ab00d3e3d7531e0459aec153c9ec82f5bfc0698beb09a1feebe3"
+      },
+      "source_metadata_fix": "Retain declared native overlay source aliases; callback-only flags derive aliases using the same exact pinned source authority helper as parser. Preserve existing mappings. Existing witness test RED MoonMirrorPos01 then GREEN7worldtests."
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
