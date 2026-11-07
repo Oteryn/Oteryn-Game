@@ -165,8 +165,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .flat_map(|bag| &bag.entries)
                 .chain(inventory.nested.iter().map(|(_, entry)| entry))
                 .find(|entry| entry.item.item_instance_id == ingredient)?;
-            request.ingredient = Some(ingredient);
-            request.station = Some(entry.item.definition.clone());
+            let used = inventory
+                .backpack
+                .iter()
+                .flat_map(|bag| &bag.entries)
+                .chain(inventory.nested.iter().map(|(_, entry)| entry))
+                .find(|entry| entry.item.item_instance_id == source)?;
+            if oteryn_gameplay_items::item_craft::retained_carried_tool_conversion(
+                native,
+                &used.item.definition,
+                &entry.item.definition,
+            )
+            .is_some()
+            {
+                request.source = ingredient;
+                request.tool = Some(source);
+                request.station = Some(used.item.definition.clone());
+            } else {
+                request.ingredient = Some(ingredient);
+                request.station = Some(entry.item.definition.clone());
+            }
         }
         let (station, map_target) = {
             if let Some(station) = request.station.clone() {
@@ -262,92 +280,112 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .flat_map(|b| &b.entries)
                 .chain(inventory.nested.iter().map(|(_, entry)| entry));
-            let water_key = &request.station.as_ref()?.production_key;
-            let target_id = item_id(water_key)?;
-            let target_pos = map_target.3;
-            let mechanical_sewer = oteryn_gameplay_items::fishing::is_yalahar_sewer_water(
-                target_id,
-                target_pos.x,
-                target_pos.y,
-                target_pos.floor,
-            );
-            let rod = entries.clone().find(|entry| {
-                entry.item.item_instance_id == source
-                    && oteryn_gameplay_items::fishing::accepts_fishing_rod(
-                        &entry.item.definition.production_key,
-                        water_key,
-                    )
-                    || (entry.item.item_instance_id == source
-                        && mechanical_sewer
-                        && entry.item.definition.production_key == "oteryn:item.tibia.i9306")
-            });
-            let Some(rod) = rod else {
-                return disposition(UseDisposition::NothingToUse);
-            };
-            let rod = rod.item.item_instance_id;
-            let worm = entries
-                .clone()
-                .find(|entry| {
-                    entry.item.definition.production_key == oteryn_gameplay_items::fishing::WORM
-                })
-                .map(|entry| entry.item.item_instance_id);
-            let nail = entries
-                .clone()
-                .find(|entry| {
-                    entry.item.definition.production_key == oteryn_gameplay_items::fishing::NAIL
-                })
-                .map(|entry| entry.item.item_instance_id);
-            let now = u64::try_from(self.clock_origin.elapsed().as_micros()).unwrap_or(u64::MAX);
-            let skill = {
-                let runtime = self.runtime.lock().await;
-                let states = self.states.spell_states.lock().await;
-                states
-                    .get(&runtime, actor, command.game_session_id)
-                    .and_then(|state| state.live_skill(SkillFamily::Fishing.index(), now))
-                    .and_then(|value| u16::try_from(value).ok())
-                    .unwrap_or(10)
-            };
-            let digest = Sha256::new()
-                .chain_update(b"oteryn.fishing.catch.v1")
-                .chain_update(command.game_session_id.as_bytes())
-                .chain_update(command.command_id.to_be_bytes())
-                .chain_update(&request.intent)
-                .finalize();
-            let mut occurrence = [0; 16];
-            occurrence.copy_from_slice(&digest[..16]);
-            let draw = deterministic_decision_u64(
-                &GameplayDecisionRoot::from_bytes(native.source_digest()),
-                DecisionOccurrenceId::from_bytes(occurrence),
-                "fishing.catch",
-                0,
-            )
-            .ok()?;
-            let roll = u32::try_from(crate::spell::uniform_draw(draw, 1, 100_000)).ok()?;
-            catch_roll = roll;
-            fishing_skill = skill;
-            let mut due = Vec::new();
-            {
-                let runtime = self.runtime.lock().await;
-                let mut states = self.states.spell_states.lock().await;
-                super::attack::skill_training::train_hit(
-                    &mut states,
-                    &runtime,
-                    native.training_formula(),
-                    actor,
-                    command.game_session_id,
-                    SkillFamily::Fishing,
-                    now,
-                    |_| FISHING_TRIES_PER_USE,
-                    &mut due,
+            // An explicit fixed station recipe owns this use before the water/fishing
+            // fallback (for example, quenching a forged item). A rod still follows
+            // the unchanged fishing owner and its skill, bait and terrain rules.
+            let station = request.station.as_ref()?;
+            let authored_station_conversion = request.tool.is_none()
+                && request.ingredient.is_none()
+                && entries
+                    .clone()
+                    .find(|entry| entry.item.item_instance_id == source)
+                    .is_some_and(|entry| {
+                        oteryn_gameplay_items::item_craft::cooking_conversion(
+                            native,
+                            &entry.item.definition,
+                            station,
+                        )
+                        .is_some()
+                    });
+            if !authored_station_conversion {
+                let water_key = &request.station.as_ref()?.production_key;
+                let target_id = item_id(water_key)?;
+                let target_pos = map_target.3;
+                let mechanical_sewer = oteryn_gameplay_items::fishing::is_yalahar_sewer_water(
+                    target_id,
+                    target_pos.x,
+                    target_pos.y,
+                    target_pos.floor,
                 );
+                let rod = entries.clone().find(|entry| {
+                    entry.item.item_instance_id == source
+                        && oteryn_gameplay_items::fishing::accepts_fishing_rod(
+                            &entry.item.definition.production_key,
+                            water_key,
+                        )
+                        || (entry.item.item_instance_id == source
+                            && mechanical_sewer
+                            && entry.item.definition.production_key == "oteryn:item.tibia.i9306")
+                });
+                let Some(rod) = rod else {
+                    return disposition(UseDisposition::NothingToUse);
+                };
+                let rod = rod.item.item_instance_id;
+                let worm = entries
+                    .clone()
+                    .find(|entry| {
+                        entry.item.definition.production_key == oteryn_gameplay_items::fishing::WORM
+                    })
+                    .map(|entry| entry.item.item_instance_id);
+                let nail = entries
+                    .clone()
+                    .find(|entry| {
+                        entry.item.definition.production_key == oteryn_gameplay_items::fishing::NAIL
+                    })
+                    .map(|entry| entry.item.item_instance_id);
+                let now =
+                    u64::try_from(self.clock_origin.elapsed().as_micros()).unwrap_or(u64::MAX);
+                let skill = {
+                    let runtime = self.runtime.lock().await;
+                    let states = self.states.spell_states.lock().await;
+                    states
+                        .get(&runtime, actor, command.game_session_id)
+                        .and_then(|state| state.live_skill(SkillFamily::Fishing.index(), now))
+                        .and_then(|value| u16::try_from(value).ok())
+                        .unwrap_or(10)
+                };
+                let digest = Sha256::new()
+                    .chain_update(b"oteryn.fishing.catch.v1")
+                    .chain_update(command.game_session_id.as_bytes())
+                    .chain_update(command.command_id.to_be_bytes())
+                    .chain_update(&request.intent)
+                    .finalize();
+                let mut occurrence = [0; 16];
+                occurrence.copy_from_slice(&digest[..16]);
+                let draw = deterministic_decision_u64(
+                    &GameplayDecisionRoot::from_bytes(native.source_digest()),
+                    DecisionOccurrenceId::from_bytes(occurrence),
+                    "fishing.catch",
+                    0,
+                )
+                .ok()?;
+                let roll = u32::try_from(crate::spell::uniform_draw(draw, 1, 100_000)).ok()?;
+                catch_roll = roll;
+                fishing_skill = skill;
+                let mut due = Vec::new();
+                {
+                    let runtime = self.runtime.lock().await;
+                    let mut states = self.states.spell_states.lock().await;
+                    super::attack::skill_training::train_hit(
+                        &mut states,
+                        &runtime,
+                        native.training_formula(),
+                        actor,
+                        command.game_session_id,
+                        SkillFamily::Fishing,
+                        now,
+                        |_| FISHING_TRIES_PER_USE,
+                        &mut due,
+                    );
+                }
+                self.save_trained_levels(due).await;
+                let consumable = if mechanical_sewer { nail } else { worm };
+                if !oteryn_gameplay_items::fishing::catches(skill, roll) || consumable.is_none() {
+                    return disposition(UseDisposition::NothingToUse);
+                }
+                request.tool = Some(rod);
+                request.source = consumable?;
             }
-            self.save_trained_levels(due).await;
-            let consumable = if mechanical_sewer { nail } else { worm };
-            if !oteryn_gameplay_items::fishing::catches(skill, roll) || consumable.is_none() {
-                return disposition(UseDisposition::NothingToUse);
-            }
-            request.tool = Some(rod);
-            request.source = consumable?;
         }
         let inventory = self
             .root
@@ -468,7 +506,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 false,
             )
             .await;
-        let result = result.ok()??;
+        let result = match result {
+            Ok(Some(result)) => result,
+            // PostgreSQL explicitly rejected COMMIT, so the source can safely
+            // report a refusal and settle ingress. An unknown outcome still
+            // follows the existing fail-closed reconciliation path.
+            Err(crate::durability::DurabilityError::CommitRejected) => UseDisposition::Rejected,
+            Ok(None) | Err(_) => return None,
+        };
         drop(_permit);
         if result == UseDisposition::Committed {
             self.refresh_terrain_tools().await;

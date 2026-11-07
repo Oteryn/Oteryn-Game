@@ -1,3 +1,47 @@
+## Anchor/craft merge fully checked — 2026-11-07
+Preserved local289804c01 four native Draconia anchors and remote22eab7c56 Corym
+forging. Only metadata conflicted; both evidence records and ownership exclusions
+retained. Combined world/dispatch all-target/all-feature check3m06s and strict
+Clippy3m09s, fmt, three source captures and pin refresh PASS. World9865615f...
+unchanged. Existing source cohorts retain their actual RED/GREEN PG proofs;
+no fresh merge PG run or title promotion claimed. Evidence:
+cloud-anchor-craft-merge-validation.json. Push immediately, then continue six-entry
+Draconia source pressure/portal batch. Observer fixture supports a second real
+admitted player: appearance_change_postgres::observer_visibility_tests::{admit,
+initialize}, used by pvp_live after Harness::seed_pvp_target. Reuse it for party
+wire proof. Generic object effects already remove-if-present/create-if-absent.
+Generator for quests-2 callback shards:tools/content-migration/quests_2_content.py.
+Source plans and remaining scope are retained below. Do not end while entries remain.
+
+## Active anchor/craft merge — checks running
+Local anchor slice289804c01 is fully green but NOT pushed yet. Pre-push fetch found
+remote22eab7c56 (Corym craft); only metadata conflicted. Resolved retaining both.
+Combined world/dispatch check+strict Clippy session86191, pin refresh session55124;
+logs /tmp/questpc-anchor-craft-merge-*.log. Finish checks, archive evidence/update
+this note and QUEST-STATUS, commit merge with owner trailers, fetch/merge again if
+remote moved and push HEAD:claude/happy-davinci-ijz3wy-questpc-pc2 immediately.
+Last published local checkpoint886ac871c (~06:40UTC); target next push by07:10UTC.
+Then continue source pressure/portal batch; do not end. Source plans retained below.
+
+## Craft and native upper doors merged GREEN — 2026-11-07
+
+Preserved craft fb96a650e and remote886ac871c. Combined world/dispatch all-target
+check and strict Clippy, fmt, source-binding units, deterministic stock/ten-door/
+craft generation and pin-check pass. Both unchanged source cohorts retain actual
+PG RED/GREEN proofs; no new merge PG run or title qualification claimed.
+Evidence: cloud-craft-upper-merge-validation.json. Publish fast-forward now.
+
+This writer continues Hidden Threats: next batch3 WorksDoor forged-key unlocks.
+Draft fixture: /tmp/questpc-hidden-doors-draft.rs; source plan/custody retained in
+/tmp/questpc-hidden-next-plan.md and /tmp/questpc-hidden-source. Captured source
+catalogue lacks all3 WorksDoor tracks. Preserve exact prior NPC13 Tibia Tales
+save compatibility when adding them; retain actual carried key identity.
+Follow with two NPC storage-gate USE compositions and Cave Spider room/ending.
+Fresh qengine2 check before generic feature implementation; skip17 overlapping
+QUALIFIED titles per the exact list/sha in QUEST-STATUS. Continue without ending.
+
+---
+
 ## Four native Draconia callback anchors fully GREEN — 2026-11-07
 Exact native source levers30006/30035 and portals35011/35012 now acquire startup
 UIDs at boot through the existing bounded binder. Capture verifies pinned source
@@ -46,6 +90,42 @@ retained from each unchanged slice; no fresh merge PG run claimed. World digest
 Next local batch: four exact native Draconia callback anchors, plan at
 /tmp/questpc-next-native-selectors-plan.md. Incoming writer owns Hidden Threats;
 continue Draconia here without overlapping its craft work.
+
+## Hidden Threats crafting GREEN — 2026-11-07
+
+Three source components qualify: full-backpack filing with exact file retention,
+post-write failure/rollback/recovery; all four lava stations and all four source
+hot-half pairs; anvil/water finishing and exact replay. Actual PostgreSQL18.6
+markers/durations, source hashes and all checks: cloud-hidden-craft-validation.json.
+No whole-title promotion yet. Counts60QUALIFIED/117UNFINISHED/1excluded unchanged.
+
+Reuses existing tool/material BURN/MINT owner. Sixteen source recipes and16 native
+policies are additive; original129 recipes retain exact canonical hash, all25 old
+policies unchanged. Four-crate strict checks, final fixture checks,13 authoring
+tests, two fluid and one fishing PG regressions, closed source gate, generation
+and pin refresh/check pass. Failed development candidates remain in evidence.
+No source originals, binaries or approximate charge/binding support committed.
+
+Continue five Corym doors: native entries and action-to-track bindings already
+exist. Reuse generic door owner for Ratter/Servant flags; add retained key27269
+on exactWorksDoor01/02/03. Check qengine2 again before new generic support. Adding
+three new tracks to TibiaTales must retain exact prior NPC13 definition read
+compatibility; implement strict append-only catalogue layers if still absent.
+Then Cave Spider room and actual source ending, never a shared-feature handoff.
+
+Detailed next plan and fresh source custody: /tmp/questpc-hidden-next-plan.md,
+/tmp/questpc-hidden-source, /tmp/questpc-hidden-item-source. Fresh room helper
+functions.lua SHA0aa8c642...dd6bbe: occupancy includes ANY creature (onlyPlayers=false),
+clear removes monsters, timer kicks only original player UID and clears monsters.
+Second registered tile is inside room and cannot ignore entrant occupancy.
+
+Ownership: qengine2@a0100244c now25QUALIFIED;17 overlap and must be skipped here.
+Exact list/sha in QUEST-STATUS.cross_lane_qualified_elsewhere, not a claim those
+implementations are merged. Latest additions include Afflicted, Assassin, Dream Warden, Druid, Hunter, Knight and Mage outfits.
+Commit as prescribed with both trailers; fetch explicit pc2 ref, merge any movement,
+push fast-forward after green, read back remote. Never force/main/PR or end active work.
+
+---
 
 ## Concurrent native door integration — 2026-11-07
 

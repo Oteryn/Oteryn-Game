@@ -1,6 +1,7 @@
 """CRAFT-1: compose the recipe-owned native cooking policies into the existing provider."""
 import hashlib
 import json
+import sys
 
 PATH = 'content/craft/runtime-item-profiles.json'
 
@@ -19,6 +20,9 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         wanted.update(ref['key'] for ref in [recipe['input_item'], recipe['target']['definition'],
                       recipe['operands'][0]['output_item_id']])
         wanted.update(output['item_id']['key'] for output in recipe['outputs']['entries'])
+    sys.path.insert(0, str(root / 'tools/content-schema/craft-authoring'))
+    from hidden_threats import native_item_ids
+    wanted.update(f'oteryn:item.tibia.i{item}' for item in native_item_ids(root))
     keys = [row['production_definition']['production_key'] for row in overlay['records']]
     if len(keys) != len(wanted) or set(keys) != wanted:
         raise ValueError('COOKING_ITEM_PROFILES_RECORD_SET')

@@ -1,0 +1,12 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.12s
+     Running `/workspace/oteryn-env/target/debug/oteryn-world-bundle-compiler pin-refresh .`
+{
+  "inputs_digest": "daa89fe08ee83db5041a3506050e1db20d7f3534ddb8372d788142b10813e7e3",
+  "pins": [
+    {
+      "digest": "9865615ff643553f07bccfc4f76c0f05919939c751cd35f0a87f92d82591e8f7",
+      "previous": "9865615ff643553f07bccfc4f76c0f05919939c751cd35f0a87f92d82591e8f7",
+      "world": "oteryn"
+    }
+  ]
+}

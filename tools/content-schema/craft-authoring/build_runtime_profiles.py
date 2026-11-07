@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract basic cooking policies using the existing pinned native Item importer.
+"""Extract recipe-owned policies using the existing pinned native Item importer.
 
 Only normalized Item facts are retained, never original XML/DAT or client assets.
 """
@@ -12,6 +12,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as native
+from hidden_threats import native_item_ids
 
 
 def build(directory):
@@ -35,6 +36,7 @@ def build(directory):
                       recipe['operands'][0]['output_item_id']]
         references += [output['item_id'] for output in recipe['outputs']['entries']]
         wanted.update(int(ref['key'].rsplit('.i', 1)[1]) for ref in references)
+    wanted.update(native_item_ids())
     index = native.xml_index(xml)
     objects = native.engine_items.load_appearance_objects(appearances)
     physical = {row['server_item_id']: row for row in native.policies(appearances, xml, wanted)}
@@ -57,6 +59,14 @@ def build(directory):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('source_directory', type=Path)
+    parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
     output = ROOT / 'content/craft/runtime-item-profiles.json'
-    output.write_text(json.dumps(build(args.source_directory), indent=2, ensure_ascii=False) + '\n')
+    document = build(args.source_directory)
+    expected = json.dumps(document, indent=2, ensure_ascii=False) + '\n'
+    if args.check:
+        if not output.exists() or output.read_text() != expected:
+            raise SystemExit('recipe-owned native Item policies require regeneration')
+    else:
+        output.write_text(expected)
+    print(f"Native conversion Item policies records={len(document['records'])} check={args.check}")

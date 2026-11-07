@@ -1,0 +1,8 @@
+   Compiling oteryn-gameplay-content v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/content)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 34.93s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_content-1978a0b39edbd73f)
+
+running 1 test
+test content::project::v2::item_conversion::hidden_threats::tests::forge_source_admission_requires_exact_repository_revision_path_hash_and_length ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 317 filtered out; finished in 0.01s

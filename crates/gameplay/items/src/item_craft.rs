@@ -11,6 +11,8 @@ use oteryn_gameplay_domain::domain::timed_item_host::resolve_timed_definition;
 use std::sync::OnceLock;
 
 pub mod enchanting;
+mod retained;
+pub use retained::retained_carried_tool_conversion;
 
 #[derive(Debug)]
 pub struct CookingConversion {

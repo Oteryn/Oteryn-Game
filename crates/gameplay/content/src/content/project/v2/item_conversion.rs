@@ -1,6 +1,7 @@
 //! CRAFT-1 authored conversions. Validation admits data only; no execution or durable writes.
 
 mod digging;
+mod hidden_threats;
 
 use super::*;
 use crate::content::{ReferenceItemField, ReferenceItemSemantics, ReferenceItemTarget};
@@ -462,7 +463,7 @@ pub(super) fn validate_item_conversions(
                     && s["lines"].as_u64() == Some(u64::from(source.lines))
             })
         });
-        if pinned.is_none()
+        if (pinned.is_none() && !hidden_threats::pinned(source))
             || source.line_start == 0
             || source.line_start > source.line_end
             || source.line_end > source.lines

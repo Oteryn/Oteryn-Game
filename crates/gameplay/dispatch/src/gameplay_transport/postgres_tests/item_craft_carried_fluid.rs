@@ -350,7 +350,7 @@ async fn live_backpack_item_count(
     Ok(count)
 }
 
-async fn exchange_carried(
+pub(super) async fn exchange_carried(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     command_id: u64,
@@ -385,7 +385,10 @@ async fn exchange_carried(
                         vessel = inventory
                             .entries
                             .iter()
-                            .find(|entry| Some(entry.item_definition_ref) == vessel_definition)
+                            .find(|entry| {
+                                Some(entry.item_definition_ref) == vessel_definition
+                                    && Some(entry.handle) != source
+                            })
                             .map(|entry| entry.handle);
                     }
                 }
@@ -401,8 +404,10 @@ async fn exchange_carried(
             )
             .map_err(debug)?;
             intent.target = UseTarget::Item(source.ok_or("current source handle")?);
-            intent.use_with_map_item =
-                Some(MapUseTarget::Item(vessel.ok_or("current vessel handle")?));
+            if vessel_definition.is_some() {
+                intent.use_with_map_item =
+                    Some(MapUseTarget::Item(vessel.ok_or("current vessel handle")?));
+            }
             encode_item_use_intent(&intent).map_err(debug)?
         } else {
             payload.to_vec()
@@ -417,7 +422,8 @@ async fn exchange_carried(
         )?;
         client.write_u32(u32::try_from(frame.len())?).await?;
         client.write_all(&frame).await?;
-        client.shutdown().await?;
+        // Keep the real transport alive until its result, including queued or
+        // delayed durable work. EOF is a disconnect, not a completion signal.
         loop {
             let raw = super::item_look::read_frame(&mut client).await?;
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
@@ -427,6 +433,7 @@ async fn exchange_carried(
                     let disposition =
                         oteryn_protocol_oteryn::world_object::decode_use_result(result.payload)
                             .map_err(debug)?;
+                    client.shutdown().await?;
                     return Ok::<_, Box<dyn std::error::Error>>((disposition, actual));
                 }
             }
