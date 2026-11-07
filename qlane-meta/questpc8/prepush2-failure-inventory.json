@@ -36,7 +36,7 @@
     }
   ],
   "integration_checkout": "/workspace/questpc8-qnpcfx-integration",
-  "main_pending": "f641d8d6c",
+  "main_pending": null,
   "publish_policy": "Owner merge fallback and PREPUSH-2 cadence exception; publish only compiling baseline",
   "groups": [
     "Reviewed room construction census",
@@ -50,5 +50,6 @@
     "Exact newly admitted Queen source loot",
     "Exact ITEMHOLD-Q full-charge precedence",
     "Transient conflicting manifest during aborted merge; rerun unchanged test"
-  ]
+  ],
+  "integration_state": "f641d8d6c merged; workspace compile/fmt/generated PASS; test reruns building"
 }

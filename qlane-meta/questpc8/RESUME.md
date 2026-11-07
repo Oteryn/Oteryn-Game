@@ -1,3 +1,24 @@
+Main47db34f09 arity fix merged in32e89595f. Its bug is already fixed by the
+checked32-line typed input adapter, which also retains Channel scope for NPC
+inputs. No product code differs from the all-target-checked integration tree.
+The 12-case regression rerun and six affected own PG cases are still building.
+Publish compiling integration under PREPUSH-2 cadence exception; full scoped
+unit rerun follows focused repair results. No post-merge test GREEN claim.
+
+# Current checkpoint: QNPCFX integrated and compiling
+
+Main f641d8d6c is merged on the lane branch through3906e6c30. Grouped fixes
+compile across the workspace/all targets (PASS1m45s); fmt and regeneration pass.
+The source product tree matches the checked integration checkout byte for byte;
+the additional tracked equipment census matches its compiled input exactly.
+World pins and deployment topology were regenerated after QNPCFX native providers.
+Twelve collected failure cases are rerunning against the merged code; six own
+PG cases are queued (Father3, Venore, Winterlight, Wrath opening). Full six-crate
+unit rerun follows focused repairs. No post-merge unit/PG GREEN claim yet.
+Continue tests in/workspace/questpc8-qnpcfx-integration, preserving those inputs
+until they finish. Publish only the own lane branch, with main/own fetch first.
+Wrath opening pre-merge PG217.555976812s is GREEN; whole Wrath still incomplete.
+
 # Active integration checkpoint
 
 Both scoped runs finished:2537/2546 and507/510passed;12failures collected,

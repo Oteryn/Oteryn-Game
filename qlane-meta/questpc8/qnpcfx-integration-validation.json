@@ -1,6 +1,6 @@
 {
   "state": "All-target integration compile and generated files PASS; scoped tests building",
-  "main": "f641d8d6c",
+  "main": "47db34f09",
   "canonical_reuse": [
     "NPC durable executor",
     "NPC source hand-ins and XP",
@@ -17,5 +17,11 @@
   "whole_quest_status": "Wrath still in progress; no qualification count increment",
   "workspace_all_targets": "PASS1m45s",
   "pin_refresh": "PASS",
-  "unit_rerun": "12 collected failures selected across six changed crates; building"
+  "unit_rerun": "12 collected failures selected across six changed crates; building",
+  "lane_merge": "3906e6c30",
+  "product_tree_check": "No code/data differences from checked worktree; tracked census cmp identical",
+  "own_pg_after_merge": "six cases queued",
+  "full_unit_after_merge": "pending focused failures",
+  "arity_merge": "32e89595f",
+  "arity_resolution": "Retained existing checked32-line typed adapter and its Channel proof; no code difference from checked integration"
 }
