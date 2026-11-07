@@ -799,3 +799,11 @@ and actual grace-expiry cleanup passed41.838s; dispatch compiled in the same
 Instance reward binding/loot lock and item-selection test accounting. Actual
 Drome movement steering and late-observed native kill timing remain next steps.
 Creature base HP/damage/scaling remain absent from available donor evidence.
+
+## W02 ENCX catalogue integration
+
+Merged ENCX1a70f306d, reusing its qualified-room publisher and migration1150.
+Preserved SRVENC parent/physical frame qualification and post-bundle boot
+ordering. Both lane-specific note files survive; no root note remains.
+The unpublished static Sugar catalogue draft was discarded in favor of this
+shared production owner;1102 remains unallocated. No second composition.

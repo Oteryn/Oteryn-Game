@@ -37,6 +37,18 @@ pub struct BossLeverCandidate {
     pub after_kill_seconds: Option<u32>,
 }
 
+impl BossLeverCandidate {
+    /// Crystal 201189f actions/bosses_levers/the_primal_manace.lua:2-4:
+    /// the lever boss name identifies the captured creature; the room keeps
+    /// that source identity in the boss namespace.
+    pub fn boss_key(&self) -> Option<String> {
+        self.creature_key
+            .as_deref()?
+            .strip_prefix("oteryn:creature.")
+            .map(|suffix| format!("oteryn:boss.{suffix}"))
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct CandidateDocument {
@@ -198,9 +210,7 @@ pub fn captured_boss_levers() -> Result<Vec<BossLeverCandidate>, ActivityTemplat
 }
 
 impl ContentActivationController {
-    /// Deterministic initial selection authorized by PR2769 ANSWER6543189919.
-    /// Every earlier refusal is retained; only the first complete qualified
-    /// template can be registered by the gameplay seam.
+    /// Qualify every captured room; preserve a diagnostic for every rejection.
     pub fn qualify_initial_activity_template(
         &self,
         parent: &QualifiedNativeEntryRoom,
@@ -212,6 +222,7 @@ impl ContentActivationController {
         Vec<ActivityTemplateDiagnostic>,
     ) {
         let mut diagnostics = Vec::new();
+        let mut templates = Vec::new();
         if !self.is_ready() || self.active().is_none() {
             diagnostics.push(ActivityTemplateDiagnostic {
                 path: String::new(),
@@ -223,14 +234,14 @@ impl ContentActivationController {
         ordered.sort_by(|a, b| a.path.cmp(&b.path));
         for candidate in ordered {
             match self.qualify_activity_template(parent, room, content_revision, candidate) {
-                Ok(template) => return (vec![template], diagnostics),
+                Ok(template) => templates.push(template),
                 Err(reason) => diagnostics.push(ActivityTemplateDiagnostic {
                     path: candidate.path.clone(),
                     reason,
                 }),
             }
         }
-        (Vec::new(), diagnostics)
+        (templates, diagnostics)
     }
 
     pub fn qualify_activity_template(
@@ -465,7 +476,7 @@ impl ContentActivationController {
             .strip_prefix("oteryn:creature.")
             .ok_or(R::InvalidSourceCapture)?;
         Ok(QualifiedActivityRoomTemplate {
-            boss_key: format!("oteryn:boss.{suffix}"),
+            boss_key: candidate.boss_key().ok_or(R::InvalidSourceCapture)?,
             template_key: format!("oteryn:room.boss.{suffix}"),
             template_revision: format!("crystal-{}", candidate.sha256),
             content_revision: content_revision.into(),

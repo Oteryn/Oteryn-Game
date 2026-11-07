@@ -28,6 +28,7 @@ use crate::foundation::{CharacterId, GameSessionId, RuntimeScopeRefV1, ScopeOwne
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 
+mod catalogue;
 mod entry;
 mod transfer_recovery;
 pub use transfer_recovery::ActivityTransferRecovery;
