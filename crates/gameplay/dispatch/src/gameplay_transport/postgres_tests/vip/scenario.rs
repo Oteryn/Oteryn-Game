@@ -262,7 +262,15 @@ pub(super) fn run_scenario() -> TestResult {
             }
             let (exhausted_id, exhausted_bytes) = exhausted.ok_or("VIP bucket did not exhaust")?;
             assert!((1..=3).contains(&wait(&exhausted_bytes)?));
-            let replayed = owner
+            // The serving owner concurrently performs periodic presence work.
+            // Use another current holder for this durable replay assertion; do
+            // not replace the immutable result with that holder's busy outcome.
+            let replay_root = h.independent_root()?;
+            assert!(replay_root.maintain_ready_once().await?);
+            let replay_authority = replay_root.open_character_authority(&seal).await.map_err(debug)?;
+            let mut replay_owner = deps.owner(&h, &replay_authority);
+            replay_owner.root = &replay_root;
+            let replayed = replay_owner
                 .vip_command(admitted, exhausted_id, 48, &named(1, "Unknown Friend"))
                 .await
                 .ok_or("rate replay")?;

@@ -239,7 +239,7 @@ rejections, G-4 revision/outbox/ACK/resync, online retention/ownership/1000-inte
 resync, and physical-death deduplication/final replay. No assertions or deadlines
 were weakened and no sleeps were introduced for timing evidence.
 
-Final allocation remains migrations 1350–1352 and 1354–1355, resources
+Final allocation is migrations 1350–1352 and 1354–1356, resources
 10069–10076 and 10083–10093. Migration 1353 and resources 10077–10082 stay free
 in PUBPROJ. No command IDs or capability bits were allocated.
 
@@ -255,3 +255,55 @@ to CI under the owner's replacement speed rule.
 Merged main 1138720b1 after owner request. Main has no migration in 1350–1355;
 PUBPROJ retains 1350–1352 and 1354–1355 with 1353 free. QENGINE2/QBASE use
 0999–1008; no 1200–1205 copies are present. Duplicate migration checking passed.
+
+### PR 3031 failure repair
+
+Migration 1356 preserves the custody digest from migration 0996 and excludes
+only `game_character_online_intervals` and `game_character_online_pending`.
+These G-8 observation rows change during quarantine; they are not transferable
+Character/item custody. Including them made CANCEL fail its custody comparison
+before restoring the public highscore. Migration 1353 remains free.
+
+The equipped field-rune PostgreSQL scenario now holds its per-owner simulation
+clock while SQL and wire turns run, then retains its existing explicit
+application-plus-11-second residual evaluation. This prevents database latency
+from injecting an unintended nine-second fire pulse into the replay assertion;
+all damage, charge, deadline and replay assertions remain intact. Real transport
+pacing and database timestamps still use their original clocks.
+
+Merged main 47db34f09d760b2f435860c2f8d4ddf12a893e05, including the VIP
+replay fix and the upstream callback integration repair. Main's single
+`apply_input_rows` helper is retained unchanged; both callers use it through
+their existing paths. This lane adds no separate VIP or royal costume behavior
+change. These failure repairs introduce no new donor-derived gameplay rules.
+
+Focused SQL regression evidence: `PUBPROJ_CUSTODY_STATISTICS_SEPARATION_PG`
+passed in 2.089 seconds against an isolated clone of this lane's full migrated
+PostgreSQL database. It applied migration 1356, inserted interval history and
+changed pending coverage, verified the custody hash stayed identical, then
+changed the canonical Character revision and verified the hash changed. The
+transaction rolled back and the isolated database was dropped.
+
+On repaired main, durability's focused unit selection passed 616/616 tests in
+153.121 seconds (the 96 PostgreSQL-labelled cases were outside that unit run).
+The workspace all-target compile passed in 4m30s and architecture checking
+passed. Item-audit tags and quest binding evidence regenerated without changes.
+
+PREPUSH-2 regeneration reran the prey model (15 cases, 776 creatures), then
+native registration, item-audit tags and quest binding evidence. Only the prey
+model input fingerprints changed; calculated simulation and slot values are
+identical. The generated balance reports and JSON were produced by repository
+tooling. The repaired main's callback helper is not edited by this lane.
+
+World pin-refresh completed with the bundle digest unchanged and the client
+placement pin already current. Dispatch and durability all-target clippy passed
+with warnings denied in 11m06s. The transport unit/PG reruns are queued behind
+the final all-target check; their completion is not claimed by this evidence.
+Pin-check also passed against the regenerated index, proving the unchanged
+32,839,850-byte World bundle. Item/Mount/content-tree equivalence and duplicate
+migration checks passed; 1353 remains free and 1356 has no collision with main.
+Final post-regeneration workspace all-target checking passed in 16m40s,
+including build-lock wait. Formatting passed. At this cadence push, the
+combined dispatch/durability unit selection and the account-deletion,
+field-rune and upstream VIP PostgreSQL reruns are still building under the
+owner's PREPUSH-2 pending-tests exception; they are not claimed green.
