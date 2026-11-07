@@ -801,7 +801,6 @@ fn chest(
     quantity: u32,
 ) -> RewardClaimMintRequest {
     RewardClaimMintRequest {
-        additional_items: Vec::new(),
         command,
         claim: definition("RewardClaim", claim_key),
         source_placement: "fixture:placement.chest".into(),

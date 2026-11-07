@@ -157,7 +157,6 @@ fn scenario_case(
             || name.contains("l10-documents-")
             || name.contains("l11-")
             || name.contains("l12-")
-            || name.contains("l13-")
         {
             use crate::gameplay_transport::spell_premium_coordinator::{
                 SpellPremiumCoordinator, purchase_fixture,

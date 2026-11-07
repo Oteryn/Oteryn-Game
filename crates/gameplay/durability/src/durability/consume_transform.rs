@@ -498,7 +498,7 @@ async fn persist_action(
         return Err(DurabilityError::InvalidStoredState);
     }
     if plan.consume_source != (plan.source_count > 0)
-        || plan.source_count > 100 || plan.extra_inputs.len() > 8
+        || plan.source_count > 100 || plan.extra_inputs.len() > 6
         || plan.extra_inputs.iter().any(|input| input.count == 0 || input.count != 1 || !matches!(input.source_kind, 1 | 3 | 4 | 5)) {
         return Err(DurabilityError::InvalidStoredState);
     }

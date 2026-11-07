@@ -6,9 +6,6 @@ pub(super) async fn scenario(admin: String, cases: Cases) -> TestResult {
         Cases::Outcomes => "mount_taming_wire",
         Cases::Items => "mount_taming_items",
         Cases::MusicBox => "mount_taming_music",
-        Cases::StockOutcomes => "s06_stock_outcomes",
-        Cases::StockItems => "s06_stock_items",
-        Cases::StockMusicBox => "s06_stock_music",
     };
     let harness = Harness::create(admin, tag, true).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -21,15 +18,8 @@ pub(super) async fn scenario(admin: String, cases: Cases) -> TestResult {
     let world = WorldId::decode(&id(42)).map_err(debug)?;
     let channel = ChannelId::decode(&id(43)).map_err(debug)?;
     let session = GameSessionId::decode(&id(50)).map_err(debug)?;
-    let (controller, pin) = if matches!(
-        cases,
-        Cases::StockOutcomes | Cases::StockItems | Cases::StockMusicBox
-    ) {
-        // Use the stock artifact; only align its test Character content revision.
-        super::super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?
-    } else {
-        crate::content::native_gameplay::test_support::cosmetics_fixture::activated_with_optional_cosmetics(world, None, Some(&cosmetics()?))
-    };
+    let (controller, pin) =
+        crate::content::native_gameplay::test_support::cosmetics_fixture::activated_with_optional_cosmetics(world, None, Some(&cosmetics()?));
     let active = controller.active().expect("active generation");
     let native = active.native_gameplay().expect("native content");
     let index = native.item_index().expect("item index");
@@ -187,15 +177,9 @@ pub(super) async fn scenario(admin: String, cases: Cases) -> TestResult {
     }
     runtime_role(&harness.root).await?;
     match cases {
-        Cases::Outcomes | Cases::StockOutcomes => {
-            outcomes::run(&owner, &harness, actor, session, index).await?
-        }
-        Cases::Items | Cases::StockItems => {
-            pairs::run(&owner, &harness, actor, session, index, false).await?
-        }
-        Cases::MusicBox | Cases::StockMusicBox => {
-            pairs::run(&owner, &harness, actor, session, index, true).await?
-        }
+        Cases::Outcomes => outcomes::run(&owner, &harness, actor, session, index).await?,
+        Cases::Items => pairs::run(&owner, &harness, actor, session, index, false).await?,
+        Cases::MusicBox => pairs::run(&owner, &harness, actor, session, index, true).await?,
     }
     drop(owner);
     drop(authority);
