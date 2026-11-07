@@ -2057,7 +2057,7 @@
       "unresolved:questpc2:norseman_outfits_quest",
       "oteryn:quest.the_ice_islands_quest"
     ],
-    "phase": "All3 L1-05 entries QUALIFIED;Norseman/Formorgar source slice immediately committing/pushing. Follow-on content/world/pin and source root-topic continuation review remain active.",
+    "phase": "All3 entries and continuous Hjaern source flow QUALIFIED;immediate follow-up push,then content/world/pin verification. Next group investigate bounded time/counter operations and source eligibility using existing owners.",
     "reuse_audit": "Refreshed questpc2..8 primary branches; no current matched entry QUALIFIED; no newer reward sex guard found. Existing immutable Character sex reader reused. Audit /tmp/qengine2-batch5-status-audit.log.",
     "red_command": "cargo test --locked -p oteryn-gameplay-dispatch qengine_l5_oriental -- --nocapture",
     "red_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-oriental-story duration=45.088365726s success=false",
@@ -2111,7 +2111,9 @@
           "strict clippy44.94s",
           "repo pin-refresh24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25"
         ],
-        "follow_on_verification": "Pending content/world/pin after immediate green slice push."
+        "follow_on_verification": "Pending content/world/pin after immediate green slice push.",
+        "commit": "b51b5d358",
+        "push": "fast-forward confirmed"
       }
     ],
     "norseman_source": "Hjaern.lua:107-155,189-197 sha2564e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466;7289 is frost charm (pinned Canary XML),not spirit container;exact take1 then5+10frostheartshards7290.",
@@ -2122,6 +2124,18 @@
       "cargo fmt --all --check;check19.63s;3Rust reward-callback unit tests",
       "strict clippy44.94s passed;disk-only sandbox launch recovered by removing obsolete compiler snapshots",
       "callback/placement reproduction;repo pin-refresh then PG GREEN60154 running"
-    ]
+    ],
+    "flow_followup": {
+      "red": "Python published-source-flow test1failed5.622s:next shard offer unreachable from published first-reward topic3",
+      "change": "Root shard keyword admitted at reachable topics0/3/4 with disjoint Questline40/42 guards;source reward next topics and exact-cost native stage guards retained.",
+      "status": "QUALIFIED",
+      "green": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=79.174554547s success=true",
+      "checks": [
+        "19authoring tests6.380s",
+        "fmt;dispatch check15.17s;strict clippy37.50s",
+        "repo pin-refresh passed;world digest24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25"
+      ],
+      "result": "1passed;0failed;0ignored;79.17s;actualPostgreSQL18.6"
+    }
   }
 }

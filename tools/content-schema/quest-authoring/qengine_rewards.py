@@ -405,8 +405,10 @@ def build():
     for name,count,before,topic in [('first',5,40,3),('second',10,42,4)]:
         states=[storage(ice+'questline',before,before+1)]
         add('l5-norseman-'+name+'-shards','the_ice_islands_quest','hjaern',['yes'],states,take=[(7290,count)],topic=topic)
-        offers.append({'npc':'oteryn:npc.hjaern','keywords':['shard'],'topic':0,'next_topic':topic,
-            'storage':states,'reply':['Have you brought '+str(count)+' frostheart shards?']})
+        # The donor's shard keyword is a root branch, including after reward topic3/4.
+        for current_topic in (0,3,4):
+            offers.append({'npc':'oteryn:npc.hjaern','keywords':['shard'],'topic':current_topic,'next_topic':topic,
+                'storage':states,'reply':['Have you brought '+str(count)+' frostheart shards?']})
         bit=1 if name=='first' else 2
         add('l5-norseman-'+name+'-reward','the_ice_islands_quest','hjaern',['reward'],
             [storage(ice+'questline',before+1,before+2)],outfit=('norseman',bit),next_topic=topic)

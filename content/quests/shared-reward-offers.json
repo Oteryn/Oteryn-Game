@@ -596,6 +596,82 @@
       ]
     },
     {
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "shard"
+      ],
+      "topic": 3,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 40,
+          "maximum": 40,
+          "set": 41
+        }
+      ],
+      "reply": [
+        "Have you brought 5 frostheart shards?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "shard"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 42,
+          "maximum": 42,
+          "set": 43
+        }
+      ],
+      "reply": [
+        "Have you brought 10 frostheart shards?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "shard"
+      ],
+      "topic": 4,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 40,
+          "maximum": 40,
+          "set": 41
+        }
+      ],
+      "reply": [
+        "Have you brought 5 frostheart shards?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "shard"
+      ],
+      "topic": 4,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 42,
+          "maximum": 42,
+          "set": 43
+        }
+      ],
+      "reply": [
+        "Have you brought 10 frostheart shards?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.irmana",
       "keywords": [
         "addon"

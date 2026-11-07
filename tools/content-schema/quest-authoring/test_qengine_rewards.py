@@ -14,6 +14,18 @@ class QuestRewards(unittest.TestCase):
         cls.author=json.loads(cls.outputs['content/cosmetics/outfits/authoring.json'])
         cls.schema=json.loads((q.ROOT/'tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json').read_text())
 
+    def test_norseman_reward_continues_with_next_shards_on_published_topic(self):
+        callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
+        reward=callbacks['l5-norseman-first-reward']
+        second=callbacks['l5-norseman-second-shards']
+        phase=next(s['set'] for s in reward['storage'] if s['track'].endswith('/questline'))
+        offers=json.loads(self.outputs['content/quests/shared-reward-offers.json'])['offers']
+        reachable=[o for o in offers if o['npc']==reward['npc'] and o['topic']==reward['next_topic']
+            and 'shard' in o['keywords'] and all(s['minimum']<=phase<=s['maximum'] for s in o['storage'])]
+        self.assertEqual(len(reachable),1,'the next source delivery must be reachable without resetting the NPC conversation')
+        self.assertEqual(reachable[0]['next_topic'],second['topic'])
+        self.assertTrue(all(s['minimum']<=phase<=s['maximum'] for s in second['storage']))
+
     def test_oriental_source_costs_gender_and_foreign_door_owner(self):
         callbacks={c['key'].split('/')[-1]:c for c in self.callbacks['callbacks']}
         for sex in ('female','male'):

@@ -307,3 +307,25 @@ Follow-oncontent/world/pinpending. One sourceflow follow-up: Hjaern firstreward
 leaves topic3;root shardkeyword should also be admitted there atQuestline42
 (current offers requirefreshroot0). Add finite root offers at0/3/4 with exact
 phaseguards and authoring flowcheck;do not weaken fresh-stage cost guards.
+
+HjaernflowfollowupRED:published-source-flow regression1failed5.622s,
+0reachableexpected1 from firstrewardnexttopic3/Questline42. Authoredroot
+shardoffersat0/3/4withstrictphase40/42;sourceNPCrootbranchignoresprior
+topic. No sourcecost/nativeguard weakened. Sourcegen/check/PG rerunnext.
+
+HjaerncontinuousflowQUALIFIED:actualPG79.174554547s success,1passed0failed
+0ignored;published-flowRED5.622s->19PythonGREEN6.380s;fmt/check15.17s/
+clippy37.50s/pinrefresh24ab1df12ca45bb1f738718e4330bfb83b9788f2114509f9cdf13b37fc3d5c25.
+Pushimmediately. Sourcecostguardsunchanged;rootquestionnowworksat0/3/4.
+Still15qualified/51remaining. Next verifycontent/world/pin,archiveL1-05.
+CandidateL1-06 Beggar,CitizenRook,DruidRook:capturedscripts/tmp/qengine2-
+{hugo,simon_the_beggar,amber,norma,tom}.lua. Timer/counteroperationsmissing
+fromboundedcallbacksurface,butcorealreadyhasSetNow,Add,ElapsedAtLeast.
+Readactualcore+premiumownerbeforeimplementation;allmissinggenericfeaturesours.
+SourceHugo24hdeadline;Amber2hdeadline+Ref increment/reset;Simonmale5days
+startsos.time,femaleimmediategypsydresssourcebugdoesnotadvance8->10(blocks
+staffintro),documentconservativecompletionnormalization. TomRookonlybodyaddon1
+source;generalizetestexpectedfinalmask/factcount,neverinventsecondreward.
+Sourceexplicitpremiumguardsneednativeeligibilityaudit(e.gHugo,Simon,Irmana),
+reuseexistingGrizzlyPremiumGate/binding;donotassumeappearance-selectionpremium
+isthesameasrewardauthorization. No code/factdecisionyet;inspectfirst.
