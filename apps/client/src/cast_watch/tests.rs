@@ -1,0 +1,63 @@
+use super::*;
+use oteryn_session::cast::{DisplayTile, PublicMedia, Scene};
+#[test]
+fn s17b_watch_entry_needs_account_ticket_and_never_character_configuration() {
+    let config = WatchConfig::from_env(|name| match name {
+        "OTERYN_WATCH_ADDRESS" => Some("127.0.0.1:7172".into()),
+        "OTERYN_WATCH_TLS_NAME" => Some("game.test".into()),
+        "OTERYN_WATCH_ROOT_CERT" => Some("root.pem".into()),
+        "OTERYN_WATCH_TICKET" => Some(format!("ocv1.{}", "a".repeat(64))),
+        _ => None,
+    });
+    assert!(config.is_ok());
+    assert!(WatchConfig::from_env(|_| None).is_err());
+}
+#[test]
+fn s17b_native_picture_draws_map_and_creatures_then_blanks_on_terminal()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, _) = channel();
+    for message in [
+        Message::Clear { epoch: 1 },
+        Message::Scene {
+            epoch: 1,
+            sequence: 1,
+            scene: Scene {
+                tiles: vec![],
+                actors: vec![(1, 16, 272, 1, 75)],
+            },
+        },
+        Message::Media {
+            epoch: 1,
+            sequence: 2,
+            media: PublicMedia::Camera { floor: -7 },
+        },
+        Message::Media {
+            epoch: 1,
+            sequence: 3,
+            media: PublicMedia::Map {
+                reset: true,
+                last: true,
+                tiles: vec![DisplayTile {
+                    x: 16,
+                    y: 16,
+                    floor: -7,
+                    appearances: vec![100],
+                }],
+            },
+        },
+    ] {
+        link.apply(message)?;
+    }
+    let (_, panel) = link.snapshot().ok_or("watch panel")?;
+    let mut assets = picture::Assets::new();
+    let drawn = assets.draw(&panel.picture, Instant::now())?;
+    assert!(!drawn.sprites.is_empty());
+    assert!(!drawn.tiles.instances().is_empty());
+    assert!(drawn.atlas.width() > 0);
+    link.fail();
+    let (_, panel) = link.snapshot().ok_or("terminal panel")?;
+    let blank = assets.draw(&panel.picture, Instant::now())?;
+    assert!(blank.sprites.is_empty());
+    assert!(panel.picture.ended);
+    Ok(())
+}

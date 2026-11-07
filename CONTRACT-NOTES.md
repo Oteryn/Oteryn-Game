@@ -693,3 +693,26 @@ and saved access revision through the existing fenced command dispatcher.
 Platform retains account preference/password storage; Game still verifies the
 saved settings before every start/update. The client never sends a password.
 Confirmed revisions drive stop/update and disconnect clears the native panel.
+
+## CLCAST S17b — account-only Watch client
+
+Allocation against main 9668e0a04: the next free PublicMedia kind is 4;
+CLCAST lane offset +30 allocates nested media kind **34** for Camera{floor}.
+It travels inside the existing family 16 / Message kind 21 and carries only
+-15..0, with no world position or identity. Existing capability 289 is reused;
+no migration, command ID, capability ID or mechanic ordinal is allocated.
+Canary `src/creatures/players/livestream/livestream.cpp:486,541` and
+`src/server/network/protocol/protocolgame.cpp:8477,12379`, plus Crystal
+`src/server/network/protocol/protocolgame.cpp:7626,7846,8043`, ground the
+map/creature/effect/public-speech view and observer-only input allowlist.
+The explicit display floor completes the public map projection for native
+layer placement. All camera/map chunks follow the existing consent and delay
+queue; the client commits a map only at its final chunk and clears on slate,
+terminal transport failure or epoch reset.
+
+The native `oteryn-client --watch` entry consumes a one-use account observer
+ticket through OTERYN_WATCH_ADDRESS, OTERYN_WATCH_TLS_NAME,
+OTERYN_WATCH_ROOT_CERT and OTERYN_WATCH_TICKET. TLS/ALPN uses the existing
+adapter. It never invokes character selection/admission or initializes private
+panels. Platform directory, account authentication, ticket issuance and stored
+preferences remain the accepted handoff; no Platform files are changed.

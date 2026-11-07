@@ -16,6 +16,13 @@ fn native_client() -> Option<oteryn_client::ClientBootstrap> {
 /// install or uninstall holds the transaction mutex (CLIENT-INSTALLER-0 §2.1).
 #[cfg(windows)]
 fn main() -> std::process::ExitCode {
+    if std::env::args().any(|arg|arg=="--watch") {
+        return match oteryn_client::cast_watch::run() {
+            Ok(())=>std::process::ExitCode::SUCCESS,
+            Err(error)=>{eprintln!("Oteryn Watch: {error}");std::process::ExitCode::FAILURE}
+        };
+    }
+
     let _instance = match oteryn_client::win_mutex::acquire_client_instance() {
         Ok(instance) => instance,
         Err(error) => {
@@ -34,6 +41,10 @@ fn main() -> std::process::ExitCode {
 
 #[cfg(not(windows))]
 fn main() {
+    if std::env::args().any(|arg|arg=="--watch") {
+        eprintln!("Oteryn Watch uses the native Windows desktop shell");return;
+    }
+
     if let Some(client) = native_client()
         && let Ok(Some(config)) =
             oteryn_client::NativeLoginConfig::from_env(|name| std::env::var(name).ok())

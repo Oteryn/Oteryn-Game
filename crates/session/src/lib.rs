@@ -18,6 +18,8 @@
 
 /// Account achievement query and typed result.
 pub mod account_achievements;
+/// Account-only observer transport; separate from the player Session.
+pub mod cast_viewer;
 
 /// Display and control vocabulary for S17.
 pub use oteryn_protocol_oteryn::cast;

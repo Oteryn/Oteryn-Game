@@ -2,6 +2,8 @@
 
 #[path = "features/0025-appearance/mod.rs"]
 pub mod appearance;
+#[path = "features/0289-cast-view/mod.rs"]
+pub mod cast_view;
 #[path = "features/0290-cast-control/mod.rs"]
 pub mod cast_control;
 #[path = "features/0083-channel-list/mod.rs"]

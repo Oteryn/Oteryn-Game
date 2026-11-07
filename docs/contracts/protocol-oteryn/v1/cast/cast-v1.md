@@ -182,3 +182,13 @@ The production scene preserves committed interest's own-actor-first ordering:
 public handle 1 is the caster camera anchor. Its relative x/y is (16,16), with
 the native floor packed into y as above. Floor perspective uses that anchor;
 map chunks never expose the caster's absolute world coordinates.
+
+### CLCAST public camera
+
+Within PublicMedia (Message kind 21), nested kind 34 is Camera: required
+varint field 2 is `floor + 15`, bounded 0..15. The map producer sends it before
+the reset map chunk. It shares that capture's consent binding and chosen delay.
+It contains no absolute position, actor identity or actionable handle. The
+native viewer stages the camera and scene until the final map chunk, and drops
+all staged/shown data on a slate, clear or terminal failure. Kind 34 is the next
+free nested kind (4) plus CLCAST's assigned lane offset (30).
