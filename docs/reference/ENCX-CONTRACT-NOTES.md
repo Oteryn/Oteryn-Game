@@ -986,3 +986,29 @@ in 188.849s, changed-crate/all-target clippy with warnings denied in 64.504s,
 workspace fmt check in 15.245s, duplicate-migration check against fetched
 `origin/main` (`1ae39c7fb`) in 0.367s and pin-check in 28.617s. Pin refresh and
 audit tag/golden regeneration used repository tooling and changed no artifacts.
+
+
+## ENCX integration of main 1ae39c7fb
+
+Merged main with the repository merge drivers. Rebuilt the conflicting spell
+manifest through `tools/merge-driver/regen.sh --skip-checks`, then explicitly ran
+`register_spell_families.py` and its `--check` mode; both passed. The first final
+pin refresh was killed while competing with clippy; the isolated retry passed.
+Preserved incoming producer/quest notes under
+`docs/reference/QENGINE2-CONTRACT-NOTES.md`, leaving no root contract notes.
+QENGINE/QBASE migrations remain 0999–1008; no 1200–1205 copies or new ENCX
+migration/command/capability/mechanic numbers were introduced.
+
+Focused validation: 46 corpse/mint/audit tests passed in 5.181s, including actual
+PostgreSQL execution of
+`native_instance_corpse_mint_postgres_physical_death_loot_replay_and_scope_fences`
+in 5.175s. All eight native source-world tests passed in 1.184s, including
+`source_region_bundle_admits_primal_and_projects_both_regions` in 0.848s.
+The two map-capture and three boss-lever importer Python tests also passed.
+Workspace/all-target check passed in 443.842s; all-target clippy with warnings
+denied passed for all eleven ENCX-changed crates in 648.620s (both times include
+build-lock waits). The redundant smaller clippy run was stopped after the broader
+run passed. Fmt check passed in 18.423s, duplicate-migration check in 0.398s,
+pin refresh in 31.210s, pin-check in 33.765s and architecture-check in 6.041s.
+These component and integration checks do not change W10/W11/W16 completion:
+the full Primal production qualification/encounter chain remains unfinished.
