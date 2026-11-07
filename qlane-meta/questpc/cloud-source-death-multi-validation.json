@@ -1,0 +1,43 @@
+{
+  "status": "GREEN",
+  "postgres": "PostgreSQL18.6",
+  "cases": {
+    "lesser": 48.208601423,
+    "observer": 48.263174457,
+    "both": 48.26729805
+  },
+  "core_proof": "cloud-source-death-validation.json",
+  "production_code_unchanged_since": "37def8b16",
+  "new_production_change": false,
+  "coverage": [
+    "Two actual damaging admitted characters both receive source credit.",
+    "Active lesser damager receives source credit while inactive top damager remains absent.",
+    "Active non-damaging observer retains stored flag0."
+  ],
+  "baseline_red": "Original core callback RED retained in cloud-source-death-red.log; this is coverage of the existing corrected mechanism, no fabricated new RED.",
+  "validation": {
+    "cargo_check_tests": "PASS 3m42s",
+    "strict_clippy": "PASS dispatch all-targets/all-features -D warnings 5m04s including lock wait",
+    "cargo_fmt": "PASS",
+    "generated_inputs": "No content/generator/migration input changed; existing regenerated world pin174f5942 and inputs ed2f5e73 unchanged."
+  },
+  "whole_title_promoted": false,
+  "logs": {
+    "cloud-source-death-multi.log": {
+      "raw_sha256": "bd5db0e0633ece7ef41d3b73371061f850b1ca4d8db139bcf682d90d2c8d6e14",
+      "stored_sha256": "8ecb85a8bae794cbfb93412a86fdffc17e20680591d7b7a8fcc1bcba62a5326f"
+    },
+    "cloud-source-death-multi-check.log": {
+      "raw_sha256": "53fa6a940423a06875a2473c51910c4fa3edcf920e538f4bf4269bb916a601ef",
+      "stored_sha256": "53fa6a940423a06875a2473c51910c4fa3edcf920e538f4bf4269bb916a601ef"
+    },
+    "cloud-source-death-multi-clippy.log": {
+      "raw_sha256": "4bc505e8f2b086e0cb04926d9042873b3a1e9f4d6efa2e949deec1467c4ab691",
+      "stored_sha256": "4bc505e8f2b086e0cb04926d9042873b3a1e9f4d6efa2e949deec1467c4ab691"
+    },
+    "cloud-source-death-multi-fmt.log": {
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stored_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  }
+}

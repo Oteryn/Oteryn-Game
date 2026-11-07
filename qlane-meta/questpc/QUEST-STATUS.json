@@ -8627,13 +8627,18 @@
   },
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
-    "scope": "generic source creature-death callback core",
+    "scope": "source damaging-player selection across two real admitted characters",
     "status": "GREEN",
-    "validation": "five actual PostgreSQL18.6 cases plus Father atomic regression, fmt/check/strictClippy/source/pins",
+    "validation": {
+      "cargo_check_tests": "PASS 3m42s",
+      "strict_clippy": "PASS dispatch all-targets/all-features -D warnings 5m04s including lock wait",
+      "cargo_fmt": "PASS",
+      "generated_inputs": "No content/generator/migration input changed; existing regenerated world pin174f5942 and inputs ed2f5e73 unchanged."
+    },
     "whole_title_promoted": false
   },
   "continuation": {
-    "next": "Run the prepared real two-character damaging-player selection probes, then Curos NPC start and timed crystal source route.",
+    "next": "Native Curos NPC start with NewFrontier prerequisite, atomic two flags; then quest door/native Renegade spawn, crystal transform/revert and exact tome reward.",
     "runtime_change_since_4f151ba81": true,
     "red_point": null,
     "source": "Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data-global/scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua, blob 8d1ecd7810b863df6f44e9e4aead98264fe50395",
@@ -8658,7 +8663,8 @@
       "clippy": "PASS three changed crates all-targets/all-features -D warnings; 8m02s including lock wait",
       "world_pin": "174f5942b036a38769872612f292957daa670bfb2a3a96f3b6a2aec395d32a62",
       "intermediate": "Three refusal cases pass; replay still flag0 because row-less fallback omitted damage shares; active stopped on invalid synthetic occurrence. Both corrections applied; final PG pending."
-    }
+    },
+    "multi_player_proof": "cloud-source-death-multi-validation.json"
   },
   "engine_progress": {
     "stateless_departure": {
@@ -9281,9 +9287,10 @@
       "next": "Level25 gate, Elathriel exact paid copper key3012, Dragonlord mushroom/fetish exchange and shared skeleton stock key3001, then final route composition."
     },
     "source_creature_death": {
-      "status": "CORE_GREEN",
+      "status": "QUALIFIED_SOURCE_COMPONENT",
       "proof": "cloud-source-death-validation.json",
-      "whole_title_promoted": false
+      "whole_title_promoted": false,
+      "multi_player_proof": "cloud-source-death-multi-validation.json"
     }
   },
   "cross_lane_qualified_elsewhere": {

@@ -435,6 +435,7 @@ fn scenario_case(
             && super::super::draconia_route::gate(super::super::draconia_route::source(name)?.0)
                 .is_some())
             || (container_stock && name.ends_with("-epoch-observer"))
+            || (source_death && name.contains("-multi-"))
         {
             h.seed_pvp_target().await?;
             super::super::appearance_change_postgres::observer_visibility_tests::admit(&h).await?;
@@ -477,7 +478,9 @@ fn scenario_case(
             1,
             "runtime-scope-assignment:1",
             // These two cases keep five source NPCs and one player alive.
-            if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {
+            if source_death && name.contains("-multi-") {
+                4
+            } else if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {
                 6
             } else if classic_npc {
                 5
@@ -702,6 +705,9 @@ fn scenario_case(
             super::super::raid_tokens::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "marlin-trophy-exchange" {
             super::super::marlin_trophy::exercise(&mut owner, &mut admitted, &h, &authority)
+                .await?;
+        } else if source_death && name.contains("-multi-") {
+            super::super::source_quest_death_multi::exercise(&deps, &owner, &admitted, &h, name)
                 .await?;
         } else if source_death {
             super::super::source_quest_death::exercise(&owner, &admitted, &h, name).await?;

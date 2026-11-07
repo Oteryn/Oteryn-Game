@@ -1,3 +1,20 @@
+## Source death two-player selection GREEN — 2026-11-07
+ActualPG18.6: both48.26729805s,lesser48.208601423s,observer48.263174457s.
+Realcharacters41/101,sessions/fences/leases1+2. Bothdamagers credit; lesser
+active damager credits whiletopinactive staysabsent; nondamagingactive observer
+retains0. Productioncode unchanged; coverageofalready-corrected core, no fakeRED.
+Focusedtest3PASS; cargoCheck--tests3m42s, strictClippy5m04s, fmtPASS.
+Proof cloud-source-death-multi-validation.json. Generic source death component
+qualified; wholeAnUneasy remains unqualified pendingnativeNPC/world/reward route.
+NEXT CurosnativeNPC (admitteddeclaration,placement33174,31394,z7), prerequisite
+NewFrontierMission06>=5, atomicQuestline1+QuestDoor0. Source201189 publicly
+verifiedsame7139byteblob4fdffd8e as9fcorpus, SHA6feee8de. Facts CONTRACT-NOTES.
+Then sourcequestdoor/nativeRenegade spawn and crystal40030 10186->10187/10s
+revert +Questline3->4; consultqworld/otherlanes beforetimergenericimplementation.
+Curosfinalmission4->5 givesitem10217 exactlyonce. No rawsource/assets copies.
+Counts61/116/1excluded;43UNFINISHEDskipelsewhere,73ownedremain.
+Push eachgreenstep, max15min; fetchexacttarget/mergeFETCH_HEAD/no force/rebase/main/PR.
+
 ## Generic source death core GREEN — 2026-11-07
 Five actualPG18.6 cases PASS: replay=72.572018456s, restarted=72.68580566s, inactive=89.541777659s, late-start=89.565341527s, active=47.700990906s.
 Fatheratomic11-track/handins/capeXP/replay regression PASS126.290383014s.

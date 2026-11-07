@@ -216,7 +216,7 @@ pub(super) async fn exercise(
     Ok(())
 }
 
-async fn start_quest(
+pub(super) async fn start_quest(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: crate::foundation::GameSessionId,
     command: u64,

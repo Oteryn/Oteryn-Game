@@ -540,3 +540,19 @@ the alternate crystal monster blob3c48000b8d76d9b93df9d1457be15e630b5ada2c has
 no event. The explicit global quest-source binding is authoritative for this slice.
 Full An Uneasy Alliance qualification still requires native Curos start, all damaging
 players coverage and the later crystal transformation/reversion source route.
+
+### Curos source intake for the next native NPC slice
+Public source verified 2026-11-07: https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/curos.lua
+SHA256 6feee8de2475788bca144210fd47cbf857b5dce3a16215ff2647e971bcd3a42e,
+Git blob4fdffd8e90b8de6d2f17ce5c38c45020397c48c9,7139bytes. It is byte-identical
+to the retained9f5a72c corpus blob; future regeneration can reuse those verified
+bytes without committing another source-data copy. Native NPC declaration already
+admitted; normalized placement candidate33174,31394,z7,lookType29.
+Mission precedence: NewFrontierQuestline16 and18 branches precede UneasyAlliance.
+Start requires NewFrontierMission06>=5 and UneasyQuestline<1, then writes Questline1
+and QuestDoor0 together. Mission at Questline1/QuestDoor1 sets2; mission at2 sets3;
+mission at4 sets5 and grants item10217. No source quest credit for absent door flag.
+Next tests must use actual native Curos dialogue and these prerequisite guards.
+Later crystal action40030 changes10186->10187 for10seconds and only advances
+Questline3->4; check qworld/other lanes for a reusable timer before implementing one.
+These are verified source facts for continuing work, not full-quest qualification.
