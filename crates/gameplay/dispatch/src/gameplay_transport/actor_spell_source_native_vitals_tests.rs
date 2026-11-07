@@ -356,7 +356,7 @@ fn pubproj_creature_dot_keeps_frozen_identity_after_source_removal_and_hides_sum
             object_look_type: None,
             summonable: true,
             convinceable: false,
-            mana_cost: None,
+            mana_cost: Some(100),
             is_familiar: false,
             condition_immunities: vec![],
             defense: Some(0),

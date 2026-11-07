@@ -213,3 +213,10 @@ large all-family resync from exhausting the shared lock table after online
 capture has completed. Fence rows contain only canonical subject identity, no
 interval payload, ownership, creature dimension or counters; retention still
 erases the retained projection/source payload on its existing deadlines.
+
+Focused unit execution found two additional issues: the summonable creature
+fixture lacked its required mana-cost declaration, and an empty final-source
+retry regressed a proven same-millisecond cut after acknowledgement. The fixture
+now satisfies native Content admission; quiesced retries retain the last proven
+cut while the existing unsafe-clock checks remain unchanged. No assertion or
+source deadline is removed or relaxed.

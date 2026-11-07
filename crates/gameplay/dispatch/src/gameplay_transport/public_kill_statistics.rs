@@ -142,6 +142,9 @@ impl CaptureQueue {
                 .map(PhysicalKill::occurred_ms)
                 .max()
                 .map_or(now_ms - 1, |last| last.max(now_ms - 1))
+                // A joined-owner retry after acknowledging a same-ms event
+                // retains that proven cut even when its queue is now empty.
+                .max(state.last_ack_cut.unwrap_or(i64::MIN))
         } else {
             state
                 .pending
