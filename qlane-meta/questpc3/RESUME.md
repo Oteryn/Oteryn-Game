@@ -83,6 +83,10 @@ check/Clippy4crates all features/all targets passed; initial atomic-start unit1 
 
 Remote b7f1399770ea27b4232c973cb3c0dd3f19684c87 changes only qlane metadata and CONTRACT-NOTES; no Rust/content inputs. Its changed proof records are preserved in cloud_continuation.remote_metadata_proofs.b7f139977. Green source merge is8b4ef8e01, reward implementation023219279. Publish this metadata-only merge immediately; no additional gameplay run is needed for notes. Then begin the three-Cockroach occurrence bridge with new real PG RED. All other remaining tutorial mechanisms and the other4owned quests remain ours to implement; no final summary while any remain.
 
+## Completed validation checkpoint
+
+The Clippy run for merged source025936c3d8b4ff07d6cb57d60c0c8afb23a6cd7e completed successfully in5m56s (/tmp/questpc3-merged-greet-clippy.log). Together with the already recorded three focused PostgreSQL cases, this closes that prior integration check. This evidence predates the active Pilgrimage slice and does not claim it GREEN. Preserve the incoming physical Santiago Item/XP slice. Continue Pilgrimage and all five owned quests.
+
 ## Current cockroach-goal-01 — awaiting actual RED
 
 Reward/greeting/proof integration is PUSHED/REMOTE-VERIFIED32d004db14a6758620659e608681f2d4d5f52c48. New uncommitted test-only changes in quest_l4_counters.rs and child quest_l4_counters/tutorial.rs. Run /tmp/questpc3-cockroach-goal-red.log (exec32400) is compiling/running; do not count a compile/fixture failure as RED. Two cases: sequential3deaths and same-start-epoch burst3. Fixture seeds only stage5/log4/counter0; no successful occurrence or stage6/hand-in. Existing unstarted negative still checks no pending entry after drain, no counter, log4, and now zero physical legs. Known-but-ineligible creatures may enter the shared queue after binding, so drain before the retained empty-queue assertion.
@@ -98,3 +102,5 @@ Actual source-path RED53.63s (PG marker53526ms, lethal event absent from native 
 check3crates passed31.99s; strict Clippy3crates/all features/all targets passed3m08s; conditional3/native15/sum2 unit filters passed. Retained inactive Cockroach PG passed55.47s (55461ms); Dragon burst PG passed50.10s (50096ms). Maelyrra sum regression still running; do not publish until it completes. No content/native/pin changes. Final proof hashes go in checks.cockroach_goal_01. Review found no unchecked reference, overflow, changed old-counter definition, extra grant or broken epoch fence. Complete metadata, commit required trailers, fetch/merge and push after final GREEN.
 
 Final Maelyrra regression GREEN53.42s/53417ms. Cockroach-goal-01 is fully GREEN; all selected checks complete. Publish now; next actual PG RED is Zirella six source instruction callbacks with no fabricated ground delivery/XP. Scratch test /tmp/questpc3-zirella-lessons.rs and producer /tmp/questpc3-zirella-producer.py are NOT applied. All five whole quests remain active.
+
+Integrated remote44e16fc73 metadata-only Clippy completion proof. Source remains exactly the tested262618b3c cockroach batch; no new gameplay validation required for this proof-only merge.

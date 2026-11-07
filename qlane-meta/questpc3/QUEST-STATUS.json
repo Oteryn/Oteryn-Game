@@ -1598,6 +1598,13 @@
           "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l4_counters/tutorial.rs": "e291456944848fe99cbd8e99f51fe9fa7e9293f478e30b6680a176fb5ab8a1fb",
           "crates/gameplay/quests/src/quest/conditional_tests.rs": "1602bb65e6843c0506cf7c4852eef8213460e7879234db167aada8b6d3492c02"
         }
+      },
+      "greeting_merge_clippy_completion": {
+        "status": "PASS",
+        "duration": "5m56s",
+        "log": "/tmp/questpc3-merged-greet-clippy.log",
+        "validated_source_commit": "025936c3d8b4ff07d6cb57d60c0c8afb23a6cd7e",
+        "scope": "quests/npc/durability/dispatch all features and targets; completed before Pilgrimage changes"
       }
     },
     "source_corrections": [
