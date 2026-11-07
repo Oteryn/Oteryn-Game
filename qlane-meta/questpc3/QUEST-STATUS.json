@@ -943,7 +943,7 @@
         "clippy": "Five crates/all features/all targets -Dwarnings PASS42.29s on recovered retry.",
         "recovery": "Filesystem exhaustion caused initial Clippy/tempdir, repository incremental-directory and service fingerprint failures (os error28), plus sandbox startup bwrap ENOSPC. Recovered with only obsolete unlocked incremental snapshots, newest/active retained; auto-review permitted the same cleanup outside the sandbox because it could not start. All failed checks reran and passed. No profile/linker settings or tests changed.",
         "validated_inputs": {
-          "apps/game-server/migrations/1096_quest_blessing_grants.sql": "91f88afa30a1c04e56a0ddd514bd58976c95a78d0092b2fa79e9fa5e9820ac92",
+          "apps/game-server/migrations/1222_quest_blessing_grants.sql": "91f88afa30a1c04e56a0ddd514bd58976c95a78d0092b2fa79e9fa5e9820ac92",
           "content/content.lock.json": "3688399d34d7d93fda709cf30f03bcb9f72830d63f10c42db0a66dad288b7de1",
           "content/dialogues/quests/shared-reward-greetings.json": "3a93ddaff17120b0d1f6411d0620c7c976ab0aba990d41e2c7f4295b7a7b3595",
           "content/manifest.json": "d571eca059134a02cfceb1f920ed53003133e0b6f320f4f65f66c826c8c8295f",
@@ -2231,7 +2231,7 @@
         ],
         "red_log": "/tmp/questpc3-beginning-equipment-red-marked.log",
         "whole_entry_status": "Beginning IN_PROGRESS; four owned whole quests remain; no engine deferral.",
-        "reuse": "Existing carried presence and native reward MINT/custody; equipment writers already serialize under Character root. No occupied-slot predicate found in refreshed qengine2/PC2/PC4–8/L2 callbacks.",
+        "reuse": "Existing carried presence and native reward MINT/custody; equipment writers already serialize under Character root. No occupied-slot predicate found in refreshed qengine2/PC2/PC4\u20138/L2 callbacks.",
         "first_red": {
           "log": "/tmp/questpc3-beginning-equipment-red.log",
           "sha256": "45de478a54e47db5abc09db3ee85089374c348c20d3e02850f37f7553822eafe",
@@ -3707,7 +3707,7 @@
             "tail": "1109 is unclaimed across all seven freshly fetched dependency lanes; highest inspected reservation1108.\nquestpc6 apps/game-server/migrations/1096_quest_reward_payments.sql\nquestpc6 apps/game-server/migrations/1097_repeatable_quest_reward_claims.sql\nquestpc7 apps/game-server/migrations/1096_npc_quest_item_exchange.sql\nquestpc7 apps/game-server/migrations/1097_fathers_burden_xp_proof_name.sql\nquestpc7 apps/game-server/migrations/1098_quest_reward_callbacks.sql\nquestpc7 apps/game-server/migrations/1099_quest_reward_payments.sql\nquestpc7 apps/game-server/migrations/1100_quest_repeatable_exchanges.sql\nquestpc7 apps/game-server/migrations/1101_quest_world_item_rewards.sql\nquestpc7 apps/game-server/migrations/1102_quest_backpack_outputs.sql\nquestpc8 apps/game-server/migrations/1108_questpc8_reward_backpack_outputs.sql\n"
           }
         },
-        "migration": "1109_npc_trade_quest_obligations.sql; only new unpublished migration renumbered above inspected cross-lane reservations; existing migrations untouched",
+        "migration": "1223_npc_trade_quest_obligations.sql; only new unpublished migration renumbered above inspected cross-lane reservations; existing migrations untouched",
         "material_base": "c40fd4fb69bd355ecbf1a2d875a2399aaed45dde",
         "review": "Whole material diff self-reviewed for root lock/atomic eligibility capture, unchanged legacy binding, typed source/cause and immutable same-transaction SQL provenance, schema-bound guards, fresh current Quest fences, existing recovery, target/source/time bindings and source exchanges. Independent exact-head review required next; none invoked yet.",
         "pin_scope": "All World compiler inputs/generated files exactly equal incoming published473461206; retain its native41 and pin/mirror proof world0bf8d8c92c222f75cb44ccaaff4f231096629fc47078446277bde055c08b6baf. Local trade callback/migration changes are outside compiler INPUT_PATHS.",
@@ -4022,7 +4022,7 @@
     },
     "current_batch": {
       "batch": "threatened_treasure_14",
-      "phase": "Compiled WIP test and genuine full six-entry PostgreSQL RED published; production14 implementation starts now.",
+      "phase": "Native loose-backpack-output core selectively reused/APPLIED from96d03398f;5crate checkPASS51.12s. Focused PG owner test building and strictClippy queued. Carried/repeatable/appearance features next; no quest14GREEN claimed.",
       "previous_published": "6146ee945",
       "entries": [
         "agaric25385 -> fourth map24946",
@@ -4064,7 +4064,16 @@
         "server": "PostgreSQL18.6",
         "negative_paths": "wrong stage, wrong mosaic position, exact native replay all reached; fixture movement fixed"
       },
-      "repeatability": "Source map has no stage prerequisite and consumes four parts every use. Test earns a second cycle by recomposing real inputs after first treasure; no stage5 or output assets seeded."
+      "repeatability": "Source map has no stage prerequisite and consumes four parts every use. Test earns a second cycle by recomposing real inputs after first treasure; no stage5 or output assets seeded.",
+      "bulk_reuse": {
+        "commit": "96d03398ff4fa6a4b4600bce114209738e072d5f",
+        "files": 19,
+        "adaptation": "Retained local no-fluid/no-charge-plan schema, added only backpack mode fields/SQL. Empty mode preserves existing intent binding. Complete existing MINT/audit owner with atomic peer outputs; no new value writer. Other caller changes only modefalse compatibility.",
+        "check": "cargo check durability/quests/dispatch/social/game-server PASS51.12s",
+        "pg_log": "/tmp/questpc3-treasure-bulk-pg.log",
+        "clippy_log": "/tmp/questpc3-treasure-bulk-clippy.log",
+        "next_push_deadline": "15minutes after9293e3d9b; publish compiled WIP if still qualifying"
+      }
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
@@ -4287,7 +4296,7 @@
       ],
       "remaining_scope": "Four wholequestsIN_PROGRESS. Bridge/log8, coat replacement, fiveGROUNDwood/cart; otherquest remainingcomponents per status. No further work by this thread."
     },
-    "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R–S entries assigned to other split lanes are scope evidence only",
+    "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R\u2013S entries assigned to other split lanes are scope evidence only",
     "phase": "OWNER STOP; handoff to r2",
     "previous_batch": {
       "id": "carlos-report-paid-fur-merge",
@@ -8671,7 +8680,7 @@
   },
   "historical_inventory": {
     "snapshot": "c5cdcd6ae:qlane-meta/questpc3/QUEST-STATUS.json",
-    "scope": "R–S; migrations1040–1059; no new commands/capabilities",
+    "scope": "R\u2013S; migrations1040\u20131059; no new commands/capabilities",
     "counts": {
       "inventory": 56,
       "qualified": 19,
@@ -9202,7 +9211,7 @@
         ]
       }
     ],
-    "note": "Other original R–S mechanisms belong to other split lanes. Do not reopen finished entries."
+    "note": "Other original R\u2013S mechanisms belong to other split lanes. Do not reopen finished entries."
   },
   "phase": "AUTHORING",
   "quests": [
@@ -9472,6 +9481,19 @@
       "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
     }
   ],
-  "scope": "L4 per LANE-L4.json and QSPLIT-PLAN.md; skip other lanes and world-change owners. All shared features required by the five owned quests are this lane’s implementation responsibility.",
-  "task_id": "questpc3-L4"
+  "scope": "L4 per LANE-L4.json and QSPLIT-PLAN.md; skip other lanes and world-change owners. All shared features required by the five owned quests are this lane\u2019s implementation responsibility.",
+  "task_id": "questpc3-L4",
+  "migration_registry_alignment": {
+    "range": "1220-1229",
+    "files": [
+      "1220_questpc3_npc_exchanges.sql",
+      "1221_sinatuki_cumulative_fish.sql",
+      "1222_quest_blessing_grants.sql",
+      "1223_npc_trade_quest_obligations.sql",
+      "1224_quest_reward_backpack_outputs.sql",
+      "1225_quest_world_reward_participants.sql"
+    ],
+    "status": "compiling WIP; pre-rename focused PostgreSQL backpack-output test passed in 6.812420905s on PostgreSQL 18.6; post-rename verification pending",
+    "red_point": "Six-entry native treasure qualification remains RED: entries=0, agaric=false, composed_maps=0, repeated_map=false, ring=0, quartz=0, coins=0, stage=4. Strict Clippy interrupted by ENOSPC; no lint pass claimed."
+  }
 }

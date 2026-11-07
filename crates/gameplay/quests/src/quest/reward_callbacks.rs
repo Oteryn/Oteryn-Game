@@ -23,6 +23,8 @@ pub struct ItemReward {
     pub count: u16,
     #[serde(default)]
     pub contents: Vec<ItemAmount>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub backpack_outputs: Vec<ItemAmount>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -103,9 +105,12 @@ pub(crate) fn valid_item_reward(reward: &ItemReward) -> bool {
     };
     item(&reward.item, reward.count)
         && reward.contents.len() <= 20
+        && reward.backpack_outputs.len() <= 19
+        && (reward.contents.is_empty() || reward.backpack_outputs.is_empty())
         && reward
             .contents
             .iter()
+            .chain(&reward.backpack_outputs)
             .all(|entry| item(&entry.item, entry.count))
 }
 
