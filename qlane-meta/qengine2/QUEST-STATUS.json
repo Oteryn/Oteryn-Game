@@ -3184,7 +3184,7 @@
     "peer_reuse_audit": "26 origin lane heads inspected; questpc3 262618b3cd9fce9de09ee83064de6f31e95aa8e7 conditional kill progression and questpc7 653feac452d8dbb2cf03edbfc733a1bf59bd77d7 world reward composition identified for reuse",
     "qualification_counts_unchanged": true,
     "carried_exchange": {
-      "state": "WIP; focused PostgreSQL GREEN queued after workspace compile gate",
+      "state": "WIP; migration syntax fix validated by actual PostgreSQL; full own7-test rerun queued",
       "api": "RewardCallback.carried_exchange (default false), existing QuestRewardAdmission and consumption/MINT transaction",
       "red_pg_seconds": 70.008946262,
       "red_pg_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-authored-bindings success=false",
@@ -3193,8 +3193,18 @@
       "registry_units_green": 4,
       "migration": 1552,
       "reuse": "questpc3 9936a44dd27374dfcd9c5430888c972b0d35e5ef bounded exchange input selection and SQL proof; opt-in preserves original legacy-tool tests",
-      "focused_green_log": "/tmp/qengine2-authored-pg-green.log",
-      "counts_unchanged": true
+      "focused_green_log": "/tmp/qengine2-authored-pg-green2.log",
+      "counts_unchanged": true,
+      "focused_rerun_1": {
+        "passed": 6,
+        "failed": 1,
+        "pg_seconds": 4.966959355,
+        "error": "migration1552 syntax error at end of input",
+        "root_cause": "PL/pgSQL IF scanner sees unparenthesized CASE THEN as statement delimiter",
+        "fix": "parenthesize CASE expression",
+        "tight_postgresql_red_green": "/tmp/qengine2-carried-case-{red,green}.log",
+        "actual_migration_probe": "/tmp/qengine2-1552-migration-probe.log; PostgreSQL18.6; transaction rolled back"
+      }
     }
   }
 }

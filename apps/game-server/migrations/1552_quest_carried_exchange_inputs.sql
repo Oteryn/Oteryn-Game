@@ -22,10 +22,10 @@ BEGIN
         OR EXISTS(SELECT 1 FROM jsonb_array_elements(NEW.plan->'take') e
             WHERE CASE WHEN e->>'count' ~ '^[0-9]{1,3}$'
                 THEN (e->>'count')::integer NOT BETWEEN 1 AND 100 ELSE true END)
-        OR CASE WHEN NEW.plan->'carried_exchange'='true'::jsonb THEN
+        OR (CASE WHEN NEW.plan->'carried_exchange'='true'::jsonb THEN
             jsonb_typeof(NEW.plan->'give') IS DISTINCT FROM 'object'
         ELSE jsonb_array_length(NEW.plan->'take')<>1
-            OR NEW.plan->'give' IS DISTINCT FROM 'null'::jsonb END
+            OR NEW.plan->'give' IS DISTINCT FROM 'null'::jsonb END)
         OR NEW.created_xact_id<>pg_current_xact_id() THEN$new$);
     EXECUTE format('ALTER FUNCTION game_quest_carried_use_complete() SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $migration$;
