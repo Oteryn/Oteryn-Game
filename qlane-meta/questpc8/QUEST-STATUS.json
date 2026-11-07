@@ -302,7 +302,7 @@
     "title": "Killing in the Name of... Quest",
     "canonical": "oteryn:quest.killing_in_the_name_of_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/64/definition",
-    "status": "QUALIFIED",
+    "status": "UNFINISHED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
     "queued_stage_binding": {
@@ -310,7 +310,9 @@
       "native_dispatch_binding": "oteryn:quest-reward/chosen/hunting-campaign",
       "runtime_enabled": true
     },
-    "blocker": null,
+    "blocker": {
+      "missing_piece": "Native hunting programme remains PG-qualified. Compiled production world has no Grizzly Adams actor (compiled-npc-probe); add the existing captured Port Hope placement32693,32767,z6 to the placement scope and verify native boot/talk. This is the immediate next integration action, not a shared-feature wait."
+    },
     "source_path_evidence": {
       "pg_qualified": true,
       "scope": "Historical source-only proof; superseded by the complete chosen-program qualification below.",
@@ -338,7 +340,7 @@
         "exact three achievements and no additional reward on a subsequent report"
       ]
     },
-    "disposition": "dispatch-pg-qualified",
+    "disposition": "authoring-native-placement",
     "qualified_elsewhere": [],
     "mechanism": "none",
     "round": "L7",
@@ -386,7 +388,13 @@
         "duration_seconds": 179.886708384,
         "proof": "qlane-meta/questpc8/cloud-hunting-campaign-proof.json"
       }
-    ]
+    ],
+    "native_placement_probe": {
+      "artifact_digest": "dd0a866904036a1823db30d042fcfd9eb4db89b21ad7ea93b1916cdc52265a04",
+      "compiled_npc_count": 29,
+      "grizzly_adams_present": false,
+      "log_sha256": "145bb737d8f88ea6d1ece1a51c5f0743d6b0e97ba4e9149594350852c1086a03"
+    }
   },
   {
     "title": "Kilmaresh Quest",
@@ -1284,8 +1292,8 @@
   {
     "canonical": "oteryn:quest.giant_smithhammer_quest",
     "title": "Giant Smithhammer Quest",
-    "status": "UNFINISHED",
-    "disposition": "authoring",
+    "status": "QUALIFIED",
+    "disposition": "qualified-here",
     "qualified_elsewhere": [],
     "mechanism": "native chosen exploration, captured Giant Spider death, exact central chest and atomic three-item backpack MINT",
     "round": "L7",
@@ -1307,13 +1315,18 @@
         "marker": "POSTGRES_CASE_COMPLETED questpc8_smith_cache_native_guardian_and_atomic_outputs",
         "duration_seconds": 26.27184565,
         "proof": "native-alias-smith-merge-validation.json"
+      },
+      {
+        "scope": "Production guardian activation from active native exploration; exact actor reused across refresh; captured native death plus atomic output programme",
+        "test": "questpc8_smith_cache_native_guardian_and_atomic_outputs",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_smith_cache_native_guardian_and_atomic_outputs",
+        "duration_seconds": 37.615971969,
+        "proof": "cloud-smith-cache-proof.json"
       }
     ],
     "proof": "cloud-smith-cache-proof.json",
     "qualification_scope": "Complete chosen exploration/Giant Spider/cache programme with exact hammer1, Talon1 and gold100 atomic outputs; retained source four-state lever is separately PG-qualified.",
-    "blocker": {
-      "missing_piece": "Finishing production guardian activation and its real-spawn PG proof; cached grant/kill and MINT proofs retained."
-    }
+    "blocker": null
   },
   {
     "canonical": "oteryn:quest.triangle_tower_quest",

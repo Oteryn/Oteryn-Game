@@ -337,6 +337,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return UseDisposition::Rejected;
                 }
                 Ok(_) | Err(_) => {
+                    if oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives|
+                        objectives.iter().any(|objective| objective.quest == callback.quest && objective.guardian.is_some()))
+                    {
+                        self.schedule_quest_refresh(session);
+                    }
                     if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
                         pending.remove(&session);
                     }

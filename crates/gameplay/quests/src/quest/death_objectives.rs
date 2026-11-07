@@ -9,6 +9,8 @@ use std::sync::OnceLock;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct DeathObjective {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub guardian: Option<GuardianSpawn>,
     pub key: String,
     pub quest: String,
     pub creature: String,
@@ -19,6 +21,13 @@ pub struct DeathObjective {
     pub minimum: Position,
     pub maximum: Position,
     pub sources: Vec<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct GuardianSpawn {
+    pub position: Position,
+    pub respawn_ms: u32,
 }
 
 impl DeathObjective {
@@ -80,6 +89,15 @@ pub fn load() -> Result<&'static [DeathObjective], String> {
                 || objective.maximum.y < objective.minimum.y
                 || objective.maximum.x - objective.minimum.x > 64
                 || objective.maximum.y - objective.minimum.y > 64
+                || objective.guardian.as_ref().is_some_and(|guardian| {
+                    !(60_000..=3_600_000).contains(&guardian.respawn_ms)
+                        || !objective.matches(
+                            &objective.creature,
+                            i32::from(guardian.position.x),
+                            i32::from(guardian.position.y),
+                            -i16::from(guardian.position.floor),
+                        )
+                })
                 || objective.sources.is_empty()
                 || objective.sources.len() > 8
                 || objective

@@ -33,20 +33,28 @@
       "counter": "oteryn:quest-progress/chosen/smith-cache/kills",
       "required": 1,
       "minimum": {
-        "x": 32773,
-        "y": 32252,
+        "x": 32760,
+        "y": 32240,
         "floor": -8
       },
       "maximum": {
-        "x": 32779,
-        "y": 32255,
+        "x": 32790,
+        "y": 32270,
         "floor": -8
       },
       "sources": [
         "oteryn-authored:chosen-recipe:giant-smithhammer:quest-r1",
         "https://tibia.fandom.com/index.php?curid=4377&oldid=748685",
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L1170; chosen consolidated cache, no retained UID."
-      ]
+      ],
+      "guardian": {
+        "position": {
+          "x": 32775,
+          "y": 32254,
+          "floor": -8
+        },
+        "respawn_ms": 90000
+      }
     },
     {
       "key": "oteryn:quest-death/authored-voodoo",

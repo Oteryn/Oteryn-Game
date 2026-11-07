@@ -3,6 +3,7 @@
 //! Crystal 201189f `creaturescripts_monster_kill.lua:18-56`, `party.lua:129-139`.
 
 use std::sync::Arc;
+mod guardians;
 
 use oteryn_gameplay_quests::quest::grizzly_adams::{self as quest, GrizzlyAction};
 
@@ -51,6 +52,7 @@ pub(super) struct FrozenGrizzlyDeath {
 /// their first capture, bounded by the carrier's existing pinned/unpinned corpse ceilings.
 #[derive(Debug, Default)]
 pub(super) struct GrizzlyCaptureCache {
+    guardians: Vec<guardians::GuardianSlot>,
     sessions: Vec<TaskSnapshot>,
     deaths: Vec<(ExactActorRef, [u8; 16], Arc<FrozenGrizzlyDeath>)>,
 }

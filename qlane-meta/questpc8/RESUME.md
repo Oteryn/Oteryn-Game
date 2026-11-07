@@ -1,3 +1,35 @@
+# Current merged checkpoint
+
+Conditional native guardian activation and the three retrieval routes are merged
+and green. PG Kormarak43.174407045s, Mastermind168.597165252s,
+Voodoo39.883104658s, actual-spawn smith26.047108047s;17 world units, all-feature
+check, strict Clippy and fmt pass. See guardian-retrieval-merge-validation.json.
+Preserve both guardian models: Smith is conditional; Kormarak uses the ordinary
+world source already verified in the compiled artifact. World inputs unchanged.
+
+URGENT next native integration: the compiled bundle contains29 NPCs and no
+Grizzly Adams. Startup places bundle NPCs plus only timed/daily actors; hunting
+logic is complete but the public NPC is missing. The existing captured candidate
+has Grizzly at32693,32767,z6, look144. Add that key to the existing NPC placement
+scope, regenerate with repo tooling and verify actual native boot/talk. Do not
+redo the2003-death hunting programme. Its qualification components are retained;
+the entry is reopened only for this concrete physical placement. Current counts:
+7 qualified here,3 elsewhere,13 remaining. No final review/freeze yet.
+
+Latest qengine2 is8d3145a1d (Rookgaard Druid, Norseman/Formorgar); use/reuse its
+native payment/presence/foreign-quest participants before writing equivalents.
+Next candidates: native NPC integration plus Mystery of the Valley and Travelling
+Trader. NPC placement scope currently covers only33 keys, mostly Newhaven.
+Lai canonical NPC exists but dialogue isNone and no promotion candidate; Rashid
+and Captain Waverider have captured placements but are outside the static scope.
+Existing server rashid_schedule already rotates a placed Rashid by weekday;
+paid_travel.rs already composes ship/carpet confirmations through the travel hold.
+Do not invent a second travel owner. Statue50335/fragments50336..50338 exist in
+client assets with take flags but lack Crystal binding rows/XML/weights; use an
+explicit documented native factory/default qualification, never numeric-only
+promotion or silent canonical rewriting. Existing40450 source-default closure
+is in tools/content-schema/native-gameplay/canary_generic_item_identity.py.
+
 # Current completed three-route batch
 
 Voodoo Doll, Mastermind Potion and Kingdom of Kormarak are QUALIFIED here.

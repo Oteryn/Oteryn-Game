@@ -47,19 +47,6 @@ pub(super) async fn exercise(
     native
         .install_companion_policies(&mut *owner.runtime.lock().await)
         .map_err(debug)?;
-    step(owner, admitted, 1, StepDirection::East).await?;
-    assert_eq!(progress(h, "stage").await?, 1);
-    let position = TilePos {
-        x: 32776,
-        y: 32253,
-        floor: -8,
-    };
-    let target = object_target(owner, position, 1)?;
-    assert_eq!(
-        use_target(owner, admitted, 2, &target).await?,
-        UseDisposition::Rejected
-    );
-    step(owner, admitted, 3, StepDirection::West).await?;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -80,16 +67,60 @@ pub(super) async fn exercise(
             .map_err(debug)?,
         )
         .map_err(debug)?;
-    super::grizzly_npc::questpc8_campaign::hunt(
+    assert!(
+        owner
+            .quest_guardian_for_test("oteryn:quest-death/authored-smith-guardian")
+            .await
+            .is_none()
+    );
+    step(owner, admitted, 1, StepDirection::East).await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    let guardian = owner
+        .quest_guardian_for_test("oteryn:quest-death/authored-smith-guardian")
+        .await
+        .ok_or("the native objective must create its guardian")?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    assert_eq!(
+        owner
+            .quest_guardian_for_test("oteryn:quest-death/authored-smith-guardian")
+            .await,
+        Some(guardian),
+        "refresh cannot duplicate the guardian"
+    );
+    assert_eq!(progress(h, "stage").await?, 1);
+    let position = TilePos {
+        x: 32776,
+        y: 32253,
+        floor: -8,
+    };
+    let target = object_target(owner, position, 1)?;
+    assert_eq!(
+        use_target(owner, admitted, 2, &target).await?,
+        UseDisposition::Rejected
+    );
+    super::grizzly_npc::questpc8_campaign::lethal(
         owner,
         admitted,
+        guardian,
         "oteryn:creature.giant_spider",
+        2,
         1,
-        3,
     )
     .await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
     assert_eq!(progress(h, "kills").await?, 1);
-    step(owner, admitted, 4, StepDirection::East).await?;
+    assert!(
+        owner
+            .quest_guardian_for_test("oteryn:quest-death/authored-smith-guardian")
+            .await
+            .is_none()
+    );
     let input = oteryn_gameplay_quests::quest::world_callbacks::Offering {
         position: Position {
             x: 32776,
@@ -108,7 +139,7 @@ pub(super) async fn exercise(
         "the fixture must leave exactly two direct entries"
     );
     assert_eq!(
-        use_target(owner, admitted, 5, &target).await?,
+        use_target(owner, admitted, 3, &target).await?,
         UseDisposition::Rejected,
         "two free backpack entries cannot admit three outputs"
     );
@@ -118,7 +149,7 @@ pub(super) async fn exercise(
     let gold_before = quantity(h, "oteryn:item.tibia.i3031").await?;
     drop_filler(owner, admitted, h, fence.item_fence(), input.position).await?;
     assert_eq!(
-        use_target(owner, admitted, 6, &target).await?,
+        use_target(owner, admitted, 4, &target).await?,
         UseDisposition::Committed
     );
     assert_eq!(progress(h, "stage").await?, 3);
@@ -131,12 +162,12 @@ pub(super) async fn exercise(
     let entries: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(entries, 20);
     assert_eq!(
-        use_target(owner, admitted, 6, &target).await?,
+        use_target(owner, admitted, 4, &target).await?,
         UseDisposition::Committed
     );
     let target = object_target(owner, position, 1)?;
     assert_eq!(
-        use_target(owner, admitted, 7, &target).await?,
+        use_target(owner, admitted, 5, &target).await?,
         UseDisposition::Rejected
     );
     assert_eq!(quantity(h, "oteryn:item.tibia.i3208").await?, 1);

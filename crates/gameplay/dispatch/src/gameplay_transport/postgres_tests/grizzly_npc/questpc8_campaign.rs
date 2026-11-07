@@ -360,7 +360,7 @@ pub(in super::super) async fn hunt(
     Ok(())
 }
 
-async fn lethal(
+pub(in super::super) async fn lethal(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     target: ExactActorRef,

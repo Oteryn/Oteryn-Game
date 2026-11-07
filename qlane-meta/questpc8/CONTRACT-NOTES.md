@@ -71,6 +71,18 @@ must agree, accepted holds refuse. The existing canonical record remains intact;
 this core admission does not infer equipment, weapon or use behavior.
 XML: https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml
 
+Smith guardian production rule: the retained spawn manifest contains no Giant
+Spider in this chamber. An active, present player therefore requests one native
+Giant Spider at the verified walkable approach32775,32254,z8. This is one shared
+world slot per authored objective, not one creature per player or refresh.
+Use the installed native creature policy for health and behavior; occupied or
+blocked tiles retry without replacing actors. After native death and release of
+corpse projections, the slot can respawn after90seconds while an active objective
+is present. The bounded roaming chamber is32760..32790,32240..32270,z8.
+This conservative authored admission completes the selected kill requirement;
+it does not assert a missing historical source spawn coordinate. Kill credit
+still comes exclusively from the existing native death/progress owner.
+
 Chosen retrieval batch (Voodoo Doll, Mastermind Potion, Kormarak): all three
 retain their original canonical recipes and source records. New callbacks are
 explicit Oteryn bindings, not fabricated donor UIDs. Where historical landmarks

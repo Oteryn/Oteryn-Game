@@ -114,3 +114,14 @@ Executable authored reward references close native Item admission during normal
 regeneration. Unknown canonical stack facts can borrow pinned client custody
 facts through `authored_quest_item_custody.py`; canonical records, accepted holds,
 non-custody facts and stateful instance-owner requirements remain authoritative.
+
+Authored death objectives may declare `guardian: {position, respawn_ms}` when the
+chosen programme requires a native creature absent from the retained spawn
+manifest. The position must lie inside the bounded objective chamber and the
+respawn delay must be60000..3600000ms. Admission uses one shared native actor
+slot per objective (at most32), native creature policy, real walkability and
+occupancy checks. Only a present player with an active objective requests the
+slot. Refresh cannot duplicate a living guardian, and pinned corpse projection
+prevents retirement. This creates no quest credit; native death capture and the
+existing fenced progress writer remain authoritative. Omit `guardian` to retain
+an existing world spawn without changing its sealed definition.
