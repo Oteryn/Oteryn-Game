@@ -775,13 +775,13 @@ command retry; a cast mutation is never retried by that adapter.
 Observed real-dispatch PostgreSQL cases (each creates and uses a real database):
 
 - `s17a_client_start_stop_dispatch_commits_audit_and_rejects_stale_revision`:
-  7.080 s in the serial run; committed start/stop audits and stale stop refusal.
+  5.612 s in the clean serial run; committed start/stop audits and stale stop refusal.
 - `s17b_native_observer_map_creatures_effects_and_public_speech_dispatch`:
-  86.019 s; native picture receives the actual door appearance and creatures,
+  50.007 s; native picture receives the actual door appearance and creatures,
   public speech from accepted gameplay Say and emitted effects. The viewer
   creates no character root and cannot move the caster.
-- `s17c_native_live_chat_mute_kick_and_persistent_ban_dispatch`: 82.734 s
-  in the serial run; D=300 caster text remains live while viewer content stays
+- `s17c_native_live_chat_mute_kick_and_persistent_ban_dispatch`: 48.727 s
+  in the clean serial run; D=300 caster text remains live while viewer content stays
   delayed, and reply/mute/unmute/kick/ban use the real command dispatcher.
   A fresh one-use account ticket cannot bypass the committed account ban.
 
@@ -791,3 +791,5 @@ rendering and strict wire consumers. PostgreSQL admission/content qualification
 is CPU-intensive, so final database cases run serially after content tools.
 Platform preference/password storage, account directory and ticket issuance
 remain the existing handoff; no Platform or migration files changed.
+
+All three cases passed together from clean code head `8a71047cf40ed969f37bad44b209426d6ed0571a`: 3 passed, 0 failed, 105.45 s total. No content compiler or other validation job ran during this PostgreSQL proof.
