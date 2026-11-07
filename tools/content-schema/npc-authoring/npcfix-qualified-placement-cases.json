@@ -2200,6 +2200,73 @@
           "before": null
         }
       ]
+    },
+    {
+      "id": "retail-population-qualification-34",
+      "before_commit": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb",
+      "source": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb:content/world/npc-placements/index.json and its 33-point shard verify these NPCs absent; current authored audited retail positions retained. tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a; tools/content-schema/npc-authoring/samples/npcfix-retail-placements.json:sha256:3aba747ac833bce3801b0f2a266eb56376590bcd746e7304848e74cb99eebdcd. Frozen packet supplies audited rows absent from the donor capture; all name/admission assertions remain exact.",
+      "cases": [
+        {
+          "npc": "oteryn:npc.omar",
+          "name": "Omar",
+          "expected": {
+            "x": 34037,
+            "y": 32487,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.georgia_rainbird",
+          "name": "Georgia Rainbird",
+          "expected": {
+            "x": 33588,
+            "y": 31907,
+            "floor": -12
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.emilie",
+          "name": "Emilie",
+          "expected": {
+            "x": 32358,
+            "y": 32183,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.gaberiel",
+          "name": "Gaberiel",
+          "expected": {
+            "x": 32343,
+            "y": 32214,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.paulette",
+          "name": "Paulette",
+          "expected": {
+            "x": 32399,
+            "y": 32215,
+            "floor": -7
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.captain_fearless",
+          "name": "Captain Fearless",
+          "expected": {
+            "x": 32955,
+            "y": 32022,
+            "floor": -6
+          },
+          "before": null
+        }
+      ]
     }
   ]
 }

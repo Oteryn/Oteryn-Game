@@ -356,10 +356,10 @@
     "final_pg_log": "/tmp/npcfix-evidence/refusal-final-paid-clock-pg.log"
   },
   "counts": {
-    "QUALIFIED": 202,
+    "QUALIFIED": 208,
     "PENDING": 8,
     "EXCLUDED": 24,
-    "AUTHORED; QUALIFICATION PENDING": 83,
+    "AUTHORED; QUALIFICATION PENDING": 77,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -2614,8 +2614,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/254",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-34",
+        "postgres_red_seconds": 52.26,
+        "postgres_green_seconds": 124.05,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Pescadu",
@@ -2875,8 +2881,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/132",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-34",
+        "postgres_red_seconds": 52.26,
+        "postgres_green_seconds": 124.05,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Graham",
@@ -3742,8 +3754,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/104",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-34",
+        "postgres_red_seconds": 52.26,
+        "postgres_green_seconds": 124.05,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Excited Tibian",
@@ -3793,8 +3811,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/128",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-34",
+        "postgres_red_seconds": 52.26,
+        "postgres_green_seconds": 124.05,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Galuna",
@@ -4098,8 +4122,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/268",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-34",
+        "postgres_red_seconds": 52.26,
+        "postgres_green_seconds": 124.05,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Robson",
@@ -4277,8 +4307,14 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/49",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-34",
+        "postgres_red_seconds": 52.26,
+        "postgres_green_seconds": 124.05,
+        "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed."
+      }
     },
     {
       "npc": "Demonguard",
@@ -6650,6 +6686,34 @@
       "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at c918fc759804e081dbf1c0174247e5598e7426ef; details in verification_components.latest_checked_source. Source identity checked before each slice",
       "test_code_commit": "c918fc759804e081dbf1c0174247e5598e7426ef",
       "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
+    },
+    {
+      "name": "retail-population-qualification-34",
+      "state": "QUALIFIED",
+      "entries": [
+        "Omar",
+        "Georgia Rainbird",
+        "Emilie",
+        "Gaberiel",
+        "Paulette",
+        "Captain Fearless"
+      ],
+      "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 52.26,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-34-red.log",
+        "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 124.05,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-34-green.log",
+        "cumulative_cases": 195
+      },
+      "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at c918fc759804e081dbf1c0174247e5598e7426ef; details in verification_components.latest_checked_source. Source identity checked before each slice",
+      "test_code_commit": "c918fc759804e081dbf1c0174247e5598e7426ef",
+      "historical_projection": "Explicit baseline mode restores only last batch placement absence proven from the published pre-NPCFIX 33-placement tree; default mode always tests current real authoring."
     }
   ],
   "shared_engine_lookup": {
@@ -7078,28 +7142,28 @@
   },
   "next_batch": "Continue remaining owned entries immediately; preserve all cumulative PG cases. No final turn until all owned scope qualified and pushed.",
   "active_batch": {
-    "name": "retail-population-qualification-33",
+    "name": "retail-population-qualification-34",
     "state": "QUALIFIED",
     "entries": [
-      "Jata",
-      "Kaumudi",
-      "Nagging Naga",
-      "Nekaret",
-      "Nihaka",
-      "Nilavarna"
+      "Omar",
+      "Georgia Rainbird",
+      "Emilie",
+      "Gaberiel",
+      "Paulette",
+      "Captain Fearless"
     ],
     "scope": "Only existing authored retail placements; actual canonical map admission, native runtime coordinates/floor and exact captured display identity. No additional service/quest behavior claimed.",
     "red": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 56.9,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-33-red.log",
+      "seconds": 52.26,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-34-red.log",
       "baseline": "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
     },
     "green": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 114.44,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-33-green.log",
-      "cumulative_cases": 189
+      "seconds": 124.05,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-34-green.log",
+      "cumulative_cases": 195
     },
     "checks": "fmt PASS; no changed Rust crates or production/pin inputs. Reuse source-equivalent proof at c918fc759804e081dbf1c0174247e5598e7426ef; details in verification_components.latest_checked_source. Source identity checked before each slice",
     "test_code_commit": "c918fc759804e081dbf1c0174247e5598e7426ef",
