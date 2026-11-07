@@ -1699,8 +1699,35 @@ fn encode_intent(
     }
     let mut identities = std::collections::BTreeSet::new();
     let mut operations = Vec::new();
+    let mut map_placements = std::collections::BTreeSet::new();
+    let mut map_fields = Vec::new();
     for op in &request.operations {
+        if let SpellItemOperation::RemoveMapField(r) = op {
+            if authority.channel.is_none()
+                || r.placement.len() != 40
+                || r.placement[..32] == [0; 32]
+                || r.map_revision.is_empty()
+                || r.content_generation != authority.compatible_content_digest
+                || r.appearance == 0
+                || r.definition.family != "Item"
+                || r.definition.production_key != format!("oteryn:item.tibia.i{}", r.appearance)
+                || !item_definition_valid(&r.definition)
+                || r.reset_epoch > i64::MAX as u64
+                || r.expected_revision >= i64::MAX as u64
+                || request.caster_origin.is_none()
+                || !map_placements.insert(r.placement.clone())
+            {
+                return Err(SpellItemError::Rejected(
+                    "unqualified or duplicate static field placement",
+                ));
+            }
+            map_fields.push(serde_json::json!({"kind":"remove_map_field","placement":r.placement,"map_revision":r.map_revision,"content_generation":r.content_generation,"reset_epoch":r.reset_epoch,"revision":r.expected_revision,"appearance":r.appearance,"definition":reference(&r.definition)}));
+            continue;
+        }
         let (identity, value) = match op {
+            SpellItemOperation::RemoveMapField(_) => {
+                return Err(SpellItemError::Rejected("static field intent route"));
+            }
             SpellItemOperation::ConsumeInventory(r) => {
                 if !r.definition.materializable
                     || !r.definition.inventory_destination
@@ -1880,6 +1907,9 @@ fn encode_intent(
         }
         intent["instance"] = serde_json::json!(key);
     }
+    if !map_fields.is_empty() {
+        intent["map_fields"] = serde_json::json!(map_fields);
+    }
     if let Some(ordinal) = request.swing_ordinal {
         intent["swing_ordinal"] = serde_json::json!(ordinal);
     }
@@ -1948,18 +1978,21 @@ pub async fn apply_spell_items_in_transaction_guarded(
     let ids: Vec<[u8; 16]> = request
         .operations
         .iter()
-        .map(|op| match op {
-            SpellItemOperation::ConsumeInventory(r) => r.item_instance_id,
-            SpellItemOperation::RetireContained(r) => r.item_instance_id,
-            SpellItemOperation::ConsumeCorpse(r) => r.item_instance_id,
-            SpellItemOperation::RemoveGround(r) => r.item_instance_id,
-            SpellItemOperation::MergeInventory(r) => r.item_instance_id,
-            SpellItemOperation::MintGround {
-                item_instance_id, ..
-            } => *item_instance_id,
-            SpellItemOperation::MintInventory {
-                item_instance_id, ..
-            } => *item_instance_id,
+        .filter_map(|op| {
+            Some(match op {
+                SpellItemOperation::RemoveMapField(_) => return None,
+                SpellItemOperation::ConsumeInventory(r) => r.item_instance_id,
+                SpellItemOperation::RetireContained(r) => r.item_instance_id,
+                SpellItemOperation::ConsumeCorpse(r) => r.item_instance_id,
+                SpellItemOperation::RemoveGround(r) => r.item_instance_id,
+                SpellItemOperation::MergeInventory(r) => r.item_instance_id,
+                SpellItemOperation::MintGround {
+                    item_instance_id, ..
+                } => *item_instance_id,
+                SpellItemOperation::MintInventory {
+                    item_instance_id, ..
+                } => *item_instance_id,
+            })
         })
         .collect();
     let receipt = CommittedSpellItems {
@@ -2024,9 +2057,13 @@ pub async fn apply_spell_items_in_transaction_guarded(
             .fetch_one(&mut **tx)
             .await?;
     sqlx::query("INSERT INTO game_spell_item_receipts(swing_ordinal,transaction_id,event_id,game_session_id,command_id,character_id,world_id,channel_id,ownership_generation,spell_family,spell_production_key,spell_revision,catalog_digest,binding,intent,cost,cost_binding,operation_count,occurred_at_unix_ms,caster_lease_generation,caster_placement_digest,runtime_scope_kind,instance_id) VALUES($21,encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric(20,0),encode($5,'hex')::uuid,encode($6,'hex')::uuid,encode($7,'hex')::uuid,$8::text::numeric(20,0),$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19::text::numeric(20,0),$20,$22,CASE WHEN $23::bytea IS NULL THEN NULL ELSE encode($23,'hex')::uuid END)")
-        .bind(request.transaction_id.as_slice()).bind(request.event_id.as_slice()).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(authority.character.as_slice()).bind(authority.world.as_slice()).bind(authority.channel.as_ref().map(|value| value.as_slice())).bind(authority.ownership_generation.to_string()).bind(&request.spell.family).bind(&request.spell.production_key).bind(&request.spell.revision_ref).bind(request.catalog_digest.as_slice()).bind(binding.as_slice()).bind(&intent).bind(&cost).bind(cost_binding.as_slice()).bind(i32::try_from(request.operations.len()).map_err(|_|SpellItemError::Rejected("operation count"))?).bind(occurred_at).bind(request.caster_origin.as_ref().map(|o|o.character_lease_generation.to_string())).bind(request.caster_origin.as_ref().map(|o|o.actor.placement_identity().to_vec())).bind(request.swing_ordinal.map(i32::from)).bind(authority.scope_kind()).bind(authority.instance_bytes().as_ref().map(|value| value.as_slice())).execute(&mut **tx).await?;
-    for (index, op) in request.operations.iter().enumerate() {
-        apply_operation(tx, authority, request, index + 1, occurred_at, op).await?;
+        .bind(request.transaction_id.as_slice()).bind(request.event_id.as_slice()).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(authority.character.as_slice()).bind(authority.world.as_slice()).bind(authority.channel.as_ref().map(|value| value.as_slice())).bind(authority.ownership_generation.to_string()).bind(&request.spell.family).bind(&request.spell.production_key).bind(&request.spell.revision_ref).bind(request.catalog_digest.as_slice()).bind(binding.as_slice()).bind(&intent).bind(&cost).bind(cost_binding.as_slice()).bind(i32::try_from(request.operations.iter().filter(|op| !matches!(op, SpellItemOperation::RemoveMapField(_))).count()).map_err(|_|SpellItemError::Rejected("operation count"))?).bind(occurred_at).bind(request.caster_origin.as_ref().map(|o|o.character_lease_generation.to_string())).bind(request.caster_origin.as_ref().map(|o|o.actor.placement_identity().to_vec())).bind(request.swing_ordinal.map(i32::from)).bind(authority.scope_kind()).bind(authority.instance_bytes().as_ref().map(|value| value.as_slice())).execute(&mut **tx).await?;
+    let mut item_ordinal = 0;
+    for op in &request.operations {
+        if !matches!(op, SpellItemOperation::RemoveMapField(_)) {
+            item_ordinal += 1;
+        }
+        apply_operation(tx, authority, request, item_ordinal, occurred_at, op).await?;
     }
     apply_consumed_equipment_epoch(tx, authority, request).await?;
     sqlx::query("INSERT INTO game_spell_item_audit_outbox(event_id,transaction_id,occurred_at_unix_ms,expires_at_unix_ms,envelope,envelope_sha256) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$3+7776000000,$4,$5)")
@@ -2220,6 +2257,51 @@ async fn apply_operation(
     occurred_at: i64,
     operation: &SpellItemOperation,
 ) -> Result<()> {
+    if let SpellItemOperation::RemoveMapField(r) = operation {
+        let fence = CurrentCharacterItemFence {
+            character_id: crate::domain::CharacterId::from_bytes(authority.character)
+                .map_err(|_| SpellItemError::Rejected("map field Character"))?,
+            game_session_id: authority.command.game_session_id(),
+            connection_generation: authority.connection_generation,
+            character_lease_generation: authority.character_lease_generation,
+            runtime_scope: authority.runtime_scope,
+            scope_ownership_generation: crate::foundation::ScopeOwnershipGeneration::new(
+                authority.ownership_generation,
+            )
+            .map_err(|_| SpellItemError::Rejected("map field owner"))?,
+        };
+        let scope = super::terrain_tool::TerrainScope {
+            map_revision: r.map_revision.clone(),
+            content_generation: r.content_generation,
+            reset_epoch: i64::try_from(r.reset_epoch)
+                .map_err(|_| SpellItemError::Rejected("map field epoch"))?,
+        };
+        let mutation = super::terrain_tool::MapMutation {
+            placement: r.placement.clone(),
+            expected_revision: i64::try_from(r.expected_revision)
+                .map_err(|_| SpellItemError::Rejected("map field revision"))?,
+            before: u32::from(r.appearance),
+            after: 0,
+            decay: Vec::new(),
+        };
+        // Bind the map CAS to the complete immutable spell receipt, including
+        // its physical Item lines and caster cost. No map placement is an Item line.
+        let cost = encode_cast_cost(&request.cost)?;
+        let intent: [u8; 32] = Sha256::digest(encode_intent(authority, request, &cost)?).into();
+        if !super::terrain_tool::apply_map_in_transaction(
+            tx,
+            fence,
+            request.command,
+            &intent,
+            &scope,
+            &mutation,
+        )
+        .await?
+        {
+            return Err(SpellItemError::Rejected("static field placement CAS"));
+        }
+        return Ok(());
+    }
     if matches!(
         operation,
         SpellItemOperation::ConsumeInventory(_) | SpellItemOperation::RetireContained(_)
@@ -2262,7 +2344,9 @@ async fn apply_operation(
         blocks_projectile,
         lifetime,
     ) = match operation {
-        SpellItemOperation::ConsumeInventory(_) | SpellItemOperation::RetireContained(_) => {
+        SpellItemOperation::RemoveMapField(_)
+        | SpellItemOperation::ConsumeInventory(_)
+        | SpellItemOperation::RetireContained(_) => {
             return Err(SpellItemError::Rejected(
                 "consumption must use its exact source owner route",
             ));
@@ -2454,6 +2538,19 @@ pub async fn verify_spell_item_chain(
            OR a.envelope_sha256 IS DISTINCT FROM r.binding OR a.created_xact_id IS DISTINCT FROM r.created_xact_id
            OR a.occurred_at_unix_ms IS DISTINCT FROM r.occurred_at_unix_ms
            OR (SELECT count(*) FROM game_spell_item_lines l WHERE l.transaction_id=r.transaction_id)<>r.operation_count
+        UNION ALL
+        SELECT 1 FROM game_spell_item_receipts r
+        CROSS JOIN LATERAL jsonb_array_elements(COALESCE(convert_from(r.intent,'UTF8')::jsonb->'map_fields','[]'::jsonb)) f
+        WHERE NOT EXISTS (
+            SELECT 1 FROM game_terrain_tool_receipts m
+            WHERE (m.game_session_id,m.command_id,m.character_id,m.world_id,m.channel_id)
+                = (r.game_session_id,r.command_id,r.character_id,r.world_id,r.channel_id)
+              AND m.created_xact_id=r.created_xact_id
+              AND m.intent=r.binding AND m.tool_item_instance_id IS NULL
+              AND m.transformed_item_id=0
+              AND f->'placement'=to_jsonb(ARRAY(SELECT get_byte(m.placement,n) FROM generate_series(0,39)n))
+              AND (f->>'reset_epoch')::numeric=m.reset_epoch
+        )
         UNION ALL
         SELECT 1 FROM game_spell_item_lines l
         LEFT JOIN game_spell_item_receipts r USING(transaction_id)

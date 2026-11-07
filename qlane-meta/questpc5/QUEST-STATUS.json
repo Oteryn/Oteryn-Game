@@ -447,7 +447,7 @@
     "title": "Devil Helmet Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
     "status": "UNFINISHED",
-    "blocker": "Active whole-route composition: actual static2123 removal with Destroy Field3148 and exact source1Dragon/3MinotaurGuards combat. All five acquisitions, keyed/level access, player pressure and native projected-grate435 USE are delivered with real PG proof.",
+    "blocker": "Active whole-route composition: exact source1Dragon/3MinotaurGuards combat and native corpse/loot admission. All five acquisitions, keyed/level access, player pressure, native projected435 USE and exact static2123 removal with3148 are delivered with real PG proof.",
     "from_lanes": [
       "questpc",
       "questpc6"
@@ -494,11 +494,25 @@
         "duration_seconds": 55.98,
         "scope": "Actual second-player-held pressure-created435 native USE, exact descent, replay, reach refusal and stale identity; whole field/combat remains active.",
         "proof": "cloud-devil-grate-proof.json"
+      },
+      {
+        "filter": "questpc5_devil_static_fire_field_destroy_payment_and_replay",
+        "result": "PASS",
+        "duration_seconds": 54.59,
+        "scope": "Actual3148/static2123 removal at source keyhole387/5017, native standing-contact disappearance, exact charge/replay/refusal and atomic map/Item audit. Whole source combat remains active.",
+        "proof": "cloud-devil-static-field-proof.json"
       }
     ],
     "source_key_access_evidence": "cloud-helmet-source-keys-proof.json",
     "source_level_access_evidence": "cloud-helmet-levels-proof.json",
-    "source_grate_use_evidence": "cloud-devil-grate-proof.json"
+    "source_grate_use_evidence": "cloud-devil-grate-proof.json",
+    "source_static_field_work": {
+      "state": "QUALIFIED",
+      "proof": "cloud-devil-static-field-proof.json",
+      "duration_seconds": 54.59,
+      "note": "Final actualPG54.59s, fmt, cargo check durability/dispatch and strict all-target/all-feature Clippy PASS. Whole Devil combat remains active."
+    },
+    "source_static_field_evidence": "cloud-devil-static-field-proof.json"
   },
   {
     "canonical": "oteryn:quest.formogar_mine_hoist",

@@ -2607,7 +2607,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
                     } else if native_world_item_cast::applicable(spell) {
                         native_world_item_cast::prepare(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
-                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
+                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw,owner.reset_epoch).await
                     } else if is_source_self(spell) && !item_spell_augments::alters_base(&owned,spell) {
                         // Simple self effects use their existing whole-player owner.
                         // The broad ordinary predicate also includes these Effects;
@@ -2905,6 +2905,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             // §1.4: the committed batch's kills, under the same runtime turn, after installation.
             owner.record_spell_kills_locked(&attack,&states,&mut runtime,std::iter::once(&batch));
             drop(attack);
+            // Phase 3: recoverable map cache, after the sealed source COMMIT and
+            // player installation. It shares this runtime turn and needs no
+            // competing semantic-pass read. Ordinary terrain recovery also
+            // reconstructs the exact durable tombstone after a restart.
+            if !native_world_item_cast::project_committed_map_fields(owner,&runtime,&attempt.request,&committed) {
+                states.owner_wake.notify_one();
+            }
             let disposition=private_result.as_ref().map_or(SpellCastDisposition::Cast,|r|r.disposition);
             **parameter_output=private_result;
             Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{disposition,

@@ -69,11 +69,47 @@ fn fold_static(facts: impl IntoIterator<Item = StaticItemFact>) -> Option<Option
 }
 /// The field a bundle tile carries as a static top Item: the bundle's fields are not
 /// `game_item_ground_locations` rows. Missing metadata is Unknown, so no damage is consumed.
-fn static_element(
+pub(in crate::gameplay_transport) fn static_element(
     tile: &crate::content::QualifiedSpellTile,
     source: &NativeGameplayState,
+    cells: &crate::content::NativeEntryMovementCells,
+    position: crate::foundation::MovementLocalPosition,
 ) -> Option<Option<DotElement>> {
-    fold_static(tile.top_source_ids().iter().map(|id| {
+    // The boot shape remains immutable. Standing contact must observe the
+    // same committed source removals/replacements as map USE and map views.
+    let current;
+    let ids =
+        if let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            cells.index()
+        {
+            use crate::map::boot::BundleCollisionIndexExt;
+            let map = index.map();
+            let pos = crate::map::overlay::TilePos {
+                x: position.x.try_into().ok()?,
+                y: position.y.try_into().ok()?,
+                floor: position.floor.checked_neg()?.try_into().ok()?,
+            };
+            let facts = map.facts.pinned();
+            let composed = crate::map::view::compose_tile(&map.overlay, &facts, pos).ok()??;
+            current = composed
+                .entries
+                .iter()
+                .filter(|entry| {
+                    entry.facts.terrain_kind
+                        != Some(oteryn_world_bundle::bundle::TerrainKind::Ground)
+                        && !matches!(
+                            entry.source,
+                            crate::map::view::EntrySource::Ground(_)
+                                | crate::map::view::EntrySource::House(_)
+                        )
+                })
+                .map(|entry| u32::from(entry.facts.appearance_id))
+                .collect::<Vec<_>>();
+            current.as_slice()
+        } else {
+            tile.top_source_ids()
+        };
+    fold_static(ids.iter().map(|id| {
         let Some(policy) = source.item_policy_for_source_id(*id) else {
             return StaticItemFact::NoPolicy;
         };
@@ -247,7 +283,7 @@ impl ChannelSpellStates {
                 .ok();
             let dynamic = standing_element(read, source);
             let fixed = match static_tile {
-                Some(tile) => static_element(tile, source),
+                Some(tile) => static_element(tile, source, cells, snapshot.position()),
                 None => Some(None),
             };
             let element = combine_elements(dynamic, fixed);
@@ -484,7 +520,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let position=runtime.read_actor_position(actor).map_err(|_|crate::durability::DurabilityError::Unavailable)?.position();
             let pz=qualified_protection_zone(runtime,owner.movement_cells,actor).ok_or(crate::durability::DurabilityError::Unavailable)?;
             let static_tile=owner.movement_cells.spell_tiles().lookup(owner.movement_cells.scope(),crate::content::LogicalCell{x:position.x,y:position.y,z:i32::from(position.floor)}).ok();
-            let standing=if pz {None} else {combine_elements(standing_element(&read,source),static_tile.map_or(Some(None),|tile|static_element(tile,source))).ok_or(crate::durability::DurabilityError::Unavailable)?};
+            let standing=if pz {None} else {combine_elements(standing_element(&read,source),static_tile.map_or(Some(None),|tile|static_element(tile,source,owner.movement_cells,position))).ok_or(crate::durability::DurabilityError::Unavailable)?};
             let before=states.get(runtime,actor,session).ok_or(crate::durability::DurabilityError::Unavailable)?.clone();
             let cycle=crate::spell::actor_conditions::stage_source_owner_cycle(&before,now,Some(TickFacts{in_protection_zone:pz,standing_on_field:standing}),None).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let Some(cycle)=cycle else {return Ok(None)};

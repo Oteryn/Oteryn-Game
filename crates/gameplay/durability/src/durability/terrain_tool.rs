@@ -175,7 +175,7 @@ pub(super) async fn apply_in_transaction(
 /// complete current Character/Channel fence and commits its value/counter receipt in this
 /// same transaction. A failed CAS must abort every promised consequence.
 pub(super) async fn apply_map_in_transaction(
-    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: CurrentCharacterItemFence,
     command: CommandRef,
     intent: &[u8],
@@ -186,7 +186,7 @@ pub(super) async fn apply_map_in_transaction(
 }
 
 async fn apply_object_in_transaction(
-    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: CurrentCharacterItemFence,
     command: CommandRef,
     intent: &[u8],
@@ -216,7 +216,7 @@ async fn apply_object_in_transaction(
             .map_err(|_| DurabilityError::InvalidStoredState)?,
     );
     let taken: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_map_item_mint_receipts WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND base_bundle_digest=$3 AND placement_key=$4::text::numeric AND reset_epoch=$5::text::numeric)")
-        .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(&placement[..32]).bind(placement_key.to_string()).bind(reset_epoch.to_string()).fetch_one(&mut ***tx).await?;
+        .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(&placement[..32]).bind(placement_key.to_string()).bind(reset_epoch.to_string()).fetch_one(&mut **tx).await?;
     if taken {
         return Ok(false);
     }
@@ -232,6 +232,6 @@ async fn apply_object_in_transaction(
                 .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(&mutation.placement)
                 .bind(&scope.map_revision).bind(scope.content_generation.as_slice()).bind(scope.reset_epoch)
                 .bind(mutation.expected_revision).bind(i64::from(mutation.before)).bind(i64::from(mutation.after))
-                .bind(states).bind(delays).fetch_one(&mut ***tx).await?;
+                .bind(states).bind(delays).fetch_one(&mut **tx).await?;
     Ok(applied)
 }

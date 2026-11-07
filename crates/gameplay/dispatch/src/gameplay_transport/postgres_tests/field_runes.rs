@@ -241,6 +241,32 @@ fn field_runes_postgres_destroy_field_removes_listed_field_and_refuses_without_p
 }
 
 #[test]
+fn questpc5_devil_static_fire_field_destroy_payment_and_replay() -> TestResult {
+    let started = std::time::Instant::now();
+    let result = large_stack(|| {
+        run(async |admin| {
+            field_scenario(
+                admin,
+                3148,
+                3,
+                2123,
+                true,
+                false,
+                false,
+                Scenario::SourceStaticField,
+            )
+            .await
+        })
+    });
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED devil_static_field duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+#[test]
 fn field_runes_postgres_destroy_field_visible_screen_and_los() -> TestResult {
     large_stack(|| {
         run(async |admin| {
@@ -283,6 +309,7 @@ fn destroy_scenario(scenario: Scenario) -> bool {
 enum Scenario {
     Ordinary,
     DestroyField,
+    SourceStaticField,
     DestroyFar,
     DestroyBlocked,
     DestroyOffScreen,
@@ -770,6 +797,12 @@ async fn field_scenario_inner(
     let mut creature = None;
     let harness =
         Harness::create_with_admission_seed(admin, "field_runes_wire", true, false).await?;
+    if scenario == Scenario::SourceStaticField {
+        let version: String = sqlx::query_scalar("SHOW server_version")
+            .fetch_one(&harness.pool)
+            .await?;
+        eprintln!("POSTGRES_CASE_STARTED devil_static_field server_version={version}");
+    }
     prepare_current_session(&harness).await?;
     if player_field || owner_loss {
         harness.seed_pvp_target().await?;
@@ -790,7 +823,9 @@ async fn field_scenario_inner(
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
     let entry_room = pin.qualified_room();
-    let map = if scenario == Scenario::DestroyBlocked {
+    let map = if scenario == Scenario::SourceStaticField {
+        field_world_with_static(world, 0, false, true)?
+    } else if scenario == Scenario::DestroyBlocked {
         field_world_inner(world, 0, true)?
     } else if matches!(scenario, Scenario::PzTick | Scenario::NoPvpTick) {
         field_world(world, if scenario == Scenario::PzTick { 1 } else { 4 })?
@@ -804,9 +839,25 @@ async fn field_scenario_inner(
         .map_err(debug)?;
     // Runtime floors are the negation of the bundle's native floors.
     let start = MovementLocalPosition {
-        x: if protection { 1 } else { 100 },
-        y: if protection { 0 } else { 100 },
-        floor: 7,
+        x: if scenario == Scenario::SourceStaticField {
+            32588
+        } else if protection {
+            1
+        } else {
+            100
+        },
+        y: if scenario == Scenario::SourceStaticField {
+            32100
+        } else if protection {
+            0
+        } else {
+            100
+        },
+        floor: if scenario == Scenario::SourceStaticField {
+            14
+        } else {
+            7
+        },
     };
     let room = entry_room
         .bundle_view(
@@ -1170,6 +1221,35 @@ async fn field_scenario_inner(
                 floor: start.floor,
             }),
         };
+        if scenario == Scenario::SourceStaticField {
+            let tile = owner
+                .movement_cells
+                .spell_tiles()
+                .lookup(
+                    owner.movement_cells.scope(),
+                    crate::content::LogicalCell {
+                        x: start.x + 1,
+                        y: start.y,
+                        z: i32::from(start.floor),
+                    },
+                )
+                .map_err(debug)?;
+            assert_eq!(
+                crate::gameplay_transport::actor_spell::static_field_element(
+                    tile,
+                    native,
+                    owner.movement_cells,
+                    MovementLocalPosition {
+                        x: start.x + 1,
+                        ..start
+                    }
+                ),
+                Some(Some(
+                    oteryn_gameplay_domain::domain::condition::DotElement::Fire
+                )),
+                "source2123 is a real native standing fire field before removal"
+            );
+        }
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
         let bytes = test_command(
             admitted.continuity.next_command_id,
@@ -1200,6 +1280,118 @@ async fn field_scenario_inner(
                 );
                 break;
             }
+        }
+        if scenario == Scenario::SourceStaticField {
+            if owner.root.has_ready_demand() {
+                owner.root.maintain_ready_once().await.map_err(debug)?;
+            }
+            owner.refresh_terrain_tools().await;
+            let map = owner.bundle_map().ok_or("source map")?;
+            use crate::map::view::MapFacts;
+            let field_key = crate::map::view::placement_key(
+                crate::map::overlay::TilePos {
+                    x: 32589,
+                    y: 32100,
+                    floor: -14,
+                },
+                1,
+            )
+            .ok_or("static field placement")?;
+            assert!(
+                map.facts.base_hidden(field_key),
+                "the exact source2123 is removed"
+            );
+            let tile = owner
+                .movement_cells
+                .spell_tiles()
+                .lookup(
+                    owner.movement_cells.scope(),
+                    crate::content::LogicalCell {
+                        x: start.x + 1,
+                        y: start.y,
+                        z: i32::from(start.floor),
+                    },
+                )
+                .map_err(debug)?;
+            assert_eq!(
+                crate::gameplay_transport::actor_spell::static_field_element(
+                    tile,
+                    native,
+                    owner.movement_cells,
+                    MovementLocalPosition {
+                        x: start.x + 1,
+                        ..start
+                    }
+                ),
+                Some(None),
+                "removed static field no longer supplies native standing fire contact"
+            );
+            let ground_key = crate::map::view::placement_key(
+                crate::map::overlay::TilePos {
+                    x: 32589,
+                    y: 32100,
+                    floor: -14,
+                },
+                0,
+            )
+            .ok_or("small hole placement")?;
+            assert!(
+                !map.facts.base_hidden(ground_key),
+                "the source387/key5017 is preserved"
+            );
+            client.write_u32(u32::try_from(bytes.len())?).await?;
+            client.write_all(&bytes).await?;
+            loop {
+                let frame = read_frame(&mut client).await?;
+                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                if envelope.message_type() == MessageType::CommandResult {
+                    let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                    assert_eq!(result.status, CommandStatus::DuplicateReplay);
+                    assert_eq!(
+                        decode_use_result(result.payload).map_err(debug)?,
+                        UseDisposition::Committed
+                    );
+                    break;
+                }
+            }
+            // The next independent attempt must reach target admission after
+            // the successful rune's ordinary support cooldown expires.
+            wait_field_client(&mut client, std::time::Duration::from_secs(2)).await?;
+            let retry = test_command(
+                admitted.continuity.next_command_id + 1,
+                COMMAND_TYPE_USE_INTENT,
+                &payload,
+            );
+            client.write_u32(u32::try_from(retry.len())?).await?;
+            client.write_all(&retry).await?;
+            loop {
+                let frame = read_frame(&mut client).await?;
+                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                if envelope.message_type() == MessageType::CommandResult {
+                    let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                    assert_eq!(
+                        decode_use_result(result.payload).map_err(debug)?,
+                        UseDisposition::TargetIllegal,
+                        "an already removed source field cannot spend another charge"
+                    );
+                    break;
+                }
+            }
+            let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3148'").fetch_one(&harness.pool).await?;
+            assert_eq!(
+                quantity, 2,
+                "exactly one rune charge pays for successful static removal, including replay"
+            );
+            let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts")
+                .fetch_one(&harness.pool)
+                .await?;
+            assert_eq!(receipts, 1);
+            let ground: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_ground_locations")
+                .fetch_one(&harness.pool)
+                .await?;
+            assert_eq!(ground, 0, "no fake durable field Item is minted");
+            client.shutdown().await?;
+            return Ok::<_, Box<dyn std::error::Error>>(());
         }
         if committed {
             // Map publication has its own cadence: a command result does not
@@ -1672,7 +1864,14 @@ async fn field_scenario_inner(
     )
     .await??;
     eprintln!("FIELD-RUNES transport complete rune={rune} scenario={scenario:?}");
-    if destroy_scenario(scenario) {
+    if scenario == Scenario::SourceStaticField {
+        let mut audit = harness.pool.begin().await?;
+        crate::durability::spell_item_transaction::verify_spell_item_chain(&mut audit)
+            .await
+            .map_err(debug)?;
+        audit.rollback().await?;
+    }
+    if destroy_scenario(scenario) || scenario == Scenario::SourceStaticField {
         drop(owner);
         drop(authority);
         drop(seal);
@@ -1848,16 +2047,27 @@ async fn field_scenario_inner(
             let periodic_now = {
                 let runtime = owner.runtime.lock().await;
                 let states = owner.states.spell_states.lock().await;
-                let state = states.get(&runtime, target, target_session).ok_or("player state")?;
-                let started_at = state.owned_conditions().instances().iter()
-                    .find(|condition| condition.provenance().source.as_deref()
-                        .is_some_and(|source| source.starts_with("player:field:")))
+                let state = states
+                    .get(&runtime, target, target_session)
+                    .ok_or("player state")?;
+                let started_at = state
+                    .owned_conditions()
+                    .instances()
+                    .iter()
+                    .find(|condition| {
+                        condition
+                            .provenance()
+                            .source
+                            .as_deref()
+                            .is_some_and(|source| source.starts_with("player:field:"))
+                    })
                     .map_or(owner.owner_now().get(), |condition| condition.started_at());
                 // Periodic evaluation truncates to milliseconds; round the
                 // application instant up so energy's eleven-second tick is due.
                 let started_at = started_at.div_ceil(1_000) * 1_000;
                 oteryn_simulation_determinism::SemanticTimeMicros::from_micros(started_at)
-                    .checked_add(11_000_000).map_err(debug)?
+                    .checked_add(11_000_000)
+                    .map_err(debug)?
             };
             let mut interrupted = if matches!(
                 scenario,
@@ -1878,7 +2088,9 @@ async fn field_scenario_inner(
                 None
             };
             eprintln!("FIELD-RUNES periodic begin {scenario:?}");
-            let tick = owner.tick_spell_periodic_at(target, target_session, periodic_now).await;
+            let tick = owner
+                .tick_spell_periodic_at(target, target_session, periodic_now)
+                .await;
             eprintln!("FIELD-RUNES periodic returned {scenario:?}");
             if scenario == Scenario::PeriodicPermissionChange {
                 // Change exactly the current source liveness at the retained
@@ -2162,6 +2374,14 @@ fn field_world_inner(
     zone: u32,
     wall: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    field_world_with_static(world, zone, wall, false)
+}
+fn field_world_with_static(
+    world: crate::foundation::WorldId,
+    zone: u32,
+    wall: bool,
+    source_static: bool,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{
         sector::{Attrs, Item, Tile},
         writer::{
@@ -2169,7 +2389,12 @@ fn field_world_inner(
             TerrainKind,
         },
     };
-    let manifest = Manifest {
+    let (min_x, min_y, floor) = if source_static {
+        (32584, 32096, -14)
+    } else {
+        (96, 96, -7)
+    };
+    let mut manifest = Manifest {
         subareas: Default::default(),
         format: writer::FORMAT.into(),
         min_reader_version: writer::VERSION,
@@ -2183,11 +2408,11 @@ fn field_world_inner(
             ..Default::default()
         },
         world: Extent {
-            min_x: 96,
-            min_y: 96,
-            max_x: 112,
-            max_y: 112,
-            floors: vec![-7],
+            min_x,
+            min_y,
+            max_x: min_x + 16,
+            max_y: min_y + 16,
+            floors: vec![floor],
         },
         palette: vec![
             PaletteEntry {
@@ -2217,9 +2442,22 @@ fn field_world_inner(
         spawns: Default::default(),
         npcs: Default::default(),
     };
+    if source_static {
+        manifest.palette[0].key = "oteryn:item.tibia.i387".into();
+        manifest.palette.push(PaletteEntry {
+            family: Family::Terrain,
+            key: "oteryn:item.tibia.i2123".into(),
+            id: 2,
+            terrain: Some(Terrain {
+                kind: TerrainKind::Field,
+                walkable: None,
+                ground_speed: None,
+            }),
+        });
+    }
     let mut tiles = Vec::new();
-    for y in 96..112 {
-        for x in 96..112 {
+    for y in min_y..min_y + 16 {
+        for x in min_x..min_x + 16 {
             tiles.push(Tile {
                 x,
                 y,
@@ -2232,14 +2470,23 @@ fn field_world_inner(
                     attrs: Attrs::default(),
                 }],
             });
+            if source_static && (x, y) == (32589, 32100) {
+                let tile = tiles.last_mut().ok_or("source tile")?;
+                tile.items[0].attrs.unique = Some(5017);
+                tile.items.push(Item {
+                    palette: 2,
+                    depth: 0,
+                    attrs: Attrs::default(),
+                });
+            }
         }
     }
     let bytes = writer::write(
         &manifest,
         &[Sector {
-            floor: -7,
-            sx: 3,
-            sy: 3,
+            floor,
+            sx: min_x / 32,
+            sy: min_y / 32,
             tiles,
         }],
         &Default::default(),
@@ -2261,9 +2508,9 @@ fn field_world_inner(
             bundle: pins,
             map_revision: crate::map::overlay::map_revision(&base),
             start: crate::map::overlay::TilePos {
-                x: 100,
-                y: 100,
-                floor: -7,
+                x: if source_static { 32588 } else { 100 },
+                y: if source_static { 32100 } else { 100 },
+                floor,
             },
         },
         world,
@@ -2439,16 +2686,30 @@ async fn qualify_creature_residual(
     output: u32,
 ) -> TestResult {
     let (before, periodic_now) = {
-        let snapshot = owner.runtime.lock().await.companion_snapshot(creature).map_err(debug)?;
-        let started_at = snapshot.state.conditions.instances().iter()
-            .find(|condition| condition.provenance().source_kind
-                == oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::Field)
-            .ok_or("creature field condition")?.started_at();
+        let snapshot = owner
+            .runtime
+            .lock()
+            .await
+            .companion_snapshot(creature)
+            .map_err(debug)?;
+        let started_at = snapshot
+            .state
+            .conditions
+            .instances()
+            .iter()
+            .find(|condition| {
+                condition.provenance().source_kind
+                    == oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::Field
+            })
+            .ok_or("creature field condition")?
+            .started_at();
         // Match the player's eleven-second residual window, independent of
         // real time spent projecting and expiring the durable field.
         let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(
             started_at.div_ceil(1_000) * 1_000,
-        ).checked_add(11_000_000).map_err(debug)?;
+        )
+        .checked_add(11_000_000)
+        .map_err(debug)?;
         (snapshot.health, now)
     };
     owner

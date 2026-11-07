@@ -101,6 +101,7 @@ pub(super) async fn prepare(
     now: SemanticTimeMicros,
     rune: Option<&ItemSpellCastIntent>,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
+    reset_epoch: u64,
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
     if !applicable(spell)
         || book.indexed(intent.spell) != Some(spell)
@@ -325,6 +326,110 @@ pub(super) async fn prepare(
         }
         facts.tile_items.push(fact);
     }
+    // A source map field is a placement, not a Ground ItemInstance. Preserve
+    // the ordinary topmost durable field, and consult the current composed base
+    // only when no durable field supplies the source operation.
+    let mut static_field = None;
+    if facts.first_magic_field.is_none()
+        && profile.spell()["execution"]["native_behavior"]["parameters"]["operation"]
+            == "remove_field"
+        && let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            room.movement_cells().index()
+    {
+        use crate::map::view::MapFacts;
+        let map = index.map();
+        let position = crate::map::overlay::TilePos {
+            x: target
+                .x
+                .try_into()
+                .map_err(|_| SpellCastDisposition::TargetIllegal)?,
+            y: target
+                .y
+                .try_into()
+                .map_err(|_| SpellCastDisposition::TargetIllegal)?,
+            floor: target
+                .floor
+                .checked_neg()
+                .and_then(|z| z.try_into().ok())
+                .ok_or(SpellCastDisposition::TargetIllegal)?,
+        };
+        let pinned = map.facts.pinned();
+        if let Some(composed) = crate::map::view::compose_tile(&map.overlay, &pinned, position)
+            .map_err(|_| SpellCastDisposition::Rejected)?
+        {
+            for entry in composed.entries.iter().rev() {
+                let crate::map::view::EntrySource::Base { placement_key, .. } = entry.source else {
+                    continue;
+                };
+                let key = format!("oteryn:item.tibia.i{}", entry.facts.appearance_id);
+                let Some(policy) = content
+                    .item_index()
+                    .and_then(|index| index.revision(&key))
+                    .and_then(|revision| content.item_policy(&key, revision))
+                else {
+                    continue;
+                };
+                let record = policy.record();
+                let F::Known(class) = &record.semantics.classification else {
+                    continue;
+                };
+                if class.item_type != F::Known(ReferenceItemType::MagicField) {
+                    continue;
+                }
+                let F::Known(physical) = &record.semantics.physical else {
+                    return Err(SpellCastDisposition::NotAvailable);
+                };
+                if physical.movable != F::Known(false) {
+                    return Err(SpellCastDisposition::NotAvailable);
+                }
+                if entry.facts.bound
+                    || entry.facts.count != 1
+                    || entry.facts.sub_type != 0
+                    || pinned.house_tile(position)
+                    || map.facts.terrain_tool_action(placement_key) != Some(None)
+                {
+                    return Err(SpellCastDisposition::TargetIllegal);
+                }
+                let mut placement = map.overlay.base().digest().to_vec();
+                placement.extend_from_slice(&placement_key.to_be_bytes());
+                if !map.facts.quest_callback_capacity(
+                    placement_key,
+                    pinned.object_revision(placement_key),
+                    0,
+                ) {
+                    return Err(SpellCastDisposition::NotAvailable);
+                }
+                let instance_key = format!("map:{placement_key}");
+                facts.first_magic_field = Some(WorldItemFacts {
+                    instance_key: instance_key.clone(),
+                    item: NativeItemRef {
+                        key: record.authoring.item.key.clone(),
+                        revision: record.authoring.item.revision.clone(),
+                    },
+                    movable: false,
+                    script_tagged: false,
+                    action_tagged: false,
+                });
+                static_field = Some((
+                    instance_key,
+                    crate::durability::spell_items_abi::DurableMapFieldRemoval {
+                        placement,
+                        map_revision: crate::map::overlay::map_revision(map.overlay.base()),
+                        content_generation: content.source_digest(),
+                        reset_epoch,
+                        expected_revision: pinned.object_revision(placement_key),
+                        appearance: entry.facts.appearance_id,
+                        definition: crate::durability::item_mint::TypedDefinitionRef {
+                            family: "Item".into(),
+                            production_key: key,
+                            revision_ref: record.production_definition.revision_ref.clone(),
+                        },
+                    },
+                ));
+                break;
+            }
+        }
+    }
     facts.top_item = facts.tile_items.first().cloned();
     let Plan::Item(plan) = profile
         .plan(Facts::Item(&facts), draw)
@@ -363,27 +468,34 @@ pub(super) async fn prepare(
             }
         }
         ItemOperation::RemoveField { remove_instance } => {
-            let row = current
-                .items
-                .iter()
-                .find(|r| {
-                    r.item_instance_id
-                        .iter()
-                        .map(|b| format!("{b:02x}"))
-                        .collect::<String>()
-                        == *remove_instance
-                })
-                .ok_or(SpellCastDisposition::Rejected)?;
-            operations.push(SpellItemOperation::RemoveGround(
-                item_tx::prepare_ground_removal_in_transaction(
-                    tx,
-                    authority,
-                    &address,
-                    row.item_instance_id,
-                )
-                .await
-                .map_err(|_| SpellCastDisposition::Rejected)?,
-            ));
+            if let Some((key, reservation)) = static_field {
+                if key != *remove_instance {
+                    return Err(SpellCastDisposition::Rejected);
+                }
+                operations.push(SpellItemOperation::RemoveMapField(reservation));
+            } else {
+                let row = current
+                    .items
+                    .iter()
+                    .find(|r| {
+                        r.item_instance_id
+                            .iter()
+                            .map(|b| format!("{b:02x}"))
+                            .collect::<String>()
+                            == *remove_instance
+                    })
+                    .ok_or(SpellCastDisposition::Rejected)?;
+                operations.push(SpellItemOperation::RemoveGround(
+                    item_tx::prepare_ground_removal_in_transaction(
+                        tx,
+                        authority,
+                        &address,
+                        row.item_instance_id,
+                    )
+                    .await
+                    .map_err(|_| SpellCastDisposition::Rejected)?,
+                ));
+            }
         }
         ItemOperation::MimicItem {
             item, duration_ms, ..
@@ -1240,6 +1352,83 @@ pub(super) async fn carried_target_is_current(
         Ok(current) => CarriedTargetBinding::from_current(&current) == *target,
         Err(_) => false,
     }
+}
+
+/// Recoverable map cache installation follows the actual common spell COMMIT.
+/// A historical descriptor alone never authorizes a projection or a rune debit.
+pub(super) fn project_committed_map_fields(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &ChannelRuntimeV1,
+    request: &crate::durability::spell_items_abi::SpellItemTransactionRequest,
+    committed: &crate::durability::spell_owner_commit::CommittedSpellOwnerTransaction,
+) -> bool {
+    use crate::map::view::MapFacts;
+    if !request
+        .operations
+        .iter()
+        .any(|operation| matches!(operation, SpellItemOperation::RemoveMapField(_)))
+    {
+        return true;
+    }
+    if !committed.items().is_some_and(|receipt| {
+        receipt.command == request.command
+            && receipt.transaction_id == request.transaction_id
+            && receipt.event_id == request.event_id
+    }) || runtime.binding().world_id() != owner.world_id
+        || runtime.binding().channel_id() != Some(owner.channel_id)
+    {
+        return false;
+    }
+    let Some(map) = owner.bundle_map() else {
+        return false;
+    };
+    let Some(native) = owner
+        .active_generation
+        .and_then(crate::content::ActiveGeneration::native_gameplay)
+    else {
+        return false;
+    };
+    for operation in &request.operations {
+        let SpellItemOperation::RemoveMapField(r) = operation else {
+            continue;
+        };
+        if r.reset_epoch != owner.reset_epoch
+            || r.content_generation != native.source_digest()
+            || r.placement.len() != 40
+            || r.placement[..32] != map.overlay.base().digest()[..]
+            || r.map_revision != crate::map::overlay::map_revision(map.overlay.base())
+        {
+            return false;
+        }
+        let Ok(bytes) = r.placement[32..].try_into() else {
+            return false;
+        };
+        let key = u64::from_be_bytes(bytes);
+        let Some(revision) = r.expected_revision.checked_add(1) else {
+            return false;
+        };
+        let facts = map.facts.pinned();
+        if facts.base_hidden(key) && facts.object_revision(key) >= revision {
+            continue;
+        }
+        let Some((pos, _)) = crate::map::view::placement_of(key) else {
+            return false;
+        };
+        let Some(tile) = crate::map::view::compose_tile(&map.overlay, &facts, pos)
+            .ok()
+            .flatten()
+        else {
+            return false;
+        };
+        let Some(entry) = tile.entries.iter().find(|entry| matches!(entry.source, crate::map::view::EntrySource::Base { placement_key, .. } if placement_key == key) && entry.facts.appearance_id == r.appearance) else { return false; };
+        if !map
+            .facts
+            .install_gathering_state(key, revision, entry.facts, None)
+        {
+            return false;
+        }
+    }
+    true
 }
 
 #[cfg(test)]

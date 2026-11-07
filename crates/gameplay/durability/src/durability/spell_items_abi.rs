@@ -129,10 +129,24 @@ pub struct CastCostBinding {
     pub caster_digest_after: [u8; 32],
 }
 
+/// A source map placement, never a fabricated ItemInstance. The spell owner
+/// binds its current map facts; the shared terrain CAS fences the terminal write.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DurableMapFieldRemoval {
+    pub placement: Vec<u8>,
+    pub map_revision: String,
+    pub content_generation: [u8; 32],
+    pub reset_epoch: u64,
+    pub expected_revision: u64,
+    pub appearance: u16,
+    pub definition: TypedDefinitionRef,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SpellItemOperation {
     ConsumeCorpse(DurableCorpseReservation),
     RemoveGround(DurableGroundItemReservation),
+    RemoveMapField(DurableMapFieldRemoval),
     MergeInventory(DurableInventoryGrantReservation),
     ConsumeInventory(DurableInventoryConsumption),
     RetireContained(DurableContainedRetirement),

@@ -406,13 +406,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 continue;
             }
-            let MapDefinition::Item(reference) = entry.facts.definition else {
-                return;
-            };
-            let Some(definition) = super::super::item_look::typed_definition(index, reference)
-            else {
-                return;
-            };
             if row.item == 0 {
                 if !map.facts.install_gathering_state(
                     key,
@@ -424,6 +417,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 continue;
             }
+            let MapDefinition::Item(reference) = entry.facts.definition else {
+                return;
+            };
+            let Some(definition) = super::super::item_look::typed_definition(index, reference)
+            else {
+                return;
+            };
             let Some(reference) = index.definition_ref(
                 "Item",
                 &format!("oteryn:item.tibia.i{}", row.item),

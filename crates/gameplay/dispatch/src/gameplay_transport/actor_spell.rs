@@ -68,6 +68,8 @@ pub(in crate::gameplay_transport) use native_combat_cast::{
 };
 #[path = "spell_periodic.rs"]
 mod spell_periodic;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use spell_periodic::static_element as static_field_element;
 #[path = "training_save.rs"]
 mod training_save;
 pub(in crate::gameplay_transport) use training_save::TrainingSave;

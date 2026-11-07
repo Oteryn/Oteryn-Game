@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "scope": "Devil Helmet source fire-field removal and reusable ordinary Channel static-map-field support; source combat remains active.",
+  "source": {
+    "position": [
+      32589,
+      32100,
+      14
+    ],
+    "ground": 387,
+    "ground_unique_selector": 5017,
+    "static_field": 2123,
+    "rune": 3148,
+    "item_profile": "content/test-packs/spells/r25/item_profiles.json:1397 @ f3f6a43fb",
+    "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+    "revision": "99902524e052f37574194466c2949c576e4ab269",
+    "field_recipe": "fire;7 repetitions of10 damage/10000ms; source facts unchanged"
+  },
+  "postgres": {
+    "version": "18.6 (Debian18.6-1.pgdg13+2)",
+    "filter": "questpc5_devil_static_fire_field_destroy_payment_and_replay",
+    "red_seconds": 52.64,
+    "red_marker_seconds": 52.635706907,
+    "red_error": "TargetIllegal instead of Committed on the exact static source field",
+    "green_seconds": 54.59,
+    "green_marker_seconds": 54.590281871,
+    "marker": "POSTGRES_CASE_COMPLETED devil_static_field success=true",
+    "assertions": [
+      "source2123 supplies actual native standing fire contact before removal",
+      "real client3148 USE commits the exact source map removal",
+      "source387 small hole/5017 stays present",
+      "removed2123 no longer supplies native standing fire contact",
+      "duplicate transport replay spends no second charge",
+      "fresh attempt after normal support cooldown refuses the empty target",
+      "one charge is consumed:3\u21922",
+      "one spell receipt and no fabricated durable Ground field Item",
+      "complete historical spell Item and map receipt chain verifies"
+    ]
+  },
+  "mechanism": {
+    "admission": "Current exact native MagicField policy and composed ordinary unbound Channel placement; native spell caster/LOS/PZ/cooldown/owned-rune guards retained; map budget/house/binding/attribute refusal before payment.",
+    "transaction": "Existing terrain zero-tombstone CAS and ordinary rune/caster payment share one PostgreSQL transaction. Map descriptors remain separate from physical Item lines.",
+    "audit": "Existing Item-line/outbox completeness guards unchanged. New1005 deferred proof requires exact same-xact map receipt bound to complete spell intent; historical verifier checks the link.",
+    "projection": "Actual sealed committed spell transaction and matching retained request install the recoverable map cache under the current runtime turn; source scope/content/reset/map/revision guards retained. Native standing contact reads the live composed map.",
+    "recovery_diagnosis": "An extra semantic-pass snapshot read during the live command loop returned RootUnavailable despite exact committed state. Immediate projection now uses the actual sealed COMMIT; ordinary SQL snapshot recovery remains supported for restarts."
+  },
+  "checks": {
+    "cargo_fmt": "PASS",
+    "cargo_check_durability_dispatch": "PASS20.79s; declaration-order-only follow-up PASS4.07s",
+    "strict_clippy_durability_dispatch_all_targets_all_features": "PASS117s",
+    "world_inputs": "unchanged; retained pin-check3fe4f02d9c01f2933270d2871b6f20095341a22c5a180dabbf93dfc27e5523f9"
+  }
+}
