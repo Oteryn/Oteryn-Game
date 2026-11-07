@@ -2,6 +2,9 @@
 mod bar;
 mod protocol;
 pub use bar::ActionBar;
+#[cfg(test)]
+#[path = "tests/e2e_c04.rs"]
+mod e2e_c04;
 mod state;
 pub use oteryn_session::ActorVitals;
 pub(crate) use protocol::run_cast;

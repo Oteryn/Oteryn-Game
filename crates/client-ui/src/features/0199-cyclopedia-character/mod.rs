@@ -16,6 +16,14 @@ mod tests;
 mod combat_modifier_tests;
 
 #[cfg(test)]
+#[path = "tests/e2e_c20a.rs"]
+mod e2e_c20a;
+
+#[cfg(test)]
+#[path = "tests/e2e_c15.rs"]
+mod e2e_c15;
+
+#[cfg(test)]
 #[path = "tests/stamina.rs"]
 mod stamina_tests;
 

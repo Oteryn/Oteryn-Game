@@ -76,6 +76,10 @@ pub fn panel_text(panel: &NpcShopPanel) -> String {
 }
 
 #[cfg(test)]
+#[path = "tests/e2e_e01.rs"]
+mod e2e_e01;
+
+#[cfg(test)]
 #[path = "tests/state.rs"]
 mod tests;
 
