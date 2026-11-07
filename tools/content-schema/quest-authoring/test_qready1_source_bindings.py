@@ -30,6 +30,17 @@ class Qready1SourceBindingsTest(unittest.TestCase):
         for path in json.loads((root / 'content/interactions/reward_claims/index.json').read_bytes())['shards']:
             claims.update((r['definition']['identity']['key'], r['definition'])
                           for r in json.loads((root / path).read_bytes())['records'])
+        expected = {
+            'adorned_uh_rune_quest', 'barbarian_axe_quest', 'battle_axe_quest',
+            'blood_herb_quest', 'captain_iglues_treasure_quest', 'circle_room_quest',
+            'combat_knife_quest', 'crusader_helmet_quest', 'crystal_wand_quest',
+            'darashia_dragon_quest', 'dark_armor_quest', 'demona_ring_quest',
+            'double_hero_quest', 'doublet_quest', 'elephant_tusk_quest',
+            'explorer_brooch_quest', 'griffin_shield_quest',
+        }
+        self.assertEqual(expected, {claims[r['claim']]['quest']['key'].split('/')[1]
+                                    for r in capture['bindings']})
+        self.assertEqual(24, len(capture['bindings']))
         seen = set()
         for row in capture['bindings']:
             key = row['claim']

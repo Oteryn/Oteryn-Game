@@ -688,3 +688,185 @@ fn qready1_demona_ring_quest_exact_reward_once() -> TestResult {
     );
     result
 }
+
+#[test]
+fn qready1_double_hero_quest_exact_reward_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result: TestResult = std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            claim_case(
+                "oteryn:reward-claim.kv.doublehero1",
+                (33109, 31679, -13),
+                &[(33109, 6032)],
+                2469,
+                "oteryn:item.tibia.i3039",
+                1,
+            )
+            .map_err(|e| e.to_string())?;
+            claim_case(
+                "oteryn:reward-claim.kv.doublehero2",
+                (33110, 31679, -13),
+                &[(33110, 6033)],
+                2469,
+                "oteryn:item.tibia.i3093",
+                1,
+            )
+            .map_err(|e| e.to_string())?;
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "qready1 dispatch panicked")?
+        .map_err(Into::into);
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qready1_double_hero_quest duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+#[test]
+fn qready1_doublet_quest_exact_reward_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result: TestResult = std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            claim_case(
+                "oteryn:reward-claim.kv.doublet",
+                (32084, 32181, -8),
+                &[(32084, 6181)],
+                408,
+                "oteryn:item.tibia.i3379",
+                1,
+            )
+            .map_err(|e| e.to_string())?;
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "qready1 dispatch panicked")?
+        .map_err(Into::into);
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qready1_doublet_quest duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+#[test]
+fn qready1_elephant_tusk_quest_exact_reward_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result: TestResult = std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            claim_case(
+                "oteryn:reward-claim.quest.u7_5.elephant_tusk",
+                (32922, 32755, -7),
+                &[(32922, 6185)],
+                2472,
+                "oteryn:item.tibia.i3044",
+                2,
+            )
+            .map_err(|e| e.to_string())?;
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "qready1 dispatch panicked")?
+        .map_err(Into::into);
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qready1_elephant_tusk_quest duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+#[test]
+fn qready1_explorer_brooch_quest_exact_reward_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result: TestResult = std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            claim_case(
+                "oteryn:reward-claim.kv.explorerbrooch",
+                (32636, 31873, -10),
+                &[(32636, 6019)],
+                4240,
+                "oteryn:item.tibia.i4871",
+                1,
+            )
+            .map_err(|e| e.to_string())?;
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "qready1 dispatch panicked")?
+        .map_err(Into::into);
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qready1_explorer_brooch_quest duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
+
+#[test]
+fn qready1_griffin_shield_quest_exact_reward_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    let result: TestResult = std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| -> Result<(), String> {
+            claim_case(
+                "oteryn:reward-claim.kv.griffinshield1",
+                (32498, 31721, -15),
+                &[(32498, 6165)],
+                4240,
+                "oteryn:item.tibia.i3433",
+                1,
+            )
+            .map_err(|e| e.to_string())?;
+            claim_case(
+                "oteryn:reward-claim.kv.griffinshield2",
+                (32500, 31721, -15),
+                &[(32500, 6166)],
+                4024,
+                "oteryn:item.tibia.i3313",
+                1,
+            )
+            .map_err(|e| e.to_string())?;
+            claim_case(
+                "oteryn:reward-claim.kv.griffinshield3",
+                (32503, 31724, -15),
+                &[(32503, 6167)],
+                4024,
+                "oteryn:item.tibia.i3323",
+                1,
+            )
+            .map_err(|e| e.to_string())?;
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "qready1 dispatch panicked")?
+        .map_err(Into::into);
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qready1_griffin_shield_quest duration={:?} success={}",
+        started.elapsed(),
+        result.is_ok()
+    );
+    result
+}
