@@ -100,3 +100,49 @@ Present delivery source: `data-global/scripts/quests/threatened_dreams_quest/act
 Cached carried admission correction: `crates/gameplay/dispatch/src/gameplay_transport/quest_carried_use.rs:360` at `49f49ee4e` substitutes `-1` for every absent cached track, while `content/quests/missions/quest-state.json:1` declares PresentsPlaced initial0. `QuestStateCopy` at `crates/gameplay/durability/src/durability/quest_state.rs:231` stores the durable track map; absent entries must use the selected catalogue's initial value for parity with the fenced writer. Real PostgreSQL18.6 intermediateRED132612ms retained all three inputs and wrote no output. Fix the generic admission fallback; do not seed the completed counter or relax its minimum to hide the mismatch.
 
 Feather movement source: `data-global/scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua:1-51`, retained corpus tree9f5a72c6, git-blob `4688b9d0a5fb77b7c1633b598622563f3326b208`, SHA-256 `87e97ad7e527b47bc70a312ec5ea7d74121ddffbbf9fd55c71359dd8a35cd8be`. Five source AIDs25024–25028, no position guards. Players at TroubledAnimals13 collect one25244 per distinct tile while FeathersCount<5; the fifth physical grant advances Animals14. Reuse existing canonical counter `oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count`, initial0, from `content/quests/missions/quest-state.json:1` at `2cb688dee`; do not create a duplicate counter. Native25244 is already materializable/StackCapable with weight10. Existing generic `SetWhenAtLeast` at `crates/gameplay/quests/src/quest/mod.rs:189` from `262618b3cd` reads the other effect's original locked value, so its threshold4 advances only on the fifth increment. QENGINE2 `f3a01112daeadb63188f35d85596708481a1baac` inspected for world reward/conditional support. Add only the missing declarative binding and StepIn MINT composition, not another effect kind. This corrects the preliminary handoff's source end-line59 to51.
+
+
+## Branch-only migration budget and owned-absence refills
+
+The coordinator keeps QUESTPC3 at1220–1229. All ten numbers were already
+used by draft migrations absent from origin/main1ae39c7fb9bef09c3cd50d16410374f4134b1676.
+Consolidate the new refill proof into the last branch-only draft version1229,
+renamed with git mv to1229_quest_reward_occurrence_guards.sql. Its original
+movement proof remains intact; the appended guard proves exact negative owned
+custody and closes eligibility with the same Item MINT. This keeps the reserved
+range and preserves main's0999–1008 byte-for-byte. Qualification uses fresh
+PostgreSQL test databases, never checksum edits to an existing database.
+
+The replacement follows retained Santiago145–160: only no owned3562 permits
+one3562; greeting3 stays3. Native item transfer away from owned custody earns
+another occurrence. A replay or another still-owned3562 cannot duplicate it.
+Free refill participants cannot also grant cosmetics, achievements, XP, blessings
+or foreign quest participants. The root lock rechecks the full owned tree, and
+the deferred SQL guard independently checks the committed custody postcondition.
+
+
+The lost-coat replay proof now uses the literal NPC wire envelope and sequential
+command IDs1–8 (plus an exact replay of2). The earlier fixture called npc_talk
+directly after its conversation had advanced; that selects the next club grant
+and is a different semantic request, despite reusing the command ID. Native
+transport owns byte-exact command replay. The strengthened fixture exercises that
+actual boundary and retains all quantity, stage, and post-drop refill assertions.
+First real PG result: replacement committed, replay hit reservation PK collision
+under the direct-owner fixture; all three regression cases passed.
+
+A fresh transport connection retains command continuity but not its local reply
+cache. The final replay fixture sends both byte-identical command2 frames on a
+single duplex connection and compares the two CommandResult payloads. Each later
+command uses the committed continuity returned by that connection. The first
+wire attempt reconnected before replay and correctly returned no command result;
+that fixture error is not counted as a mechanic failure or a qualification.
+
+Native wire fixture corrections: Dependencies::with_content initializes
+admitted.item_fence=None (monk_save_postgres_tests.rs:213). Direct NPC helpers
+supply the proven current fence per invocation, whereas real wire dispatch uses
+the admitted session's fence. Bind that same fence explicitly before serving;
+otherwise the reward correctly refuses before writing any receipt. The first
+fenced run committed both physical coats and both replacement receipts; its
+last current-fence read raced live transport root work. Preserve the final
+durable greeting assertion after joining the completed wire session, while
+retaining the intermediate durable stage checks and exact reply replay.

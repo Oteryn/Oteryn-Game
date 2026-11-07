@@ -272,7 +272,7 @@ pub(crate) async fn apply(
     }
     let minted = if let Some(reward) = &callback.give {
         let Some(transaction) =
-            mint(tx, tuple, node, fence, command, &callback.key, callback.repeatable, reward, admission).await?
+            mint(tx, tuple, node, fence, command, &callback.key, callback.repeatable || callback.is_paid_exchange(), reward, admission).await?
         else {
             return Ok(false);
         };

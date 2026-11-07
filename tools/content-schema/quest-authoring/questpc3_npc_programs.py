@@ -78,6 +78,19 @@ def documents():
                               3, 0, (4, 4), 5, (-1, 3), 4, 165,
                               "Take this club, then go downstairs in my house. Bring three cockroach legs as proof.",
                               give={"item": "oteryn:item.tibia.i3270", "count": 1}))
+    replacement = callback("lost-coat", ["yes", "right", "ok"],
+                           2, 3, (3, 3), 3, (-1, 3), 2, 158,
+                           "Oh no, did you lose my coat? Well, lucky you, I have a spare one here. Don't lose it again! Now we're getting to the fun part, let's get you armed! Are you ready for some {action}?",
+                           give={"item": "oteryn:item.tibia.i3562", "count": 1})
+    replacement["storage"][1]["preserve"] = True
+    replacement["absent"] = ["oteryn:item.tibia.i3562"]
+    replacement["repeatable"] = True
+    replacement["sources"].append("data-global/npc/santiago.lua:145-160 git-blob=c55210f3b5ccaa5437f8f22148c91b5134f52880 sha256=e83d14b26fb9e6bca12cd3ec50abe34daaeb56f2719b5a1dee3d8efc4402a1bd")
+    callbacks.append(replacement)
+    callbacks.append(callback("club-grant-after-replacement", ["yes", "right", "ok", "action"],
+                              3, 0, (3, 3), 5, (-1, 3), 4, 165,
+                              "Take this club, then go downstairs in my house. Bring three cockroach legs as proof.",
+                              give={"item": "oteryn:item.tibia.i3270", "count": 1}))
     for stage, line, reply in [
         (1, 107, "I need firewood for my oven. Will you help me?"),
         (2, 112, "Find a dead tree without leaves in the forest to the south."),
@@ -154,17 +167,28 @@ def main():
         if target.exists():
             existing = json.loads(target.read_text())
             field = "callbacks" if "callbacks" in document else "offers" if "offers" in document else "npcs"
-            foreign = [record for record in existing[field]
-                       if (not record["key"].startswith("oteryn:quest-reward/questpc3/beginning/")
-                           if field == "callbacks" else record["npc"] not in OWNED_NPCS)]
-            document[field].extend(foreign)
+            # Keep shared registry order stable while replacing only this lane's rows.
+            if field in ("callbacks", "npcs"):
+                identity = "key" if field == "callbacks" else "npc"
+                replacements = {row[identity]: row for row in document[field]}
+                rows = []
+                for row in existing[field]:
+                    owned = (row["key"].startswith("oteryn:quest-reward/questpc3/beginning/")
+                             if field == "callbacks" else row["npc"] in OWNED_NPCS)
+                    if owned:
+                        replacement = replacements.pop(row[identity], None)
+                        if replacement is not None:
+                            rows.append(replacement)
+                    else:
+                        rows.append(row)
+                rows.extend(replacements.values())
+                document[field] = rows
+            else:
+                document[field].extend(row for row in existing[field]
+                                       if row["npc"] not in OWNED_NPCS)
             for key, value in existing.items():
                 if key not in document:
                     document[key] = value
-        if field == "callbacks":
-            document[field].sort(key=lambda record: record["key"])
-        elif field == "npcs":
-            document[field].sort(key=lambda record: record["npc"])
         text = json.dumps(document, indent=2) + "\n"
         target.parent.mkdir(parents=True, exist_ok=True)
         if not target.exists() or target.read_text() != text:

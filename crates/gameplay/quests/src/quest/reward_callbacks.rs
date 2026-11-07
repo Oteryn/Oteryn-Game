@@ -85,6 +85,10 @@ fn reward_binding(callback: &RewardCallback) -> Result<[u8; 32], String> {
         digest
             .update(serde_json::to_vec(&callback.present_any).map_err(|error| error.to_string())?);
     }
+    if !callback.absent.is_empty() {
+        digest.update(b"\0quest-reward-owned-absence-v1\0");
+        digest.update(serde_json::to_vec(&callback.absent).map_err(|error| error.to_string())?);
+    }
     if let Some(fee) = &callback.fee {
         digest.update(b"\0quest-reward-fee-v1\0");
         digest.update(serde_json::to_vec(fee).map_err(|error| error.to_string())?);
@@ -293,6 +297,9 @@ pub struct RewardCallback {
     /// At least one complete carried requirement must hold; inputs remain untouched.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present_any: Vec<ItemAmount>,
+    /// Definitions that must have no live instance in complete owned custody.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub absent: Vec<String>,
     /// Read-only canonical durable equipment slots, checked under the Character root lock.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub equipped_slots: Vec<u8>,
@@ -403,12 +410,20 @@ fn validate_additional_terms(c: &RewardCallback) -> Result<(), String> {
     };
 
     let alternatives: BTreeSet<_> = c.present_any.iter().map(|s| &s.item).collect();
+    let absent: BTreeSet<_> = c.absent.iter().collect();
+    let refill = c.absent.len() == 1
+        && c.give.as_ref().is_some_and(|give| {
+            c.absent.contains(&give.item)
+                && give.contents.is_empty()
+                && give.backpack_outputs.is_empty()
+        });
+
     if ((c.repeatable || c.repeatable_check) && c.storage.is_empty())
         || c.storage
             .iter()
             .any(|s| s.increment.is_some() || s.set_when_at_least.is_some())
         || (c.repeatable
-            && (c.take.is_empty()
+            && ((c.take.is_empty() && !refill)
                 || c.give.is_none()
                 || c.fee.is_some()
                 || c.outfit.is_some()
@@ -443,6 +458,18 @@ fn validate_additional_terms(c: &RewardCallback) -> Result<(), String> {
         || c.health_loss == Some(0)
         || c.experience
             .is_some_and(|v| !(1..=super::QUESTGATE0_RL_05).contains(&v))
+        || c.absent.len() > 8
+        || absent.len() != c.absent.len()
+        || (!c.absent.is_empty() && c.give.is_none())
+        || c.absent.iter().any(|key| {
+            !slug(key, "oteryn:item.", b"._/:-", 256)
+                || c.take
+                    .iter()
+                    .chain(&c.present)
+                    .chain(&c.present_any)
+                    .any(|item| &item.item == key)
+        })
+        || (c.repeatable && refill && (!c.participants.is_empty() || !c.state_ops.is_empty()))
         || c.present_any.len() > 8
         || alternatives.len() != c.present_any.len()
         || c.present_any
@@ -849,17 +876,15 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                     from: QuestComparison::Between(s.minimum, s.maximum),
                     effect: if s.preserve {
                         QuestEffectKind::Add(0)
-                    } else {
-                        if Some(index) == bound_effect
-                            && let Some(binding) = binding
-                        {
-                            QuestEffectKind::SetWithBinding {
-                                value: s.set,
-                                binding,
-                            }
-                        } else {
-                            QuestEffectKind::Set(s.set)
+                    } else if Some(index) == bound_effect
+                        && let Some(binding) = binding
+                    {
+                        QuestEffectKind::SetWithBinding {
+                            value: s.set,
+                            binding,
                         }
+                    } else {
+                        QuestEffectKind::Set(s.set)
                     },
                 })
                 .chain(callback.state_ops.iter().map(StateOperation::quest_effect))
@@ -1265,6 +1290,40 @@ mod tests {
 #[cfg(test)]
 mod additional_terms_tests {
     use super::*;
+    #[test]
+    fn owned_absence_refills_are_bounded_exact_and_disjoint() -> Result<(), String> {
+        let original = load()?
+            .into_iter()
+            .find(|c| c.key == "oteryn:quest-reward/questpc3/beginning/lost-coat")
+            .ok_or("refill callback")?;
+        let document =
+            |row: &RewardCallback| serde_json::json!({"schema":1,"callbacks":[row]}).to_string();
+        assert!(parse(&document(&original)).is_ok());
+        for edit in 0..6 {
+            let mut callback = original.clone();
+            match edit {
+                0 => callback.absent.push(callback.absent[0].clone()),
+                1 => callback.absent = vec!["oteryn:item.tibia.i3270".into()],
+                2 => callback.present.push(ItemAmount {
+                    item: callback.absent[0].clone(),
+                    count: 1,
+                }),
+                3 => callback.take.push(ItemAmount {
+                    item: callback.absent[0].clone(),
+                    count: 1,
+                }),
+                4 => callback.experience = Some(1),
+                _ => callback.give = None,
+            }
+            assert!(parse(&document(&callback)).is_err(), "absence edit {edit}");
+        }
+        let mut ordinary = original.clone();
+        ordinary.repeatable = false;
+        ordinary.absent.clear();
+        assert_ne!(reward_binding(&original)?, reward_binding(&ordinary)?);
+        Ok(())
+    }
+
     #[test]
     fn merged_catalogue_has_a_closed_512_callback_budget() -> Result<(), String> {
         let original = load()?.into_iter().next().ok_or("callback fixture")?;

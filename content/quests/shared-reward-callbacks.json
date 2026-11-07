@@ -11019,6 +11019,94 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/sam.lua:sha256:ed713aa63d597133355328a16e9c36d1b382c0e1d7e40dc199211f4fc4d14e6b"
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning/club-grant-after-replacement",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "keywords": [
+        "yes",
+        "right",
+        "ok",
+        "action"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 5,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 4,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3270",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take this club, then go downstairs in my house. Bring three cockroach legs as proof."
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L165"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/beginning/lost-coat",
+      "quest": "oteryn:quest.the_beginning_quest",
+      "npc": "oteryn:npc.santiago",
+      "keywords": [
+        "yes",
+        "right",
+        "ok"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_npc_greet_storage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_beginning_quest/santiago_quest_log",
+          "minimum": -1,
+          "maximum": 3,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3562",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Oh no, did you lose my coat? Well, lucky you, I have a spare one here. Don't lose it again! Now we're getting to the fun part, let's get you armed! Are you ready for some {action}?"
+      ],
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/santiago.lua#L158",
+        "data-global/npc/santiago.lua:145-160 git-blob=c55210f3b5ccaa5437f8f22148c91b5134f52880 sha256=e83d14b26fb9e6bca12cd3ec50abe34daaeb56f2719b5a1dee3d8efc4402a1bd"
+      ],
+      "absent": [
+        "oteryn:item.tibia.i3562"
+      ],
+      "repeatable": true
     }
   ],
   "tracks": [

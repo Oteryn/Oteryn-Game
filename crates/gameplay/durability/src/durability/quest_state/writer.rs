@@ -402,11 +402,6 @@ impl DurabilityRoot {
                         && let QuestCause::Command(command)=request.cause {
                         super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
                     }
-                    // The MINT cause precedes the Character root, matching the item owner.
-                    if reward_callback.as_ref().is_some_and(|c|c.give.is_some())
-                        && let QuestCause::Command(command)=request.cause {
-                        super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
-                    }
                     if callback.as_ref().is_some_and(|c| c.effects.item_reward.is_some())
                         && let QuestCause::Use(command) | QuestCause::Step(command) = request.cause {
                         super::super::reward_claim_mint::lock_cause(&mut tx, command).await?;
@@ -778,8 +773,6 @@ impl DurabilityRoot {
                         }
                     };
 
-                    // A native death reads its mission gate; it must not move that mission epoch.
-                    if native.is_some() {changes.retain(|change|change.before!=change.after);}
                     // Native death gates are locked read predicates, not new mission
                     // epochs. Receipt only the changed counter; its deferred SQL proof
                     // must name exactly the rows this transition writes.

@@ -236,6 +236,7 @@ pub(super) async fn exercise(
             owner.quest_catalogue.clone().ok_or("replay catalogue")?,
             &permit,
             context,
+            owner.active_generation.and_then(|generation| generation.native_gameplay()),
         )
         .await
         .map_err(debug)?;

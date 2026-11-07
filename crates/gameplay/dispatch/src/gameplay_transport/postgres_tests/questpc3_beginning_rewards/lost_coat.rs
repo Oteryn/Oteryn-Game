@@ -1,5 +1,7 @@
 //! Missing-coat replacement is source value, not a state-only clothing check.
-use super::super::classic_quests::{install, progress};
+use super::super::classic_quests::install;
+#[path = "lost_coat/readback.rs"]
+mod readback;
 use super::super::fixture::{Harness, debug, id, run};
 use super::super::{
     AdmittedSession, ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session,
@@ -7,12 +9,12 @@ use super::super::{
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef};
-use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
 };
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
+use readback::progress;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 const QUEST: &str = "oteryn:quest.the_beginning_quest";
@@ -232,13 +234,27 @@ fn scenario() -> TestResult {
         owner
             .refresh_quest_session(admitted.game_session_id, false)
             .await;
-        let [santiago] = install(&mut owner, &admitted, [SANTIAGO]).await?;
+        let [santiago] = install(&owner, &admitted, [SANTIAGO]).await?;
+        admitted.item_fence = Some(fence.item_fence());
+        admitted.continuity.selected_capabilities =
+            crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                &[oteryn_protocol_oteryn::npc_service::CAPABILITY_NPC_SERVICE_V1],
+            )
+            .ok_or("NPC service selection")?;
+        // Keep the admitted transport alive across the complete conversation.
+        // Reconnects discard the connection-local reply cache and emit new snapshots.
+        use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
+        use tokio::io::AsyncWriteExt;
+        let (mut server, mut client) = tokio::io::duplex(1 << 20);
+        let driving = async {
+            let result: TestResult<(u32, i64, i64)> = async {
         assert_eq!(
-            speak(&mut owner, &admitted, santiago, 37001, "hi").await?,
+            speak(&mut client, santiago, 1, "hi").await?,
             NpcIntentDisposition::Ok,
             "native Santiago source offer must open"
         );
-        let first = speak(&mut owner, &admitted, santiago, 37002, "yes").await?;
+        let first = speak(&mut client, santiago, 2, "yes").await?;
         let mut completed = 0;
         if first == NpcIntentDisposition::Ok && quantity(&h).await? == 1 {
             completed += 1;
@@ -247,28 +263,22 @@ fn scenario() -> TestResult {
                 3,
                 "source replacement preserves greeting storage"
             );
-            assert_eq!(
-                speak(&mut owner, &admitted, santiago, 37002, "yes").await?,
-                NpcIntentDisposition::Ok,
-                "exact reward reply replays"
-            );
             assert_eq!(quantity(&h).await?, 1);
-            speak(&mut owner, &admitted, santiago, 37003, "bye").await?;
-            speak(&mut owner, &admitted, santiago, 37004, "hi").await?;
-            speak(&mut owner, &admitted, santiago, 37005, "yes").await?;
+            speak(&mut client, santiago, 3, "bye").await?;
+            speak(&mut client, santiago, 4, "hi").await?;
+            speak(&mut client, santiago, 5, "yes").await?;
             if quantity(&h).await? == 1
                 && progress(&owner, &admitted, &authority, GREET).await? == 3
             {
                 completed += 1;
             }
             drop_owned_coat(&owner, &admitted).await?;
-            speak(&mut owner, &admitted, santiago, 37006, "bye").await?;
-            speak(&mut owner, &admitted, santiago, 37007, "hi").await?;
-            let second = speak(&mut owner, &admitted, santiago, 37008, "yes").await?;
+            speak(&mut client, santiago, 6, "bye").await?;
+            speak(&mut client, santiago, 7, "hi").await?;
+            let second = speak(&mut client, santiago, 8, "yes").await?;
             if second == NpcIntentDisposition::Ok && quantity(&h).await? == 2 {
                 completed += 1;
             }
-            assert_eq!(progress(&owner, &admitted, &authority, GREET).await?, 3);
         }
         let coats = quantity(&h).await?;
         let receipts: i64 = sqlx::query_scalar(
@@ -280,6 +290,24 @@ fn scenario() -> TestResult {
         eprintln!(
             "BEGINNING_LOST_COAT POSTGRES_EVIDENCE completed={completed} coats={coats} receipts={receipts}"
         );
+                Ok((completed, coats, receipts))
+            }.await;
+            client.shutdown().await?;
+            result
+        };
+        let serving = async {
+            let ended = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS).await;
+            drop(server);
+            ended
+        };
+        let (_, result) = tokio::time::timeout(
+            std::time::Duration::from_secs(60),
+            super::super::fixture::join_two(serving, driving),
+        )
+        .await?;
+        let (completed, coats, receipts) = result?;
+        // Read the final committed state after the transport releases its root work.
+        assert_eq!(progress(&owner, &admitted, &authority, GREET).await?, 3);
         drop(owner);
         drop(authority);
         drop(seal);
@@ -297,51 +325,84 @@ async fn quantity(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1").bind(COAT).fetch_one(&h.pool).await?)
 }
 async fn speak(
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    admitted: &AdmittedSession,
+    client: &mut tokio::io::DuplexStream,
     npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
     command: u64,
     text: &str,
 ) -> TestResult<NpcIntentDisposition> {
-    owner.clock_origin = owner
-        .clock_origin
-        .checked_sub(std::time::Duration::from_secs(2))
-        .ok_or("clock")?;
-    let fence = owner
-        .current_quest_fence(admitted.game_session_id)
-        .await
-        .map_err(|()| "fence")?
-        .ok_or("fence")?;
-    let result = owner
-        .npc_talk(
-            admitted.runtime_actor.ok_or("actor")?,
-            UseCommand {
-                game_session_id: admitted.game_session_id,
-                command_id: command,
-                item_fence: Some(fence.item_fence()),
-            },
-            NpcTalkIntent {
-                npc_actor: npc,
-                text: text.into(),
-            },
-        )
-        .await;
-    assert!(!result.unknown, "native reply must be definite");
-    Ok(result.disposition)
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    // NPC0-RL-04 admits four intents per second.
+    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+    let payload = oteryn_protocol_oteryn::npc_service::encode_npc_talk_intent(&NpcTalkIntent {
+        npc_actor: npc,
+        text: text.into(),
+    })
+    .map_err(debug)?;
+    let frame = oteryn_protocol_oteryn::encode_client_command(
+        1,
+        &oteryn_protocol_oteryn::ClientCommandValue {
+            command_id: command,
+            command_type: oteryn_protocol_oteryn::npc_service::COMMAND_TYPE_NPC_TALK_INTENT,
+            payload: &payload,
+        },
+    )
+    .map_err(debug)?;
+    let copies = if command == 2 { 2 } else { 1 };
+    for _ in 0..copies {
+        client
+            .write_all(&u32::try_from(frame.len())?.to_be_bytes())
+            .await?;
+        client.write_all(&frame).await?;
+    }
+    let mut result = None;
+    let mut replies = 0;
+    while replies < copies {
+        let mut prefix = [0; 4];
+        client.read_exact(&mut prefix).await?;
+        let mut frame = vec![0; u32::from_be_bytes(prefix) as usize];
+        client.read_exact(&mut frame).await?;
+        let envelope = crate::foundation::decode_wire_envelope(&frame).map_err(debug)?;
+        if envelope.message_type() == crate::foundation::MessageType::CommandResult {
+            let reply =
+                oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
+            assert_eq!(reply.command_id, command);
+            let payload = reply.payload.to_vec();
+            if let Some(previous) = &result {
+                assert_eq!(previous, &payload, "exact reward reply replays");
+            }
+            result = Some(payload);
+            replies += 1;
+        }
+    }
+    oteryn_protocol_oteryn::npc_service::decode_npc_intent_result(
+        &result.ok_or("no command result")?,
+    )
+    .map_err(debug)
 }
 async fn drop_owned_coat(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
 ) -> TestResult {
     use crate::durability::item_loop_move::{LoopDestination, LoopGround, LoopMoveRequest};
+    let budget = crate::gameplay_transport::AdmissionRetryBudget::for_command(owner.root);
     let fence = owner
-        .current_quest_fence(admitted.game_session_id)
+        .current_quest_fence_within(&budget, admitted.game_session_id)
         .await
         .map_err(|()| "fence")?
         .ok_or("fence")?;
-    let inventory = owner
-        .root
-        .read_item_use_inventory(owner.character, owner.holder, fence.item_fence())
+    let inventory = budget
+        .retry_unavailable(async || {
+            owner
+                .root
+                .read_item_use_inventory(owner.character, owner.holder, fence.item_fence())
+                .await
+                .map_err(|error| match error {
+                    crate::durability::item_use::ItemUseError::Unavailable(error) => {
+                        readback::classify(error)
+                    }
+                    _ => crate::gameplay_transport::connection::AdmissionRefusal::Rejected,
+                })
+        })
         .await
         .map_err(debug)?;
     let item = inventory

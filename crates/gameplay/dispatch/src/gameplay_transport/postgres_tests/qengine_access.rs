@@ -809,6 +809,9 @@ async fn wardrobe(
         .clone()
         .ok_or("wardrobe outfit")?;
     let seed = RewardCallback {
+        absent: vec![], blessing: None, completes: false, equipped_slots: vec![],
+        experience: None, health_loss: None, premium: false, present_any: vec![],
+        repeatable: false, repeatable_check: false,
         carried_item: None,
         minimum_level: None,
         requires_addons: vec![],
@@ -865,6 +868,7 @@ async fn wardrobe(
         let runtime = owner.runtime.lock().await;
         let actor = admitted.runtime_actor.ok_or("actor")?;
         crate::durability::quest_world_callback::QuestWorldContext {
+            carried: None, projection_time_us: None,
             map_revision: crate::map::overlay::map_revision(
                 owner.bundle_map().ok_or("map")?.overlay.base(),
             ),

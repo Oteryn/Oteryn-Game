@@ -84,6 +84,23 @@ class QuestCallbackProfiles(unittest.TestCase):
             self.assertEqual(rows[f'oteryn:item.tibia.i{ident}']['semantics']['physical']['value']['weight'],
                              {'state': 'KNOWN', 'value': weight})
 
+    def test_foreign_programme_retains_its_owner_and_ours_requires_qualification(self):
+        key = 'oteryn:item.tibia.i133'
+        path = self.root / 'content/quests/shared-reward-callbacks.json'
+        before = {r['production_definition']['production_key']: r
+                  for r in self.document['records']}
+        foreign = {'key': 'oteryn:quest-reward/other/holy-water',
+                   'give': {'item': key, 'count': 1}}
+        path.write_text(json.dumps({'callbacks': [foreign]}))
+        self.admit()
+        after = {r['production_definition']['production_key']: r
+                 for r in json.loads(self.generated[PROFILE])['records']}
+        self.assertEqual(after.get(key), before.get(key))
+        own = {**foreign, 'key': 'oteryn:quest-reward/questpc3/holy-water'}
+        path.write_text(json.dumps({'callbacks': [own]}))
+        with self.assertRaisesRegex(ValueError, 'QUEST_CALLBACK_ITEM_NOT_ADMITTED'):
+            self.admit()
+
     def test_npc_reward_input_evidence_and_child_closure_is_native(self):
         wanted = {f'oteryn:item.tibia.i{i}' for i in (25731, 25733, 25779, 675, 676)}
         self.document['records'] = [r for r in self.document['records']
@@ -274,8 +291,9 @@ class QuestCallbackProfiles(unittest.TestCase):
                     expected.add(placement['root']['key'])
                     expected.update(child['item']['key'] for child in placement['contents'])
         # ITEMHOLD-Q admits the Ornamented Shield bag (2859, 2949, 3053,
-        # 3083), with 3083 also used by Triangle Tower: 130 + 4 identities.
-        self.assertEqual(len(expected), 135)
+        # 3083), with 3083 also used by Triangle Tower. The combined
+        # current item admissions qualify a complete closure of139 identities.
+        self.assertEqual(len(expected), 139)
         self.assertTrue({f'oteryn:item.tibia.i{item}' for item in (2859, 2949, 3053, 3083)} <= expected)
         for key in expected:
             row = rows[key]

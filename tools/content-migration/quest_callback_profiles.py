@@ -136,6 +136,11 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     shared = root / 'content/quests/shared-reward-callbacks.json'
     if shared.is_file():
         for callback in json.loads(shared.read_bytes())['callbacks']:
+            # This overlay qualifies the lane's programmes. Other programmes
+            # retain their existing native owners (including QENGINE2's
+            # physical profile importer and deliberately held output facts).
+            if 'key' in callback and not callback['key'].startswith('oteryn:quest-reward/questpc3/'):
+                continue
             npc_inputs.update(item['item'] for item in callback.get('take', []))
             npc_inputs.update(item['item'] for item in callback.get('present', []))
             npc_inputs.update(item['item'] for item in callback.get('present_any', []))

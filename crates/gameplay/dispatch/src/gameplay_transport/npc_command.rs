@@ -732,16 +732,25 @@ pub(super) async fn npc_bank_talk(
         drop(_trade_permit);
         return grizzly::talk(admission, actor, command, intent, context).await;
     }
-    if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
+    let owned = if reward_callbacks::needs_inventory(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        let owned = reward_callbacks::owned_inventory(admission, command).await;
+        runtime = admission.runtime.lock().await;
+        let Some(owned) = owned else {
+            return NpcTalkOutcome::only(NpcIntentDisposition::Rejected);
+        };
+        Some(owned)
+    } else {
+        None
+    };
+    if let Some(step) =
+        reward_callbacks::prepare(admission, actor, command, &intent, &runtime, owned.as_ref())
+    {
         drop(runtime);
         drop(_trade_permit);
         return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
-    if let Some(step) = reward_callbacks::prepare(admission, actor, command, &intent, &runtime) {
-        drop(runtime);
-        drop(_trade_permit);
-        return quest_dialogue::apply(admission, actor, command, intent, step).await;
-    }
+
     if let Some(step) = beginning::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
         drop(_trade_permit);

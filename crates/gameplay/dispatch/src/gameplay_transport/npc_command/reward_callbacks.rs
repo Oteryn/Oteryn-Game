@@ -5,6 +5,66 @@ use super::*;
 use oteryn_gameplay_quests::quest::reward_callbacks;
 use oteryn_gameplay_quests::quest::world_callbacks::Storage;
 use serde::Deserialize;
+use std::collections::{BTreeMap, BTreeSet};
+
+pub(super) fn needs_inventory(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &NpcTalkIntent,
+    runtime: &ChannelRuntimeV1,
+) -> bool {
+    let Some(context) = admission.states.npc_conversations.current_npc(
+        &admission.states.chat,
+        runtime,
+        actor,
+        command.game_session_id,
+        intent,
+    ) else {
+        return false;
+    };
+    let text = intent.text.trim().to_ascii_lowercase();
+    reward_callbacks::load().is_ok_and(|callbacks| {
+        callbacks.iter().any(|callback| {
+            callback.npc == context.2
+                && !callback.absent.is_empty()
+                && callback.keywords.contains(&text)
+        })
+    })
+}
+
+pub(super) async fn owned_inventory(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    command: UseCommand,
+) -> Option<BTreeMap<String, u64>> {
+    let inventory = admission
+        .root
+        .read_item_use_inventory(admission.character, admission.holder, command.item_fence?)
+        .await
+        .ok()?;
+    let mut counts = BTreeMap::<String, u64>::new();
+    let mut seen = BTreeSet::new();
+    for item in inventory
+        .equipment
+        .iter()
+        .chain(inventory.backpack.iter().map(|bag| &bag.backpack))
+        .chain(
+            inventory
+                .backpack
+                .iter()
+                .flat_map(|bag| bag.entries.iter().map(|entry| &entry.item)),
+        )
+        .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
+    {
+        if seen.insert(item.item_instance_id) {
+            let count = counts
+                .entry(item.definition.production_key.clone())
+                .or_default();
+            *count = count.saturating_add(u64::from(item.quantity));
+        }
+    }
+    Some(counts)
+}
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -33,6 +93,7 @@ pub(super) fn prepare(
     command: UseCommand,
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
+    owned: Option<&BTreeMap<String, u64>>,
 ) -> Option<Step> {
     let callbacks = reward_callbacks::load().ok()?;
     let offers: Offers = serde_json::from_str(include_str!(
@@ -78,6 +139,17 @@ pub(super) fn prepare(
                     && c.minimum_level
                         .is_none_or(|minimum| minimum > 0 && level >= minimum)
                     && eligible(&c.storage)
+                    && owned.map_or(c.absent.is_empty(), |owned| {
+                        let count = |key: &str| owned.get(key).copied().unwrap_or(0);
+                        c.absent.iter().all(|key| count(key) == 0)
+                            && c.present
+                                .iter()
+                                .all(|item| count(&item.item) >= u64::from(item.count))
+                            && (c.present_any.is_empty()
+                                || c.present_any
+                                    .iter()
+                                    .any(|item| count(&item.item) >= u64::from(item.count)))
+                    })
                     && c.state_ops
                         .iter()
                         .all(|op| op.advisory_holds(catalogue, tracks))

@@ -2137,7 +2137,7 @@
           "file": "data-global/scripts/quests/threatened_dreams_quest/action_fairies_release.lua:1-67",
           "git_blob": "96e10ff0166fdc0d6c17fd584721173b973ae560",
           "sha256": "73a538f9be2e1afcd0d31632ab68689191229ba4049dc4562caa757587869243",
-          "selector": "AIDs40016–40020; config coordinates are source placements, not runtime position predicates",
+          "selector": "AIDs40016\u201340020; config coordinates are source placements, not runtime position predicates",
           "timer": "30sec, revert only if current appearance25797; intervening same-appearance uses retain earlier deadline",
           "counter": "canonical initial0 normalizes Lua absent/-1 branch to same first output1; capped5"
         },
@@ -2160,7 +2160,7 @@
         "first_pg_driver_failure": {
           "duration_ms": 65825,
           "exact_error": "async fn resumed after completion in test cancellation poll_fn",
-          "database_evidence": "5 actual source receipts; Fairy01–05 each1; FairiesCounter5; inspected then exact failed test DB dropped",
+          "database_evidence": "5 actual source receipts; Fairy01\u201305 each1; FairiesCounter5; inspected then exact failed test DB dropped",
           "fix": "latch stopped future completion; never poll it again; production mechanisms unchanged",
           "log": "/tmp/questpc3-fairies-green.log",
           "sha256": "8f1d6eb6285e30f8c4edd2349f22820dd55be8a545b4daa9dface3bba9b560df",
@@ -2798,7 +2798,7 @@
         ],
         "red_log": "/tmp/questpc3-beginning-equipment-red-marked.log",
         "whole_entry_status": "Beginning IN_PROGRESS; four owned whole quests remain; no engine deferral.",
-        "reuse": "Existing carried presence and native reward MINT/custody; equipment writers already serialize under Character root. No occupied-slot predicate found in refreshed qengine2/PC2/PC4–8/L2 callbacks.",
+        "reuse": "Existing carried presence and native reward MINT/custody; equipment writers already serialize under Character root. No occupied-slot predicate found in refreshed qengine2/PC2/PC4\u20138/L2 callbacks.",
         "first_red": {
           "log": "/tmp/questpc3-beginning-equipment-red.log",
           "sha256": "45de478a54e47db5abc09db3ee85089374c348c20d3e02850f37f7553822eafe",
@@ -4788,7 +4788,7 @@
           "file": "data-global/scripts/quests/threatened_dreams_quest/action_fairies_release.lua:1-67",
           "git_blob": "96e10ff0166fdc0d6c17fd584721173b973ae560",
           "sha256": "73a538f9be2e1afcd0d31632ab68689191229ba4049dc4562caa757587869243",
-          "selector": "AIDs40016–40020; config coordinates are source placements, not runtime position predicates",
+          "selector": "AIDs40016\u201340020; config coordinates are source placements, not runtime position predicates",
           "timer": "30sec, revert only if current appearance25797; intervening same-appearance uses retain earlier deadline",
           "counter": "canonical initial0 normalizes Lua absent/-1 branch to same first output1; capped5"
         },
@@ -4811,7 +4811,7 @@
         "first_pg_driver_failure": {
           "duration_ms": 65825,
           "exact_error": "async fn resumed after completion in test cancellation poll_fn",
-          "database_evidence": "5 actual source receipts; Fairy01–05 each1; FairiesCounter5; inspected then exact failed test DB dropped",
+          "database_evidence": "5 actual source receipts; Fairy01\u201305 each1; FairiesCounter5; inspected then exact failed test DB dropped",
           "fix": "latch stopped future completion; never poll it again; production mechanisms unchanged",
           "log": "/tmp/questpc3-fairies-green.log",
           "sha256": "8f1d6eb6285e30f8c4edd2349f22820dd55be8a545b4daa9dface3bba9b560df",
@@ -5147,6 +5147,31 @@
           "regression": "three selected presents with lost acknowledgement recovery pass on new schema",
           "world_pin": "unchanged1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f"
         }
+      },
+      "beginning_owned_absence_18": {
+        "status": "QUALIFIED_MECHANISM",
+        "whole_quest": "IN_PROGRESS; ground tree/cart engine request remains",
+        "postgres": {
+          "version": "18.6",
+          "duration_ms": 120264,
+          "completed": 3,
+          "coats": 2,
+          "receipts": 2,
+          "log": "/tmp/questpc3-owner-lost-coat-readback-final-pg.log",
+          "red_log": "/tmp/questpc3-lost-coat-red.log",
+          "red_duration_ms": 101208
+        },
+        "regressions_ms": {
+          "beginning_equipment": 110912,
+          "threatened_feathers": 73304,
+          "threatened_presents": 53166
+        },
+        "workspace_check": "PASS all-targets 1m06s /tmp/questpc3-owner-speed-workspace-check.log",
+        "fmt": "PASS /tmp/questpc3-owner-speed-fmt.log",
+        "generated": "PASS repo tooling + pin-refresh; no content changes after regeneration",
+        "duplicate_migrations": "CLEAR; canonical main0999-1008 exact; no1200-1205 copies; own1220-1229",
+        "clippy": "Original two test lints fixed; final extra rerun stopped/superseded by latest owner SPEED direction after environmental disk failures; CI owns remaining verification",
+        "readback": "30-line test-only helper reuses existing bounded retry; only RootUnavailable retries; permanent refusals fail; no assertions removed"
       }
     },
     "counts": {
@@ -5156,7 +5181,7 @@
     },
     "current_batch": {
       "batch": "beginning_world_18",
-      "phase": "Compiling native lost-coat test checkpoint; realPG18.6 running, source zero-owned coat grant not implemented yet",
+      "phase": "GREEN; publish immediately",
       "entries": [
         "missing owned coat produces source3562 replacement without greeting advance",
         "owned coat prevents duplicate and exact source reply replays",
@@ -5171,11 +5196,32 @@
         "sha256": "e83d14b26fb9e6bca12cd3ec50abe34daaeb56f2719b5a1dee3d8efc4402a1bd"
       },
       "latest_checks": {
-        "test_compile": "PASS5m00s",
-        "postgres": "running18.6, no qualification claimed yet",
-        "red_point": "source topic2 zero-owned coat branch has no replacement callback; present-only clothing check rejects it"
+        "status": "QUALIFIED_MECHANISM",
+        "whole_quest": "IN_PROGRESS; ground tree/cart engine request remains",
+        "postgres": {
+          "version": "18.6",
+          "duration_ms": 120264,
+          "completed": 3,
+          "coats": 2,
+          "receipts": 2,
+          "log": "/tmp/questpc3-owner-lost-coat-readback-final-pg.log",
+          "red_log": "/tmp/questpc3-lost-coat-red.log",
+          "red_duration_ms": 101208
+        },
+        "regressions_ms": {
+          "beginning_equipment": 110912,
+          "threatened_feathers": 73304,
+          "threatened_presents": 53166
+        },
+        "workspace_check": "PASS all-targets 1m06s /tmp/questpc3-owner-speed-workspace-check.log",
+        "fmt": "PASS /tmp/questpc3-owner-speed-fmt.log",
+        "generated": "PASS repo tooling + pin-refresh; no content changes after regeneration",
+        "duplicate_migrations": "CLEAR; canonical main0999-1008 exact; no1200-1205 copies; own1220-1229",
+        "clippy": "Original two test lints fixed; final extra rerun stopped/superseded by latest owner SPEED direction after environmental disk failures; CI owns remaining verification",
+        "readback": "30-line test-only helper reuses existing bounded retry; only RootUnavailable retries; permanent refusals fail; no assertions removed"
       },
-      "migration_range_request": "Asked coordinator for additional questpc3 range (suggest1350–1359);1220–1229 fully used. Continue Rust/native PG work; no out-of-range migration authored."
+      "migration_range_request": "No extra range used: new guard consolidated into last branch-only draft1229, renamed quest_reward_occurrence_guards; main SQL unchanged",
+      "next": "Continue owned quests using existing engine; route new shared mechanisms to qengine2"
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",
@@ -5398,7 +5444,7 @@
       ],
       "remaining_scope": "Four wholequestsIN_PROGRESS. Bridge/log8, coat replacement, fiveGROUNDwood/cart; otherquest remainingcomponents per status. No further work by this thread."
     },
-    "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R–S entries assigned to other split lanes are scope evidence only",
+    "ownership": "L4 per QSPLIT-PLAN; world changes excluded by current owner; original R\u2013S entries assigned to other split lanes are scope evidence only",
     "phase": "OWNER STOP; handoff to r2",
     "previous_batch": {
       "id": "carlos-report-paid-fur-merge",
@@ -9771,43 +9817,19 @@
       },
       "review": "Read strict combined admission union, all unchanged conflicting Item weights, retained source observation guards, disjoint NPC producer prefixes, both new physical PG contracts and generated input witnesses. All three PG cases, 4callbackunits,15profiles,9authoring,actual15case/776creatureprey,check/strictClippy3crates,123content,5repository andpinchecks pass; no blocking finding."
     },
-    "updated_at": "2026-11-07T10:37:57.379120+00:00",
+    "updated_at": "2026-11-07T19:48:32.945796+00:00",
     "standing_validation_rule": {
-      "owner_update": "2026-11-07 latest instruction overrides earlier focused-only test restriction",
-      "before_every_push": "cargo tree -i EACH_CHANGED_CRATE -e normal --workspace --prefix none; union dependent crates; full cargo nextest run -p EACH --no-fail-fast with PostgreSQL",
-      "dependent_crates": [
-        "oteryn-game-server",
-        "oteryn-gameplay-characters",
-        "oteryn-gameplay-combat",
-        "oteryn-gameplay-combat-rules",
-        "oteryn-gameplay-content",
-        "oteryn-gameplay-content-promotion",
-        "oteryn-gameplay-dispatch",
-        "oteryn-gameplay-durability",
-        "oteryn-gameplay-encounter-rules",
-        "oteryn-gameplay-encounters",
-        "oteryn-gameplay-entities",
-        "oteryn-gameplay-foundation",
-        "oteryn-gameplay-items",
-        "oteryn-gameplay-monster-ai",
-        "oteryn-gameplay-native-admission-source",
-        "oteryn-gameplay-npc",
-        "oteryn-gameplay-progression",
-        "oteryn-gameplay-quests",
-        "oteryn-gameplay-social",
-        "oteryn-gameplay-spell",
-        "oteryn-gameplay-spell-rules",
-        "oteryn-gameplay-world",
-        "oteryn-gameplay-world-change"
+      "owner_override": "Latest owner SPEED: stop extra verification; focused failures fixed and own PostgreSQL proof, cargo check --workspace --all-targets + fmt, push immediately; CI runs heavy suites",
+      "before_each_push": [
+        "Own focused mechanic tests with real PostgreSQL proof",
+        "cargo check --workspace --all-targets",
+        "cargo fmt --all -- --check"
       ],
-      "merge_main": "at least every few hours; current merge origin/main bbb3e06d0 in progress",
-      "failures": "collect ALL full-run failures, group root causes, fix together, rerun full set, then ONE push; no weakening/skips/deletions",
-      "execution": "serial build jobs and two test threads for18GiB worker; test scope unchanged",
-      "current": "32 main merge conflicts manually resolved; generated registry regeneration ongoing before merge commit, restoring owned absence draft, and full nextest"
+      "full_suites": "CI runs full suites; group all owner-reported failures and push fixes once"
     },
     "main_merge_validation": {
       "main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
-      "state": "canonical_engine_merged_regeneration_in_progress_full_pg_prevention_not_started",
+      "state": "GREEN latest owner speed gate; ready for immediate publication",
       "shared_migrations": "0999-1008 byte-identical to main; no QBASE1200-1205 copies; own1220-1229 retained",
       "duplicate_migration_check": "staged tree: clear",
       "quest_unit_suite": {
@@ -9821,9 +9843,47 @@
       },
       "quest_authoring_suite": "29passed21.392s",
       "callback_schema": "271merged callbacks; closed512limit; 512accepted/513rejected unittestpassed",
-      "regeneration_log": "/tmp/questpc3-3020-regen-retry.log",
-      "full_reverse_dependency_run": "NOT_STARTED; required23crates withrealPG beforeonepush",
-      "push_policy": "No partial push; collect all full-run failures, grouped repairs, full rerun then one push"
+      "regeneration_log": "/tmp/questpc3-owner-regenerate-pin.log",
+      "full_reverse_dependency_run": "Not run; CI owns heavy suites per owner",
+      "push_policy": "Publish this green batch immediately under latest SPEED instruction"
+    },
+    "standing_engine_rule": {
+      "owner": "qengine2",
+      "new_generic_features": "Request centrally; only small local helpers under about50lines in new files",
+      "existing_slice": "Owned-absence production mechanism was implemented before this rule; finish its qualification without adding further engine features",
+      "engine_requests": [
+        {
+          "feature": "ground-item MINT and ground-item USE_WITH cart callbacks",
+          "needed_by": [
+            "oteryn:quest.the_beginning_quest"
+          ],
+          "where": [
+            "crates/gameplay/quests/src/quest/world_callbacks.rs",
+            "crates/gameplay/durability"
+          ],
+          "state": "REQUESTED; continue other owned quests"
+        },
+        {
+          "feature": "Expose existing transaction-clock state operations on world reward callbacks for harvest cooldowns",
+          "needed_by": [
+            "oteryn:quest.threatened_dreams_quest"
+          ],
+          "where": [
+            "crates/gameplay/quests/src/quest/world_callbacks.rs",
+            "crates/gameplay/durability/src/durability/quest_world_callback.rs"
+          ],
+          "state": "REQUESTED"
+        }
+      ],
+      "reuse_checked": {
+        "qengine2": "5c01deabb33b448fe7de795a3f9271477af05ea6",
+        "questpc4": "8bf3338eca7e86708c7ae4a87493043b0976e831",
+        "qworld": "943fddf340608e4f14a99854cf7b4cdcbdc4f58a"
+      }
+    },
+    "collector": {
+      "owner": "wpkg",
+      "publication": "Push this lane branch; collector pulls green batches; no lane PR; merge main after coordinator announces collector merge"
     }
   },
   "counts": {
@@ -9835,7 +9895,7 @@
   },
   "historical_inventory": {
     "snapshot": "c5cdcd6ae:qlane-meta/questpc3/QUEST-STATUS.json",
-    "scope": "R–S; migrations1040–1059; no new commands/capabilities",
+    "scope": "R\u2013S; migrations1040\u20131059; no new commands/capabilities",
     "counts": {
       "inventory": 56,
       "qualified": 19,
@@ -10366,7 +10426,7 @@
         ]
       }
     ],
-    "note": "Other original R–S mechanisms belong to other split lanes. Do not reopen finished entries."
+    "note": "Other original R\u2013S mechanisms belong to other split lanes. Do not reopen finished entries."
   },
   "phase": "AUTHORING",
   "quests": [
@@ -10636,7 +10696,7 @@
       "scope_disposition": "Other world-change lanes per current owner; preserve inherited qualification."
     }
   ],
-  "scope": "L4 per LANE-L4.json and QSPLIT-PLAN.md; skip other lanes and world-change owners. All shared features required by the five owned quests are this lane’s implementation responsibility.",
+  "scope": "L4 per LANE-L4.json and QSPLIT-PLAN.md; skip other lanes and world-change owners. All shared features required by the five owned quests are this lane\u2019s implementation responsibility.",
   "task_id": "questpc3-L4",
   "migration_registry_alignment": {
     "range": "1220-1229",
@@ -10652,7 +10712,7 @@
       "1228_quest_carried_world_rewards.sql",
       "1229_quest_movement_world_rewards.sql"
     ],
-    "status": "QUALIFIED: lane1220–1229, canonical QENGINE2 shared files unchanged; new StepIn MINT and prior selected USE rewards PostgreSQL18.6 proven",
+    "status": "QUALIFIED: lane1220\u20131229, canonical QENGINE2 shared files unchanged; new StepIn MINT and prior selected USE rewards PostgreSQL18.6 proven",
     "red_point": "Registry and treasure slice complete; whole four-quest scope remains active.",
     "post_rename_postgresql": {
       "marker": "REWARD-CLAIM-MINT-PG server_version_num=180006; POSTGRES_CASE_COMPLETED questl2-peer-outputs",

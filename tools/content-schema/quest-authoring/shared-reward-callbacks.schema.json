@@ -549,6 +549,16 @@
               }
             }
           }
+        },
+        "absent": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "maxLength": 256,
+            "pattern": "^oteryn:item[.][a-z0-9._/:-]+$"
+          }
         }
       }
     },

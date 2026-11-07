@@ -1257,7 +1257,7 @@ fn scenario(mode: Scenario) -> TestResult {
                 .refresh_quest_session(admitted.game_session_id, false)
                 .await;
             super::classic_quests::talk(&mut owner, &admitted, santiago, 4301, "hi").await?;
-            // No armor and no coat cannot advance the source clothing check.
+            // The source replaces a missing coat without advancing the clothing check.
             owner.clock_origin = owner
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(2))
@@ -1286,7 +1286,8 @@ fn scenario(mode: Scenario) -> TestResult {
                 refused.disposition,
                 started.elapsed().as_millis()
             );
-            assert_eq!(refused.disposition, NpcIntentDisposition::Rejected);
+            assert_eq!(refused.disposition, NpcIntentDisposition::Ok);
+            assert_eq!(quantity(&h, "oteryn:item.tibia.i3562").await?, 1);
             assert_eq!(
                 super::classic_quests::progress(
                     &owner,
@@ -1301,16 +1302,19 @@ fn scenario(mode: Scenario) -> TestResult {
                 "QUESTPC3_BEGINNING_EQUIPMENT POSTGRES_ASSERTION_REACHED missing_gear duration_ms={}",
                 started.elapsed().as_millis()
             );
+            // Re-enter the clothing check with the actual coat just minted.
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4303, "bye").await?;
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4304, "hi").await?;
             let mut tx = h.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
                 .execute(&mut *tx)
                 .await?;
-            for (ident, instance, ordinal) in [(3562, 84, 3), (3567, 85, 4)] {
+            for (ident, instance) in [(3562, 84), (3567, 85)] {
+                if ident != 3562 {
                 sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($4,'hex')::uuid)")
                     .bind(id(instance).as_slice()).bind(id(42).as_slice()).bind(format!("oteryn:item.tibia.i{ident}")).bind(id(81).as_slice()).execute(&mut *tx).await?;
+                }
                 if ident == 3562 {
-                    sqlx::query("INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid)")
-                        .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(70).as_slice()).bind(id(instance).as_slice()).bind(ordinal.to_string()).bind(id(81).as_slice()).execute(&mut *tx).await?;
                     tx.commit().await?;
                     owner.clock_origin = owner
                         .clock_origin
@@ -1326,7 +1330,7 @@ fn scenario(mode: Scenario) -> TestResult {
                             admitted.runtime_actor.ok_or("actor")?,
                             UseCommand {
                                 game_session_id: admitted.game_session_id,
-                                command_id: 4303,
+                                command_id: 4305,
                                 item_fence: Some(fence.item_fence()),
                             },
                             NpcTalkIntent {
@@ -1362,9 +1366,9 @@ fn scenario(mode: Scenario) -> TestResult {
                 }
             }
             tx.commit().await?;
-            super::classic_quests::talk(&mut owner, &admitted, santiago, 4304, "bye").await?;
-            super::classic_quests::talk(&mut owner, &admitted, santiago, 4305, "hi").await?;
-            super::classic_quests::talk(&mut owner, &admitted, santiago, 4306, "yes").await?;
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4306, "bye").await?;
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4307, "hi").await?;
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4308, "yes").await?;
             assert_eq!(
                 super::classic_quests::progress(
                     &owner,
@@ -1378,11 +1382,11 @@ fn scenario(mode: Scenario) -> TestResult {
             assert_eq!(quantity(&h, "oteryn:item.tibia.i3562").await?, 1);
             assert_eq!(quantity(&h, "oteryn:item.tibia.i3270").await?, 0);
             // A fresh conversation at stage four repeats only the clothing check.
-            super::classic_quests::talk(&mut owner, &admitted, santiago, 4307, "bye").await?;
-            super::classic_quests::talk(&mut owner, &admitted, santiago, 4308, "hi").await?;
-            super::classic_quests::talk(&mut owner, &admitted, santiago, 4309, "yes").await?;
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4309, "bye").await?;
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4310, "hi").await?;
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4311, "yes").await?;
             assert_eq!(quantity(&h, "oteryn:item.tibia.i3270").await?, 0);
-            super::classic_quests::talk(&mut owner, &admitted, santiago, 4310, "action").await?;
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4312, "action").await?;
             assert_eq!(
                 super::classic_quests::progress(
                     &owner,
@@ -1405,7 +1409,7 @@ fn scenario(mode: Scenario) -> TestResult {
             );
             assert_eq!(quantity(&h, "oteryn:item.tibia.i3270").await?, 1);
             assert_eq!(quantity(&h, "oteryn:item.tibia.i3562").await?, 1);
-            super::classic_quests::talk(&mut owner, &admitted, santiago, 4311, "bye").await?;
+            super::classic_quests::talk(&mut owner, &admitted, santiago, 4313, "bye").await?;
             owner.clock_origin = owner
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(2))
@@ -1420,7 +1424,7 @@ fn scenario(mode: Scenario) -> TestResult {
                     admitted.runtime_actor.ok_or("actor")?,
                     UseCommand {
                         game_session_id: admitted.game_session_id,
-                        command_id: 4312,
+                        command_id: 4314,
                         item_fence: Some(fence.item_fence()),
                     },
                     NpcTalkIntent {

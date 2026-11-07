@@ -651,7 +651,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn qengine_reward_npcs_open_only_source_conversations() -> Result<(), String> {
+    fn original_reward_npcs_open_only_source_conversations() -> Result<(), String> {
         let catalogue = crate::content::NpcDataCatalogue::load(
             std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
             std::ffi::OsStr::new("world"),
