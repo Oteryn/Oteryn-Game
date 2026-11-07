@@ -32,6 +32,7 @@ enum Route {
     ElvenbaneExploration,
     ElvenbaneCombat,
     ElvenbaneDefenders,
+    ElvenbaneComplete,
 }
 
 pub(super) fn native_objective_atomicity() -> TestResult {
@@ -48,6 +49,10 @@ pub(super) fn elvenbane_source_combat() -> TestResult {
 
 pub(super) fn elvenbane_source_defenders() -> TestResult {
     run(Route::ElvenbaneDefenders)
+}
+
+pub(super) fn elvenbane_source_complete() -> TestResult {
+    run(Route::ElvenbaneComplete)
 }
 
 pub(super) fn elvenbane_source_exploration() -> TestResult {
@@ -67,7 +72,10 @@ fn run(route: Route) -> TestResult {
         }
     } else if matches!(
         route,
-        Route::ElvenbaneExploration | Route::ElvenbaneCombat | Route::ElvenbaneDefenders
+        Route::ElvenbaneExploration
+            | Route::ElvenbaneCombat
+            | Route::ElvenbaneDefenders
+            | Route::ElvenbaneComplete
     ) {
         Position {
             x: 32599,
@@ -106,7 +114,10 @@ fn run(route: Route) -> TestResult {
         let world = source_world(
             generation.native_gameplay().ok_or("native gameplay")?,
             start,
-            matches!(route, Route::ElvenbaneCombat | Route::ElvenbaneDefenders),
+            matches!(
+                route,
+                Route::ElvenbaneCombat | Route::ElvenbaneDefenders | Route::ElvenbaneComplete
+            ),
         )?;
         let now: i64 =
             sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
@@ -188,7 +199,10 @@ fn run(route: Route) -> TestResult {
             .ok_or("native gameplay")?
             .install_companion_policies(&mut runtime)
             .map_err(debug)?;
-        if matches!(route, Route::ElvenbaneCombat | Route::ElvenbaneDefenders) {
+        if matches!(
+            route,
+            Route::ElvenbaneCombat | Route::ElvenbaneDefenders | Route::ElvenbaneComplete
+        ) {
             // Same source projection/activation owner as serve.rs2445-2471,
             // before Fresh players can block source spawn placement.
             let sources = world
@@ -270,7 +284,10 @@ fn run(route: Route) -> TestResult {
         }
         if matches!(
             route,
-            Route::ElvenbaneExploration | Route::ElvenbaneCombat | Route::ElvenbaneDefenders
+            Route::ElvenbaneExploration
+                | Route::ElvenbaneCombat
+                | Route::ElvenbaneDefenders
+                | Route::ElvenbaneComplete
         ) {
             pending.push(oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1);
             pending.push(oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1);
@@ -439,12 +456,16 @@ fn run(route: Route) -> TestResult {
             h.cleanup().await?;
             return result;
         }
-        if matches!(route, Route::ElvenbaneCombat | Route::ElvenbaneDefenders) {
+        if matches!(
+            route,
+            Route::ElvenbaneCombat | Route::ElvenbaneDefenders | Route::ElvenbaneComplete
+        ) {
             let result = super::elvenbane_combat::scenario(
                 &mut owner,
                 &mut admitted[0],
                 &h.pool,
-                route == Route::ElvenbaneDefenders,
+                matches!(route, Route::ElvenbaneDefenders | Route::ElvenbaneComplete),
+                route == Route::ElvenbaneComplete,
             )
             .await;
             drop(owner);

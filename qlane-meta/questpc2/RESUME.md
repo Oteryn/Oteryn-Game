@@ -1,3 +1,23 @@
+# WIP whole-route test compiles; source first chest actual PG95.95s RED
+
+New elvenbane_treasure::elvenbane_source_treasure_exit_and_journal_via_wire
+runs inherited full earned Native6 route, then four physical chest claims,
+replay/once, four root+five nested items samexmin, actual inverse native stairs
+exit to32599,31652,z7, ownphase4/completed journal requirements. Actual
+PG18000695.95s stops at firstbp1 USE: NothingToUse expectedCommitted.
+Log /tmp/questpc2-treasure-source-corrected-red-pg.log. Compiles91s; initial
+floori16/i8 compile assertion fixed by exact widening, notPGproof.
+Push compiling checkpoint now, then reuse existing generic
+ tools/content-schema/world-authoring/quest_chest_bindings.py
+Its docs explicitly allow lane-specific source captures. Raw B3 chest attrs
+None; strict binder correctly requiresUID+position+appearance. Do not weaken
+binder or invent virtual source facts. Existing tool pins old201189 chestSHA
+7c3a..., current corpus9f5 chestSHA0ca1... has exact same four source claims;
+extend accepted exact source-pair validation generically if needed, keeping
+old captures as-is. Check actual level/startup file pins from corpus; source
+capture validates physical rewards before restoring metadata. Then pin tools/
+focused PG. Whole quest/owned27 remainunfinished; no final/end.
+
 # GREEN six source defenders: push, then four source treasures/exit/journal
 
 Actual PG180006 GREEN94.83s (route18508ms), log

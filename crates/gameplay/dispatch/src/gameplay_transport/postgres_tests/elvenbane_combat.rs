@@ -18,6 +18,7 @@ pub(super) async fn scenario(
     member: &mut AdmittedSession,
     pool: &sqlx::PgPool,
     all_defenders: bool,
+    complete: bool,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let version: i32 = sqlx::query_scalar("SELECT current_setting('server_version_num')::int")
@@ -93,6 +94,9 @@ pub(super) async fn scenario(
             recipe, expected,
             "every actual upper source kill must also earn its recipe objective"
         );
+    }
+    if complete {
+        super::elvenbane_treasure::complete(owner, member, pool).await?;
     }
     eprintln!(
         "ELVENBANE_WIRE_COMBAT POSTGRES_CASE_COMPLETED source_dragon=earned source_defenders=6 upper_defenders={all_defenders} elapsed_ms={}",

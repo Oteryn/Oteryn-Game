@@ -2134,5 +2134,23 @@
     "duplicate_migrations": "HEAD PASS",
     "pins": "repo refresh/check PASS",
     "world_digest": "56275a3ba06db4611a016821d1c0194c261e320ef983fcb215631911b56bc306"
+  },
+  "treasure_completion_authoring": {
+    "state": "WIP_FULL_ROUTE_SOURCE_CHEST_UID_RED",
+    "server_version_num": 180006,
+    "red_postgres_seconds": 95.95,
+    "red_log": "/tmp/questpc2-treasure-source-corrected-red-pg.log",
+    "red_point": "After all six earned source kills, actual bp1 chest USE returnsNothingToUse expectedCommitted. Raw source B3 omits startupUID6255; strict binder requires actual UID.",
+    "compiles": true,
+    "compile_seconds": 91,
+    "requirements": [
+      "four actual source claims",
+      "literal same-command replay",
+      "fresh-command once refusal",
+      "four roots and five nested children with same physical xmin",
+      "native descent to source entry",
+      "phase4 and completed admitted journal"
+    ],
+    "next": "Reuse existing quest_chest_bindings startup UID restoration, capture exact four declarations from committed corpus, preserve binder UID/position/appearance checks. Then source exit/journal completion."
   }
 }
