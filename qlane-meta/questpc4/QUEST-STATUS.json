@@ -10634,7 +10634,7 @@
     "cadence_decision": "PREPUSH-2 permits publication of main+regeneration+workspace-check+fmt while step3 remains running at the30minute cadence. Continue pending tests and group all failures before the next repair push."
   },
   "ci_cb38_complete_repair": {
-    "state": "COMPILE_FMT_REGEN_PASS_PUSH_NOW_OWNER_DIRECTION",
+    "state": "PUSHED_58901066C_ALL_REPORTED_ROOTS_GREEN",
     "base_main": "f641d8d6c",
     "reported_leaf_failures": 3,
     "root_causes": 2,
@@ -10654,7 +10654,14 @@
       "unit_red": "/tmp/questpc4-rotten-owner-unit-red.log",
       "unit_green": "PASS1 /0.07s /tmp/questpc4-rotten-owner-unit-green.log",
       "full_quest_unit_green": "300PASS36.78s /tmp/questpc4-rotten-final-quest-units.log",
-      "pg_green": "BUILD_RUNNING /tmp/questpc4-rotten-blood-green.log"
+      "pg_green": {
+        "seconds": 43.995,
+        "log": "/tmp/questpc4-rotten-blood-green.log",
+        "marker_repeat_seconds": 44.41,
+        "marker_log": "/tmp/questpc4-rotten-blood-green-marker.log",
+        "marker": "ROTTEN_BLOOD POSTGRES_CASE_COMPLETED literal_altar possession_only_phase atomic_item_burn replay",
+        "postgres": "18.6"
+      }
     },
     "completed": {
       "workspace_check": "PASS7m56s /tmp/questpc4-equipment-final-workspace-check.log; identical-source duplicate check cancelled",
@@ -10663,13 +10670,24 @@
       "full_three_crate_run": "3830PASS/1knowncountFAIL/18pre-existing skips in1933.458s; count regression subsequentlyGREEN99.683s; /tmp/questpc4-f641-crate-units.log",
       "durability_units": "709PASS253.49s /tmp/questpc4-final-durability-unit-binary.log",
       "python_units": "1099PASS98modules /tmp/questpc4-f641-python-unit.log",
-      "prior_clippy": "3cratesPASS14m19s /tmp/questpc4-f641-clippy.log"
+      "prior_clippy": "3cratesPASS14m19s /tmp/questpc4-f641-clippy.log",
+      "current_clippy": "3changedcrates/alltargets/-DwarningsPASS3m18s /tmp/questpc4-final-repair-clippy.log"
     },
     "pending": [
-      "Rebuilt altar PG green case and equipment/unit regressions /tmp/questpc4-rotten-blood-green.log",
-      "Current changed-crate clippy /tmp/questpc4-final-repair-clippy.log queued after rebuilt binary",
-      "Consume MAINRED3027 canonical fix when it lands; do not extend existing temporary NPC/world reconciliation"
+      "Consume MAINRED3027 canonical fix when it lands; replace already-published temporary reconciliation with main, no competing expansion."
     ],
     "publication_exception": "Latest owner says push complete fix NOW per PREPUSH-2; steps1,2,4pass; step3 PG green rebuild remains explicitly pending. Continue immediately after publication."
+  },
+  "main3032_merge": {
+    "main": "47db34f09d760b2f435860c2f8d4ddf12a893e05",
+    "state": "CONFLICT_RESOLVED_VALIDATING",
+    "decision": "Keep main apply_input_rows; remove temporary input_rows.rs; preserve existing lane reusable/alternative item behavior and NPC ground guard. All world/carried callers retain the checked apply_input wrapper.",
+    "pending": [
+      "Durability crate unit tests with PG absent (standard guards)",
+      "Own actual PG NPC hand-in, carried key, reusable tools and Rotten altar cases with durations",
+      "Native/item/equipment/binding checks and pin refresh",
+      "cargo check --workspace --all-targets and fmt",
+      "Current clippy on changed durability crate"
+    ]
   }
 }
