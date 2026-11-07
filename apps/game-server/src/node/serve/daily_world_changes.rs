@@ -9,30 +9,21 @@ use super::event;
 use crate::foundation::{ChannelRuntimeV1, MovementFacing, NpcPlacement, WorldId};
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_world_change::daily::DailyWorldChanges;
-use oteryn_simulation_determinism::{
-    DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
-};
 use sha2::{Digest, Sha256};
 
 /// The day after the reset `reset_epoch` of `world`, on the UTC calendar at `unix_ms`.
 pub(super) fn roll(world: WorldId, reset_epoch: u64, unix_ms: i64) -> DailyWorldChanges {
-    let mut hash = Sha256::new();
-    hash.update(b"oteryn.world_change.daily.v1\0");
-    hash.update(world.as_bytes());
-    let root = GameplayDecisionRoot::from_bytes(hash.finalize().into());
-    let mut occurrence = [0; 16];
-    occurrence[8..].copy_from_slice(&reset_epoch.to_be_bytes());
     let (month, day) = utc_month_day(unix_ms);
-    DailyWorldChanges::roll(reset_epoch, month, day, |purpose| {
-        // A purpose is never empty, so the draw cannot fail; a failure would read as "no".
-        deterministic_decision_u64(
-            &root,
-            DecisionOccurrenceId::from_bytes(occurrence),
-            purpose,
-            0,
-        )
-        .unwrap_or(u64::MAX)
-    })
+    roll_calendar(world, reset_epoch, month, day)
+}
+
+pub(super) fn roll_calendar(
+    world: WorldId,
+    reset_epoch: u64,
+    month: u8,
+    day: u8,
+) -> DailyWorldChanges {
+    oteryn_gameplay_world_change::daily::roll_calendar(world.as_bytes(), reset_epoch, month, day)
 }
 
 /// Qualify the boot's optional composition against its resolved reset epoch.
@@ -143,7 +134,7 @@ pub(super) fn apply_items(
 }
 
 /// The UTC (month, day) of `unix_ms` (days-from-civil inverted).
-fn utc_month_day(unix_ms: i64) -> (u8, u8) {
+pub(super) fn utc_month_day(unix_ms: i64) -> (u8, u8) {
     let days = unix_ms.div_euclid(86_400_000) + 719_468;
     let era = days.div_euclid(146_097);
     let day_of_era = days - era * 146_097;
@@ -165,7 +156,7 @@ fn utc_month_day(unix_ms: i64) -> (u8, u8) {
 
 #[cfg(test)]
 #[allow(clippy::expect_used, reason = "test fixtures")]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::foundation::{ChannelId, NodeId, NpcPlacementTable};
     use crate::gameplay_transport::NpcTalkBook;
@@ -500,8 +491,12 @@ mod tests {
     }
 
     fn exercise_fungus(epoch: u64) {
+        exercise_fungus_snapshot(DailyWorldChanges::roll(epoch, 1, 1, |_| 0));
+    }
+
+    fn exercise_fungus_snapshot(day: DailyWorldChanges) {
         use crate::map::view::MapFacts;
-        let day = DailyWorldChanges::roll(epoch, 1, 1, |_| 0);
+        let epoch = day.reset_epoch;
         let world = boot_physical(&day);
         let restarted = boot_physical(&day);
         let mut changed = 0;
@@ -527,7 +522,11 @@ mod tests {
                 changed += usize::from(fact.appearance_id != 12065);
             }
         }
-        assert!((1200..=1600).contains(&changed), "changed {changed}");
+        if day.their_masters_voice {
+            assert!((1200..=1600).contains(&changed), "changed {changed}");
+        } else {
+            assert_eq!(changed, 0);
+        }
         assert_eq!(world, restarted);
         for (x, y, floor) in [(33305, 31847, -9), (33370, 31847, -9), (33306, 31847, -8)] {
             assert_eq!(
@@ -638,6 +637,12 @@ mod tests {
     }
 
     fn exercise_grimvale_inner(epoch: u64) {
+        for day in [12, 13, 14] {
+            exercise_grimvale_snapshot(DailyWorldChanges::roll(epoch, 1, day, |_| u64::MAX));
+        }
+    }
+
+    fn exercise_grimvale_snapshot(changes: DailyWorldChanges) {
         use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
         let (controller, pin) =
             crate::content::native_gameplay::test_support::activated_with_loot_tables(
@@ -650,86 +655,278 @@ mod tests {
             .enable_time()
             .build()
             .expect("executor");
-        for day in [12, 13, 14] {
-            let changes = DailyWorldChanges::roll(epoch, 1, day, |_| u64::MAX);
-            let map = boot_physical(&changes);
-            let sources = map
-                .activation_spawns(|_| Some((100, false)))
-                .expect("activation sources");
-            let points: Vec<_> = sources.iter().flat_map(|(points, _)| points).collect();
-            assert!(!points.is_empty(), "Grimvale sources");
-            assert!(points.len() <= 21);
-            let allowed = if day == 13 {
-                &["oteryn:creature.wereboar", "oteryn:creature.werebadger"][..]
-            } else {
-                &[
-                    "oteryn:creature.bandit",
-                    "oteryn:creature.badger",
-                    "oteryn:creature.blue_butterfly",
-                    "oteryn:creature.yellow_butterfly",
-                ][..]
-            };
-            let count = points.len();
-            for (position, delay, creature, health, _) in points {
-                assert!((33330..=33350).contains(&position.0));
-                assert!((31670..=31690).contains(&position.1));
-                assert_eq!(position.2, 7);
-                assert!(allowed.contains(&creature.as_str()));
-                assert_eq!(*health, 100);
-                assert_eq!(*delay, 90_000);
-            }
-            let channel_pin = oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
+        let map = boot_physical(&changes);
+        let sources = map
+            .activation_spawns(|_| Some((100, false)))
+            .expect("activation sources");
+        let points: Vec<_> = sources.iter().flat_map(|(points, _)| points).collect();
+        assert!(!points.is_empty(), "Grimvale sources");
+        assert!(points.len() <= 21);
+        let allowed = if changes.grimvale_full_moon {
+            &["oteryn:creature.wereboar", "oteryn:creature.werebadger"][..]
+        } else {
+            &[
+                "oteryn:creature.bandit",
+                "oteryn:creature.badger",
+                "oteryn:creature.blue_butterfly",
+                "oteryn:creature.yellow_butterfly",
+            ][..]
+        };
+        let count = points.len();
+        for (position, delay, creature, health, _) in points {
+            assert!((33330..=33350).contains(&position.0));
+            assert!((31670..=31690).contains(&position.1));
+            assert_eq!(position.2, 7);
+            assert!(allowed.contains(&creature.as_str()));
+            assert_eq!(*health, 100);
+            assert_eq!(*delay, 90_000);
+        }
+        let channel_pin = oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
                 world(),pin.activation_sequence(),pin.identity().server_artifact_digest(),
                 pin.identity().client_artifact_digest(),map.frame_binding_digest(world()),
                 map.map_revision_digest(),(33330,31670,7));
-            let mut runtime = ChannelRuntimeV1::from_committed_assignment(
-                world(),
-                ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
-                    .expect("channel"),
-                NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3])
-                    .expect("node"),
-                1,
-                1,
-                1,
-                "runtime-scope-assignment:1",
-                64,
-                channel_pin,
-            )
-            .expect("runtime");
-            native
-                .install_companion_policies(&mut runtime)
-                .expect("served policies");
-            let realized = executor
-                .block_on(super::super::realize_bundle_spawns(
-                    &mut runtime,
-                    &map,
-                    &oteryn_foundation::CancellationToken::new(),
-                ))
-                .expect("activation");
-            assert_eq!(realized, Some((count, 1)));
-            for (_, _, actor) in runtime.spawn_point_creatures() {
-                let actor = actor.expect("live Grimvale creature");
-                let snapshot = runtime.companion_snapshot(actor).expect("served creature");
-                assert!(snapshot.health > 0);
-                assert_eq!(snapshot.health, snapshot.maximum_health);
-            }
-            let (point, _, actor) = runtime.spawn_point_creatures()[0];
-            let actor = actor.expect("first creature");
-            let health = runtime.companion_snapshot(actor).expect("health").health;
-            runtime
-                .commit_monster_lab_damage(actor, b"sp02-lethal-hit", health)
-                .expect("lethal hit");
-            crate::gameplay_transport::drive_owner_spawns(&mut runtime, 0);
-            let due = runtime
-                .pending_respawn(point)
-                .expect("pending respawn")
-                .due_micros;
-            assert_eq!(due, 90_000_000);
-            crate::gameplay_transport::drive_owner_spawns(&mut runtime, due);
-            crate::gameplay_transport::drive_owner_spawns(&mut runtime, due + 4_200_000);
-            assert!(runtime.spawn_point_creatures()[0].2.is_some());
-            assert_ne!(runtime.spawn_point_creatures()[0].2, Some(actor));
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world(),
+            ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+                .expect("channel"),
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node"),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            64,
+            channel_pin,
+        )
+        .expect("runtime");
+        native
+            .install_companion_policies(&mut runtime)
+            .expect("served policies");
+        let realized = executor
+            .block_on(super::super::realize_bundle_spawns(
+                &mut runtime,
+                &map,
+                &oteryn_foundation::CancellationToken::new(),
+            ))
+            .expect("activation");
+        assert_eq!(realized, Some((count, 1)));
+        for (_, _, actor) in runtime.spawn_point_creatures() {
+            let actor = actor.expect("live Grimvale creature");
+            let snapshot = runtime.companion_snapshot(actor).expect("served creature");
+            assert!(snapshot.health > 0);
+            assert_eq!(snapshot.health, snapshot.maximum_health);
         }
+        let (point, _, actor) = runtime.spawn_point_creatures()[0];
+        let actor = actor.expect("first creature");
+        let health = runtime.companion_snapshot(actor).expect("health").health;
+        runtime
+            .commit_monster_lab_damage(actor, b"sp02-lethal-hit", health)
+            .expect("lethal hit");
+        crate::gameplay_transport::drive_owner_spawns(&mut runtime, 0);
+        let due = runtime
+            .pending_respawn(point)
+            .expect("pending respawn")
+            .due_micros;
+        assert_eq!(due, 90_000_000);
+        crate::gameplay_transport::drive_owner_spawns(&mut runtime, due);
+        crate::gameplay_transport::drive_owner_spawns(&mut runtime, due + 4_200_000);
+        assert!(runtime.spawn_point_creatures()[0].2.is_some());
+        assert_ne!(runtime.spawn_point_creatures()[0].2, Some(actor));
+    }
+
+    pub(crate) fn qworld_physical_case() -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{Harness, configured_admin, runtime};
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        std::thread::Builder::new().stack_size(64 << 20).spawn(move || {
+            let run = || -> crate::bestiary_postgres_harness::TestResult {
+                runtime()?.block_on(async {
+                    let h = Harness::create(admin, "qworld_physical", false).await?;
+                    let world = world();
+                    let active = (1..=128).find(|epoch| {
+                        let day = roll_calendar(world, *epoch, 6, 13);
+                        day.their_masters_voice && day.fury_gates.is_some()
+                    }).ok_or("active source occurrence")?;
+                    let inactive = (active + 1..=active + 128).find(|epoch| {
+                        let day = roll_calendar(world, *epoch, 6, 14);
+                        !day.their_masters_voice && day.fury_gates.is_none()
+                    }).ok_or("inactive source occurrence")?;
+                    for (epoch, day, enabled) in [(active, 13, true), (inactive, 14, false)] {
+                        let timestamp = format!("2026-06-{day:02} 06:00:00+00");
+                        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,'qworld',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,$4::text::timestamptz,'2026-06')")
+                            .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind([7_u8;32].as_slice()).bind(timestamp).execute(&h.pool).await?;
+                        let announcement = oteryn_gameplay_world_change::scheduled::announcement_for_epoch(epoch).unwrap_or_default();
+                        sqlx::query("INSERT INTO game_world_event_epochs(world_id,reset_epoch,active,announcement) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$4)")
+                            .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(!announcement.is_empty()).bind(announcement).execute(&h.pool).await?;
+                        sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,$2::text::numeric) ON CONFLICT(world_id) DO UPDATE SET reset_epoch=EXCLUDED.reset_epoch")
+                            .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).execute(&h.pool).await?;
+                        assert_eq!(h.root.world_change_calendar(world, epoch).await?, (6, day));
+                        let snapshot = h.root.world_change_snapshot(world, epoch).await?;
+                        assert_eq!(snapshot.their_masters_voice, enabled);
+                        assert_eq!(snapshot.grimvale_full_moon, enabled);
+                        assert_eq!(snapshot.fury_gates.is_some(), enabled);
+                        assert_eq!(h.root.world_change_snapshot(world, epoch).await?, snapshot);
+                        // Separate native runtime: the spawn owner drives its own Tokio clock.
+                        std::thread::Builder::new().stack_size(64 << 20).spawn(move || {
+                            exercise_fungus_snapshot(snapshot);
+                            exercise_grimvale_snapshot(snapshot);
+                            exercise_fury_snapshot(snapshot).map_err(|error| error.to_string())
+                        })?.join().map_err(|_| "QWORLD physical owner thread failed")??;
+                    }
+                    assert!(h.root.world_change_snapshot(world, active).await.is_err());
+                    h.cleanup().await
+                })
+            };
+            run().map_err(|error| error.to_string())
+        })?.join().map_err(|_| "QWORLD PostgreSQL thread failed")?.map_err(Into::into)
+    }
+
+    fn exercise_fury_snapshot(
+        changes: DailyWorldChanges,
+    ) -> crate::bestiary_postgres_harness::TestResult {
+        use compile::{KeyResolver, Resolution};
+        use oteryn_world_bundle_compiler::{compile, source};
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let layers: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/encounters/world-changes/layers.json"
+        ))?;
+        let source_layer = layers["layers"]
+            .as_array()
+            .ok_or("source layers")?
+            .iter()
+            .find(|layer| layer["key"] == changes.fury_exit)
+            .ok_or("selected Fury source layer")?;
+        let tiles = source_layer["tiles"].as_array().ok_or("source tiles")?;
+        let regions: std::collections::BTreeSet<_> = tiles
+            .iter()
+            .map(|tile| {
+                let x = tile["position"][0].as_u64().ok_or("source x")? as u16;
+                let y = tile["position"][1].as_u64().ok_or("source y")? as u16;
+                Ok::<_, &'static str>((x / 256, y / 256))
+            })
+            .collect::<Result<_, _>>()?;
+        let project = source::project_regions(&root, &regions.into_iter().collect::<Vec<_>>())?;
+        let (registry, palette) = source::registry(&root, &project)?;
+        let input = compile::Input {
+            regions: &project.regions,
+            palette: &palette,
+            identity: oteryn_world_bundle::bundle::Identity {
+                project_format_version: "OTERYN_WORLD_PROJECT/v2".into(),
+                world_schema_version: "world-schema-1".into(),
+                content_revision: "qworld".into(),
+                ..Default::default()
+            },
+            world: source::world_extent(&root)?,
+            build_class: oteryn_world_bundle::bundle::BuildClass::NonProduction,
+            draft_areas: Vec::new(),
+            families: &project.families,
+        };
+        let compiled = compile::compile(&input, &registry)?;
+        let pins = crate::map::BundlePins {
+            digest: compiled.digest,
+            project_format_version: "OTERYN_WORLD_PROJECT/v2".into(),
+            world_schema_version: "world-schema-1".into(),
+            content_revision: "qworld".into(),
+            production: false,
+        };
+        let base = crate::map::load(&compiled.bytes, &pins)?;
+        let decoded = oteryn_world_bundle::bundle::read(&compiled.bytes)?;
+        let (floor, x, y) = decoded
+            .sectors
+            .iter()
+            .filter(|sector| sector.floor == -7)
+            .flat_map(|sector| sector.tiles.iter().map(move |tile| (sector.floor, tile)))
+            .find(|(floor, tile)| {
+                base.tile(tile.x, tile.y, *floor)
+                    .is_some_and(|entry| entry.walkable())
+                    && tile.items.iter().all(|item| {
+                        let entry = &decoded.manifest.palette[item.palette as usize];
+                        entry.family != oteryn_world_bundle::bundle::Family::Item
+                            || !registry.solid(&entry.key)
+                            || (!registry.solid_stated(&entry.key)
+                                && entry.terrain.is_some_and(|terrain| {
+                                    terrain.kind == oteryn_world_bundle::bundle::TerrainKind::Ground
+                                }))
+                    })
+                    && !tiles.iter().any(|source| {
+                        source["position"][0].as_u64() == Some(u64::from(tile.x))
+                            && source["position"][1].as_u64() == Some(u64::from(tile.y))
+                    })
+            })
+            .map(|(floor, tile)| (floor, tile.x, tile.y))
+            .ok_or("enterable source entry outside Fury overlay")?;
+        let checked = crate::map::boot::check(
+            compiled.bytes,
+            crate::map::boot::BootPins {
+                bundle: pins,
+                map_revision: format!(
+                    "sha256:{}",
+                    compiled
+                        .digest
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>()
+                ),
+                start: TilePos { x, y, floor },
+            },
+        )?;
+        let projected = bind_layers(checked, &changes)?.boot(
+            world(),
+            crate::foundation::ChannelId::decode(&[
+                1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2,
+            ])?,
+            |key| {
+                let Resolution::Resolved(oteryn_world_bundle::bundle::Family::Item, id) =
+                    registry.resolve(key)
+                else {
+                    return None;
+                };
+                Some(crate::map::facts::ItemDefinition {
+                    reference: std::num::NonZeroU32::new(id + 1)?,
+                    solid: registry.solid_stated(key).then(|| registry.solid(key)),
+                    blocks_projectile: registry.solid(key),
+                    pickupable: false,
+                    door: false,
+                })
+            },
+        )?;
+        assert_eq!(projected.base().layer_epoch(), Some(changes.reset_epoch));
+        assert_eq!(
+            projected
+                .base()
+                .active_layers()
+                .iter()
+                .any(|key| key == changes.fury_exit),
+            changes.fury_gates.is_some()
+        );
+        assert!(
+            projected
+                .base()
+                .exit_layers()
+                .iter()
+                .any(|key| key == changes.fury_exit)
+        );
+        if changes.fury_gates.is_some() {
+            let mut different = 0;
+            for tile in tiles {
+                let x = tile["position"][0].as_u64().ok_or("source x")? as u16;
+                let y = tile["position"][1].as_u64().ok_or("source y")? as u16;
+                let floor = -(tile["position"][2].as_i64().ok_or("source z")? as i8);
+                let active = projected
+                    .base()
+                    .tile(x, y, floor)
+                    .ok_or("active Fury tile")?;
+                different += usize::from(
+                    base.tile(x, y, floor)
+                        .is_none_or(|old| old.ids() != active.ids()),
+                );
+            }
+            assert!(
+                different > 0,
+                "source Fury layer must change physical tiles"
+            );
+        }
+        Ok(())
     }
 
     fn pg_physical(
