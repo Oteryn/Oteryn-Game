@@ -777,3 +777,8 @@ against configured PostgreSQL. Production remains unchanged before RED. Missing
 point: native cosmetics mounts=[] and absent taming grant mappings. Tests retain
 existing outcome, consumption, replay, equipment and all51pair assertions.
 Donor mounts.xml250rows verified sha e5ed55b01274d1e29472a43224ccdb579684f8967244e50e8927ce3858a392b8.
+
+Fresh peer audit at questpc7 1eb71ca5e4aecc4ec967cf064eb582107f4ae59e adds Ferumbras Ascension and
+Grave Danger QUALIFIED; native real-dispatch RED/GREEN proofs and ordinary
+earned outfit selection are retained in peer metadata, copied into local evidence.
+Skip both per cross-lane owner rule; counts now44/66,22remaining.

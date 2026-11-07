@@ -3,8 +3,8 @@
   "lifecycle": "AUTHORING; owner-authorized local commits and fast-forward pushes to claude/happy-davinci-ijz3wy-qengine2 after each green batch",
   "qualification_boundary": "Whole L1 entry, not an isolated seeded reward stage. No entry is promoted before all of its required stages and relevant PG cases pass.",
   "counts": {
-    "qualified": 42,
-    "unfinished": 24,
+    "qualified": 44,
+    "unfinished": 22,
     "blocked": 0
   },
   "quests": [
@@ -726,7 +726,7 @@
     {
       "canonical": "oteryn:quest.ferumbras_ascension_quest",
       "title": "Ferumbras' Ascension Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -743,7 +743,42 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "qualification": {
+        "kind": "qualified_elsewhere",
+        "owner": "questpc7",
+        "source_sha": "1eb71ca5e4aecc4ec967cf064eb582107f4ae59e",
+        "source_path": "qlane-meta/questpc7/QUEST-STATUS.json",
+        "proof": {
+          "kind": "whole selected native Ferumbras Ascension programme",
+          "test": "questpc7_ferumbras_full_native_seals_and_reward_bundle",
+          "proof": "qlane-meta/questpc7/FERUMBRAS-PG-PROOF.json",
+          "postgres": "18.6",
+          "red_seconds": 41.469268453,
+          "green_seconds": 52.479192159,
+          "scope": [
+            "fresh native level150/Premium subject; no quest-state seeds",
+            "zero/short9 ritual refusals with no charge; native pickup, carried merge and drop exact10",
+            "eight actual native species in source arenas, ordered by earned personal passages",
+            "duplicate lethal notifications/drains once; next guardian inactive before its passage",
+            "each actual native passage destination asserted",
+            "fresh Premium refusal grants none of tokens/outfit/achievement",
+            "full20-slot backpack refuses entire bundle with no source/progress/value output",
+            "real native food USE frees one slot before atomic final delivery",
+            "Silver22516x5, all3 native Rift Warrior grant facts, HatHunter and once-only completion",
+            "new command repeat grants no additional value",
+            "exact native command replay does not grant again",
+            "ordinary native appearance command selects earned full Rift Warrior"
+          ],
+          "boundary": "Complete selected finite Oteryn programme. Original raid/global/cooldown/party phases and ordinary corpse loot unchanged; ritual readiness is chosen milestone, not a claim of unsupported Godbreaker crafting.",
+          "generic_mechanisms": [
+            "explicit opt-in once-only completing world item/outfit bundle; legacy mixed field refusal remains",
+            "bounded unique world achievements reuse fenced grant_missing in same transaction; stable32-byte source event",
+            "exact existing item MINT/appearance/achievement owners retained; no migration needed",
+            "fixture Ground MINT now uses real content/frame metadata, preserving production compatibility guard"
+          ],
+          "validation": "14 focused gates GREEN; retained Hero PG53.248s, check/strict clippy3crates, repository generation/pins, content123/world5, fmt"
+        }
+      }
     },
     {
       "canonical": "oteryn:quest.festive_outfits_quest",
@@ -1013,7 +1048,7 @@
     {
       "canonical": "oteryn:quest.grave_danger_quest",
       "title": "Grave Danger Quest",
-      "status": "UNFINISHED",
+      "status": "QUALIFIED",
       "origin_checks": [
         {
           "lane": "questpc",
@@ -1030,7 +1065,33 @@
           ]
         }
       ],
-      "remaining_work": "Queued for source-bound implementation and PostgreSQL qualification here, including missing generic mechanisms. Original gap/recipe evidence remains in LANE-L1.json; no dependency-only deferral."
+      "qualification": {
+        "kind": "qualified_elsewhere",
+        "owner": "questpc7",
+        "source_sha": "1eb71ca5e4aecc4ec967cf064eb582107f4ae59e",
+        "source_path": "qlane-meta/questpc7/QUEST-STATUS.json",
+        "proof": {
+          "kind": "whole selected native Grave Danger journey",
+          "test": "questpc7_grave_whole_native_journey_and_reward",
+          "proof": "qlane-meta/questpc7/GRAVE-PG-PROOF.json",
+          "postgres": "18.6",
+          "red_seconds": 40.799342316,
+          "green_seconds": 56.924504294,
+          "scope": [
+            "fresh native level250/Premium subject; no quest progress seeds",
+            "12 distinct retained physical grave sites, exact native journey destinations",
+            "current Premium refusal at first grave and final reward",
+            "five Lich Knight encounters with both Sirs mandatory",
+            "King Zelos and typed native Zelos-door entitlement earned",
+            "retained Cobra access STEP and flag, selected investigation USE, native Scarlett death",
+            "base Hand of Inquisition, Inquisition's Hand and canonical completion in one transaction",
+            "exact command replay; inactive new-command use preserves native armour behavior with unchanged grants and completion revision",
+            "ordinary appearance command selects earned base outfit"
+          ],
+          "boundary": "Whole selected finite programme. Seven literal upstream grave coordinates; five documented conservative native grave bindings in named regions. Original raid/global/cooldown/party logic and optional corpse loot remain outside proof.",
+          "validation": "14 focused gates GREEN; retained Ferumbras PG52.553s, check/strict clippy, repository generators/pins, content123/world5, fmt"
+        }
+      }
     },
     {
       "canonical": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
