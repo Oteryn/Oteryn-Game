@@ -6032,13 +6032,34 @@
           "generic_computed_evaluation": "NOT_SUPPORTED",
           "recovery": "exact committed receipt; newer shared map revision preserved",
           "evidence": "qlane-meta/questpc/cloud-source-world-validation.json"
+        },
+        {
+          "status": "QUALIFIED",
+          "scope": "Ratter and Servant source acceptance",
+          "test": "hidden_threats_source_npc_acceptance_initializes_mission_once",
+          "evidence": "qlane-meta/questpc/cloud-hidden-npcs-validation.json",
+          "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+        },
+        {
+          "status": "QUALIFIED",
+          "scope": "eight distinct once-only rescues with three native gifts",
+          "test": "hidden_threats_source_npc_eight_rescues_grant_each_reward_once",
+          "evidence": "qlane-meta/questpc/cloud-hidden-npcs-validation.json",
+          "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+        },
+        {
+          "status": "QUALIFIED",
+          "scope": "twenty rare earth exchanged atomically for two3040, line5 and access9",
+          "test": "hidden_threats_source_npc_rare_earth_exchange_is_atomic_and_replays",
+          "evidence": "qlane-meta/questpc/cloud-hidden-npcs-validation.json",
+          "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
         }
       ],
       "blocker": {
-        "missing_piece": "Continue the full source NPC/forge/rescue/door and Cave Spider room composition. The guarded departure and native rewards are implemented and qualified; no shared-engine ownership deferral applies.",
+        "missing_piece": "Continue forge, forged-key doors and Cave Spider room composition. NPC acceptance, rescues, hand-in and guarded source departure are implemented with real dispatch PG evidence; this lane owns the remaining reusable engine work.",
         "evidence": [
-          "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/npc/corym_servant.lua",
-          "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/hidden_threats/action-key_forge.lua"
+          "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/hidden_threats/action-key_forge.lua",
+          "https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/hidden_threats/movement-cave_spider_room.lua"
         ]
       }
     },
@@ -8513,13 +8534,13 @@
   "owner_execution_override": "Shared quest-engine, reward/binding, NPC, Item and callback features are owned here when needed. Check and reuse origin/claude/happy-davinci-ijz3wy-qengine2 first; historical outside-lane blockers are active implementation obligations, not final dispositions.",
   "latest_cloud_batch": {
     "scope": [
-      "Life Ring Quest",
-      "Hidden Threats Quest source components",
-      "Mintwallin native import binding"
+      "Ratter and Servant source acceptance",
+      "eight distinct once-only rescues with three native gifts",
+      "twenty rare earth exchanged atomically for two3040, line5 and access9"
     ],
     "status": "GREEN",
-    "evidence": "qlane-meta/questpc/cloud-source-world-validation.json",
-    "base_head": "2ea1809a15b2bea2dffde3347f8773fb1e95fa5e"
+    "evidence": "qlane-meta/questpc/cloud-hidden-npcs-validation.json",
+    "qualification_boundary": "Three source components qualified; complete Hidden Threats continues with forge/door/room."
   },
   "continuation": {
     "base": "9bf74b42d",

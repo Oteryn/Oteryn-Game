@@ -1,0 +1,220 @@
+{
+  "scope": [
+    "Ratter and Servant source acceptance",
+    "eight distinct once-only rescues with three native gifts",
+    "twenty rare earth exchanged atomically for two3040, line5 and access9"
+  ],
+  "postgres_version": 180006,
+  "logs": {
+    "red": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-red.log",
+      "sha256": "4a0852988575ee001ea3d85cd4a5a5f6bc64c710c3489e12eb0b7df240086836",
+      "markers": [
+        "POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
+        "POSTGRES_CASE_STARTED hidden_threats_source_npc_acceptance version=180006",
+        "POSTGRES_CASE_FAILED hidden_threats_source_npc_acceptance duration=83.875813744s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 26s",
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2558 filtered out; finished in 83.88s"
+      ]
+    },
+    "greeting-red": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-greeting-red.log",
+      "sha256": "ac0e0a863d4bb8e4664671890e64c65dcd8bc58a96d9281b395b964924077ec0",
+      "markers": [
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_npcs::hidden_threats_source_npc_acceptance_initializes_mission_once ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
+        "POSTGRES_CASE_STARTED hidden_threats_source_npc_acceptance version=180006",
+        "POSTGRES_CASE_FAILED hidden_threats_source_npcs phase=0 duration=84.580795159s",
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_npcs::hidden_threats_source_npc_eight_rescues_grant_each_reward_once ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
+        "POSTGRES_CASE_STARTED hidden_threats_source_npc_acceptance version=180006",
+        "POSTGRES_CASE_FAILED hidden_threats_source_npcs phase=1 duration=83.41736308s",
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_npcs::hidden_threats_source_npc_rare_earth_exchange_is_atomic_and_replays ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
+        "POSTGRES_CASE_STARTED hidden_threats_source_npc_acceptance version=180006",
+        "POSTGRES_CASE_FAILED hidden_threats_source_npcs phase=2 duration=82.680447085s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 29s",
+        "test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 2558 filtered out; finished in 250.68s"
+      ]
+    },
+    "placement-candidate": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-placement-candidate.log",
+      "sha256": "91280dcc332daa1c76a24aa74926cd1616a4b3c8061a98a2090c3fd43ea29cf8",
+      "markers": [
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_npcs::hidden_threats_source_npc_acceptance_initializes_mission_once ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
+        "POSTGRES_CASE_STARTED hidden_threats_source_npc_acceptance version=180006",
+        "POSTGRES_CASE_FAILED hidden_threats_source_npcs phase=0 duration=84.219919456s",
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_npcs::hidden_threats_source_npc_eight_rescues_grant_each_reward_once ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
+        "POSTGRES_CASE_STARTED hidden_threats_source_npc_acceptance version=180006",
+        "POSTGRES_CASE_FAILED hidden_threats_source_npcs phase=1 duration=82.584446369s",
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_npcs::hidden_threats_source_npc_rare_earth_exchange_is_atomic_and_replays ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
+        "POSTGRES_CASE_STARTED hidden_threats_source_npc_acceptance version=180006",
+        "POSTGRES_CASE_FAILED hidden_threats_source_npcs phase=2 duration=82.994160369s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 31s",
+        "test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 2558 filtered out; finished in 249.80s"
+      ]
+    },
+    "green": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-green.log",
+      "sha256": "95d07c902230c3deaa5298389a5869a6450e90b0be8431b67f5725935dc2e36d",
+      "markers": [
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_npcs::hidden_threats_source_npc_acceptance_initializes_mission_once ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
+        "POSTGRES_CASE_STARTED hidden_threats_source_npc_acceptance version=180006",
+        "POSTGRES_CASE_COMPLETED hidden_threats_source_npcs phase=0 duration=83.933212035s",
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_npcs::hidden_threats_source_npc_eight_rescues_grant_each_reward_once ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
+        "POSTGRES_CASE_STARTED hidden_threats_source_npc_acceptance version=180006",
+        "POSTGRES_CASE_COMPLETED hidden_threats_source_npcs phase=1 duration=89.848461434s",
+        "test gameplay_transport::monk_save::postgres_tests::hidden_threats_npcs::hidden_threats_source_npc_rare_earth_exchange_is_atomic_and_replays ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006",
+        "POSTGRES_CASE_STARTED hidden_threats_source_npc_acceptance version=180006",
+        "POSTGRES_CASE_COMPLETED hidden_threats_source_npcs phase=2 duration=91.109504452s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 3m 21s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 2558 filtered out; finished in 264.89s"
+      ]
+    },
+    "check": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-check.log",
+      "sha256": "c3ced4978e443efb5528d24e1e84f36f47aa80e55f65805a6b4e49e4b9e82a03",
+      "markers": [],
+      "results": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 45s"
+      ]
+    },
+    "clippy": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-clippy.log",
+      "sha256": "15163235af0c790d5fb91fb06e1354ca81e5415f2411f644b49127bb465967f9",
+      "markers": [],
+      "results": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 51s"
+      ]
+    },
+    "fixture-check": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-fixture-check.log",
+      "sha256": "1d586b958a7115b902eadc64039d3ebd06ae944143082d29a4db6314e7e8bfa6",
+      "markers": [],
+      "results": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 42s"
+      ]
+    },
+    "fixture-clippy": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-fixture-clippy.log",
+      "sha256": "c4a2b4d811ce65aa8716bde0103c695cf68ac2e6539587b51f38610addfdb841",
+      "markers": [],
+      "results": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 51s"
+      ]
+    },
+    "fmt": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "markers": [],
+      "results": []
+    },
+    "units": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-units.log",
+      "sha256": "e20b77fa6c3306792cbb862e8adb029cf9ed7c181d38a1c070592bd66383d7b6",
+      "markers": [],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.44s",
+        "test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 241 filtered out; finished in 1.37s"
+      ]
+    },
+    "greeting-units": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-greeting-units.log",
+      "sha256": "e701af0556120a22dcc7cc22020cbfd4efadc72235f8eb92690ea6c181fa8a0b",
+      "markers": [],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 16.75s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 23 filtered out; finished in 0.00s",
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 26s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 23 filtered out; finished in 0.00s"
+      ]
+    },
+    "book-units": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-book-units.log",
+      "sha256": "01a3580aeb45e04ce0f401a99c97336e154338eb2530d514723b37ac785ddc5a",
+      "markers": [],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.20s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 25 filtered out; finished in 36.84s"
+      ]
+    },
+    "python": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-python.log",
+      "sha256": "749fb6ae44bf71d808121d378496d63f0432df42fa572d12529a0ddeaf9d244a",
+      "markers": [],
+      "results": []
+    },
+    "generation": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-generation.log",
+      "sha256": "baa090ca6bc82799114d73dc7589bd55c27beb3c075ca3c1828f838da2281a4e",
+      "markers": [],
+      "results": []
+    },
+    "placements-check": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-placements-check.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "markers": [],
+      "results": []
+    },
+    "register": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-register.log",
+      "sha256": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa",
+      "markers": [],
+      "results": []
+    },
+    "tree": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-tree.log",
+      "sha256": "4b1a51f1f00f83f5e1ea3ce860719e88e9df6fdbf9c8e82a29016b5982a7a8f2",
+      "markers": [],
+      "results": []
+    },
+    "pin-refresh": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-pin-refresh.log",
+      "sha256": "b92b2ce0e80b17d1f9d6768e4a5fc8456a466cd78b0ce6db2a34c5159b70bd85",
+      "markers": [],
+      "results": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s"
+      ]
+    },
+    "pin-check": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-pin-check.log",
+      "sha256": "f2bf0654d39366abe2b59c500db329ef8bc51c593ccfa87aa9570ccb4878fea7",
+      "markers": [],
+      "results": [
+        "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s"
+      ]
+    },
+    "marlin": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-marlin.log",
+      "sha256": "ab9205d2995f1f3cd521be2f6b2e32ff8ce40be74b534fce46829c658c9cc4eb",
+      "markers": [
+        "POSTGRES_CASE_COMPLETED marlin_trophy_carried_fish_exchange_is_atomic_once_and_replays duration=85.337850218s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.25s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2560 filtered out; finished in 85.34s"
+      ]
+    },
+    "father": {
+      "path": "qlane-meta/questpc/cloud-hidden-npcs-father.log",
+      "sha256": "3cee09811d269ad9d5a96cfa5112e1846990fa1c6dd3063bf1ed93fcbf91844c",
+      "markers": [
+        "POSTGRES_CASE_COMPLETED catalogue-npc-father 84.974436069s"
+      ],
+      "results": [
+        "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.23s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2560 filtered out; finished in 84.98s"
+      ]
+    }
+  },
+  "reused_engine_ref": "origin/claude/happy-davinci-ijz3wy-qengine2 e45e8f8a9",
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "source_packet": "tools/content-schema/quest-authoring/samples/native-rewards/hidden-threats-npcs.json",
+  "world_digest": "9865615ff643553f07bccfc4f76c0f05919939c751cd35f0a87f92d82591e8f7",
+  "boundary": "Controlled real-dispatch PostgreSQL source composition; full forge/door/room work continues. All ten fixture NPCs installed once. Production NPC book and placements include the source cohort."
+}

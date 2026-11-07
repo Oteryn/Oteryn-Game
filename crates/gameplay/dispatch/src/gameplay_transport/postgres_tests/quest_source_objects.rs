@@ -74,7 +74,15 @@ fn life_ring() -> TestResult {
     source_objects(false, false)
 }
 
+pub(super) fn hidden_npc_scenario(phase: u8) -> TestResult {
+    source_objects_with_npc_start(false, true, Some(phase))
+}
+
 fn source_objects(mint: bool, hidden: bool) -> TestResult {
+    source_objects_with_npc_start(mint, hidden, None)
+}
+
+fn source_objects_with_npc_start(mint: bool, hidden: bool, npc_start: Option<u8>) -> TestResult {
     let trigger = if hidden {
         Position {
             x: 33079,
@@ -181,7 +189,7 @@ fn source_objects(mint: bool, hidden: bool) -> TestResult {
     let world = if hidden {
         callback.passages.clear();
         callback.selector.appearance = None;
-        let extras: Vec<_> = hidden_tiles
+        let mut extras: Vec<_> = hidden_tiles
             .iter()
             .flat_map(|p| {
                 [
@@ -192,6 +200,22 @@ fn source_objects(mint: bool, hidden: bool) -> TestResult {
             })
             .chain(chests.iter().map(|(p, _)| Position { x: p.x - 1, ..*p }))
             .collect();
+        if npc_start.is_some() {
+            extras.extend((33100..33110).flat_map(|x| {
+                [
+                    Position {
+                        x,
+                        y: 32000,
+                        floor: -13,
+                    },
+                    Position {
+                        x,
+                        y: 32001,
+                        floor: -13,
+                    },
+                ]
+            }));
+        }
         super::quest_world_callbacks::world_with_chests(
             &callback, trigger, &extras, &chests, false,
         )?
@@ -269,7 +293,7 @@ fn source_objects(mint: bool, hidden: bool) -> TestResult {
             1,
             1,
             "runtime-scope-assignment:1",
-            8,
+            if npc_start.is_some() { 32 } else { 8 },
             pin,
         )
         .map_err(debug)?;
@@ -357,6 +381,20 @@ fn source_objects(mint: bool, hidden: bool) -> TestResult {
             )
             .map_err(debug)?;
         if hidden {
+            let mut dialogue = if let Some(phase) = npc_start {
+                let dialogue =
+                    super::hidden_threats_npcs::start(&mut owner, &mut admitted, &h, &authority)
+                        .await?;
+                if phase == 0 {
+                    drop(owner);
+                    drop(authority);
+                    drop(seal);
+                    return h.cleanup().await;
+                }
+                Some(dialogue)
+            } else {
+                None
+            };
             hidden_steps(
                 &mut owner,
                 &mut admitted,
@@ -367,6 +405,18 @@ fn source_objects(mint: bool, hidden: bool) -> TestResult {
                 &chests,
             )
             .await?;
+            if let Some(dialogue) = &mut dialogue {
+                super::hidden_threats_npcs::rescues(
+                    dialogue, &mut owner, &admitted, &h, &authority,
+                )
+                .await?;
+                if npc_start == Some(2) {
+                    super::hidden_threats_npcs::delivery(
+                        dialogue, &mut owner, &admitted, &h, &authority,
+                    )
+                    .await?;
+                }
+            }
             drop(owner);
             drop(authority);
             drop(seal);
@@ -704,7 +754,7 @@ async fn source_use(
     oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)
 }
 
-async fn fixture_relocate(
+pub(super) async fn fixture_relocate(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     actor: crate::foundation::ExactActorRef,

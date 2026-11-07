@@ -1,3 +1,33 @@
+## Hidden Threats NPC batch qualified — 2026-11-07
+
+Three source components now have real PostgreSQL18.6 RED/GREEN evidence:
+Ratter/Servant acceptance, eight distinct once-only rescues and gifts, and the
+20 rare-earth exchange for two3040 with line5/access9. Evidence and exact marker
+durations are in cloud-hidden-npcs-validation.json. The injected final-track
+failure proves item burn and MINT rollback; replay returns exact stored replies.
+Production NPC book and generated44-placement shard admit all ten Corym NPCs.
+
+The reusable NPC item participant adapts qengine2e45e8f8a9 and retains existing
+Father/Marlin owners; the exact eleven-track Father and Marlin PG regressions
+pass. Four-crate format/check/strict Clippy,29 quest units,3 greeting units,
+production-book integration,3 authoring tests and generated/pin checks pass.
+NPC fixture installs all ten actors once; immutable runtime placement stays intact.
+Earlier failed candidates remain archived rather than hidden.
+
+Continue Hidden Threats forge/key doors/Cave Spider room. Check current qengine2
+before new generic engine work. Pinned fresh mechanics are in
+/tmp/questpc-hidden-source (temporary originals only), revision04b83b5121.
+Forge six conversions and retained metal file; corrected Canary door storage IDs
+must agree with stamped source targets. Keep source citation and conservative
+rules explicit. Full Hidden Threats remains active; counts stay60/117/1excluded.
+
+Fetch the explicit pc2 tracking ref and merge concurrent native stock/key/object
+predicate work before pushing;1007 map-key binding precedes1008 NPC item sources.
+Preserve current NPC placement pin9865615ff643553f07bccfc4f76c0f05919939c751cd35f0a87f92d82591e8f7.
+Do not force push, create a PR, touch workflows/repository tools or accept skipped PG.
+
+---
+
 ## Documentation follow-up integrated — 2026-11-07
 
 Validated source merge3f889f617 retains both source-world and concurrent Draconia

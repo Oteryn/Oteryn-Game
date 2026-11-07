@@ -7,7 +7,7 @@ use crate::durability::quest_state::{
     npc_program::{self, NpcProgramRequest},
 };
 use crate::foundation::{CommandId, CommandRef};
-use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleCatalog, NpcRuleTrigger};
+use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleCatalog, NpcRuleEffect, NpcRuleTrigger};
 use std::sync::Arc;
 
 type Context = (u64, u64, String);
@@ -16,6 +16,7 @@ pub(super) struct Conversation {
     context: Context,
     actor: ExactActorRef,
     npc: EntityRef,
+    npc_actor: ExactActorRef,
     topic: i32,
 }
 #[derive(Clone)]
@@ -30,7 +31,11 @@ pub(super) enum Pending {
     },
 }
 pub(super) enum Step {
-    Reply(Vec<String>),
+    Reply {
+        lines: Vec<String>,
+        end: bool,
+        npc_actor: ExactActorRef,
+    },
     Refused,
     Held,
     Commit(Box<CommitStep>),
@@ -146,14 +151,24 @@ pub(super) fn prepare(
         context: context.clone(),
         actor,
         npc: intent.npc_actor,
+        npc_actor: admission.states.chat.engaged(command.game_session_id)?,
         topic: plan.next_topic,
     };
     if plan.track_changes.is_empty() && request.npc != "oteryn:npc.pemaret" {
-        state.catalogue = Some(Pending::Topic(next));
-        return if plan.reply.is_empty() {
+        let end = plan
+            .effects
+            .iter()
+            .any(|effect| matches!(effect, NpcRuleEffect::EndConversation { delay_ms: 0 }));
+        let npc_actor = next.npc_actor;
+        state.catalogue = (!end).then_some(Pending::Topic(next));
+        return if plan.reply.is_empty() && !end {
             None
         } else {
-            Some(Step::Reply(plan.reply))
+            Some(Step::Reply {
+                lines: plan.reply,
+                end,
+                npc_actor,
+            })
         };
     }
     request.transition_key = plan.selected_rule_keys.first()?.clone();
@@ -197,6 +212,18 @@ fn response(
         window: None,
     }
 }
+fn end_response(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+    npc_actor: ExactActorRef,
+    response: &mut NpcTalkOutcome,
+) {
+    admission.states.chat.end_engagement(session, npc_actor);
+    if let Some(conversation) = &mut response.conversation {
+        conversation.open = None;
+    }
+}
+
 fn install(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     session: GameSessionId,
@@ -228,7 +255,17 @@ pub(super) async fn apply(
         request,
         fallback_lines,
     } = match step {
-        Step::Reply(lines) => return response(admission, command.game_session_id, &intent, lines),
+        Step::Reply {
+            lines,
+            end,
+            npc_actor,
+        } => {
+            let mut response = response(admission, command.game_session_id, &intent, lines);
+            if end {
+                end_response(admission, command.game_session_id, npc_actor, &mut response);
+            }
+            return response;
+        }
         Step::Refused => return rejected(),
         Step::Held => return unknown(),
         Step::Commit(c) => *c,
@@ -338,9 +375,9 @@ pub(super) async fn apply(
             install(
                 admission,
                 command.game_session_id,
-                Some(Conversation {
+                (!commit.end_conversation).then_some(Conversation {
                     topic: commit.next_topic,
-                    ..next
+                    ..next.clone()
                 }),
             );
             admission
@@ -356,7 +393,16 @@ pub(super) async fn apply(
                     commit.reply
                 },
             );
-            response.inventory_changed = !commit.read_only && moves_items;
+            response.inventory_changed =
+                !commit.read_only && (commit.inventory_changed || moves_items);
+            if commit.end_conversation {
+                end_response(
+                    admission,
+                    command.game_session_id,
+                    next.npc_actor,
+                    &mut response,
+                );
+            }
             response
         }
         Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
@@ -415,9 +461,9 @@ pub(in crate::gameplay_transport) async fn resume(
                 install(
                     admission,
                     command.game_session_id,
-                    Some(Conversation {
+                    (!commit.end_conversation).then_some(Conversation {
                         topic: commit.next_topic,
-                        ..next
+                        ..next.clone()
                     }),
                 );
                 admission
@@ -433,7 +479,15 @@ pub(in crate::gameplay_transport) async fn resume(
                         commit.reply
                     },
                 );
-                response.inventory_changed = moves_items;
+                response.inventory_changed = commit.inventory_changed || moves_items;
+                if commit.end_conversation {
+                    end_response(
+                        admission,
+                        command.game_session_id,
+                        next.npc_actor,
+                        &mut response,
+                    );
+                }
                 response
             }
             Ok(None) => {

@@ -1,0 +1,98 @@
+warning: use of deprecated method `std::sync::atomic::Atomic::<usize>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/tokio-1.53.1/src/runtime/io/scheduled_io.rs:208:32
+    |
+208 |         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+    |                                ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+208 -         let _ = self.readiness.fetch_update(AcqRel, Acquire, |curr| {
+208 +         let _ = self.readiness.try_update(AcqRel, Acquire, |curr| {
+    |
+
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 2 warnings (run `cargo fix --lib -p tokio` to apply 1 suggestion)
+warning: `tokio` (lib) generated 2 warnings (2 duplicates)
+warning: use of deprecated method `std::sync::atomic::Atomic::<u32>::fetch_update`: renamed to `try_update` for consistency
+   --> vendor/sqlx-core-0.9.0/src/pool/inner.rs:260:14
+    |
+260 |             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |              ^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+help: replace the use of the deprecated method
+    |
+260 -             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+260 +             .try_update(Ordering::AcqRel, Ordering::Acquire, |size| {
+    |
+
+warning: `sqlx-core` (lib) generated 1 warning (run `cargo fix --lib -p sqlx-core` to apply 1 suggestion)
+warning: `sqlx-core` (lib) generated 1 warning (1 duplicate)
+   Compiling oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)
+   Compiling oteryn-gameplay-dispatch v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/dispatch)
+   Compiling oteryn-gameplay-durability v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/durability)
+   Compiling oteryn-gameplay-world v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/world)
+   Compiling oteryn-gameplay-combat v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/combat)
+   Compiling oteryn-gameplay-spell v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/spell)
+   Compiling oteryn-gameplay-social v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/social)
+   Compiling oteryn-gameplay-npc v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/npc)
+   Compiling oteryn-gameplay-monster-ai v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/monster-ai)
+   Compiling oteryn-gameplay-encounters v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/encounters)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4m 29s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-b4f5a8b0ba0b5a59)
+
+running 3 tests
+test gameplay_transport::monk_save::postgres_tests::hidden_threats_npcs::hidden_threats_source_npc_acceptance_initializes_mission_once ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006
+POSTGRES_CASE_STARTED hidden_threats_source_npc_acceptance version=180006
+
+thread 'hidden-threats-npcs' (68538) panicked at /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/classic_quests.rs:177:5:
+assertion `left == right` failed: 4000: hi
+  left: NoConversation
+ right: Ok
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+POSTGRES_CASE_FAILED hidden_threats_source_npcs phase=0 duration=84.580795159s
+Error: "composed PostgreSQL scenario thread panicked"
+FAILED
+test gameplay_transport::monk_save::postgres_tests::hidden_threats_npcs::hidden_threats_source_npc_eight_rescues_grant_each_reward_once ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006
+POSTGRES_CASE_STARTED hidden_threats_source_npc_acceptance version=180006
+
+thread 'hidden-threats-npcs' (68608) panicked at /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/classic_quests.rs:177:5:
+assertion `left == right` failed: 4000: hi
+  left: NoConversation
+ right: Ok
+POSTGRES_CASE_FAILED hidden_threats_source_npcs phase=1 duration=83.41736308s
+Error: "composed PostgreSQL scenario thread panicked"
+FAILED
+test gameplay_transport::monk_save::postgres_tests::hidden_threats_npcs::hidden_threats_source_npc_rare_earth_exchange_is_atomic_and_replays ... POSTGRES_CASE_STARTED quest_source_objects mint=false version=180006
+POSTGRES_CASE_STARTED hidden_threats_source_npc_acceptance version=180006
+
+thread 'hidden-threats-npcs' (68707) panicked at /workspace/Oteryn-Game/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/classic_quests.rs:177:5:
+assertion `left == right` failed: 4000: hi
+  left: NoConversation
+ right: Ok
+POSTGRES_CASE_FAILED hidden_threats_source_npcs phase=2 duration=82.680447085s
+Error: "composed PostgreSQL scenario thread panicked"
+FAILED
+
+failures:
+
+failures:
+    gameplay_transport::monk_save::postgres_tests::hidden_threats_npcs::hidden_threats_source_npc_acceptance_initializes_mission_once
+    gameplay_transport::monk_save::postgres_tests::hidden_threats_npcs::hidden_threats_source_npc_eight_rescues_grant_each_reward_once
+    gameplay_transport::monk_save::postgres_tests::hidden_threats_npcs::hidden_threats_source_npc_rare_earth_exchange_is_atomic_and_replays
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 2558 filtered out; finished in 250.68s
+
+error: test failed, to rerun pass `-p oteryn-gameplay-dispatch --lib`

@@ -180,3 +180,43 @@ and Draconia. Integration preserves that exact approved base and removes the
 now-redundant intermediate shard; no callback is lost. The native source-world
 shard remains loaded with cross-shard uniqueness and the combined runtime cap.
 No source-fix approval or guard is weakened during this integration.
+
+Hidden Threats NPC programme uses the internally consistent Canary revision
+04b83b512114bfd888000d6e1433ed8ecaec7c5b. Ten exact NPC source hashes and fresh
+URLs are retained in samples/native-rewards/hidden-threats-npcs.json; the generator
+verifies the unchanged donor corpus and reuses the existing literal reader.
+https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/corym_servant.lua
+https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/corym_butler.lua
+
+Independent source programmes may share a canonical aggregate through an explicit
+program_key. Hidden Threats activates only the Corym programme for Tibia Tales;
+the older Cursed Crystal capture stays intact and outside this activation scope.
+Absent programme keys are omitted from canonical serialization, preserving old
+programme digests. All original track/transition compatibility checks remain.
+
+Conservative native projections are explicit: source -1 and inherited absent0
+are both unrescued flags; every rescue sets1 once. Counter0..7 must already be
+initialized before a rescue can grant anything. Ratter repeats open the existing
+mine and retain later quest-line progress. Item effects and quest writes are
+atomic; a full backpack or later failure cannot lose materials or rewards.
+
+The reusable NPC item participant resolves up to eight plain input types across
+carried stacks before mutation and grants at most one reward type per branch.
+It reuses qengine2e45e8f8a9's carried consumption and deferred source-proof design
+and the existing once-claim MINT/audit owner. Exact programme track changes,
+input totals and fresh reward quantity must match their same-transaction quest
+and NPC receipts. A sealed NPC capability is constructed after equipment fence
+admission; world callbacks still require their spell capability, and the NPC
+capability cannot authorize ground-item mutation. Father and Marlin retain their
+existing value owners; Father's acceptance remains one eleven-track write.
+Immediate source end-conversation effects clear only the selected exact NPC
+engagement. Recorded response flags support replay without inventing a protocol
+capability or leaving inventory views stale.
+
+Corym production conversation admission requires a literal opener in addition to
+stateful native programme rules. A separate closed ten-NPC greeting shard pins
+both exact NPC hashes and the source handler's greeting/tag defaults; the older
+23-NPC greeting contract remains intact. Production-book construction is tested.
+All ten controlled-fixture actors are installed once in a separate walkable row;
+subsequent dialogue moves the character to each actor. Runtime NPC placement
+immutability is preserved, including the earlier failed fixture evidence.

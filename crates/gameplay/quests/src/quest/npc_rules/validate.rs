@@ -23,6 +23,7 @@ fn sources(sources: &[String], quest: &str) -> bool {
                                 && reference.starts_with("data-global/npc/pemaret.lua:")
                         })
                 })
+                .or_else(|| super::hidden_threats::reference(quest, source))
                 .is_some_and(|reference| {
                     reference
                         .rsplit_once(':')
@@ -54,7 +55,11 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
         let document = &program.document;
         if document.schema != 1
             || !valid_quest_key(&document.quest)
-            || !quests.insert(&document.quest)
+            || !quests.insert(document.program_key.as_ref().unwrap_or(&document.quest))
+            || document
+                .program_key
+                .as_ref()
+                .is_some_and(|key| !valid_quest_key(key))
             || document.rules.len() > 4096
             || document.tracks.len() > 4096
         {
@@ -71,6 +76,9 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
         {
             return Err(invalid("Pemaret source custody"));
         }
+        if !super::hidden_threats::custody(document) {
+            return Err(invalid("Corym source custody"));
+        }
         let mut tracks = BTreeMap::new();
         for track in &document.tracks {
             if !valid_quest_key(&track.key)
@@ -85,6 +93,12 @@ pub(super) fn catalogue(catalogue: &NpcRuleCatalog) -> Result<(), NpcRuleError> 
         for file in &document.source_files {
             if file.path.is_empty()
                 || (file.revision != "201189f871d23597b82caf88fd611454a2ddefb8"
+                    && !super::hidden_threats::file_is_pinned(
+                        &document.quest,
+                        &file.path,
+                        &file.revision,
+                        &file.sha256,
+                    )
                     && !(document.quest == "oteryn:quest.marlin_trophy_quest"
                         && file.revision == "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
                         && file.path == "data-global/npc/pemaret.lua"
