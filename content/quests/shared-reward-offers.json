@@ -257,6 +257,66 @@
       ]
     },
     {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "base outfit"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/golden/commission",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The basic Golden outfit costs 100000 gold. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "boots and gloves"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/golden/commission",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The Golden boots and gloves costs 50000 gold. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "golden helmet"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/golden/commission",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The Golden helmet costs 50000 gold. Do you agree?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.morgan",
       "keywords": [
         "forge"

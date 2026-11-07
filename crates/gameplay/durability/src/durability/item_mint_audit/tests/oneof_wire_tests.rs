@@ -316,6 +316,19 @@ fn fee_fixtures() -> Vec<(u32, &'static str, FeeBurnCauseV1)> {
             }),
         ),
         (
+            18,
+            "QuestRewardPayment",
+            FeeBurnCauseV1::QuestRewardPayment(crate::durability::item_fee_burn_audit::OneItemQuestRewardPaymentV1 {
+                purchase: Some(OneItemNpcPurchaseV1 {
+                    service_key: "oteryn:quest-reward/wire-fixture".into(),
+                    occurrence: vec![0x81, 0x07],
+                    atelier_proof: vec![1, 2],
+                }),
+                fee_gold_units: 100,
+                include_bank: true,
+            }),
+        ),
+        (
             472,
             "HirelingService",
             FeeBurnCauseV1::HirelingService(OneItemNpcPurchaseV1 {
@@ -371,6 +384,7 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         ("Imbuement", "3a070a028107208101"),
         ("NpcTravel", "420c0a0674726176656c12028107"),
         ("ArenaEntry", "8a012a0a246f746572796e3a736572766963652e7376617267726f6e642d6172656e612e656e74727912028107"),
+        ("QuestRewardPayment", "9201300a2a0a206f746572796e3a71756573742d7265776172642f776972652d66697874757265120281071a02010210641801"),
         // E12 adds reserved cause472; every earlier codec golden remains unchanged.
         ("HirelingService", "c21d360a226f746572796e3a736572766963652e686972656c696e672e666f6f642e3239343039121000000000000070008000000000000007"),
         ("EventId", "0a028107"),

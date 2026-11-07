@@ -1039,6 +1039,174 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc7-golden-base",
+      "quest": "oteryn:quest.golden_outfits_quest",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/golden/commission",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.golden",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Your basic Golden outfit is ready."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-189:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
+      ],
+      "fee": {
+        "gold": 100000,
+        "include_bank": true
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-golden-complete",
+      "quest": "oteryn:quest.golden_outfits_quest",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "complete commission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/golden/commission",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your Golden commission is complete."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-189:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-golden-gloves",
+      "quest": "oteryn:quest.golden_outfits_quest",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/golden/commission",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.golden",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Your Golden boots and gloves is ready."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-189:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
+      ],
+      "fee": {
+        "gold": 50000,
+        "include_bank": true
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-golden-helmet",
+      "quest": "oteryn:quest.golden_outfits_quest",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/golden/commission",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.golden",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Your Golden helmet is ready."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-189:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
+      ],
+      "fee": {
+        "gold": 50000,
+        "include_bank": true
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-golden-intro",
+      "quest": "oteryn:quest.golden_outfits_quest",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "golden commission",
+        "golden outfit"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/golden/commission",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I can commission the Golden outfit and its two addons. Ask me for the base outfit."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-189:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/sam-backpack",
       "quest": "oteryn:quest.sam_s_old_backpack_quest",
       "npc": "oteryn:npc.sam",

@@ -929,41 +929,31 @@
     "title": "Golden Outfits Quest",
     "canonical": "oteryn:quest.golden_outfits_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/52/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "queued_stage_binding": {
-      "stage": "s2",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s2",
-      "kind": "collect",
-      "objective": "Gather the chosen hundred-thousand-coin base commissioning payment.",
-      "targets": [
-        "Gold Coin"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Golden Outfits, Golden boots and gloves addon, Golden helmet addon: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
-      "evidence": [
-        "content/quests/definitions/quests-00100-00199.json:1#/records/52/definition",
-        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
-        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
-      ],
-      "attempts": [
-        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
-    },
     "shared_reward_mechanism": {
       "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
       "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
       "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
       "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "qualification": {
+      "kind": "complete selected native route",
+      "proof": "qlane-meta/questpc7/GOLDEN-PG-PROOF.json",
+      "test": "questpc7_golden_full_commission_charges_exactly_once",
+      "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "red_seconds": 76.55003838,
+      "green_seconds": 85.616165933,
+      "route": "Fresh King Tibianus commission; exact 100000/50000/50000 payments and unfunded refusal, replay, completion, immutable account grants and normal client selection of both addons. No quest-stage seeds.",
+      "bindings": [
+        "content/quests/shared-reward-callbacks.json",
+        "content/quests/shared-reward-offers.json",
+        "content/dialogues/quests/shared-reward-greetings.json",
+        "content/world/npc-placements/index.json"
+      ],
+      "source_contract": "qlane-meta/questpc7/CONTRACT-NOTES.md"
     }
   },
   {

@@ -23,7 +23,7 @@ fn scenario_case(
     stateless_destination: Option<Position>,
 ) -> TestResult {
     let monk = name.starts_with("monk-guidance");
-    let shared_rewards = name.starts_with("qengine-rewards-");
+    let shared_rewards = name.starts_with("qengine-rewards-") || name == "questpc7-golden";
     let classic_npc = shared_rewards || matches!(
         name,
         "catalogue-npc"
@@ -205,6 +205,8 @@ fn scenario_case(
         if name == "npc-item-exchanges" {
             super::super::npc_item_exchanges::exercise(&mut owner, &mut admitted, &h, &authority)
                 .await?;
+        } else if name == "questpc7-golden" {
+            super::super::questpc7_golden::exercise(&mut owner, &mut admitted, &h, &authority).await?;
         } else if shared_rewards {
             super::super::qengine_rewards::exercise(&mut owner, &mut admitted, &h, &authority, name).await?;
         } else if name.starts_with("formogar-hoist-") {

@@ -32,6 +32,14 @@ pub struct OutfitReward {
     pub addons: u8,
 }
 
+/// Exact source price settled by the durable fee owner.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct MonetaryFee {
+    pub gold: u64,
+    pub include_bank: bool,
+}
+
 /// A read-only prerequisite: its original quest retains ownership and writes.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -63,6 +71,11 @@ pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub requires: Vec<TrackRequirement>,
     pub take: Vec<ItemAmount>,
+    /// Gold units settled by the existing carried-coin and Bank fee owner.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fee: Option<MonetaryFee>,
+    #[serde(default)]
+    pub completes: bool,
     /// Carried evidence checked under the same locks, without consuming it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<ItemAmount>,
@@ -133,6 +146,18 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
             || c.present
                 .iter()
                 .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
+            || c.fee.as_ref().is_some_and(|fee| {
+                fee.gold == 0
+                    || fee.gold > 1_000_000_000_000
+                    || c.take.iter().any(|item| {
+                        matches!(
+                            item.item.as_str(),
+                            "oteryn:item.tibia.i3031"
+                                | "oteryn:item.tibia.i3035"
+                                | "oteryn:item.tibia.i3043"
+                        )
+                    })
+            })
             || c.take.len() > 8
             || inputs.len() != c.take.len()
             || c.take
@@ -209,7 +234,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
                     },
                 })
                 .collect(),
-            completes: false,
+            completes: callback.completes,
             experience: None,
         });
     }

@@ -32,7 +32,7 @@ def sha(value):
 def donor_inputs():
     paths = ['data/XML/outfits.xml', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
-        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry')]
+        'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'king_tibianus')]
     paths += ['data-global/scripts/quests/the_new_frontier/action_outfit.lua',
               'data-global/scripts/quests/wrath_of_the_emperor/actions_mission12_just_rewards.lua',
               'data-global/startup/tables/item.lua']
@@ -273,6 +273,8 @@ def build():
             'topic':0,'next_topic':first,'storage':guard,'reply':['Did you bring samples for me to analyse?']})
         offers.append({'npc':'oteryn:npc.broken_servant_sentry','keywords':['yes'],
             'topic':first,'next_topic':second,'storage':guard,'reply':['Let me analyse the samples.']})
+    selected = load_module('questpc7_selected_rewards', 'tools/content-schema/quest-authoring/questpc7_selected_rewards.py')
+    selected.append_golden(ROOT, callbacks, offers, inputs, PIN)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'callbacks':callbacks})
@@ -342,6 +344,7 @@ def validate_callbacks(document):
             or len({s['track'] for s in storage})!=len(storage)
             or len({i['item'] for i in callback['take']})!=len(callback['take'])
             or len({i['item'] for i in callback.get('present',[])})!=len(callback.get('present',[]))
+            or (callback.get('fee') and any(i['item'] in ('oteryn:item.tibia.i3031','oteryn:item.tibia.i3035','oteryn:item.tibia.i3043') for i in callback['take']))
             or len({r['track'] for r in requires})!=len(requires)
             or {r['track'] for r in requires}&{s['track'] for s in storage}
             or any(r['minimum']>r['maximum'] for r in requires)

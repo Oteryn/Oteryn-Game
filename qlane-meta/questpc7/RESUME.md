@@ -1,3 +1,30 @@
+# Golden QUALIFIED and payment owner GREEN — 2026-11-07
+
+Golden's whole selected route is QUALIFIED. GOLDEN-PG-PROOF.json contains
+PostgreSQL18.6 RED76.550s and GREEN85.616s, all three exact selected fees,
+unfunded refusals, wire replay, unseeded quest start and final completion,
+three immutable appearance grants and normal client selection with both addons.
+The imported qengine2 fee participant is reusable, with exact price/policy,
+same-transaction quest/fee/source bridges and unchanged earlier fee encodings.
+The new tag18 has its own codec fixture and exact inventory entry.
+
+All checks pass:13 authoring tests;3 fee audit/wire units;2 quest units;
+Cargo check; strict all-target/all-feature Clippy;123 content and5 world
+checks; tooling pin refresh/check; fmt. World digest is
+8d0063eb4b12f5e3ef714d7a05e7e1ff2604b96e92b301ae5b8f501d96d2c762.
+
+Scope now22 ACTIVE. Festive and Glooth Engineer were skipped with exact
+external qualifications; Golden is this lane's first whole-route qualification.
+Continue Friends and Traders, using the selected finite priest sequence,
+source skirt/honeycomb quantities, actual Gamon stake and service unlocks.
+Its13 donor NPC files were extracted only to /tmp/questpc7-friends-*.lua;
+canonical and exact donor file:line+SHA are the contract, never commit those dumps.
+Reusable counted service progress may be needed: first reuse the existing
+NpcRuleEffect::Add / QuestEffectKind::Add owner. Do not defer shared features.
+Keep the30-minute push cadence; no PR and no turn ending while ACTIVE remains.
+
+## Previous checkpoint history
+
 # Golden fee regression and payment reuse — 2026-11-07
 
 Golden fresh-start PostgreSQL 18.6 RED executed in 76.55003838s:

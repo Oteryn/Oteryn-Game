@@ -25,3 +25,24 @@
 - Palimuth is now globally qualified by the reused reward catalogue. Its older
   unavailable-greeting expectation becomes exact source greeting/farewell/
   walkaway assertions; the unrequested Spectulus refusal remains unchanged.
+
+- Golden uses the pinned selected recipe's100000/50000/50000 gold-unit prices
+  (`content/quests/definitions/quests-00100-00199.json:1#/records/52/definition`,
+  SHA256afe08860377d1027a1698e4dca459f617d34f39a5ddbf987ae5af25a73be5e50).
+  King Tibianus' donor accepts carried money plus Bank balance at
+  `data-global/npc/king_tibianus.lua:131-189`, Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d,
+  SHA256e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd.
+  Preserve that existing settlement policy with the chosen Oteryn prices;
+  do not substitute the donor's500m/250m/250m economy. Each character's
+  commission is once-only; earned appearance facts retain account ownership.
+
+- Payment support reuses qengine2 commit33b640335 (head e06058c74),
+  including the closed fee cause, exact price/bank policy, same-transaction
+  source bridge and immutable receipts. Migration1099 preserves all previous
+  carried conservation, custody and revision predicates; no new wallet is added.
+  Golden's selected final confirmation writes completion atomically through
+  the reusable callback `completes` flag.
+- This checkout's hand-maintained fee-tag golden inventory additionally needs
+  tag18 and its own codec fixture. Added both, retaining every pre-existing
+  golden byte and exact inventory assertion. The imported qengine commit
+  did not include this checkout-specific fixture update.

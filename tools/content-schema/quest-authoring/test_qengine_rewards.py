@@ -67,8 +67,23 @@ class QuestRewards(unittest.TestCase):
             with self.assertRaises(ValueError,msg=mutation):
                 q.validate_callbacks(bad)
 
+    def test_golden_selected_prices_and_fee_conservation(self):
+        from jsonschema import ValidationError
+        selected=[c for c in self.callbacks['callbacks'] if c['key'].split('/')[-1].startswith('questpc7-golden-')]
+        self.assertEqual(len(selected),5)
+        fees={c['key'].split('-')[-1]:c['fee'] for c in selected if c.get('fee')}
+        self.assertEqual(fees, {name:{'gold':amount,'include_bank':True} for name,amount in [('base',100000),('gloves',50000),('helmet',50000)]})
+        source=next(c for c in selected if c.get('fee'))
+        for mutation in ('zero','double'):
+            bad=copy.deepcopy(self.callbacks)
+            callback=next(c for c in bad['callbacks'] if c['key']==source['key'])
+            if mutation=='zero':callback['fee']['gold']=0
+            else:callback['take']=[{'item':'oteryn:item.tibia.i3043','count':10}]
+            with self.assertRaises((ValueError,ValidationError)):q.validate_callbacks(bad)
+        self.assertEqual(sum(c.get('completes',False) for c in selected),1)
+
     def test_original_six_and_eight_l1_source_compositions_exist(self):
-        callbacks=self.callbacks['callbacks']
+        callbacks=[c for c in self.callbacks['callbacks'] if not c['key'].split('/')[-1].startswith('questpc7-')]
         self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
         self.assertEqual(sum(c['outfit'] is not None for c in callbacks),20)

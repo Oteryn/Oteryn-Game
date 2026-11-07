@@ -107,7 +107,7 @@ fn qengine_l1_legacy_decaying_entitlement_remains_selectable() -> TestResult {
     scenario("qengine-rewards-l1-legacy-decaying")
 }
 
-async fn talk(
+pub(super) async fn talk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
@@ -144,6 +144,9 @@ async fn talk(
 fn offer_words(key: &str) -> &'static [&'static str] {
     match key.rsplit('/').next().unwrap_or(key) {
         "knight-sword" => &["forge"],
+        "questpc7-golden-base" => &["base outfit"],
+        "questpc7-golden-gloves" => &["boots and gloves"],
+        "questpc7-golden-helmet" => &["golden helmet"],
         "l1-warmaster-crest" => &["crest"],
         "l1-wayfarer-cape" => &["cape"],
         "l1-yalaharian-sage" | "l1-yalaharian-villain" => &["addon"],
@@ -181,7 +184,7 @@ async fn acknowledge_probe(
 
 // A conversation spans several commands on ONE connection. Re-opening the
 // one-command movement helper correctly clears conversation engagement.
-async fn wire_grant(
+pub(super) async fn wire_grant(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
