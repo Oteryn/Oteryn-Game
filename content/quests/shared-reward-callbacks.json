@@ -1330,7 +1330,7 @@
           "set_now": false
         }
       ],
-      "clock_wait_reply": [
+      "cooldown_reply": [
         "Big Ben still hammering! Come back in |REMAINING|!"
       ]
     },
@@ -1370,7 +1370,7 @@
         "track": "oteryn:quest-progress/npcfix/blood_brothers/ghost_tear_cooldown",
         "seconds": 72000
       },
-      "clock_wait_reply": [
+      "cooldown_reply": [
         "... I'm sorry... my tears are not ready yet... my soul needs time to grieve..."
       ]
     }

@@ -140,7 +140,7 @@
           "set_now": false
         }
       ],
-      "clock_wait_reply": [
+      "cooldown_reply": [
         "Big Ben still hammering! Come back in |REMAINING|!"
       ]
     }

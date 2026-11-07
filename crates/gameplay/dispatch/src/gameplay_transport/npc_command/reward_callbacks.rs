@@ -1,6 +1,6 @@
 //! Content selects a bounded exchange; the shared quest transaction owns every effect.
 use super::super::{ComposedFreshAdmission, connection::UseCommand};
-use super::quest_dialogue::{self, Choice, Step, Topic};
+use super::quest_dialogue::{self, Choice, Step as DialogueStep, Topic};
 use super::*;
 use oteryn_gameplay_quests::quest::reward_callbacks;
 use oteryn_gameplay_quests::quest::world_callbacks::Storage;
@@ -25,6 +25,11 @@ struct Offer {
     reply: Vec<String>,
 }
 
+pub(super) struct Step {
+    dialogue: DialogueStep,
+    guard: Option<(quest_dialogue::Context, reward_callbacks::RewardCallback)>,
+}
+
 pub(super) fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -41,7 +46,8 @@ pub(super) fn prepare(
         return None;
     }
     let catalogue = admission.quest_catalogue.as_deref()?;
-    quest_dialogue::prepare(
+    let mut guard = None;
+    let dialogue = quest_dialogue::prepare(
         admission,
         actor,
         command,
@@ -68,6 +74,13 @@ pub(super) fn prepare(
                 if selected.next().is_some() {
                     return None;
                 }
+                if callback
+                    .clock_effects()
+                    .any(|clock| clock.elapsed_seconds.is_some())
+                    && !callback.cooldown_reply.is_empty()
+                {
+                    guard = Some((context.clone(), callback.clone()));
+                }
                 return Some(Choice {
                     transition: Some(callback.key.clone()),
                     next_topic: Some(Topic::from(callback.next_topic)),
@@ -87,54 +100,77 @@ pub(super) fn prepare(
                 reply: offer.reply.clone(),
             })
         },
-    )
+    )?;
+    Some(Step { dialogue, guard })
 }
 
-/// A refused clock may speak only from a new coherent database read.
-pub(super) async fn wait_reply(
+/// Clock advice is a fresh read; the value writer independently rechecks every grant.
+pub(super) async fn apply(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
-    session: GameSessionId,
-    key: &str,
-) -> Result<Option<(u16, Vec<String>)>, ()> {
-    let callback = reward_callbacks::load()
-        .map_err(|_| ())?
-        .into_iter()
-        .find(|c| c.key == key)
-        .ok_or(())?;
-    if callback.clock_wait_reply.is_empty() {
-        return Ok(None);
-    }
-    let catalogue = admission.quest_catalogue.as_deref().ok_or(())?;
-    let fence = admission.current_quest_fence(session).await?.ok_or(())?;
-    let (copy, now) = admission
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: NpcTalkIntent,
+    step: Step,
+) -> NpcTalkOutcome {
+    use crate::durability::quest_state::RewardReadiness;
+    let Some((context, callback)) = step.guard else {
+        return quest_dialogue::apply(admission, actor, command, intent, step.dialogue).await;
+    };
+    let Some(catalogue) = admission.quest_catalogue.as_ref() else {
+        return NpcTalkOutcome::only(NpcIntentDisposition::Rejected);
+    };
+    let Ok(Some(fence)) = admission.current_quest_fence(command.game_session_id).await else {
+        return NpcTalkOutcome::only(NpcIntentDisposition::Rejected);
+    };
+    let observed = admission
         .root
-        .read_character_quest_state_at(admission.character, fence.character_id)
-        .await
-        .map_err(|_| ())?;
-    let value = |key: &str| {
-        catalogue
-            .track(key)
-            .map(|track| copy.tracks().get(key).copied().unwrap_or(track.initial))
+        .read_quest_reward_clock_readiness(
+            admission.character,
+            fence,
+            std::sync::Arc::clone(catalogue),
+            callback.key.clone(),
+        )
+        .await;
+    let Ok(observed) = observed else {
+        return NpcTalkOutcome::only(NpcIntentDisposition::Rejected);
     };
-    if callback
-        .storage
-        .iter()
-        .any(|s| !value(&s.track).is_some_and(|v| (s.minimum..=s.maximum).contains(&v)))
-        || callback
-            .requires
-            .iter()
-            .any(|r| !r.holds(catalogue, copy.tracks()))
-    {
-        return Ok(None);
+    match observed.readiness {
+        RewardReadiness::Ready => {
+            quest_dialogue::apply(admission, actor, command, intent, step.dialogue).await
+        }
+        RewardReadiness::Cooldown => {
+            let runtime = admission.runtime.lock().await;
+            let reply = quest_dialogue::prepare(
+                admission,
+                actor,
+                command,
+                &intent,
+                &runtime,
+                |current, topic, _, _| {
+                    if current != &context || topic.number != callback.topic {
+                        return None;
+                    }
+                    Some(Choice {
+                        transition: None,
+                        next_topic: Some(Topic::from(callback.next_topic)),
+                        reply: clock_reply(&callback.cooldown_reply, observed.remaining_seconds),
+                    })
+                },
+            );
+            drop(runtime);
+            match reply {
+                Some(reply) => {
+                    quest_dialogue::apply(admission, actor, command, intent, reply).await
+                }
+                None => NpcTalkOutcome::only(NpcIntentDisposition::Rejected),
+            }
+        }
+        _ => NpcTalkOutcome::only(NpcIntentDisposition::Rejected),
     }
-    let remaining = callback.clock_effects().find_map(|clock| {
-        let seconds = clock.elapsed_seconds?;
-        let remaining = i128::from(seconds) - (i128::from(now) - i128::from(value(&clock.track)?));
-        (remaining > 0).then_some(remaining)
-    });
-    let Some(remaining) = remaining else {
-        return Ok(None);
-    };
+}
+
+fn clock_reply(lines: &[String], remaining: Option<i64>) -> Vec<String> {
+    let remaining = remaining.unwrap_or(0).max(0);
     let hours = remaining / 3600;
     let minutes = (remaining % 3600) / 60;
     let mut parts = Vec::new();
@@ -152,12 +188,8 @@ pub(super) async fn wait_reply(
     } else {
         parts.join(" and ")
     };
-    Ok(Some((
-        callback.next_topic,
-        callback
-            .clock_wait_reply
-            .iter()
-            .map(|line| line.replace("|REMAINING|", &time))
-            .collect(),
-    )))
+    lines
+        .iter()
+        .map(|line| line.replace("|REMAINING|", &time))
+        .collect()
 }

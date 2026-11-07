@@ -42,15 +42,6 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         character: CharacterId,
     ) -> Result<QuestStateCopy> {
-        self.read_character_quest_state_at(authority, character).await.map(|(copy, _)| copy)
-    }
-
-    /// A coherent read-only quest copy and the database transaction's Unix seconds.
-    pub async fn read_character_quest_state_at(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        character: CharacterId,
-    ) -> Result<(QuestStateCopy, i64)> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -116,8 +107,6 @@ impl DurabilityRoot {
                     .bind(bound(QUESTGATE0_RL_10))
                     .fetch_all(&mut *tx)
                     .await?;
-                    let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM now()))::bigint")
-                        .fetch_one(&mut *tx).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     if over(&tracks, QUESTSTATE0_RL_01.min(QUESTSTATE0_RL_08_TRACKS))
                         || over(&states, QUESTSTATE0_RL_05.min(QUESTSTATE0_RL_08_STATES))
@@ -181,7 +170,7 @@ impl DurabilityRoot {
                             amount: row.try_get("amount")?,
                         });
                     }
-                    Ok(Ok((copy, now)))
+                    Ok(Ok(copy))
                 })
             })
             .await?

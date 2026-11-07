@@ -388,7 +388,7 @@
             }
           }
         },
-        "clock_wait_reply": {
+        "cooldown_reply": {
           "type": "array",
           "maxItems": 8,
           "items": {

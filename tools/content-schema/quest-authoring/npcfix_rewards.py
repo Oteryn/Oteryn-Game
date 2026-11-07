@@ -166,7 +166,7 @@ def outputs(root=ROOT, generated=None):
     Draft202012Validator(schema).validate(document)
     for callback in document['callbacks']:
         if callback.get('repeatable') and (not callback.get('give') or callback.get('outfit')
-                or not (callback['take'] or callback.get('cooldown'))):
+                or not (callback['take'] or callback.get('fee') or callback.get('cooldown'))):
             raise ValueError('NPCFIX_UNBOUNDED_REPEAT')
     result = {callbacks: encoded(document)}
     for relative, field in [('content/quests/shared-reward-offers.json', 'offers'),

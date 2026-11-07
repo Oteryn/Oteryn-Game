@@ -124,7 +124,7 @@ pub struct RewardCallback {
     pub achievement_once: bool,
     pub reply: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub clock_wait_reply: Vec<String>,
+    pub cooldown_reply: Vec<String>,
     pub sources: Vec<String>,
 }
 
@@ -309,14 +309,14 @@ fn parse_document(text: &str) -> Result<Document, String> {
             || c.keywords.iter().any(|s| {
                 s.is_empty() || s.len() > 64 || !s.is_ascii() || s != &s.to_ascii_lowercase()
             })
-            || (!c.clock_wait_reply.is_empty()
+            || (!c.cooldown_reply.is_empty()
                 && !clocks.iter().any(|clock| clock.elapsed_seconds.is_some()))
-            || c.clock_wait_reply.len() > 8
+            || c.cooldown_reply.len() > 8
             || c.reply.is_empty()
             || c.reply.len() > 8
             || c.reply
                 .iter()
-                .chain(&c.clock_wait_reply)
+                .chain(&c.cooldown_reply)
                 .any(|s| s.is_empty() || s.len() > 512 || s.chars().any(char::is_control))
             || c.achievement
                 .as_ref()
