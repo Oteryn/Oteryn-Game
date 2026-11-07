@@ -189,10 +189,11 @@ pub fn load() -> Result<Vec<Callback>, String> {
     callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
     bindings::apply(&mut callbacks)?;
     let keys: BTreeSet<_> = callbacks.iter().map(|callback| &callback.key).collect();
-    if callbacks.len() >= MAX_CALLBACKS || keys.len() != callbacks.len() {
+    if callbacks.len() > MAX_CALLBACKS.saturating_sub(2) || keys.len() != callbacks.len() {
         return Err("callback bounds including Rotten Blood altar".into());
     }
     callbacks.push(super::rotten_blood::altar_callback());
+    callbacks.push(super::schrodinger_island::callback());
     Ok(callbacks)
 }
 

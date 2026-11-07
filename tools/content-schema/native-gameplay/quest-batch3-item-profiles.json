@@ -243,7 +243,7 @@
     },
     {
       "path": "content/items/definitions/items-16500-16999.json",
-      "sha256": "9dd2e7427766b3ae717a52c64b66a452c4fdff6b93b39370925e4b53f0f2a356"
+      "sha256": "67dc8ad41477b493daa2f03f4b4ea8c034ab62a8d94eba8febee3a90604cb081"
     },
     {
       "path": "content/items/definitions/items-17000-17499.json",
@@ -251,11 +251,11 @@
     },
     {
       "path": "content/items/definitions/items-17500-17999.json",
-      "sha256": "a8dca48833965f757a10c628b36403f3a5752a6504481b838257c6de46e5ea5f"
+      "sha256": "30c6afeb92bc4b03e80d816d16f58f7c4306f50dd0857f8b02e983645ae85d51"
     },
     {
       "path": "content/items/definitions/items-18000-18499.json",
-      "sha256": "29ba3bcb7bed93a812c397d0b5fd4cc78ec6bd8d0d6fe4cefb0e4b9801572f29"
+      "sha256": "b23b34137c4934cca3db83613b039dabbcd8f11e68f961e1f80fd34ebc81eb9b"
     },
     {
       "path": "content/items/definitions/items-18500-18999.json",
@@ -267,7 +267,7 @@
     },
     {
       "path": "content/items/definitions/items-21000-21499.json",
-      "sha256": "1b0927bf7da1965c551822031860c22c41e85fc25b2b90b0891f7e8fd693aa7b"
+      "sha256": "09d3b5409a8a5098cedaf47777a2d050e3faeee4f200139e5ae8a9da5d4a91d8"
     },
     {
       "path": "content/items/definitions/items-21500-21999.json",
@@ -303,7 +303,7 @@
     },
     {
       "path": "content/items/definitions/items-28500-28999.json",
-      "sha256": "2db3c8ce0a4b3b7d80063e458b8ed2a4b627f73789c835410d4364902d35e886"
+      "sha256": "ab430f09558a741812d55deaaf88cb64637515e965ccda9b31f5dd9a7aec2bd8"
     },
     {
       "path": "content/items/definitions/items-29000-29499.json",
@@ -345,7 +345,7 @@
   "accepted_inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "f4ca4b433b53cc1ac120fe77e93772d8498fb9f355a99c0b145d52e82054e187"
+      "sha256": "fea15ba6c4a7781c9ce0eedd952096165ebb0e6b1b7512c45c5c31e1ba54fac4"
     },
     {
       "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",

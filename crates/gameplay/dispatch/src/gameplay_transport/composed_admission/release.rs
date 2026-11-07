@@ -42,16 +42,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return GraceExpiryResult::NotApplicable;
         };
         if admitted.controller.is_none()
-            && !matches!(release, TerminalRelease::CapabilityMismatch(_))
+            && !matches!(
+                release,
+                TerminalRelease::CapabilityMismatch(_) | TerminalRelease::StaffKickLost(_)
+            )
         {
             return GraceExpiryResult::NotApplicable;
         }
         let session = admitted.game_session_id;
         // ATTACK0-RL-03: a closed client stays in the world until its in-fight deadline ends.
-        if wait_for_combat {
-            while self.hold_while_in_fight(actor, session).await {}
-        } else if self.terminal_combat_pending(actor, session).await {
-            return GraceExpiryResult::Unknown;
+        if !matches!(
+            release,
+            TerminalRelease::StaffKick(_) | TerminalRelease::StaffKickLost(_)
+        ) {
+            if wait_for_combat {
+                while self.hold_while_in_fight(actor, session).await {}
+            } else if self.terminal_combat_pending(actor, session).await {
+                return GraceExpiryResult::Unknown;
+            }
         }
         let Ok(token) = release.fence(&mut *self.runtime.lock().await) else {
             return GraceExpiryResult::Unknown;
@@ -86,7 +94,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-        if matches!(release, TerminalRelease::CapabilityMismatch(_)) {
+        if matches!(
+            release,
+            TerminalRelease::CapabilityMismatch(_) | TerminalRelease::StaffKickLost(_)
+        ) {
             // D449: an unproven mismatch release is reconciled from the durable row. TERMINAL
             // settles as released; a session still holding the lease gives back this release's
             // hold, and the epoch fence is lifted once no other release holds it, so the client's
@@ -135,11 +146,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return ReleaseAttempt::Done(GraceExpiryResult::NotApplicable);
         };
         if admitted.controller.is_none()
-            && !matches!(release, TerminalRelease::CapabilityMismatch(_))
+            && !matches!(
+                release,
+                TerminalRelease::CapabilityMismatch(_) | TerminalRelease::StaffKickLost(_)
+            )
         {
             return ReleaseAttempt::Done(GraceExpiryResult::NotApplicable);
         }
         let session = admitted.game_session_id;
+        if !self.drome_sync(session, true).await {
+            return ReleaseAttempt::Retry;
+        }
         let account_id = canonical_uuid(&account);
         if !self
             .settle_released_death(actor, session, settled_death)
@@ -170,7 +187,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (TerminalRelease::Logout(_), TransitionFence::GraceExpiry(_)) => {
                 return ReleaseAttempt::Done(GraceExpiryResult::Unknown);
             }
-            (TerminalRelease::Abandoned(_) | TerminalRelease::CapabilityMismatch(_), _) => None,
+            (
+                TerminalRelease::Abandoned(_)
+                | TerminalRelease::CapabilityMismatch(_)
+                | TerminalRelease::StaffKick(_)
+                | TerminalRelease::StaffKickLost(_),
+                _,
+            ) => None,
         };
         // SPELL-D8 §8.2 save point 1: the actor's monk values are durable, or fenced out,
         // before the release can end the Character lease.
@@ -226,7 +249,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .release_capability_mismatch(session, &account_id, epoch)
                     .await
             }
-            TerminalRelease::Logout(transport) => {
+            TerminalRelease::StaffKickLost(epoch) => {
+                releasing
+                    .release_staff_lost_session(session, &account_id, epoch)
+                    .await
+            }
+            TerminalRelease::Logout(transport) | TerminalRelease::StaffKick(transport) => {
                 releasing
                     .release_logout_session(session, &account_id, transport)
                     .await
@@ -287,6 +315,65 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.forget_lost(lost.game_session_id, lost.continuity.connection_generation);
         }
         result
+    }
+
+    /// Staff rejection is a terminal owner, not reconnect grace. The caller must
+    /// independently prove the captured kick or active account ban immediately
+    /// before invoking this method; the release re-proves the exact controller.
+    pub(in crate::gameplay_transport) async fn release_staff_session(
+        &self,
+        admitted: AdmittedSession,
+    ) -> GraceExpiryResult {
+        let Some(controller) = admitted.controller else {
+            return GraceExpiryResult::NotApplicable;
+        };
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let current = match store.current_session(admitted.game_session_id).await {
+            Ok(current) => current,
+            Err(_) => return GraceExpiryResult::Unknown,
+        };
+        let Some(fence) = super::item_fence_of(current) else {
+            return GraceExpiryResult::NotApplicable;
+        };
+        if fence.connection_generation.get() != admitted.continuity.connection_generation {
+            return GraceExpiryResult::NotApplicable;
+        }
+        let release = match current.session_state() {
+            GameSessionState::Active
+                if current.current_transport() == Some(controller.transport) =>
+            {
+                TerminalRelease::StaffKick(controller.transport)
+            }
+            GameSessionState::Reconnectable if current.current_transport().is_none() => {
+                let Some(epoch) = current.current_control_loss_epoch() else {
+                    return GraceExpiryResult::NotApplicable;
+                };
+                let Ok(account) = crate::domain::AccountId::from_bytes(controller.account_id)
+                else {
+                    return GraceExpiryResult::NotApplicable;
+                };
+                match self
+                    .root
+                    .staff_lost_session_kicked(self.character, self.holder, fence, account, epoch)
+                    .await
+                {
+                    Ok(true) => TerminalRelease::StaffKickLost(epoch),
+                    Ok(false) => return GraceExpiryResult::NotApplicable,
+                    Err(_) => return GraceExpiryResult::Unknown,
+                }
+            }
+            _ => return GraceExpiryResult::NotApplicable,
+        };
+        match self
+            .root
+            .staff_live_status(self.character, self.holder, fence)
+            .await
+        {
+            Ok(status) if status.banned || status.kicked => {}
+            Ok(_) => return GraceExpiryResult::NotApplicable,
+            Err(_) => return GraceExpiryResult::Unknown,
+        }
+        self.release_terminal(admitted, release).await
     }
 
     pub(in crate::gameplay_transport) async fn release_abandoned_session(

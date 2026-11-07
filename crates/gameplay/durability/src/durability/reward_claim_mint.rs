@@ -128,6 +128,7 @@ pub(crate) mod quest;
 pub use quest::{QuestRewardAdmission, QuestRewardFeePayment};
 pub(in crate::durability) mod npc_exchange;
 mod soul_war;
+mod tibiadrome;
 mod viola_book;
 
 type Result<T> = std::result::Result<T, RewardClaimMintError>;

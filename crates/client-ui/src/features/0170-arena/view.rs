@@ -47,6 +47,41 @@ pub fn panel_text(panel: &ArenaPanel) -> String {
             text.push_str("\r\n");
         }
     }
+    text.push_str("Tibiadrome\r\n");
+    if let Some(reply) = panel.drome {
+        let disposition = match reply.disposition {
+            1 => "Applied",
+            2 => "Action unavailable in the current state",
+            3 => "Premium and level 50 required",
+            4 => "Re-entry cooldown active",
+            5 => "Arena busy; retry",
+            6 => "Arena content unavailable",
+            7 => "No earned potion or insufficient drome points",
+            8 => "Inventory full",
+            _ => "Unknown result",
+        };
+        let phase = if reply.phase == 0 { "Idle" } else { "Active" };
+        let rank = if reply.rank == 0 {
+            "Unranked".to_owned()
+        } else {
+            reply.rank.to_string()
+        };
+        text.push_str(&format!(
+            "{disposition}\r\n{phase}: wave {}. Rotation level: {}. Starting level: {}\r\nDrome points: {}. Rank: {rank}. Unclaimed potions: {}\r\nServer time remaining: {} seconds. Re-entry cooldown: {} seconds\r\n",
+            reply.wave, reply.level, reply.start, reply.points, reply.potions,
+            reply.remaining, reply.cooldown,
+        ));
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |duration| duration.as_secs());
+        let remaining = u64::from(reply.rotation_ends).saturating_sub(now);
+        text.push_str(&format!(
+            "Next rotation in approximately {}d {}h {}m (local clock estimate)\r\nRefresh Drome status for current server values\r\n",
+            remaining / 86400, remaining / 3600 % 24, remaining / 60 % 60,
+        ));
+    } else {
+        text.push_str("Refresh Drome status to load progress\r\n");
+    }
     if panel.pending.is_some() {
         text.push_str("Waiting for the server\r\n");
     }

@@ -28,6 +28,10 @@ fn promotion_npc_postgres_dispatch_purchase_replay_bank_login_and_death() -> Tes
 fn scenario() -> TestResult {
     run(async |admin| {
         reset();
+        // Compile content before opening the admission holder; cold Native setup can exceed
+        // the holder's idle lifetime on a contended CI worker.
+        let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+        let (controller, pin) = activated_with_loot_tables(world, None);
         let h = Harness::create_with_admission_seed(admin, "promotion_npc", true, false).await?;
         eprintln!("POSTGRES_STARTED PREM-2b+PREM-5 promotion_npc version=17.6");
         prepare_current_session(&h).await?;
@@ -37,8 +41,6 @@ fn scenario() -> TestResult {
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-        let (controller, pin) = activated_with_loot_tables(world, None);
         let active = controller.active().ok_or("active content")?;
         let policy = active
             .native_gameplay()
@@ -79,10 +81,14 @@ fn scenario() -> TestResult {
         .map_err(debug)?;
         let model = catalogue.service_model_for_project().map_err(debug)?;
         owner
-            .states.chat
+            .states
+            .chat
             .install_npc_talk(Arc::new(NpcTalkBook::from_model(&model)));
         let session = dependencies.admitted.game_session_id;
-        owner.states.chat.admit(session, "Fixture Hero", owner.owner_now());
+        owner
+            .states
+            .chat
+            .admit(session, "Fixture Hero", owner.owner_now());
         owner.states.chat.set_npc_service(session);
         let npc = {
             let mut runtime = dependencies.runtime.lock().await;
@@ -238,7 +244,8 @@ fn scenario() -> TestResult {
         owner.admit_promotion(session).await;
         assert_eq!(
             owner
-                .states.premium_sessions
+                .states
+                .premium_sessions
                 .lock()
                 .map_err(debug)?
                 .1
@@ -458,7 +465,8 @@ fn scenario() -> TestResult {
         }
         assert_eq!(
             owner
-                .states.premium_sessions
+                .states
+                .premium_sessions
                 .lock()
                 .map_err(debug)?
                 .1
@@ -508,7 +516,9 @@ fn scenario() -> TestResult {
             blocker.rollback().await?;
             Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
         });
-        let (settled, _) = owner.commit_death(session, &progression, lapsed_death).await;
+        let (settled, _) = owner
+            .commit_death(session, &progression, lapsed_death)
+            .await;
         revoke_when_blocked.await?.map_err(debug)?;
         assert_eq!(settled, crate::gameplay_transport::DeathCommit::Settled);
         let (level, lost, held): (i64, i64, Vec<String>) = sqlx::query_as(

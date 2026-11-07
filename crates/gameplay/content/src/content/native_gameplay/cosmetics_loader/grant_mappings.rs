@@ -2,7 +2,7 @@
 use super::{CosmeticsDiagnostic, Mount, Outfit, Result, text};
 use crate::domain::appearance::{EarnedCosmetic, UnlockFact};
 use serde::Deserialize;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -64,14 +64,21 @@ pub(super) fn resolve(
     mapping: Option<&GrantMapping>,
     provenance: &str,
     target: EarnedCosmetic<'_>,
+    aliases: &BTreeMap<String, String>,
 ) -> UnlockFact {
     let Some(mapping) = mapping else {
         return UnlockFact::Absent;
     };
+    let same_outfit = |left: &str, right: &str| {
+        aliases.get(left).map_or(left, String::as_str)
+            == aliases.get(right).map_or(right, String::as_str)
+    };
     let matches = match (&mapping.target, target) {
-        (Target::Outfit { outfit_key }, EarnedCosmetic::Outfit(key)) => outfit_key == key,
+        (Target::Outfit { outfit_key }, EarnedCosmetic::Outfit(key)) => {
+            same_outfit(outfit_key, key)
+        }
         (Target::Addon { outfit_key, addon }, EarnedCosmetic::Addon(key, bit)) => {
-            outfit_key == key && *addon == bit
+            same_outfit(outfit_key, key) && *addon == bit
         }
         (Target::Mount { mount_key }, EarnedCosmetic::Mount(key)) => mount_key == key,
         _ => false,

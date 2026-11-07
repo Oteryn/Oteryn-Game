@@ -35,6 +35,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         expected: Option<crate::foundation::MovementPositionSnapshot>,
         follow: Option<(ExactActorRef, crate::foundation::MovementPositionSnapshot)>,
     ) -> (StepOutcome, Option<Duration>) {
+        if !self.resume_dawnport_departure(actor, session).await {
+            return (StepOutcome::rejected(), None);
+        }
         if !self.ensure_source_map_initialized().await {
             return (StepOutcome::rejected(), None);
         }

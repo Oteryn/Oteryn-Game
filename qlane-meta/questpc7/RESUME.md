@@ -1,3 +1,96 @@
+# Owner-required PR3020 integration — 2026-11-07 17:10 UTC
+
+Fetched origin/main1ae39c7fb9bef09c3cd50d16410374f4134b1676 (PR3020,
+QENGINE2/QBASE merged). Owner requires immediate merge, main-exact shared
+engines/migrations, regenerate, complete reverse-dependency PG nextest plus
+fmt/Clippy, grouped fixes and one push. Superseded old diagnostic full run:
+1315/8417 completed,23failures in two roots (18cosmetics authoring200KB cap,
+5placement-index pins). Not final qualification evidence; full new run is
+mandatory after integrating main and regeneration. No new ignored tests.
+
+Current source compiles: cargo check dispatch+game-server PASS2m12s; content
+check23.13s; native alias Rust4tests PASS2.22s including duplicate-key RED→GREEN;
+Python alias2tests PASS; native composition41outputs/3765base+10starter unique.
+Qengine34author tests now33pass/1expected stale-generated-output failure.
+New alias support preserves all grants, shares14 explicit identity pairs, hides
+legacy duplicates in wardrobe, enforces source-look/starter/addon equivalence,
+never reduces premium and retains exact grant provenance. Combined catalogue
+keeps Character revisionS3b; canonical row revisions retainNX5. Do not remove
+that existing revision invariant test. Full old main merge is being committed
+locally as compiling WIP before merging new main; NO push until required full
+new prevention run is green. Four ACTIVE unchanged.
+
+# Validation restart after cache recovery — 2026-11-07 16:34 UTC
+
+Full nextest attempt1 stopped at fixture compile errors (corrected); attempt2
+hit disk exhaustion and linker bus error before executing tests. Stale lane
+server/dispatch caches and failed-link temporaries reclaimed9.3GB; completed
+incremental caches are reclaimed while preserving active compiler directories.
+Attempt3 also exhausted disk before tests. After removing stale pre-16:12
+lane binaries/rlibs while Cargo idle,11GB was free. Attempt4
+/tmp/questpc7-full-nextest-4.log is compiling complete25-package set,
+CARGO_BUILD_JOBS=2, two test threads, --no-fail-fast, PG env loaded. No test
+results yet. Do not push before complete failures grouped, repaired, full rerun.
+
+Regeneration3 stopped at ValueError: STARTING_LOADOUT_PROFILE_DUPLICATE.
+Captured native overlap /tmp/questpc7-starter-existing-overlap.json identifies
+3571,3572,7991; all known mechanics agree,7991 description differs finalperiod.
+Plan /tmp/questpc7-integration-repair-plan.md records reuse of strict shared
+merge_fact and one provider per identity, retaining canonical presentation.
+Separate author checks: cosmetics25tests/1failure;quest34tests/3failures, all
+catalogue composition assumptions. Fmtcheck only fixture constructor wrapping.
+Duplicate migration check PASS; forbidden workflow/repository paths match main.
+
+# Main integration and mandatory dependency run — 2026-11-07 16:16 UTC
+
+origin/main bbb3e06d0 is merged in the index; merge commit awaits compilation,
+generation and mandatory complete reverse-dependency validation. All 72 merge
+conflicts were resolved with independent main features preserved. QENGINE2
+0999/1000 remain consumed unchanged; PR3020 is not yet in fetched main.
+
+Required closure remains 25 workspace packages; exact cargo-tree commands
+and package list are in DEPENDENCY-TEST-PLAN.json. Full nextest is launched
+with --no-fail-fast, two test threads and CARGO_BUILD_JOBS=2, PostgreSQL env
+loaded. It currently waits for repository regeneration's build-directory lock.
+Logs: /tmp/questpc7-main-regeneration3.log and
+/tmp/questpc7-full-nextest-1.log. Do not push until full failures are grouped,
+fixed and complete package set rerun. Owner explicitly suspended automated
+push reminders while this validation is running.
+
+Merge compilation uncovered missing fields on main's Schrodinger callback
+and Tibiadrome reward-request constructors; inert defaults preserve their
+existing behavior. Removed a duplicate writer import from conflict resolution.
+Full cosmetics/NX5 compatibility must be validated: current authoring merges
+main catalogue and legacy quest grant identities; duplicate visual identities
+need resolving if catalogue contracts require a single canonical entry.
+Four ACTIVE remain; no additional entry qualified from integration work.
+
+# Owner mandatory dependency validation — 2026-11-07 15:48 UTC
+
+NEW owner standing rule overrides earlier focused-only/no-full-nextest rule.
+Before EVERY push run complete nextest for every changed crate and reverse
+normal workspace dependency, including PG. Collect ALL failures, group roots,
+fix together, rerun full set, then ONE push. Merge origin/main every few hours
+and test after merge.25 required crates are recorded in DEPENDENCY-TEST-PLAN.
+Do not push compiling WIP before this mandatory set passes now.
+
+Next stash current prefix work, merge freshmain with proper author/trailers,
+restore work, recompute dependency closure and run full25-package nextest
+--no-fail-fast with PG. No skipping/weakening. Keep all4 ACTIVE; continue lane
+work after grouped validation repairs. Current prefix compiles; latest PG
+RED77.242757746s reached native entry but did not teleport to first bell.
+Collect this and all other failures from FULL run before individual fixes.
+
+Authored prop data moved to content/world/placements/authored-questpc7.json
+inside an existing directory, avoiding repeated NPC scan growth. Original
+NPC budget232 RESTORED unchanged; no raised limit remains. Overlay/compiler/
+producer/tests now use new path; old world/authored-props directory removed.
+34 source-author tests PASS42.414s,5 physical tests PASS, exact map props
+proof40.79s (must rerun after move). Prefix still needs entry fix, exact sample
+command replay and tool drop/pickup refusal proof, then remaining17 stages.
+No quest qualification from schema-only PG or prefix. Latest pushed known
+compiling prefix d58add72d; standing tests now gate every further push.
+
 # Feaster six-stage compiling prefix checkpoint — 2026-11-07 15:40 UTC
 
 Source first6 stages are authored: actual Norbert/Bell,3 source sites, exact

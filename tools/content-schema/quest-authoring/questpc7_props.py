@@ -17,9 +17,9 @@ def build(root):
     return {'schema':1,'basis':'CHOSEN_OTERYN_APPROXIMATION','quest':{'key':QUEST,'path':path,'sha256':hashlib.sha256(raw).hexdigest()},'sources':sources,'props':[{'key':'oteryn:world-prop/questpc7-feaster-'+r['name'],'item':'oteryn:item.tibia.i'+str(r['appearance']),'position':dict(zip(['x','y','floor'],r['position'])),'role':r['role']} for r in SITES]}
 
 def outputs(root):
-    path='content/world/authored-props/questpc7.json';raw=(json.dumps(build(root),ensure_ascii=False,indent=2)+'\n').encode()
+    path='content/world/placements/authored-questpc7.json';raw=(json.dumps(build(root),ensure_ascii=False,indent=2)+'\n').encode()
     index_path='content/world/placements/index.json';before=(root/index_path).read_bytes();index=json.loads(before)
-    pins=[p for p in index.get('authored_props',[]) if p['path']!=path]+[{'path':path,'sha256':hashlib.sha256(raw).hexdigest()}]
+    pins=[p for p in index.get('authored_props',[]) if p['path'] not in {path,'content/world/authored-props/questpc7.json'}]+[{'path':path,'sha256':hashlib.sha256(raw).hexdigest()}]
     index['authored_props']=sorted(pins,key=lambda p:p['path'])
     rendered=json.dumps(index,ensure_ascii=False,indent=2) if b'\n  \"' in before else json.dumps(index,ensure_ascii=False,separators=(',',':'))
     return {path:raw,index_path:(rendered+'\n').encode()}

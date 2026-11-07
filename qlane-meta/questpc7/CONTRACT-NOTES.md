@@ -623,3 +623,49 @@ Ground-only source constructors8995/8996/21573/23163/32173/32537 are distinct fr
 
 Purified Soul32228 keeps the canonical0.20oz instead of raw XML2.50oz (imports/canary/items-xml/items.xml:60455). Only canonical20/source250 centi-oz and matching active250-or20 records reconcile; any identity, binding, admission or other weight drift still refuses.
 Canonical citation: content/items/definitions/items-19000-19499.json:1#/records/476/definition/semantics/physical, SHA25624568a95f12ccef9c6540b46609e24c137ffd7161a7c8e211d5a85b3fc2853a5.
+
+## Main integration: explicit cosmetic aliases and bounded provisioning (2026-11-07)
+
+Main bbb3e06d0 introduces14 canonical cosmetic identities already represented
+by the quest donor catalogue. Keep both signed source rows and all historical
+grant keys, but promote14 explicit one-hop aliases to main's canonical keys.
+The native compiler validates equal female/male source-record identities,
+addon count and starter flags; an alias cannot reduce premium eligibility.
+Fiend Slayer is the only differing premium fact: main's premium=true prevails
+conservatively over the older donor false. Main source:
+https://github.com/Oteryn/Oteryn-Game/blob/bbb3e06d0/content/cosmetics/outfits/authoring.json#L812
+(file SHA2569e2d82a68453c7f110f605ae350c780d60136d4bc064a2bac94541f5f0b9c8dd).
+The exact14 pairs were compared against both admitted source appearance IDs;
+no alias is inferred at runtime from matching visuals. Equal looks without an
+explicit promoted alias continue to have separate ownership. Alias cycles,
+unknown targets, different source looks, different addon masks and reductions
+of eligibility fail closed. Grant provenance and addon-bit matching remain
+exact. No persisted grant keys or Character revision rows are rewritten.
+The wardrobe enumerates only canonical identities; historical selections and
+earned grants remain usable through the explicit compatibility map.
+
+The merged authored catalogue measured780,059 bytes (77 source rows,
+232 mappings) before adding alias promotions. Main's descriptor-only input
+still remains408 bytes; retain its16KiB cap and all source-shard/total-section
+caps. The maintained authoring input gets a separate1MiB cap to admit this
+actual complete catalogue, with the existing4096-record and promotion bounds.
+No arbitrary-size input and no weakening of source SHA validation is admitted.
+Python alias test RED1error/2tests before support; GREEN2tests0.154s. Native
+Rust alias tests GREEN3tests2.20s; cargo check content PASS23.13s. Full PG
+reverse-dependency run and exact native earned-grant integration remain pending.
+
+## Main integration: one native Item provider per starter identity
+
+Main's dedicated starter overlay overlaps the existing quest/Corruptor owners
+for3571,3572,7991. Exact production definition, binding and admission must agree.
+Merge only previously UNKNOWN mechanical leaves using a strict typed recursive
+composer; known differences, bool/int substitutions, changed pattern IDs and
+list-shape differences are errors. Canonical presentation retains its text
+(7991 differs only by a trailing period). Emit only absent identities into the
+starter overlay, preserving original base bytes when no enrichment is needed.
+The original empty-base eight-item test is unchanged. New composition test
+RED STARTING_LOADOUT_PROFILE_DUPLICATE4.112s, then four starter tests GREEN
+4.951s and two strict composer tests GREEN. Full native composition now builds
+41 outputs with3765 base profiles plus10 starter profiles and no duplicate
+production identities. Recipe evidence was recaptured with repository tooling
+from the already pinned local donor after main changed canonical input hashes.

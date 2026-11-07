@@ -27,7 +27,7 @@ fn questpc7_feaster_native_sampling_prefix() -> TestResult {
     );
     result
 }
-use super::questpc7_ferumbras::{guardian, step, use_at, value, walk};
+use super::questpc7_ferumbras::{step, use_at, value, walk};
 use oteryn_gameplay_quests::quest::world_callbacks::Callback;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 const QUEST: &str = "oteryn:quest.feaster_of_souls_quest";
@@ -133,7 +133,7 @@ fn track(name: &str) -> String {
 }
 pub(super) fn native_items() -> TestResult<Vec<(Position, u32)>> {
     let doc: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../../../content/world/authored-props/questpc7.json"
+        "../../../../../../content/world/placements/authored-questpc7.json"
     ))?;
     doc["props"]
         .as_array()
@@ -247,6 +247,14 @@ pub(super) async fn exercise(
     word(owner, a, npc, "mission").await?;
     assert_eq!(value(owner, a, TRACK).await?, 0);
     assert_eq!(carried(h, 32582).await?, 1);
+    // Norbert's approach is also the entrance selector. A STEP callback needs
+    // an actual crossing after accepting the mission, rather than a no-op walk.
+    step(
+        owner,
+        a,
+        oteryn_protocol_oteryn::world_spatial::StepDirection::South,
+    )
+    .await?;
     passage(owner, a, callback(&rows, "entry")?).await?;
     for i in 0..3 {
         let c = callback(&rows, &format!("bell-{i}"))?;
@@ -282,7 +290,7 @@ pub(super) async fn exercise(
         owner,
         a,
         Position {
-            x: 32629,
+            x: 32628,
             y: 32077,
             floor: -7,
         },
@@ -359,6 +367,12 @@ pub(super) async fn exercise(
             .expected_character_revision,
         f.expected_character_revision
     );
+    step(
+        owner,
+        a,
+        oteryn_protocol_oteryn::world_spatial::StepDirection::South,
+    )
+    .await?;
     passage(owner, a, callback(&rows, "samples-return")?).await?;
     word(owner, a, npc, "probes").await?;
     assert_eq!(carried(h, 32197).await?, 0);

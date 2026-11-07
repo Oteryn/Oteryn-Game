@@ -594,3 +594,13 @@ async fn write_transition(
         })
     })
 }
+
+
+/// Read-only status projection. Caller holds the admitted Character root fence.
+pub(crate) async fn read_taints_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    character: CharacterId,
+) -> StoredResult<(u8, u8, bool)> {
+    let state = read_state(tx, character).await?;
+    Ok((state.regular_taints(), state.child_flags(), state.final_taint()))
+}

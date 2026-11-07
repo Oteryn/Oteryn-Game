@@ -515,20 +515,25 @@ fn scenario_options_impl(
                 .await?,
                 ItemMoveOutcome::Rejected
             );
-            assert_eq!(
-                send(&mut client, 2, &request, protocol::CommandStatus::Accepted).await?,
-                ItemMoveOutcome::Moved
-            );
+            if !coalescing {
+                assert_eq!(
+                    send(&mut client, 2, &request, protocol::CommandStatus::Accepted).await?,
+                    ItemMoveOutcome::Moved
+                );
+            }
             if extra_quiver {
                 assert_eq!(equipped_count(pool).await?, 2);
                 client.shutdown().await?;
                 return Ok(());
             }
-            assert_eq!(equipped_count(pool).await?, 1);
+            if !coalescing {
+                assert_eq!(equipped_count(pool).await?, 1);
+            }
             if coalescing {
-                // All three presses arrive during the cooldown of command 2. Only 5
-                // may toggle the sword; 3 and 4 must have no durable equipment receipt.
-                for command_id in 3..=5 {
+                // Queue the whole burst before polling the server. A reply and SQL
+                // round-trip between 2 and 3 can consume the native 200 ms cooldown.
+                // Only 5 may toggle the sword back; 3 and 4 have no durable receipt.
+                for command_id in 2..=5 {
                     let frame = protocol::encode_client_command(
                         1,
                         &protocol::ClientCommandValue {
@@ -542,6 +547,7 @@ fn scenario_options_impl(
                     client.write_all(&frame).await?;
                 }
                 for (command_id, expected) in [
+                    (2, ItemMoveOutcome::Moved),
                     (3, ItemMoveOutcome::Rejected),
                     (4, ItemMoveOutcome::Rejected),
                     (5, ItemMoveOutcome::Moved),
@@ -557,13 +563,24 @@ fn scenario_options_impl(
                             assert_eq!(
                                 protocol::hotkey_equip::decode_reply(result.payload)
                                     .map_err(debug)?,
-                                expected
+                                expected,
+                                "hotkey burst command {command_id}"
                             );
                             break;
                         }
                     }
                 }
                 assert_eq!(equipped_count(pool).await?, 0);
+                // The immutable receipt proves the initial one-slot equip even
+                // though the later toggle has already removed the live slot.
+                let initial_equips: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_character_equipment_receipts WHERE character_id=encode($1,'hex')::uuid AND command_id=2 AND operation=1 AND from_slot IS NULL AND to_slot=5 AND item_instance_id=encode($2,'hex')::uuid",
+                )
+                .bind(id(41).as_slice())
+                .bind(id(71).as_slice())
+                .fetch_one(pool)
+                .await?;
+                assert_eq!(initial_equips, 1);
                 let cancelled_receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_receipts WHERE command_id IN (3,4)").fetch_one(pool).await?;
                 assert_eq!(cancelled_receipts, 0);
                 assert_eq!(

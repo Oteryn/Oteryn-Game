@@ -40,6 +40,59 @@ fn item_listeners<K>(
 }
 
 impl ChatRuntime {
+    /// Automatic NPC speech shares the bounded CHAT egress, without player ingress limits
+    /// or the player-only uppercase transformation for YELL.
+    pub(in crate::gameplay_transport) fn publish_npc_voice(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        proposal: &crate::gameplay_transport::npc_voice::NpcVoiceProposal,
+    ) {
+        if runtime.owner_fence().is_err() || runtime.npc_key(proposal.occurrence.actor).is_none() {
+            return;
+        }
+        let visible = runtime.visible_entities();
+        let Some(npc) = visible
+            .npcs
+            .iter()
+            .find(|npc| npc.actor == proposal.occurrence.actor)
+        else {
+            return;
+        };
+        let at = npc.position;
+        if at.x != proposal.position.x
+            || at.y != proposal.position.y
+            || at.floor != i16::from(proposal.position.floor)
+        {
+            return;
+        }
+        let Ok(line) = proposal.chat_line() else {
+            return;
+        };
+        let Ok(mut sessions) = self.sessions.lock() else {
+            return;
+        };
+        let listeners = sessions
+            .keys()
+            .filter_map(|session| {
+                let (_, position) = runtime.positioned_player_for_session(*session).ok()??;
+                let at = position.position();
+                Some((
+                    *session,
+                    ChatPosition {
+                        x: at.x,
+                        y: at.y,
+                        floor: u8::try_from(at.floor).ok()?,
+                    },
+                ))
+            })
+            .collect::<Vec<_>>();
+        for (listener, _) in local_listeners(proposal.mode(), proposal.position, listeners) {
+            if let Some(entry) = sessions.get_mut(&listener) {
+                entry.egress.push(line.clone());
+            }
+        }
+    }
+
     pub(in crate::gameplay_transport) fn publish_item_speech(
         &self,
         runtime: &ChannelRuntimeV1,

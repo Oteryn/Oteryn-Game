@@ -11,7 +11,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
     // SAFETY: userdata points to the live selection flag on this window's thread.
     unsafe {
         if msg == WM_COMMAND
-            && (matches!(w & 0xffff, 102 | 103 | 104)
+            && (matches!(w & 0xffff, 102..=104)
                 || w & 0xffff == 101 && (w >> 16) & 0xffff == LBN_SELCHANGE as usize)
         {
             let flag = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut u8;

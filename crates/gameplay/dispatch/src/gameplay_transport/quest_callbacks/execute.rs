@@ -366,6 +366,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(snapshot) = runtime.commit_source_step(proof) else {
                 return UseDisposition::Rejected;
             };
+            // Crystal 201189f data-global/scripts/actions/other/dryad_garden.lua:18-19:
+            // publish at the committed destination, never at the source or on refusal.
+            if matches!(
+                callback.key.as_str(),
+                "oteryn:quest-callback/dryad-garden-enter"
+                    | "oteryn:quest-callback/dryad-garden-leave"
+            ) {
+                states.sounds.record_item_effect(
+                    runtime,
+                    actor,
+                    snapshot.position(),
+                    oteryn_gameplay_items::event_planting::DRYAD_GARDEN_EFFECT_ID,
+                    false,
+                );
+            }
             states.stage_special_movement_step(
                 runtime,
                 map,

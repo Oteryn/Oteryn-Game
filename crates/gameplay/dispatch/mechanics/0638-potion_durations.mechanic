@@ -1,0 +1,8 @@
+name=potion_durations
+commands=662
+transport=potion_durations
+composed=potion_durations
+authority=potion_durations
+offer=637,potion_durations::offered,potion_durations_available
+[route]
+routing::potion_durations::route(authority, &session.admitted, command).await

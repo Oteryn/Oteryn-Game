@@ -1,0 +1,15 @@
+{
+  "mechanic": "0276-condition-status",
+  "kind": "handlers",
+  "id": "0276-condition-status-query",
+  "status": "supported",
+  "commands": [
+    492
+  ],
+  "direction": "client_to_server",
+  "capability": 276,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "Condition state is server-owned and has no client authority settings."
+  }
+}

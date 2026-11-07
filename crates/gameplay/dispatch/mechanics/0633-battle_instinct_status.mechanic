@@ -1,0 +1,8 @@
+name=battle_instinct_status
+commands=494
+transport=battle_instinct_status
+composed=battle_instinct_status
+authority=battle_instinct_status
+offer=633,battle_instinct_status::offered,battle_instinct_status_available
+[route]
+routing::battle_instinct_status::route(authority, &session.admitted, command).await

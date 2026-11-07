@@ -110,6 +110,8 @@ pub(super) fn extend(
         transitions.into_values().collect(),
     )
     .map_err(|e| format!("{e:?}"))
+    .and_then(super::hero_of_bounac::extend)
+    .and_then(super::planegazer_finale::extend)
 }
 
 #[cfg(test)]

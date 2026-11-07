@@ -84,6 +84,8 @@ pub struct CharacterCastFacts {
 /// evaluation that changes Serene.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlayerSpellState {
+    /// Tibiadrome suppresses training and soul-cost spells (manual combat.md:258-259).
+    pub drome_practice: bool,
     pub facts: CharacterCastFacts,
     /// Character-owner maxima before temporary Wheel dedication is projected.
     pub(crate) base_max_health: u32,
@@ -197,6 +199,7 @@ impl PlayerSpellState {
             && facts.max_mana <= MAX_VITAL_POOL
             && facts.max_soul <= MAX_SOUL)
             .then(|| Self {
+                drome_practice: false,
                 facts,
                 base_max_health: facts.max_health,
                 base_max_mana: facts.max_mana,

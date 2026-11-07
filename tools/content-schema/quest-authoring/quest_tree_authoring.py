@@ -61,6 +61,16 @@ def claim_catalogue(root):
             binding.get('canonical_item', {}).get('key') in full_charge_items
             for binding in claim.get('source_variant', {}).get('item_bindings', [])
             if binding.get('canonical_item'))
+        # completion242 records the historical SOURCE frame, independently of
+        # ITEMHOLD-Q's live Item/charge admissions. Keep canonical holds and native
+        # contents intact; only the SOURCE compiler consumes this private view.
+        historical = {
+            'oteryn:reward-claim.kv.ornamentedshield': ['item', 'source'],
+            'oteryn:reward-claim.kv.present_box': ['item'],
+            'oteryn:reward-claim.kv.triangletower': ['item'],
+        }.get(claim['identity']['key'])
+        if historical is not None:
+            claim['_source_hold_categories'] = historical
     return claims
 
 
@@ -123,6 +133,7 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
                 categories = {hold['category'] for hold in claim['data_holds']}
                 if claim.get('_source_baseline_item_hold'):
                     categories.add('item')
+                categories.update(claim.get('_source_hold_categories', []))
                 for category in sorted(categories):
                     code = {'source': 'claim_source_data_missing', 'item': 'claim_item_semantics_missing'}[category]
                     issues.append({'code': code, 'source_key': ref['key']})

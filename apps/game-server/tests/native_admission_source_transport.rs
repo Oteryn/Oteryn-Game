@@ -392,6 +392,7 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                     | Operation::ListPendingCharacterCommandsV1
                     | Operation::ReadCharacterCommandIntentV1
                     | Operation::PublishCharacterCommandReceiptV1
+                    | Operation::PublishAccountClosureCommandReceiptV2
                     | Operation::ListPendingStoreOperationsV1
                     | Operation::ReadStoreOperationIntentV1
                     | Operation::PublishStoreDeliveryReceiptV1
@@ -402,7 +403,21 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                     | Operation::PublishWorldHighscoresV1
                     | Operation::PublishCharacterProfileV1
                     | Operation::PublishWorldOnlineV1
+                    | Operation::PublishWorldTotalsV1
                     | Operation::PublishPublicProjectionWatermarkV1
+                    | Operation::ListPendingBazaarCommandsV1
+                    | Operation::ReadBazaarCommandIntentV1
+                    | Operation::ListBazaarCommandStatesV1
+                    | Operation::PublishBazaarTransferabilityV1
+                    | Operation::PublishBazaarListingStatusV1
+                    | Operation::PublishBazaarWatermarkV1
+                    | Operation::PublishBazaarCharacterCommandReceiptV2
+                    | Operation::ReadAccountClosureLifecycleV1
+                    | Operation::PublishAccountClosureV1
+                    | Operation::PublishAccountClosureWatermarkV1
+                    | Operation::PublishWorldEventOutcomeV1
+                    | Operation::PublishGuildSeasonV1
+                    | Operation::PublishLeagueWatermarkV1
                     | Operation::PublishGameRestoreNoticeV1 => {
                         return Err(io::Error::new(io::ErrorKind::InvalidData, "operation"));
                     }
@@ -458,6 +473,7 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                 | Operation::ListPendingCharacterCommandsV1
                 | Operation::ReadCharacterCommandIntentV1
                 | Operation::PublishCharacterCommandReceiptV1
+                | Operation::PublishAccountClosureCommandReceiptV2
                 | Operation::ListPendingStoreOperationsV1
                 | Operation::ReadStoreOperationIntentV1
                 | Operation::PublishStoreDeliveryReceiptV1
@@ -468,7 +484,21 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                 | Operation::PublishWorldHighscoresV1
                 | Operation::PublishCharacterProfileV1
                 | Operation::PublishWorldOnlineV1
+                | Operation::PublishWorldTotalsV1
                 | Operation::PublishPublicProjectionWatermarkV1
+                | Operation::ListPendingBazaarCommandsV1
+                | Operation::ReadBazaarCommandIntentV1
+                | Operation::ListBazaarCommandStatesV1
+                | Operation::PublishBazaarTransferabilityV1
+                | Operation::PublishBazaarListingStatusV1
+                | Operation::PublishBazaarWatermarkV1
+                | Operation::PublishBazaarCharacterCommandReceiptV2
+                | Operation::ReadAccountClosureLifecycleV1
+                | Operation::PublishAccountClosureV1
+                | Operation::PublishAccountClosureWatermarkV1
+                | Operation::PublishWorldEventOutcomeV1
+                | Operation::PublishGuildSeasonV1
+                | Operation::PublishLeagueWatermarkV1
                 | Operation::PublishGameRestoreNoticeV1 => {
                     return Err("operation".into());
                 }

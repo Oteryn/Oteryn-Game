@@ -16,6 +16,7 @@ use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
 mod grant_mappings;
+mod outfit_aliases;
 
 const JSON_BYTES_MAX: usize = 8 * 1024 * 1024;
 const SOURCE_BYTES_MAX: usize = 32 * 1024 * 1024;
@@ -130,6 +131,8 @@ struct Document {
     fallbacks: Fallbacks,
     #[serde(default)]
     grant_mappings: Vec<grant_mappings::GrantMapping>,
+    #[serde(default, deserialize_with = "outfit_aliases::deserialize")]
+    outfit_aliases: BTreeMap<String, String>,
 }
 
 // Exact existing stage_appearance_tables.py formats. Large rendering observations are ignored,
@@ -197,6 +200,9 @@ pub struct CosmeticsCandidate {
 }
 
 impl CosmeticsCandidate {
+    pub fn is_outfit_alias(&self, key: &str) -> bool {
+        self.document.outfit_aliases.contains_key(key)
+    }
     pub fn content_revision(&self) -> &str {
         &self.document.content_revision
     }
@@ -251,6 +257,7 @@ impl AppearanceContent<String> for CosmeticsCandidate {
                 .map(|index| &self.document.grant_mappings[*index]),
             provenance,
             target,
+            &self.document.outfit_aliases,
         )
     }
     fn palette_size(&self) -> u16 {
@@ -379,6 +386,7 @@ pub fn compile_candidate(
         &document.outfits,
         &document.mounts,
     )?;
+    outfit_aliases::bind(&document.outfits, &document.outfit_aliases, &mut outfits)?;
     let grants = document
         .grant_mappings
         .iter()

@@ -140,14 +140,42 @@ def build():
     author = {'schema': 'OTERYN_CHARACTER_COSMETICS_AUTHORING/v1',
         'profile': {'kind': 'reference', 'revision': 'quest-cosmetics-r1', 'mount_speed_bonus': 10},
         'client_version': manifest['client_version'], 'document': doc, 'promotions': []}
+    # Preserve the accepted NX5 catalogue, palette, mounts and fallbacks while
+    # extending its grant catalogue with the quest lane's compatibility rows.
+    existing_path=ROOT/'content/cosmetics/outfits/authoring.json'
+    if existing_path.exists():
+        existing=json.loads(existing_path.read_bytes())
+        if existing.get('profile',{}).get('revision','').startswith('tibia-15.30-nx5'):
+            base=existing['document']
+            for field,identity in [('outfits','key'),('mounts','key'),('grant_mappings','grant_key')]:
+                combined={r[identity]:r for r in base[field]}
+                for row in doc[field]:combined[row[identity]]=row
+                doc[field]=sorted(combined.values(),key=lambda r:r[identity])
+            # The combined catalogue keeps the Character gameplay revision;
+            # canonical outfit identities retain their individual NX5 revisions.
+            for field in ['palette','fallbacks']:doc[field]=base[field]
+            author['profile']=existing['profile']
+            canonical_looks={(row['female']['id'],row['male']['id']):row
+                             for row in doc['outfits']
+                             if row['key'].startswith('oteryn:content.outfit.')}
+            aliases={}
+            for row in doc['outfits']:
+                target=canonical_looks.get((row['female']['id'],row['male']['id']))
+                if row['key'].startswith('oteryn:outfit.') and target is not None:
+                    aliases[row['key']]=target['key']
+            doc['outfit_aliases']=dict(sorted(aliases.items()))
     for path in sorted(cosmetics.promotion_paths(doc)):
         citation=palette_source if path == '/palette' else item_grant_source if path == '/grant_mappings' else source
+        if path.startswith('/outfits/'):
+            row=doc['outfits'][int(path.split('/')[2])]
+            if row['key'].startswith('oteryn:content.outfit.'):
+                citation=row['source']
         if path in ('/source_manifest_sha256','/source_appearances_sha256'):
             citation={'reference': 'imports/cipsoft-appearances/outfits/manifest.json',
                       'revision':manifest['client_version'],'sha256':sha(manifest_raw)}
         author['promotions'].append({'path': path, 'value': cosmetics.pointer(doc, path),
-            'state': 'PROMOTED', 'decision': programmes.DECISION if path == '/grant_mappings' else DECISION,
-            'source_kind': 'OWNER_DECISION' if path.startswith('/fallbacks/') or path=='/grant_mappings' else 'STRUCTURED_REFERENCE_DATA',
+            'state': 'PROMOTED', 'decision': 'owner:questpc7:canonical-outfit-aliases:2026-11-07' if path == '/outfit_aliases' else programmes.DECISION if path == '/grant_mappings' else DECISION,
+            'source_kind': 'OWNER_DECISION' if path.startswith('/fallbacks/') or path in ('/grant_mappings','/outfit_aliases') else 'STRUCTURED_REFERENCE_DATA',
             'source': citation})
     callbacks = []
     def storage(track, before, after, maximum=None, preserve=False):
@@ -328,7 +356,11 @@ def build():
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'callbacks':callbacks})
-    native_cosmetics=cosmetics.build(author, appearance/'manifest.json')
+    section=cosmetics.build(author, appearance/'manifest.json')
+    native_cosmetics=cosmetics.canonical({'schema':'OTERYN_NATIVE_COSMETICS_INPUT/v1',
+        'authoring':{'path':'authoring.json','sha256':sha(encoded(author))},
+        'source_manifest':{'path':'../../../imports/cipsoft-appearances/outfits/manifest.json','sha256':sha(manifest_raw)},
+        'section_sha256':sha(section)})
     gameplay['schema']='OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6'
     gameplay['cosmetics']={'path':'cosmetics/outfits/native-cosmetics.json','sha256':sha(native_cosmetics)}
     generated = {'content/cosmetics/outfits/authoring.json': encoded(author),

@@ -34,7 +34,9 @@ mod market_catalogue;
 
 pub mod mount_taming;
 
+mod item_profile_updates;
 mod native_cosmetics;
+mod starting_loadout_input;
 
 pub const MAGIC: &[u8; 8] = b"OTNGP01\0";
 pub const MAGIC_V2: &[u8; 8] = b"OTNGP02\0";
@@ -185,6 +187,10 @@ struct ProvisioningManifest {
     presentation_profiles: FilePin,
     #[serde(default)]
     item_profiles: Option<FilePin>,
+    #[serde(default)]
+    starting_loadout_item_profiles: Option<FilePin>,
+    #[serde(default)]
+    item_profile_updates: Option<FilePin>,
     #[serde(default)]
     spell_appearances: Option<FilePin>,
     #[serde(default)]
@@ -712,7 +718,9 @@ impl NativeGameplayInput {
         };
         let cosmetics = match manifest.cosmetics {
             Some(pin) => {
+                let locator = directory.join(&pin.path);
                 let pin = load(pin, native_cosmetics::MAX_BYTES)?;
+                let pin = native_cosmetics::materialize(pin, &locator)?;
                 if native_cosmetics::decode(&pin.bytes)?.is_none() {
                     return Err(invalid("native gameplay v6 requires authored cosmetics"));
                 }
@@ -760,10 +768,22 @@ impl NativeGameplayInput {
             source_selection: load(manifest.source_selection, MAX_SELECTION)?,
             creature_profiles: load(manifest.creature_profiles, MAX_CREATURE_PROFILES)?,
             presentation_profiles: load(manifest.presentation_profiles, MAX_PROFILES)?,
-            item_profiles: manifest
-                .item_profiles
-                .map(|pin| load(pin, MAX_ITEM_PROFILES))
-                .transpose()?,
+            item_profiles: starting_loadout_input::merge(
+                item_profile_updates::merge(
+                    manifest
+                        .item_profiles
+                        .map(|pin| load(pin, MAX_ITEM_PROFILES))
+                        .transpose()?,
+                    manifest
+                        .item_profile_updates
+                        .map(|pin| load(pin, MAX_PROFILES))
+                        .transpose()?,
+                )?,
+                manifest
+                    .starting_loadout_item_profiles
+                    .map(|pin| load(pin, MAX_PROFILES))
+                    .transpose()?,
+            )?,
             spell_appearances: manifest
                 .spell_appearances
                 .map(|pin| load(pin, MAX_PROFILES))
@@ -1134,6 +1154,21 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                     Ok((binding.external_id.clone(), binding))
                 })
                 .collect::<Result<_, ContentError>>()?;
+        // ITEMHOLD-Q: this existing canonical identity has no Crystal row. Its
+        // own Wiki itemid/revision and admitted 15.30 appearance bind it exactly;
+        // never fabricate a Crystal identity or admit a numeric-id fallback.
+        let bottle_binding = serde_json::from_value(serde_json::json!({
+            "source_key": "oteryn:source.tibiawiki", "source_revision": "fandom-r1041565",
+            "identity_namespace": "tibiawiki/item_id", "external_id": "44179",
+            "target": {"family": "Item", "key": "oteryn:item.tibia.i44179", "revision": "definition-r1"},
+            "disposition": "EXACT"
+        })).map_err(|_| invalid("ITEMHOLD-Q Wiki identity"))?;
+        if admitted
+            .insert("44179".to_owned(), bottle_binding)
+            .is_some()
+        {
+            return Err(invalid("ITEMHOLD-Q Wiki identity collision"));
+        }
         let candidate_bytes = include_bytes!(
             "../../../../../tools/content-schema/native-gameplay/candidate-bindings/spell-items-candidate.json"
         );
@@ -1178,6 +1213,53 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 || !production_identities.insert(binding.target.clone())
             {
                 return Err(invalid("native gameplay item production binding"));
+            }
+            if binding.external_id == "44179" {
+                use super::ReferenceItemField as F;
+                let canonical: serde_json::Value = serde_json::from_slice(include_bytes!(
+                    "../../../../../content/items/definitions/items-25500-25999.json"
+                ))
+                .map_err(|_| invalid("ITEMHOLD-Q canonical source"))?;
+                let canonical = canonical["records"]
+                    .as_array()
+                    .and_then(|rows| {
+                        rows.iter().find(|row| {
+                            row["definition"]["identity"]["key"] == "oteryn:item.tibia.i44179"
+                        })
+                    })
+                    .ok_or_else(|| invalid("ITEMHOLD-Q canonical identity"))?;
+                let semantics: super::ReferenceItemSemantics =
+                    serde_json::from_value(canonical["definition"]["semantics"].clone())
+                        .map_err(|_| invalid("ITEMHOLD-Q canonical semantics"))?;
+                let attrs = &record.attributes;
+                if record.semantics != semantics
+                    || !record.admission.materializable
+                    || record.admission.stack_class != NativeItemStackClass::NonStackable
+                    || record.admission.legal_destinations
+                        != [
+                            NativeItemDestination::CharacterInventory,
+                            NativeItemDestination::Ground,
+                        ]
+                    || !matches!(&semantics.physical, F::Known(p) if p.weight == F::Known(60)
+                        && p.movable == F::Known(true) && p.pickupable == F::Known(true))
+                    || !matches!(&semantics.stack, F::Known(s) if s.stackable == F::Known(false))
+                    || semantics.container != F::NotApplicable
+                    || semantics.charges != F::NotApplicable
+                    || semantics.temporal != F::NotApplicable
+                    || semantics.fluid != F::NotApplicable
+                    || record.production_binding_qualification.is_some()
+                    || attrs.speed_bonus != Some(0)
+                    || !attrs.spell_augments.is_empty()
+                    || attrs.blocks_movement != Some(false)
+                    || attrs.blocks_projectile != Some(false)
+                    || attrs.immovable_block_solid != Some(false)
+                    || attrs.field_condition.is_some()
+                    || attrs.rune_consumption.is_some()
+                    || attrs.field_replaceable.is_some()
+                    || attrs.has_height != Some(false)
+                {
+                    return Err(invalid("ITEMHOLD-Q exact Wiki recipe"));
+                }
             }
             if binding.external_id == "40450" {
                 use super::ReferenceItemField as F;
@@ -1844,6 +1926,7 @@ pub mod test_support {
         activated_boss_slot_loot_fixture, activated_loop_monster,
         activated_loop_monster_missing_child, activated_reward_boss_fixture,
         activated_with_custom_loot_tables, activated_with_loot_tables, loop_monster_inner_digest,
+        try_activate_input,
     };
 }
 
@@ -1859,6 +1942,116 @@ mod tests {
         qualify_native_entry_room_with_gameplay,
     };
     use serde_json::Value;
+    #[test]
+    fn itemhold_q_resolved_catalogue_materializes_and_remaining_holds_reject() {
+        use super::super::ReferenceItemField as F;
+        use crate::domain::timed_item::TimedValues;
+        use crate::domain::timed_item_host::TimedDefinitionSource;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = starting_loadout_input::merge(
+            Some(pinned(include_bytes!(
+                "../../../../../content/items/definitions/spell-native-profiles.json"
+            ))),
+            Some(pinned(include_bytes!(
+                "../../../../../content/items/definitions/starting-loadout-profiles.json"
+            ))),
+        )
+        .unwrap();
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        for id in [
+            2881, 2882, 3054, 3056, 3083, 3572, 12369, 14156, 33330, 39546, 44179, 52732,
+        ] {
+            let policy = decoded
+                .state
+                .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                .unwrap();
+            let record = policy.record();
+            assert!(record.admission.materializable, "Item {id}");
+            assert_eq!(
+                record.admission.stack_class,
+                NativeItemStackClass::NonStackable
+            );
+            assert!(
+                record
+                    .admission
+                    .legal_destinations
+                    .contains(&NativeItemDestination::CharacterInventory)
+            );
+            assert_eq!(record.semantics.container, F::NotApplicable);
+            assert_eq!(record.semantics.temporal, F::NotApplicable);
+            if let Some(weight) = match id {
+                33330 => Some(7500),
+                44179 => Some(60),
+                52732 => Some(90),
+                _ => None,
+            } {
+                assert!(
+                    matches!(&record.semantics.physical, F::Known(p) if p.weight == F::Known(weight))
+                );
+            }
+            if let Some(count) = match id {
+                3054 | 3056 => Some(200),
+                3083 => Some(150),
+                _ => None,
+            } {
+                assert!(
+                    matches!(&record.semantics.charges, F::Known(charges) if charges.count == F::Known(count))
+                );
+                let target = super::super::ReferenceItemTarget {
+                    key: record.production_definition.production_key.clone(),
+                    revision: record.production_definition.revision_ref.clone(),
+                };
+                let timed = record
+                    .semantics
+                    .resolve_timed_definition(&target)
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(timed.full, TimedValues::new(Some(count), None).unwrap());
+            }
+            if matches!(id, 2881 | 2882) {
+                assert!(
+                    matches!(&record.semantics.fluid, F::Known(fluid) if fluid.fluid_type == F::NotApplicable)
+                );
+            }
+        }
+        // Main admits starter Item 34017; keep a held row and an unknown ID here.
+        for id in [1000, 54609] {
+            assert!(
+                decoded
+                    .state
+                    .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                    .is_none()
+            );
+        }
+        for (field, reason) in [
+            ("weight", "ITEMHOLD-Q exact Wiki recipe"),
+            ("revision", "native gameplay item production binding"),
+        ] {
+            let mut profiles: Value =
+                serde_json::from_slice(&supplied.item_profiles.as_ref().unwrap().bytes).unwrap();
+            let bottle = profiles["records"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|r| {
+                    r["production_definition"]["production_key"] == "oteryn:item.tibia.i44179"
+                })
+                .unwrap();
+            if field == "weight" {
+                bottle["semantics"]["physical"]["value"]["weight"]["value"] = 0.into();
+            } else {
+                bottle["production_binding"]["source_revision"] = "unqualified".into();
+            }
+            let mut bad = supplied.clone();
+            bad.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
+            assert!(matches!(compile_native_gameplay(baseline.compiled(), &bad),
+                Err(ContentError::InvalidArtifact(found)) if found == reason));
+        }
+    }
+
     #[test]
     fn hireling_lamp_inbox_destination_is_source_bound_and_not_portable() {
         use super::super::ReferenceItemField as F;

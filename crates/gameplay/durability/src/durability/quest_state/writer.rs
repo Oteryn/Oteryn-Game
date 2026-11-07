@@ -274,6 +274,10 @@ impl DurabilityRoot {
         } else {
             None
         };
+        let lionheart = super::hero_of_bounac::prepare(&request)
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        let wayfarer = super::wrath_sleeping_dragon::prepare(&request)
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         if context.is_some() && (callback.as_ref().is_some_and(|c| c.item_reward.is_some()) != reward_admission.is_some()) {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -974,6 +978,9 @@ impl DurabilityRoot {
                         super::super::quest_unnatural_selection::earn(&mut tx, fence, &request, callback,
                             &changes, dance_achievement.as_ref()).await?;
                     }
+                    super::hero_of_bounac::earn(&mut tx, fence, &request, &changes, lionheart.as_ref()).await?;
+                    super::planegazer_finale::earn(&mut tx, fence, &request, &changes).await?;
+                    super::wrath_sleeping_dragon::earn(&mut tx, fence, &request, &changes, wayfarer.as_ref()).await?;
                     if let Some(plan) = &grizzly_plan {
                         grizzly::earn(&mut tx, character, &request, plan, &content_revision).await?;
                     }

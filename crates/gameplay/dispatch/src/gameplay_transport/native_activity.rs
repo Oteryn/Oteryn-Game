@@ -531,6 +531,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 || source.states.newhaven_travel.held(admitted.game_session_id)
                 || source
                     .states
+                    .dawnport_departures
+                    .held(admitted.game_session_id)
+                || source
+                    .states
                     .dawnport_trials
                     .lock()
                     .map_err(|_| ())?

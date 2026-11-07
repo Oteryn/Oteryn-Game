@@ -529,11 +529,19 @@ def main() -> int:
     parser.add_argument("--skip-checks", action="store_true", help="regenerate only")
     parser.add_argument("--check", action="store_true", help="run the registered content checks without writing")
     parser.add_argument("--capability-golden", help="regenerate only the named runtime capability golden")
+    parser.add_argument("--native-only", action="store_true", help="regenerate native providers and their registry pins without rebuilding the unchanged World package")
     args = parser.parse_args()
     if args.capability_golden:
         if args.check or args.resolve or args.skip_checks or args.no_stage:
             parser.error("--capability-golden cannot be combined with content options")
         run(["python3", "tools/contracts/update_capability_golden.py", args.capability_golden, "--client-registrations"])
+        return 0
+    if args.native_only:
+        if args.resolve or args.no_stage or args.check:
+            parser.error("--native-only cannot be combined with --resolve, --no-stage or --check")
+        run(["python3", "tools/content-migration/register_spell_families.py"])
+        if not args.skip_checks:
+            run(["python3", "tools/content-migration/register_spell_families.py", "--check"])
         return 0
     if args.check:
         if args.resolve or args.skip_checks or args.no_stage:

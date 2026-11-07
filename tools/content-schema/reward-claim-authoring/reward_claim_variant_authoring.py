@@ -10,6 +10,7 @@ from pathlib import Path
 
 import container_native
 import charge_native
+import itemhold_charge_precedence
 import reward_claim_variant_migration as migration
 
 PROFILE = 'authored_variant_v1'
@@ -128,7 +129,7 @@ def stack_normalization_checks():
         'native_admission': 'WAITING_IMPLEMENTATION', 'selected_cases': proof['cases']}]
 
 
-def derive_definitions(packet, items, stack_problem):
+def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve().parents[3]):
     """No dummy rewards, guessed carrier, or source count promoted to definition charges."""
     out, identities, positions = [], set(), set()
     selected = {c['source_identity']['key']: c for c in stack_normalization_proof()['cases']}
@@ -144,7 +145,8 @@ def derive_definitions(packet, items, stack_problem):
         holds = [{'category': 'source', **copy.deepcopy(g)} for g in row['source_data']['missing']]
         holds += [{'category': 'source', 'code': c['reason'], 'placement_index': c['placement_index'],
                    'reward_field': c['reward_field'], 'reward_index': c['reward_index']}
-                  for c in row['charge_dispositions'] if c['data_status'] != 'AUTHORED']
+                  for c in row['charge_dispositions'] if c['data_status'] != 'AUTHORED'
+                  and not itemhold_charge_precedence.variant_override(source, c, items, root)]
         placements = []
         for pi, placement in enumerate(source['placements']):
             reward = copy.deepcopy(placement['reward'])
@@ -241,7 +243,7 @@ def derive(root, items, stack_problem):
     evidence = json.loads(migration.metadata_path(root, migration.EVIDENCE).read_text())
     packet = migration.derive_packet(root, evidence)
     migration.validate(packet, root)
-    records = derive_definitions(packet, items, stack_problem)
+    records = derive_definitions(packet, items, stack_problem, root)
     check = validator(root)
     for record in records:
         check.validate(record['definition'])

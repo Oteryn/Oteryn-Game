@@ -1,55 +1,67 @@
 # House furniture wrap V1
 
-HOUSE-ITEM-WIRE-1: capability 207 requires House V1 (49). Command 402 is an
-explicit wrap/unwrap operation, modelled on client packet 0x8B. It is offered
-only in bundle Worlds, with an active gameplay generation. Ordinary USE is
-unchanged. The native client input is currently unsupported.
+Capability 207 requires House V1 (49). Command 402 carries wrap, unwrap and a
+read-only catalogue query. The native client opens the furniture panel with
+Ctrl+Alt+F, requests the current catalogue and displays numbered furniture names.
+The player selects a number and wraps or places that entry at their current
+House position. UUIDs, item revisions and ACL revisions remain protocol data.
 
 ## Request
 
-Exactly 45 bytes: action (1 wrap, 2 unwrap), item UUID (16 bytes), expected
-Item state revision (u64 big endian), expected house ACL revision (u64 big
-endian), then x, y, floor (each i32 big endian, runtime cell coordinates).
-The session supplies the character, named House, connection generation,
-lease generation and scope generation; clients cannot select those authorities.
+A mutation is exactly 45 bytes: action (1 wrap, 2 unwrap), item UUID (16 bytes),
+expected Item state revision (u64 big endian), expected House ACL revision (u64
+big endian), then x, y, floor (each i32 big endian, runtime coordinates).
+The session supplies character, named House, connection, lease and scope.
 
-The physical House owner proves current custody. The durable writer checks
-node incarnation and the current named-House session, property lock and exactly
-one OWNER/SUBOWNER edit grant. An ACL revision mismatch refuses. Unwrap requires
-a walkable, unoccupied tile belonging to that House. The same Item UUID,
-mint lineage and quantity survive conversion; its revision advances once.
-House placement/reclaim provenance and main backpack custody change atomically.
-A receipt keyed by GameSessionId/CommandId binds the complete request and
-replays its committed revision, including after owner reconstruction.
+Catalogue query: exactly three bytes, tag **3** followed by page (u16 big endian,
+0..252). This next-free request tag does not allocate another command or capability.
+The read follows the same current House/node/session/lease and OWNER/SUBOWNER
+fences as the existing House owner. Migration 0981 bounds its custody-first read
+to the House's 2000 placed items and the 20 main-backpack entries. An empty
+catalogue still carries the current ACL revision.
+
+The physical House owner proves mutation custody. The durable writer checks
+node incarnation, current named-House session, property lock and exactly one
+OWNER/SUBOWNER grant. An ACL revision mismatch refuses. Unwrap requires a
+walkable, unoccupied tile belonging to that House. Item UUID, mint lineage and
+quantity survive; revision advances once. Placement/reclaim and backpack custody
+change atomically. A receipt keyed by session/command binds the complete request
+and replays its revision, including after owner reconstruction.
 
 ## Result
 
-CommandResult is Accepted with byte 0 followed by the committed revision
-(u64 big endian). Refusals are Rejected with one byte: 1 outside a house,
-2 no edit right, 3 not wrapable, 4 stale generation/revision/ACL or conflicting
-replay, 5 blocked/occupied/outside-house unwrap tile, 6 inventory full.
-Unknown storage outcomes disconnect; they never report a successful change.
-Committed commands refresh the selected inventory/container views.
+Mutation: Accepted with tag 0 then committed revision (u64 big endian).
+Refusals: Rejected with one byte: 1 outside House, 2 no edit right,
+3 unsupported item, 4 stale generation/revision/ACL or conflicting replay,
+5 blocked/occupied/outside-House placement, 6 inventory full.
 
-## Content evidence and UNKNOWN
+Catalogue: Accepted with next-free tag **7**, page (u16), more (u8, 0/1),
+ACL revision (u64), x/y/floor (three i32), count (u8, 0..8), then entries:
+UUID (16), revision (u64), action (u8, 1/2), UTF-8 name length (u8), name
+(1..120 bytes, no NUL). All integers are big endian. The maximum reply is 2048
+bytes. Decoders reject trailing bytes, truncation, duplicate UUIDs, zero
+UUIDs/revisions and out-of-range fields. Selecting an entry constructs the
+existing 45-byte mutation; reads never grant mutation authority.
 
-No Crystal/Canary `playerWrapableItem` implementation exists in the in-repo
-reference sources searched for this slice. Deterministic conversion rules
-come from `gameplay_transport/house_furnishing.rs`. The admitted pair is oven
-`oteryn:item.tibia.i6355` ↔ oven kit `oteryn:item.tibia.i6371`:
-`imports/canary/items-xml/items.xml:17549-17552` explicitly has
-`wrapableto=6371`; repository item 6371's description says to use it in a
-house to construct an oven. The active content must contain both definitions.
-Only this single-cell oven variant is admitted, so unwrap preserves the
-original furniture identity without guessing an orientation or kit recipe.
-Unwrap requires a prior wrap receipt for that Item UUID; freshly minted kits
-without that lineage remain UNKNOWN until their construction rules are qualified.
-All other furniture, oven orientations, multipart furnishings, store-bound
-furnishings and kit pairs remain UNKNOWN here. Contents, timed states,
-imbuements and written text refuse conversion. This does not alter the
-outdated Tibia manual statement or claim general furniture parity.
+The client prevents a second request while pending. A successful mutation or
+refusal invalidates cached selection. Refresh obtains new revisions. Admission
+and session end clear the panel state. Malformed catalogue data produces an
+error, never a successful wrap. Unknown storage outcomes disconnect.
 
-Migration 0595 keeps immutable before/after and custody evidence in the House
-owner. Its SECURITY DEFINER entry is the only receipt writer; runtime/control
-have read access, and only runtime can execute the fenced transition. Existing
-item/custody guard chains receive narrow same-physical-transaction proof arms.
+## Source and retained rules
+
+Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
+`src/game/game.cpp:4775-4909` supplies wrap/unwrap House checks;
+`data-global/scripts/actions/other/construction_kits.lua` supplies construction
+pairs. The base's closed `furniture_catalog.rs` owns 1533 wrap pairs and 56
+construction pairs, including purchased-kit lineage; this change preserves its
+mutation behavior. Migration 0595 remains the sole fenced mutation receipt owner.
+Contents, timed states, imbuements and written text retain their existing refusals.
+
+Labels are generated by `furniture_names.py` from that closed catalogue and
+Crystal's same-revision `data/items/items.xml`, SHA-256
+`8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509`.
+The existing pair 30231 -> 35027 has no target XML name in either pinned current
+Crystal or Canary. Its existing action remains available: Wrap uses the known
+source label, festive table, and Unwrap uses the known counterpart label. No
+canonical name for 35027 or new conversion is guessed.

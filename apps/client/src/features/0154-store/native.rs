@@ -2,7 +2,7 @@
 use oteryn_client_runtime::server_mechanic::ServerMechanicCommand;
 use oteryn_client_ui::store::{self, StorePanel};
 
-pub(super) fn purchase(
+pub(in crate::play) fn purchase(
     panel: &mut StorePanel,
     selection: usize,
     confirmed: bool,
@@ -36,7 +36,7 @@ pub(super) fn purchase(
 }
 
 // Game identities replace Crystal's modal selection of an owned Hireling.
-pub(super) fn customization(panel: &mut StorePanel, name: &str, sex: &str, identity: &str) {
+pub(in crate::play) fn customization(panel: &mut StorePanel, name: &str, sex: &str, identity: &str) {
     panel.hireling_name = name.into();
     panel.hireling_sex = sex.parse().unwrap_or(0);
     let hex: String = identity.chars().filter(|c| *c != '-').collect();
@@ -51,7 +51,7 @@ pub(super) fn customization(panel: &mut StorePanel, name: &str, sex: &str, ident
         .flatten();
 }
 
-pub(super) fn panel_text(panel: &StorePanel) -> String {
+pub(in crate::play) fn panel_text(panel: &StorePanel) -> String {
     if !panel.selected {
         return "Store unavailable in this session".into();
     }

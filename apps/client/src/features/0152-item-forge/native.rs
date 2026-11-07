@@ -2,10 +2,10 @@
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::item_forge::ItemForgePanel;
 
-pub(super) const CONTROLS: &[(&str, &str, &str)] = &[
+pub(in crate::play) const CONTROLS: &[(&str, &str, &str)] = &[
     (
         "EDIT",
-        "Operation (0 history, 1 fusion, 2 convergence fusion, 3 transfer, 4 convergence transfer, 5 slivers, 6 cores, 7 dust limit)",
+        "Operation (8 current dust; 0 history; 1 fusion; 2 convergence fusion; 3 transfer; 4 convergence transfer; 5 slivers; 6 cores; 7 dust limit)",
         "0",
     ),
     ("EDIT", "First item handle", "0"),
@@ -20,16 +20,16 @@ pub(super) const CONTROLS: &[(&str, &str, &str)] = &[
     ("EDIT", "History limit (0–50)", "20"),
     ("BUTTON", "Submit", ""),
 ];
-pub(super) struct Inputs(pub Vec<String>);
+pub(in crate::play) struct Inputs(pub Vec<String>);
 impl Default for Inputs {
     fn default() -> Self {
         Self(CONTROLS.iter().map(|c| c.2.to_owned()).collect())
     }
 }
-pub(super) fn enabled(panel: &ItemForgePanel) -> bool {
+pub(in crate::play) fn enabled(panel: &ItemForgePanel) -> bool {
     panel.selected && !panel.pending
 }
-pub(super) fn presentation(panel: &ItemForgePanel) -> String {
+pub(in crate::play) fn presentation(panel: &ItemForgePanel) -> String {
     let mut text = oteryn_client_ui::item_forge::panel_text(panel);
     if panel.pending {
         text.push_str("\nWaiting for server…");
@@ -42,10 +42,10 @@ pub(super) fn presentation(panel: &ItemForgePanel) -> String {
     }
     text
 }
-pub(super) fn submit(link: &PlayLink, inputs: &Inputs) {
+pub(in crate::play) fn submit(link: &PlayLink, inputs: &Inputs) {
     dispatch(link, inputs, false);
 }
-pub(super) fn dispatch(link: &PlayLink, inputs: &Inputs, detail: bool) {
+pub(in crate::play) fn dispatch(link: &PlayLink, inputs: &Inputs, detail: bool) {
     let mut mailbox = lock(&link.mailbox);
     let panel = &mut mailbox.item_forge;
     if !enabled(panel) {
@@ -54,7 +54,12 @@ pub(super) fn dispatch(link: &PlayLink, inputs: &Inputs, detail: bool) {
     let parsed = (|| {
         let _ = detail;
         use oteryn_client_runtime::cui3::item_forge::Operation;
-        let operation = match inputs.0.first()?.trim().parse::<u8>().ok()? {
+        let chosen = inputs.0.first()?.trim().parse::<u8>().ok()?;
+        panel.query_current_dust = chosen == 8;
+        if panel.query_current_dust {
+            return Some(());
+        }
+        let operation = match chosen {
             0 => Operation::QueryHistory,
             1 => Operation::Fusion,
             2 => Operation::ConvergenceFusion,
@@ -154,10 +159,9 @@ mod windows {
                 run(weak, commands);
             })
             .is_err()
+            && let Some(shared) = rollback.upgrade()
         {
-            if let Some(shared) = rollback.upgrade() {
-                lock(&shared).item_forge.open = false;
-            }
+            lock(&shared).item_forge.open = false;
         }
     }
     fn run(

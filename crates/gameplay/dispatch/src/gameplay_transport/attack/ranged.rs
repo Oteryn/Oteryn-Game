@@ -498,25 +498,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let pass = self.root.try_issue_semantic_pass().ok()?;
         let mut context = (self, permit, &*runtime, objects, room, content);
         let equipment = ranged.equipment.clone();
-        let projectile = match ranged.consumption {
-            Consumption::Always => ranged.projectile.clone(),
-            Consumption::Never => None,
-            Consumption::Break(chance) => {
-                let root = GameplayDecisionRoot::from_bytes(content.source_digest());
-                let draw = swing_draw(
-                    &root,
-                    entry.actor,
-                    selected.swing.lineage,
-                    selected.ordinal,
-                    b"break",
-                    "attack.break",
-                    0,
-                    99,
-                )?;
-                if i64::from(chance) > draw {
-                    ranged.projectile.clone()
-                } else {
-                    None
+        let projectile = if runtime.is_tibiadrome(entry.actor)
+            && ranged
+                .projectile
+                .as_ref()
+                .is_some_and(|p| p.item_instance_id != ranged.weapon.item_instance_id)
+        {
+            None
+        } else {
+            match ranged.consumption {
+                Consumption::Always => ranged.projectile.clone(),
+                Consumption::Never => None,
+                Consumption::Break(chance) => {
+                    let root = GameplayDecisionRoot::from_bytes(content.source_digest());
+                    let draw = swing_draw(
+                        &root,
+                        entry.actor,
+                        selected.swing.lineage,
+                        selected.ordinal,
+                        b"break",
+                        "attack.break",
+                        0,
+                        99,
+                    )?;
+                    if i64::from(chance) > draw {
+                        ranged.projectile.clone()
+                    } else {
+                        None
+                    }
                 }
             }
         };

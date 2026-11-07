@@ -53,6 +53,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // before the creature think pass, whether or not melee content is active.
         drive_owner_spawns(&mut runtime, now.get());
         super::arena_match::tick(self, &mut runtime);
+        super::tibiadrome::tick(self, &mut runtime);
         // BUNDLE-MONSTER-AI-1: the pass reads the combat room, the entry room on the fixture
         // World and its bundle view (bundle cells and map revision) on a bundle World.
         let Some(room) = self.rooms.gate_monster_ai() else {
@@ -359,9 +360,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let Some(indices) = local_target_indices(
                         p,
                         monster.behavior.targeting.sense_invisible,
-                        targets
-                            .iter()
-                            .map(|(_, p, _, invisible, protected)| (*p, *invisible, *protected)),
+                        targets.iter().map(|(target, p, _, invisible, protected)| {
+                            (
+                                *p,
+                                *invisible,
+                                *protected
+                                    || runtime.is_tibiadrome(*actor)
+                                        != runtime.is_tibiadrome(*target),
+                            )
+                        }),
                     ) else {
                         continue;
                     };
@@ -482,6 +489,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &mut super::attack::player_block::PlayerBiteVitals {
                             quest_sessions: Some(&self.states.quest_sessions),
                             charm: Some(super::attack::player_block::IncomingCharm {
+                                source: *actor,
                                 catalogue: self.imported_charms,
                                 root: decision_root,
                                 occurrence: decision_occurrence,
@@ -659,7 +667,8 @@ fn current_player_target<'a>(
     actor: crate::foundation::ExactActorRef,
     session: crate::foundation::GameSessionId,
 ) -> Option<&'a crate::spell::cast::PlayerSpellState> {
-    if states.is_dead(actor)
+    if runtime.actor_staff_visibility(actor).ok()?.0
+        || states.is_dead(actor)
         || states.has_pending_spell_commit(actor, session)
         || runtime.assert_actor_spell_unreserved(actor).is_err()
     {
@@ -826,7 +835,8 @@ pub(in crate::gameplay_transport) fn melee_targets(
         .filter_map(|(actor, position, session)| {
             let session = (*session)?;
             let state = current_player_target(runtime, states, *actor, session)?;
-            let invisible = state.owned_invisible_at(now).ok()?;
+            let invisible = state.owned_invisible_at(now).ok()?
+                || runtime.actor_staff_visibility(*actor).ok()?.1;
             let protected =
                 attack.creature_target_protection(runtime, *actor, session, semantic_now)?;
             let p = position.position();
@@ -1429,5 +1439,36 @@ mod tests {
             local_target_indices(position(0, 7), false, eligible),
             Some(vec![0])
         );
+    }
+    #[test]
+    fn nx1_staff_ghost_is_excluded_even_from_stale_sense_invisible_candidates()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests as player};
+        let (mut runtime, actor, session) = player::runtime_with_player(86);
+        runtime
+            .initialize_movement_test_position(actor, position(1, 7))
+            .map_err(|e| format!("{e:?}"))?;
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                player::FACTS,
+                (0, 0),
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            )
+            .ok_or("vitals")?;
+        let targets = [(actor, position(1, 7), session, false, false)];
+        assert_eq!(think_candidates(&runtime, &states, &targets).len(), 1);
+        runtime
+            .set_staff_visibility(actor, session, true, false)
+            .map_err(|e| format!("{e:?}"))?;
+        assert!(think_candidates(&runtime, &states, &targets).is_empty());
+        runtime
+            .set_staff_visibility(actor, session, false, true)
+            .map_err(|e| format!("{e:?}"))?;
+        assert_eq!(think_candidates(&runtime, &states, &targets).len(), 1);
+        Ok(())
     }
 }

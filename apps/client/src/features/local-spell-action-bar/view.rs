@@ -10,10 +10,23 @@ impl PlayView {
     #[must_use]
     pub fn hud_status(&self) -> String {
         format!(
-            "{}   {}   {}   {}   {}   {}",
+            "{}   {}   {}   {}   {}   {}   {}",
             self.served_channel_text().unwrap_or_default(),
             self.world_clock_text().unwrap_or_default(),
             oteryn_client_ui::spell_action_bar::vitals_text(self.actor_vitals()),
+            self.battle_instinct
+                .map_or_else(String::new, |status| format!(
+                    "Battle Instinct: {} (+{} melee, +{} shielding)",
+                    if !status.active {
+                        "inactive"
+                    } else if status.melee == 0 && status.shielding == 0 {
+                        "eligible"
+                    } else {
+                        "active"
+                    },
+                    status.melee,
+                    status.shielding,
+                )),
             self.combat_status(),
             self.target_walk_feedback().unwrap_or(""),
             self.world_context_feedback.as_deref().unwrap_or("")

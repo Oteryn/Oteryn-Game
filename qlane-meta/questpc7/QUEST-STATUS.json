@@ -113,7 +113,16 @@
       "scope": "Generic owner only; not this quest's route qualification"
     },
     "current_batch": "First6 selected stages fully authored and native PG prefix compiles. PG18.6 RED44.959359639s: NPC scan233 exceeds measured232 after new directory. +1 exact measured budget and fixture corrections are in working tree/rerun, not this known-compiling checkpoint. No source quest/tool/reward state seeds; whole23-stage quest ACTIVE.",
-    "assumptions": "Feaster contact/quest/Thaian facts closed using Wiki revisions419674,368970,421868,445240; exact XML items retained. See RESUME and forthcoming source/prop contracts."
+    "assumptions": "Feaster contact/quest/Thaian facts closed using Wiki revisions419674,368970,421868,445240; exact XML items retained. See RESUME and forthcoming source/prop contracts.",
+    "mandatory_validation": {
+      "state": "AUTHORING_NEW_MAIN_INTEGRATION",
+      "scope": "complete changed-crate and reverse normal workspace dependency nextest including PostgreSQL",
+      "packages": 25,
+      "main_integrated": "pending:1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+      "run_log": "/tmp/questpc7-full-nextest-4.log",
+      "push_gate": "collect all failures, group fixes, rerun full set before one push",
+      "previous_run": "superseded by explicit owner main-merge instruction"
+    }
   },
   {
     "title": "Feral Trappers Quest",
@@ -936,6 +945,15 @@
         "Read the chosen Guardcatcher/Adventurer and perfume/trunk stages; compared the single-carried-item map callback schema with the required actor capture operation."
       ],
       "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
+    },
+    "mandatory_validation": {
+      "state": "AUTHORING_NEW_MAIN_INTEGRATION",
+      "scope": "complete changed-crate and reverse normal workspace dependency nextest including PostgreSQL",
+      "packages": 25,
+      "main_integrated": "pending:1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+      "run_log": "/tmp/questpc7-full-nextest-4.log",
+      "push_gate": "collect all failures, group fixes, rerun full set before one push",
+      "previous_run": "superseded by explicit owner main-merge instruction"
     }
   },
   {
@@ -1132,7 +1150,7 @@
       "green_seconds": 81.696754812,
       "scope": [
         "source Zao/Farmine entry; fresh Current Premium refusal",
-        "actual8911\u21928912 destabilizer USE and bound travel",
+        "actual8911→8912 destabilizer USE and bound travel",
         "all6 distinct native bosses in retained arenas with duplicate-death safeguards",
         "typed progress and once-only native Yana report",
         "exact5 carried Gold Tokens, Ender of the End, durable completion; repeat unchanged",
@@ -1441,6 +1459,15 @@
       ],
       "reused_source": "origin/claude/happy-davinci-ijz3wy-qengine2@5a6de28c142de185594217ce1e5cbc7f4b6e6e4e:tools/content-migration/qengine_reward_item_profiles.py",
       "validation": "qlane-meta/questpc7/NPC-EXCHANGE-VALIDATION.json"
+    },
+    "mandatory_validation": {
+      "state": "AUTHORING_NEW_MAIN_INTEGRATION",
+      "scope": "complete changed-crate and reverse normal workspace dependency nextest including PostgreSQL",
+      "packages": 25,
+      "main_integrated": "pending:1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+      "run_log": "/tmp/questpc7-full-nextest-4.log",
+      "push_gate": "collect all failures, group fixes, rerun full set before one push",
+      "previous_run": "superseded by explicit owner main-merge instruction"
     }
   },
   {
@@ -1617,6 +1644,15 @@
       "state": "shared eligibility mechanism QUALIFIED; own native start bound; whole route remains ACTIVE",
       "proof": "qlane-meta/questpc7/ELIGIBILITY-PG-PROOF.json",
       "boundary": "Not whole route qualification; finish remaining physical/reward bindings here"
+    },
+    "mandatory_validation": {
+      "state": "AUTHORING_NEW_MAIN_INTEGRATION",
+      "scope": "complete changed-crate and reverse normal workspace dependency nextest including PostgreSQL",
+      "packages": 25,
+      "main_integrated": "pending:1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+      "run_log": "/tmp/questpc7-full-nextest-4.log",
+      "push_gate": "collect all failures, group fixes, rerun full set before one push",
+      "previous_run": "superseded by explicit owner main-merge instruction"
     }
   }
 ]

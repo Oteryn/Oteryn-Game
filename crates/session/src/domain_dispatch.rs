@@ -71,7 +71,7 @@ impl<S: SessionStream> Session<S> {
             52 => crate::pvp_expert::apply(self, server_sequence, payload),
             18 => crate::world_light::apply(self, server_sequence, payload),
             22 => crate::weather::apply(self, server_sequence, payload),
-            19 | 20 | 101 => crate::presentation::apply(self, server_sequence, payload),
+            19 | 20 | 101 | oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ITEM_EFFECTS => crate::presentation::apply(self, server_sequence, payload),
             14 => crate::container_tree::apply(self, server_sequence, delta),
             16 => crate::quest_log_transport::apply(self, server_sequence, delta),
             40 => crate::server_save_countdown::apply(self, server_sequence, payload),
@@ -94,8 +94,8 @@ impl<S: SessionStream> Session<S> {
                 )?;
                 let fields =
                     world_spatial_entities::EntityFields::selected(self.selected_capabilities());
-                let (entities_delta, _) =
-                    world_spatial_entities::decode_world_spatial_entities_delta_with_fields(
+                let (entities_delta, lights, icons) =
+                    world_spatial_entities::decode_world_spatial_entities_delta_with_icons(
                         delta.payload,
                         fields,
                     )?;
@@ -103,15 +103,23 @@ impl<S: SessionStream> Session<S> {
                     return Err(SessionError::ContentGenerationMismatch { domain_id });
                 }
                 let next = match &self.entities {
-                    Some(stored) => stored.after(&entities_delta)?,
+                    Some(stored) => stored.after(&entities_delta, &lights)?,
                     None => {
                         return Err(SessionError::UnselectedDomain { domain_id });
                     }
                 };
                 appearance_state::validate_entities(self.appearance.as_ref(), Some(&next))?;
+                if icons.as_ref().is_some_and(|icons| icons.iter().any(|icon| {
+                    !next.get(&icon.entity).is_some_and(|entity| entity.kind == EntityKind::Player)
+                })) {
+                    return Err(SessionError::Protocol(FoundationProtocolError::MalformedFrame));
+                }
                 self.entities = Some(next);
                 self.world_spatial.actor_position = entities_delta.actor_position;
                 self.spatial_revision = new_revision;
+                if let Some(icons) = icons {
+                    return Ok(SessionEvent::PartyIcons(applied(server_sequence, base_revision, new_revision, icons)));
+                }
                 Ok(SessionEvent::WorldSpatialEntities(applied(
                     server_sequence,
                     base_revision,

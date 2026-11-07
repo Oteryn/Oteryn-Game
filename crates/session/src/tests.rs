@@ -21,6 +21,8 @@ mod quest_log_tests;
 mod replacement_snapshot_tests;
 #[path = "features/0287-actor-spell-catalog/tests.rs"]
 mod spell_catalog_tests;
+#[path = "tests/status_projection_tests.rs"]
+mod status_projection_tests;
 #[path = "features/0064-target-move/tests.rs"]
 mod target_move_tests;
 include!("tutorial_notices_tests.rs");

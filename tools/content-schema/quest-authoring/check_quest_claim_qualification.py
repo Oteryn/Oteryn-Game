@@ -17,6 +17,11 @@ LEDGER = ROOT / "docs/agents/evidence/quest-claim-qualification.json"
 # Every other supported claim keeps its per-World qualification hold; reward
 # qualification does not certify access puzzles or a complete storyline.
 EXPECTED_DENOMINATOR = 162
+ITEMHOLD_ADMISSIONS = frozenset({
+    "oteryn:reward-claim.kv.ornamentedshield",
+    "oteryn:reward-claim.kv.powerring2",
+    "oteryn:reward-claim.kv.triangletower",
+})
 BLOCKERS = {
     "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": "QUEST-QUAL-1",
     "LEVER_STEP_IN_OR_OFFERING_CALLBACK_MISSING": "QUEST-CALLBACKS-2",

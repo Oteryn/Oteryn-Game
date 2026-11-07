@@ -147,7 +147,7 @@ pub(super) fn apply(
             root,
             &pin.path,
             &pin.sha256,
-            "content/world/authored-props/",
+            "content/world/placements/",
             262144,
         )?;
         let doc: Document = serde_json::from_slice(&bytes).map_err(|_| bad("invalid document"))?;
@@ -307,14 +307,15 @@ mod tests {
         )));
         std::fs::create_dir_all(root.0.join("content/quests/definitions"))
             .map_err(|e| e.to_string())?;
-        std::fs::create_dir_all(root.0.join("content/world/authored-props"))
+        std::fs::create_dir_all(root.0.join("content/world/placements"))
             .map_err(|e| e.to_string())?;
         let quest=serde_json::to_vec(&serde_json::json!({"records":[{"definition":{"identity":{"key":"oteryn:quest.fixture"},"oteryn_recipe":{"payload":{"recipe":{"stages":[{"targets":["Ulcer Probe"]}]}}}}}]})).map_err(|e|e.to_string())?;
         std::fs::write(root.0.join("content/quests/definitions/quest.json"), &quest)
             .map_err(|e| e.to_string())?;
         let props=serde_json::to_vec(&serde_json::json!({"schema":1,"basis":"CHOSEN_OTERYN_APPROXIMATION","quest":{"key":"oteryn:quest.fixture","path":"content/quests/definitions/quest.json","sha256":hash(&quest)},"sources":["owner:selected-recipe"],"props":[{"key":"oteryn:world-prop/fixture-ulcer","item":"oteryn:item.tibia.i32173","position":{"x":31915,"y":32354,"floor":-8},"role":"Ulcer Probe"}]})).map_err(|e|e.to_string())?;
         std::fs::write(
-            root.0.join("content/world/authored-props/fixture.json"),
+            root.0
+                .join("content/world/placements/authored-fixture.json"),
             &props,
         )
         .map_err(|e| e.to_string())?;
@@ -337,7 +338,7 @@ mod tests {
             sectors: vec![(31915 / 32, 32354 / 32, vec![tile])],
         };
         let regions = vec![encode(&region).map_err(|e| format!("{e:?}"))?];
-        let index = serde_json::json!({"palette":[{"key":"oteryn:item.tibia.i100"}],"authored_props":[{"path":"content/world/authored-props/fixture.json","sha256":hash(&props)}]});
+        let index = serde_json::json!({"palette":[{"key":"oteryn:item.tibia.i100"}],"authored_props":[{"path":"content/world/placements/authored-fixture.json","sha256":hash(&props)}]});
         Ok(Fixture {
             root,
             index,
@@ -388,7 +389,7 @@ mod tests {
                 f.index["authored_props"][0]["sha256"] = "0".repeat(64).into();
             } else if case == 1 {
                 f.index["authored_props"][0]["path"] =
-                    "content/world/authored-props/../../../outside.json".into();
+                    "content/world/placements/../../../outside.json".into();
             } else if case == 2 {
                 f.regions.clear();
             } else if case == 3 {
@@ -398,7 +399,10 @@ mod tests {
                 region.sectors[0].2[0].house = 1;
                 f.regions[0] = encode(&region).map_err(|e| format!("{e:?}"))?;
             } else {
-                let path = f.root.0.join("content/world/authored-props/fixture.json");
+                let path = f
+                    .root
+                    .0
+                    .join("content/world/placements/authored-fixture.json");
                 let mut doc: Value =
                     serde_json::from_slice(&std::fs::read(&path).map_err(|e| e.to_string())?)
                         .map_err(|e| e.to_string())?;

@@ -1290,6 +1290,13 @@ pub fn record_creature_kill(
     now_ms: u64,
     observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
 ) {
+    if runtime.is_tibiadrome(target) {
+        let _ = crate::combat::project_fixed_one_creature_death(
+            &mut runtime.borrow_combat_death(),
+            target,
+        );
+        return;
+    }
     // Instance Soulpit deaths belong to its lifecycle/XP adapter. They never enter the
     // ordinary corpse, Bestiary, Task Board, proficiency, Forge or Echo reward pipeline.
     if runtime.soulpit_variant(target).is_some() {

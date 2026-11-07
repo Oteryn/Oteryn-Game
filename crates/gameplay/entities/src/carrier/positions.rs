@@ -233,9 +233,15 @@ impl ChannelRuntimeV1 {
         destination: MovementLocalPosition,
     ) -> Result<bool, CarrierError> {
         let source_index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        if matches!(&self.carrier.slots[source_index], Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost)
+        {
+            return Ok(false);
+        }
         let context = self.pinned_position_context();
         for (index, slot) in self.carrier.slots.iter().enumerate() {
-            if index == source_index {
+            if index == source_index
+                || matches!(slot, Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost)
+            {
                 continue;
             }
             let spell_combat = match slot {
@@ -316,12 +322,15 @@ impl ChannelRuntimeV1 {
                     game_session_id: Some(_),
                     committed: true,
                     position: Some(version),
+                    lifecycle,
                     ..
-                } if version.context == context => Some(MovementLocalPosition {
-                    x: version.position.x,
-                    y: version.position.y,
-                    floor: version.position.floor,
-                }),
+                } if version.context == context && !lifecycle.staff_ghost => {
+                    Some(MovementLocalPosition {
+                        x: version.position.x,
+                        y: version.position.y,
+                        floor: version.position.floor,
+                    })
+                }
                 _ => None,
             })
             .collect()
@@ -853,6 +862,19 @@ impl ChannelActorCarrier {
     ) -> Result<PositionSnapshot, CarrierError> {
         let index = self.validate_ref(continuity, expected.actor_ref)?;
         self.assert_slot_spell_unreserved(index)?;
+        // W17: the physical arena boundary prevents carrying a Drome exemption into
+        // ordinary combat. Administrative return remains inside its original hall cell.
+        if let Slot::Occupied { spell_combat, .. } = &self.slots[index]
+            && let Some(origin) = spell_combat
+                .tibiadrome_origin
+                .filter(|_| spell_combat.tibiadrome)
+            && (next_position.floor != origin.floor
+                || next_position.x.abs_diff(origin.x) > 6
+                || next_position.y.abs_diff(origin.y) > 6)
+        {
+            return Err(CarrierError::PositionSnapshotMismatch);
+        }
+
         if matches!(
             &self.slots[index],
             Slot::CreatureOccupied {
@@ -977,8 +999,14 @@ impl ChannelRuntimeV1 {
         let Ok(excluded) = self.carrier.validate_ref(&self.continuity, except.0) else {
             return true;
         };
+        if matches!(&self.carrier.slots[excluded], Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost)
+        {
+            return false;
+        }
         self.carrier.slots.iter().enumerate().any(|(i, slot)| {
-            if i == excluded {
+            if i == excluded
+                || matches!(slot, Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost)
+            {
                 return false;
             }
             let position = match slot {

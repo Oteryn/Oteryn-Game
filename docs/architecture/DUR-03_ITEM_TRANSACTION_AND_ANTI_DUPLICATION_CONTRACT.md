@@ -1203,6 +1203,24 @@ the reward chest amendment above. For this shape:
 - mint into an existing stack stays excluded (§39.1).
 Every other §39 obligation is unchanged.
 
+**SRX-2 Newhaven profession-kit amendment (owner task, 2026-11-05).** New Characters bound to
+`newhaven-starter-r1` receive the original plain main-backpack component, then the source Newhaven
+profession kit; they never also execute the historical `send_first_items` loadout. Each new kit
+member is a fresh MINT into exactly one owned equipment slot, main-backpack entry or nested
+quiver entry, proved against its exact same-transaction receipt, quantity and definition. The
+complete kit commits atomically and is granted once per Character across vocation changes.
+Its envelope binds the immutable creation starter revision separately from the kit revision.
+Historical Characters retain their recorded revision, receipts and items and receive no new
+Newhaven kit. A historical starter token may remain valid only through World-scoped trusted
+registration; profile/ruleset/content and every session/authority fence remain current, as
+[accepted in SRX-2](../reference/SRX-2.md). This does not authorize runtime registration.
+
+The kit quantities and slots follow CrystalServer `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`,
+`data-global/lib/others/newhaven.lua:3-145`; portal timing is at
+`data-global/scripts/quests/newhaven/movement_select_vocation.lua:3-34`. The task explicitly
+admits first-entry provisioning in addition to that portal event. No Dawnport kit is selected
+for a new Newhaven root; no level cap is invented. Existing historical loadout proof arms remain.
+
 **Corpse container amendment (D3).** `D3-CORPSE-CONTAINER-LOOT-WINDOW-DECAY-V1` (owner decisions
 D111-D113, `reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md` §4)
 admits, for creature-death loot only, the following besides the destinations already listed

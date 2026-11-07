@@ -10,7 +10,7 @@ use std::{collections::BTreeSet, error::Error};
 fn feaster_source_props_compile_and_retain_native_item_identity() -> Result<(), Box<dyn Error>> {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let doc: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        root.join("content/world/authored-props/questpc7.json"),
+        root.join("content/world/placements/authored-questpc7.json"),
     )?)?;
     let props = doc["props"].as_array().ok_or("props")?;
     assert_eq!(props.len(), 6);

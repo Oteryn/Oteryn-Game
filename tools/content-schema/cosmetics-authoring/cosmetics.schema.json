@@ -353,6 +353,20 @@
           "items": {
             "$ref": "#/$defs/grantMapping"
           }
+        },
+        "outfit_aliases": {
+          "type": "object",
+          "maxProperties": 512,
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
         }
       }
     },

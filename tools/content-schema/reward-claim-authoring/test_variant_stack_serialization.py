@@ -38,6 +38,19 @@ class VariantStackSerializationTests(unittest.TestCase):
         # W15b and QUEST-FINISH implement 78 exact container/leaf recipes, including
         # these two selected native stack normalizations (PR2770 Q4/A).
         self.assertEqual(len(variants.native_lowering_errors(self.records)), 27)
+        errors = variants.native_lowering_errors(self.records)
+        qualified = {'oteryn:reward-claim.kv.ornamentedshield',
+                     'oteryn:reward-claim.kv.triangletower'}
+        self.assertTrue(qualified.isdisjoint(error['claim'] for error in errors))
+        without_itemhold = copy.deepcopy(self.records)
+        for row in without_itemhold:
+            if row['definition']['identity']['key'] in qualified:
+                self.assertIn('native_contents', row['definition'])
+                del row['definition']['native_contents']
+        previous_errors = variants.native_lowering_errors(without_itemhold)
+        self.assertEqual(len(previous_errors), 29)
+        self.assertEqual({error['claim'] for error in previous_errors}
+                         - {error['claim'] for error in errors}, qualified)
 
     def test_every_actual_item_total_is_preserved(self):
         for row, old in zip(self.records, self.old):

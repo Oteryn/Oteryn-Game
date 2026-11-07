@@ -1,0 +1,8 @@
+name=party_effects
+commands=496
+transport=party_effects
+composed=party_effects
+authority=party_effects
+offer=635,party_effects::offered,party_effects_available
+[route]
+routing::party_effects::route(authority, &session.admitted, command).await

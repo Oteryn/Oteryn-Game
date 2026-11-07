@@ -1,4 +1,4 @@
-//! Native Svargrond arena controls. Server results are the sole progress authority.
+//! Native Svargrond and Tibiadrome arena controls. Server results are the sole progress authority.
 //! Accepted native presentation difference: docs/contracts/protocol-oteryn/v1/arena-v1.md,
 //! Native client section (Ctrl+Shift+Z, command controls, server-only progress).
 //! The Z binding preserves CL1/CL2 account achievements on Ctrl+Shift+A.
@@ -10,8 +10,8 @@ mod input;
 mod protocol;
 mod state;
 mod view;
-pub use input::open_key;
-pub use protocol::{Intent, apply_result, request};
+pub use input::{DROME_REWARDS, drome_intent, open_key};
+pub use protocol::{DromeAction, DromeReply, Intent, apply_result, request};
 pub use state::ArenaPanel;
 pub use view::panel_text;
 #[cfg(test)]

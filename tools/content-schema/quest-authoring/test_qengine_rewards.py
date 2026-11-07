@@ -26,9 +26,11 @@ class QuestRewards(unittest.TestCase):
             self.assertEqual((row['female']['id'],row['male']['id']),looks)
             self.assertEqual(row['addon_count'],2)
         mappings=self.author['document']['grant_mappings']
+        aliases=self.author['document'].get('outfit_aliases',{})
         for row in outfits.values():
+            owner=next((alias for alias,target in aliases.items() if target==row['key']),row['key'])
             for addon in range(row['addon_count']+1):
-                self.assertEqual(sum(m['grant_key']==f"{row['key']}/quest-grant/{addon}" for m in mappings),1)
+                self.assertEqual(sum(m['grant_key']==f"{owner}/quest-grant/{addon}" for m in mappings),1)
 
     def test_formal_exhibition_requires_current_premium_and_consumed_button(self):
         worlds=[c for c in json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks'] if c['key'].startswith('oteryn:quest-callback/questpc7-formal-')]
@@ -287,7 +289,9 @@ class QuestRewards(unittest.TestCase):
         self.assertTrue(formal['premium'])
         self.assertFalse(formal['starter_female'] or formal['starter_male'])
         targets = {'oteryn:outfit.formal_dress', 'oteryn:outfit.fiend_slayer', 'oteryn:outfit.hand_of_the_inquisition'}
-        aliases = [m for m in document['grant_mappings'] if m['grant_key'].startswith('oteryn:item-grant.')]
+        item_aliases = [m for m in document['grant_mappings'] if m['grant_key'].startswith('oteryn:item-grant.')]
+        self.assertEqual(len(item_aliases),47)
+        aliases = [m for m in item_aliases if m['target'].get('outfit_key') in targets]
         self.assertEqual(len(aliases), 9)
         self.assertEqual({m['target']['outfit_key'] for m in aliases}, targets)
         self.assertTrue(all(m['compatible_provenance'] == ['crystal-item-cosmetics-201189f-v1'] for m in aliases))
@@ -498,6 +502,41 @@ class ForgottenProgramme(unittest.TestCase):
             if rule['family'] in [1,11,12]:expected.insert(0,'oteryn:quest.heart_of_destruction_quest')
             self.assertEqual(rule['any_completed_quests'],expected)
             self.assertTrue(any('data/XML/imbuements.xml:' in s for s in rule['sources']))
+
+
+class FeasterPrefix(unittest.TestCase):
+    def test_personal_quota_tool_custody_and_exact_potion_inputs(self):
+        import questpc7_feaster_programme as f
+        worlds,objectives,rewards=f.build(q.ROOT)
+        self.assertEqual((len(worlds),len(objectives),len(rewards)),(13,0,4))
+        self.assertFalse(any(r.get('completes') for r in worlds+rewards))
+        repeated=[r for r in worlds if any(s.get('add') for s in r['storage'])]
+        self.assertEqual({r['key'].rsplit('-',1)[-1] for r in repeated},{'sample','soul','purify'})
+        for row in repeated:
+            counters=[s for s in row['storage'] if s.get('add')]
+            self.assertEqual(len(counters),1)
+            state=counters[0]
+            self.assertEqual((state['minimum'],state['maximum'],state['set'],state['add']),(0,19,20,1))
+            self.assertEqual(row['activation'],{'track':state['track'],'minimum':0,'maximum':19})
+            self.assertTrue(row['requirements']['owned_items'])
+        apparatus=next(r for r in worlds if r['key'].endswith('-apparatus'))
+        self.assertEqual(apparatus['item_on_target']['item'],'oteryn:item.tibia.i32602')
+        self.assertEqual(apparatus['offerings'][0]['item'],'oteryn:item.tibia.i3661')
+        self.assertEqual(apparatus['item_reward']['item'],'oteryn:item.tibia.i32584')
+        self.assertEqual([r['give']['item'] for r in rewards if r.get('give')],['oteryn:item.tibia.i32582','oteryn:item.tibia.i32225','oteryn:item.tibia.i32226'])
+        self.assertTrue(all(r['requirements']['min_level']==250 and r['requirements']['premium'] for r in worlds+rewards))
+
+    def test_anchored_props_have_ground_only_source_constructors(self):
+        import questpc7_props
+        props=questpc7_props.build(q.ROOT)['props']
+        packet=json.loads((q.ROOT/'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json').read_bytes())
+        profiles={r['production_definition']['production_key']:r for r in packet['records']}
+        self.assertEqual(len(props),6)
+        for prop in props:
+            row=profiles[prop['item']]
+            self.assertEqual(row['admission'],{'materializable':True,'stack_class':'NonStackable','legal_destinations':['Ground']})
+            for field in ['movable','pickupable']:
+                self.assertEqual(row['semantics']['physical']['value'][field],{'state':'KNOWN','value':False})
 
 if __name__=='__main__':
     unittest.main()
