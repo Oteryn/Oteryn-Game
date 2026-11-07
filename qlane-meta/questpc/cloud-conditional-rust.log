@@ -1,0 +1,10 @@
+   Compiling oteryn-gameplay-quests v0.1.0 (/workspace/Oteryn-Game/crates/gameplay/quests)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.70s
+     Running unittests src/lib.rs (/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_quests-c77927d0dc67a44a)
+
+running 3 tests
+test quest::tests::conditional_set_matches_exact_value_preserves_other_values_and_binds_hash ... ok
+test quest::world_callbacks::tests::conditional_storage_compiles_exact_value_effect_and_rejects_guard_overloading ... ok
+test quest::world_callbacks::tests::conditional_failure_destination_requires_returning_step_and_native_floor ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 264 filtered out; finished in 0.01s

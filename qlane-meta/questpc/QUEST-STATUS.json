@@ -3538,7 +3538,8 @@
           "Read full source wiki route: daily key stock and two-player floor switch progression remain mandatory; did not replace them with personal claims or qualify unchanged reward-only tests."
         ]
       },
-      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff"
+      "execution_owner": "questpc; implement and compose the source path here; no shared-engine handoff",
+      "active_batch": "Escape35012 and Native Item3206 source slice PASS four fresh PG cases180.43s after all artifact regeneration; exact offering burn/reset, missing offering refusal, replay and absent/later flags. Next implement four-lever exit35011, shared resettable keys and party switches here; all four original rewards retained."
     },
     {
       "title": "Dragon Corpse Quest",
@@ -5083,7 +5084,8 @@
         "targets": [
           "A Restless Soul"
         ]
-      }
+      },
+      "execution_disposition": "SKIP_QUALIFIED_ELSEWHERE"
     },
     {
       "title": "Frost Dragon Quest",
@@ -8740,19 +8742,244 @@
         "source_generation": "PASS 22 source packets, zero stale generated files",
         "pin_refresh": "PASS; unchanged 2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968"
       }
+    },
+    "conditional_callback_recovery": {
+      "scope": "Reusable authored failure landing on returning STEP and exact conditional quest storage set; no whole-title promotion",
+      "result": "PASS",
+      "pg": {
+        "passed": 5,
+        "failed": 0,
+        "total_seconds": 102.11,
+        "server_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "cases": {
+          "conditional-failure-blocked": 45.72262623,
+          "conditional-failure-landing": 44.745471535,
+          "conditional-reset-match": 3.858968746,
+          "conditional-reset-absent": 3.846971042,
+          "conditional-reset-later": 3.930033136
+        }
+      },
+      "red": {
+        "failed": 2,
+        "seconds": 7.3,
+        "reason": "Both real-PG failure landing cases rejected unsupported failure_teleport; marker after SQL database creation"
+      },
+      "reuse": {
+        "failure_landing_commit": "c651c87d52acd0fcc56c5b426a1e9f27ab0b92ba",
+        "conditional_set_commit": "be812420e3c20d9dd8ae6c3c23a9c4acb942ceda",
+        "source_branch": "origin/claude/happy-davinci-ijz3wy-questpc6",
+        "adaptation": "Retain this lane objects/StepOut and23 source inputs; use256MiB thread wrapper with existing fixture run; do not duplicate source kernels. All original assertions retained.",
+        "qengine2_checked": "5a6de28c142de185594217ce1e5cbc7f4b6e6e4e"
+      },
+      "validation": {
+        "check": "PASS changed crates all targets/all features41.25s",
+        "clippy": "PASS changed crates all targets/all features,-D warnings53.27s",
+        "rust": "3 focused source-bound/schema/hash tests PASS0.01s; pure unit, not PG",
+        "python": "batch3:7 PASS0.002s; batch4:18 PASS0.513s; pure units, not PG",
+        "generated": "23 packets, zero stale outputs",
+        "format": "cargo fmt changed crates; mounted tests explicitly formatted; avoid unrelated Soul War formatting churn",
+        "pin": "PASS unchanged2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968"
+      },
+      "logs": {
+        "red": {
+          "log": "qlane-meta/questpc/cloud-conditional-red.log",
+          "sha256": "ffb68966bdee38871814ca67efe7ca0da9c9b6bcc34fc2d15d45ac574f191d73"
+        },
+        "green": {
+          "log": "qlane-meta/questpc/cloud-conditional-green.log",
+          "sha256": "c88077ddf9807e6fe1758a78fc69816b9484a7d44e6b011fab66139b1078c791"
+        },
+        "check": {
+          "log": "qlane-meta/questpc/cloud-conditional-check.log",
+          "sha256": "54dbf15db3670b5f2246b486d146a48c73f4852be8113882c518a9680635c472"
+        },
+        "clippy": {
+          "log": "qlane-meta/questpc/cloud-conditional-clippy.log",
+          "sha256": "df0df9ee5197a4df10d96188e11a710a2123a50cf03449e0b5362dfd5fe42f0e"
+        },
+        "rust": {
+          "log": "qlane-meta/questpc/cloud-conditional-rust.log",
+          "sha256": "dda487389803470e32fac59b5ee4f6df21fee29f7ae04b364478304c40c263db"
+        },
+        "python3": {
+          "log": "qlane-meta/questpc/cloud-conditional-python3.log",
+          "sha256": "74c03fc16fde9a2dfeff03db0ec8f472a5a8dfed04e9e982a912b4b7f64faee3"
+        },
+        "python4": {
+          "log": "qlane-meta/questpc/cloud-conditional-python4.log",
+          "sha256": "37f4966686749c8a48faf763221c4ee7a628073d2a226b568410d688bcf5c9e9"
+        },
+        "generated": {
+          "log": "qlane-meta/questpc/cloud-conditional-generated.log",
+          "sha256": "9cf9f5e6beb9f15854cc65285097df5ae846f796dacd2edf3014b79914843557"
+        },
+        "pin": {
+          "log": "qlane-meta/questpc/cloud-conditional-pin.log",
+          "sha256": "9d601ad50527052d1d904acdced6e7d2f7b544baf1a1aea6059a07fe746c355b"
+        }
+      }
+    },
+    "draconia_escape": {
+      "scope": "Exact source uid35012 escape/offering and conditional flag integration; not NPC acquisition, shared key/party-switch/four-lever path or whole-title qualification",
+      "result": "PASS",
+      "source": {
+        "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/draconia/movement-escape.lua",
+        "sha256": "53f3313e99fb541c3e016b5ac09a2e372c0ad8a382786ccd79db6bb40a700312",
+        "native_item_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml",
+        "item": 3206,
+        "weight": 490,
+        "stack_class": "NonStackable",
+        "container_charges_temporal": "NOT_APPLICABLE"
+      },
+      "reuse": {
+        "branch": "origin/claude/happy-davinci-ijz3wy-questpc6",
+        "commit": "3bfd856061e5aa89668747ec7405af8c2b8cf7f5",
+        "paths": [
+          "tools/content-migration/quests_2_emperor_item_profiles.py",
+          "tools/content-schema/native-gameplay/quests-2-emperor-item-profiles.json",
+          "tools/content-schema/quest-authoring/quests-2/world-callbacks/draconia_quest.json",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/draconia_escape.rs"
+        ],
+        "adaptation": "Use current generic scene harness and production callback lookup after DB creation; compare runtime/authored callback; retain all original offering/flag/replay assertions; use256MiB thread wrapper. Native profile canonical hashes match exactly."
+      },
+      "red": {
+        "failed": 4,
+        "seconds": 14.26,
+        "reason": "Missing production callback, markers after actual PG database creation"
+      },
+      "pg": {
+        "passed": 4,
+        "failed": 0,
+        "initial_seconds": 184.07,
+        "final_seconds": 180.43,
+        "server_version": "18.6 (Debian18.6-1.pgdg13+2)",
+        "cases": {
+          "draconia-escape-exact": 45.795934834,
+          "draconia-escape-later": 44.666095601,
+          "draconia-escape-absent": 45.11168542,
+          "draconia-escape-missing": 44.85661544
+        }
+      },
+      "generated_review": {
+        "native_profiles": "Only Item3206 added; no old record changed or removed",
+        "callbacks": "Only escape35012 added; no old callback changed or removed",
+        "quest_shards": "Only28 source_change_provenance.sha256 leaves changed",
+        "transcription_receipt": "Only callback proof pointer and approval digest refreshed; approved graphs/core digests and immutable/compiler inputs unchanged; Native admission remainsfalse"
+      },
+      "validation": {
+        "profile_units": "9 passed7.358s; pure units, not PG",
+        "native_generator": "40 generated files; clean follow-up check",
+        "callback_generator": "clean follow-up check",
+        "quest_tree": "4 shards regenerated; clean follow-up check",
+        "check": "PASS dispatch/content/quests alltarget/allfeature33.03s",
+        "clippy": "PASS dispatch/content/quests alltarget/allfeature,-D warnings47.82s",
+        "pin": "PASS world digest unchanged2cabea56ee6747d47444245a2c61b3be3ac6f3c4907ba1ed4961e2fb2baf9968",
+        "format": "PASS cargo fmt changed crates and explicit mounted Rust formatting"
+      },
+      "logs": {
+        "red": {
+          "log": "qlane-meta/questpc/cloud-draconia-escape-red.log",
+          "sha256": "e024b3c649ada05a835c4d50ae9a2f4755b6a240c7f241d910ed8661edbec56d"
+        },
+        "green": {
+          "log": "qlane-meta/questpc/cloud-draconia-escape-green.log",
+          "sha256": "898a935ea12f36774838fca5ee3bf3207f809d301744fbb867bd8382ff927f42"
+        },
+        "final-pg": {
+          "log": "qlane-meta/questpc/cloud-draconia-escape-final-pg.log",
+          "sha256": "6ee213f13954bd8a8d11336c794e9c0cb62bb3a0751af1ceeb2eceac129eb132"
+        },
+        "profile-tests": {
+          "log": "qlane-meta/questpc/cloud-draconia-escape-profile-tests.log",
+          "sha256": "829d5a77d94e7dacc173069649de9ff0bebd95bac0837ab4dea585b1c31f3188"
+        },
+        "callback-generation": {
+          "log": "qlane-meta/questpc/cloud-draconia-escape-callback-generation.log",
+          "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+        },
+        "native-generation": {
+          "log": "qlane-meta/questpc/cloud-draconia-escape-native-generation.log",
+          "sha256": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa"
+        },
+        "native-check": {
+          "log": "qlane-meta/questpc/cloud-draconia-escape-native-check.log",
+          "sha256": "e17883c3b904492b5238996447f88597b8e4d46e6c883b4445ed5f1e756d83aa"
+        },
+        "callback-check": {
+          "log": "qlane-meta/questpc/cloud-draconia-escape-callback-check.log",
+          "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+        },
+        "generated-review": {
+          "log": "qlane-meta/questpc/cloud-draconia-escape-generated-review.log",
+          "sha256": "c6314fd15ab8a9446142466b24d875e022bccb66017d5f84358339a990e7e10f"
+        },
+        "tree-before": {
+          "log": "qlane-meta/questpc/cloud-draconia-escape-tree-before.log",
+          "sha256": "c09a44103a5a32cbfa1b6cc7e0fc00d7035d7893d0c74f5a7f1c31a7cc20b30e"
+        },
+        "tree-generation": {
+          "log": "qlane-meta/questpc/cloud-draconia-escape-tree-generation.log",
+          "sha256": "1e9b98d389873aab162e7ff9e28dbe59c2813848eb2d09b3156010f8eed375f1"
+        },
+        "tree-check": {
+          "log": "qlane-meta/questpc/cloud-draconia-escape-tree-check.log",
+          "sha256": "4b1a51f1f00f83f5e1ea3ce860719e88e9df6fdbf9c8e82a29016b5982a7a8f2"
+        },
+        "proof-rebind": {
+          "log": "qlane-meta/questpc/cloud-draconia-escape-proof-rebind.log",
+          "sha256": "b66b07c9d89b25a1b25a6cd3e1412170b76c2e847b2ad09588cd6f6c1f92aac4"
+        },
+        "quest-metadata-review": {
+          "log": "qlane-meta/questpc/cloud-draconia-escape-quest-metadata-review.log",
+          "sha256": "80a182f482bb4ab64bb1c29540ad4199048527bcac6cf9e0681e5f8e5da902d3"
+        },
+        "check": {
+          "log": "qlane-meta/questpc/cloud-draconia-escape-check.log",
+          "sha256": "dede35291571ba52172272c587945c167985d6e8fde46e0eb85800060a7e6642"
+        },
+        "clippy": {
+          "log": "qlane-meta/questpc/cloud-draconia-escape-clippy.log",
+          "sha256": "07a2895c8ac35d5df948a0a404732fde1ec2bb868e4c9aef31c53f626eed9bc8"
+        },
+        "pin": {
+          "log": "qlane-meta/questpc/cloud-draconia-escape-pin.log",
+          "sha256": "32a7708d049ab7c84b6b89e6942db412574b27700af1b6dbfc1d12b6046f2320"
+        }
+      },
+      "artifact_hashes": {
+        "content/quests/world-callbacks.json": "d6f1bdb6625f140b5526b59086f8daddaafb321e6aacbbbe927f6aaf64f1de8c",
+        "content/items/definitions/spell-native-profiles.json": "c1497a51a48ef1c7f92a22609b287629b67b5fdd8f4eb42390d57328eea3786f",
+        "content/manifest.json": "d6ddfce72dcba656191fcba9dcf7fa6ce4a37047355373c8cb2e1ce62c39384e",
+        "content/quests/definitions/index.json": "d8e4de6d23e42221e8caacca9cc05d8298fab27f9214ea807dd9c71c7d975021",
+        "content/quests/definitions/quests-00000-00099.json": "61292f960ee99159ec0d054ae2905635818b9affc4723ddef834bcdb479ed388",
+        "content/quests/definitions/quests-00100-00199.json": "2f6e7ef21e32343c4c5b951f91325441a0cf73d9ce25f747c6ca6bd924bb681f",
+        "content/quests/definitions/quests-00200-00299.json": "ae989d8ced81c8f2b8c0d6a275ba09174a22c12cc1be5b4fce5cde9d60c35b0e",
+        "tools/content-schema/quest-authoring/quests-2/world-callbacks/draconia_quest.json": "cd483a6f38e1d8a29d389bb306e13db115978c6f02115d9dba8bb1085870ab1e",
+        "tools/content-schema/native-gameplay/quests-2-emperor-item-profiles.json": "59de89545e6099b4a87dae290d25208d3ae1b97cfc9876e557f89a64dfdb9199",
+        "tools/content-schema/quest-authoring/samples/completion242/source-fix-receipt.json": "e7646667b87987c4e7af61f3ce3450f97c00e1a8819f78bef9152e4637239127"
+      }
     }
   },
   "cross_lane_qualified_elsewhere": {
     "ref": "origin/claude/happy-davinci-ijz3wy-qengine2",
-    "sha": "059364f38c7c82b5e624d908bc69b2af6d7e54ba",
+    "sha": "b51b5d3587296f47dfdb85d6ecbe220fefe896a8",
     "titles": [
       "Battle Mage Outfits Quest",
       "Dark Trails Quest",
       "Demon Outfits Quest",
       "Elementalist Outfits Quest",
       "Festive Outfits Quest",
+      "Formorgar Mines Quest",
       "Glooth Engineer Outfits Quest"
     ],
     "rule": "Skip per current owner; this does not claim those implementations are merged here."
+  },
+  "latest_cloud_integration": {
+    "status": "GREEN",
+    "parents": [
+      "4b08ff5c4506759d3f9025ad24f8b95ec133e119",
+      "69ad45e6e9c3af9a30522bc8cc7acf48ebf08a3c"
+    ],
+    "evidence": "qlane-meta/questpc/cloud-source-integration-validation.json"
   }
 }

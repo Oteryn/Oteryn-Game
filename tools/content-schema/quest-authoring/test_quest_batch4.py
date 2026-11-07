@@ -44,6 +44,29 @@ def packet(directory):
 
 
 class QuestBatch4Tests(unittest.TestCase):
+    def test_conditional_set_is_exact_and_cannot_be_a_read_only_guard(self):
+        row = callback('cults_of_tibia', 'conditional-reset')
+        row['storage'] = [{'track': 'oteryn:quest-progress/conditional-reset/flag',
+                           'minimum': -1, 'maximum': 2, 'set': 0, 'set_if': 1}]
+        tool.validate_callback(row, 'cults_of_tibia')
+        for patch in [{'set_if': 3}, {'set_if': True}, {'preserve': True}, {'read_only': True}]:
+            invalid = copy.deepcopy(row)
+            invalid['storage'][0].update(patch)
+            with self.assertRaises(ValueError):
+                tool.validate_callback(invalid, 'cults_of_tibia')
+
+
+    def test_failure_teleport_requires_valid_native_position_and_returning_step(self):
+        row = callback('cults_of_tibia', 'failure-landing')
+        row['return_on_failure'] = True
+        row['failure_teleport'] = {'x': 32818, 'y': 31599, 'floor': -9}
+        tool.validate_callback(row, 'cults_of_tibia')
+        for field, value in [('trigger', 'use'), ('return_on_failure', False),
+                             ('failure_teleport', {'x': 1, 'y': 2, 'floor': -16})]:
+            with self.assertRaises(ValueError):
+                tool.validate_callback({**row, field: value}, 'cults_of_tibia')
+
+
     def test_source_objects_are_bounded_and_cannot_write_durable_value(self):
         source = callback('thais_lighthouse', 'objects')
         source.update(trigger='use', teleport=None,
@@ -115,31 +138,7 @@ class QuestBatch4Tests(unittest.TestCase):
                 path.unlink()
 
     def output(self):
-        result = json.loads((self.root / tool.CALLBACK_OUTPUT).read_text())
-        shared = self.root / tool.SHARED_CALLBACK_OUTPUT
-        if shared.exists():
-            result['callbacks'].extend(json.loads(shared.read_text())['callbacks'])
-            result['callbacks'].sort(key=lambda row: row['key'])
-        return result
-
-    def test_shared_source_additions_preserve_frozen_base(self):
-        for name in tool.SHARDED_QUESTS:
-            self.packets[name]['callbacks'] = [callback(name, name + '-source')]
-        self.run_generator()
-        expected = copy.deepcopy(self.seed)
-        expected['callbacks'].sort(key=lambda row: row['key'])
-        self.assertEqual(json.loads((self.root / tool.CALLBACK_OUTPUT).read_text()), expected)
-        shared = json.loads((self.root / tool.SHARED_CALLBACK_OUTPUT).read_text())
-        self.assertEqual(len(shared['callbacks']), 2)
-        self.assertEqual(self.run_generator(check=True), [])
-
-    def test_duplicate_keys_across_callback_shards_refuse_before_writes(self):
-        write_json(self.root / tool.SHARED_CALLBACK_OUTPUT,
-                   {'schema': 1, 'callbacks': [self.seed['callbacks'][0]]})
-        before = (self.root / tool.CALLBACK_OUTPUT).read_bytes()
-        with self.assertRaisesRegex(ValueError, 'duplicate existing callback key'):
-            self.run_generator()
-        self.assertEqual((self.root / tool.CALLBACK_OUTPUT).read_bytes(), before)
+        return json.loads((self.root / tool.CALLBACK_OUTPUT).read_text())
 
     def test_deterministic_regeneration_sorts_union_and_keeps_complete_npc_source(self):
         cults = self.packets['cults_of_tibia']

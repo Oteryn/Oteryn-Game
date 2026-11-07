@@ -102,6 +102,39 @@ UID5016 supplies2969/key3667 at32576,32216,z15. Existing canonical claim selecto
 positions, item IDs, quantities and key bindings were independently checked against
 these source rows. The original misspellingdevilhemet1/2/3 remains the claim identity.
 
+Draconia escape support reuses questpc6 commitsc651c87d5 andbe812420e. A returning
+STEP may name an explicit failure destination; the existing sealed movement owner
+validates its landing. If that landing is unavailable, retain the committed entry
+position and grant no Quest state or receipt; do not invent another destination.
+Absent failure_teleport preserves the old return-to-origin behavior.
+
+SET_IF compares the exact locked flag, writes its authored value only on equality,
+and retains every other flag value. It remains receipt-bearing and binds equality
+and replacement literals in definition-hash tag6; old effect encodings are unchanged.
+Pure read-only guards and native rules cannot be combined with set_if. This matches
+Draconia escape sourceDragonfetish1->0 while preserving absent-1 and later2:
+https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/draconia/movement-escape.lua
+Five focused PG cases102.11s prove safe/blocked landings, replay, exact reset, absent
+and later preservation. The final source escape/offering composition follows next.
+
+Draconia escape35012 now reuses questpc6@3bfd85606's reviewed native Item3206
+profile and authored callback. Existing canonical-input hashes match exactly;
+pinned items.xml confirms dragonfetish weight490. Only3206 is newly admitted,
+NonStackable with no container, charges or lifetime. Existing Native records and
+callbacks remain byte-for-byte equal as parsed objects, apart from the new escape.
+
+Missing offering teleports to32818,31599,z9 without progress/receipt. One3206
+at32816,31601,z9 is consumed atomically with the exact1->0 flag reset (other
+values retained), then teleport to32701,31639,z6. Fixture flag acquisition uses
+the fenced Quest writer, never an NPC qualification claim; the approach tile is
+controlled test geometry, never a production UID coordinate alias.
+
+The callback registry's changed proof hash required a transcription receipt
+refresh and dependent Quest-tree regeneration. Approved graphs/core digests and
+immutable/compiler inputs remain unchanged. All28 Quest changes are provenance
+sha256 leaves; no quest values/rules changed. Native admission is separate from
+this transcription receipt, whose native_runtime_admission remainsfalse.
+
 Source-world native bindings (Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d):
 https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua
 https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/mintwallin_quest/actions_devil_helmet_lever.lua
@@ -123,8 +156,10 @@ recovery has no map projection and cannot be pinned by another player's later
 shared origin revision; the real PostgreSQL regression exercises that interruption.
 This component does not certify the remaining NPC/forge/rescue/room storyline.
 
-The reviewed callback base is restored byte-for-byte to SHA256
-c57297aabe3763a3d35f56e83dbbd16487ff56c121de0ca9691a8267a16dc8ad. Mintwallin and Devil Helmet's
-three additive callbacks remain generated and loaded from shared-source-callbacks;
-new native source callbacks use source-world-callbacks. Cross-shard uniqueness and
-the combined runtime cap remain enforced. No frozen approval or guard is changed.
+The initial source-world batch restored the reviewed callback base while moving
+three concurrent additions to a generated shard. Incoming69ad45e6e subsequently
+refreshes its source-fix proof for the complete base, including those additions
+and Draconia. Integration preserves that exact approved base and removes the
+now-redundant intermediate shard; no callback is lost. The native source-world
+shard remains loaded with cross-shard uniqueness and the combined runtime cap.
+No source-fix approval or guard is weakened during this integration.

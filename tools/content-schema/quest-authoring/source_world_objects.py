@@ -154,7 +154,7 @@ def callbacks(capsule, root=ROOT):
             or any([1271, None] not in row['roots'] for row in mint['remove'])):
         raise ValueError('SOURCE_WORLD_MINTWALLIN_CONTRACT')
     # Reuse the concurrently qualified source callback and its object owner.
-    existing = [row for row in read(root, 'content/quests/shared-source-callbacks.json')['callbacks']
+    existing = [row for row in read(root, 'content/quests/world-callbacks.json')['callbacks']
                 if row['key'] == 'oteryn:quest-callback/mintwallin-cyclops-lever']
     if (len(existing) != 1 or existing[0]['selector'] != dict(position=None, unique=None, action=30008, appearance=None)
             or not existing[0]['objects']['consume_trigger']

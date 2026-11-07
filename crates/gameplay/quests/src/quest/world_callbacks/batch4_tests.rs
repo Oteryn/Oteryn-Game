@@ -219,6 +219,10 @@ fn source_world_binding_reuses_the_existing_hidden_threats_transition() -> Resul
             .after,
         3
     );
+    let mut conditional = callbacks[0].clone();
+    conditional.storage[0].set_if = Some(2);
+    assert!(!conditional.is_guarded_source_departure());
+    assert!(conditional.bind_inexact_source_transition(source).is_none());
     let mut divergent = callbacks;
     divergent[0].storage[0].set = 4;
     assert!(extend_callbacks(before.clone(), &divergent).is_err());

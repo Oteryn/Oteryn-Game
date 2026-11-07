@@ -96,6 +96,16 @@ Where does a character's quest progress live, and how does it change safely?
   - `effect`: `SET v`, `ADD n` (checked `i64`), or `SET_NOW` (server Unix time), each within the
     track's `[min, max]`. `SET_NOW` and `elapsed` use the database transaction time (`now()`), never
     a node clock.
+- **Owner continuation amendment (2026-11-06, quest/NPC completion):** `SET_IF equals, value`
+  compares the exact locked track value with `equals`, sets `value` on a match, and retains
+  the locked value otherwise. Both literals must lie within the track bounds. Its stable
+  definition-hash tag is 6; existing tags and hashes remain unchanged. World callbacks expose
+  it as optional `storage.set_if`, mutually exclusive with `preserve`, `read_only` and native
+  rules. This is a receipt-bearing effect for an event (including an atomic offering/exit),
+  never a replacement for a pure read-only guard. The retained value is included in the
+  event's receipt even when it does not change. Draconia's source escape resets Dragonfetish
+  only when it equals 1 (`crystalserver@9f5a72c6:data-global/scripts/quests/draconia/movement-escape.lua:17-19`,
+  git blob `8d9e413024dc127b7b26513127b033ec19bfe615`).
 - The 35 `computed: expression` effects have no kind yet: each needs a closed kind added by
   amendment, and until then its transition is `NOT_SUPPORTED`.
 - A transition may carry `completes: true`, which completes its quest (§3).

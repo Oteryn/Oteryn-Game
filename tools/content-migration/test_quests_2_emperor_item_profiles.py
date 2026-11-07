@@ -17,7 +17,7 @@ class EmperorItemProfiles(unittest.TestCase):
                       else json.loads((cls.root / profiles.PATH).read_bytes()))
 
     def test_source_letterbag_is_portable_nonstackable_without_invented_capacity(self):
-        row = self.packet['records'][0]
+        row = next(row for row in self.packet['records'] if row['production_definition']['production_key'] == 'oteryn:item.tibia.i3217')
         self.assertEqual(row['production_definition']['production_key'], 'oteryn:item.tibia.i3217')
         self.assertEqual(row['admission'], {
             'materializable': True, 'stack_class': 'NonStackable',
@@ -31,8 +31,18 @@ class EmperorItemProfiles(unittest.TestCase):
         self.assertEqual(row['semantics']['equipment']['value']['patterns']['value'][0]
                          ['primary_slot'], {'state': 'KNOWN', 'value': 'CONTAINER'})
 
+    def test_dragon_fetish_has_exact_plain_custody_and_no_charges_or_lifetime(self):
+        row = next(row for row in self.packet['records']
+                   if row['production_definition']['production_key'] == 'oteryn:item.tibia.i3206')
+        self.assertEqual(row['admission'], {'materializable': True,
+            'stack_class': 'NonStackable', 'legal_destinations': ['CharacterInventory', 'Ground']})
+        self.assertEqual(row['semantics']['physical']['value']['weight'],
+                         {'state': 'KNOWN', 'value': 490})
+        for group in ('container', 'charges', 'temporal'):
+            self.assertEqual(row['semantics'][group], {'state': 'NOT_APPLICABLE'})
+
     def test_three_dragon_tears_use_actual_source_stack_limit(self):
-        row = self.packet['records'][1]
+        row = next(row for row in self.packet['records'] if row['production_definition']['production_key'] == 'oteryn:item.tibia.i19084')
         self.assertEqual(row['production_definition']['production_key'], 'oteryn:item.tibia.i19084')
         self.assertEqual(row['admission']['stack_class'], 'StackCapable')
         self.assertEqual(row['semantics']['stack'], {'state': 'KNOWN', 'value': {
@@ -52,12 +62,12 @@ class EmperorItemProfiles(unittest.TestCase):
                               profiles.encode)
         actual = json.loads(generated['profiles'])
         self.assertEqual([r['production_binding']['external_id'] for r in actual['records']],
-                         ['3217', '19084'])
+                         ['3206', '3217', '19084'])
         self.assertEqual(json.loads(generated['manifest'])['item_profiles']['sha256'],
                          profiles.digest(generated['profiles']))
 
     def test_existing_authority_conflict_fails_closed(self):
-        existing = copy.deepcopy(self.packet['records'][1])
+        existing = copy.deepcopy(next(row for row in self.packet['records'] if row['production_definition']['production_key'] == 'oteryn:item.tibia.i19084'))
         existing['semantics']['physical']['value']['weight']['value'] = 11
         generated = {
             'profiles': profiles.encode({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': [existing]}),
@@ -71,7 +81,7 @@ class EmperorItemProfiles(unittest.TestCase):
         self.assertEqual(generated, before)
 
     def test_wrong_donor_pin_or_extra_item_is_not_admitted(self):
-        for field, value in (('source_revision', 'other'), ('item_ids', [3217, 19084, 18928])):
+        for field, value in (('source_revision', 'other'), ('item_ids', [3206, 3217, 19084, 18928])):
             changed = copy.deepcopy(self.packet)
             changed[field] = value
             with self.assertRaisesRegex(ValueError, 'PROFILE_PROVENANCE'):

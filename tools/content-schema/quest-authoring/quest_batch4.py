@@ -19,8 +19,6 @@ SOURCE_REVISION = 'zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddef
 SOURCE_PREFIX = 'crystal:201189f871d23597b82caf88fd611454a2ddefb8:'
 INPUT_DIRECTORY = Path('tools/content-schema/quest-authoring/batches/quests4')
 CALLBACK_OUTPUT = Path('content/quests/world-callbacks.json')
-SHARED_CALLBACK_OUTPUT = Path('content/quests/shared-source-callbacks.json')
-SHARDED_QUESTS = {'mintwallin_quest', 'devil_helmet'}
 NPC_OUTPUT_DIRECTORY = Path('content/dialogues/quest-sources')
 QUEST_ORDER = (
     'cults_of_tibia', 'devil_helmet', 'dreamers_challenge_quest', 'elemental_spheres',
@@ -66,7 +64,7 @@ CALLBACK_FIELDS = {
     'key', 'quest', 'trigger', 'selector', 'lever', 'reversible', 'passages',
     'teleport', 'storage', 'minimum_level', 'experience', 'monk_reward',
     'offerings', 'item_on_target', 'return_on_failure', 'failure_message',
-    'success_message', 'native_rule', 'sources', 'objects',
+    'success_message', 'native_rule', 'sources', 'objects', 'failure_teleport',
 }
 CALLBACK_REQUIRED = {
     'key', 'quest', 'trigger', 'selector', 'reversible', 'passages',
@@ -282,19 +280,28 @@ def validate_callback(callback, directory):
                 key + ': invalid lever')
     if callback.get('teleport') is not None:
         position(callback['teleport'], key + ': teleport')
+    if callback.get('failure_teleport') is not None:
+        position(callback['failure_teleport'], key + ': failure_teleport')
+        require(callback['trigger'] == 'step_in' and callback['return_on_failure'],
+                key + ': failure teleport requires a returning STEP')
     for field in ('passages', 'storage', 'offerings'):
         require(isinstance(callback[field], list) and len(callback[field]) <= MAX_EFFECTS,
                 key + ': invalid or excessive ' + field)
     seen = set()
     for storage in callback['storage']:
         fields(storage, {'track', 'minimum', 'maximum', 'set'},
-               {'track', 'minimum', 'maximum', 'set', 'preserve', 'read_only'}, key + ': storage')
+               {'track', 'minimum', 'maximum', 'set', 'preserve', 'read_only', 'set_if'}, key + ': storage')
         require(valid_key(storage['track']) and storage['track'] not in seen, key + ': duplicate or invalid track')
         seen.add(storage['track'])
         require(all(integer(storage[field], -(2 ** 63), 2 ** 63 - 1) for field in ('minimum', 'maximum', 'set'))
                 and storage['minimum'] <= storage['maximum'], key + ': invalid storage range')
         require(type(storage.get('preserve', False)) is bool, key + ': invalid preserve')
         require(type(storage.get('read_only', False)) is bool, key + ': invalid read_only')
+        if storage.get('set_if') is not None:
+            require(integer(storage['set_if'], storage['minimum'], storage['maximum'])
+                    and not storage.get('preserve', False) and not storage.get('read_only', False)
+                    and callback.get('native_rule') is None,
+                    key + ': invalid conditional set')
     if any(entry.get('read_only', False) for entry in callback['storage']):
         require(all(entry.get('read_only', False) and not entry.get('preserve', False)
                     for entry in callback['storage'])
@@ -418,38 +425,32 @@ def load_packets(root, selected=None, available=False):
 def expected_files(root, selected=None, available=False):
     root = Path(root)
     packets = load_packets(root, selected=selected, available=available)
-    destinations = (CALLBACK_OUTPUT, SHARED_CALLBACK_OUTPUT)
-    merged = {}
+    seed = read(root / CALLBACK_OUTPUT)
+    fields(seed, {'schema', 'callbacks'}, {'schema', 'callbacks'}, 'existing world callbacks')
+    require(type(seed['schema']) is int and seed['schema'] == 1 and isinstance(seed['callbacks'], list),
+            'existing world callbacks: invalid schema')
     authored = {callback['key']: callback for packet in packets for callback in packet['callbacks']}
     existing_keys = set()
-    for destination in destinations:
-        seed = (read(root / destination) if destination == CALLBACK_OUTPUT or (root / destination).exists()
-                else {'schema': 1, 'callbacks': []})
-        fields(seed, {'schema', 'callbacks'}, {'schema', 'callbacks'}, 'existing world callbacks')
-        require(type(seed['schema']) is int and seed['schema'] == 1 and isinstance(seed['callbacks'], list),
-                'existing world callbacks: invalid schema')
-        retained = []
-        for callback in seed['callbacks']:
-            require(isinstance(callback, dict) and isinstance(callback.get('key'), str), 'invalid existing callback')
-            key = callback['key']
-            require(key not in existing_keys, 'duplicate existing callback key: ' + key)
-            existing_keys.add(key)
-            if key in authored:
-                require(callback.get('quest') == authored[key]['quest'], 'foreign existing callback key: ' + key)
-            else:
-                retained.append(copy.deepcopy(callback))
-        merged[destination] = {'schema': 1, 'callbacks': retained}
+    retained = []
+    for callback in seed['callbacks']:
+        require(isinstance(callback, dict) and isinstance(callback.get('key'), str), 'invalid existing callback')
+        key = callback['key']
+        require(key not in existing_keys, 'duplicate existing callback key: ' + key)
+        existing_keys.add(key)
+        if key in authored:
+            require(callback.get('quest') == authored[key]['quest'], 'foreign existing callback key: ' + key)
+        else:
+            retained.append(copy.deepcopy(callback))
+    merged = copy.deepcopy(seed)
+    merged['callbacks'] = retained
     outputs = {}
     for packet in packets:
         excluded = {row['key'] for row in packet['runtime_exclusions']}
-        destination = SHARED_CALLBACK_OUTPUT if packet['quest_directory'] in SHARDED_QUESTS else CALLBACK_OUTPUT
-        merged[destination]['callbacks'].extend(copy.deepcopy(callback) for callback in packet['callbacks'] if callback['key'] not in excluded)
+        merged['callbacks'].extend(copy.deepcopy(callback) for callback in packet['callbacks'] if callback['key'] not in excluded)
         outputs[NPC_OUTPUT_DIRECTORY / (packet['quest_directory'] + '.json')] = encoded(packet['npc_source'])
-    require(sum(len(value['callbacks']) for value in merged.values()) <= MAX_CALLBACKS,
-            f'callback cap is {MAX_CALLBACKS}, reserving one dynamic altar')
-    for destination, value in merged.items():
-        value['callbacks'].sort(key=lambda callback: callback['key'])
-        outputs[destination] = encoded(value)
+    require(len(merged['callbacks']) <= MAX_CALLBACKS, f'callback cap is {MAX_CALLBACKS}, reserving one dynamic altar')
+    merged['callbacks'].sort(key=lambda callback: callback['key'])
+    outputs[CALLBACK_OUTPUT] = encoded(merged)
     return outputs
 
 

@@ -1,0 +1,19 @@
+{
+  "result": "PASS",
+  "diff": {
+    "profiles": {
+      "added": [
+        "oteryn:item.tibia.i3206"
+      ],
+      "removed": [],
+      "changed_existing": []
+    },
+    "callbacks": {
+      "added": [
+        "oteryn:quest-callback/draconia-escape-35012"
+      ],
+      "removed": [],
+      "changed_existing": []
+    }
+  }
+}

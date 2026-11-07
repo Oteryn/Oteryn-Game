@@ -35,6 +35,8 @@ fn scenario_case(
     let departure = name == "departure-map-regression";
     let dropdown = name.starts_with("source-dropdown");
     let devil = name.starts_with("devil-helmet-source");
+    let failure_landing = name.starts_with("conditional-failure-");
+    let draconia_escape = name.starts_with("draconia-escape-");
     let object_mutation = name.starts_with("object-mutation-");
     let mintwallin = name == "mintwallin-source";
     let monk = name.starts_with("monk-guidance");
@@ -56,8 +58,17 @@ fn scenario_case(
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
     let mut callback = callback(
-        if classic_npc || departure || object_mutation || mintwallin || dropdown || devil {
+        if classic_npc
+            || departure
+            || object_mutation
+            || mintwallin
+            || dropdown
+            || devil
+            || draconia_escape
+        {
             "behemoth"
+        } else if failure_landing {
+            "liquid-black-shortcut"
         } else if rotten_purchase {
             "rotten-blood/sacrifice"
         } else if monk {
@@ -68,6 +79,9 @@ fn scenario_case(
             name
         },
     )?;
+    if failure_landing {
+        callback.selector.position = Some(trigger);
+    }
     if target_swap {
         callback
             .item_on_target
@@ -224,6 +238,28 @@ fn scenario_case(
                 });
         }
     }
+    if draconia_escape {
+        callback.selector.unique = Some(35012);
+        callback.selector.action = None;
+        callback.selector.position = None;
+        callback.selector.appearance = None;
+        callback.lever = None;
+        callback.passages.clear();
+        callback.teleport = Some(Position {
+            x: 32701,
+            y: 31639,
+            floor: -6,
+        });
+        callback.offerings = vec![oteryn_gameplay_quests::quest::world_callbacks::Offering {
+            position: Position {
+                x: 32816,
+                y: 31601,
+                floor: -9,
+            },
+            item: "oteryn:item.tibia.i3206".into(),
+            count: 1,
+        }];
+    }
     let world = if devil {
         super::world_with_palette(
             &callback,
@@ -247,7 +283,21 @@ fn scenario_case(
         } else {
             None
         };
-        let callback = if devil {
+        let callback = if draconia_escape {
+            println!("POSTGRES_CASE_STARTED draconia_escape database_created=true");
+            let production = super::callback("draconia-escape-35012")?;
+            assert_eq!(
+                serde_json::to_value(&production)?,
+                serde_json::to_value(super::super::draconia_escape::authored_callback()?)?,
+                "runtime callback preserves its authored source packet"
+            );
+            production
+        } else if failure_landing {
+            println!("POSTGRES_CASE_STARTED conditional_failure_landing database_created=true");
+            let mut value = serde_json::to_value(&callback)?;
+            value["failure_teleport"] = serde_json::json!({"x":32818,"y":31599,"floor":if name.ends_with("blocked") {-10}else{-9}});
+            serde_json::from_value::<Callback>(value)?
+        } else if devil {
             super::callback("devil-helmet-sewer-entry")?
         } else if object_mutation {
             println!("POSTGRES_CASE_STARTED quest_object_mutations database_created=true");
@@ -350,6 +400,10 @@ fn scenario_case(
                 .catalogue()
                 .clone(),
         ));
+        if draconia_escape {
+            owner.quest_catalogue =
+                Some(super::super::draconia_escape::catalogue(&callback, name)?);
+        }
         if departure {
             let mut entry = callback.clone();
             entry.key = "oteryn:quest-callback/departure-entry-feedback".into();
@@ -386,7 +440,7 @@ fn scenario_case(
                     ])
                     .is_ok()
             );
-        } else if lever_fixture || target_swap || object_mutation || mintwallin {
+        } else if lever_fixture || target_swap || object_mutation || mintwallin || failure_landing {
             assert!(
                 owner
                     .states
@@ -442,7 +496,36 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if devil {
+        if draconia_escape {
+            super::super::draconia_escape::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                &callback,
+                name,
+            )
+            .await?;
+        } else if failure_landing {
+            super::super::conditional_callback_failure::exercise(
+                &owner,
+                &mut admitted,
+                &h,
+                deps.actor,
+                fence,
+                if name.ends_with("blocked") {
+                    trigger
+                } else {
+                    Position {
+                        x: 32818,
+                        y: 31599,
+                        floor: -9,
+                    }
+                },
+            )
+            .await?;
+        } else if devil {
             super::super::devil_helmet_source::exercise(
                 &owner,
                 &mut admitted,
