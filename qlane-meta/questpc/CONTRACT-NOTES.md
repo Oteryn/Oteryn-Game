@@ -469,3 +469,13 @@ than delivering a paid key outside the customer's carried custody. Reuse questpc
 paid enginee30938891/2123b7871 and SQL0999/1096; preserve local typed input permits,
 Corym transactions, source world effects, and Father's atomic eleven-track write.
 Reviewed native placement32684,31671,z9; source copper2970 profile already exists.
+
+Elathriel follow-up: actual PG key sales correctly refused copper2970 because its
+ordinary profile classified it UNKNOWN. Refine that existing profile from pinned
+Canary99902524 item/appearance facts via the existing bounded key/door importer.
+Preserve identity/admission and every known fact; reject contradictory facts.
+Do not bypass the generic key-mint classification check. The source item is KEY.
+The incoming qualified Corym commit9ff93aede supplies reusable additive catalogue
+history; use it rather than a duplicate predecessor map. Source-history guards
+still reject edits/removals of old tracks and transitions. Static/source validation
+is separate from the pending final paid-sale PG qualification.

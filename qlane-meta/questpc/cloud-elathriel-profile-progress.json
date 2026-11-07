@@ -1,0 +1,41 @@
+{
+  "phase": "source engine compiling and focused regressions GREEN; completed copper-key classification awaits fresh sale PG",
+  "intermediate_pg": {
+    "log": "qlane-meta/questpc/cloud-elathriel-intermediate-profile-gap.log",
+    "sha256": "6498a8407d22c7e50bf082a98d67be4186935347b45d3a931d8e00335f6e0e16",
+    "postgres": "18.6",
+    "harness_seconds": 254.19,
+    "passed": 1,
+    "failed": 2,
+    "cause": "Native copper2970 profile was materializable but classification UNKNOWN; generic key MINT correctly refused it."
+  },
+  "regressions": [
+    {
+      "case": "draconia_dragonlord_exchange_replay_and_exact_flag_refusal",
+      "log": "qlane-meta/questpc/cloud-elathriel-regression-draconia_dragonlord_exchange_replay_and_exact_flag_refusal.log",
+      "sha256": "d052933ddb2656a3d725fcf87d6d0845ccbc011ef9262816eb828484023af7ad",
+      "harness_seconds": 87.26
+    },
+    {
+      "case": "hidden_threats_doors_works01_retains_key_and_unlocks_exact_source_door",
+      "log": "qlane-meta/questpc/cloud-elathriel-regression-hidden_threats_doors_works01_retains_key_and_unlocks_exact_source_door.log",
+      "sha256": "87453b3773861f0a8a64592d8f8cddd7ef64b5921d65019eb9e091c22babe1c4",
+      "harness_seconds": 50.41
+    },
+    {
+      "case": "fathers_burden_eight_handins_cape_experience_and_replay",
+      "log": "qlane-meta/questpc/cloud-elathriel-regression-fathers_burden_eight_handins_cape_experience_and_replay.log",
+      "sha256": "012cb3042b4a8044a20eb639fcc5cc907f10ee5cf0c17685ba7d4711ff686320",
+      "harness_seconds": 87.26
+    }
+  ],
+  "fix": "Pinned importer now refines only UNKNOWN facts, preserves admitted identity and known facts, rejects conflicts. Copper2970 classification is KEY; no mint guard relaxed.",
+  "checks": {
+    "profile_units": "PASS 3/3 0.133s",
+    "generation": "PASS 40 outputs",
+    "pins": "PASS",
+    "strict_clippy_before_profile_refinement": "PASS"
+  },
+  "whole_title_promoted": false,
+  "boundary": "Documentation/proof checkpoint only. Runtime implementation remains uncommitted until fresh post-refinement sale PG proof."
+}

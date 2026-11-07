@@ -1,3 +1,31 @@
+## Elathriel profile/proof checkpoint — 2026-11-07
+Engine/source admission authored; intermediate actualPG3=254.19s gives1pass/2fail:
+correct key guard rejects materializable-but-UNKNOWN copper2970. Full-capacity
+case is not final proof until rerun with knownKEY. Existing pinned importer now
+refines only UNKNOWN facts, preserves identity/known facts, rejects conflicts.
+Generation40/profileunits3/pinsPASS; strictClippy passed before profile refinement.
+Affected actualPG regressions Dragonlord87.26s,CorymWorks0150.41s,Father87.26s GREEN.
+Native sale final3PG MUST run after this checkpoint and final typed-key data.
+Original initial RED3=247.98s retained; no whole-title promotion.
+
+Current uncommitted integration reusesqpc6e30938891 and incoming Corym generic
+catalogue_history9ff93aede. No duplicate predecessor map; exact additive snapshots.
+Source stateless paid sale is allowed only for current matching paid callback;
+durable fee/MINT participant still required; no invented quest flag. Typed
+reward input permits retain carried-only custody. Source refusal reply/topic0.
+Fixed units use runtime programmes10 including explicitDragonlord, historical
+legacy8 vs currentlegacy9; current predecessor questset is exactlyTibiaTales+
+Draconia. FinalNPC unit log/tmp/questpc-elathriel-npc-unit-qualified.log.
+Before finalPG: pins session61379 complete; post-profile gen46326 complete.
+Final typed key source checks PASS. Run finalClippy/check/fmt asneeded and freshPG,
+then push feature immediately. Stash0 is a retained premerge backup, already applied.
+
+CRITICAL: named git fetch did not refresh the target tracking ref here. Before
+EVERY push fetch the exact target and merge FETCH_HEAD (not a stale origin ref).
+Current fetched-engine ref explicitly updated toe7867e061; qpc6still53d5648b8.
+Paid support frome30938891 remains needed; currentqengine value-only cosmetics
+have no qpc6 repeatable monetary fee path. No forcepush/rebase/main/PR.
+
 Ownership refresh: Hidden Threats Quest is QUALIFIED in questpc7 at ee0f48730d3e864796dfa69f691fd643f1284c5a (HIDDEN-PG-PROOF.json, actual PostgreSQL18.6 RED43.512682362s/GREEN45.593580772s). Apply owner SKIP rule; room drafts are uncommitted /tmp files and must not be implemented as duplicate lane work. Current owner snapshots recorded for questpc2–8 and qengine2. Next select other unfinished owned entries after level-gate integration push.
 
 GREEN integration:5b3d0a14e native Draconia level25 gate merged with Corym doors and Dragonlord exchange. Combined fmt/check/strict clippy,5source-binding/2profile units, source/profile generation and pins passed. Evidence: cloud-hidden-level-integration-validation.json. Parent real-PG proofs retained; imported logs normalized only at EOF with raw hashes preserved. Publish fast-forward, then source research/RED for next owned batch; Hidden Threats is SKIP under current questpc7 qualification.
