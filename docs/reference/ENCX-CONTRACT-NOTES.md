@@ -1012,3 +1012,92 @@ run passed. Fmt check passed in 18.423s, duplicate-migration check in 0.398s,
 pin refresh in 31.210s, pin-check in 33.765s and architecture-check in 6.041s.
 These component and integration checks do not change W10/W11/W16 completion:
 the full Primal production qualification/encounter chain remains unfinished.
+
+
+## ENCX publication cadence (owner direction)
+
+After the integrated main checkpoint, publish compiling work within fifteen
+minutes, then at least every thirty minutes. The pre-push gates are
+`cargo check --workspace --all-targets` and `cargo fmt --check`; full suites run
+in CI. If a main merge cannot be resolved within fifteen minutes, abort that
+merge, publish the last compiling state, and resume the integration afterwards.
+Keep follow-ups small for the single SRVENC integration PR. This checkpoint
+adds no runtime behavior or allocated numbers. The next W10 production gate
+remains the captured Primal callbacks in `activity_template.rs`; neither source
+hook qualification nor the unfinished W10/W11/W16 chain tests are relaxed.
+
+Checkpoint gates passed: workspace/all-target compile 220.394s; fmt 14.866s.
+
+
+## W10 callback qualification diagnostics
+
+Boot now reports the exact unavailable captured source hooks with each
+`SourceHookUnavailable` rejection. Qualification and diagnostics use the same
+hook filter; no source hook was admitted by this change. Crystal 201189f,
+`data-global/monster/quests/primal_ordeal_quest/the_primal_menace.lua:66-69,338-347`
+requires the distinct Primal death/quest callbacks and think owner. Map failures
+retain their own reason and do not report a callback rejection.
+
+The new test `primal_hook_diagnostic_names_the_captured_unimplemented_callbacks`
+failed first (missing diagnostic API), then passed in 0.010s. All five activity
+qualification tests passed in 82.869s. The native Instance corpse PostgreSQL
+regression `native_instance_corpse_mint_postgres_physical_death_loot_replay_and_scope_fences`
+executed and passed in 5.370s. No IDs, migrations, wire shapes or generated
+registrations changed. W10/W11/W16 full production chains remain unfinished.
+
+Follow-up gates passed: workspace/all-target compile 409.527s (including test-build lock wait), changed-crate/all-target clippy with warnings denied 170.204s, fmt 14.531s, duplicate migrations 0.358s.
+
+
+## PREPUSH-2 integration of main f641d8d6c
+
+Fetched and merged current main with repository merge drivers. The spell manifest
+was the sole textual conflict and was resolved by the repository generator.
+Main itself supplied an uncompilable NPC caller: `quest_world_callback.rs` called
+five-argument `apply_input` with three arguments (E0061). The shared mutation now
+accepts an explicit private `InputAuthority`: World callbacks retain the exact
+Channel lane/fence check, while the existing current-equipment-admitted
+`NpcItemPermit` admits carried custody only. Ground is rejected before any NPC
+mutation; no fresh or reconstructed lane permit is manufactured.
+
+Regeneration uses the full content/world materializer and tree tooling, spell
+registration, item audit tag tooling, quest binding evidence assembly and client
+registration golden tooling. World metadata was checked and regenerated from the
+converter's exact hash-pinned Crystal source files: zero metadata files changed.
+The two registration fixture changes are generator canonical formatting only.
+No ENCX migrations or command/capability/mechanic numbers were added.
+
+The native Instance corpse PG regression executed on merged main and passed in
+5.777s. Unit suites are running for all eleven ENCX-changed crates (library unit
+selection; the full PostgreSQL suite is excluded), and the real-dispatch NPC XP
+hand-in PG case is also queued. Final check evidence is recorded below before
+publication. W10/W11/W16 full encounter chains remain unfinished.
+
+
+Publication gates: full regeneration and pin refresh passed (world digest
+`d528b2dfce1bedf9db643ff78c45060ef6c08f69459c9edbf632cdc4ca73eb95`, unchanged
+by regeneration). Spell registration check passed in 85.936s and quest binding
+check in 19.032s. The fresh workspace/all-target check passed in 999.935s,
+including build-lock waits; changed-crate/all-target clippy with warnings denied
+passed in 804.094s, fmt in 16.082s and duplicate migrations in 0.414s.
+
+PREPUSH-2 cadence exception: full library unit suites are still pending for
+`oteryn-client`, `oteryn-client-ui`, `oteryn-game-server`,
+`oteryn-gameplay-combat`, `oteryn-gameplay-content`,
+`oteryn-gameplay-dispatch`, `oteryn-gameplay-durability`,
+`oteryn-gameplay-entities`, `oteryn-gameplay-items`,
+`oteryn-gameplay-monster-ai`, and `oteryn-synthetic-client-harness`.
+The first build exposed the repaired main caller error; the second hit a
+SIGKILL while compiling the dispatch test binary concurrently with server tests.
+A serial build retry is queued; no test case or assertion was disabled.
+`catalogue_npc_general_xp_handin_runs_in_real_dispatch` is also pending build.
+The completed Instance corpse PostgreSQL case remains the actual 5.777s proof
+for this checkpoint, not a claim that the full encounter chains are DONE.
+
+
+Final generated-content checks passed: World-project/tree equivalence (34,111
+items, 252 mounts and all admitted bindings), materialized tree 97/97, and the
+publication pin-check in `/tmp/encx-f641-publish-pin-check.log`. A duplicate
+optional pin-check process and the NPC dispatch test build suffered memory kills
+while running together; the publication pin-check completed successfully, and
+the one-job unit retry remains active. No assertion failure is being reported as
+a pass. The NPC PG case has not executed yet and remains explicitly pending.

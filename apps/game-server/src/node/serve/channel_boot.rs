@@ -54,6 +54,7 @@ pub(super) async fn prepare_channel(
     let (active_content, content) =
         activate_content(root, material.world, material.channel, reset_epoch).await?;
     let qualified_room = content.qualified_room().clone();
+
     let (channel_pin, movement_cells, door_content, spawn_source) = content.into_channel_parts();
     // Spell cast §3 (SPELL-D1): the V1 spell book is loaded with the Content activation, before
     // the Channel runtime; a book that does not load refuses readiness.
@@ -139,8 +140,8 @@ pub(super) async fn prepare_channel(
         .map_err(|_| BootError::ContentActivation("qualified activity catalogue publication"))?;
     for diagnostic in activity_diagnostics {
         event(&format!(
-            "event=activity_template state=unavailable source={} reason={:?}",
-            diagnostic.path, diagnostic.reason
+            "event=activity_template state=unavailable source={} reason={:?} unavailable_source_hooks={:?}",
+            diagnostic.path, diagnostic.reason, diagnostic.unavailable_source_hooks
         ));
     }
     for template in &activity_templates {
