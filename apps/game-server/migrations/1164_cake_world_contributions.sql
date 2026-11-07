@@ -398,3 +398,82 @@ DO $$ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION game_cake_equipment_complete(game_item_consume_transform_records) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_cake_equipment_complete(game_item_consume_transform_records) TO oteryn_game_runtime;
+
+-- Crystal biff_the_baker.lua:69-100 Player:getItemCount/removeItem includes
+-- carried hand stacks. An equipment source has no parent Container, so its
+-- actual parent capacity is0; all existing recipes retain1..500 unchanged.
+DO $migration$
+DECLARE prior TEXT;body TEXT;old TEXT;replacement TEXT;
+BEGIN
+ SELECT pg_get_expr(conbin,conrelid) INTO STRICT prior FROM pg_constraint
+  WHERE conrelid='game_item_consume_transform_records'::regclass
+   AND conname='game_item_consume_transform_records_parent_capacity_check';
+ ALTER TABLE game_item_consume_transform_records
+  DROP CONSTRAINT game_item_consume_transform_records_parent_capacity_check;
+ EXECUTE format('ALTER TABLE game_item_consume_transform_records ADD CONSTRAINT game_item_consume_transform_records_parent_capacity_check CHECK ((%s) OR (recipe=''oteryn:cake.baker-substances'' AND source_kind=2 AND parent_item_instance_id IS NULL AND parent_capacity=0 AND game_cake_donation_shape(game_item_consume_transform_records)))',prior);
+
+ -- Preserve the complete existing direct-carried source custody/audit proof.
+ -- Only the new exact source recipe gains its already-validated source_count;
+ -- all legacy branches keep the original one-unit/dispenser semantics.
+ body:=pg_get_functiondef('game_item_consume_transform_complete(uuid)'::regprocedure);
+ old:='CASE WHEN r.recipe=''oteryn:dispenser.fill'' THEN r.source_count ELSE 1 END';
+ replacement:='CASE WHEN r.recipe IN(''oteryn:dispenser.fill'',''oteryn:cake.baker-substances'') THEN r.source_count ELSE 1 END';
+ IF (length(body)-length(replace(body,old,'')))/length(old)<>1 THEN
+  RAISE EXCEPTION 'missing exact Cake direct-source count completion boundary';
+ END IF;
+ EXECUTE replace(body,old,replacement);
+END $migration$;
+
+-- An equipment root has no parent Container. Do not permit a fabricated
+-- positive capacity merely because that value satisfies the legacy scalar bound.
+ALTER TABLE game_item_consume_transform_records
+ ADD CONSTRAINT game_cake_equipment_parent_truth CHECK(
+  recipe<>'oteryn:cake.baker-substances' OR source_kind<>2 OR
+  (parent_item_instance_id IS NULL AND parent_capacity=0));
+
+-- Player:getItemCount/removeItem (Crystal biff_the_baker.lua:69-100) may
+-- consume200 one-unit carried inputs. Every deferred Item mutation still
+-- revalidates the complete final set, using one relational proof instead of
+-- issuing an individual PL/pgSQL SELECT for each input on every callback.
+-- There is no memoization, timeout increase or omitted custody/before-image check.
+CREATE OR REPLACE FUNCTION game_cake_donation_extra_complete(r game_item_consume_transform_records)
+ RETURNS VOID LANGUAGE plpgsql AS $$
+BEGIN
+ IF NOT game_cake_donation_shape(r) OR EXISTS(
+  SELECT 1 FROM jsonb_array_elements(r.extra_inputs) e
+  LEFT JOIN game_item_instances i ON i.item_instance_id=(e->>'item')::uuid
+  WHERE i.item_instance_id IS NULL
+   OR i.quantity<>(e->'before'->>'quantity')::bigint-(e->>'count')::integer
+   OR i.lifecycle<>(CASE WHEN i.quantity=0 THEN 2 ELSE 1 END)
+   OR i.last_transaction_id IS DISTINCT FROM r.transaction_id
+   OR (to_jsonb(i)-ARRAY['quantity','lifecycle','last_transaction_id']) IS DISTINCT FROM
+      ((e->'before')-ARRAY['quantity','lifecycle','last_transaction_id'])
+   OR (i.quantity=0 AND
+      (EXISTS(SELECT 1 FROM game_item_container_entries c WHERE c.item_instance_id=i.item_instance_id)
+       OR EXISTS(SELECT 1 FROM game_item_nested_entries n WHERE n.item_instance_id=i.item_instance_id)
+       OR EXISTS(SELECT 1 FROM game_character_equipment_slots s WHERE s.item_instance_id=i.item_instance_id)))
+   OR (i.quantity>0 AND NOT game_cake_extra_custody(r,e))
+ ) THEN RAISE EXCEPTION 'Cake donation lacks exact decrement and custody' USING ERRCODE='23514'; END IF;
+END $$;
+DO $$ BEGIN
+ EXECUTE format('ALTER FUNCTION game_cake_donation_extra_complete(game_item_consume_transform_records) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END $$;
+
+-- Crystal biff_the_baker.lua:69-100 removes the accepted substance amount,
+-- including an entire nested stack. The existing additional-input removal
+-- proof admits single units; extend only this exact recipe to its complete
+-- before quantity, preserving every existing custody/transaction predicate.
+DO $migration$
+DECLARE body TEXT;old TEXT;replacement TEXT;
+BEGIN
+ body:=pg_get_functiondef('game_item_nested_entry_proven()'::regprocedure);
+ old:='WHERE (e->>''source_kind'')::integer=4 AND (e->>''count'')::integer=1';
+ replacement:='WHERE (e->>''source_kind'')::integer=4 AND
+  ((e->>''count'')::integer=1 OR (r.recipe=''oteryn:cake.baker-substances''
+   AND game_cake_donation_shape(r)
+   AND (e->>''count'')::bigint=(e->''before''->>''quantity'')::bigint))';
+ IF (length(body)-length(replace(body,old,'')))/length(old)<>1 THEN
+  RAISE EXCEPTION 'missing exact Cake nested extra stack-retirement boundary';
+ END IF;
+ EXECUTE replace(body,old,replacement);
+END $migration$;

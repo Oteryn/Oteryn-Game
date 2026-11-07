@@ -1062,7 +1062,7 @@ async fn consume_count(
         .get("quantity")
         .and_then(Value::as_i64)
         .ok_or(DurabilityError::InvalidStoredState)?;
-    if count == 0 || i64::from(count) > quantity || !matches!(source_kind, 1 | 2 | 3 | 4 | 5) {
+    if count == 0 || i64::from(count) > quantity || !matches!(source_kind, 1..=5) {
         return Err(DurabilityError::InvalidStoredState);
     }
     let changed = sqlx::query("UPDATE game_item_instances SET quantity=quantity-$3,lifecycle=CASE WHEN quantity=$3 THEN 2 ELSE 1 END,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid")

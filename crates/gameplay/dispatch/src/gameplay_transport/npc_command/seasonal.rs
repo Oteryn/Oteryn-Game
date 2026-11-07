@@ -170,11 +170,10 @@ pub(super) async fn apply(
         digest.update(command.game_session_id.as_bytes());
         digest.update(command.command_id.to_be_bytes());
         digest.update(fence.character_id.as_bytes());
-        let occurrence = DecisionOccurrenceId::from_bytes(
-            digest.finalize()[..16]
-                .try_into()
-                .expect("fixed digest prefix"),
-        );
+        let digest = digest.finalize();
+        let mut occurrence_bytes = [0_u8; 16];
+        occurrence_bytes.copy_from_slice(&digest[..16]);
+        let occurrence = DecisionOccurrenceId::from_bytes(occurrence_bytes);
         let (Some(chance), Some(group)) = (
             draw(&root, occurrence, "santa.present.chance", 100),
             draw(&root, occurrence, "santa.present.group", 10),

@@ -983,3 +983,47 @@ Christmas/real Baker invalid journal state; equipment-only Baker parent-capacity
 constraint and partial-extra source-count completion. Full failure collection
 continues before the prepared fix batch and full rerun. No green row is claimed.
 The complete31-case Python source rerun now passes472.453s.
+
+### Owner replacement validation rule,17:48UTC
+
+The owner replaced the full inverse-dependency Nextest requirement with own
+mechanic RED/GREEN cases (including real PostgreSQL), workspace all-target
+compile checking, changed-crate Clippy, fmt, duplicate-migration checking and
+normal generated-content/pin regeneration. CI owns the complete suites and its
+failures will be repaired together. The obsolete full run was interrupted at
+the owner's explicit direction:4,573 passed,53 reported failed/interrupted,
+4,626/9,721 executed; execution6,423.663s, total6,880.135s. This is diagnostic
+evidence, not a passing full-suite claim. Existing43 ignored annotations stayed
+unchanged.
+
+Merged origin/main1ae39c7fb (QENGINE2/QBASE0999-1008). No1200-1205 migration
+copies exist. Collected fixes cover strict source inventory regeneration,
+independent regeneration pulse persistence, Cake equipment parent truth and
+exact decrements, set-based complete200-input proofs, historical NPC retirement,
+normal400-bed source facts and fixtures, and closed guard/read inventories.
+The new main's53 qualified reward-item profiles are a separate measured cohort;
+no old speed/ability, source authority or immutable-write checks were removed.
+Native provider regeneration passed98.227s. Focused build/PG results follow.
+
+Main reintroduced its legacy root contract notes. The merge preserves that
+unchanged evidence with git mv at docs/reference/QENGINE2-CONTRACT-NOTES.md;
+the repository root remains clear and all SEASON additions stay in this file.
+
+
+### Owner compiling-checkpoint direction (2026-11-07)
+
+The owner superseded the pre-push test gate: publish the current state after
+`cargo check --workspace --all-targets` and `cargo fmt --check`; CI runs the
+full suites. This checkpoint is unfinished work, not a DONE claim for any row.
+Changed-crate Clippy passed for all 15 packages in 208.907s. The focused five
+PostgreSQL cases executed in 123.658s (434.364s including build): three Baker
+physical-input cases passed; the real Baker NPC and Santa NPC cases still fail
+at their inventory_changed assertions. No test was weakened, skipped or deleted.
+The earlier 67-case mechanic run passed 64 cases, with the three failures
+subsequently investigated; the nested-stack retirement repair now passes.
+Pin refresh passed in 33.208s and pin-check in 29.525s. The normal Python world
+tree validation passed in 593.019s. Remaining native NPC failures and private
+feature drafts are follow-up work; they are not represented as completed rules.
+
+Publication gates passed on this checkpoint: `cargo check --workspace --all-targets`
+243.796s; `cargo fmt --check` 15.405s. Duplicate migration numbers: none.

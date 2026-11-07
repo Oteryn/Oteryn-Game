@@ -1,0 +1,4183 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.a_majestic_warwolf",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/druid_hat_addon",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.amber",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_backpack_rook",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Would you bring 100 minotaur leathers for a handmade backpack?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.amber",
+      "keywords": [
+        "addon",
+        "outfit",
+        "backpack",
+        "leather"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_backpack_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Did you bring 100 minotaur leathers? Your backpack takes two hours to make."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.amber",
+      "keywords": [
+        "backpack",
+        "minotaur",
+        "leather"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_backpack_rook",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_backpack_rook",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Would you bring 100 minotaur leathers for a handmade backpack?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ariella",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_base_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_hat_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Bring proof from the four pirate leaders."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ariella",
+      "keywords": [
+        "task"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_hat_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Did you bring the shirt, sabre, hat and eye patch?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ariella",
+      "keywords": [
+        "task"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_base_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_hat_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Bring proof from the four pirate leaders."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ariella",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_base_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_hat_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Bring proof from the four pirate leaders."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.atrad",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/atrad",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_second_addon",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.atrad",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/atrad",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_second_addon",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.avar_tar",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "Choose the base, shield or helmet."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.avar_tar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [],
+      "reply": [
+        "Choose the base, shield or helmet."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "slime",
+        "mould",
+        "fungus",
+        "sample"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring samples for me to analyse?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "slime",
+        "mould",
+        "fungus",
+        "sample"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring samples for me to analyse?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Let me analyse the samples."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.broken_servant_sentry",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_1/elementalist_outfits/outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Let me analyse the samples."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "crest"
+      ],
+      "topic": 0,
+      "next_topic": 60,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 27,
+          "maximum": 27,
+          "set": 27,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Can I have that serpent crest?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cael",
+      "keywords": [
+        "tribal crest"
+      ],
+      "topic": 0,
+      "next_topic": 61,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 27,
+          "maximum": 27,
+          "set": 27,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/warmaster_addon_2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Can I have that tribal crest?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ceiron",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/druid_hat_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ceiron",
+      "keywords": [
+        "chain",
+        "wolf tooth chain"
+      ],
+      "topic": 0,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/druid_hat_addon",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ceiron",
+      "keywords": [
+        "dust",
+        "demon dust"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/druid_hat_addon",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ceiron",
+      "keywords": [
+        "griffinclaw",
+        "container"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/druid_hat_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ceiron",
+      "keywords": [
+        "task"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/druid_hat_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ceiron",
+      "keywords": [
+        "task"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/druid_hat_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ceiron",
+      "keywords": [
+        "task"
+      ],
+      "topic": 0,
+      "next_topic": 10,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/druid_hat_addon",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/druid_amulet_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ceiron",
+      "keywords": [
+        "waterskin",
+        "water skin"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/druid_hat_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ceiron",
+      "keywords": [
+        "faolan"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/druid_hat_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ceiron",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/druid_hat_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.costello",
+      "keywords": [
+        "holy water"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "reply": [
+        "Who sent you?"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "keywords": [
+        "cape",
+        "first addon"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wayfarer_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Do you have the old cape with you?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.cranky_lizard_crone",
+      "keywords": [
+        "hat",
+        "second addon"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/wayfarer_outfit_1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Do you have the sedge hat with you?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "I need five sturdy books for the first addon or twenty epaulettes for the second."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "I need five sturdy books for the first addon or twenty epaulettes for the second."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        }
+      ],
+      "reply": [
+        "I need five sturdy books for the first addon or twenty epaulettes for the second."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.duncan",
+      "keywords": [
+        "eye patches"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you gathered 100 eye patches?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.duncan",
+      "keywords": [
+        "hooks"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Have you gathered 100 hooks?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.duncan",
+      "keywords": [
+        "peg legs"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Have you gathered 100 peg legs?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.duncan",
+      "keywords": [
+        "task"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Bring 100 eye patches, 100 peg legs and 100 hooks in that order."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.duncan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Bring 100 eye patches, 100 peg legs and 100 hooks in that order."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "chicken wing"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "crossbow"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "leather"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "steel"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "task"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.erayo",
+      "keywords": [
+        "10 spools of yarn"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_first_addon",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.erayo",
+      "keywords": [
+        "50 blue cloth"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_first_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.erayo",
+      "keywords": [
+        "50 brown cloth"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_first_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.erayo",
+      "keywords": [
+        "50 green cloth"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.erayo",
+      "keywords": [
+        "50 red cloth"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_first_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.erayo",
+      "keywords": [
+        "50 white cloth"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_first_addon",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.erayo",
+      "keywords": [
+        "50 yellow cloth"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_first_addon",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.erayo",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.erayo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.eruaran",
+      "keywords": [
+        "dream warden claw"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/dream_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.eruaran",
+      "keywords": [
+        "dream warden mask"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/dream_outfit_1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomadness",
+      "keywords": [
+        "salvage"
+      ],
+      "topic": 0,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/makeshift_warrior/qualification",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "addition to the crystal warlord armor outfit"
+      ],
+      "topic": 0,
+      "next_topic": 104,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "addition to the soil guardian outfit"
+      ],
+      "topic": 0,
+      "next_topic": 102,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "basic crystal warlord outfit"
+      ],
+      "topic": 0,
+      "next_topic": 103,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "basic soil guardian outfit"
+      ],
+      "topic": 0,
+      "next_topic": 101,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomally",
+      "keywords": [
+        "supply"
+      ],
+      "topic": 0,
+      "next_topic": 105,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gregor",
+      "keywords": [
+        "behemoth fang"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_helmet",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/mission_helmet",
+          "minimum": -1,
+          "maximum": 6,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/ramsays_helmet_door",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gregor",
+      "keywords": [
+        "ramsay the reckless helmet"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_helmet",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/mission_helmet",
+          "minimum": -1,
+          "maximum": 6,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gregor",
+      "keywords": [
+        "royal steel"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_helmet",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/mission_helmet",
+          "minimum": -1,
+          "maximum": 6,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gregor",
+      "keywords": [
+        "sweat"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_helmet",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/mission_helmet",
+          "minimum": -1,
+          "maximum": 6,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gregor",
+      "keywords": [
+        "task"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_helmet",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/mission_helmet",
+          "minimum": 0,
+          "maximum": 6,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gregor",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_helmet",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/mission_helmet",
+          "minimum": 0,
+          "maximum": 6,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.habdel",
+      "keywords": [
+        "comb"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you brought the mermaid comb?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.habdel",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 35,
+          "maximum": 2147483647
+        }
+      ],
+      "reply": [
+        "Could you bring a mermaid comb?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.habdel",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 35,
+          "maximum": 2147483647
+        }
+      ],
+      "reply": [
+        "Could you bring a mermaid comb?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "shard"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 40,
+          "maximum": 40,
+          "set": 41
+        }
+      ],
+      "reply": [
+        "Have you brought 5 frostheart shards?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "shard"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 42,
+          "maximum": 42,
+          "set": 43
+        }
+      ],
+      "reply": [
+        "Have you brought 10 frostheart shards?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "shard"
+      ],
+      "topic": 3,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 40,
+          "maximum": 40,
+          "set": 41
+        }
+      ],
+      "reply": [
+        "Have you brought 5 frostheart shards?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "shard"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 42,
+          "maximum": 42,
+          "set": 43
+        }
+      ],
+      "reply": [
+        "Have you brought 10 frostheart shards?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "shard"
+      ],
+      "topic": 4,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 40,
+          "maximum": 40,
+          "set": 41
+        }
+      ],
+      "reply": [
+        "Have you brought 5 frostheart shards?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hjaern",
+      "keywords": [
+        "shard"
+      ],
+      "topic": 4,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 42,
+          "maximum": 42,
+          "set": 43
+        }
+      ],
+      "reply": [
+        "Have you brought 10 frostheart shards?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "10 bat wings"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Have you brought 10 of the requested materials?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "20 brown pieces of cloth"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you brought 20 of the requested materials?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "30 heaven blossoms"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Have you brought 30 of the requested materials?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "50 minotaur leathers"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Have you brought 50 of the requested materials?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help gather the materials for my creation?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "Have you come to collect your new outfit?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hugo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help gather the materials for my creation?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 19,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 24,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Are you here to collect your accessory for 150000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 25,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 30,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Are you here to collect your accessory for 150000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 19,
+      "next_topic": 20,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "dress",
+        "coat"
+      ],
+      "topic": 20,
+      "next_topic": 21,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 21,
+      "next_topic": 22,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 22,
+      "next_topic": 23,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 25,
+      "next_topic": 26,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "hat"
+      ],
+      "topic": 26,
+      "next_topic": 27,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 27,
+      "next_topic": 28,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 28,
+      "next_topic": 29,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_first_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/nobleman_outfits/nobleman_second_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The accessory costs 150000 gold carried with you."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ishina",
+      "keywords": [
+        "comb"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you brought the mermaid comb?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ishina",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 35,
+          "maximum": 2147483647
+        }
+      ],
+      "reply": [
+        "Could you bring a mermaid comb?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ishina",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/explorer_society/the_orc_powder",
+          "minimum": 35,
+          "maximum": 2147483647
+        }
+      ],
+      "reply": [
+        "Could you bring a mermaid comb?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "outfit",
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "Choose armor, boots or helmet for your golden commission."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [],
+      "reply": [
+        "Choose armor, boots or helmet for your golden commission."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "armor"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "The chosen commission costs 100000 gold. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "boots"
+      ],
+      "topic": 2,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "The chosen commission costs 50000 gold. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "helmet"
+      ],
+      "topic": 2,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "The chosen commission costs 50000 gold. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.legola",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lynda",
+      "keywords": [
+        "angelina"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_wand",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lynda",
+      "keywords": [
+        "ankh"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_wand",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lynda",
+      "keywords": [
+        "soul stone"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_wand",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lynda",
+      "keywords": [
+        "sulphur"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_wand",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lynda",
+      "keywords": [
+        "wand",
+        "rod"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_wand",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lynda",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_wand",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "ape fur"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Did you bring the ape fur?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "blue cloth"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Did you bring the blue cloth?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "enchanted chicken wings"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Did you bring the enchanted chicken wings?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "fish fins"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Did you bring the fish fins?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "task"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Bring ape fur, fish fins, enchanted chicken wings and blue cloth in order."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Bring ape fur, fish fins, enchanted chicken wings and blue cloth in order."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.morgan",
+      "keywords": [
+        "forge"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "reply": [
+        "What would you like me to forge?"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_sword",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.muriel",
+      "keywords": [
+        "addons"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_02/the_first_dragon/feathers",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
+      "reply": [
+        "Choose the first or second addon."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "ape fur"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "bat wings"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "holy orchids"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "lizard scales"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 7
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 100,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "red cloth"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "red dragon scales"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 8
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "sulphur"
+      ],
+      "topic": 0,
+      "next_topic": 10,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 9
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "vampire dust"
+      ],
+      "topic": 0,
+      "next_topic": 11,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 10
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "yarn"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.myra",
+      "keywords": [
+        "tiara"
+      ],
+      "topic": 100,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_hat_cloak",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/mission_hat_cloak",
+          "minimum": 0,
+          "maximum": 11,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "flou"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "explain"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 5,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 6,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 7,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.navigator",
+      "keywords": [
+        "helmet"
+      ],
+      "topic": 7,
+      "next_topic": 8,
+      "reply": [
+        "Listen carefully."
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/navigator",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 4
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.norma",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_hat_rook",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Shall I teach you how to make a feather hat?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.norma",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/addon_hat_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits_rook/mission_hat_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Have you brought a legion helmet, 50 honeycombs and 100 chicken feathers?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ottokar",
+      "keywords": [
+        "medicine",
+        "medicine pouch",
+        "belongings of deceasead"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.palimuth",
+      "keywords": [
+        "job",
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 54,
+          "maximum": 54,
+          "set": 55
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring me the vampiric crest?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.palimuth",
+      "keywords": [
+        "job",
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/questline",
+          "minimum": 54,
+          "maximum": 54,
+          "set": 55
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/side_decision",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring me the vampiric crest?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "outfit",
+        "addon",
+        "royal"
+      ],
+      "topic": 0,
+      "next_topic": 14,
+      "storage": [],
+      "reply": [
+        "Choose armor, shield or crown for a token donation."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 14,
+      "next_topic": 15,
+      "storage": [],
+      "reply": [
+        "Choose armor, shield or crown for a token donation."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "armor"
+      ],
+      "topic": 15,
+      "next_topic": 16,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/outfit_quest/royal_costume_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "The donation is 15000 silver tokens and 12500 gold tokens."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "crown"
+      ],
+      "topic": 15,
+      "next_topic": 18,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/outfit_quest/royal_costume_outfit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "The donation is 7500 silver tokens and 6250 gold tokens."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.percybald",
+      "keywords": [
+        "shield"
+      ],
+      "topic": 15,
+      "next_topic": 17,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/outfit_quest/royal_costume_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "The donation is 7500 silver tokens and 6250 gold tokens."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "ape fur"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Did you bring the ape fur?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "blue cloth"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Did you bring the blue cloth?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "enchanted chicken wings"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Did you bring the enchanted chicken wings?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "fish fins"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Did you bring the fish fins?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "task"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Bring ape fur, fish fins, enchanted chicken wings and blue cloth in order."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.razan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Bring ape fur, fish fins, enchanted chicken wings and blue cloth in order."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sam",
+      "keywords": [
+        "old backpack",
+        "backpack"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "reply": [
+        "Did you find my old backpack?"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_5/sams_old_backpack/sams_old_backpack_npc",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sandra",
+      "keywords": [
+        "prize"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sandra",
+      "keywords": [
+        "vial",
+        "ticket",
+        "bonus",
+        "deposit"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sandra",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "100 ape fur"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring the fur and the 20000 gold fee?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you retrieve my favourite staff?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "reply": [
+        "Will you bring 100 ape fur and pay 20000 gold for our deal?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "staff"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 11,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_second_addon",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Did you bring my favourite staff?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "reply": [
+        "Will you bring 100 ape fur and pay 20000 gold for our deal?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "staff"
+      ],
+      "topic": 4,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you retrieve my favourite staff?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_outfit",
+          "minimum": 10,
+          "maximum": 10,
+          "set": 11
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/beggar_outfits/beggar_first_addon_door",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you retrieve my favourite staff?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
+        "advancement",
+        "demonic",
+        "essence"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
+        "advancement",
+        "demonic",
+        "essence"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
+        "join"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
+        "advancement",
+        "demonic",
+        "essence"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
+        "advancement",
+        "demonic",
+        "essence"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
+        "join"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.tom",
+      "keywords": [
+        "paws",
+        "bear paws"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits_rook/druid_body_addon_rook",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Have you brought 50 bear paws and 50 wolf paws?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ustan",
+      "keywords": [
+        "paws",
+        "bear paws"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/druid_outfits/druid_body_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vanys",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_summer_court",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vanys",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 7,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_summer_court",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vanys",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 8,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_summer_court",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vescu",
+      "keywords": [
+        "10 demon dust"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_base_outfit",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vescu",
+      "keywords": [
+        "10 red dragon scales"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_base_outfit",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vescu",
+      "keywords": [
+        "20 fish fins"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_base_outfit",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vescu",
+      "keywords": [
+        "20 vampire dust"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_base_outfit",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vescu",
+      "keywords": [
+        "30 bonelord eyes"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_base_outfit",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vescu",
+      "keywords": [
+        "30 lizard scales"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_base_outfit",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vescu",
+      "keywords": [
+        "sober"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_base_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vescu",
+      "keywords": [
+        "warrior's sweat"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_base_outfit",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vescu",
+      "keywords": [
+        "potion"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_base_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vescu",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_base_outfit",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zoltan",
+      "keywords": [
+        "proof"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "Will you help me with this task?"
+      ]
+    }
+  ]
+}

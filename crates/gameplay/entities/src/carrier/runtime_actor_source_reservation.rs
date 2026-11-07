@@ -596,9 +596,12 @@ mod scope_tests {
                 |_, _| Some(true),
             )
             .unwrap();
-        let RaidSpawnOutcome::Placed(actor) = placed.outcome else {
-            panic!("native raid fixture must place a creature");
+        let actor = match placed.outcome {
+            RaidSpawnOutcome::Placed(actor) => Some(actor),
+            _ => None,
         };
+        assert!(actor.is_some(), "native raid fixture must place a creature");
+        let actor = actor.unwrap();
         let p = Proof {
             scope: r.binding().runtime_scope(),
             generation: r.binding().scope_generation(),

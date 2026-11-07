@@ -4,6 +4,8 @@ use super::*;
 use serde::Deserialize;
 use std::sync::OnceLock;
 
+type RankedTileTop = ((u8, bool, u64), Option<bool>, Option<bool>);
+
 #[derive(Debug, Deserialize)]
 struct Pair {
     item_id: u32,
@@ -251,7 +253,7 @@ pub(super) async fn plan(
             .filter(|(item, _)| item_id(&item.production_key) == Some(id))
             .count();
         if count == 1 {
-            let mut top: Option<((u8, bool, u64), Option<bool>, Option<bool>)> = None;
+            let mut top: Option<RankedTileTop> = None;
             for (item, ordinal) in &tile_items {
                 let Some(policy) = native.item_policy(&item.production_key, &item.revision_ref)
                 else {

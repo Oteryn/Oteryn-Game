@@ -135,6 +135,10 @@ def capture(crystal, canary):
     read('src/items/items.cpp')
     read('src/items/item.hpp')
     wrap_parser = read('src/items/functions/item/item_parse.cpp')
+    bed_engine = read('src/items/bed.cpp')
+    if ('it.transformToOnUse[player->getSex()] != 0' not in bed_engine
+            or 'if (newType.type == ITEM_TYPE_BED)' not in bed_engine):
+        raise ValueError('HOUSE_BED_APPEARANCE_SOURCE_DRIFT')
     if 'itemType.wrapableTo = pugi::cast<int32_t>(valueAttribute.value());\n\t\titemType.wrapable = true;' not in wrap_parser:
         raise ValueError('HOUSE_WRAP_XML_SOURCE_DRIFT')
     item_definitions = read('src/items/items_definitions.hpp')
@@ -234,7 +238,8 @@ def capture(crystal, canary):
                  'sources': [{'path': path, 'sha256': digest} for path, digest in sorted(sources.items())],
                  'carpets': carpets, 'windows': windows, 'mirror': mirror, 'bathtub': bathtub,
                  'music': music, 'birdcage': birdcage, 'fish_tank': fish_tank, 'magic_trees': trees,
-                 'bed_kits': bed_kits, 'bed_item_ids': bed_item_ids, 'wrap_pairs': wrap_pairs, 'wrap_eligible': [row['item_id'] for row in wrap_eligible],
+                 'bed_kits': bed_kits, 'bed_item_ids': bed_item_ids,
+                 'bed_semantics_donors': ['src/items/functions/item/item_parse.cpp:397-398,733-766', 'src/items/bed.cpp:288-303'], 'wrap_pairs': wrap_pairs, 'wrap_eligible': [row['item_id'] for row in wrap_eligible],
                  'wrap_eligibility': wrap_eligible, 'native_item_specs': item_specs,
                  'native_transforms': sorted(native_transforms, key=lambda row: (row['item_id'], row['kind'])),
                  'unavailable_native_transforms': unavailable}
@@ -267,6 +272,7 @@ def capture(crystal, canary):
     records = [source.profile(item, xml[item], objects[item], physical[item], bindings, None) for item in sorted(ids)]
     bound = bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records}, bindings, ids,
                           independent_crystal_source=(PIN, xml_raw))
+    apply_source_beds(bound['records'], xml, bindings)
     # Crystal items.cpp:203-208 and item.hpp:553-555 establish auto-carpet eligibility.
     top = {str(item): next((order for flag, order in (('clip', 1), ('top', 3), ('bottom', 2))
                            if obj['flags'].get('flags.' + flag, False)), 0) for item, obj in objects.items()}
@@ -283,6 +289,69 @@ def capture(crystal, canary):
                 'always_on_top': top, 'records': bound['records']}
     return catalogue, profiles
 
+
+def apply_source_beds(records, xml, bindings):
+    """Crystal item_parse.cpp:733-766 and bed.cpp:288-303, initialized BEDs only."""
+    by_id = {int(row['production_definition']['production_key'].removeprefix('oteryn:item.tibia.i')): row
+             for row in records}
+    count = 0
+    free = {}
+    for source_item, node in xml.items():
+        for attribute in node.findall('attribute'):
+            key = attribute.get('key', '').lower()
+            if key in ('maletransformto', 'femaletransformto'):
+                target = int(attribute.get('value'))
+                if free.get(target, 0) == 0:
+                    free[target] = source_item
+            elif key == 'transformto':
+                free[source_item] = int(attribute.get('value'))
+    for item, row in by_id.items():
+        attributes = source.attrs(xml[item])
+        if attributes.get('type') != 'bed':
+            continue
+        part = {'pillow': 'HEAD', 'blanket': 'FOOT'}.get(attributes.get('bedpart'))
+        direction = {'north': 'NORTH', 'east': 'EAST', 'south': 'SOUTH', 'west': 'WEST'}.get(attributes.get('partnerdirection'))
+        if part is None or direction is None:
+            raise ValueError(f'HOUSE_BED_UNKNOWN_PART_OR_DIRECTION:{item}')
+        # The parser populates the other sex only while that slot is zero.
+        male = female = 0
+        for attribute in xml[item].findall('attribute'):
+            key = attribute.get('key', '').lower()
+            if key == 'maletransformto':
+                male = int(attribute.get('value'))
+                if female == 0:
+                    female = male
+            elif key == 'femaletransformto':
+                female = int(attribute.get('value'))
+                if male == 0:
+                    male = female
+        def target(value):
+            if not value:
+                value = free.get(item, 0)
+            if not value or value not in xml or source.attrs(xml[value]).get('type') != 'bed':
+                value = item
+            if value not in by_id:
+                raise ValueError(f'HOUSE_BED_TARGET_NOT_CAPTURED:{item}:{value}')
+            identity = bindings[str(value)]['target']
+            return {'key': identity['key'], 'revision': identity['revision']}
+        row['semantics']['bed'] = source.K({'part': part, 'partner_direction': direction,
+                                          'occupied_male': target(male), 'occupied_female': target(female)})
+        count += 1
+    return count
+
+
+def apply_bed_semantics(records, overlay):
+    """Enrich an admitted identity in place; conflicting known semantics remain an error."""
+    beds = {row['production_definition']['production_key']: row['semantics']['bed']
+            for row in overlay['records'] if row['semantics'].get('bed', {}).get('state') == 'KNOWN'}
+    for row in records:
+        key = row['production_definition']['production_key']
+        if key not in beds:
+            continue
+        current = row['semantics'].get('bed', source.U)
+        if current['state'] == 'KNOWN' and current != beds[key]:
+            raise ValueError('HOUSE_BED_SEMANTICS_CONFLICT:' + key)
+        row['semantics']['bed'] = copy.deepcopy(beds[key])
 
 def apply_top_order(records, overlay):
     """Crystal items.cpp:203-208 source facts survive richer specialized profiles."""
@@ -324,6 +393,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                                if row['production_definition']['production_key'] not in existing)
     apply_top_order(document['records'], overlay)
     apply_carpet_types(document['records'], overlay)
+    apply_bed_semantics(document['records'], overlay)
     for row in document['records']:
         key = row['production_definition']['production_key']
         item = key.removeprefix('oteryn:item.tibia.i')

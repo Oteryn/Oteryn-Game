@@ -11,5 +11,5 @@
   ],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "Current named House actor, native bundle and source catalogue; every request rechecks session, lease, node and House generation."
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES advertises the native bundle source path. Execution requires a current named-House actor and source catalogue, and rechecks session, lease, node and House generation on every request."
 }

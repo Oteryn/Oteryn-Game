@@ -199,23 +199,6 @@ impl DurabilityRoot {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn santa_literal_lookup_preserves_unreachable_rare_groups_and_nil() {
-        assert_eq!(
-            santa_present_items(1, 1),
-            Some([7439, 7440, 7443].as_slice())
-        );
-        assert_eq!(santa_present_items(90, 10), Some([3036].as_slice()));
-        assert_eq!(santa_present_items(91, 1), None);
-        assert_eq!(santa_present_items(100, 10), None);
-        assert_eq!(santa_present_items(0, 1), None);
-        assert_eq!(santa_present_items(1, 0), None);
-    }
-}
 impl DurabilityRoot {
     /// Resolve the original atomic MINT after its acknowledgement was lost.
     /// This owner never reconstructs a gift or repeats the random decision.
@@ -276,5 +259,23 @@ impl DurabilityRoot {
                 })
             })
             .await?
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn santa_literal_lookup_preserves_unreachable_rare_groups_and_nil() {
+        assert_eq!(
+            santa_present_items(1, 1),
+            Some([7439, 7440, 7443].as_slice())
+        );
+        assert_eq!(santa_present_items(90, 10), Some([3036].as_slice()));
+        assert_eq!(santa_present_items(91, 1), None);
+        assert_eq!(santa_present_items(100, 10), None);
+        assert_eq!(santa_present_items(0, 1), None);
+        assert_eq!(santa_present_items(1, 0), None);
     }
 }

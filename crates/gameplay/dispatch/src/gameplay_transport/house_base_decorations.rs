@@ -383,11 +383,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let native = self.active_generation?.native_gameplay()?;
         let index = native.item_index()?;
         let definition = super::item_look::typed_definition(index, reference)?;
-        let Some((rule, window)) =
-            item_id(&definition.production_key).and_then(|id| source_rule(id, rotate))
-        else {
-            return None;
-        };
+        let (rule, window) =
+            item_id(&definition.production_key).and_then(|id| source_rule(id, rotate))?;
         if before.bound {
             return outcome(UseDisposition::NothingToUse);
         }

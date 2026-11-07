@@ -10,6 +10,8 @@ from house_decoration_actions import (
     PROFILES,
     admit,
     apply_top_order,
+    apply_bed_semantics,
+    apply_source_beds,
     apply_carpet_types,
     initialized_item_ids,
     native_item_specs,
@@ -21,6 +23,58 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class HouseDecorationActions(unittest.TestCase):
+    def test_bed_parser_zero_reverse_free_slot_is_initialized_in_xml_order(self):
+        from xml.etree import ElementTree as ET
+        # Crystal item_parse.cpp:741-742 checks zero, not dictionary absence.
+        # The occupied Item is parsed first with explicitzero, then male source
+        # initializes its reverse free appearance. No canonical IDs are invented.
+        occupied = ET.fromstring('<item><attribute key="type" value="bed"/>'
+                                 '<attribute key="bedpart" value="pillow"/>'
+                                 '<attribute key="partnerdirection" value="south"/>'
+                                 '<attribute key="transformto" value="0"/></item>')
+        free = ET.fromstring('<item><attribute key="type" value="bed"/>'
+                            '<attribute key="bedpart" value="pillow"/>'
+                            '<attribute key="partnerdirection" value="south"/>'
+                            '<attribute key="maletransformto" value="20"/></item>')
+        records = [{'production_definition': {'production_key': f'oteryn:item.tibia.i{item}'},
+                    'semantics': {}} for item in (20,10)]
+        bindings = {str(item): {'target': {'key': f'oteryn:item.tibia.i{item}',
+                                         'revision': 'definition-r1'}} for item in (20,10)}
+        self.assertEqual(apply_source_beds(records, {20: occupied, 10: free}, bindings), 2)
+        self.assertEqual(records[0]['semantics']['bed']['value']['occupied_female']['key'],
+                         'oteryn:item.tibia.i10')
+        self.assertEqual(records[1]['semantics']['bed']['value']['occupied_female']['key'],
+                         'oteryn:item.tibia.i20')
+
+    def test_exact_source_bed_profiles_and_in_place_admission(self):
+        profiles = json.loads((ROOT / PROFILES).read_bytes())
+        catalogue = json.loads((ROOT / CATALOGUE).read_bytes())
+        beds = {row['production_definition']['production_key']: row['semantics']['bed']['value']
+                for row in profiles['records'] if row['semantics'].get('bed', {}).get('state') == 'KNOWN'}
+        self.assertEqual(len(beds), 400)
+        self.assertEqual(set(beds), {f'oteryn:item.tibia.i{item}' for item in catalogue['bed_item_ids']})
+        self.assertEqual(beds['oteryn:item.tibia.i696']['occupied_female']['key'], 'oteryn:item.tibia.i2493')
+        self.assertEqual(beds['oteryn:item.tibia.i697']['occupied_male']['key'], 'oteryn:item.tibia.i2494')
+        # Crystal bed.cpp:288-303 checks target BED, without geometry coercion.
+        self.assertEqual(beds['oteryn:item.tibia.i37197']['occupied_male']['key'], 'oteryn:item.tibia.i37200')
+        for bed in beds.values():
+            for sex in ('occupied_male', 'occupied_female'):
+                self.assertIn(bed[sex]['key'], beds)
+                self.assertEqual(bed[sex]['revision'], 'definition-r1')
+        original = copy.deepcopy(next(row for row in profiles['records']
+                                     if row['production_definition']['production_key'] == 'oteryn:item.tibia.i696'))
+        row = copy.deepcopy(original)
+        row['semantics'].pop('bed')
+        before = copy.deepcopy(row)
+        apply_bed_semantics([row], profiles)
+        self.assertEqual(row['semantics']['bed'], original['semantics']['bed'])
+        row['semantics'].pop('bed')
+        self.assertEqual(row, before)
+        bad = copy.deepcopy(original)
+        bad['semantics']['bed']['value']['partner_direction'] = 'WEST'
+        with self.assertRaisesRegex(ValueError, 'HOUSE_BED_SEMANTICS_CONFLICT'):
+            apply_bed_semantics([bad], profiles)
+
     def test_captured_source_families_are_complete_without_invented_targets(self):
         catalogue = json.loads((ROOT / CATALOGUE).read_bytes())
         profiles = json.loads((ROOT / PROFILES).read_bytes())

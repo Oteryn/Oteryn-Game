@@ -450,6 +450,19 @@ pub struct ConditionLineage {
     pub source_creation_command: u64,
 }
 
+/// Crystal condition.cpp:1287-1298 retains independent regeneration accumulators
+/// when COMBAT/type/subid matches. Ages survive the normal snapshot clock rebase.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RegenerationPhase {
+    health_last_age_us: u64,
+    mana_last_age_us: u64,
+    #[serde(default)]
+    health_blocked: bool,
+    #[serde(default)]
+    mana_blocked: bool,
+}
+
 /// One live instance of a definition on one actor.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -466,6 +479,8 @@ pub struct ConditionInstance<S> {
     /// (§3.1); it runs through `take_due` under the same budget as every other tick.
     immediate_due: Option<u64>,
     started_at: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    regeneration_phase: Option<RegenerationPhase>,
     /// Online age retained when a logout snapshot is rebased onto a fresh process clock.
     elapsed_before_start: u64,
     /// Overdue timers retain their logical order when a new clock cannot represent the past.
@@ -506,6 +521,40 @@ fn source_buff_delta(base: i32, percent: u32) -> Result<i32, ConditionRefusal> {
 }
 
 impl<S> ConditionInstance<S> {
+    /// Legacy snapshots lack the separate accumulators. Their existing next
+    /// logical tick and original intervals recover the last processed pulse.
+    fn regeneration_phase_at_next_tick(&self) -> Option<RegenerationPhase> {
+        if let Some(phase) = self.regeneration_phase {
+            return Some(phase);
+        }
+        let (h, m) = match self.definition.values {
+            ConditionValues::SpellRegeneration {
+                health_interval_ms,
+                mana_interval_ms,
+                ..
+            } => (health_interval_ms, mana_interval_ms),
+            ConditionValues::Recovery { interval_ms, .. } => (interval_ms, interval_ms),
+            _ => return None,
+        };
+        let age = self
+            .age_at(self.next_tick_at?)
+            .saturating_sub(self.tick_debt_us);
+        let last = |interval: u32| {
+            let interval = u64::from(interval) * MICROS_PER_MS;
+            let quotient = age / interval;
+            if age.is_multiple_of(interval) {
+                quotient.saturating_sub(1) * interval
+            } else {
+                quotient * interval
+            }
+        };
+        Some(RegenerationPhase {
+            health_last_age_us: last(h),
+            mana_last_age_us: last(m),
+            health_blocked: false,
+            mana_blocked: false,
+        })
+    }
     fn age_at(&self, now: u64) -> u64 {
         self.elapsed_before_start
             .saturating_add(now.saturating_sub(self.started_at))
@@ -634,6 +683,34 @@ pub struct TickFacts {
     pub in_protection_zone: bool,
     /// The element of a field the actor stands on: ticks of that element are not used up.
     pub standing_on_field: Option<DotElement>,
+}
+
+/// Crystal creatures_definitions.hpp547-551 / condition.cpp1330-1396.
+/// The actor owner supplies its qualified native daily-reward streak.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct RegenerationPzRewards {
+    health: u8,
+    mana: u8,
+}
+impl RegenerationPzRewards {
+    pub const fn from_qualified_streak(streak: u32) -> Self {
+        Self {
+            health: if streak >= 5 {
+                2
+            } else if streak >= 2 {
+                1
+            } else {
+                0
+            },
+            mana: if streak >= 6 {
+                2
+            } else if streak >= 3 {
+                1
+            } else {
+                0
+            },
+        }
+    }
 }
 
 /// Frozen removal chosen before commit. The actor owner retains this exact plan for replay;
@@ -960,6 +1037,7 @@ impl<S: Clone> ConditionStore<S> {
             next_tick_at: None,
             immediate_due: None,
             started_at: now,
+            regeneration_phase: None,
             elapsed_before_start: 0,
             tick_debt_us: 0,
             immediate_debt_us: 0,
@@ -1165,8 +1243,34 @@ impl<S: Clone> ConditionStore<S> {
                 mana_interval_ms,
                 ..
             } => {
-                instance.ends_at = Some(now + ms(duration_ms));
-                instance.next_tick_at = Some(now + ms(health_interval_ms.min(mana_interval_ms)));
+                // Crystal condition.cpp:436-447,1287-1298: same COMBAT/subid
+                // refuses a shorter duration and preserves both elapsed counters.
+                if existing.is_some_and(|old| {
+                    old.ends_at.is_none() || ms(duration_ms) < old.remaining_at(now)
+                }) {
+                    return Err(ConditionRefusal::KeptCurrent);
+                }
+                let phase = existing
+                    .and_then(ConditionInstance::regeneration_phase_at_next_tick)
+                    .unwrap_or_default();
+                if let Some(old) = existing {
+                    instance.started_at = old.started_at;
+                    instance.elapsed_before_start = old.elapsed_before_start;
+                }
+                let age = instance.age_at(now);
+                let h = ms(health_interval_ms)
+                    .saturating_sub(age.saturating_sub(phase.health_last_age_us));
+                let m =
+                    ms(mana_interval_ms).saturating_sub(age.saturating_sub(phase.mana_last_age_us));
+                instance.regeneration_phase = Some(phase);
+                instance.ends_at = Some(
+                    now.checked_add(ms(duration_ms))
+                        .ok_or(ConditionRefusal::TimeOverflow)?,
+                );
+                instance.next_tick_at = Some(
+                    now.checked_add(h.min(m))
+                        .ok_or(ConditionRefusal::TimeOverflow)?,
+                );
             }
             ConditionValues::Attributes {
                 duration_ms,
@@ -1338,7 +1442,7 @@ impl<S: Clone> ConditionStore<S> {
     /// due, in order, for the next simulation tick (`RUN_EACH_BOUNDED`), and none is dropped.
     /// Instances whose time is over and whose ticks are all dealt end here.
     pub fn take_due(&mut self, now: u64, facts: TickFacts) -> Vec<ConditionTick<S>> {
-        self.take_due_matching(now, facts, true, None)
+        self.take_due_matching(now, facts, true, None, RegenerationPzRewards::default())
     }
     /// Only a just-applied field's immediate tick; retained overdue conditions are untouched.
     pub fn take_due_source_application(
@@ -1352,11 +1456,33 @@ impl<S: Clone> ConditionStore<S> {
     {
         let matches =
             |provenance: &ConditionProvenance<S>| provenance.source.as_ref() == Some(source);
-        self.take_due_matching(now, facts, true, Some(&matches))
+        self.take_due_matching(
+            now,
+            facts,
+            true,
+            Some(&matches),
+            RegenerationPzRewards::default(),
+        )
     }
     /// Independent qualified regeneration must not drain unknown combat ticks.
     pub fn take_due_non_damage(&mut self, now: u64, facts: TickFacts) -> Vec<ConditionTick<S>> {
-        self.take_due_matching(now, facts, false, None)
+        self.take_due_matching(now, facts, false, None, RegenerationPzRewards::default())
+    }
+    pub fn take_due_with_regeneration(
+        &mut self,
+        now: u64,
+        facts: TickFacts,
+        rewards: RegenerationPzRewards,
+    ) -> Vec<ConditionTick<S>> {
+        self.take_due_matching(now, facts, true, None, rewards)
+    }
+    pub fn take_due_non_damage_with_regeneration(
+        &mut self,
+        now: u64,
+        facts: TickFacts,
+        rewards: RegenerationPzRewards,
+    ) -> Vec<ConditionTick<S>> {
+        self.take_due_matching(now, facts, false, None, rewards)
     }
     fn take_due_matching(
         &mut self,
@@ -1364,6 +1490,7 @@ impl<S: Clone> ConditionStore<S> {
         facts: TickFacts,
         damage: bool,
         application_source: Option<&ConditionApplicationSource<'_, S>>,
+        regeneration_rewards: RegenerationPzRewards,
     ) -> Vec<ConditionTick<S>> {
         self.cleanse_immunities
             .retain(|immunity| immunity.until > now);
@@ -1419,6 +1546,7 @@ impl<S: Clone> ConditionStore<S> {
             };
             let instance = &mut self.instances[index];
             let previous_next = instance.next_tick_at;
+            let mut respect_tick_debt = true;
             let kind = match instance.definition.values {
                 ConditionValues::DamageSchedule { element } => {
                     // A malformed internal cursor must not emit a fabricated tick or remove
@@ -1566,26 +1694,92 @@ impl<S: Clone> ConditionStore<S> {
                     ..
                 } => {
                     let elapsed = instance.age_at(due).saturating_sub(debt);
+                    let current_age = instance.age_at(now);
                     let h = u64::from(health_interval_ms) * MICROS_PER_MS;
                     let m = u64::from(mana_interval_ms) * MICROS_PER_MS;
-                    let next_h = due.checked_add(h - elapsed % h);
-                    let next_m = due.checked_add(m - elapsed % m);
-                    instance.next_tick_at = match (next_h, next_m) {
-                        (Some(a), Some(b)) => Some(a.min(b)),
-                        (a, b) => a.or(b),
+                    let mut phase = instance
+                        .regeneration_phase_at_next_tick()
+                        .unwrap_or_default();
+                    let hp = if facts.in_protection_zone {
+                        regeneration_rewards.health
+                    } else {
+                        1
                     };
+                    let mp = if facts.in_protection_zone {
+                        regeneration_rewards.mana
+                    } else {
+                        1
+                    };
+                    // PZ accumulators keep growing and reset only when that
+                    // resource may pulse. An unblocked pool pulses once at
+                    // current online age, never retroactively for its PZ time.
+                    let h_age = if phase.health_blocked && hp > 0 {
+                        current_age
+                    } else {
+                        elapsed
+                    };
+                    let m_age = if phase.mana_blocked && mp > 0 {
+                        current_age
+                    } else {
+                        elapsed
+                    };
+                    let health_due = hp > 0 && h_age.saturating_sub(phase.health_last_age_us) >= h;
+                    let mana_due = mp > 0 && m_age.saturating_sub(phase.mana_last_age_us) >= m;
+                    if health_due {
+                        phase.health_last_age_us = h_age;
+                    }
+                    if mana_due {
+                        phase.mana_last_age_us = m_age;
+                    }
+                    phase.health_blocked = hp == 0;
+                    phase.mana_blocked = mp == 0;
+                    let poll = current_age
+                        .checked_add(u64::from(COND0_RL_02_MIN_TICK_INTERVAL_MS) * MICROS_PER_MS);
+                    let next_age = |last: u64, interval: u64, blocked: bool| {
+                        let due = last.checked_add(interval);
+                        if blocked {
+                            match (due, poll) {
+                                (Some(a), Some(b)) => Some(a.max(b)),
+                                _ => None,
+                            }
+                        } else {
+                            due
+                        }
+                    };
+                    let next_age = [
+                        next_age(phase.health_last_age_us, h, phase.health_blocked),
+                        next_age(phase.mana_last_age_us, m, phase.mana_blocked),
+                    ]
+                    .into_iter()
+                    .flatten()
+                    .min();
+                    // Compute from online age rather than a potentially clamped
+                    // process timestamp, preserving both pools across rebase.
+                    instance.tick_debt_us = 0;
+                    instance.next_tick_at = next_age.and_then(|age| {
+                        if age < instance.elapsed_before_start {
+                            instance.tick_debt_us = instance.elapsed_before_start - age;
+                            Some(instance.started_at)
+                        } else {
+                            instance
+                                .started_at
+                                .checked_add(age - instance.elapsed_before_start)
+                        }
+                    });
+                    respect_tick_debt = false;
+                    instance.regeneration_phase = Some(phase);
                     TickKind::SpellRegeneration {
-                        health_gain: if elapsed.is_multiple_of(h) {
-                            health_gain
+                        health_gain: if health_due {
+                            health_gain.saturating_mul(u32::from(hp))
                         } else {
                             0
                         },
-                        mana_gain: if elapsed.is_multiple_of(m) {
-                            mana_gain
+                        mana_gain: if mana_due {
+                            mana_gain.saturating_mul(u32::from(mp))
                         } else {
                             0
                         },
-                        suppressed: facts.in_protection_zone,
+                        suppressed: facts.in_protection_zone && hp == 0 && mp == 0,
                     }
                 }
                 // Speed, mana shield and light never schedule a tick.
@@ -1594,7 +1788,8 @@ impl<S: Clone> ConditionStore<S> {
                     continue;
                 }
             };
-            if debt > 0
+            if respect_tick_debt
+                && debt > 0
                 && (!immediate || instance.next_tick_at != previous_next)
                 && let Some(next) = instance.next_tick_at
             {

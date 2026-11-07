@@ -26,7 +26,7 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     // The source tree digest is refreshed by regenerate_content.py with the package pins.
     assert_eq!(
         catalogue.project_revision(),
-        "e06-market-crystal-parity-20261031-r1"
+        "seasonal-cake-creature-20261107-r1"
     );
     assert_eq!(
         catalogue.source_tree_digest(),
@@ -116,4 +116,41 @@ fn legacy_project_without_v2_cannot_be_imported_as_npc_data() {
         .expect("validated legacy");
     assert!(legacy.v2().is_none());
     assert!(NpcDataCatalogue::from_project(legacy, limits).is_err());
+}
+
+#[test]
+fn seasonal_source_extent_retains_exact_reference_and_source_boundaries() {
+    let project = captured();
+    let limits = npc_catalogue_preproduction_limits().project;
+    let qualified_records = project.migrate_to_v2().core.records.len();
+    let qualified_sources = project.v2().expect("qualified v2").sources.len();
+    assert_eq!(qualified_records, limits.max_reference_records);
+    assert_eq!(qualified_sources, limits.max_import_records);
+    let mut draft = project.migrate_to_v2();
+    // A duplicate is invalid independently; the resource bound must reject
+    // limit+1 before identity admission can mask an accidentally widened cap.
+    draft.core.records.push(draft.core.records[0].clone());
+    assert!(matches!(
+        CanonicalProjectDocuments::from_v2_draft(draft, limits),
+        Err(ProjectError::LimitExceeded {
+            resource: "project reference records",
+            actual,
+            limit,
+        }) if actual == qualified_records + 1 && limit == qualified_records
+    ));
+    let mut draft = project.migrate_to_v2();
+    draft.state.sources.push(draft.state.sources[0].clone());
+    assert!(matches!(
+        CanonicalProjectDocuments::from_v2_draft(draft, limits),
+        Err(ProjectError::LimitExceeded {
+            resource: "v2 sources",
+            actual,
+            limit,
+        }) if actual == qualified_sources + 1 && limit == qualified_sources
+    ));
+    eprintln!(
+        "SOURCE_COHORT_BOUNDARY_NEGATIVE records={} sources={}",
+        qualified_records + 1,
+        qualified_sources + 1
+    );
 }

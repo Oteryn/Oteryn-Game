@@ -27,8 +27,10 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
 fn item_id(key: &str) -> Option<u16> {
     key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()
 }
+type CachedCakeMapSources = ([u8; 32], [u8; 32], Vec<CakeMapSource>);
+
 #[derive(Default)]
-pub(super) struct SourceCache(std::sync::Mutex<Option<([u8; 32], [u8; 32], Vec<CakeMapSource>)>>);
+pub(super) struct SourceCache(std::sync::Mutex<Option<CachedCakeMapSources>>);
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     fn immutable_cake_candidate(&self, target: &WorldObjectTarget) -> bool {

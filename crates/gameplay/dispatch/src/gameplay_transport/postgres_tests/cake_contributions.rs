@@ -292,6 +292,34 @@ fn scenario(equipped: bool, tiny: bool) -> TestResult {
         assert_ne!(refused.disposition, UseDisposition::Committed);
         let audits:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_audit_outbox a JOIN game_cake_donation_receipts r USING(transaction_id)").fetch_one(&h.pool).await?;
         assert_eq!(audits, 1);
+        if tiny {
+            // The optimized deferred proof must still reject an omitted input,
+            // a forged decrement and drift in otherwise unchanged metadata.
+            for (path, value) in [
+                (
+                    vec!["extra_inputs", "0", "item"],
+                    serde_json::json!("00000000-0000-0000-0000-000000000000"),
+                ),
+                (
+                    vec!["extra_inputs", "0", "before", "quantity"],
+                    serde_json::json!(2),
+                ),
+                (
+                    vec!["extra_inputs", "0", "before", "world_id"],
+                    serde_json::json!("00000000-0000-0000-0000-000000000000"),
+                ),
+            ] {
+                let rejected=sqlx::query("SELECT game_cake_donation_extra_complete(jsonb_populate_record(NULL::game_item_consume_transform_records,jsonb_set(to_jsonb(r),$1,$2))) FROM game_item_consume_transform_records r WHERE recipe='oteryn:cake.baker-substances'")
+                    .bind(path).bind(value).execute(&h.pool).await;
+                let Err(sqlx::Error::Database(error)) = rejected else {
+                    return Err(
+                        "tampered Cake completion did not produce a database constraint refusal"
+                            .into(),
+                    );
+                };
+                assert_eq!(error.code().as_deref(), Some("23514"));
+            }
+        }
         if !tiny {
             let revision:String=sqlx::query_scalar("SELECT revision::text FROM game_character_equipment_state WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(revision, "2");

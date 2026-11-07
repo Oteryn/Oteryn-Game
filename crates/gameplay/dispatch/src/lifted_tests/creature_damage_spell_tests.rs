@@ -1906,7 +1906,13 @@ fn summer_current_holy_target_lethal_hit_retains_the_existing_death_receipt() {
 
 fn qualify_current_spell_replay(name: &str, index: usize) {
     let (mut runtime, mut vitals, source, proposal, mut world, _, _) = setup_named(name, index);
-    let execute = if source.area.is_some() {
+    let execute = if source.element() == Some("undefined") {
+        // The production profile cycle uses execute_current for ordinary
+        // source-bound casts (monster_profile_cycle/physical_spell.rs:257-262).
+        // The narrower target-only elemental helper deliberately excludes
+        // Undefined and must retain that contract for its existing callers.
+        DamageSpellOwner::execute_current
+    } else if source.area.is_some() {
         DamageSpellOwner::execute_current_elemental_area
     } else {
         DamageSpellOwner::execute_current_target_damage
@@ -1983,10 +1989,41 @@ fn qualify_current_spell_replay(name: &str, index: usize) {
 fn w05d_native_cake_poisoned_cake_uses_undefined_hp_and_current_owner_replay() {
     // Crystal cake_golem.lua:79 omits the type: monsters.hpp:244 defaults
     // Undefined. Its poison appearance does not convert the HP family to Earth.
-    let (_, _, source, _, _, _, _) = setup_named("cake_golem", 1);
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) = setup_named("cake_golem", 1);
     assert_eq!(source.element(), Some("undefined"));
     assert_eq!((source.minimum, source.maximum, source.range), (0, 40, 7));
     assert!(!source.armor);
+    let before = crate::gameplay_transport::actor_spell::observe_vitals(
+        &runtime,
+        &vitals,
+        proposal.target,
+        world.facts.attack.session,
+    )
+    .expect("current player before restricted qualification");
+    let stamp = runtime.issue_owner_work().expect("actual owner stamp");
+    assert_eq!(
+        DamageSpellOwner::default().execute_current_target_damage(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        ),
+        Err(AttackError::UnsupportedShape),
+        "restricted elemental-only API retains its Undefined refusal"
+    );
+    assert_eq!(
+        crate::gameplay_transport::actor_spell::observe_vitals(
+            &runtime,
+            &vitals,
+            proposal.target,
+            world.facts.attack.session,
+        )
+        .expect("current player after restricted qualification"),
+        before
+    );
     qualify_current_spell_replay("cake_golem", 1);
 }
 

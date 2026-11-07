@@ -47,6 +47,9 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
                 let unrelated_command=UseCommand{game_session_id:deps.admitted.game_session_id,command_id:900,item_fence:Some(fence)};
                 assert!(owner.use_cake_world_object(deps.actor,unrelated_command,&unrelated).await.is_none(),"unrelated base source never enters Cake's equipment owner");
                 assert_eq!(owner.use_world_object(deps.actor,unrelated_command,unrelated).await.disposition,UseDisposition::NothingToUse);
+                // Separate the ordinary200ms action clock from Cake's90s bite rule.
+                tokio::time::sleep(std::time::Duration::from_millis(210)).await;
+
                 sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&h.pool).await?;
                 sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
                 sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(room.frame_binding().digest().as_slice()).execute(&h.pool).await?;
@@ -72,6 +75,7 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
                 assert!(!world.enterable(crate::map::overlay::TilePos{x:33303,y:32070,floor:-7}));
                 assert_eq!(owner.use_world_object(deps.actor,command,one.clone()).await.disposition,UseDisposition::Committed);
                 assert_eq!(owner.use_world_object(deps.actor,command,one).await.disposition,UseDisposition::Committed,"same command replays before resolving the now-hidden source");
+                tokio::time::sleep(std::time::Duration::from_millis(210)).await;
                 assert_eq!(owner.use_world_object(deps.actor,UseCommand{command_id:2,..command},two).await.disposition,UseDisposition::NotPossible,"90-second cooldown is world-owner time");
                 let progress:i16=sqlx::query_scalar("SELECT layer_progress FROM game_cake_phases WHERE world_id=encode($1,'hex')::uuid AND event_year=2026").bind(id(42).as_slice()).fetch_one(&h.pool).await?;
                 let receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_cake_bite_receipts WHERE world_id=encode($1,'hex')::uuid").bind(id(42).as_slice()).fetch_one(&h.pool).await?;

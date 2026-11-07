@@ -243,9 +243,29 @@ impl ChannelRuntimeV1 {
             .validate_current_continuity(&self.continuity)
             .map_err(NpcPlacementError::Carrier)?;
         self.owner_fence().map_err(NpcPlacementError::Carrier)?;
-        let Ok(index) = self.carrier.validate_ref(&self.continuity, actor.0) else {
-            return Ok(());
+        let index = self
+            .carrier
+            .validate_ref(&self.continuity, actor.0)
+            .map_err(NpcPlacementError::Carrier)?;
+        // validate_ref checks namespace/slot shape, not the slot's current
+        // local generation. A reused player, creature or NPC slot is a stale
+        // historical cleanup, and an already vacant slot is idempotently gone.
+        let held_generation = match &self.carrier.slots[index] {
+            Slot::VacantReusable { generation, .. }
+            | Slot::Occupied { generation, .. }
+            | Slot::CreatureOccupied { generation, .. }
+            | Slot::CreatureReserved { generation, .. }
+            | Slot::Exhausted { generation }
+            | Slot::NpcOccupied { generation, .. } => *generation,
         };
+        if held_generation != actor.0.actor_local_generation.0
+            || matches!(
+                &self.carrier.slots[index],
+                Slot::VacantReusable { .. } | Slot::Exhausted { .. }
+            )
+        {
+            return Ok(());
+        }
         let generation = match &self.carrier.slots[index] {
             Slot::NpcOccupied {
                 generation,

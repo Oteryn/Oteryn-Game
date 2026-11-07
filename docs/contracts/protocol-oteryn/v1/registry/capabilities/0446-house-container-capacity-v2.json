@@ -10,5 +10,5 @@
   "command_types": [],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "Supplementary authenticated selection permits up to25 entries only for a currently proved named-House container. Capability14 retains20 entries in every legacy scope."
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES advertises this supplementary extension. Authenticated selection requires 14 and 49; up to 25 entries are admitted only for a currently proved named-House container. Capability 14 retains 20 entries in every legacy scope."
 }

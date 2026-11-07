@@ -97,16 +97,21 @@ fn scenario(epochs: u64, seasonal: Option<&str>) -> TestResult {
             // Fixture clock set before the real reset writer creates its epoch;
             // admission, publication and mutation guards remain enabled.
             if seasonal == Some("A Piece of Cake") {
-                sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2030-02-21 06:00 Europe/Berlin'; RETURN NEW; END $$")
+                // Business clock matches the historical epoch fixture. T94's
+                // actual observation clock remains current: terminal native
+                // evidence must not claim a future decision (native.rs:483-484).
+                sqlx::query("CREATE OR REPLACE FUNCTION game_cake_now_ms() RETURNS bigint LANGUAGE sql STABLE AS $$ SELECT floor(extract(epoch FROM TIMESTAMPTZ '2026-02-21 06:00 Europe/Berlin')*1000)::bigint $$")
+                    .execute(&h.pool).await?;
+                sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-02-21 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$")
                     .execute(&h.pool).await?;
             } else if seasonal == Some("Christmas") {
-                sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2030-12-12 06:00 Europe/Berlin'; RETURN NEW; END $$")
+                sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2025-12-12 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$")
                     .execute(&h.pool).await?;
             } else {
-                sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2030-10-31 06:00 Europe/Berlin'; RETURN NEW; END $$")
+                sqlx::query("CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-10-31 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$")
                     .execute(&h.pool).await?;
             }
-            sqlx::query("CREATE TRIGGER seasonal_fixture_clock BEFORE INSERT OR UPDATE ON game_world_reset_epochs FOR EACH ROW EXECUTE FUNCTION seasonal_fixture_clock()")
+            sqlx::query("CREATE TRIGGER seasonal_fixture_clock BEFORE INSERT ON game_world_reset_epochs FOR EACH ROW EXECUTE FUNCTION seasonal_fixture_clock()")
                 .execute(&h.pool).await?;
         }
         let world = WorldId::decode(&id(42)).map_err(debug)?;
@@ -173,13 +178,7 @@ fn scenario(epochs: u64, seasonal: Option<&str>) -> TestResult {
         event_fixture::admit(&h, epochs + 1).await?;
         let mut deps = Dependencies::new()?;
         deps.room = room.clone();
-        planned_world_reset::reset_fixture::set_runtime(
-            &mut deps,
-            world,
-            channel,
-            &pin,
-            epochs + 1,
-        )?;
+        set_seasonal_runtime(&mut deps, world, channel, &pin, epochs + 1)?;
         let actor = {
             let mut runtime = deps.runtime.lock().await;
             let reservation = runtime
@@ -224,7 +223,7 @@ fn scenario(epochs: u64, seasonal: Option<&str>) -> TestResult {
                 .any(|c| c.id == wire::CAPABILITY_WORLD_EVENT_V1)
         );
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(offered, &[6, 53]).ok_or("capability 53")?;
+            SelectedCapabilities::select(offered, &[6, 11, 53]).ok_or("capability 53")?;
         let fresh = admitted;
 
         // Malformed query never reaches storage. A valid query commits its exact result.
@@ -256,7 +255,7 @@ fn scenario(epochs: u64, seasonal: Option<&str>) -> TestResult {
         // No negotiated capability => no event bytes or receipt, even for a valid query.
         let mut unsupported = admitted;
         unsupported.continuity.selected_capabilities =
-            SelectedCapabilities::select(offered, &[6]).ok_or("base capability")?;
+            SelectedCapabilities::select(offered, &[6, 11]).ok_or("base capability")?;
         assert_eq!(
             exchange(&owner, &mut unsupported, &[(3, &[])]).await?,
             [(CommandStatus::Rejected, Vec::new())]
@@ -513,6 +512,52 @@ impl crate::native_admission_source::account_characters::EpochFence for T94Boots
     ) -> Result<(), crate::native_admission_source::account_characters::FenceUnusable> {
         Ok(())
     }
+}
+
+fn set_seasonal_runtime(
+    deps: &mut Dependencies,
+    world: WorldId,
+    channel: ChannelId,
+    pin: &crate::content::NativeEntryContentPin,
+    generation: u64,
+) -> TestResult {
+    let room = pin.qualified_room();
+    let start = room.entry_start();
+    // Native entry maps use -z; ordinary Channel/NPC movement uses legacy z.
+    // Match the production bundle pin boundary (node/serve.rs::bundle_channel_pin),
+    // rather than negating an already-native player floor at NPC placement.
+    let legacy_floor = start
+        .floor
+        .checked_neg()
+        .ok_or("native fixture floor overflow")?;
+    assert!(
+        (0..=15).contains(&legacy_floor),
+        "source-qualified legacy floor"
+    );
+    let content = ChannelContentPin::from_activation(
+        world,
+        generation,
+        pin.identity().server_artifact_digest(),
+        pin.identity().client_artifact_digest(),
+        pin.frame_binding().digest(),
+        room.map_revision_digest(),
+        (start.x, start.y, legacy_floor),
+    );
+    deps.runtime = Mutex::new(
+        ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
+            1,
+            generation,
+            generation,
+            &format!("runtime-scope-assignment:{generation}"),
+            2,
+            content,
+        )
+        .map_err(debug)?,
+    );
+    Ok(())
 }
 
 async fn santa_present_scenario(

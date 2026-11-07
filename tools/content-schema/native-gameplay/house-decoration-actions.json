@@ -55,6 +55,10 @@
       "sha256": "5f7ba67a158af607bacb9d75451ca490817f189ca7d3dcf9e774d55dc1ccaab6"
     },
     {
+      "path": "src/items/bed.cpp",
+      "sha256": "2d8ede0ab99899f2819292857d4a9c777bb7f476835546d8dfd8984803037791"
+    },
+    {
       "path": "src/items/functions/item/item_parse.cpp",
       "sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7"
     },
@@ -2313,6 +2317,10 @@
     51217,
     51218,
     51219
+  ],
+  "bed_semantics_donors": [
+    "src/items/functions/item/item_parse.cpp:397-398,733-766",
+    "src/items/bed.cpp:288-303"
   ],
   "wrap_pairs": [
     {

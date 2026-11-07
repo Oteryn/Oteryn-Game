@@ -119,6 +119,11 @@ pub mod boss_reward;
 mod contents;
 mod grizzly;
 mod monk;
+pub(crate) mod quest;
+mod quest_participants;
+mod quest_actor_conditions;
+pub use quest_actor_conditions::QuestActorConditionProof;
+pub use quest::{QuestCarriedUse, QuestRewardAdmission, QuestRewardFeePayment};
 mod santa;
 pub use santa::{
     SANTA_PRESENT_CLAIM, SantaPresentRequest, santa_failed_script_claim, santa_present_items,
@@ -1316,7 +1321,7 @@ async fn apply_claim(
     })
 }
 
-async fn lock_cause(
+pub(super) async fn lock_cause(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     command: CommandRef,
 ) -> std::result::Result<(), DurabilityError> {
