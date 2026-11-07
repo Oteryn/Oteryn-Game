@@ -38,39 +38,46 @@ fn scenario_case(
     );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if classic_npc {
-        "behemoth"
-    } else if rotten_purchase {
-        "rotten-blood/sacrifice"
-    } else if monk {
-        "monk-guidance"
-    } else if name == "giant-smithhammer-asymmetric" {
-        "giant-smithhammer"
-    } else if target_swap {
-        "fish-napping-key"
-    } else {
-        name
-    })?;
-    if target_swap {
-        callback
-            .item_on_target
-            .as_mut()
-            .ok_or("item")?
-            .target_replacement = Some(7777);
-    }
-    if lever_fixture {
-        callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use;
-        callback.selector.unique = Some(25012);
-        callback.selector.appearance = Some(2772);
-        callback.lever = Some([2772, 2773]);
-    }
-    if stateless_destination.is_some() {
-        assert_eq!(callback.selector.position, Some(trigger));
-    }
-    let world = world(&callback, trigger)?;
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
             .await?;
+        if name == "authored-braindeath" {
+            eprintln!("POSTGRES_CASE_STARTED authored-braindeath after PostgreSQL fixture initialization");
+        }
+        let mut callback = callback(if classic_npc {
+            "behemoth"
+        } else if rotten_purchase {
+            "rotten-blood/sacrifice"
+        } else if monk {
+            "monk-guidance"
+        } else if name == "giant-smithhammer-asymmetric" {
+            "giant-smithhammer"
+        } else if target_swap {
+            "fish-napping-key"
+        } else {
+            name
+        })?;
+        if target_swap {
+            callback
+                .item_on_target
+                .as_mut()
+                .ok_or("item")?
+                .target_replacement = Some(7777);
+        }
+        if lever_fixture {
+            callback.trigger = oteryn_gameplay_quests::quest::world_callbacks::Trigger::Use;
+            callback.selector.unique = Some(25012);
+            callback.selector.appearance = Some(2772);
+            callback.lever = Some([2772, 2773]);
+        }
+        if stateless_destination.is_some() {
+            assert_eq!(callback.selector.position, Some(trigger));
+        }
+        let world = if name == "authored-braindeath" {
+            super::super::quest_callbacks::source_world((32546, 31522, -11), 0, 1983, 0)?
+        } else {
+            world(&callback, trigger)?
+        };
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -134,7 +141,15 @@ fn scenario_case(
             .initialize_pinned_test_position(deps.actor, origin)
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
+        let premium = if name == "authored-braindeath" {
+            let (consumer, clock, activation, _) = crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
+            h.root.latch_premium_activation(&activation.activation_id, activation.switch_over_us,
+                activation.switch_over_us + 60_000_000).await.map_err(debug)?;
+            Some(crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+                consumer, Some(clock), Some(activation), Some(h.root.clone())))
+        } else { None };
         let mut owner = deps.owner(&h, &authority);
+        owner.premium_coordinator = premium.as_ref();
         owner.active_generation = Some(generation);
         owner.movement_cells = &cells;
         owner.quest_catalogue = Some(std::sync::Arc::new(
@@ -199,7 +214,11 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name == "giant-smithhammer-asymmetric" {
+        if name == "authored-braindeath" {
+            super::super::questpc8_authored_programmes::exercise_braindeath(
+                &mut owner, &mut admitted, &h,
+            ).await?;
+        } else if name == "giant-smithhammer-asymmetric" {
             super::super::quest_l7_asymmetric::exercise(
                 &mut owner,
                 &mut admitted,

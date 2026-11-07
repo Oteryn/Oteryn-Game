@@ -69,6 +69,22 @@ pub struct RewardCallback {
     pub sources: Vec<String>,
 }
 
+pub(crate) fn valid_item_reward(reward: &ItemReward) -> bool {
+    let valid = |item: &str, count: u16| {
+        super::valid_quest_key(item)
+            && item
+                .strip_prefix("oteryn:item.")
+                .is_some_and(|tail| !tail.is_empty())
+            && (1..=100).contains(&count)
+    };
+    valid(&reward.item, reward.count)
+        && reward.contents.len() <= 20
+        && reward
+            .contents
+            .iter()
+            .all(|item| valid(&item.item, item.count))
+}
+
 fn is_false(value: &bool) -> bool {
     !*value
 }

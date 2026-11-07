@@ -266,7 +266,7 @@ async fn say(
     wire::talk(owner, admitted, npc, &commands).await
 }
 
-async fn hunt(
+pub(in super::super) async fn hunt(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     creature: &str,

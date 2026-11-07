@@ -23,7 +23,11 @@ BEGIN
         OR NOT EXISTS(SELECT 1 FROM game_character_quest_receipts r
             WHERE r.character_id=NEW.character_id AND r.cause_id=NEW.cause_id
                 AND r.cause_ordinal=NEW.cause_ordinal AND r.transition_key=NEW.transition_key
-                AND r.quest_key=NEW.plan->>'quest' AND r.cause_kind='command'
+                AND r.quest_key=NEW.plan->>'quest'
+                AND (r.cause_kind='command' OR (r.cause_kind='use'
+                    AND NEW.plan #>> '{world_callback,key}'=NEW.transition_key
+                    AND NEW.plan #>> '{world_callback,quest}'=NEW.plan->>'quest'
+                    AND NEW.plan #>> '{world_callback,trigger}'='use'))
                 AND r.created_xact_id=pg_current_xact_id()) THEN
         RAISE EXCEPTION 'quest reward lacks same-transaction quest receipt' USING ERRCODE='23514';
     END IF;

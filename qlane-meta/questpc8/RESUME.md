@@ -42,3 +42,13 @@ Cargo/PG shell. Repository regeneration completed successfully; unchanged world
 pin. Full logs under /tmp, exact hashes in cloud-hunting-campaign-proof.json.
 No active regeneration job remains. Last push89ebe9ef9 at23:56:50Z November6;
 keep the new owner's30-minute maximum push cadence. Do not end at a checkpoint.
+
+
+Braindeath slice: real PG PASS 1/1 in 38.43930999s, after RED 2.64s.
+Native coffin has no retained source UID: bind actual position/appearance/ordinal1.
+Premium refusal, exploration, native death, pre-kill refusal, exact backpack and
+children, and durable replay passed. Generic death objectives and world rewards
+reuse existing capture, revision, Premium and MINT owners. cargo check passed;
+Clippy rerun after disk exhaustion cleared by deleting disposable incremental cache.
+Proof: cloud-braindeath-proof.json. Qualification awaits final checks/review.
+Last completed metadata push 15b02adfd at00:17:45Z November7.

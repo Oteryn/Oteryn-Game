@@ -1,0 +1,25 @@
+{
+  "scope": "Braindeath exploration, native creature death, exact native coffin ordinal, atomic world reward and Premium admission",
+  "red": {
+    "duration_seconds": 2.64,
+    "marker": "POSTGRES_CASE_STARTED authored-braindeath",
+    "failure": "missing authored callback"
+  },
+  "green": {
+    "test": "questpc8_braindeath_exploration_native_death_coffin_and_replay",
+    "duration_seconds": 38.43930999,
+    "passed": 1,
+    "marker": "POSTGRES_CASE_COMPLETED",
+    "postgres": "real PostgreSQL 18.6; native death, world dispatch, MINT and replay"
+  },
+  "checks_pending": [
+    "strict Clippy rerun after clearing exhausted incremental cache",
+    "focused units and pin refresh",
+    "independent review"
+  ],
+  "logs": {
+    "questpc8-braindeath-red.log": "d32db3a02bd0c41e701d758f832a188aeaf90c011b45a5600b055df1d48df279",
+    "questpc8-braindeath-native-ordinal.log": "0c837ae73d551da939522f78eca5f63805a7cd0234ef5e9c9cadff489fdc551f",
+    "questpc8-braindeath-check-final.log": "78afe45743c217bcba1fb006c506305a6b1a60db8152285ba54ab44399107c34"
+  }
+}

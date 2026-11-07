@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "objectives": [
+    {
+      "key": "oteryn:quest-death/braindeath",
+      "quest": "oteryn:quest.authored.braindeath_quest",
+      "creature": "oteryn:creature.braindeath",
+      "stage": "oteryn:quest-progress/chosen/braindeath/stage",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/chosen/braindeath/kills",
+      "required": 1,
+      "minimum": {
+        "x": 32543,
+        "y": 31520,
+        "floor": -11
+      },
+      "maximum": {
+        "x": 32548,
+        "y": 31524,
+        "floor": -11
+      },
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=38390&oldid=322750",
+        "Authored conservative chamber bound around the pinned right-coffin placement. Present most-damage principal only."
+      ]
+    }
+  ]
+}
