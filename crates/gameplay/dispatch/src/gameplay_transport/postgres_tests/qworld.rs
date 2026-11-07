@@ -2,6 +2,8 @@
 use super::*;
 #[path = "qworld/consumers.rs"]
 pub(super) mod consumers;
+#[path = "qworld/rules.rs"]
+pub(super) mod rules;
 
 #[test]
 fn qworld_postgres_occurrence_dispatch_and_restart() -> TestResult {

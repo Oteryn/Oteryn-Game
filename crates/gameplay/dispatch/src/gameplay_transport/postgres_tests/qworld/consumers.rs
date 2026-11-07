@@ -22,6 +22,7 @@ pub(crate) async fn qualify(
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
     let world = admitted.world_id;
     let session = admitted.game_session_id;
+    super::rules::qualify(h, owner, world, epoch).await?;
     let key = "qworld_rat_cull";
     let rule = crate::durability::world_event::WorldChangeCounter {
         key: key.into(),
@@ -200,6 +201,12 @@ pub(crate) async fn qualify(
             tokio::task::yield_now().await;
         }
         assert_eq!(h.root.world_change_active(world, key).await?, death == 2);
+        assert_eq!(
+            h.root
+                .world_change_active(world, "qworld_rat_exhaustion")
+                .await?,
+            death != 2
+        );
         {
             let mut runtime = owner.runtime.lock().await;
             let attack = owner.states.attack.lock().await;

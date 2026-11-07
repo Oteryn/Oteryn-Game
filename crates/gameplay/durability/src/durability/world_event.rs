@@ -304,12 +304,19 @@ pub(super) async fn capture_kill<const N: usize>(
 }
 
 async fn capture_calendar(tx: &mut Transaction<'_, Postgres>, world: WorldId, epoch: u64, catalogue: &oteryn_gameplay_world_change::rules::Catalogue) -> Result<(), DurabilityError> {
-    sqlx::query("INSERT INTO game_world_change_calendar(world_id,reset_epoch,month,day) SELECT world_id,reset_epoch,EXTRACT(MONTH FROM activated_at AT TIME ZONE 'UTC')::smallint,EXTRACT(DAY FROM activated_at AT TIME ZONE 'UTC')::smallint FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric ON CONFLICT DO NOTHING")
-        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).execute(&mut **tx).await?;
-    let (month, day): (i16,i16) = sqlx::query_as("SELECT month,day FROM game_world_change_calendar WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
+    occurrence::lock(tx,world).await?;
+    let created = sqlx::query("INSERT INTO game_world_change_calendar(world_id,reset_epoch,month,day,decision_required) SELECT world_id,reset_epoch,EXTRACT(MONTH FROM activated_at AT TIME ZONE 'UTC')::smallint,EXTRACT(DAY FROM activated_at AT TIME ZONE 'UTC')::smallint,true FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric ON CONFLICT DO NOTHING")
+        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).execute(&mut **tx).await?.rows_affected() == 1;
+    let (month, day, required, matches): (i16,i16,bool,bool) = sqlx::query_as("SELECT c.month,c.day,c.decision_required,c.month=EXTRACT(MONTH FROM e.activated_at AT TIME ZONE 'UTC')::smallint AND c.day=EXTRACT(DAY FROM e.activated_at AT TIME ZONE 'UTC')::smallint FROM game_world_change_calendar c JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE c.world_id=encode($1,'hex')::uuid AND c.reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut **tx).await?;
+    if !matches { return Err(DurabilityError::InvalidStoredState); }
+    if required && !created { occurrence::load(tx,world,epoch).await?; }
     let month = u8::try_from(month).map_err(|_| DurabilityError::InvalidStoredState)?;
     let day = u8::try_from(day).map_err(|_| DurabilityError::InvalidStoredState)?;
     occurrence::capture(tx,world,epoch,month,day,catalogue).await?;
+    if !required {
+        sqlx::query("UPDATE game_world_change_calendar SET decision_required=true WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric AND NOT decision_required")
+            .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).execute(&mut **tx).await?;
+    }
     Ok(())
 }

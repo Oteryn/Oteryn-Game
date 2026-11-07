@@ -722,3 +722,13 @@ The implementation compiles (focused check: 1m31s). Remaining validation points:
 generic-rule PostgreSQL cases, regenerated pins for the new runtime catalogue,
 and a fail-closed distinction between legacy upgrade and a missing already-bound
 occurrence payload. This checkpoint is not final qualification.
+
+### Recovery and RNG guard checkpoint (WIP)
+Forward migration `1322_world_change_decision_required.sql` distinguishes one-time
+legacy calendar upgrades from missing already-bound decisions, which must fail
+closed. Generic chance rules hash accepted keys into a bounded RNG purpose (review
+found that a raw 100-byte key exceeded the RNG purpose limit). Focused production
+check passed in 1m00s. PG compilation was interrupted by disk exhaustion before
+assertions; only inactive generated incremental caches were removed. New generic
+schedule, inverse-counter, maximum-key, wrong-World payload, and missing-decision
+PG assertions are queued; runtime-catalogue pins still need regeneration.

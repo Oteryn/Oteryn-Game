@@ -152,12 +152,13 @@ impl Definition {
                 NativeChange::TheirMastersVoice => native.their_masters_voice,
             },
             Schedule::AtReset { chance_permille } => {
-                (u128::from(daily::draw_for_epoch(
-                    world,
-                    epoch,
-                    &format!("world-change/{}", self.key),
-                )) * 1000)
-                    >> 64
+                let mut purpose = String::with_capacity(77);
+                purpose.push_str("world-change/");
+                for byte in Sha256::digest(self.key.as_bytes()).iter().copied() {
+                    purpose.push(char::from(b"0123456789abcdef"[usize::from(byte >> 4)]));
+                    purpose.push(char::from(b"0123456789abcdef"[usize::from(byte & 15)]));
+                }
+                (u128::from(daily::draw_for_epoch(world, epoch, &purpose)) * 1000) >> 64
                     < u128::from(*chance_permille)
             }
             Schedule::Calendar { months, days } => {
