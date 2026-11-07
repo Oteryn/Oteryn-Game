@@ -732,3 +732,9 @@ check passed in 1m00s. PG compilation was interrupted by disk exhaustion before
 assertions; only inactive generated incremental caches were removed. New generic
 schedule, inverse-counter, maximum-key, wrong-World payload, and missing-decision
 PG assertions are queued; runtime-catalogue pins still need regeneration.
+
+Generic-rule and recovery PG proof now passed in 57.98 seconds: chance/calendar/
+rotation decisions, maximum-length accepted keys, two-direction counter states,
+wrong-World payload rejection, missing-bound-decision refusal, native death replay,
+quest/travel gates, and real world-event dispatch. Pin refresh regenerated the
+same world bytes; the physical-case rerun and final lint/pin-check remain pending.
