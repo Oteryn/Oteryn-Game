@@ -1307,3 +1307,45 @@ duplicate migration checks pass. Final pins, workspace check, clippy, affected
 unit tests and own PG revalidation are tracked separately; none is claimed
 passed before its output is available. The inherited Primal hook-closure
 failure remains an ENCX-owned gap; no guard or test is weakened.
+
+Main integration regeneration proof: native43-file output PASS86.391s;
+canonical tree PASS214.864s; authored family tools PASS17.235s;
+pin-refresh PASS31.392s; pin-check PASS29.487s (format8,32,879,502bytes,
+digest196a7f87877c7f1725a04ad008b5768dad4b7848fe99b17d2b92ef49bf8d856d).
+Item/Mount and complete materialized-tree equivalence PASS123.894s;
+world metadata PASS1.504s. The regenerated delta is four content indexes,
+manifest/lock and Grizzly room provenance; no pin is hand-edited.
+
+Current-main PostgreSQL execution: all3 native Instance corpse cases PASS in
+14.100s runtime: committed-cause migration/replay7.355s, legacyv1 corpse/loot
+migration/replay7.279s, physical death/custody/scope fences6.820s. Both Channel
+and Instance controls and the three-attempt budget remain strict.
+
+Affected-crate unit revalidation pending under PREPUSH-2's cadence exception:
+oteryn-architecture-check, oteryn-client, oteryn-client-runtime, oteryn-client-ui,
+oteryn-game-server, oteryn-gameplay-content, oteryn-gameplay-dispatch,
+oteryn-gameplay-durability, oteryn-gameplay-npc, oteryn-gameplay-quests,
+oteryn-gameplay-social, oteryn-gameplay-world-change, oteryn-protocol-oteryn,
+oteryn-session, oteryn-world-bundle-compiler. These run library/binary unit
+targets without the full PG suite; the remaining source Sugar/publication,
+production boss/reward and Tibiadrome own PG cases remain separately pending.
+No pending suite is represented as green.
+
+The full workspace/all-target check collected one merge-compatibility failure:
+E0308 in postgres_tests/s17_client_watch.rs, where main's new fixture assigned
+&NativeEntryMovementCells to SRVENC's SharedOwner. Wrapped that existing borrow
+in SharedOwner::Borrowed, matching the production owner contract; assertions
+and behavior are unchanged. A sibling scan found no other raw-reference
+assignments, and the keep-going run reported no other compilation failures.
+The full workspace check is rerun after this correction; the red log is kept
+separately from the green candidate's output.
+
+After the one caller adaptation, fresh full workspace/all-target check passes
+128.792s and fmt passes14.385s. The three current-main PG cases remain green
+with actual execution above. Remaining own PG cases and unit targets for the
+15 affected crates are queued; publication does not hold the compiling merge
+for those suites under PREPUSH-2's cadence exception. No whole-workspace or
+full PostgreSQL test suite is launched.
+At the cadence publication, changed-crate clippy with warnings denied is also
+still running; it is not represented as passed. The checked/pinned code is
+published without waiting for the remaining validation processes.
