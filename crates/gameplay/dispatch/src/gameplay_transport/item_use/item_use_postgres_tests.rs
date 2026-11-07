@@ -466,7 +466,7 @@ async fn scenario(
     harness.cleanup().await
 }
 
-/// I10a: a carried vial of mana fluid (Crystal `fluids.lua`, sub-type 7) is drunk through the
+/// I10a: a carried vial of oil (Crystal global fluid enum, sub-type 7) is drunk through the
 /// real use path: the container stays, its fluid is gone, and an empty vial is `NothingToUse`.
 async fn drink_from_a_vial(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
@@ -487,8 +487,36 @@ async fn drink_from_a_vial(
     sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,7,encode($3,'hex')::uuid)")
         .bind(id(130).as_slice()).bind(id(42).as_slice()).bind(id(133).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
+    let session = command(8).game_session_id;
+    let oil_health = {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        let mut state = states
+            .read_owned_player_state_test_snapshot(&runtime, actor, session)
+            .ok_or("oil drink actor state")?
+            .clone();
+        let vitals = state.vitals();
+        assert!(
+            vitals.max_mana > 0,
+            "oil regression needs available mana capacity"
+        );
+        state.restore_saved_vitals(vitals.health, 0);
+        assert!(states.replace_owned_player_state_test_fixture(&runtime, actor, session, state));
+        vitals.health
+    };
     let drink = |command_id| owner.use_item(actor, command(command_id), ItemKey::Instance(id(130)));
     assert_eq!(drink(8).await.disposition, UseDisposition::Committed);
+    {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let vitals = states
+            .read_owned_player_state_test_snapshot(&runtime, actor, session)
+            .ok_or("oil drink committed actor state")?
+            .vitals();
+        assert_eq!(vitals.mana, 0, "oil must never restore mana");
+        assert_eq!(vitals.health, oil_health, "oil must never restore health");
+    }
+
     assert_eq!(harness.count("game_item_fluid_states").await?, 0);
     assert_eq!(harness.count("game_item_fluid_transitions").await?, 1);
     let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id = encode($1,'hex')::uuid AND lifecycle = 1")
@@ -498,7 +526,7 @@ async fn drink_from_a_vial(
     assert_eq!(drink(8).await.disposition, UseDisposition::Committed);
     assert_eq!(drink(9).await.disposition, UseDisposition::NothingToUse);
     assert_eq!(harness.count("game_item_fluid_transitions").await?, 1);
-    // A second vial of life fluid (`fluids.lua` sub-type 10) pours into the empty one in one
+    // A second vial of mana fluid (Crystal global fluid enum, sub-type 10) pours into the empty one in one
     // command; the emptied one then fills back from it (`fluids.lua:39-48`).
     let mut tx = harness.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role = replica")

@@ -17,11 +17,11 @@ use oteryn_game_server::content::{
     ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle,
     ProjectV2ItemTaxonomy, ProjectV2RangedWeapon, ProjectV2Source, ProjectV2SourceIdentityBinding,
     ProjectV2SourceIdentityDisposition, ProjectV2State, ProjectionDocument, ReferenceCells,
-    ReferenceItemField, ReferenceItemImbuement, ReferenceItemPresentation, ReferenceItemSemantics,
-    ReferenceItemSkillModifiers, ReferenceItemStack, ReferenceItemTradeRestrictions,
-    ReferenceItemWeapon, ReferenceRationalPercent, ReferenceSignedPoints, ReferenceWeaponType,
-    ReimportDecision, ReimportFieldState, capture_world_project,
-    item_abilities::apply_equip_abilities_v1,
+    ReferenceItemField, ReferenceItemFluid, ReferenceItemImbuement, ReferenceItemPresentation,
+    ReferenceItemSemantics, ReferenceItemSkillModifiers, ReferenceItemStack,
+    ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
+    ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
+    capture_world_project, item_abilities::apply_equip_abilities_v1,
 };
 use oteryn_gameplay_content_promotion::content::{
     CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256, CW2_B1_DONOR_EPOCH2_MINTED_COUNT,

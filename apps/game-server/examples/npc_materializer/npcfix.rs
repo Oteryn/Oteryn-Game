@@ -5,6 +5,66 @@ const PACKET: &[u8] = include_bytes!(
     "../../../../tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json"
 );
 
+const FLUID_FACTS: &[u8] = include_bytes!(
+    "../../../../tools/content-schema/npc-authoring/samples/npcfix-fluid-containers.json"
+);
+
+/// Apply only evidenced fluid-container facts; all before-state checks precede writes.
+fn apply_fluid_container_facts(
+    draft: &mut ProjectV2Draft,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if hex_sha256(FLUID_FACTS) != "efcae45114e079dd18dcd24728c7692c73b1f870f85da33e8f1c5c36d4ec8429"
+    {
+        return Err("fluid container fact packet digest drifted".into());
+    }
+    let facts: Value = serde_json::from_slice(FLUID_FACTS)?;
+    if facts["schema"] != "OTERYN_NATIVE_FLUID_CONTAINERS/v1" {
+        return Err("fluid container fact schema drifted".into());
+    }
+    let rows = facts["items"]
+        .as_array()
+        .ok_or("fluid container items missing")?;
+    if rows.is_empty() || rows.len() > 4096 {
+        return Err("fluid container fact count".into());
+    }
+    let mut slots = Vec::new();
+    let mut seen = BTreeSet::new();
+    for row in rows {
+        let key = row["item_key"].as_str().ok_or("fluid container identity")?;
+        let revision = row["revision"].as_str().ok_or("fluid container revision")?;
+        if !seen.insert(key) {
+            return Err("duplicate fluid container fact".into());
+        }
+        let slot = draft
+            .core
+            .records
+            .iter()
+            .position(|record| {
+                matches!(record,
+            ProjectReferenceRecord::Item { identity, .. }
+                if identity.key == key && identity.revision == revision)
+            })
+            .ok_or("fluid container item absent")?;
+        let ProjectReferenceRecord::Item { semantics, .. } = &draft.core.records[slot] else {
+            return Err("fluid container item family".into());
+        };
+        if !semantics.fluid.is_unknown() {
+            return Err(format!("fluid container baseline drift: {key}").into());
+        }
+        slots.push(slot);
+    }
+    let field: ReferenceItemField<ReferenceItemFluid> =
+        serde_json::from_value(serde_json::json!({
+            "state":"KNOWN", "value":{"fluid_type":{"state":"NOT_APPLICABLE"}}
+        }))?;
+    for slot in slots {
+        if let ProjectReferenceRecord::Item { semantics, .. } = &mut draft.core.records[slot] {
+            semantics.fluid = field.clone();
+        }
+    }
+    Ok(())
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Packet {
@@ -33,11 +93,11 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn std::error
     if draft.core.project_revision != "e06-market-crystal-parity-20261031-r1" {
         return Err("NPCFIX predecessor revision drifted".into());
     }
-    if hex_sha256(PACKET) != "5efa3c245199ba4c9b1926b21d7afadb76939c2a634746b1ca0e8702beafd480" {
+    if hex_sha256(PACKET) != "d2ab30181dc41efd535e5d5b565e438311fc4d175de756c3001b28ed5de96723" {
         return Err("NPCFIX repair packet digest drifted".into());
     }
     let packet: Packet = serde_json::from_slice(PACKET)?;
-    if packet.schema != "OTERYN_NPCFIX_NATIVE_REPAIRS/v1" || packet.repairs.len() != 53 {
+    if packet.schema != "OTERYN_NPCFIX_NATIVE_REPAIRS/v1" || packet.repairs.len() != 54 {
         return Err("NPCFIX repair schema or count drifted".into());
     }
     let mut replacements = Vec::new();
@@ -62,6 +122,7 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn std::error
         };
         replacements.push((slot, repair.after));
     }
+    apply_fluid_container_facts(draft)?;
     // No partial repair when a later before-state fails.
     for (slot, declaration) in replacements {
         if let Some(slot) = slot {
@@ -88,7 +149,10 @@ mod tests {
                 licensing_metadata: "PENDING".into(),
                 world_id: "0123456789ab70cd8ef0123456789abc".into(),
                 coordinate_frame: "global-target-2026-09-27".into(),
-                records: Vec::new(),
+                records: [2874, 2901].into_iter().map(|id| serde_json::from_value(serde_json::json!({
+                    "kind":"Item", "identity":{"family":"Item","key":format!("oteryn:item.tibia.i{id}"),"revision":"definition-r1"},
+                    "client_projection":"ClientSafe","materializable":false,"stack_class":"Unknown"
+                }))).collect::<Result<Vec<_>, _>>()?,
                 imports: Vec::new(),
                 metadata: Vec::new(),
             },
@@ -112,6 +176,13 @@ mod tests {
         assert_eq!(draft.state.declarations.len(), packet.repairs.len());
         for repair in packet.repairs {
             assert!(draft.state.declarations.contains(&repair.after));
+        }
+        for record in &draft.core.records {
+            let ProjectReferenceRecord::Item { semantics, .. } = record else {
+                return Err("expected fluid Item".into());
+            };
+            assert!(matches!(&semantics.fluid, ReferenceItemField::Known(fluid)
+                if matches!(fluid.fluid_type, ReferenceItemField::NotApplicable)));
         }
         assert_eq!(draft.core.project_revision, "npcfix-retail-20261106-r1");
         Ok(())
@@ -155,6 +226,21 @@ mod tests {
             field_path: "oteryn:source.npc.drift".into(),
             value: ProjectV2CandidateValue::Integer(1),
         });
+        let before = draft.clone();
+        assert!(apply(&mut draft).is_err());
+        assert_eq!(draft, before);
+        Ok(())
+    }
+    #[test]
+    fn npcfix_late_fluid_fact_drift_rejects_items_and_npcs_atomically()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut draft = fixture()?;
+        let ProjectReferenceRecord::Item { semantics, .. } = &mut draft.core.records[1] else {
+            return Err("expected fluid Item".into());
+        };
+        semantics.fluid = serde_json::from_value(serde_json::json!({
+            "state":"KNOWN", "value":{"fluid_type":{"state":"NOT_APPLICABLE"}}
+        }))?;
         let before = draft.clone();
         assert!(apply(&mut draft).is_err());
         assert_eq!(draft, before);

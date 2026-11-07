@@ -137,6 +137,9 @@ pub trait NpcItemFacts {
     fn stackable(&self, key: &str) -> bool;
     fn charged(&self, key: &str) -> bool;
     fn fluid(&self, key: &str) -> bool;
+    fn fluid_container(&self, _key: &str) -> bool {
+        false
+    }
     /// Charges of an admitted timed definition; `None` when the item is not timed.
     fn timed_charges(&self, key: &str) -> Option<u32>;
 }
@@ -146,6 +149,7 @@ struct ItemFactRow {
     stackable: bool,
     charged: bool,
     fluid: bool,
+    fluid_container: bool,
     timed_charges: Option<u32>,
 }
 
@@ -192,6 +196,7 @@ impl ReferenceNpcItemFacts {
                     stackable,
                     charged: charges.is_some(),
                     fluid,
+                    fluid_container: matches!(&semantics.fluid, ReferenceItemField::Known(_)),
                     timed_charges: if timed { charges } else { None },
                 },
             );
@@ -212,6 +217,9 @@ impl NpcItemFacts for ReferenceNpcItemFacts {
     }
     fn fluid(&self, key: &str) -> bool {
         self.items.get(key).is_some_and(|row| row.fluid)
+    }
+    fn fluid_container(&self, key: &str) -> bool {
+        self.items.get(key).is_some_and(|row| row.fluid_container)
     }
     fn timed_charges(&self, key: &str) -> Option<u32> {
         self.items.get(key).and_then(|row| row.timed_charges)
@@ -393,6 +401,22 @@ fn classify(
         return Some(NpcOfferHeldReason::UnknownItem);
     }
     let count = count_of(offer);
+    if let Some(subtype) = offer.sub_type {
+        return if offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer
+            && facts.fluid_container(key)
+            && !facts.stackable(key)
+            && !facts.charged(key)
+            && facts.timed_charges(key).is_none()
+            && (1..=255).contains(&subtype)
+            && count == u32::from(subtype)
+            && !offer.parity_pending
+            && offer.unit_price <= NPC_SELL_PRICE_COIN_CAPACITY
+        {
+            None
+        } else {
+            Some(NpcOfferHeldReason::ChargedOrFluidPending)
+        };
+    }
     if offer.direction == ProjectV2ServiceOfferDirection::SellToPlayer
         && count == 1
         && offer.sub_type.is_none()

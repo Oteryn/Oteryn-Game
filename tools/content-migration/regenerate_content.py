@@ -402,6 +402,47 @@ def export_predecessor(destination: Path) -> None:
         target.write_bytes(blob)
 
 
+
+def refresh_npcfix_repair_proof() -> None:
+    """Bind the exact-before authoring packet in its materializer and reproduction test."""
+    packet = ROOT / "tools/content-schema/npc-authoring/samples/npcfix-native-repairs.json"
+    data = packet.read_bytes()
+    parsed = json.loads(data)
+    repairs = parsed["repairs"]
+    keys = [row["after"]["identity"]["key"] for row in repairs]
+    if parsed["schema"] != "OTERYN_NPCFIX_NATIVE_REPAIRS/v1" or not keys or len(set(keys)) != len(keys):
+        raise SystemExit("invalid NPCFIX exact-before packet")
+    digest = hashlib.sha256(data).hexdigest()
+    targets = [
+        (ROOT / "apps/game-server/examples/npc_materializer/npcfix.rs",
+         r'(hex_sha256\(PACKET\) != ")[0-9a-f]{64}(")',
+         r'(packet.repairs.len\(\) != )\d+'),
+        (PIN_TEST,
+         r'(world_project_sha256\(npcfix_bytes\),\s*")[0-9a-f]{64}(")',
+         r'(assert_eq!\(npcfix_records.len\(\), )\d+'),
+    ]
+    outputs = []
+    for path, digest_pattern, count_pattern in targets:
+        # Rust delimiters follow the quote directly; no whitespace requirement.
+        text, n = re.subn(digest_pattern, lambda m: m[1] + digest + m[2], path.read_text())
+        text, m = re.subn(count_pattern, lambda m: m[1] + str(len(repairs)), text)
+        if n != 1 or m != 1:
+            raise SystemExit(f"NPCFIX proof anchors drifted: {path.name}")
+        outputs.append((path, text))
+    for path, text in outputs:
+        path.write_text(text, encoding="utf-8", newline="\n")
+    fluid_packet = ROOT / "tools/content-schema/npc-authoring/samples/npcfix-fluid-containers.json"
+    materializer = targets[0][0]
+    text, count = re.subn(
+        r'(hex_sha256\(FLUID_FACTS\) != ")[0-9a-f]{64}(")',
+        lambda m: m[1] + hashlib.sha256(fluid_packet.read_bytes()).hexdigest() + m[2],
+        materializer.read_text(),
+    )
+    if count != 1:
+        raise SystemExit("NPCFIX fluid fact digest anchor drifted")
+    materializer.write_text(text, encoding="utf-8", newline="\n")
+
+
 def materialize_world() -> None:
     with tempfile.TemporaryDirectory() as temp:
         output = Path(temp) / "world"
@@ -559,6 +600,7 @@ def main() -> int:
     # Without local donor checkouts the committed, pinned source catalogue is retained.
     if sources := os.environ.get("OTERYN_SPELL_SOURCE_ROOT"):
         run(["python3", "tools/content-schema/spell-authoring/build_field_profiles.py", "--sources", sources])
+    refresh_npcfix_repair_proof()
     materialize_world()
     repin_rust_inventory()
     run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])

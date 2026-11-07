@@ -25,8 +25,8 @@
 //! The cause record is keyed by (occurrence, Character) forever: a replay with the same binding
 //! returns the first outcome without reacquiring session authority, a changed binding conflicts.
 //! Any refusal writes nothing. The caller supplies the offer from the server catalogue at the
-//! bound revision. A charged or fluid offer (§5.3/§5.4 count as charges or sub-type) is outside
-//! this slice: no durable fluid sub-type exists and a charged MINT/BURN needs the timed-state
+//! bound revision. Explicit filled-container BUY offers bind a fluid subtype and mint one
+//! physical container through the existing fluid-state owner. Charged MINT/BURN needs the timed-state
 //! arms, so the caller refuses it before this commit (the database refuses a sold item with a
 //! timed state or contents).
 
@@ -121,6 +121,7 @@ pub struct NpcTradeRequest {
     pub unit_price: u64,
     /// The offer's count per unit: a stackable offer trades `quantity x count` units in one stack.
     pub offer_count: u32,
+    pub fluid_subtype: Option<u8>,
     /// The offer's item definition at its current revision; never a coin.
     pub item: ItemDefinitionFacts,
     pub transaction_id: [u8; 16],
@@ -318,6 +319,13 @@ impl std::error::Error for NpcTradeError {}
 fn item_units(request: &NpcTradeRequest) -> Result<u32> {
     let (maximum, stackable) =
         stack_maximum(request.item.stack).map_err(|_| NpcTradeError::InvalidInput)?;
+    if let Some(subtype) = request.fluid_subtype {
+        if subtype == 0 || request.offer_count != u32::from(subtype)
+            || request.quantity != 1 || stackable || request.cause.side != NpcTradeSide::Buy {
+            return Err(NpcTradeError::InvalidInput);
+        }
+        return Ok(1);
+    }
     rules::item_units(request.quantity, request.offer_count, maximum, stackable).map_err(Into::into)
 }
 
@@ -334,6 +342,9 @@ fn validate(request: &NpcTradeRequest, sell_all: bool) -> Result<Option<(u64, u3
 }
 
 fn validate_sell_bound(request:&NpcTradeRequest,sell_all:bool,sell_max:u64)->Result<Option<(u64,u32)>> {
+    if sell_all && request.fluid_subtype.is_some() {
+        return Err(NpcTradeError::InvalidInput);
+    }
     let cause = &request.cause;
     let priced = if sell_all {
         if cause.side != NpcTradeSide::Sell
@@ -426,6 +437,10 @@ fn request_binding(
     text(&mut digest, &item.family);
     text(&mut digest, &item.production_key);
     text(&mut digest, &item.revision_ref);
+    if let Some(subtype) = request.fluid_subtype {
+        digest.update(b"npc-fluid:v1");
+        digest.update([subtype]);
+    }
     if sell_all {
         digest.update([1]);
     }
@@ -900,6 +915,8 @@ async fn lock_entries(
                             WHERE c.parent_item_instance_id = i.item_instance_id) \
                 OR EXISTS (SELECT 1 FROM game_item_timed_states t \
                             WHERE t.item_instance_id = i.item_instance_id) \
+                OR EXISTS (SELECT 1 FROM game_item_fluid_states f \
+                            WHERE f.item_instance_id = i.item_instance_id) \
                 OR EXISTS (SELECT 1 FROM game_item_imbuements b \
                             WHERE b.item_instance_id = i.item_instance_id) AS not_default \
            FROM game_item_container_entries e \
@@ -1031,14 +1048,14 @@ async fn apply_trade(
            item_definition_production_key, item_definition_revision_ref, item_instance_id, \
            item_units, backpack_item_instance_id, burned_gold_units, minted_gold_units, \
            line_count, occurred_at, envelope_sha256, committed_at, bank_debit_gold_units, \
-           sell_all, house_key) \
+           sell_all, house_key, fluid_subtype) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
            encode($4,'hex')::uuid, $5::text::numeric(20,0), encode($6,'hex')::uuid, $7, \
            encode($8,'hex')::uuid, encode($9,'hex')::uuid, $10::text::numeric(20,0), $11, \
            $12::text::numeric(20,0), $13, $14, $15, $16, $17, $18, $19, $20, \
            encode($21,'hex')::uuid, $22, encode($23,'hex')::uuid, $24, $25, $26, $27, \
            sha256($28), floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $29, \
-           $30, $31)",
+           $30, $31, $32)",
     )
     .bind(request.transaction_id.as_slice())
     .bind(request.event_id.as_slice())
@@ -1071,6 +1088,7 @@ async fn apply_trade(
     .bind(gold(plan.bank_debit_gold_units)?)
     .bind(sell_all)
     .bind(house_key)
+    .bind(request.fluid_subtype.map(i16::from))
     .execute(&mut **tx)
     .await?;
 
@@ -1165,6 +1183,13 @@ async fn apply_trade(
         .bind(i64::from(line.quantity_after))
         .execute(&mut **tx)
         .await?;
+    }
+
+    if let Some(fluid) = request.fluid_subtype {
+        sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid)")
+            .bind(plan.item_instance_id.as_slice()).bind(world_id.as_bytes().as_slice())
+            .bind(i16::from(fluid)).bind(request.transaction_id.as_slice())
+            .execute(&mut **tx).await?;
     }
 
     sqlx::query(

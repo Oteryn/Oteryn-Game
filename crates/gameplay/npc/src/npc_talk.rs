@@ -434,6 +434,7 @@ impl NpcTalkBook {
             } else if matches!(
                 reference.key.as_str(),
                 "oteryn:npc.a_ghostly_guardian"
+                    | "oteryn:npc.ahmet"
                     | "oteryn:npc.albinius"
                     | "oteryn:npc.alesar"
                     | "oteryn:npc.benjamin"
@@ -485,7 +486,11 @@ impl NpcTalkBook {
                 {
                     // Albinius supplies one authored leave line and no separate farewell.
                     dialogue.walkaway[0].clone()
-                } else if reference.key == "oteryn:npc.dixi" && dialogue.farewell.is_empty() {
+                } else if matches!(
+                    reference.key.as_str(),
+                    "oteryn:npc.dixi" | "oteryn:npc.ahmet"
+                ) && dialogue.farewell.is_empty()
+                {
                     "Farewell.".into()
                 } else {
                     continue;

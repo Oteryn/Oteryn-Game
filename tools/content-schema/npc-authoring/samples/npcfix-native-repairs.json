@@ -17943,6 +17943,812 @@
       "research": [
         ".npcaudit/research/tarak-sunken.md"
       ]
+    },
+    {
+      "before": {
+        "kind": "Service",
+        "identity": {
+          "key": "oteryn:service.trade.ahmet",
+          "revision": "definition-r1"
+        },
+        "offers": [
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2815",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 5
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2817",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 8
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2818",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 12
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2855",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 6
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2856",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 10
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2863",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 4
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2871",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 10
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2873",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 4
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2875",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 3
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2881",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 2
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2905",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 6
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2906",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 6
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2906",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 20
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2911",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 8
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2912",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 8
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2917",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 2
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2920",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 2
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3003",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 15
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3003",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 50
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i31334",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 25
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i31489",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 50
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3304",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 50
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3304",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 260
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3308",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 6
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3308",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 35
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3453",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 10
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3453",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 50
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3456",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 15
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3456",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 50
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3457",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 8
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3457",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 50
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3459",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 15
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3481",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 75
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3481",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 280
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3483",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 40
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3483",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 150
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3492",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 1
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i46627",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 500
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i7866",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 1000
+          }
+        ],
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.held_offer_057",
+            "value": {
+              "type": "Text",
+              "value": "{\"access_state\":\"UNKNOWN_SCOPE_CONTEXT_UNRESOLVED\",\"admission_eligible\":false,\"disposition\":\"SOURCE_FACT_RETAINED_NOT_EXECUTABLE_OFFER\",\"item_reference_canonicalization\":{\"alias_table\":{\"entries_sha256\":\"fdf99248ed956b946c8fa4ceb081e6234c5d63eb39681a859bfc1cc63a5275e7\",\"locator\":\"content/items/aliases.json\",\"sha256\":\"128bc354816199702c26f83120e6fb7846fb2608fb5ee1c16085f63268e592f2\"},\"original_field\":{\"field_sha256\":\"b6e59aa1e817ec4b4cc00876b9423166c85023ad539d3ecd545a9e32570af6d8\",\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r4/service-corrections.json\",\"pointer\":\"/records/0/fields/0\",\"sha256\":\"993207b4df4e828bc906227ea994b35654881bcb1ec8a17b7a2ba988f843c788\",\"text_sha256\":\"71835e9841295b0e898f9f08570699d62265ddc87eb2d35a61385f024797e7ad\"},\"references\":[{\"alias_entry_sha256\":\"93881fb5b46136654eb20c8bc65c40d1829e9a919119a96d620b4a09d5b2f456\",\"alias_pointer\":\"/entries/2823\",\"alias_version\":1,\"canonical_key\":\"oteryn:item.tibia.i2874\",\"historical_identity\":{\"family\":\"Item\",\"local_id\":\"i00002771\",\"namespace\":\"registry\"},\"pointer\":\"/source_proof/old_exact_candidate_offer/item/key\"}],\"runtime_qualified\":false,\"state\":\"PROTECTED_EXACT_ITEM_ALIASES\"},\"native_mapping\":\"UNKNOWN_NO_ACCEPTED_SERVICE_SUBTYPE_NUMERIC_BINDING\",\"npc\":\"oteryn:npc.ahmet\",\"old_native_offer\":{\"count\":7,\"direction\":\"SellToPlayer\",\"item\":{\"family\":\"Item\",\"key\":\"oteryn:item.tibia.i2874\",\"revision\":\"definition-r1\"},\"unit_price\":20},\"quantity_state\":\"UNKNOWN_FLUID_ENUM_NOT_UNITS\",\"reason\":\"FLUID_SOURCE_ENUM_IS_NOT_NATIVE_TRANSACTION_QUANTITY\",\"recovered_native_offer\":null,\"runtime_qualified\":false,\"second_wiki_variant_observation_pointer\":{\"array\":\"fluid_second_wiki_observations\",\"index\":0,\"path\":\"capture-artifact:qualified-variant-source-quotes.json\",\"sha256\":\"9f5f120ab9e3eb9d45a39b36c374fc5fcd596b58a12dcdd7662d75433d0efb29\"},\"second_wiki_variant_state\":\"EXACT_LITERAL_VARIANT_ROW_PRESENT\",\"service\":\"oteryn:service.trade.ahmet\",\"source_container\":\"vial\",\"source_count\":7,\"source_fluid_enum_proof\":[{\"git_blob_sha\":\"d645b99d0c2c7ebe101b66cc6c6297b7f0cb8935\",\"path\":\"src/utils/utils_definitions.hpp\",\"repository\":\"opentibiabr/canary\",\"revision\":\"47dfd51f45280a59a1d3e50ba7edd573d7234446\",\"sha256\":\"bdd23ca8e86ab433bef04766f0c183d46fc2ca1796a81bab1d44db8d3fd685d1\"},{\"git_blob_sha\":\"d42e3ae6314520a289d88172793e57f8812796dc\",\"path\":\"src/utils/utils_definitions.hpp\",\"repository\":\"zimbadev/crystalserver\",\"revision\":\"ff7ede593c69d4c658b382c97443e8155926924a\",\"sha256\":\"8ca63a90b2d34da65ee94ca0e3134ed05bd021bd20ccfad0ed6210ed7ae116e9\"}],\"source_fluid_symbol\":\"FLUID_OIL\",\"source_fluid_symbol_qualification\":\"PINNED_OT_ENUM_INTERPRETATION_ONLY_NOT_GLOBAL_OR_NATIVE_BINDING\",\"source_proof\":{\"old_exact_candidate_offer\":{\"count\":7,\"direction\":\"SellToPlayer\",\"item\":{\"family\":\"Item\",\"key\":\"oteryn:item.tibia.i2874\",\"revision\":\"definition-r1\"},\"source_item_id\":2874,\"sub_type\":null,\"unit_price\":20},\"path\":\"capture-artifact:native_fluid_quantity_safety_hold_inventory.json\",\"row_index\":0,\"sha256\":\"4d7dbc757c812e6c3c168faa4f0865a1648bd7084e23f5a0f8a983796685e74c\"},\"source_sub_type\":null,\"source_variant_pointers\":[{\"file_sha256\":\"c52d9cee7b486c7beccbde59cb3df35eec9bb306f76ff86ee1e28800deecd0b3\",\"pageid\":93813,\"path\":\"capture-artifact:fandom-item-price-data.json\",\"raw\":\"{[\\\"item\\\"] = \\\"Vial\\\", [\\\"price\\\"] = 20, [\\\"note\\\"] = notes[\\\"oil\\\"]},\",\"revid\":1203407,\"source_line\":192,\"wikitext_sha256\":\"7a86384ba8a36cc93f8b86b3f6998ea2fa35a7510d984f1012d0dea6c3dac46a\"}],\"source_wiki_variant_rows\":[{\"direction\":\"SellToPlayer\",\"effective_currency\":\"Gold\",\"item\":\"Vial\",\"note\":{\"note_key\":\"oil\",\"raw_expression\":\"notes[\\\"oil\\\"]\",\"text\":\"With [[Oil]].\"},\"npc\":\"Ahmet\",\"price\":20,\"raw\":\"{[\\\"item\\\"] = \\\"Vial\\\", [\\\"price\\\"] = 20, [\\\"note\\\"] = notes[\\\"oil\\\"]},\",\"source_line\":192}],\"state\":\"UNKNOWN\"}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.trade.held_tuple_11029f33361a0241",
+            "value": {
+              "type": "Text",
+              "value": "{\"admission_eligible\":false,\"disposition\":\"SOURCE_FACT_RETAINED_NOT_EXECUTABLE_OFFER\",\"npc\":\"oteryn:npc.ahmet\",\"old_native_offer\":{\"count\":1,\"direction\":\"SellToPlayer\",\"item\":{\"family\":\"Item\",\"key\":\"oteryn:item.tibia.i2901\",\"revision\":\"definition-r1\"},\"unit_price\":40},\"reason\":\"FLUID_WATER_VARIANT_NATIVE_BINDING_UNQUALIFIED\",\"runtime_qualified\":false,\"service\":\"oteryn:service.trade.ahmet\",\"source_observations\":[{\"native_sub_type\":null,\"npc_slug\":\"ahmet\",\"old_source_offer\":{\"buy_price\":40,\"client_id\":2901,\"count\":1,\"item_name\":\"waterskin of water\",\"sell_price\":null,\"server_item_id\":null,\"stock_gate\":null,\"sub_type\":null},\"quantity_state\":\"UNKNOWN_SOURCE_FLUID_ENUM_NOT_TRANSACTION_UNITS\",\"runtime_qualified\":false,\"source_encoded_value\":1,\"source_encoding_matches_enum\":true,\"source_fluid_enum\":1,\"source_fluid_name\":\"water\",\"source_proof\":{\"line\":57,\"path\":\"data-otservbr-global/npc/ahmet.lua\",\"raw_shop_row\":\"{ itemName = \\\"waterskin of water\\\", clientId = 2901, buy = 40, count = 1 }\",\"repository\":\"opentibiabr/canary\",\"revision\":\"47dfd51f45280a59a1d3e50ba7edd573d7234446\",\"sha256\":\"017953fa96f21272f93aeb2273d5cb09edeb27baf3fcdb30dd6a3a1acc8cf0d1\"}}]}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.trade.held_tuple_9c7f7305cdb309de",
+            "value": {
+              "type": "Text",
+              "value": "{\"admission_eligible\":false,\"disposition\":\"SOURCE_FACT_RETAINED_NOT_EXECUTABLE_OFFER\",\"npc\":\"oteryn:npc.ahmet\",\"old_native_offer\":{\"count\":1,\"direction\":\"SellToPlayer\",\"item\":{\"family\":\"Item\",\"key\":\"oteryn:item.tibia.i2874\",\"revision\":\"definition-r1\"},\"unit_price\":40},\"reason\":\"FLUID_WATER_VARIANT_NATIVE_BINDING_UNQUALIFIED\",\"runtime_qualified\":false,\"service\":\"oteryn:service.trade.ahmet\",\"source_observations\":[{\"native_sub_type\":null,\"npc_slug\":\"ahmet\",\"old_source_offer\":{\"buy_price\":40,\"client_id\":2874,\"count\":1,\"item_name\":\"vial of water\",\"sell_price\":null,\"server_item_id\":null,\"stock_gate\":null,\"sub_type\":null},\"quantity_state\":\"UNKNOWN_SOURCE_FLUID_ENUM_NOT_TRANSACTION_UNITS\",\"runtime_qualified\":false,\"source_encoded_value\":1,\"source_encoding_matches_enum\":true,\"source_fluid_enum\":1,\"source_fluid_name\":\"water\",\"source_proof\":{\"line\":55,\"path\":\"data-otservbr-global/npc/ahmet.lua\",\"raw_shop_row\":\"{ itemName = \\\"vial of water\\\", clientId = 2874, buy = 40, count = 1 }\",\"repository\":\"opentibiabr/canary\",\"revision\":\"47dfd51f45280a59a1d3e50ba7edd573d7234446\",\"sha256\":\"017953fa96f21272f93aeb2273d5cb09edeb27baf3fcdb30dd6a3a1acc8cf0d1\"}}]}"
+            }
+          }
+        ]
+      },
+      "after": {
+        "kind": "Service",
+        "identity": {
+          "key": "oteryn:service.trade.ahmet",
+          "revision": "definition-r1"
+        },
+        "offers": [
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2815",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 5
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2817",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 8
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2818",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 12
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2855",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 6
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2856",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 10
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2863",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 4
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2871",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 10
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2873",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 4
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2874",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 20,
+            "count": 7,
+            "sub_type": 7
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2874",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 40,
+            "count": 1,
+            "sub_type": 1
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2875",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 3
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2881",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 2
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2901",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 40,
+            "count": 1,
+            "sub_type": 1
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2905",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 6
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2906",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 6
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2906",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 20
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2911",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 8
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2912",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 8
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2917",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 2
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2920",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 2
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3003",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 15
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3003",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 50
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i31334",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 25
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i31489",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 50
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3304",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 50
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3304",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 260
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3308",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 6
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3308",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 35
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3453",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 10
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3453",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 50
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3456",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 15
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3456",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 50
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3457",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 8
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3457",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 50
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3459",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 15
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3481",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 75
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3481",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 280
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3483",
+              "revision": "definition-r1"
+            },
+            "direction": "BuyFromPlayer",
+            "unit_price": 40
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3483",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 150
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3492",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 1
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i46627",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 500
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i7866",
+              "revision": "definition-r1"
+            },
+            "direction": "SellToPlayer",
+            "unit_price": 1000
+          }
+        ],
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.held_offer_057",
+            "value": {
+              "type": "Text",
+              "value": "{\"access_state\":\"UNKNOWN_SCOPE_CONTEXT_UNRESOLVED\",\"admission_eligible\":false,\"disposition\":\"SOURCE_FACT_RETAINED_NOT_EXECUTABLE_OFFER\",\"item_reference_canonicalization\":{\"alias_table\":{\"entries_sha256\":\"fdf99248ed956b946c8fa4ceb081e6234c5d63eb39681a859bfc1cc63a5275e7\",\"locator\":\"content/items/aliases.json\",\"sha256\":\"128bc354816199702c26f83120e6fb7846fb2608fb5ee1c16085f63268e592f2\"},\"original_field\":{\"field_sha256\":\"b6e59aa1e817ec4b4cc00876b9423166c85023ad539d3ecd545a9e32570af6d8\",\"locator\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r4/service-corrections.json\",\"pointer\":\"/records/0/fields/0\",\"sha256\":\"993207b4df4e828bc906227ea994b35654881bcb1ec8a17b7a2ba988f843c788\",\"text_sha256\":\"71835e9841295b0e898f9f08570699d62265ddc87eb2d35a61385f024797e7ad\"},\"references\":[{\"alias_entry_sha256\":\"93881fb5b46136654eb20c8bc65c40d1829e9a919119a96d620b4a09d5b2f456\",\"alias_pointer\":\"/entries/2823\",\"alias_version\":1,\"canonical_key\":\"oteryn:item.tibia.i2874\",\"historical_identity\":{\"family\":\"Item\",\"local_id\":\"i00002771\",\"namespace\":\"registry\"},\"pointer\":\"/source_proof/old_exact_candidate_offer/item/key\"}],\"runtime_qualified\":false,\"state\":\"PROTECTED_EXACT_ITEM_ALIASES\"},\"native_mapping\":\"UNKNOWN_NO_ACCEPTED_SERVICE_SUBTYPE_NUMERIC_BINDING\",\"npc\":\"oteryn:npc.ahmet\",\"old_native_offer\":{\"count\":7,\"direction\":\"SellToPlayer\",\"item\":{\"family\":\"Item\",\"key\":\"oteryn:item.tibia.i2874\",\"revision\":\"definition-r1\"},\"unit_price\":20},\"quantity_state\":\"UNKNOWN_FLUID_ENUM_NOT_UNITS\",\"reason\":\"FLUID_SOURCE_ENUM_IS_NOT_NATIVE_TRANSACTION_QUANTITY\",\"recovered_native_offer\":null,\"runtime_qualified\":false,\"second_wiki_variant_observation_pointer\":{\"array\":\"fluid_second_wiki_observations\",\"index\":0,\"path\":\"capture-artifact:qualified-variant-source-quotes.json\",\"sha256\":\"9f5f120ab9e3eb9d45a39b36c374fc5fcd596b58a12dcdd7662d75433d0efb29\"},\"second_wiki_variant_state\":\"EXACT_LITERAL_VARIANT_ROW_PRESENT\",\"service\":\"oteryn:service.trade.ahmet\",\"source_container\":\"vial\",\"source_count\":7,\"source_fluid_enum_proof\":[{\"git_blob_sha\":\"d645b99d0c2c7ebe101b66cc6c6297b7f0cb8935\",\"path\":\"src/utils/utils_definitions.hpp\",\"repository\":\"opentibiabr/canary\",\"revision\":\"47dfd51f45280a59a1d3e50ba7edd573d7234446\",\"sha256\":\"bdd23ca8e86ab433bef04766f0c183d46fc2ca1796a81bab1d44db8d3fd685d1\"},{\"git_blob_sha\":\"d42e3ae6314520a289d88172793e57f8812796dc\",\"path\":\"src/utils/utils_definitions.hpp\",\"repository\":\"zimbadev/crystalserver\",\"revision\":\"ff7ede593c69d4c658b382c97443e8155926924a\",\"sha256\":\"8ca63a90b2d34da65ee94ca0e3134ed05bd021bd20ccfad0ed6210ed7ae116e9\"}],\"source_fluid_symbol\":\"FLUID_OIL\",\"source_fluid_symbol_qualification\":\"PINNED_OT_ENUM_INTERPRETATION_ONLY_NOT_GLOBAL_OR_NATIVE_BINDING\",\"source_proof\":{\"old_exact_candidate_offer\":{\"count\":7,\"direction\":\"SellToPlayer\",\"item\":{\"family\":\"Item\",\"key\":\"oteryn:item.tibia.i2874\",\"revision\":\"definition-r1\"},\"source_item_id\":2874,\"sub_type\":null,\"unit_price\":20},\"path\":\"capture-artifact:native_fluid_quantity_safety_hold_inventory.json\",\"row_index\":0,\"sha256\":\"4d7dbc757c812e6c3c168faa4f0865a1648bd7084e23f5a0f8a983796685e74c\"},\"source_sub_type\":null,\"source_variant_pointers\":[{\"file_sha256\":\"c52d9cee7b486c7beccbde59cb3df35eec9bb306f76ff86ee1e28800deecd0b3\",\"pageid\":93813,\"path\":\"capture-artifact:fandom-item-price-data.json\",\"raw\":\"{[\\\"item\\\"] = \\\"Vial\\\", [\\\"price\\\"] = 20, [\\\"note\\\"] = notes[\\\"oil\\\"]},\",\"revid\":1203407,\"source_line\":192,\"wikitext_sha256\":\"7a86384ba8a36cc93f8b86b3f6998ea2fa35a7510d984f1012d0dea6c3dac46a\"}],\"source_wiki_variant_rows\":[{\"direction\":\"SellToPlayer\",\"effective_currency\":\"Gold\",\"item\":\"Vial\",\"note\":{\"note_key\":\"oil\",\"raw_expression\":\"notes[\\\"oil\\\"]\",\"text\":\"With [[Oil]].\"},\"npc\":\"Ahmet\",\"price\":20,\"raw\":\"{[\\\"item\\\"] = \\\"Vial\\\", [\\\"price\\\"] = 20, [\\\"note\\\"] = notes[\\\"oil\\\"]},\",\"source_line\":192}],\"state\":\"UNKNOWN\"}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.trade.held_tuple_11029f33361a0241",
+            "value": {
+              "type": "Text",
+              "value": "{\"admission_eligible\":false,\"disposition\":\"SOURCE_FACT_RETAINED_NOT_EXECUTABLE_OFFER\",\"npc\":\"oteryn:npc.ahmet\",\"old_native_offer\":{\"count\":1,\"direction\":\"SellToPlayer\",\"item\":{\"family\":\"Item\",\"key\":\"oteryn:item.tibia.i2901\",\"revision\":\"definition-r1\"},\"unit_price\":40},\"reason\":\"FLUID_WATER_VARIANT_NATIVE_BINDING_UNQUALIFIED\",\"runtime_qualified\":false,\"service\":\"oteryn:service.trade.ahmet\",\"source_observations\":[{\"native_sub_type\":null,\"npc_slug\":\"ahmet\",\"old_source_offer\":{\"buy_price\":40,\"client_id\":2901,\"count\":1,\"item_name\":\"waterskin of water\",\"sell_price\":null,\"server_item_id\":null,\"stock_gate\":null,\"sub_type\":null},\"quantity_state\":\"UNKNOWN_SOURCE_FLUID_ENUM_NOT_TRANSACTION_UNITS\",\"runtime_qualified\":false,\"source_encoded_value\":1,\"source_encoding_matches_enum\":true,\"source_fluid_enum\":1,\"source_fluid_name\":\"water\",\"source_proof\":{\"line\":57,\"path\":\"data-otservbr-global/npc/ahmet.lua\",\"raw_shop_row\":\"{ itemName = \\\"waterskin of water\\\", clientId = 2901, buy = 40, count = 1 }\",\"repository\":\"opentibiabr/canary\",\"revision\":\"47dfd51f45280a59a1d3e50ba7edd573d7234446\",\"sha256\":\"017953fa96f21272f93aeb2273d5cb09edeb27baf3fcdb30dd6a3a1acc8cf0d1\"}}]}"
+            }
+          },
+          {
+            "field_path": "oteryn:source.npc.trade.held_tuple_9c7f7305cdb309de",
+            "value": {
+              "type": "Text",
+              "value": "{\"admission_eligible\":false,\"disposition\":\"SOURCE_FACT_RETAINED_NOT_EXECUTABLE_OFFER\",\"npc\":\"oteryn:npc.ahmet\",\"old_native_offer\":{\"count\":1,\"direction\":\"SellToPlayer\",\"item\":{\"family\":\"Item\",\"key\":\"oteryn:item.tibia.i2874\",\"revision\":\"definition-r1\"},\"unit_price\":40},\"reason\":\"FLUID_WATER_VARIANT_NATIVE_BINDING_UNQUALIFIED\",\"runtime_qualified\":false,\"service\":\"oteryn:service.trade.ahmet\",\"source_observations\":[{\"native_sub_type\":null,\"npc_slug\":\"ahmet\",\"old_source_offer\":{\"buy_price\":40,\"client_id\":2874,\"count\":1,\"item_name\":\"vial of water\",\"sell_price\":null,\"server_item_id\":null,\"stock_gate\":null,\"sub_type\":null},\"quantity_state\":\"UNKNOWN_SOURCE_FLUID_ENUM_NOT_TRANSACTION_UNITS\",\"runtime_qualified\":false,\"source_encoded_value\":1,\"source_encoding_matches_enum\":true,\"source_fluid_enum\":1,\"source_fluid_name\":\"water\",\"source_proof\":{\"line\":55,\"path\":\"data-otservbr-global/npc/ahmet.lua\",\"raw_shop_row\":\"{ itemName = \\\"vial of water\\\", clientId = 2874, buy = 40, count = 1 }\",\"repository\":\"opentibiabr/canary\",\"revision\":\"47dfd51f45280a59a1d3e50ba7edd573d7234446\",\"sha256\":\"017953fa96f21272f93aeb2273d5cb09edeb27baf3fcdb30dd6a3a1acc8cf0d1\"}}]}"
+            }
+          }
+        ]
+      },
+      "research": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/ahmet.lua#L51-L59; explicit filled container subtype, one physical container per purchase; ordinary accepted offers preserved.",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/utils/utils_definitions.hpp#L438-L451 sha256=03ebfc0da66b01cdef46dca4195c4f1a0132a0fce058d6c670cb401bcc35ae7d: native global enum oil7, mana10, life11; the legacy data-crystal fluid script uses different numeric constants.",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/other/fluids.lua#L124-L139 sha256=5ca5ff091a9710788e7e4610c95620220ff338a8b8fc6b3baf88ed857ccdfb50: matching global consumption owner; oil never grants mana or health."
+      ]
     }
   ]
 }

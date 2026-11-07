@@ -277,6 +277,22 @@ pub(super) async fn trade(
     let Ok(item) = generation_item_facts(native, &materialized) else {
         return Err(Box::new(NpcTradeStep::rejected()));
     };
+    if offer.fluid_subtype.is_some() {
+        let container = native
+            .item_policy(
+                &item.definition.production_key,
+                &item.definition.revision_ref,
+            )
+            .is_some_and(|p| {
+                matches!(
+                    &p.record().semantics.fluid,
+                    crate::content::ReferenceItemField::Known(_)
+                )
+            });
+        if !container {
+            return Err(Box::new(NpcTradeStep::rejected()));
+        }
+    }
     if offer.side == NpcTradeSide::Buy
         && let Some(charges) = crate::content::npc_catalogue::service::default_state_purchase(
             &offer.npc_key,
@@ -340,6 +356,7 @@ pub(super) async fn trade(
     };
     let id = |tag: &[u8]| derived(tag, session, command.command_id);
     let request = NpcTradeRequest {
+        fluid_subtype: offer.fluid_subtype,
         cause: NpcTradeCause {
             npc_key: offer.npc_key,
             catalogue_revision: offer.catalogue_revision,

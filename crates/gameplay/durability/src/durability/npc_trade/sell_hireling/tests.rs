@@ -8,6 +8,7 @@ fn definition(key:&str)->TypedDefinitionRef {TypedDefinitionRef{family:"Item".in
 fn facts(key:&str)->ItemDefinitionFacts {ItemDefinitionFacts {definition:definition(key),weight:None,stack:ItemStackClass::NonStackable,container_capacity:None,container_slot_equip_pattern:false}}
 fn request()->NpcTradeRequest {
     NpcTradeRequest {
+        fluid_subtype: None,
         cause:NpcTradeCause {npc_key:crate::durability::house_hireling::npc_key(id(60)),catalogue_revision:1,offer_index:0,side:NpcTradeSide::Sell,occurrence:id(70)},
         command:CommandRef::new(GameSessionId::decode(&id(50)).expect("session"),CommandId::new(9).expect("command")),
         quantity:1,unit_price:MAX_GOLD,offer_count:1,item:facts("oteryn:item.tibia.i43963"),transaction_id:id(80),event_id:id(81),

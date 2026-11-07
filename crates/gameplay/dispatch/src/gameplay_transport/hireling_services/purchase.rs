@@ -312,6 +312,7 @@ pub(super) async fn package(
     }
     let id = |tag: &[u8]| derived(tag, command.game_session_id, command.command_id);
     let request = NpcTradeRequest {
+        fluid_subtype: None,
         cause: NpcTradeCause {
             npc_key: snapshot.npc_key(),
             catalogue_revision: context.0,

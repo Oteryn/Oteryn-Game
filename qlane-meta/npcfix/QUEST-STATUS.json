@@ -7292,7 +7292,7 @@
       "normal_profile": "This checkout retained normal unoptimized+debuginfo profiles and existing env.sh. Only stopped-build incremental caches were removed."
     }
   },
-  "next_batch": "Push green current union immediately; then review/apply saved R2 fluid source, regenerate through repo tooling, finish strict Clippy and focused PG/catalogue/repository gates. Continue remaining scope without a final turn.",
+  "next_batch": "Complete current-data PG RED, run repository materialization and registered checks, validate only2 Item fluid groups/one service change, run fresh PG GREEN and focused oil/replay/refusal checks, finish strict Clippy then qualify Ahmet.",
   "active_batch": {
     "name": "reviewed-passive-cells-35",
     "state": "QUALIFIED",
@@ -7460,5 +7460,14 @@
       "Rebuild release world compiler, refresh/check pins using repository tooling; qualify Ahmet and publish after validation"
     ],
     "local_full_checkpoint": "git stash entry npcfix owner STOP: preserve local fluid source and generated checkpoint"
+  },
+  "active_fluid_work": {
+    "state": "WIP_COMPILES",
+    "entries": [
+      "Ahmet"
+    ],
+    "compile": "Fresh dispatch PG test target PASS12m44s with source patch and migration1148; current-data PG marker present, run still active.",
+    "exact_red_point": "Committed generated catalogue still omits2874/subtype7/price20,2874/subtype1/price40 and2901/subtype1/price40; canonical fluid-container facts2874/2901 remain UNKNOWN. Source packet54 and exact-before fact bridge are applied but not materialized.",
+    "next": "Complete current-data PG RED, run repository materialization and registered checks, validate only2 Item fluid groups/one service change, run fresh PG GREEN and focused oil/replay/refusal checks, finish strict Clippy then qualify Ahmet."
   }
 }

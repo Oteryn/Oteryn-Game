@@ -1,0 +1,18 @@
+{
+  "schema": "OTERYN_NATIVE_FLUID_CONTAINERS/v1",
+  "source_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml",
+  "source_sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+  "rule": "The source primarytype fluid containers proves the container fluid group, with no fixed fluid source type. Preserve all unrelated canonical facts; native subtype and current Item-policy checks remain mandatory.",
+  "items": [
+    {
+      "item_key": "oteryn:item.tibia.i2874",
+      "revision": "definition-r1",
+      "source_line": 6137
+    },
+    {
+      "item_key": "oteryn:item.tibia.i2901",
+      "revision": "definition-r1",
+      "source_line": 6230
+    }
+  ]
+}

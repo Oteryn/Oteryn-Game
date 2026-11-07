@@ -51,6 +51,7 @@ fn trade(
     unit_price: u64,
 ) -> TestResult<NpcTradeRequest> {
     Ok(NpcTradeRequest {
+        fluid_subtype: None,
         cause: NpcTradeCause {
             npc_key: "fixture:npc.trader".into(),
             catalogue_revision: 1,
@@ -699,7 +700,14 @@ fn sell_all_sells_every_stack_once_replays_and_then_finds_nothing() -> TestResul
                 0,
                 4,
             ),
-            (NpcTradeLineKind::CoinMint, id(15), 5, Some(Coin::Gold), 0, 28),
+            (
+                NpcTradeLineKind::CoinMint,
+                id(15),
+                5,
+                Some(Coin::Gold),
+                0,
+                28,
+            ),
         ];
         assert_eq!(shape(&sold), expected);
         assert_eq!(

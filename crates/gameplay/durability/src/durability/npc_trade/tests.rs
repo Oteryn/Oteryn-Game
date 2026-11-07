@@ -40,6 +40,7 @@ fn sword() -> TypedDefinitionRef {
 
 fn request(side: NpcTradeSide, quantity: u32, unit_price: u64) -> NpcTradeRequest {
     NpcTradeRequest {
+        fluid_subtype: None,
         cause: NpcTradeCause {
             npc_key: "oteryn:npc.tibia.sam".into(),
             catalogue_revision: 1,
@@ -408,4 +409,26 @@ fn only_albinius_exact_blank_scroll_offer_activates_the_durable_gate() {
     value.unit_price -= 1;
     value.cause.npc_key = "oteryn:npc.someone_else".into();
     assert!(!is_albinius_blank_scroll(&value));
+}
+
+#[test]
+fn filled_trade_mints_one_container_and_rejects_invalid_shapes() {
+    let mut r = request(NpcTradeSide::Buy, 1, 20);
+    r.item.stack = ItemStackClass::NonStackable;
+    r.fluid_subtype = Some(7);
+    r.offer_count = 7;
+    assert_eq!(item_units(&r).unwrap(), 1);
+    r.offer_count = 1;
+    assert!(item_units(&r).is_err());
+    r.offer_count = 7;
+    r.quantity = 2;
+    assert!(item_units(&r).is_err());
+    r.quantity = 1;
+    r.cause.side = NpcTradeSide::Sell;
+    assert!(item_units(&r).is_err());
+    assert!(validate(&r, true).is_err());
+    r.cause.side = NpcTradeSide::Buy;
+    r.fluid_subtype = Some(0);
+    r.offer_count = 0;
+    assert!(item_units(&r).is_err());
 }

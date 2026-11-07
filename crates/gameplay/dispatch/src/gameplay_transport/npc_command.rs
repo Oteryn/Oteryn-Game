@@ -443,10 +443,7 @@ impl NpcConversations {
         if offer.side != intent.side || offer.unit_price != intent.expected_unit_price {
             return Err(Box::new(stale()));
         }
-        if !entry.offers().contains(source)
-            || source.currency.is_some()
-            || source.sub_type.is_some()
-        {
+        if !entry.offers().contains(source) || source.currency.is_some() {
             return Err(Box::new(rejected()));
         }
         Ok(NpcTradeOffer {
@@ -456,6 +453,7 @@ impl NpcConversations {
             side: offer.side,
             quantity: intent.quantity,
             count: offer.count,
+            fluid_subtype: source.sub_type.and_then(|n| u8::try_from(n).ok()),
             unit_price: offer.unit_price,
             item_key: source.item.key.clone(),
             item_revision: source.item.revision.clone(),

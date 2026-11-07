@@ -147,6 +147,7 @@ pub struct NpcTradeOffer {
     pub quantity: u32,
     /// Units per trade row.
     pub count: u32,
+    pub fluid_subtype: Option<u8>,
     pub unit_price: u32,
     /// The offered Item's definition key and revision.
     pub item_key: String,

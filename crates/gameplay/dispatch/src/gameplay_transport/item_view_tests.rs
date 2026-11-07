@@ -275,7 +275,7 @@ fn domain_nine_shows_the_backpack_from_read_character_backpack_without_internal_
                 placement_ordinal: 2,
             },
         ],
-        // I10a: the vial holds mana fluid (Crystal `fluids.lua` sub-type 7).
+        // I10a: the vial holds oil (Crystal global fluid enum, sub-type 7).
         fluids: [([4; 16], 7)].into(),
     };
     let refs = |definition: &TypedDefinitionRef| match definition.production_key.as_str() {

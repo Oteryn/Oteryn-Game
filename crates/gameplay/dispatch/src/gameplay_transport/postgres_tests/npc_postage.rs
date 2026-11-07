@@ -40,6 +40,11 @@ fn npcfix_postgres_additional_postal_services_and_replay() -> TestResult {
     postgres_services(&["olrik", "chemar", "chrystal", "fyodor", "nelly"])
 }
 
+#[test]
+fn npcfix_postgres_ahmet_filled_fluid_mints_exact_matching_and_replay() -> TestResult {
+    postgres_services(&["ahmet"])
+}
+
 fn postgres_services(keys: &'static [&'static str]) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -201,6 +206,56 @@ fn scenario(keys: &[&str]) -> TestResult {
                         "{key}: {text}"
                     );
                     window = outcome.window;
+                }
+                if key == "ahmet" {
+                    let window = window.ok_or("Ahmet trade window")?;
+                    let (_, revision) = window.open.ok_or("Ahmet open window")?;
+                    let index = active.native_gameplay().and_then(|n| n.item_index())
+                        .ok_or("native Item index")?;
+                    let mut paid = 0_u32;
+                    for (offset, (item, subtype, price)) in [
+                        (2874, 7, 20), (2874, 1, 40), (2901, 1, 40),
+                    ].into_iter().enumerate() {
+                        let definition = format!("oteryn:item.tibia.i{item}");
+                        let reference = index.definition_ref("Item", &definition, "definition-r1")
+                            .ok_or("fluid container reference")?.get();
+                        let offer = window.offers.iter().position(|o| o.item_definition_ref == reference
+                            && o.side == NpcTradeSide::Buy && o.count == subtype && o.unit_price == price)
+                            .ok_or("Ahmet must offer the exact sourced filled container")?;
+                        let intent = NpcTradeIntent { npc_actor: npc, catalogue_revision: revision,
+                            offer_index: u32::try_from(offer)?, side: NpcTradeSide::Buy,
+                            quantity: 1, expected_unit_price: price };
+                        let ordinal = 30 + u64::try_from(offset)? * 3;
+                        let wrong = NpcTradeIntent { expected_unit_price: price - 1, ..intent };
+                        assert!(matches!(owner.npc_trade(deps.actor, command(ordinal), wrong).await,
+                            NpcTradeStep::Refused(_)), "misquoted fluid purchase must not charge");
+                        let bulk = NpcTradeIntent { quantity: 2, ..intent };
+                        assert!(matches!(owner.npc_trade(deps.actor, command(ordinal + 1), bulk).await,
+                            NpcTradeStep::Refused(_)), "stateful nonstackable purchase remains one physical container");
+                        for _ in 0..2 {
+                            require_trade(owner.npc_trade(deps.actor, command(ordinal + 2), intent).await,
+                                "Ahmet filled container")?;
+                        }
+                        paid += price;
+                        let gold: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i3031'")
+                            .fetch_one(&h.pool).await?;
+                        assert_eq!(gold, i64::from(100 - paid), "exact price once across replay");
+                        let containers: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances i JOIN game_item_fluid_states f USING(item_instance_id) WHERE i.lifecycle=1 AND i.definition_production_key=$1 AND i.quantity=1 AND f.fluid_subtype=$2")
+                            .bind(&definition).bind(i16::try_from(subtype)?).fetch_one(&h.pool).await?;
+                        assert_eq!(containers, 1, "one physical container with exact fluid subtype");
+                        let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_npc_trades")
+                            .fetch_one(&h.pool).await?;
+                        assert_eq!(receipts, i64::try_from(offset + 1)?);
+                    }
+                    let mut tx = h.pool.begin().await?;
+                    assert!(sqlx::query("UPDATE game_item_fluid_states SET fluid_subtype=8 WHERE fluid_subtype=7")
+                        .execute(&mut *tx).await.is_err(), "mutable fluid state needs its own current proof");
+                    tx.rollback().await?;
+                    let mut tx = h.pool.begin().await?;
+                    assert!(sqlx::query("DELETE FROM game_item_fluid_states WHERE fluid_subtype=7")
+                        .execute(&mut *tx).await.is_err(), "old mint receipt cannot authorize emptying the container");
+                    tx.rollback().await?;
+                    return Ok(());
                 }
                 if matches!(key, "flint" | "romella" | "pugwah") {
                     seed_purchase_bank(&h).await?;

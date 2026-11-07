@@ -656,7 +656,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// I10a: drink from a carried fluid container (Crystal 201189f8
-    /// `data/scripts/actions/items/fluids.lua:48-65`, the use on oneself). An empty one is
+    /// `data-global/scripts/actions/other/fluids.lua:124-139`, the use on oneself). An empty one is
     /// `NothingToUse` ("It is empty."); otherwise the container is emptied by
     /// `commit_item_fluid` and only a known commit applies the fluid's effect.
     async fn drink(
@@ -1066,13 +1066,14 @@ fn fluid_source_subtype(id: u32) -> Option<u8> {
     }
 }
 
-/// Crystal `fluids.lua:55-62`: mana fluid (7) restores `math.random(50, 150)` mana and life
-/// fluid (10) `addHealth(60)`. The drunk (3, 15, 43) and poison (4) conditions are not modelled
-/// (`PARITY_PENDING`); every other fluid is only drunk.
+/// Crystal 201189f871d23597b82caf88fd611454a2ddefb8, global fluids.lua:124-139;
+/// src/utils/utils_definitions.hpp:447-451: oil=7, mana=10, life=11.
+/// The legacy data-crystal script uses different numeric constants. Native global content
+/// follows the shared enum, so oil never receives a mana restoration.
 fn drink_restore(fluid: u8) -> Option<ReferencePotionRestore> {
     let (resource, min, max) = match fluid {
-        7 => (ReferenceRestoreResource::Mana, 50, 150),
-        10 => (ReferenceRestoreResource::Health, 60, 60),
+        10 => (ReferenceRestoreResource::Mana, 50, 150),
+        11 => (ReferenceRestoreResource::Health, 60, 60),
         _ => return None,
     };
     Some(ReferencePotionRestore { resource, min, max })
@@ -1238,9 +1239,10 @@ mod tests {
     #[test]
     fn drinking_restores_only_mana_and_life_fluid() {
         let restore = |fluid| drink_restore(fluid).map(|r| (r.resource, r.min, r.max));
-        assert_eq!(restore(7), Some((ReferenceRestoreResource::Mana, 50, 150)));
+        assert_eq!(restore(10), Some((ReferenceRestoreResource::Mana, 50, 150)));
+        assert_eq!(restore(7), None, "oil is not mana fluid");
         assert_eq!(
-            restore(10),
+            restore(11),
             Some((ReferenceRestoreResource::Health, 60, 60))
         );
         assert_eq!(restore(1), None);
