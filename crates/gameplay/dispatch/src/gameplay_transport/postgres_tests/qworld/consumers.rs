@@ -26,7 +26,7 @@ pub(crate) async fn qualify(
     let rule = crate::durability::world_event::WorldChangeCounter {
         key: key.into(),
         creature: "oteryn:creature.rat".into(),
-        goal: 1,
+        goal: 2,
     };
     h.root
         .bind_world_change_counter(owner.character, world, epoch, rule.clone())
@@ -110,114 +110,131 @@ pub(crate) async fn qualify(
         .bind(fence.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
     let active = owner.active_generation.ok_or("native generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
-    let rat = {
+    {
         let mut runtime = owner.runtime.lock().await;
         native
             .install_companion_policies(&mut runtime)
             .map_err(debug)?;
-        runtime
-            .realize_native_qualification_spawn(
-                pin,
-                "oteryn:creature.rat",
-                crate::foundation::MovementLocalPosition {
-                    x: 1,
-                    y: 11,
-                    floor: -7,
-                },
-            )
-            .map_err(debug)?;
-        let creature = runtime
-            .visible_entities()
-            .creatures
-            .first()
-            .copied()
-            .ok_or("real rat")?;
-        oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
-            identity: creature.actor.placement_identity(),
-            generation: creature.generation,
-        }
-    };
-    let start = owner.owner_now();
-    {
-        let runtime = owner.runtime.lock().await;
-        assert_eq!(
-            owner.states.attack.lock().await.set_target(
-                &runtime,
-                Some(room),
-                actor,
-                session,
-                start,
-                Some(rat),
-                1
-            ),
-            oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
-        );
     }
-    for turn in 0..128 {
-        let now = start.checked_add(turn * 3_000_000).map_err(debug)?;
-        owner.refresh_attack_weapon_at(actor, session, now).await;
-        owner.drain_auto_attacks_at(now).await;
-        if owner
-            .states
-            .attack
-            .lock()
-            .await
-            .kills()
-            .has_session(session)
-        {
-            break;
-        }
-    }
-    let replay = {
-        let attack = owner.states.attack.lock().await;
-        let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) =
-            attack.kills().take(session, 2)
-        else {
-            return Err("real swings did not queue the kill".into());
+    let mut combat_clock = owner.owner_now();
+    for death in 1_u16..=2 {
+        let rat = {
+            let mut runtime = owner.runtime.lock().await;
+            runtime
+                .realize_native_qualification_spawn_for_source(
+                    death,
+                    pin.clone(),
+                    "oteryn:creature.rat",
+                    crate::foundation::MovementLocalPosition {
+                        x: 1,
+                        y: 11,
+                        floor: -7,
+                    },
+                )
+                .map_err(debug)?;
+            let creature = runtime
+                .visible_entities()
+                .creatures
+                .first()
+                .copied()
+                .ok_or("real rat")?;
+            oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                identity: creature.actor.placement_identity(),
+                generation: creature.generation,
+            }
         };
-        let entry = taken.entry().ok_or("real sealed kill")?;
-        let replay = (entry.facts, entry.target, entry.activity_observed_at);
-        taken.requeue();
-        replay
-    };
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
-    loop {
-        if owner.drain_kill_rewards(session).await
-            == crate::gameplay_transport::kill_reward::DrainOutcome::Drained
+        let start = combat_clock;
         {
-            break;
+            let runtime = owner.runtime.lock().await;
+            assert_eq!(
+                owner.states.attack.lock().await.set_target(
+                    &runtime,
+                    Some(room),
+                    actor,
+                    session,
+                    start,
+                    Some(rat),
+                    u64::from(death)
+                ),
+                oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
+            );
         }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("kill settlement deadline".into());
+        for turn in 0..128 {
+            let now = start.checked_add(turn * 3_000_000).map_err(debug)?;
+            owner.refresh_attack_weapon_at(actor, session, now).await;
+            owner.drain_auto_attacks_at(now).await;
+            combat_clock = now.checked_add(3_000_000).map_err(debug)?;
+            if owner
+                .states
+                .attack
+                .lock()
+                .await
+                .kills()
+                .has_session(session)
+            {
+                break;
+            }
         }
-        tokio::task::yield_now().await;
-    }
-    assert!(h.root.world_change_active(world, key).await?);
-    {
-        let mut runtime = owner.runtime.lock().await;
-        let attack = owner.states.attack.lock().await;
-        crate::gameplay_transport::kill_reward::record_creature_kill(
-            &mut runtime,
-            crate::gameplay_transport::kill_reward::KillSink {
-                prey: None,
-                activity: &[],
-                queue: attack.kills(),
-                rewards: native.reward_table(),
-                charms: None,
-            },
-            replay.1,
-            replay.0.principal,
-            replay.0.death_at_ms,
-            replay.2,
+        let replay = {
+            let attack = owner.states.attack.lock().await;
+            let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) =
+                attack.kills().take(session, 2)
+            else {
+                return Err("real swings did not queue the kill".into());
+            };
+            let entry = taken.entry().ok_or("real sealed kill")?;
+            let replay = (entry.facts, entry.target, entry.activity_observed_at);
+            taken.requeue();
+            replay
+        };
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+        loop {
+            if owner.drain_kill_rewards(session).await
+                == crate::gameplay_transport::kill_reward::DrainOutcome::Drained
+            {
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err("kill settlement deadline".into());
+            }
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(h.root.world_change_active(world, key).await?, death == 2);
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let attack = owner.states.attack.lock().await;
+            crate::gameplay_transport::kill_reward::record_creature_kill(
+                &mut runtime,
+                crate::gameplay_transport::kill_reward::KillSink {
+                    prey: None,
+                    activity: &[],
+                    queue: attack.kills(),
+                    rewards: native.reward_table(),
+                    charms: None,
+                },
+                replay.1,
+                replay.0.principal,
+                replay.0.death_at_ms,
+                replay.2,
+            );
+        }
+        assert_eq!(
+            owner.drain_kill_rewards(session).await,
+            crate::gameplay_transport::kill_reward::DrainOutcome::Drained
+        );
+        let count: i64 = sqlx::query_scalar("SELECT counter FROM game_world_change_states WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric AND change_key=$3")
+        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(key).fetch_one(&h.pool).await?;
+        assert_eq!(
+            count,
+            i64::from(death),
+            "sealed death replay must not increment twice"
+        );
+        assert_eq!(
+            h.root.world_change_active(world, key).await?,
+            death == 2,
+            "the first replay cannot cross the two-kill threshold"
         );
     }
-    assert_eq!(
-        owner.drain_kill_rewards(session).await,
-        crate::gameplay_transport::kill_reward::DrainOutcome::Drained
-    );
-    let count: i64 = sqlx::query_scalar("SELECT counter FROM game_world_change_states WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric AND change_key=$3")
-        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).bind(key).fetch_one(&h.pool).await?;
-    assert_eq!(count, 1, "sealed death replay must not increment twice");
     let fence = owner
         .current_quest_fence(session)
         .await

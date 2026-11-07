@@ -122,12 +122,13 @@ pub(super) fn scenario_with_consumers(epochs: u64, consumers: bool) -> TestResul
         deps.room = room.clone();
         if consumers { deps.combat_room = Some(room.clone()); }
 
-        planned_world_reset::reset_fixture::set_runtime(
+        planned_world_reset::reset_fixture::set_runtime_with_capacity(
             &mut deps,
             world,
             channel,
             &pin,
             epochs + 1,
+            if consumers { 3 } else { 2 },
         )?;
         let channel_pin = deps.runtime.lock().await.content_pin().clone();
         let actor = {

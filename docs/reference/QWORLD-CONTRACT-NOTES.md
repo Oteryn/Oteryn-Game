@@ -700,6 +700,16 @@ qualification, while the reusable engine implementation proceeds here.
   spawn/death/respawn -> repeat snapshot: focused PostgreSQL case passed in
   128.74 seconds.
 - The generic rat-cull quest and travel route prove reusable consumers, not
-  title-specific NPC/quest completion. Counter replay coverage will be strengthened
-  to replay a first kill before a two-kill threshold; saturation at one cannot
-  independently detect an accidental duplicate increment.
+  title-specific NPC/quest completion. Counter replay coverage now uses two distinct native deaths: replaying the
+  first leaves the count at one and state inactive, then the second crosses the
+  two-kill threshold. The focused case passed in 58.99 seconds before migration
+  renumbering.
+
+### Coordinator migration allocation
+QWORLD owns 1320–1329. The unchanged world-change calendar/state migration was
+renamed with git mv to `apps/game-server/migrations/1320_world_change_calendar.sql`.
+This branch carries no QENGINE2 0999–1006 or QBASE 1200–1209 migrations.
+Renumbered 1320 validation: real-dispatch PostgreSQL passed in 72.30 seconds;
+physical snapshot PostgreSQL passed in 137.88 seconds. Pin refresh/check regenerated
+and verified the unchanged world artifact. Migration duplicate check runs on the
+committed candidate before publication.
