@@ -255,6 +255,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "exchange-cyclops-royal-steel" => &["uth'kean"],
         "exchange-cyclops-hell-steel" => &["za'ralator"],
         "exchange-cyclops-crude-iron" => &["uth'prta"],
+        "exchange-cyclops-soul-orbs" => &["soul orb"],
         "exchange-cyclops-gold-melt" => &["melt"],
         "exchange-cyclops-gear-wheel" => &["gear whell"],
         "exchange-marina-start" => &["silk", "yes"],

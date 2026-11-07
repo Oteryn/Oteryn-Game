@@ -409,6 +409,33 @@
         "Changing the layout cannot reinterpret a committed claim"
       ],
       "qualification_scope": "Generic mechanism only; no quest qualification is inferred."
+    },
+    {
+      "name": "all-carried-item bulk exchange with retained per-input native random draws",
+      "status": "QUALIFIED",
+      "migration": 1145,
+      "postgres_test": "questl2_exchange_fixed_source_journey",
+      "red": {
+        "marker": "POSTGRES_CASE_FAILED qengine-rewards-exchange-fixed",
+        "duration_seconds": 79.103822214,
+        "failure": "source exchange binding absent: cyclops-soul-orbs",
+        "log": "/tmp/l2-bulk-red.log"
+      },
+      "green": {
+        "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-exchange-fixed",
+        "duration_seconds": 94.770336667,
+        "postgresql": "18.6",
+        "passed": true,
+        "log": "/tmp/l2-bulk-green.log"
+      },
+      "proves": [
+        "All matching carried inputs are resolved under the quest fence",
+        "One server-owned draw is retained per input unit",
+        "Deferred proof checks exact input count, roll outcomes, output item and total quantity",
+        "No matching carried input can remain after a committed all-input exchange",
+        "Every native stack and audit commits with the original quest receipt",
+        "Capacity refusal rolls back every consumed input and output"
+      ]
     }
   ],
   "entries": [
@@ -567,7 +594,7 @@
     },
     {
       "title": "Exchange Quests",
-      "status": "PENDING",
+      "status": "QUALIFIED",
       "evidence": [
         {
           "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-paid-stake-priests",
@@ -582,12 +609,29 @@
           "postgresql": "18.6",
           "passed": true,
           "path": "Cyclops fixed recipes and complete Marina path"
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-exchange-fixed",
+          "duration_seconds": 94.770336667,
+          "postgresql": "18.6",
+          "passed": true,
+          "path": "All Cyclops fixed and all-orb recipes, plus complete Marina path",
+          "log": "/tmp/l2-bulk-green.log"
+        },
+        {
+          "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-paid-stake-priests",
+          "duration_seconds": 94.118788267,
+          "postgresql": "18.6",
+          "passed": true,
+          "path": "Quentin, two exact paid stakes and the ordered ten-priest blessing",
+          "log": "/tmp/l2-bulk-green.log"
         }
       ],
       "completed_paths": [
         "Wooden Stake: mission issue, paid wooden stake, ordered prayers, atomic blessed-stake hand-in and replay",
         "Cyclops favour and all six fixed metalworking recipes, including timed molten gold",
-        "Marina introduction, exact 50-honeycomb favour and repeatable ten-silk yarn exchanges"
+        "Marina introduction, exact 50-honeycomb favour and repeatable ten-silk yarn exchanges",
+        "Cyclops consumes every carried soul orb; independent normal and 1% bonus outcomes mint exact native bolt stacks atomically"
       ],
       "wooden_stake_journey": [
         "No seeded quest progress",
@@ -617,7 +661,8 @@
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:161:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:133:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/marina.lua:sha256:8574dd5721f258bef8d649657ed428537e3e351e540a990fe72bcc21c89b8682"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/marina.lua:sha256:8574dd5721f258bef8d649657ed428537e3e351e540a990fe72bcc21c89b8682",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:197:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
       ],
       "fixed_exchange_journey": [
         "No seeded quest progress",
@@ -630,6 +675,15 @@
         "49 honeycombs remain intact on failed 50-item hand-in",
         "Nine spider silk remain intact on failed ten-item hand-in",
         "Twenty spider silk produce exactly two yarn rewards through two paid exchanges"
+      ],
+      "bulk_exchange_journey": [
+        "No seeded quest progress or earned outputs",
+        "Missing orbs refuse without value changes",
+        "Normal per-orb roll grants100 bolts",
+        "Two input orbs with one bonus grant exactly300 bolts in three native stacks",
+        "Replays retain exact earned quantities",
+        "A six-stack reward that cannot fit leaves all three input orbs intact and writes no reward or item audit",
+        "Existing native orb and ammunition providers are reused"
       ]
     },
     {
@@ -944,7 +998,8 @@
         1141,
         1142,
         1143,
-        1144
+        1144,
+        1145
       ],
       "payment_checked_main": "ca5a91b59",
       "deadline_checked_main": "9668e0a04e1a631ebfc8752772102a1fd98ce8fa",
@@ -963,7 +1018,9 @@
         "evidence": "/tmp/l2-migration-range-current.json"
       },
       "backpack_outputs_checked_heads": 24,
-      "backpack_outputs_evidence": "/tmp/l2-flat-migration-lanes.json"
+      "backpack_outputs_evidence": "/tmp/l2-flat-migration-lanes.json",
+      "bulk_checked_heads": 24,
+      "bulk_evidence": "/tmp/l2-bulk-migration-lanes.json"
     },
     "world_pins": {
       "regenerated": true,
@@ -1430,6 +1487,28 @@
       "pin_refresh_log": "/tmp/l2-flat-pin-refresh.log",
       "pin_check_log": "/tmp/l2-flat-pin-check.log",
       "pin_digest": "099ec5efdf4e1fa87a0e63fb8077e0f22fa497bf252c8f2a244276f9a753947b"
+    },
+    "bulk_exchange_slice": {
+      "postgres_passed": 2,
+      "postgres_failed": 0,
+      "postgres_seconds": 94.77,
+      "postgres_log": "/tmp/l2-bulk-green.log",
+      "authoring_passed": 51,
+      "authoring_seconds": 31.251,
+      "authoring_log": "/tmp/l2-bulk-authoring-final.log",
+      "clippy_packages": [
+        "oteryn-gameplay-dispatch",
+        "oteryn-gameplay-durability",
+        "oteryn-gameplay-quests"
+      ],
+      "clippy_all_targets": true,
+      "clippy_deny_warnings": true,
+      "clippy_exit_code": 0,
+      "clippy_log": "/tmp/l2-bulk-clippy.log",
+      "formatting_exit_code": 0,
+      "regeneration_log": "/tmp/l2-bulk-generate.log",
+      "pin_refresh_log": "/tmp/l2-bulk-pin-refresh.log",
+      "pin_check_log": "/tmp/l2-bulk-pin-check.log"
     }
   },
   "cross_lane_inspection": {

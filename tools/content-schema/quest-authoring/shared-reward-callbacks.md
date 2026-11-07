@@ -143,3 +143,11 @@ exclusive with container contents. The whole set must fit the equipped backpack
 and carried capacity; each item retains a native MINT audit and all outputs
 commit with the same quest receipt. Absolute-deadline rewards currently require
 a single root, so mixed timed peer outputs are rejected at authoring.
+
+`bulk` declares an all-carried-input exchange. The authored one-input/root
+reward pair is a template; the fenced writer resolves the full carried count,
+rolls once per input with the native server RNG and freezes the exact result
+in the immutable source plan. Root and peer stacks use the same complete MINT
+owner. The database proves the exact retained outcome and rejects any remaining
+carried matching input. A capacity refusal consumes nothing. This bounded form
+requires distinct input/output keys and excludes unrelated value participants.

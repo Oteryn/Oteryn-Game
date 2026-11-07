@@ -308,6 +308,9 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 100000000
+        },
+        "bulk": {
+          "$ref": "#/$defs/bulk"
         }
       }
     },
@@ -478,6 +481,44 @@
               }
             }
           ]
+        }
+      }
+    },
+    "bulk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item",
+        "output",
+        "base",
+        "bonus",
+        "chance_percent"
+      ],
+      "properties": {
+        "item": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "output": {
+          "type": "string",
+          "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
+          "maxLength": 256
+        },
+        "base": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "bonus": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "chance_percent": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
         }
       }
     }

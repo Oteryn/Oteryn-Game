@@ -34,3 +34,17 @@ that implementation, retaining fee, expiry and prerequisite extensions. Its
 main, engine and quest-lane refs for 1144 collisions. This is a shared mechanic
 slice; it does not alone qualify a quest. A source soul-orb trade may require
 more room than available; refuse the whole exchange without consuming orbs.
+
+### L2 Cyclops all-orb exchange
+
+Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d,
+`data-global/npc/a_sweaty_cyclops.lua:188-213`,
+sha256 `bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a`,
+consumes every carried soul orb5944 and rolls separately per orb: 1/100 yields
+200 spectral bolts6528, otherwise100. The generic bulk owner preserves that
+rule and records every native server roll with the exact consumed count and
+output layout. A whole output set that cannot fit is refused atomically.
+The isolated PostgreSQL fixture replaces only the server RNG function to drive
+normal and bonus outcomes deterministically; it seeds neither quest progress
+nor earned outputs. Native orb/ammunition providers are reused unchanged.
+Migration1145 was checked against24 current main/engine/quest heads.

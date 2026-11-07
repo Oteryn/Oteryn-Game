@@ -258,5 +258,48 @@ pub(super) async fn exercise(
     }
     assert_eq!(progress(h, "the_mermaid_marina").await?, Some(2));
     assert_eq!(progress(h, "default_start").await?, Some(1));
+    // Source Cyclops184–213 consumes ALL carried orbs and rolls separately per orb.
+    let soul = recipe(&callbacks, "cyclops-soul-orbs")?;
+    confirm(
+        owner,
+        admitted,
+        cyclops,
+        soul,
+        NpcIntentDisposition::Rejected,
+    )
+    .await?;
+    assert_eq!(quantity(h, 6528).await?, 0);
+    sqlx::query("CREATE OR REPLACE FUNCTION game_quest_reward_rolls(n integer) RETURNS integer[] LANGUAGE sql VOLATILE AS $$ SELECT array_fill(100,ARRAY[n]) $$").execute(&h.pool).await?;
+    material(owner, admitted, 5944, 1, 2400).await?;
+    let command = confirm(owner, admitted, cyclops, soul, NpcIntentDisposition::Ok).await?;
+    assert_eq!(quantity(h, 5944).await?, 0);
+    assert_eq!(quantity(h, 6528).await?, 100);
+    replay(owner, admitted, cyclops, command).await?;
+    assert_eq!(quantity(h, 6528).await?, 100);
+    // Isolated server RNG fixture exercises both source outcomes without seeded progress.
+    sqlx::query("CREATE OR REPLACE FUNCTION game_quest_reward_rolls(n integer) RETURNS integer[] LANGUAGE sql VOLATILE AS $$ SELECT CASE WHEN n=2 THEN ARRAY[1,100] ELSE array_fill(100,ARRAY[n]) END $$").execute(&h.pool).await?;
+    material(owner, admitted, 5944, 2, 2401).await?;
+    let command = confirm(owner, admitted, cyclops, soul, NpcIntentDisposition::Ok).await?;
+    assert_eq!(quantity(h, 5944).await?, 0);
+    assert_eq!(quantity(h, 6528).await?, 400);
+    let stacks: Vec<i64> = sqlx::query_scalar("SELECT quantity::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i6528' ORDER BY item_instance_id").fetch_all(&h.pool).await?;
+    assert_eq!(stacks, vec![100; 4]);
+    replay(owner, admitted, cyclops, command).await?;
+    assert_eq!(quantity(h, 6528).await?, 400);
+    sqlx::query("CREATE OR REPLACE FUNCTION game_quest_reward_rolls(n integer) RETURNS integer[] LANGUAGE sql VOLATILE AS $$ SELECT array_fill(1,ARRAY[n]) $$").execute(&h.pool).await?;
+    material(owner, admitted, 5944, 3, 2402).await?;
+    let before: (i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_quest_reward_sources),(SELECT count(*) FROM game_item_audit_outbox)").fetch_one(&h.pool).await?;
+    confirm(
+        owner,
+        admitted,
+        cyclops,
+        soul,
+        NpcIntentDisposition::Rejected,
+    )
+    .await?;
+    assert_eq!(quantity(h, 5944).await?, 3);
+    assert_eq!(quantity(h, 6528).await?, 400);
+    assert_eq!(sqlx::query_as::<_,(i64,i64)>("SELECT (SELECT count(*) FROM game_quest_reward_sources),(SELECT count(*) FROM game_item_audit_outbox)").fetch_one(&h.pool).await?,before);
+    assert_eq!(progress(h, "the_sweaty_cyclops").await?, Some(2));
     Ok(())
 }

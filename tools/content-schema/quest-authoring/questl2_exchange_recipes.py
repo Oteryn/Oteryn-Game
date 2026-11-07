@@ -39,6 +39,18 @@ def append(add, state, callbacks, offers, inputs):
             [state(track,2,2,preserve=True)],'Cling clang!',take=[(source,1)],give=(reward,1),
             topic=topic,offer=([word],prompt),repeatable=True,
             source_text=f'player:removeItem({source}, 1)')
+    donor = inputs['data-global/npc/a_sweaty_cyclops.lua'].decode()
+    for fact in ('local count = player:getItemCount(5944)', 'player:removeItem(5944, count)',
+                 'math.random(100) <= 1', 'total = total + 200', 'total = total + 100',
+                 'player:addItem(6528, total)'):
+        if fact not in donor:
+            raise ValueError('Cyclops bulk source drift: ' + fact)
+    add('exchange-cyclops-soul-orbs','friends_and_traders',cyclops,['yes'],
+        [state(track,2,2,preserve=True)],'Cling clang!',take=[(5944,1)],give=(6528,100),
+        topic=9,repeatable=True,source_text='local count = player:getItemCount(5944)',
+        offer=(['soul orb'],'Me can make nasty bolt from soul orbs. Trade all?'))
+    callbacks[-1]['bulk'] = {'item':'oteryn:item.tibia.i5944','output':'oteryn:item.tibia.i6528',
+                             'base':100,'bonus':100,'chance_percent':1}
     # These source recipes are unconditional, unlike the favour-gated steel menu.
     neutral = [state('exchange/friends_and_traders/metalwork',-1,-1,9223372036854775807,preserve=True)]
     for name, word, source, reward, reply, prompt, topic in [

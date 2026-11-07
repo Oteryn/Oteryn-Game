@@ -821,6 +821,7 @@ async fn wardrobe(
         repeatable: false,
         requires: vec![],
         fee: None,
+        bulk: None,
         close_after: false,
         failure_reply: vec![],
         minimum_level: None,
