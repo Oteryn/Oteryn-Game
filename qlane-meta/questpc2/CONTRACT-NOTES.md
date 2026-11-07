@@ -223,3 +223,32 @@ qualification. Continue owned missing mechanisms; no external engine deferral.
   timed-escape language are provenance, not instructions to invent mechanics.
   Reuse existing generic level predicates and source startup action1100.
   Desert merge retains single-dictionary and list-shaped source table groups.
+
+- Elvenbane continuation: fresh qengine2@97cb9db79 and questpc4@6d7cd8cc0
+  provide no Elvenbane route/objective implementation. questpc6@53d5648b8
+  explicitly SKIPPED_OTHER_LANE to questpc2. Reuse existing native XP/death
+  receipts and fenced Quest writer; objective bindings must reject command
+  causes, foreign principal/creature/scope and unearned death occurrences.
+- Exact native tower identities found without guessed coordinates:
+  content/world/spawns/spawns-02000-03999.json:1, SHA256
+  00f3f314eb78e7eff2dd1ec1b199b74a329d46aac6703c8258b22737f262b04a,
+  /records/1440/declaration Dragon32590,31645,z5;
+  /records/26 MinotaurMage32592,31643,z4; /records/28 OrcShaman32590,31647,z4.
+  content/world/spawns/spawns-00000-01999.json:1, SHA256
+  624bdaf1c5b8ebbcf7e98c2410ffbf8c8a25a81fc851e3952d48c5573d962d66,
+  /records/1175/declaration ElfArcanist32590,31643,z3 and two
+  DemonSkeletons32592,31644,z3 and32589,31646,z3. These match the accepted
+  authored recipe's mandatory Dragon plus five defenders exactly. Keep its
+  personal completion/reward choice; ordinary shared loot is not that recipe.
+- Elvenbane authored implementation choice: the kill-credit footprint is the
+  bounded tower rectangle x32580..32600/y31635..31655 on each exact native
+  defender floor. This boundary is an Oteryn choice, not an invented donor
+  script. Carrier positions use positive floors (5/4/3); callback/map storage
+  uses negative floors. Personal completion is Character-owned progress and
+  rewards through the native tower; no NPC bypass supplies terminal loot.
+- Elvenbane Spellbook resolution: choose normal equipped spellbook3059 from
+  pinned items.xml:6988-7003 (SHA2561cf2992c...022f2) and its existing exact
+  native binding. Same-named3101 lacks the normal weaponType/script declaration
+  at7484-7489. This resolves an authored approximation; historical ambiguous
+  import provenance remains unchanged. All seven chosen reward identities
+  already have native item profiles; no new guessed identity is needed.

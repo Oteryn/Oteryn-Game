@@ -18,7 +18,7 @@ These are remaining implementation gaps owned by L3, not external-owner deferral
 | Devovorga's Essence Mini World Change | Incarnation offering, Anmothra summon, Vengoth participants and terminal encounter cleanup are absent. |
 | Down the Drain Mini World Change | Personal flooded-island entry, Water Elemental encounter completion and dungeon reset are absent. |
 | Elemental Spheres Quest | Four sphere participants and machines are not composed with Lord of the Elements summoning, admission and cleanup. |
-| Elvenbane Quest | The required Dragon and five upper-floor defenders are not bound to personal encounter completion before terminal loot. |
+| Elvenbane Quest | Native objective catalogue/capture/protected writer implemented; continuous source traversal, actual native objective acceptance and seven-item terminal reward/replay are next. |
 | Forgotten Knowledge Quest | Lloyd, Lady Tenebris, Dragon King, Time Guardian and Last Lore Keeper admissions and frozen-participant death settlement do not earn imbuing access. |
 | Grimvale Quest | Feroxa and named were-creature encounters lack participant capture and repeat/reset-safe death settlement. |
 | Heart of Destruction Quest | Six room-death/vortex rules remain runtime-disabled; participant capture, source encounter admission and settlement are absent. |

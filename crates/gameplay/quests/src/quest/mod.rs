@@ -28,6 +28,7 @@ pub mod grave_danger;
 pub mod grizzly_adams;
 pub mod hero_of_bounac;
 pub mod isle_of_evil;
+pub mod kill_objectives;
 pub mod liquid_black;
 pub mod loader;
 pub mod log;

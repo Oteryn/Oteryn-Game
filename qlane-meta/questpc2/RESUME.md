@@ -654,3 +654,56 @@ No compiler setting changes, broad clean or full test suite.
 
 2026-11-07 08:02 UTC: combined pin-check PASS. Entire Annihilator slice green,
 ready for authorized authoring commit/push; continue next item immediately.
+
+2026-11-07 08:26 UTC: native personal kill-objective guard slice follows
+5c7d32296 (Annihilator qualification pushed08:02). PG RED3.78s
+/tmp/questpc2-elvenbane-objectives-recovered-red-pg.log, PostgreSQL180006,
+missing Dragon binding. Guard PG GREEN4.03s/4021ms
+/tmp/questpc2-native-objectives-authority-recovered-pg.log: production catalogue
+loads; generic command and arbitrary CreatureDeath occurrence cannot forge
+source authority and write no Quest receipt. Kernel unit1.17s validates
+Dragon-first ordering, exact carrier floors/footprint, five objective bindings,
+two Skeletons and no excess credit. No positive native objective acceptance
+or whole Elvenbane qualification claimed by this slice.
+
+Production now freezes native source position via runtime.projected_death,
+Character/session/lease, coherent phase/revision and original scoped death on
+the existing bounded kill queue. Existing Quest writer requires exact native
+principal/member/creature/death audit, scope generation and started quest
+revision; receipts bind immutable source facts. Generic callers are blocked.
+Capture supports each binding's own phase track. Native drain joins normal
+reward completion before final corpse release; unavailable writes retry.
+
+Full existing Annihilator regression PG GREEN103.86s/103297ms against180006,
+/tmp/questpc2-native-objective-annihilator-regression-pg.log. Scoped check9.36s
+passes; three-crate all-targets/all-features clippy running. Counts2/33.
+Source tower exact spawn identities and authored footprint/Spellbook3059
+choice are in CONTRACT-NOTES.md. All seven reward IDs already have profiles.
+
+NEXT: publish guard slice once lint/fmt green, then continuous native Elvenbane
+route, actual objective acceptance, physical seven-item terminal reward and
+replay. Reuse/parameterize existing source-world and actual combat fixtures;
+do not fake whole-route progress. Entry callbacks must reuse the new phase
+track (world callback catalogue extension currently precedes kill-objective
+extension, so reconcile ordering/duplicate-track reuse when adding them).
+
+Latest cache ledger /tmp/questpc2-elvenbane-verification-retention.json has
+current pre-slice check/clippy archives and verified5c7d32296 executable.
+Clippy cache restored. /tmp/questpc2-native-objective-metadata-retention.json
+old originals/retained files were retired only after new completed READY.
+Current native/check caches newest snapshots are live; native link recovered
+after exact failed temporary-CGU cleanup, with no profile/flags changes.
+
+Native settlement review: before enabling Elvenbane phase callbacks, compose
+objective writes with the native XP transaction (or durable obligation recovery),
+so a crash after ordinary rewards but before deferred quest credit cannot lose
+progress. Current content cannot activate the new phase track; this slice
+claims only binding/guard proof and existing-route regression. This is our next
+implementation work, never an external engine dependency or final deferral.
+Final formatting/module ordering was corrected after PG; behavior unchanged.
+
+2026-11-07 08:31 UTC: three-crate clippy all-targets/all-features -D warnings
+PASS122s after retiring superseded completed caches; initial ENOSPC was build
+failure, not test evidence. Fmt/mounted-fixture rustfmt/whitespace PASS. Guard
+slice is green for authoring publication; next is atomic native objective
+settlement before enabling actual Elvenbane route. Counts remain2/33.

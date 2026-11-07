@@ -332,7 +332,7 @@
       "title": "Elvenbane Quest",
       "mechanism": "encounter_party_admission_settlement",
       "status": "UNFINISHED",
-      "blocker": "The required Dragon and five upper-floor defenders are not bound to personal encounter completion before terminal loot.",
+      "blocker": "Native personal kill-objective catalogue, lethal-turn capture and protected Quest writer/drain are implemented. Continuous source traversal, positive native objective acceptance and seven-item terminal reward/replay remain the next composed route.",
       "source_lane_checks": [
         {
           "lane": "questpc",
@@ -350,7 +350,14 @@
         }
       ],
       "qualification_scope": "Whole quest; no qualification inferred from existing reward cohorts.",
-      "external_owner_blocker": false
+      "external_owner_blocker": false,
+      "native_kill_objective_guard_slice": {
+        "status": "PG_GUARDED_BINDINGS",
+        "record": "BATCH-native-kill-objective-guards-2026-11-07.json",
+        "postgres_version": 180006,
+        "duration_seconds": 4.03,
+        "whole_quest_qualified": false
+      }
     },
     {
       "canonical": "oteryn:quest.forgotten_knowledge_quest",
@@ -1685,13 +1692,15 @@
     "BATCH-desert-party-rite-mechanism-2026-11-07.json",
     "BATCH-annihilator-native-combat-2026-11-07.json",
     "BATCH-desert-source-gate-and-earned-rewards-2026-11-07.json",
-    "BATCH-annihilator-complete-source-route-2026-11-07.json"
+    "BATCH-annihilator-complete-source-route-2026-11-07.json",
+    "BATCH-native-kill-objective-guards-2026-11-07.json"
   ],
   "next_batch": {
+    "quest": "oteryn:quest.authored.elvenbane_quest",
     "state": "AUTHORING",
     "work_owner": "questpc2",
-    "task": "Continue same route through actual source reward-room door, physical shared-claim chest selection/replay, actual exit and claimed-door/sealed re-entry; preserve incoming Desert party rite and continue all35 owned entries.",
-    "external_dependencies_to_wait_for": []
+    "external_dependencies_to_wait_for": [],
+    "task": "Continuous actual native tower route: source basement/poison/Dragon/five defenders, personal reward bundle and replay. Reuse carrier capture and native XP audit; qualify only after positive whole-route PG proof."
   },
   "remote_publications_reused": {
     "sha": "e0aca57413e36818be5406052ac656d240236b15",

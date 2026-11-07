@@ -33,6 +33,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
+            None,
         )
         .await
     }
@@ -64,6 +65,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
+            None,
         )
         .await
     }
@@ -92,6 +94,7 @@ impl DurabilityRoot {
             &grizzly::NoGrizzlyPremium,
             None,
             Some(payment),
+            None,
             None,
         )
         .await
@@ -125,6 +128,7 @@ impl DurabilityRoot {
             None,
             None,
             Some(admission),
+            None,
         )
         .await
     }
@@ -152,7 +156,14 @@ impl DurabilityRoot {
         grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
         payment: Option<super::rotten_blood_access::RottenBloodAccessPayment>,
         reward_admission: Option<QuestRewardAdmission<'_>>,
+        native_objective: Option<super::kill_objectives::NativeObjectiveDeath>,
     ) -> Result<QuestTransitionOutcome> {
+        let objective = oteryn_gameplay_quests::quest::kill_objectives::binding(&request.transition_key);
+        if objective.is_some() != native_objective.is_some()
+            || (objective.is_some() && !matches!(request.cause, QuestCause::CreatureDeath(_)))
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load()
             .map_err(|_| CharacterProgressionError::InvalidInput)?
             .into_iter()
@@ -292,6 +303,9 @@ impl DurabilityRoot {
                 .finalize();
             binding[1..].copy_from_slice(&digest);
         }
+        if let Some(source) = &native_objective {
+            source.bind(&mut binding)?;
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -370,6 +384,11 @@ impl DurabilityRoot {
                         Ok(root) => root,
                         Err(error) => return Ok(Err(error)),
                     };
+                    if let (Some(rule), Some(source)) = (objective, &native_objective)
+                        && !super::kill_objectives::authorize(&mut tx, &fence, &request, rule, source).await?
+                    {
+                        return Ok(Err(CharacterProgressionError::AuthorityRejected));
+                    }
                     if let (Some(callback), Some((_, context, _))) = (&callback, &context)
                         && !super::super::quest_world_callback::party_is_current(&mut tx, &node, fence, callback, context).await?
                     {
