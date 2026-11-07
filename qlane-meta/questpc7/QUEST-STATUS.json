@@ -654,7 +654,7 @@
     "title": "Formorgar Mines Quest",
     "canonical": "oteryn:quest.the_ice_islands_quest",
     "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/27/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -688,38 +688,30 @@
         "log": ".questpc7/lane-rewards-pg.log:331"
       }
     ],
-    "queued_stage_binding": {
-      "stage": "s6",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s6",
-      "kind": "talk",
-      "objective": "Question the restless soul in Formorgar Mines.",
-      "targets": [
-        "A Restless Soul"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Norseman Outfits: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
-      "evidence": [
-        "content/quests/definitions/quests-00200-00299.json:1#/records/27/definition",
-        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
-        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
-      ],
-      "attempts": [
-        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
-    },
     "shared_reward_mechanism": {
       "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
       "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
       "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
       "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "qualification": {
+      "kind": "external_branch_qualification; skipped here per owner scope rule",
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "sha": "0cf799d197e3d09cab984c5d68ad6633f7f96e66",
+      "status_path": "qlane-meta/qengine2/QUEST-STATUS.json",
+      "evidence": {
+        "batch": "L1-05B",
+        "scope": "Complete shared Norseman/Formorgar L1 outfit path:base exact frost charm7289x1 with four parentObelisks5/Questline39;5+10shards7290 and both reward conversations;no internal outfit-stage seeding;late missing item rolls back foreign stages;all3 foreign proofs share primary revisions/original owners;replay,3immutable account facts and ordinary final appearance pass.",
+        "native_owners": [
+          "oteryn:quest.the_ice_islands_quest",
+          "oteryn:quest.outfit_and_addon_quests"
+        ],
+        "identity_resolution": "Original L1 title identity retained;Norseman source outfit stages use shared General owner,Formorgar progress uses existing IceIslands owner. No fabricated dedicated Norseman quest record.",
+        "postgres_marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l5-norseman-story duration=79.824440352s success=true"
+      },
+      "boundary": "External lane qualification is retained with its precise scope; no local whole-route PG claim is invented.",
+      "ownership_decision": "QSPLIT L1 outfit entry is explicitly QUALIFIED at the same canonical/title on qengine2. Skip that entry under current owner rule. Peer proof covers the complete Norseman/Formorgar outfit path with other-parent prerequisites, not a new local certification of every Ice Islands recipe stage."
     }
   },
   {
@@ -762,7 +754,7 @@
     "title": "Giant Smithhammer Quest",
     "canonical": "oteryn:quest.giant_smithhammer_quest",
     "definition": "content/quests/definitions/quests-00100-00199.json:1#/records/49/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [
       {
@@ -811,33 +803,7 @@
         "retained_test": "questpc7_giant_smithhammer_rewards_use_replay_and_refusal"
       }
     ],
-    "queued_stage_binding": {
-      "stage": "s1",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "explore",
-      "objective": "Locate the smith's hidden cache in the Plains of Havoc.",
-      "targets": [
-        "Plains of Havoc giant-smith cache"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "The asymmetric lever mechanism and three exact source reward claims have final real PG proof. Implement and compose the pinned explore -> Giant Spider kill -> cache -> completion programme through real dispatch and qualify its entire stage graph. Existing recipe runtime_enabled remains false; mechanism/reward slices do not qualify that programme.",
-      "evidence": [
-        "content/quests/definitions/quests-00100-00199.json:1#/records/49/definition",
-        "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:62",
-        "crates/gameplay/quests/src/quest/world_callbacks.rs:98"
-      ],
-      "attempts": [
-        "Extracted both donor lever.lua bodies; compared all four lever/rock states to the current executor. Found the three reward claims under Explorer Society and added their exact source-position/item/quantity PG cohort; retained the accepted PR2770 Q5/A Item12510 substitute rather than overriding that decision."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
-    },
     "mechanism_progress": {
       "asymmetric_lever": {
         "state": "QUALIFIED_MECHANISM_ONLY",
@@ -850,6 +816,44 @@
         "final_log": ".questpc7/asymmetric-rechecked-pg.log",
         "final_duration_seconds": 35.916384503
       }
+    },
+    "qualification": {
+      "kind": "external_branch_qualification; skipped here per owner scope rule",
+      "branch": "claude/happy-davinci-ijz3wy-questpc8",
+      "sha": "3b315d18dbb0a3a00149a2a14b9a19fcb42053a1",
+      "status_path": "qlane-meta/questpc8/QUEST-STATUS.json",
+      "evidence": {
+        "scope": "Complete chosen exploration/Giant Spider/cache programme with exact hammer1, Talon1 and gold100 atomic outputs; retained source four-state lever is separately PG-qualified.",
+        "proof": "qlane-meta/questpc8/cloud-smith-cache-proof.json",
+        "components": [
+          {
+            "scope": "source lever mechanism only; not the chosen quest programme",
+            "test": "quest_l7_giant_smithhammer_four_source_states",
+            "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked -p oteryn-gameplay-dispatch --lib quest_l7_giant_smithhammer_four_source_states -- --nocapture",
+            "marker": "POSTGRES_CASE_COMPLETED L7 giant-smithhammer four source states via USE",
+            "duration_seconds": 30.16,
+            "log": ".questpc8/l7-smithhammer-final.log",
+            "log_sha256": "fb8e46d5fa3c56c288cb9197df965c03d7ed83b10f86d3afd7592dd68b536fc9",
+            "red_duration_seconds": 27.97,
+            "red_failure": "open+absent lever revision advanced from 1 to 2"
+          },
+          {
+            "scope": "Native guardian, capacity refusal, exact direct backpack outputs, completion and replay",
+            "test": "questpc8_smith_cache_native_guardian_and_atomic_outputs",
+            "marker": "POSTGRES_CASE_COMPLETED questpc8_smith_cache_native_guardian_and_atomic_outputs",
+            "duration_seconds": 26.27184565,
+            "proof": "native-alias-smith-merge-validation.json"
+          },
+          {
+            "scope": "Production guardian activation from active native exploration; exact actor reused across refresh; captured native death plus atomic output programme",
+            "test": "questpc8_smith_cache_native_guardian_and_atomic_outputs",
+            "marker": "POSTGRES_CASE_COMPLETED questpc8_smith_cache_native_guardian_and_atomic_outputs",
+            "duration_seconds": 37.615971969,
+            "proof": "cloud-smith-cache-proof.json"
+          }
+        ]
+      },
+      "boundary": "External lane qualification is retained with its precise scope; no local whole-route PG claim is invented."
     }
   },
   {

@@ -1,3 +1,23 @@
+# Peer delivery decisions — 2026-11-07
+
+Refreshed qengine2 to0cf799d197e3d09cab984c5d68ad6633f7f96e66,
+questl2 to80f41c77e48645a0513f56aae2133d9554aefbd9, and questpc8
+to3b315d18dbb0a3a00149a2a14b9a19fcb42053a1 during final validation.
+Giant Smithhammer is externally QUALIFIED for the complete chosen native
+exploration/guardian/atomic hammer+talon+gold programme. Skip it here.
+The same Formorgar Mines title/canonical is now externally QUALIFIED as
+QSPLIT L1's complete Norseman/Formorgar outfit path (PG79.824s). Skip that
+entry under the current owner rule, retaining the precise peer scope; do not
+claim its fixture parent prerequisites as a local full Ice Islands proof.
+QUEST-STATUS retains both exact source heads, scopes and proof paths.
+No ownership question is needed.19 ACTIVE entries remain; no local route
+was relabelled from a mechanism-only proof.
+
+qengine2 also now supplies reusable bounded state operations/native timers
+(e9d98947f); inspect/reuse those before implementing further counters.
+Our world-outfit batch has all3 hoist floors,16 Rust callback units,
+strict Clippy and explicit Cargo check green. Content/world/pins continue.
+
 # World wardrobe PG checkpoint — 2026-11-07
 
 Actual PG18.6 RED41.719s observed a committed wardrobe USE with zero grants.
