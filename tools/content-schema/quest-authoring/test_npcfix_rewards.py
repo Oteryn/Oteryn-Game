@@ -44,6 +44,28 @@ class NpcfixRewardProfiles(unittest.TestCase):
             items.admit(q.ROOT, outputs, items.PROFILE, 'content/spells.manifest.json',
                         native.provider_order, q.encoded)
 
+    def test_passive_cell_profile_preserves_canonical_weight_and_source_entry(self):
+        packet = json.loads(self.outputs[items.PROOF])
+        stone = next(row for row in packet['records']
+                     if row['production_definition']['production_key'] == 'oteryn:item.tibia.i1780')
+        # The canonical accepted stone weighs 41000; Canary's 1500 must not replace it.
+        self.assertEqual(stone['semantics']['physical']['value']['weight']['value'], 41000)
+        self.assertIs(stone['attributes']['blocks_movement'], False)
+        self.assertIs(stone['attributes']['blocks_projectile'], False)
+        self.assertEqual(set(items.PASSIVE_CELL_IDS) & PRODUCER.ITEMS, set())
+
+    def test_passive_entry_does_not_relax_known_pickup_constraints(self):
+        from unittest.mock import patch
+        profile = items.source.profile
+        def changed(item_id, *args):
+            record = profile(item_id, *args)
+            if item_id == 1780:
+                record['semantics']['physical']['value']['pickupable']['value'] = False
+            return record
+        with patch.object(items.source, 'profile', side_effect=changed):
+            with self.assertRaisesRegex(ValueError, 'QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:1780:physical'):
+                items.capture()
+
 import importlib.util
 import json
 from pathlib import Path

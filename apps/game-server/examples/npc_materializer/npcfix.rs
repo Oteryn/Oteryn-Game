@@ -33,11 +33,11 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn std::error
     if draft.core.project_revision != "e06-market-crystal-parity-20261031-r1" {
         return Err("NPCFIX predecessor revision drifted".into());
     }
-    if hex_sha256(PACKET) != "5506fea8ad860c48b83dac5f994270193ca25b2f9fc56366b16d2d538bf6c99b" {
+    if hex_sha256(PACKET) != "5efa3c245199ba4c9b1926b21d7afadb76939c2a634746b1ca0e8702beafd480" {
         return Err("NPCFIX repair packet digest drifted".into());
     }
     let packet: Packet = serde_json::from_slice(PACKET)?;
-    if packet.schema != "OTERYN_NPCFIX_NATIVE_REPAIRS/v1" || packet.repairs.len() != 52 {
+    if packet.schema != "OTERYN_NPCFIX_NATIVE_REPAIRS/v1" || packet.repairs.len() != 53 {
         return Err("NPCFIX repair schema or count drifted".into());
     }
     let mut replacements = Vec::new();
@@ -121,10 +121,35 @@ mod tests {
     fn npcfix_late_before_drift_rejects_the_entire_repair() -> Result<(), Box<dyn std::error::Error>>
     {
         let mut draft = fixture()?;
-        let Some(ProjectV2Declaration::Service { fields, .. }) =
-            draft.state.declarations.last_mut()
+        let Some(ProjectV2Declaration::Service { fields, .. }) = draft
+            .state
+            .declarations
+            .iter_mut()
+            .rfind(|declaration| matches!(declaration, ProjectV2Declaration::Service { .. }))
         else {
             return Err("expected final existing service".into());
+        };
+        fields.push(ProjectV2CandidateField {
+            field_path: "oteryn:source.npc.drift".into(),
+            value: ProjectV2CandidateValue::Integer(1),
+        });
+        let before = draft.clone();
+        assert!(apply(&mut draft).is_err());
+        assert_eq!(draft, before);
+        Ok(())
+    }
+
+    #[test]
+    fn npcfix_npc_before_drift_rejects_the_entire_repair() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let mut draft = fixture()?;
+        let Some(ProjectV2Declaration::Npc { fields, .. }) =
+            draft.state.declarations.iter_mut().find(|declaration| {
+                matches!(declaration, ProjectV2Declaration::Npc { identity, .. }
+                    if identity.key == "oteryn:npc.edgar_ellen")
+            })
+        else {
+            return Err("expected exact-before Edgar-Ellen NPC".into());
         };
         fields.push(ProjectV2CandidateField {
             field_path: "oteryn:source.npc.drift".into(),

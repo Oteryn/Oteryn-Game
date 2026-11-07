@@ -1,9 +1,10 @@
-"""Qualify the physical Items required by shared quest exchanges.
+"""Qualify physical Items for shared quest exchanges and source NPC cells.
 
 Uses the existing native source importer and exact canonical identity bindings.
 Known canonical facts win. No use effect, subtype, timer or custom script is
 inferred, and the canonical Item admission records remain unchanged.
 """
+import copy
 import hashlib
 import json
 import sys
@@ -16,8 +17,10 @@ import grizzly_shop_profiles as accepted
 sys.path.insert(0, str(ROOT / "tools/content-schema/quest-authoring"))
 import npcfix_rewards
 
+PASSIVE_CELL_IDS = {1780, 1858, 1899, 2585, 2586, 3891, 4768, 4772,
+                    6218, 8695, 15049, 15051, 19958, 19965, 20250}
 IDS = {133, 139, 875, 3244, 9041, 10198, 10199, 11700, 11701,
-       12599, 12601, 12803, 28792, 28793, 8746} | npcfix_rewards.ITEMS
+       12599, 12601, 12803, 28792, 28793, 8746} | npcfix_rewards.ITEMS | PASSIVE_CELL_IDS
 PROOF = 'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json'
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
 XML = 'imports/canary/items-xml/items.xml'
@@ -55,21 +58,30 @@ def capture(root=ROOT):
             raise ValueError('QENGINE_REWARD_ITEM_FLUID_OWNER_REQUIRED')
         record=source.profile(item_id,node,objects[item_id],physical[item_id],bindings,None)
         definition=definitions[f'oteryn:item.tibia.i{item_id}']
+        semantics = (definition.get('semantics', {}) if item_id in PASSIVE_CELL_IDS
+                     else definition['semantics'])
         for group in ('physical','stack','container'):
-            if accepted.known_conflict(definition['semantics'][group],record['semantics'][group]):
-                raise ValueError('QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:'+group)
+            canonical = copy.deepcopy(semantics.get(group, {'state': 'UNKNOWN'}))
+            if item_id in PASSIVE_CELL_IDS and group == 'physical' and canonical.get('state') == 'KNOWN':
+                # Reviewed decoration may differ in donor weight only; all other
+                # accepted physical, stack and container constraints still hold.
+                canonical['value'].pop('weight', None)
+            if accepted.known_conflict(canonical, record['semantics'][group]):
+                raise ValueError(f'QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:{item_id}:{group}')
         if definition['stack_class'] not in ('Unknown',record['admission']['stack_class']):
             raise ValueError('QENGINE_REWARD_ITEM_STACK_CONFLICT')
-        if record['admission']['legal_destinations']!=['CharacterInventory','Ground']:
+        if item_id not in PASSIVE_CELL_IDS and record['admission']['legal_destinations']!=['CharacterInventory','Ground']:
             raise ValueError('QENGINE_REWARD_ITEM_NOT_PORTABLE')
-        record['semantics']=accepted.accepted_first(definition['semantics'],record['semantics'])
+        # Passive cells retain canonical custody facts; only source entry attributes
+        # (including blocking flags) are added, without rewriting known weights.
+        record['semantics']=accepted.accepted_first(semantics,record['semantics'])
         records.append(record)
     records=source.bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,IDS)['records']
     return {'schema':'OTERYN_QENGINE_REWARD_ITEM_PROFILES/v1',
         'producer':'tools/content-migration/qengine_reward_item_profiles.py',
         'sources':[{'path':XML,'revision':'47dfd51f45280a59a1d3e50ba7edd573d7234446','sha256':XML_SHA},
                    {'path':CLIENT,'sha256':CLIENT_SHA}],
-        'scope':'Physical custody for the shared quest exchanges; no custom use or script activation.',
+        'scope':'Physical custody and reviewed NPC-cell entry facts; no custom use or script activation.',
         'records':records}
 
 

@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "batches": [
+    {
+      "id": "fading-and-source-cells-01",
+      "before_commit": "803a33d3923bbd9756cf3c1733ec63420da1e54f",
+      "source": "samples/promotion-candidates-v1.json:sha256:1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a; reviewed retail placements at before_commit retained where admitted",
+      "cases": [
+        {
+          "npc": "oteryn:npc.a_fading_memory",
+          "name": "A Fading Memory",
+          "expected": {
+            "x": 32952,
+            "y": 31440,
+            "floor": -3
+          },
+          "before": null
+        },
+        {
+          "npc": "oteryn:npc.dream_butterfly",
+          "name": "Dream Butterfly",
+          "expected": {
+            "x": 33715,
+            "y": 32378,
+            "floor": -6
+          },
+          "before": {
+            "x": 33715,
+            "y": 32378,
+            "floor": -6
+          }
+        },
+        {
+          "npc": "oteryn:npc.edgar_ellen",
+          "name": "Edgar-Ellen",
+          "expected": {
+            "x": 32357,
+            "y": 32188,
+            "floor": -7
+          },
+          "before": {
+            "x": 32357,
+            "y": 32188,
+            "floor": -7
+          }
+        },
+        {
+          "npc": "oteryn:npc.jack_the_worker",
+          "name": "Jack The Worker",
+          "expected": {
+            "x": 33032,
+            "y": 32104,
+            "floor": -6
+          },
+          "before": {
+            "x": 33032,
+            "y": 32104,
+            "floor": -6
+          }
+        },
+        {
+          "npc": "oteryn:npc.nemal",
+          "name": "Nemal",
+          "expected": {
+            "x": 32615,
+            "y": 32108,
+            "floor": -10
+          },
+          "before": {
+            "x": 32615,
+            "y": 32108,
+            "floor": -10
+          }
+        },
+        {
+          "npc": "oteryn:npc.ocelus",
+          "name": "Ocelus",
+          "expected": {
+            "x": 32310,
+            "y": 32622,
+            "floor": -4
+          },
+          "before": {
+            "x": 32310,
+            "y": 32622,
+            "floor": -4
+          }
+        }
+      ]
+    }
+  ]
+}
