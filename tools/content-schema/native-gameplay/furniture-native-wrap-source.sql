@@ -16,6 +16,8 @@ RETURNS TABLE(before_item JSONB,location JSONB,provenance JSONB,spatial_position
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE i game_item_instances%ROWTYPE; e game_item_container_entries%ROWTYPE;
  n game_item_nested_entries%ROWTYPE;
+ floor_item game_item_house_interior_locations%ROWTYPE;
+ floor_proof game_item_house_reclaim_provenance%ROWTYPE;
 BEGIN
  RETURN QUERY SELECT * FROM game_house_construction_source(p_session,p_character,p_connection,p_lease,p_scope,
   p_node,p_node_revision,p_world,p_house,p_item);
@@ -27,6 +29,20 @@ BEGIN
   AND candidate.lifecycle=1 AND candidate.definition_family='Item' AND candidate.definition_revision_ref='definition-r1'
   AND candidate.quantity BETWEEN 2 AND policy.stack_max FOR UPDATE OF candidate;
  IF NOT FOUND THEN RETURN; END IF;
+ -- The generic source above has already acquired the mature House/Character
+ -- fences. Only an exact closed stack policy admits this quantity2..max arm.
+ SELECT placed.* INTO floor_item FROM game_item_house_interior_locations placed
+  WHERE placed.item_instance_id=p_item AND placed.world_id=p_world AND placed.house_key=p_house FOR UPDATE;
+ IF FOUND THEN
+  SELECT proof.* INTO floor_proof FROM game_item_house_reclaim_provenance proof
+   WHERE proof.item_instance_id=p_item AND proof.world_id=p_world AND proof.house_key=p_house
+    AND proof.placement_transaction_id=floor_item.placed_transaction_id FOR UPDATE;
+  IF NOT FOUND OR game_house_access_tile(p_world,p_house,floor_item.spatial_position) IS DISTINCT FROM TRUE
+   THEN RETURN; END IF;
+  RETURN QUERY SELECT to_jsonb(i),jsonb_build_object('house',to_jsonb(floor_item),'custody_kind','house','custody',to_jsonb(floor_item)),
+   to_jsonb(floor_proof),floor_item.spatial_position,floor_item.stack_ordinal::text;
+  RETURN;
+ END IF;
  SELECT entry.* INTO e FROM game_item_container_entries entry
  JOIN game_item_container_slots bag ON bag.character_id=entry.character_id
   AND bag.item_instance_id=entry.parent_item_instance_id AND bag.world_id=entry.world_id

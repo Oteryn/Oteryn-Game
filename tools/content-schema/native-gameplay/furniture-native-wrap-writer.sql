@@ -12,7 +12,7 @@ DO $writer$ DECLARE body TEXT; needle TEXT; replacement TEXT; source_at INTEGER;
  IF position(needle IN body)=0 THEN RAISE EXCEPTION 'missing native writer transaction creation'; END IF;
  -- Set the explicit namespace before quantity admission, not by custody fallback.
  body:=replace(body,'IF i.quantity<>1 OR',
-  'IF (i.quantity<>1 AND NOT (p_action=1 AND get_byte(p_use_intent,0)=4)) OR (p_action=1 AND get_byte(p_use_intent,0)=4 AND NOT EXISTS(SELECT 1 FROM game_house_furniture_portable_wrap_sources wrap_policy WHERE i.definition_production_key=''oteryn:item.tibia.i''||wrap_policy.item_id::text AND i.quantity BETWEEN 1 AND wrap_policy.stack_max)) OR');
+  'IF (i.quantity<>1 AND NOT (p_action=1 AND get_byte(p_use_intent,0) IN(3,4))) OR (p_action=1 AND (get_byte(p_use_intent,0)=4 OR i.quantity<>1) AND NOT EXISTS(SELECT 1 FROM game_house_furniture_portable_wrap_sources wrap_policy WHERE i.definition_production_key=''oteryn:item.tibia.i''||wrap_policy.item_id::text AND i.quantity BETWEEN 1 AND wrap_policy.stack_max)) OR');
  IF position('IF i.quantity<>1 OR' IN body)>0 OR position('wrap_policy.stack_max' IN body)=0 THEN RAISE EXCEPTION 'missing exact native Wrap quantity guard'; END IF;
  body:=replace(body,needle,needle||E'\n carried:=p_action=1 AND get_byte(p_use_intent,0)=4;');
  source_at:=position('IF p_action=1 THEN' IN body);

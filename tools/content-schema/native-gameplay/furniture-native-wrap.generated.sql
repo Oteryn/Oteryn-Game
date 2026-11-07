@@ -103,6 +103,8 @@ RETURNS TABLE(before_item JSONB,location JSONB,provenance JSONB,spatial_position
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE i game_item_instances%ROWTYPE; e game_item_container_entries%ROWTYPE;
  n game_item_nested_entries%ROWTYPE;
+ floor_item game_item_house_interior_locations%ROWTYPE;
+ floor_proof game_item_house_reclaim_provenance%ROWTYPE;
 BEGIN
  RETURN QUERY SELECT * FROM game_house_construction_source(p_session,p_character,p_connection,p_lease,p_scope,
   p_node,p_node_revision,p_world,p_house,p_item);
@@ -114,6 +116,20 @@ BEGIN
   AND candidate.lifecycle=1 AND candidate.definition_family='Item' AND candidate.definition_revision_ref='definition-r1'
   AND candidate.quantity BETWEEN 2 AND policy.stack_max FOR UPDATE OF candidate;
  IF NOT FOUND THEN RETURN; END IF;
+ -- The generic source above has already acquired the mature House/Character
+ -- fences. Only an exact closed stack policy admits this quantity2..max arm.
+ SELECT placed.* INTO floor_item FROM game_item_house_interior_locations placed
+  WHERE placed.item_instance_id=p_item AND placed.world_id=p_world AND placed.house_key=p_house FOR UPDATE;
+ IF FOUND THEN
+  SELECT proof.* INTO floor_proof FROM game_item_house_reclaim_provenance proof
+   WHERE proof.item_instance_id=p_item AND proof.world_id=p_world AND proof.house_key=p_house
+    AND proof.placement_transaction_id=floor_item.placed_transaction_id FOR UPDATE;
+  IF NOT FOUND OR game_house_access_tile(p_world,p_house,floor_item.spatial_position) IS DISTINCT FROM TRUE
+   THEN RETURN; END IF;
+  RETURN QUERY SELECT to_jsonb(i),jsonb_build_object('house',to_jsonb(floor_item),'custody_kind','house','custody',to_jsonb(floor_item)),
+   to_jsonb(floor_proof),floor_item.spatial_position,floor_item.stack_ordinal::text;
+  RETURN;
+ END IF;
  SELECT entry.* INTO e FROM game_item_container_entries entry
  JOIN game_item_container_slots bag ON bag.character_id=entry.character_id
   AND bag.item_instance_id=entry.parent_item_instance_id AND bag.world_id=entry.world_id
@@ -151,7 +167,7 @@ BEGIN
  source_amount:=(wrap_receipt.before_item->>'quantity')::numeric;
  IF source_amount IS NULL OR source_amount<1 OR source_amount>100 OR source_amount<>trunc(source_amount) THEN RAISE EXCEPTION 'WRAP_NOT_WRAPABLE'; END IF;
  IF wrap_receipt.action=1 THEN
-  IF source_amount<>1 AND NOT coalesce((octet_length(wrap_receipt.use_intent)=13 AND get_byte(wrap_receipt.use_intent,0)=4
+  IF source_amount<>1 AND NOT coalesce((octet_length(wrap_receipt.use_intent)=13 AND get_byte(wrap_receipt.use_intent,0) IN(3,4)
    AND wrap_receipt.before_item->>'definition_family'='Item'
    AND wrap_receipt.before_item->>'definition_revision_ref'='definition-r1'
    AND EXISTS(SELECT 1 FROM game_house_furniture_portable_wrap_sources wrap_policy
@@ -169,7 +185,7 @@ BEGIN
  ORDER BY (prior_wrap.before_item->>'state_revision')::numeric DESC LIMIT 1;
  IF NOT FOUND OR (source_wrap.before_item->>'quantity')::numeric=1 THEN RETURN 1; END IF;
  source_amount:=(source_wrap.before_item->>'quantity')::numeric;
- IF octet_length(source_wrap.use_intent) IS DISTINCT FROM 13 OR get_byte(source_wrap.use_intent,0) IS DISTINCT FROM 4
+ IF octet_length(source_wrap.use_intent) IS DISTINCT FROM 13 OR get_byte(source_wrap.use_intent,0) NOT IN(3,4)
   OR source_wrap.before_item->>'definition_production_key' IS DISTINCT FROM wrap_receipt.after_key
   OR NOT EXISTS(SELECT 1 FROM game_house_furniture_portable_wrap_sources wrap_policy
    WHERE wrap_receipt.after_key='oteryn:item.tibia.i'||wrap_policy.item_id::text
@@ -219,7 +235,7 @@ DO $writer$ DECLARE body TEXT; needle TEXT; replacement TEXT; source_at INTEGER;
  IF position(needle IN body)=0 THEN RAISE EXCEPTION 'missing native writer transaction creation'; END IF;
  -- Set the explicit namespace before quantity admission, not by custody fallback.
  body:=replace(body,'IF i.quantity<>1 OR',
-  'IF (i.quantity<>1 AND NOT (p_action=1 AND get_byte(p_use_intent,0)=4)) OR (p_action=1 AND get_byte(p_use_intent,0)=4 AND NOT EXISTS(SELECT 1 FROM game_house_furniture_portable_wrap_sources wrap_policy WHERE i.definition_production_key=''oteryn:item.tibia.i''||wrap_policy.item_id::text AND i.quantity BETWEEN 1 AND wrap_policy.stack_max)) OR');
+  'IF (i.quantity<>1 AND NOT (p_action=1 AND get_byte(p_use_intent,0) IN(3,4))) OR (p_action=1 AND (get_byte(p_use_intent,0)=4 OR i.quantity<>1) AND NOT EXISTS(SELECT 1 FROM game_house_furniture_portable_wrap_sources wrap_policy WHERE i.definition_production_key=''oteryn:item.tibia.i''||wrap_policy.item_id::text AND i.quantity BETWEEN 1 AND wrap_policy.stack_max)) OR');
  IF position('IF i.quantity<>1 OR' IN body)>0 OR position('wrap_policy.stack_max' IN body)=0 THEN RAISE EXCEPTION 'missing exact native Wrap quantity guard'; END IF;
  body:=replace(body,needle,needle||E'\n carried:=p_action=1 AND get_byte(p_use_intent,0)=4;');
  source_at:=position('IF p_action=1 THEN' IN body);

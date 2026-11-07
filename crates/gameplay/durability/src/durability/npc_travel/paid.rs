@@ -58,6 +58,11 @@ async fn quote(
     {
         return Ok(Err(TravelRefusal::UnavailableRoute));
     }
+    if let Some(change) = &route.world_change
+        && !crate::durability::world_event::change_active(tx, fence.runtime_scope.world_id(), change).await?
+    {
+        return Ok(Err(TravelRefusal::UnavailableRoute));
+    }
     if matches!(
         route.service.as_str(),
         "oteryn:service.travel.appaloosa" | "oteryn:service.travel.palomino"
@@ -188,6 +193,11 @@ impl DurabilityRoot {
             {return Ok(Err(CharacterProgressionError::InvalidInput));}
             let mut hash = Sha256::new();
             hash.update(b"oteryn:paid-travel-binding:v1");
+            if let Some(change) = &route.world_change {
+                hash.update(b"world-change");
+                hash.update((change.len() as u64).to_be_bytes());
+                hash.update(change.as_bytes());
+            }
             for text in [&route.service, &route.route.key, &route.keyword, &route.route.destination.coordinate_frame] {
                 hash.update((text.len() as u64).to_be_bytes());
                 hash.update(text.as_bytes());

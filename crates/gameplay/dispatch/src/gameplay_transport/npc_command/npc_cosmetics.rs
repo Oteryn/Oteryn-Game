@@ -160,16 +160,25 @@ pub(super) async fn refresh_equipment(
         .checkpoint_timed_equipment(actor, session, true)
         .await
     {
+        #[cfg(test)]
+        eprintln!("SRV7_NPC_REFRESH_UNAVAILABLE stage=checkpoint_timed_equipment");
         return false;
     }
     let Ok(effects) = admission.read_admission_effects(session).await else {
+        #[cfg(test)]
+        eprintln!("SRV7_NPC_REFRESH_UNAVAILABLE stage=read_admission_effects");
         return false;
     };
     let runtime = admission.runtime.lock().await;
-    admission
+    let installed = admission
         .install_admission_suppressions(&runtime, actor, session, effects)
         .await
-        .is_some()
+        .is_some();
+    #[cfg(test)]
+    if !installed {
+        eprintln!("SRV7_NPC_REFRESH_UNAVAILABLE stage=install_admission_suppressions");
+    }
+    installed
 }
 
 pub(super) async fn apply(
@@ -313,6 +322,13 @@ pub(super) async fn apply(
             None
         }
         Ok(Some(outcome)) => {
+            #[cfg(test)]
+            if state.context.2 == "oteryn:npc.chondur" {
+                eprintln!(
+                    "SRV7_CHONDUR_KNOWN_OUTCOME fresh={} inventory_changed={} topic={}",
+                    outcome.fresh, outcome.inventory_changed, outcome.topic
+                );
+            }
             publish_source_effect(admission, actor, command, &intent, &state, &outcome).await;
             if outcome.inventory_changed
                 && !refresh_equipment(admission, actor, command.game_session_id).await

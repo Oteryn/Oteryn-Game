@@ -268,6 +268,28 @@ pub(in crate::gameplay_transport) async fn peer_at(
     base: AdmittedSession,
     position: MovementLocalPosition,
 ) -> TestResult<AdmittedSession> {
+    peer_at_with_publisher(h, owner, base, position, false).await
+}
+
+/// A fresh peer whose claims originate with the same owning publisher used by
+/// real scope transfers. This is selected before its first publication/commit;
+/// no existing foreign-owned guard is rewritten or taken over.
+pub(in crate::gameplay_transport) async fn peer_at_for_scope_transfer(
+    h: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    base: AdmittedSession,
+    position: MovementLocalPosition,
+) -> TestResult<AdmittedSession> {
+    peer_at_with_publisher(h, owner, base, position, true).await
+}
+
+async fn peer_at_with_publisher(
+    h: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    base: AdmittedSession,
+    position: MovementLocalPosition,
+    composed_claims: bool,
+) -> TestResult<AdmittedSession> {
     use crate::durability::guild_chat_fixture::{historical_character, sid};
     let character = crate::domain::CharacterId::from_bytes(sid(90, 1)).map_err(debug)?;
     historical_character(&h.pool, 90, character, sid(90, 2), id(42), "Scenario Peer").await?;
@@ -292,6 +314,18 @@ pub(in crate::gameplay_transport) async fn peer_at(
     publications
         .rows
         .retain(|r| matches!(r.key, Key::Account { .. } | Key::Character(_)));
+    if composed_claims {
+        for row in source.rows.iter_mut().chain(publications.rows.iter_mut()) {
+            if matches!(row.key, Key::Account { .. } | Key::Character(_)) {
+                row.source.authority =
+                    crate::durability::fresh_admission_composition::COMPOSITION_SOURCE_AUTHORITY
+                        .into();
+                if let crate::foundation::admission_authority_publication::AdmissionAuthorityGuardStateV1::Account { security, .. } = &mut row.state {
+                    security.provenance.source_authority = "platform-test".into();
+                }
+            }
+        }
+    }
     for row in &mut source.rows {
         if matches!(row.key, Key::Runtime(_) | Key::SigningTrust { .. }) {
             *row = guards

@@ -13,6 +13,41 @@ SOURCE = "oteryn:source.crystalserver.srv7_cake_golem"
 BATCH = "srv7-seasonal-cake-golem-r1"
 
 
+def canonical_profile(entry):
+    """Only the exact Cake creature's two serde-elided defaults are equivalent."""
+    result = copy.deepcopy(entry)
+    if result.get("target") != {
+        "family": "Creature",
+        "key": "oteryn:creature.cake_golem",
+        "revision": "definition-r1",
+    }:
+        return result
+    data = result.get("data", {})
+    if data.get("kind") != "Creature":
+        return result
+    profile = data.get("profile", {})
+    # ProjectV2CreatureProfile Vec<String>: missing defaults to empty; null is
+    # NOT an empty Vec and must remain a conflict, as must every real immunity.
+    if profile.get("immunities") == []:
+        del profile["immunities"]
+    details = profile.get("details", {})
+    # ProjectV2CreatureDetails Option<u32>: both missing and null mean None.
+    if "reference_level" in details and details["reference_level"] is None:
+        del details["reference_level"]
+    return result
+
+
+def append_profile(rows, entry):
+    identity = lambda row: (row["target"]["family"], row["target"]["key"])
+    prior = [row for row in rows if identity(row) == identity(entry)]
+    candidate = canonical_profile(entry)
+    if prior:
+        if len(prior) != 1 or canonical_profile(prior[0]) != candidate:
+            raise ValueError("SUMMER_NPC_EXISTING_IDENTITY_CONFLICT")
+    else:
+        rows.append(candidate)
+
+
 def files():
     stage = json.loads(INPUT.read_text())
     source = stage["source"]
@@ -37,11 +72,7 @@ def files():
             lambda r: (r["identity"]["family"], r["identity"]["key"]),
         )
     for row in stage["profiles"]:
-        summer_npcs.append_exact(
-            docs[paths[1]]["authoring_profiles"],
-            row,
-            lambda r: (r["target"]["family"], r["target"]["key"]),
-        )
+        append_profile(docs[paths[1]]["authoring_profiles"], row)
     sources = docs[paths[2]]
     summer_npcs.append_exact(
         sources["sources"],

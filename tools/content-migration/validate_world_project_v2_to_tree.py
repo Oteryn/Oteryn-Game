@@ -28,7 +28,9 @@ CREATURE_FAMILY_NODES = {
 }
 # NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1).
 NPC_COUNT = 1283
-NPC_BINDING_COUNT = 2748
+# W05d adds Messenger of Santa's exact MediaWiki page-id binding (62185),
+# emitted by seasonal_messenger_shop.py alongside the donor bindings.
+NPC_BINDING_COUNT = 2748 + 1
 # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
 ENCOUNTER_COUNT = 108
 DOCUMENT_COUNT = 1609
@@ -477,10 +479,17 @@ def validate_creature_families(reference: Any, declarations: Any, sources: Any) 
     canary_creatures = load(ROOT / "imports/canary/bindings/creatures.json")["bindings"]
     wiki_creatures = load(ROOT / "imports/tibiawiki/bindings/creatures.json")["bindings"]
     crystal_creatures = load(ROOT / "imports/crystalserver/bindings/creatures.json")["bindings"]
+    # The closed seasonal packet has separate provenance from the general import.
+    # Require its exact binding, rather than accepting arbitrary additional rows.
+    cake_stage = load(ROOT / "tools/content-migration/cake_golem_stage.json")
+    cake_bindings = [dict(row, source_key="oteryn:source.crystalserver.srv7_cake_golem",
+                          source_revision="201189f871d23597b82caf88fd611454a2ddefb8",
+                          identity_namespace="crystalserver/monster-file")
+                     for row in cake_stage["bindings"]]
     require(all(row["source_key"] == "oteryn:source.canary" for row in canary_creatures)
             and all(row["source_key"] == "oteryn:source.tibiawiki" for row in wiki_creatures)
             and all(row["source_key"] == "oteryn:source.crystalserver" for row in crystal_creatures)
-            and canonical_sorted(canary_creatures + wiki_creatures + crystal_creatures) == canonical_sorted(legacy_bindings),
+            and canonical_sorted(canary_creatures + wiki_creatures + crystal_creatures + cake_bindings) == canonical_sorted(legacy_bindings),
             "IMPORT_CREATURE_BINDINGS")
     require(load(ROOT / "imports/canary/index.json")["population_state"] == "POPULATED", "IMPORT_CANARY_MARKER_STATE")
     return sum(family_counts.values()), len(migrated_profiles), len(migrated_bindings)

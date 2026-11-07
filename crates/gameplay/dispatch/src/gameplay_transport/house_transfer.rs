@@ -582,9 +582,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(None);
         }
-        let Some(mut receipt) = self
-            .root
-            .house_transfer_recovery(admitted.game_session_id)
+        let retry = super::AdmissionRetryBudget::for_root(&admitted.game_session_id, self.root);
+        let Some(mut receipt) = retry
+            .retry_unavailable(async || {
+                self.root
+                    .await_ready()
+                    .await
+                    .map_err(super::activity_recovery::projection_refusal)?;
+                self.root
+                    .house_transfer_recovery(admitted.game_session_id)
+                    .await
+                    .map_err(super::activity_recovery::projection_refusal)
+            })
             .await
             .map_err(|_| ())?
         else {
@@ -592,8 +601,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let fence = admitted.item_fence.ok_or(())?;
         let controller = admitted.controller.ok_or(())?;
-        let (session, _) = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session_at(admitted.game_session_id)
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let (session, _) = retry
+            .retry_unavailable(async || {
+                self.root
+                    .await_ready()
+                    .await
+                    .map_err(super::activity_recovery::projection_refusal)?;
+                store
+                    .current_session_at(admitted.game_session_id)
+                    .await
+                    .map_err(super::activity_recovery::projection_refusal)
+            })
             .await
             .map_err(|_| ())?;
         if session.session_state() != crate::foundation::GameSessionState::Active

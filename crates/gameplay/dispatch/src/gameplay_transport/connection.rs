@@ -726,10 +726,14 @@ where
             }
             // A real activity receipt/current owner supplies the exact scope;
             // no House acknowledgement or unsolicited command result is used.
-            let activity_scope = authority
-                .activity_scope_snapshot(resumed)
-                .await
-                .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
+            let activity_scope =
+                authority
+                    .activity_scope_snapshot(resumed)
+                    .await
+                    .map_err(|_| {
+                        super::operator_event("event=resume_bootstrap_failed phase=activity_scope");
+                        ConnectionEnd::AdmittedThenDisconnected(resumed)
+                    })?;
             let accepted = encode_server_resume_accepted(&ServerResumeAcceptedValue {
                 game_session_id: resumed.game_session_id,
                 connection_generation: continuity.connection_generation,

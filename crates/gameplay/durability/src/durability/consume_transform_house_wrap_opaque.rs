@@ -84,7 +84,7 @@ impl DurabilityRoot {
             let Some(id)=observed.production_key.strip_prefix("oteryn:item.tibia.i").and_then(|id|id.parse::<u32>().ok()) else {
                 return Ok(wire::Reply::Refused(wire::Refusal::NotWrapable));
             };
-            if carried {
+            if carried || before.get("quantity").and_then(Value::as_u64).is_some_and(|quantity| quantity > 1) {
                 let Some(policy)=native.item_policy(&observed.production_key,&observed.revision_ref) else {return Ok(wire::Reply::Refused(wire::Refusal::NotWrapable))};
                 let F::Known(physical)=&policy.record().semantics.physical else{return Ok(wire::Reply::Refused(wire::Refusal::NotWrapable))};
                 if physical.pickupable!=F::Known(true){return Ok(wire::Reply::Refused(wire::Refusal::NotWrapable))}

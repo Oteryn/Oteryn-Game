@@ -1029,7 +1029,11 @@ def main(argv=None):
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--output", type=Path, default=OUTPUT)
     parser.add_argument("--record", type=Path, default=RECORD)
+    parser.add_argument("--refresh-runtime-pin", action="store_true",
+                        help="refresh the Rust packet digest from this generated output")
     args = parser.parse_args(argv)
+    if args.refresh_runtime_pin and (args.check or args.output != OUTPUT or args.record != RECORD):
+        parser.error("--refresh-runtime-pin requires the default output paths and generation mode")
     snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
     compiler_sha256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     data = packet_bytes(snapshot, content_item_ids(), compiler_sha256)
@@ -1042,6 +1046,16 @@ def main(argv=None):
         return 0
     args.output.write_bytes(data)
     args.record.write_bytes(record)
+    if args.refresh_runtime_pin:
+        runtime = ROOT / "crates/gameplay/content-promotion/src/content/item_stats_promotion.rs"
+        text = runtime.read_text(encoding="utf-8")
+        text, count = re.subn(
+            r'(pub const ITEM_STATS_PROMOTION_V2_PACKET_SHA256: &str =\s*")[0-9a-f]{64}(";)',
+            lambda match: match[1] + hashlib.sha256(data).hexdigest() + match[2], text,
+        )
+        if count != 1:
+            raise ValueError("expected exactly one runtime Item statistics packet digest")
+        runtime.write_text(text, encoding="utf-8")
     packet = json.loads(data)
     print(
         json.dumps(

@@ -96,7 +96,23 @@ pub(super) async fn kill(
     {
         let runtime = owner.runtime.lock().await;
         let monster = runtime.companion_snapshot(target).map_err(debug)?;
-        assert_eq!((monster.health, monster.maximum_health), (400, 400));
+        assert_eq!(
+            monster.state.policy.definition_key, "oteryn:creature.demon_skeleton",
+            "actual source species"
+        );
+        assert_eq!(
+            monster.state.policy.maximum_health, 400,
+            "immutable native source health remains400"
+        );
+        // Normal native Forge classification remains active during real walking/AI.
+        // Derive its exact observed successor; never lower this source actor's HP.
+        let percent = monster.forge.map_or(100, |kind| kind.health_percent());
+        let expected = (400_i64 * i64::from(percent) + 99) / 100;
+        assert_eq!(
+            (monster.health, monster.maximum_health),
+            (expected, expected),
+            "actual unchanged source+native Forge health"
+        );
         let visible = runtime.visible_entities();
         let v = visible
             .creatures

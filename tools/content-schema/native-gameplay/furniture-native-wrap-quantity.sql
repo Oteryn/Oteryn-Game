@@ -9,7 +9,7 @@ BEGIN
  source_amount:=(wrap_receipt.before_item->>'quantity')::numeric;
  IF source_amount IS NULL OR source_amount<1 OR source_amount>100 OR source_amount<>trunc(source_amount) THEN RAISE EXCEPTION 'WRAP_NOT_WRAPABLE'; END IF;
  IF wrap_receipt.action=1 THEN
-  IF source_amount<>1 AND NOT coalesce((octet_length(wrap_receipt.use_intent)=13 AND get_byte(wrap_receipt.use_intent,0)=4
+  IF source_amount<>1 AND NOT coalesce((octet_length(wrap_receipt.use_intent)=13 AND get_byte(wrap_receipt.use_intent,0) IN(3,4)
    AND wrap_receipt.before_item->>'definition_family'='Item'
    AND wrap_receipt.before_item->>'definition_revision_ref'='definition-r1'
    AND EXISTS(SELECT 1 FROM game_house_furniture_portable_wrap_sources wrap_policy
@@ -27,7 +27,7 @@ BEGIN
  ORDER BY (prior_wrap.before_item->>'state_revision')::numeric DESC LIMIT 1;
  IF NOT FOUND OR (source_wrap.before_item->>'quantity')::numeric=1 THEN RETURN 1; END IF;
  source_amount:=(source_wrap.before_item->>'quantity')::numeric;
- IF octet_length(source_wrap.use_intent) IS DISTINCT FROM 13 OR get_byte(source_wrap.use_intent,0) IS DISTINCT FROM 4
+ IF octet_length(source_wrap.use_intent) IS DISTINCT FROM 13 OR get_byte(source_wrap.use_intent,0) NOT IN(3,4)
   OR source_wrap.before_item->>'definition_production_key' IS DISTINCT FROM wrap_receipt.after_key
   OR NOT EXISTS(SELECT 1 FROM game_house_furniture_portable_wrap_sources wrap_policy
    WHERE wrap_receipt.after_key='oteryn:item.tibia.i'||wrap_policy.item_id::text

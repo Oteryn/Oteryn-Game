@@ -1,35 +1,35 @@
 {
   "admission_main": "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c",
   "authoring_profile_counts": {
-    "Ability": 7392,
-    "Behavior": 3145,
-    "Creature": 1863,
-    "Effect": 5797,
+    "Ability": 7396,
+    "Behavior": 3147,
+    "Creature": 1864,
+    "Effect": 5800,
     "Encounter": 108,
-    "Formula": 6126,
+    "Formula": 6129,
     "Loot": 40,
-    "Presentation": 3145
+    "Presentation": 3147
   },
   "editor_entry_counts": {
     "Item": 165,
     "Mount": 252
   },
   "family_counts": {
-    "Ability": 7392,
-    "Behavior": 3145,
+    "Ability": 7396,
+    "Behavior": 3147,
     "Charm": 25,
-    "Creature": 1863,
-    "Dialogue": 836,
+    "Creature": 1864,
+    "Dialogue": 837,
     "Document": 1609,
-    "Effect": 5797,
+    "Effect": 5800,
     "Encounter": 108,
     "Encounter.Raid": 239,
-    "Formula": 6126,
+    "Formula": 6129,
     "Item": 34111,
-    "Loot": 1290,
+    "Loot": 1291,
     "Mount": 252,
-    "NPC": 1282,
-    "Presentation": 3145,
+    "NPC": 1283,
+    "Presentation": 3147,
     "Proficiency": 443,
     "Quest": 352,
     "RewardClaim": 336,
@@ -47,11 +47,11 @@
     "taxonomy": 12252
   },
   "legacy_blobs": {
-    "declarations": "64dbc962d8e20470c6441aa04b11c21fbbd74a38",
+    "declarations": "9cb51583a3b24067b039777ddfb61dc77b461590",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "ff16932786c5189e02e11b08456f09f87eaa6565",
-    "reference": "45d4938e30c6b19bd9e29e6b9f2aa387596524bd",
-    "sources": "71e382c6864316e918f77fda32002224b0be1806"
+    "imports": "dc270c90da80ba43c3737c4418a59b19d5e3bd2d",
+    "reference": "4cd40bd48000c455acff69428dbda10f780f280c",
+    "sources": "c2bff3f1b95a0492bddd27158912c353c783bdb4"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "ruleset_counts": {
@@ -89,11 +89,11 @@
   },
   "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
   "source_binding_counts": {
-    "Creature": 1863,
+    "Creature": 1864,
     "Encounter": 108,
     "Item": 476,
     "Mount": 252,
-    "NPC": 2747
+    "NPC": 2749
   },
   "spell_import": {
     "collections": {
@@ -163,7 +163,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "ba5849b2fae52a451884f017b0452b78cfbfe5563b5b1ae3e4b046266b8ceeb0"
+          "sha256": "26b4e4ff48ce56ff6c32e72ea8ac1f8914632f68b2885f168f329a2cfb0a85f7"
         },
         {
           "creates_canonical_identities": false,

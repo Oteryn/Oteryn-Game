@@ -50,7 +50,7 @@ pub(super) async fn join(
     let deadline: i64 = sqlx::query_scalar("SELECT deadline FROM game_boss_room_activities")
         .fetch_one(&h.pool)
         .await?;
-    let mut peer = super::super::scenarios::peer_at(
+    let mut peer = super::super::scenarios::peer_at_for_scope_transfer(
         h,
         source,
         original,

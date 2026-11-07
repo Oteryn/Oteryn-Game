@@ -39,7 +39,11 @@ fn world_event_postgres_real_dispatch_reset_restart_and_fences() -> TestResult {
     Ok(())
 }
 
-fn scenario(epochs: u64) -> TestResult {
+pub(super) fn scenario(epochs: u64) -> TestResult {
+    scenario_with_consumers(epochs, false)
+}
+
+pub(super) fn scenario_with_consumers(epochs: u64, consumers: bool) -> TestResult {
     let _clock = oteryn_gameplay_foundation::scheduled_events::test_clock::set(
         oteryn_gameplay_foundation::scheduled_events::content_schedule().clone(),
         1_793_422_800,
@@ -48,7 +52,7 @@ fn scenario(epochs: u64) -> TestResult {
     run(async move |admin| {
         reset();
         let h =
-            Harness::create_with_admission_seed(admin, "world_event_dispatch", true, false).await?;
+            Harness::create_with_admission_seed(admin, "world_event_dispatch", !consumers, false).await?;
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         assert_eq!(h.root.active_world_event_epoch(world).await?, None);
@@ -78,6 +82,14 @@ fn scenario(epochs: u64) -> TestResult {
             )
             .await?;
         event_fixture::reset_epochs(&h, &authority, room, world, channel, epochs).await?;
+        // The reset decision owns the calendar across every Channel and restart.
+        let calendar = h.root.world_change_calendar(world, epochs).await?;
+        assert_eq!(h.root.world_change_calendar(world, epochs).await?, calendar);
+        assert!(h.root.world_change_calendar(world, epochs + 1).await.is_err());
+        let changes = oteryn_gameplay_world_change::daily::roll_calendar(world.as_bytes(), epochs, calendar.0, calendar.1);
+        for (key, expected) in [("grimvale", changes.grimvale_full_moon), ("their_masters_voice", changes.their_masters_voice), ("fury_gates", changes.fury_gates.is_some())] {
+            assert_eq!(h.root.world_change_active(world, key).await?, expected);
+        }
         for _ in 0..16 {
             h.root
                 .t94_start_world(
@@ -113,13 +125,17 @@ fn scenario(epochs: u64) -> TestResult {
         event_fixture::admit(&h, epochs + 1).await?;
         let mut deps = Dependencies::new()?;
         deps.room = room.clone();
-        planned_world_reset::reset_fixture::set_runtime(
+        if consumers { deps.combat_room = Some(room.clone()); }
+
+        planned_world_reset::reset_fixture::set_runtime_with_capacity(
             &mut deps,
             world,
             channel,
             &pin,
             epochs + 1,
+            if consumers { 3 } else { 2 },
         )?;
+        let channel_pin = deps.runtime.lock().await.content_pin().clone();
         let actor = {
             let mut runtime = deps.runtime.lock().await;
             let reservation = runtime
@@ -135,6 +151,13 @@ fn scenario(epochs: u64) -> TestResult {
         item_fence.scope_ownership_generation =
             ScopeOwnershipGeneration::new(epochs + 1).map_err(debug)?;
         deps.admitted.item_fence = Some(item_fence);
+        if consumers {
+            let mut runtime = deps.runtime.lock().await;
+            runtime.initialize_pinned_test_position(actor, crate::foundation::MovementLocalPosition { x: 2, y: 11, floor: -7 }).map_err(debug)?;
+            runtime.bind_attacker_lease(actor, deps.admitted.game_session_id,
+                crate::foundation::CharacterLease::new(crate::foundation::CharacterId::decode(&id(41)).map_err(debug)?, 2).map_err(debug)?).map_err(debug)?;
+        }
+
         let mut admitted = deps.admitted;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = controller.active();
@@ -145,6 +168,10 @@ fn scenario(epochs: u64) -> TestResult {
             .await?
             .ok_or("active epoch")?;
         deps.initialize(&owner).await;
+        if consumers {
+            super::qworld::consumers::qualify(&h, &mut owner, &mut admitted, actor, channel_pin, room, epochs).await?;
+        }
+
         owner
             .runtime
             .lock()
@@ -184,8 +211,12 @@ fn scenario(epochs: u64) -> TestResult {
         assert_eq!(results[1].0, CommandStatus::Accepted);
         let state = wire::decode_world_event_state(&results[1].1).map_err(debug)?;
         assert_eq!(state.reset_epoch, epochs);
-        assert_eq!(state.active, epochs == 1);
-        assert_eq!(state.announcement.is_empty(), epochs == 2);
+        let expected_active = epochs % 2 == 1 || changes.their_masters_voice || changes.grimvale_full_moon || changes.fury_gates.is_some();
+        assert_eq!(state.active, expected_active);
+        assert_eq!(state.announcement.is_empty(), !expected_active);
+        for (name, active) in [("Their Master's Voice", changes.their_masters_voice), ("Grimvale", changes.grimvale_full_moon), ("Fury Gates", changes.fury_gates.is_some())] {
+            assert_eq!(state.announcement.contains(name), active, "wire world-state decision for {name}");
+        }
         assert_eq!(
             state.seasonal.len(),
             3,
