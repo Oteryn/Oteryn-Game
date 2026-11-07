@@ -9841,7 +9841,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "989c1b3528fd846868a5cd3813ab166442cec7dd50858ca318cea7f8baba0085",
+        "canonical_definition_sha256": "3738921084d08d563a87456c44861c0ba4568e0a58d3ac863f2b20dc940aeb14",
         "canonical_name": "dragon shield",
         "canonical_path": "content/items/definitions/items-20500-20999.json",
         "wiki_observations": [
@@ -16889,7 +16889,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "cb8bda5f983ac0602e67d8f22249bb14b98047cf391c7dc5f130ccb86ecccfe2",
+        "canonical_definition_sha256": "27012f4e8efbe28e61c9cc1fae1536f9255cf5e6d72969f0787d0ddf9ccd975f",
         "canonical_name": "dragonbone staff",
         "canonical_path": "content/items/definitions/items-31000-31499.json",
         "wiki_observations": [

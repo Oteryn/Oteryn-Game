@@ -446,13 +446,12 @@
     "canonical": "oteryn:quest.devil_helmet_quest",
     "title": "Devil Helmet Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
-    "status": "UNFINISHED",
-    "blocker": "Active whole-route composition: exact source1Dragon/3MinotaurGuards combat and native corpse/loot admission. All five acquisitions, keyed/level access, player pressure, native projected435 USE and exact static2123 removal with3148 are delivered with real PG proof.",
+    "status": "QUALIFIED",
     "from_lanes": [
       "questpc",
       "questpc6"
     ],
-    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "qualification_scope": "Whole selected source route: both exact keys, all three source treasures/cold replay, exact keyed and level30 access, player-only pressure and created435 native descent, actual3148/static2123 removal preserving387/5017, one source Dragon and three source Minotaur Guards with native combat/XP/corpses.",
     "input_canonical": "oteryn:quest.devil_helmet_quest",
     "canonical_location": {
       "path": "content/quests/definitions/quests-00000-00099.json",
@@ -512,7 +511,14 @@
       "duration_seconds": 54.59,
       "note": "Final actualPG54.59s, fmt, cargo check durability/dispatch and strict all-target/all-feature Clippy PASS. Whole Devil combat remains active."
     },
-    "source_static_field_evidence": "cloud-devil-static-field-proof.json"
+    "source_static_field_evidence": "cloud-devil-static-field-proof.json",
+    "source_combat_work": {
+      "state": "QUALIFIED",
+      "proof": "cloud-devil-complete-proof.json",
+      "duration_seconds": 58.28,
+      "note": "All four native source kills/XP/corpses/replay, complete source route proofs, fmt/check/strict clippy/tree/source/pin checks PASS."
+    },
+    "whole_route_evidence": "cloud-devil-complete-proof.json"
   },
   {
     "canonical": "oteryn:quest.formogar_mine_hoist",

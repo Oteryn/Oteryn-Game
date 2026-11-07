@@ -1866,7 +1866,7 @@
     {
       "key": "oteryn:item.tibia.i3275",
       "path": "content/items/definitions/items-19500-19999.json",
-      "definition_sha256": "a894b81cf190de37f370f557758cd51699862c89ef50db51ec269d3626b12db2"
+      "definition_sha256": "e0da50bf68c7610c8102c0eb68c95a9ad718b6d180734bc7c31b66b54fb61af8"
     },
     {
       "key": "oteryn:item.tibia.i3291",
@@ -1911,7 +1911,7 @@
     {
       "key": "oteryn:item.tibia.i3322",
       "path": "content/items/definitions/items-20000-20499.json",
-      "definition_sha256": "75ed28ae8a6546405b0d051a3ce48d4bdb75a309ef6cdde25c6b3da43bcfdff7"
+      "definition_sha256": "92e484b019f565c334ad144bddbf4c87cd68b28d05426e9ef1feae6cb7f4a975"
     },
     {
       "key": "oteryn:item.tibia.i3330",
@@ -1956,7 +1956,7 @@
     {
       "key": "oteryn:item.tibia.i3413",
       "path": "content/items/definitions/items-20500-20999.json",
-      "definition_sha256": "e03c9b3c6397d1ba7679226517d0b55fae76345582e2c7cb4c3f9710058a2a3a"
+      "definition_sha256": "164198433734525bf442595a719dbb4714d196d4cf82897fed963ef29f8a2c70"
     },
     {
       "key": "oteryn:item.tibia.i3415",
@@ -2391,7 +2391,7 @@
     {
       "key": "oteryn:item.tibia.i11457",
       "path": "content/items/definitions/items-01000-01499.json",
-      "definition_sha256": "4f5c1f51dcbc1708e10b77690a667f61f93577915e8135b1ae067a3f4bdd81e7"
+      "definition_sha256": "c70298ab5d1e0bacc4dc94ae77afc668185c75d669ebb19c548fd3f0b39de244"
     },
     {
       "key": "oteryn:item.tibia.i11465",
@@ -2411,7 +2411,7 @@
     {
       "key": "oteryn:item.tibia.i11482",
       "path": "content/items/definitions/items-01000-01499.json",
-      "definition_sha256": "016e19e91705161b5b377b91f309937ee4619c46842e0c39b2f7f8637cc862b8"
+      "definition_sha256": "455d8eac55fc9a7c5c61d0836ea385b8f81038d0537d89d1a47b94d7e4df35e5"
     },
     {
       "key": "oteryn:item.tibia.i11487",

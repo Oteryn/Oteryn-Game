@@ -953,7 +953,7 @@
     "Green Dragon Leather": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "89063335f2e043cdf8bb85249f13225a39ede30a01bd8be72062f9d15781d879",
+          "definition_sha256": "cb958d846a01988764fa5c14b74f10a95e652f104ced8896cf7abe6c4b9234f7",
           "name": "green dragon leather",
           "path": "content/items/definitions/items-29500-29999.json"
         },
@@ -985,7 +985,7 @@
     "Green Dragon Scale": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "234b67d4560a8a1148a0532f465996b689234092553f7b7d329f6d983cca246c",
+          "definition_sha256": "637490388ef824cb74dd447385db10da52ecbda1f22a1210eee59e08d7e00cd4",
           "name": "green dragon scale",
           "path": "content/items/definitions/items-29500-29999.json"
         },

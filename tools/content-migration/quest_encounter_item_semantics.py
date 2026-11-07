@@ -1,7 +1,7 @@
 """Close selected encounter Item facts through the ordinary pinned Item contracts.
 
 The profile capture is produced by build_quest_encounter_profiles.py. Existing
-native policies remain authoritative; only absent decay stages are appended.
+native policies remain authoritative; only absent native policies are appended.
 Canonical identity-only records gain their own exact captured semantics. No
 creature, loot probability, reward quantity or WorldObject is rewritten.
 """
@@ -14,7 +14,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PATH = 'tools/content-schema/native-gameplay/quest-encounter-item-profiles.json'
-IDS = {3060, 3063, 3306, 3364, 3366, 3414, 4097, 4098, 4099, 5954, 5995, 7368, 7382, 7393}
+IDS = {
+    3060, 3061, 3063, 3071, 3275, 3306, 3322, 3359, 3364, 3366, 3413, 3414, 3416,
+    4013, 4025, 4026, 4027, 4057, 4058, 4097, 4098, 4099, 5877, 5920, 5954,
+    5973, 5983, 5995, 7368, 7382, 7393, 7401, 7430, 11457, 11472, 11482, 44158,
+}
 
 
 def profiles(root=ROOT):
@@ -23,9 +27,16 @@ def profiles(root=ROOT):
     expected_sources = {
         'data/items/items.xml': 'bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85',
         'data/items/appearances.dat': '17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1',
+        'crystal-current/data/items/items.xml': '8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509',
+        'official/client-assets/15.30/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat': '2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2',
     }
     if {row['path']: row['sha256'] for row in capture['source_files']} != expected_sources:
         raise ValueError('QUEST_ENCOUNTER_SOURCE_PIN')
+    overrides = capture.get('source_overrides',[])
+    if (len(overrides)!=1 or overrides[0].get('item')!=44158
+            or overrides[0].get('xml_revision')!='201189f871d23597b82caf88fd611454a2ddefb8'
+            or overrides[0].get('client_sha256')!='2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2'):
+        raise ValueError('QUEST_ENCOUNTER_CURRENT_SOURCE_OVERRIDE')
     keys = [r['production_definition']['production_key'] for r in rows]
     if (capture['schema'] != 'OTERYN_NATIVE_QUEST_ENCOUNTER_ITEM_PROFILES/v1'
             or capture['source_revision'] != '99902524e052f37574194466c2949c576e4ab269'

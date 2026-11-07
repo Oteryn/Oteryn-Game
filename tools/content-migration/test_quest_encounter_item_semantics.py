@@ -29,6 +29,28 @@ class EncounterItemTests(unittest.TestCase):
         self.assertEqual(len(loot['entries']), 34)
         self.assertTrue(all(definitions[e['item']['key']]['materializable'] for e in loot['entries']))
 
+    def test_exact_devil_corpse_chains_and_complete_loot_closure(self):
+        definitions = {d['identity']['key']: d for d in self.definitions()}
+        chains = [(5973,12,10000,4025),(4025,10,300000,4026),
+                  (4026,10,300000,4027),(4027,8,60000,None),
+                  (5983,10,10000,4057),(4057,10,300000,4058),
+                  (4058,10,300000,4013),(4013,10,60000,None)]
+        for item,capacity,duration,target in chains:
+            with self.subTest(item=item):
+                d = definitions[f'oteryn:item.tibia.i{item}']
+                self.assertTrue(d['materializable'])
+                self.assertEqual(d['stack_class'],'NonStackable')
+                self.assertEqual(d['semantics']['container'], {'state':'KNOWN','value':{'capacity':{'state':'KNOWN','value':capacity}}} if capacity else {'state':'NOT_APPLICABLE'})
+                temporal=d['semantics']['temporal']['value']
+                self.assertEqual(temporal['duration']['value'],duration)
+                self.assertEqual(temporal['decay_target'],{'state':'KNOWN','value':{'key':f'oteryn:item.tibia.i{target}','revision':'definition-r1'}} if target else {'state':'NOT_APPLICABLE'})
+        for creature,count in [('dragon',22),('minotaur_guard',11)]:
+            loot = next(r['definition'] for p in (encounter.ROOT/'content/loot').glob('*.json')
+                        for r in json.loads(p.read_bytes()).get('records',[])
+                        if r.get('definition',{}).get('identity',{}).get('key') == f'oteryn:loot.creature.{creature}')
+            self.assertEqual(len(loot['entries']),count)
+            self.assertTrue(all(definitions[e['item']['key']]['materializable'] for e in loot['entries']))
+
     def test_canonical_projection_is_idempotent_and_preserves_unrelated_items(self):
         definitions = self.definitions()
         before = copy.deepcopy(definitions)
