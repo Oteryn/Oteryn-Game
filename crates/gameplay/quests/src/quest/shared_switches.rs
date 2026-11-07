@@ -1,4 +1,5 @@
 //! Source-keyed shared World switch leases; no invented personal Quest progress.
+pub mod native;
 use super::world_callbacks::{
     Callback, CallbackEffectSet, MagicEffect, Position, Selector, Trigger,
 };

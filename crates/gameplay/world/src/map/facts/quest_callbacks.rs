@@ -573,6 +573,35 @@ impl BundleFacts {
             })
     }
 
+    /// Match an exact authored counterpart only while the retained base object is bare.
+    /// Sparse placements and plain palette entries share the same original appearance proof.
+    pub fn quest_callback_native_object(&self, key: u64, id: u32, appearance: u16) -> bool {
+        let Some((pos, _)) = view::placement_of(key) else {
+            return false;
+        };
+        if self.house_tile(pos) || self.base_hidden(key) {
+            return false;
+        }
+        let index = match self.placements.binary_search_by_key(&key, |(k, _)| *k) {
+            Ok(at) => {
+                let placement = &self.placements[at].1;
+                if placement.attrs != Attrs::default() || placement.dropped {
+                    return false;
+                }
+                placement.palette
+            }
+            Err(_) => {
+                let Some(index) = self.unique_index(id) else {
+                    return false;
+                };
+                index
+            }
+        };
+        self.palette
+            .get(index as usize)
+            .is_some_and(|p| p.facts.appearance_id == appearance)
+    }
+
     /// Match a source-selected native portal against its original bound attributes.
     /// A legacy unique/action binding or a hidden placement cannot become this alias.
     pub fn quest_callback_native_teleport(

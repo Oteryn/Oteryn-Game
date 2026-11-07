@@ -29,8 +29,11 @@ fn scenario_case(
     let carried_step = name.starts_with("l6-tomb-carried-") || tomb_native;
     let mead = name == "l6/waterskin-of-mead";
     let spirit = name == "qengine-rewards-questpc4-spirit";
-    let native_crop = small_ruby || mead || spirit || tomb_native;
-    let start = if tomb_native {
+    let native_switch = name.starts_with("l6-tomb-switch-native-");
+    let native_crop = small_ruby || mead || spirit || tomb_native || native_switch;
+    let start = if native_switch {
+        super::super::l6_shared_switch_native::start(name)?
+    } else if tomb_native {
         Position {
             x: trigger.x,
             y: trigger.y - 1,
@@ -254,7 +257,14 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if tomb_native {
+        let world = if native_switch {
+            super::super::l6_shared_switch_native::world(
+                generation
+                    .native_gameplay()
+                    .ok_or("native switch policies")?,
+                name,
+            )?
+        } else if tomb_native {
             super::super::l6_tomb_native::world(
                 generation.native_gameplay().ok_or("native Tomb policies")?,
                 callback.selector.unique.ok_or("source UID")?,
@@ -583,6 +593,15 @@ fn scenario_case(
                 &h,
                 deps.actor,
                 fence,
+                trigger,
+                name,
+            )
+            .await?;
+        } else if native_switch {
+            super::super::l6_shared_switch_native::exercise(
+                &owner,
+                &mut admitted,
+                &h,
                 trigger,
                 name,
             )

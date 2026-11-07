@@ -3227,7 +3227,7 @@
       {
         "canonical": "oteryn:quest.the_ancient_tombs_quest",
         "status": "IN_PROGRESS",
-        "blocker": "Native tomb assembly/switch/gate counterparts and remaining conditional room/NPC/finale composition are active obligations; do not redo qualified generic assembly, physical lifetimes, seven native carried routes, shared lease activation/count gates, physical switch restoration or original-actor personal expiry.",
+        "blocker": "Native tomb assembly/gate counterparts, full native route composition and remaining conditional room/NPC/finale behavior are active obligations; do not redo qualified generic assembly/lifetimes, seven native carried routes, shared lease activation/count gates, physical/personal expiry or exact native shared-switch USE counterparts.",
         "partial_qualification": {
           "scope": "Five successful instrument USE transitions, position/appearance binding independently checked against native B3; literal STEP approach, replay and fail-closed out-of-order/completed-attempt tests. Not tomb collision, source wrong-instrument damage/reset, doors, drops, assembly or whole quest.",
           "test": "l6_ancient_tombs_instruments_real_use_persists_order_and_replay",
@@ -3452,7 +3452,7 @@
     },
     "scope_note": "All LANE-L6 input source blockers remain obligations. Differences from selected recipe approximations are not authority to drop a blocker. Historical qengine ownership language is not treated as a reason to defer work now owned by L6.",
     "publication_branch": "claude/happy-davinci-ijz3wy-questpc4",
-    "latest_batch": "cloud-shared-switch-treasure-15",
+    "latest_batch": "cloud-native-shared-switches-16",
     "mechanisms": {
       "reusable_tools_and_atomic_counters": {
         "status": "QUALIFIED",
@@ -4127,6 +4127,75 @@
           "migration": "1072 unique; published migrations untouched",
           "diff": "PASS staged and unstaged",
           "generated": "No content/native/world inputs changed; existing a36 pin unchanged"
+        }
+      },
+      "native_shared_switch_use_counterparts": {
+        "status": "QUALIFIED",
+        "classification": "OTERYN_AUTHORED_COUNTERPART / SELECTED_RECIPE_ONLY; not recovered legacy registrations",
+        "scope": "Exact native USE counterparts8/11/6, retained source thresholds8/7/5;25native tile/ordinal witnesses,3unrelated controls, replay and no early personal grant. Not native gate/traversal or whole-quest qualification.",
+        "postgres": {
+          "status": "GREEN",
+          "version": "18.6",
+          "cases": 8,
+          "native_result": "6passed/0failed145.85s",
+          "groups": [
+            {
+              "log": "/tmp/questpc4-native-switch-final-green.log",
+              "cases": [
+                {
+                  "marker": "l6-tomb-switch-native-control-12122",
+                  "duration_seconds": 79.40282251
+                },
+                {
+                  "marker": "l6-tomb-switch-native-control-12121",
+                  "duration_seconds": 79.436375821
+                },
+                {
+                  "marker": "l6-tomb-switch-native-present-12121",
+                  "duration_seconds": 79.84569344
+                },
+                {
+                  "marker": "l6-tomb-switch-native-control-12123",
+                  "duration_seconds": 88.21086888
+                },
+                {
+                  "marker": "l6-tomb-switch-native-present-12122",
+                  "duration_seconds": 66.405102932
+                },
+                {
+                  "marker": "l6-tomb-switch-native-present-12123",
+                  "duration_seconds": 66.40881602
+                }
+              ]
+            },
+            {
+              "log": "/tmp/questpc4-native-switch-legacy-regression.log",
+              "cases": [
+                {
+                  "marker": "l6-tomb-switch-12121",
+                  "duration_seconds": 75.152120677
+                }
+              ]
+            },
+            {
+              "log": "/tmp/questpc4-native-switch-personal-regression.log",
+              "cases": [
+                {
+                  "marker": "l6-tomb-switch-treasure-expired-12121",
+                  "duration_seconds": 53.990745399
+                }
+              ]
+            }
+          ]
+        },
+        "checks": {
+          "fmt": "PASS all and explicit mounted leaves",
+          "check": "PASS quests/world/dispatch all targets/features; final fixture-only repair1m52s",
+          "clippy": "PASS same3crates all targets/features -D warnings2m03s; no lint exemptions",
+          "unit": "1passed/0failed unique scoped native counterpart ownership (pure unit, not PG proof)",
+          "diff_duplicates": "PASS staged/unstaged diffs and migration versions",
+          "generated": "No world/native/content generated inputs changed; existing a36 pin unchanged",
+          "scope_of_final_repairs": "Only invalid fixture error propagation and named tuple types; production, valid native coordinates and allPGassertions unchanged"
         }
       }
     },
@@ -5476,9 +5545,9 @@
       }
     ],
     "last_pushed_batch": {
-      "head": "26fbae136d75ecaf42f04fae97072a4b36188819",
+      "head": "3617e5ad74e7cd9f5d4af2e34d45e3a30693e704",
       "status": "PUSHED",
-      "scope": "Physical switch expiry and preserved incoming physical admission/input bindings; merged PG12/units14/5crate fmt check clippy/pin green"
+      "scope": "Original-actor personal timer consequences; PG8/unit5/fmt/check/clippy/1072 green"
     },
     "native_portal_batch_10": {
       "status": "GREEN",
@@ -5873,6 +5942,131 @@
         "migration": "1072 unique; published migrations untouched",
         "diff": "PASS staged and unstaged",
         "generated": "No content/native/world inputs changed; existing a36 pin unchanged"
+      }
+    },
+    "native_switch_batch_16": {
+      "status": "GREEN",
+      "stage": "All focused gates green; commit and exact fresh-fetch fast-forward push immediately",
+      "log": "/tmp/questpc4-native-switch-real-red.log",
+      "source_actions": [
+        12121,
+        12122,
+        12123
+      ],
+      "selected_native_levers": [
+        8,
+        11,
+        6
+      ],
+      "source_thresholds_unchanged": [
+        8,
+        7,
+        5
+      ],
+      "classification": "OTERYN_AUTHORED_COUNTERPART / SELECTED_RECIPE_ONLY; not recovered legacy registrations",
+      "controls": [
+        [
+          33125,
+          32790,
+          14
+        ],
+        [
+          32821,
+          32341,
+          13
+        ],
+        [
+          32843,
+          32649,
+          11
+        ]
+      ],
+      "source_evidence": "Frozen Crystal201189 callback rules, retained B3 exact positions/ordinals/absence of attributes and region SHA witnesses",
+      "scope": "Native USE bindings and exact unrelated-appearance refusal only; gates/native route composition remain active consecutive work",
+      "no_whole_qualification": true,
+      "red": {
+        "postgres": "18.6",
+        "marker": "POSTGRES_DATABASE_READY l6_native_switch",
+        "duration_seconds": 55.78,
+        "observed": "Retained native Thalas lever returnsNothingToUse instead of committing source lease",
+        "log": "/tmp/questpc4-native-switch-final-red.log"
+      },
+      "green_log": "/tmp/questpc4-native-switch-final-green.log",
+      "implementation": [
+        "25exact native position/top-level ordinal/original2772 counterparts, source thresholds unchanged8/7/5",
+        "Bare original object proof handles sparse placement and unique palette fallback; every authored attribute must be absent, House/hidden/dropped placements refused",
+        "Legacy selectors retained, no appearance/radius wildcard, no world map/attrs edits",
+        "Native fixtures preserve all25selected tiles and exact unrelated controls; geometry/attributes unmodified"
+      ],
+      "preflight": "Initial fixture trait/ordinal/match preflights and non-static Rust array lifetime corrected; none counted as PG RED.",
+      "postgres": {
+        "status": "GREEN",
+        "version": "18.6",
+        "cases": 8,
+        "native_result": "6passed/0failed145.85s",
+        "groups": [
+          {
+            "log": "/tmp/questpc4-native-switch-final-green.log",
+            "cases": [
+              {
+                "marker": "l6-tomb-switch-native-control-12122",
+                "duration_seconds": 79.40282251
+              },
+              {
+                "marker": "l6-tomb-switch-native-control-12121",
+                "duration_seconds": 79.436375821
+              },
+              {
+                "marker": "l6-tomb-switch-native-present-12121",
+                "duration_seconds": 79.84569344
+              },
+              {
+                "marker": "l6-tomb-switch-native-control-12123",
+                "duration_seconds": 88.21086888
+              },
+              {
+                "marker": "l6-tomb-switch-native-present-12122",
+                "duration_seconds": 66.405102932
+              },
+              {
+                "marker": "l6-tomb-switch-native-present-12123",
+                "duration_seconds": 66.40881602
+              }
+            ]
+          },
+          {
+            "log": "/tmp/questpc4-native-switch-legacy-regression.log",
+            "cases": [
+              {
+                "marker": "l6-tomb-switch-12121",
+                "duration_seconds": 75.152120677
+              }
+            ]
+          },
+          {
+            "log": "/tmp/questpc4-native-switch-personal-regression.log",
+            "cases": [
+              {
+                "marker": "l6-tomb-switch-treasure-expired-12121",
+                "duration_seconds": 53.990745399
+              }
+            ]
+          }
+        ]
+      },
+      "final_fixture_lints": {
+        "initial": "Three invalid fixture lookup branches used forbidden panic; replaced with Err propagation, no assertions removed",
+        "next": "Named complex test-only tuple return types instead of suppressing Clippy",
+        "scope": "No production or valid-input behavior changes; retained8 real PG proof. Invalid fixture specifications fail closed more directly."
+      },
+      "checks": {
+        "fmt": "PASS all and explicit mounted leaves",
+        "check": "PASS quests/world/dispatch all targets/features; final fixture-only repair1m52s",
+        "clippy": "PASS same3crates all targets/features -D warnings2m03s; no lint exemptions",
+        "unit": "1passed/0failed unique scoped native counterpart ownership (pure unit, not PG proof)",
+        "diff_duplicates": "PASS staged/unstaged diffs and migration versions",
+        "generated": "No world/native/content generated inputs changed; existing a36 pin unchanged",
+        "scope_of_final_repairs": "Only invalid fixture error propagation and named tuple types; production, valid native coordinates and allPGassertions unchanged"
       }
     }
   },
