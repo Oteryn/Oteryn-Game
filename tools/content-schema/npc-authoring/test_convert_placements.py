@@ -56,6 +56,34 @@ class ConvertPlacementsTest(unittest.TestCase):
                 checked.add(key.removeprefix('oteryn:npc.'))
         self.assertEqual(checked, names)
 
+    def test_three_endpoints_preserve_original_sources_and_stationary_policy(self):
+        rows = {r['npc']: r for r in json.loads((cp.HERE / 'samples/npcfix-retail-placements.json').read_text())}
+        scope = json.loads(cp.SCOPE.read_text())
+        authored = {r['npc']: r for r in scope['retail_placements']}
+        for key in ('oteryn:npc.a_wandering_soul', 'oteryn:npc.goldro', 'oteryn:npc.doctor_marrow'):
+            self.assertEqual(rows[key], authored[key])
+        wandering = rows['oteryn:npc.a_wandering_soul']
+        self.assertEqual(wandering['position'], {'x': 32915, 'y': 31489, 'z': 7})
+        self.assertEqual(wandering['captured_spawn_anchor'], {'x': 32914, 'y': 31490, 'z': 7})
+        self.assertEqual(wandering['walk_radius'], 2)
+        self.assertEqual(wandering['native_source']['sha256'], hashlib.sha256(cp.CANDIDATES.read_bytes()).hexdigest())
+        goldro = rows['oteryn:npc.goldro']
+        self.assertEqual(goldro['position'], {'x': 34055, 'y': 32504, 'z': 7})
+        self.assertEqual(goldro['captured_spawn_anchor'], {'x': 34055, 'y': 32503, 'z': 7})
+        self.assertEqual(goldro['audited_roaming_position'], goldro['captured_spawn_anchor'])
+        self.assertEqual(goldro['walk_radius'], 1)
+        self.assertEqual(goldro['native_source']['donor_movement']['walk_radius'], 1)
+        self.assertEqual(goldro['native_source']['donor_movement']['sha256'], '394da3c41a2e81fb8b2cb5ee637a95e4bb50393de1069a338452a1ab89ab15f8')
+        doctor = rows['oteryn:npc.doctor_marrow']
+        self.assertEqual(doctor['position'], {'x': 34009, 'y': 32643, 'z': 6})
+        self.assertNotIn('captured_spawn_anchor', doctor)
+        self.assertNotIn('held_reason', doctor)
+        resolution = doctor['position_conflict_resolution']
+        self.assertEqual(resolution['stationary_donor']['walk_radius'], 0)
+        self.assertEqual(resolution['policy'], 'STRICTLY_ADMITTED_PRIMARY_AUDITED_WIKI_CELL')
+        self.assertEqual({(r['cell']['x'], r['cell']['y'], r['cell']['z']) for r in resolution['previous_observations']}, {(34009, 32643, 6), (33992, 32662, 6), (34010, 32641, 6)})
+        self.assertFalse(any(r['npc'] == doctor['npc'] for r in scope['position_conflicts']))
+
     def test_npcfix_retail_population_has_each_audited_cell(self):
         expected = json.loads((cp.HERE / "samples/npcfix-retail-placements.json").read_text())
         actual = {}
