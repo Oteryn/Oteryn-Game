@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "scope": "Exact helmet source keyed access and missing native locked-door admission; whole Demon/Devil routes remain active.",
+  "reused_from": "8aacc18bb0700ff914ea1ff34b3bb8afb7808b76",
+  "red": {
+    "test_seconds": 51.77,
+    "postgres_server_version": "18.6",
+    "error": "ItemReference at the source6010 door"
+  },
+  "second_red": {
+    "test_seconds": 51.49,
+    "error": "source door action None instead of Some(6010)"
+  },
+  "green": {
+    "filter": "questpc5_helmet_source_key_doors_use_replay_and_relog",
+    "test_seconds": 72.7,
+    "postgres_server_version": "18.6",
+    "source_cases": [
+      {
+        "position": [
+          33211,
+          31634,
+          -13
+        ],
+        "key": 6010,
+        "door": 5097
+      },
+      {
+        "position": [
+          32462,
+          32151,
+          -15
+        ],
+        "key": 3610,
+        "door": 1628
+      },
+      {
+        "position": [
+          32462,
+          32153,
+          -14
+        ],
+        "key": 3610,
+        "door": 1631
+      },
+      {
+        "position": [
+          32592,
+          32102,
+          -14
+        ],
+        "key": 3667,
+        "door": 5106
+      }
+    ],
+    "completion_markers": [
+      "POSTGRES_CASE_COMPLETED source_key_door_Some((33211, 31634, -13, 6010)) wire_commands=6 transitions=3 duration=1.456811807s",
+      "POSTGRES_CASE_COMPLETED source_key_door_Some((32462, 32151, -15, 3610)) wire_commands=6 transitions=3 duration=1.384553298s",
+      "POSTGRES_CASE_COMPLETED source_key_door_Some((32462, 32153, -14, 3610)) wire_commands=6 transitions=3 duration=1.362263661s",
+      "POSTGRES_CASE_COMPLETED source_key_door_Some((32592, 32102, -14, 3667)) wire_commands=6 transitions=3 duration=1.407059656s"
+    ],
+    "wire_commands_per_case": 6,
+    "transitions_per_case": 3,
+    "wrong_key_refusal_replay_custody_reconnect_retained": true,
+    "immutable_content_activation_shared_only": true
+  },
+  "admission": {
+    "new_profiles": [
+      1631,
+      5097,
+      5106
+    ],
+    "previous_five_profiles_unchanged": true,
+    "source": "opentibiabr/canary@99902524e052f37574194466c2949c576e4ab269",
+    "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+    "appearances_sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1",
+    "profile_unit_cases": 2,
+    "source_binding_unit_sources": 6
+  },
+  "source_bindings": {
+    "producer": "tools/content-schema/world-authoring/quest_key_door_bindings.py",
+    "runtime_consumer": "crates/gameplay/world/src/map/facts/source_key_door_bindings.rs",
+    "guard": "Exact position, appearance, unambiguous locked entry, no House and no conflicting native action; compiler-owned ordinary startup selectors are untouched.",
+    "multi_door_key_3610_complete": true,
+    "legacy_3940_3980_preserved": true
+  },
+  "world_digest": "fbd743039f2bcc768cb8f856b9a34175c13f9360a056c8794f9edf989383b9df",
+  "logs": {
+    "postgres": {
+      "path": "/tmp/questpc5-helmet-keys-green3.log",
+      "sha256": "26c4db66c4289d77d78f2e4275b9b26e73d71cbaedb11c9e6d9fdf5709599188"
+    },
+    "unit": {
+      "path": "/tmp/questpc5-helmet-keys-binding-unit.log",
+      "sha256": "782c75d8a9203c291f4b760b89135716c8712b5caaa43e841c628b9900322f41"
+    },
+    "clippy": {
+      "path": "/tmp/questpc5-helmet-keys-clippy.log",
+      "sha256": "6e6a66934c765555391be32f3063468609bc8064e7050ca0a543cb654ae14429"
+    },
+    "pins": {
+      "path": "/tmp/questpc5-helmet-keys-pins.log",
+      "sha256": "9e13fcb4b5216fa0de2c9fcce716de39da7efbd67061c5eb220d5ed29d45c265"
+    },
+    "pin_check": {
+      "path": "/tmp/questpc5-helmet-keys-pin-check.log",
+      "sha256": "aa188088b1712d0edf7e21585c14b467511f2b097f090c8743720e4c9afdaab4"
+    }
+  }
+}

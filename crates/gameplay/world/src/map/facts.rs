@@ -35,6 +35,7 @@ use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
 mod quest_callbacks;
+mod source_key_door_bindings;
 use quest_callbacks::CallbackStates;
 pub use quest_callbacks::QuestCallbackProjection;
 
@@ -218,6 +219,36 @@ impl BundleFacts {
                     .palette
                     .get(item.palette as usize)
                     .map_or(PaletteDoor::No, |entry| entry.door);
+                // Reuse the pinned key-door supplement at exact, unambiguous locked
+                // doors. Compiler-owned quest startup selectors retain their own owner.
+                let projected = if matches!(door, PaletteDoor::Pair { key_door: true, .. })
+                    && item.attrs.action.is_none()
+                    && tile.house == 0
+                    && tile
+                        .items
+                        .iter()
+                        .filter(|other| other.depth == 0 && other.palette == item.palette)
+                        .count()
+                        == 1
+                {
+                    let mut attrs = item.attrs.clone();
+                    if let Some(entry) = self.palette.get(item.palette as usize) {
+                        source_key_door_bindings::apply(
+                            pos,
+                            entry.facts.appearance_id,
+                            tile.house,
+                            &mut attrs,
+                        );
+                    }
+                    attrs.action.map(|_| {
+                        let mut copy = item.clone();
+                        copy.attrs = attrs;
+                        copy
+                    })
+                } else {
+                    None
+                };
+                let item = projected.as_ref().unwrap_or(item);
                 let required_level = self.palette.get(item.palette as usize).and_then(|entry| {
                     super::door_registry::level_door_of(u32::from(entry.facts.appearance_id))
                         .and(item.attrs.action)
