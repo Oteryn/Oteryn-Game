@@ -625,6 +625,12 @@
         "The issued container transforms in place and collection removes the target",
         "The next NPC action sees committed world progress immediately"
       ]
+    },
+    {
+      "name": "durable equipment predicates and authoritative callback clock windows",
+      "status": "QUALIFIED",
+      "postgres_test": "questl2_delivery_batch_troll_sabotage_full_journey",
+      "evidence": "Troll Sabotage full native journey proves held-only and expired-clock refusals, native hotkey equipment and freshly stamped admission. Canonical owner track declarations reused without widening."
     }
   ],
   "entries": [
@@ -791,21 +797,24 @@
           "postgres_version": "18.6",
           "red": {
             "duration_seconds": 2.923743737,
-            "result": "hand-in binding absent"
+            "result": "source hand-in binding absent",
+            "log": "/tmp/l2-delivery-red2.log"
           },
           "green": {
             "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-cartography",
-            "duration_seconds": 81.210444598,
+            "duration_seconds": 82.228308564,
             "passed": 1,
             "failed": 0
           },
           "proves": [
-            "NPC issues physical map",
-            "All three exact landmark native USE commands record distinct one-time surveys",
-            "Incomplete finish and duplicate surveys refuse",
-            "Final NPC consumes map and grants achievement"
+            "Actual Rotem issues one physical survey map",
+            "Incomplete survey cannot finish",
+            "Native USE at all three exact landmark coordinates records distinct one-time marks",
+            "Survey marks retain the carried map and repeated marks refuse",
+            "Final NPC hand-in consumes the map and grants Cartography 101 achievement"
           ],
-          "sources": "CONTRACT-NOTES.md and immutable recipe/landmark/NPC-shell SHA256 witnesses in authoring"
+          "sources": "CONTRACT-NOTES.md: L2 delivery batch; immutable file:line and SHA256 witnesses in shared-reward-callbacks.json and world-callbacks.json",
+          "contract_notes": "Explicit restoration choices, fixture travel compression and durable equipment semantics documented in CONTRACT-NOTES.md."
         }
       ]
     },
@@ -1299,24 +1308,24 @@
           "postgres_version": "18.6",
           "red": {
             "duration_seconds": 3.086206271,
-            "result": "complete source hand-in binding absent"
+            "result": "source hand-in binding absent",
+            "log": "/tmp/l2-delivery-red2.log"
           },
           "green": {
             "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-steal",
-            "duration_seconds": 77.171317588,
+            "duration_seconds": 83.330200631,
             "passed": 1,
             "failed": 0
           },
           "proves": [
-            "Actual Ahmet mission issuance",
-            "Native chest refuses with all 20 backpack slots occupied and no bag or progress change",
-            "Moving one non-stackable filler to a nested backpack allows exactly one quest bag",
-            "Final hand-in refuses atomically when the consumed input frees only one of two required output slots",
-            "Freeing another slot permits exact bag consumption and 100 gold plus 100 brown mushrooms",
-            "Completed native chest refuses another bag"
+            "Actual Ahmet mission issuance and native chest USE",
+            "Full backpack refuses chest output without advancing stage",
+            "Two-output NPC reward refuses atomically when only the input slot becomes free",
+            "Exact stolen bag consumed; 100 gold and 100 brown mushrooms granted together",
+            "Completed chest refuses another bag"
           ],
-          "sources": "CONTRACT-NOTES.md: Ahmet118-159 SHA7141a6ed014f4ca77031a6c83f41f7ff9603bf35a645004be53754e7bfa62797; actions_steal_from_thieves.lua4-16 SHAcf029fb4b5f0d9a8adb119c1cae81da2eef80a6d9f768e25e3af28cd8dcbc9ec",
-          "postgres_log": "/tmp/l2-delivery-green7.log"
+          "sources": "CONTRACT-NOTES.md: L2 delivery batch; immutable file:line and SHA256 witnesses in shared-reward-callbacks.json and world-callbacks.json",
+          "contract_notes": "Explicit restoration choices, fixture travel compression and durable equipment semantics documented in CONTRACT-NOTES.md."
         }
       ]
     },
@@ -1434,8 +1443,34 @@
     },
     {
       "title": "Troll Sabotage",
-      "status": "PENDING",
-      "evidence": []
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "postgres_test": "questl2_delivery_batch_troll_sabotage_full_journey",
+          "postgres_version": "18.6",
+          "red": {
+            "duration_seconds": 3.165587615,
+            "result": "source hand-in binding absent",
+            "log": "/tmp/l2-delivery-red2.log"
+          },
+          "green": {
+            "marker": "POSTGRES_CASE_COMPLETED qengine-rewards-l2-troll",
+            "duration_seconds": 126.204467108,
+            "passed": 1,
+            "failed": 0
+          },
+          "proves": [
+            "Actual Jerom mission and Chief Grarkharok necklace issuance",
+            "Carried but unworn diving helmet refuses the source water gate",
+            "Native hotkey equips durable head and feet slots",
+            "Expired authoritative jump clock refuses; freshly stamped clock admits",
+            "Native underwater vortex and source forward/backward gates return the player",
+            "Jerom consumes necklace and grants elvenhair rope"
+          ],
+          "sources": "CONTRACT-NOTES.md: L2 delivery batch; immutable file:line and SHA256 witnesses in shared-reward-callbacks.json and world-callbacks.json",
+          "contract_notes": "Explicit restoration choices, fixture travel compression and durable equipment semantics documented in CONTRACT-NOTES.md."
+        }
+      ]
     },
     {
       "title": "Unnatural Selection",
@@ -2532,7 +2567,9 @@
       "lane_authoring_log": "/tmp/l2-equipment-authoring.log",
       "shared_authoring_log": "/tmp/l2-equipment-qengine-tests.log",
       "steal_full_journey_passed": true,
-      "remaining": "Troll full journey running; final clippy and world pin verification pending."
+      "remaining": "Resolved: all three full delivery journeys passed. Final registry regressions and pin check continue.",
+      "resolved": true,
+      "superseded_by": "delivery_batch"
     },
     "migration_registry": {
       "coordinator_binding": "2026-11-07; questl2 owns1210-1219; QBASE1200-1209; QENGINE2 owns0999-1006 unchanged",
@@ -2562,13 +2599,39 @@
       "qbase_renames": "Byte-identical contents; only filenames and references change.",
       "l2_extensions": "1210 preserves canonical value-only receipts and raises the atomic bound;1211 extends exact paid repeats;1216 preserves16-track and exact-set_if participant proofs.",
       "focused_postgres_log": "/tmp/l2-registry-probe-green.log",
-      "full_lane_postgres_after_renumber": "pending",
+      "full_lane_postgres_after_renumber": {
+        "delivery_cases_passed": 3,
+        "delivery_log": "/tmp/l2-registry-delivery-pg.log",
+        "paid_repeat_passed": true,
+        "paid_repeat_duration_seconds": 96.816094661,
+        "paid_repeat_log": "/tmp/l2-registry-paid-pg.log",
+        "remaining_running": [
+          "atomic eleven-track regression",
+          "counter/timer/foreign owner",
+          "selected carried USE",
+          "token repeat"
+        ]
+      },
       "schema_probe": {
         "marker": "POSTGRES_CASE_COMPLETED l2-migration-registry",
         "duration_seconds": 2.88443,
         "server_version": "18.6",
         "result": "passed"
       }
+    },
+    "delivery_batch": {
+      "postgres_log": "/tmp/l2-registry-delivery-pg.log",
+      "postgres_passed": 3,
+      "authoring_passed": 50,
+      "domain_passed": 21,
+      "clippy_log": "/tmp/l2-registry-clippy.log",
+      "clippy_all_targets": true,
+      "clippy_deny_warnings": true,
+      "pin_refresh": "/tmp/l2-registry-pin-refresh.log",
+      "pin_check": "/tmp/l2-registry-pin-check.log",
+      "clippy_exit_code": 0,
+      "formatting_exit_code": 0,
+      "pin_check_pending": true
     }
   },
   "cross_lane_inspection": {
@@ -2656,15 +2719,10 @@
   },
   "next_batch": {
     "entries": [
-      "Barbarian Test",
-      "Unnatural Selection",
-      "Tomes of Knowledge",
       "Kilmaresh",
-      "Krailos",
-      "The Repenters"
+      "An Uneasy Alliance",
+      "Tomes of Knowledge"
     ],
-    "rule": "Inspect and reuse published shared-engine and lane mechanisms, then source-author and prove complete fresh PostgreSQL journeys.",
-    "dependency_order": "Complete New Frontier before An Uneasy Alliance, which requires New Frontier Mission06 at least 5.",
-    "source_tracing": "Pinned Sven and Lazaran scripts extracted; shared native Unnatural Selection dance owner exists. Trace and compose complete NPC/world journeys without seeding entry progress."
+    "source_tracing": "Pinned Yonan, Curos, Zalamon and Cael sources extracted; reuse atomic multi-item hand-ins, mission issuance and incremental entitlement tracks."
   }
 }
