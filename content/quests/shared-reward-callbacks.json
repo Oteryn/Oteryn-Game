@@ -1807,6 +1807,365 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc3/threatened-final/maelyrra-blossom-bag",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.maelyrra",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/charged_moon_mirror",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/charged_starlight_vial",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/charged_sun_catcher",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i25780",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, mortal being! The fae will be forever grateful. Take this blossom bag as a little thank-you gift. Such blossoms grow on our trees just once in a decade, so they are quite rare."
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/npc/maelyrra.lua:157-166 git-blob=9a164f275775f456b81f9736a8153f896c7df08b sha256=16acd67b566785af18a6a5cfce6d03a7a41a9f66717596774a3c309eca0eea88"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/threatened-final/maelyrra-held-lights",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.maelyrra",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission02/nightmare_intruders",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "That's wonderful! Now you will be able to repair the magical barrier. You have to strengthen the arcane sources that power this mystic shield. There are three different arcane sources: the moon sculptures, the dream bird trees and the sun mosaics. ...",
+        "There are five of each of them and you have to find them all to repair the barrier. Spread the gathered moon rays on the moon sculptures. Pour out the starlight over the dream bird trees and let the sunlight shine on the mosaics. ...",
+        "If you charge all fifteen arcane sources with the respective light, Feyrist's protection will be ensured again."
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/npc/maelyrra.lua:143-156 git-blob=9a164f275775f456b81f9736a8153f896c7df08b sha256=16acd67b566785af18a6a5cfce6d03a7a41a9f66717596774a3c309eca0eea88"
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i25734",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i25732",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i25730",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/threatened-final/taegen-flower",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.taegen",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission03_1",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission03/unlikely_couple",
+          "minimum": -1,
+          "maximum": 4,
+          "set": 4,
+          "preserve": false
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i25782",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "We are so happy. Now Aurita can take a walk on the beach. But I still can't visit her secret underwater grotto. To achieve this, we need something else: a very rare plant called raven herb. ...",
+        "If eaten it allows an air breathing creature to breathe underwater for a while. Please find this plant for me. But know that you'll only find it at night. It resembles a common fern but its leaves are of a lighter green."
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/npc/taegen.lua:121-128 git-blob=bf435e06539adfba12820ba042310d76da4c630e sha256=cd1bd27585798ae5a732a30c5a6f96f4ec6e8400ad4e2854d1dda945b040e74f"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/threatened-final/taegen-herb",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.taegen",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission03_1",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4,
+          "preserve": false
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5953",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you, friend! Now I can visit Aurita in her underwater grotto!"
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/npc/taegen.lua:158-169 git-blob=bf435e06539adfba12820ba042310d76da4c630e sha256=cd1bd27585798ae5a732a30c5a6f96f4ec6e8400ad4e2854d1dda945b040e74f"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/threatened-maps/tooth-collection",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.tooth_fairy",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/teeth_collection",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/tooth_fairy",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i10196",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22649",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i9685",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i5893",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i10275",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i22052",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3026",
+        "count": 6
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/toothfairy_assistant",
+      "reply": [
+        "Oh, I see! You really found all the teeth for me! Thank you, human being! Please take this in return."
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/npc/tooth_fairy.lua:119-130 git-blob=787a128d13ad4f8122cff5bfb0ee105a15c5af35 sha256=b34d60fc82f372b04549482a8fde40c14f8f20a067309e0e17ab152a2633e250"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/threatened-maps/tooth-gifts",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.tooth_fairy",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/tooth_fairy",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i25302",
+        "count": 3
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you very much, human being! You have to find three children: Quero's daughter in Thais, Allen's son in Venore and Rowenna's daughter in Carlin. Go to their bedrooms and find their milk teeth. ...",
+        "Usually they put them on their bed stands. Then you have to put the gifts on their beds. Please take these presents and go to Thais, Carlin and Venore. Come back with the milk teeth."
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/npc/tooth_fairy.lua:69-103 git-blob=787a128d13ad4f8122cff5bfb0ee105a15c5af35 sha256=b34d60fc82f372b04549482a8fde40c14f8f20a067309e0e17ab152a2633e250"
+      ],
+      "minimum_level": 30
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/threatened-maps/tooth-map",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.tooth_fairy",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/tooth_fairy",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2,
+          "preserve": false
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i25303",
+          "count": 3
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i24943",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You're bringing the milk teeth! Thank you, human being; you were of great assistance to me! Please take this in return. It's the part of a map. If you find the other parts, it will show you the way to a hidden fairy treasure. ...",
+        "Oh, and if you're interested, there's still another {cause} you could help me with."
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/npc/tooth_fairy.lua:69-103 git-blob=787a128d13ad4f8122cff5bfb0ee105a15c5af35 sha256=b34d60fc82f372b04549482a8fde40c14f8f20a067309e0e17ab152a2633e250"
+      ],
+      "minimum_level": 30
+    },
+    {
+      "key": "oteryn:quest-reward/questpc3/threatened-maps/tree-map",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "npc": "oteryn:npc.tired_tree",
+      "keywords": [
+        "seeds of life"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/tired_tree",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission04/tooth_fairy",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i24944",
+        "count": 1
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Oh what a beautiful story. ... *yawn* Here, take this map part. We have no need for it when we are slumbering. *yawn* Some of our siblings have the third part. They took over a couple of stones in the north of some high mountains. ...",
+        "There are ... dwarves I guess. ... Zzzzzz ..."
+      ],
+      "sources": [
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/npc/tired_tree.lua:64-87 git-blob=183eb1d049ef0f1cb0382909b6dcd1161b89bf92 sha256=a0162ecba3b89a4eb215087774bd1929fcf351e8ad62d49881f094d5431794ea"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/questpc3/threatened/aurita-vial",
       "quest": "oteryn:quest.threatened_dreams_quest",
       "npc": "oteryn:npc.aurita",

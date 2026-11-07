@@ -104,6 +104,12 @@
       "walkaway": "Safe travels."
     },
     {
+      "npc": "oteryn:npc.maelyrra",
+      "greet": "Welcome, |PLAYERNAME|. How can I help you?",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
       "npc": "oteryn:npc.norf",
       "greet": "Welcome, |PLAYERNAME|. Ask me about your pilgrimage.",
       "farewell": "Safe travels, |PLAYERNAME|.",
@@ -123,6 +129,18 @@
     },
     {
       "npc": "oteryn:npc.taegen",
+      "greet": "Welcome, |PLAYERNAME|. How can I help you?",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.tired_tree",
+      "greet": "Welcome, |PLAYERNAME|. How can I help you?",
+      "farewell": "Safe travels, |PLAYERNAME|.",
+      "walkaway": "Safe travels."
+    },
+    {
+      "npc": "oteryn:npc.tooth_fairy",
       "greet": "Welcome, |PLAYERNAME|. How can I help you?",
       "farewell": "Safe travels, |PLAYERNAME|.",
       "walkaway": "Safe travels."
