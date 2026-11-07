@@ -1,16 +1,16 @@
 {
   "scope": "Original committed 33-row questpc6 ledger after owner-mandated cross-lane exclusions. No foreign quest is qualified by this audit.",
   "counts": {
+    "SKIPPED_OTHER_LANE": 31,
     "EXCLUDED": 1,
-    "QUALIFIED": 1,
-    "SKIPPED_OTHER_LANE": 31
+    "IN_PROGRESS": 1
   },
-  "owned_remaining": 0,
+  "owned_remaining": 1,
   "owned_entries": [
     {
       "title": "Deeper Fibula Quest",
       "canonical": "oteryn:quest.deeper_fibula_quest",
-      "status": "QUALIFIED"
+      "status": "IN_PROGRESS"
     }
   ],
   "source_branches": {
@@ -76,10 +76,10 @@
   "absent_original_lane_packet": "No LANE-*.json existed at start db355fae2; this audit preserves the actual committed ledger and verifies foreign allocation against fetched packets.",
   "continuation_refresh": {
     "date": "2026-11-07",
-    "own_branch_head_checked": "2e42d08fa463eaa47045274ed5a41bd5b28a07b3",
+    "own_branch_head_checked": "9e11c4ef99aaca10828d83cec75a6ada2f70fc66",
     "verified_foreign_assignments": 31,
-    "owned_pending": 0,
-    "decision": "Preserve the committed lane packet and qualified original source contract. The nested authored Fibula supplement remains unimplemented and is not newly qualified or added to the active lane packet. Follow the owner instruction not to redo finished entries; do not duplicate the 31 verified foreign assignments.",
+    "owned_pending": 1,
+    "decision": "Keep all verified foreign ownership. Reopen the retained authored Fibula supplement under the repeated owner continuation instruction; original source qualification remains valid and is not whole-supplement completion.",
     "verification": "All 31 current canonical/title aliases matched exactly one entry in freshly fetched owner packets. Packet statuses are frozen input and are not asserted as current qualification.",
     "entries": [
       {

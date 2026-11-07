@@ -696,8 +696,8 @@
     "title": "Deeper Fibula Quest",
     "canonical": "oteryn:quest.deeper_fibula_quest",
     "definition": "content/quests/definitions/quests-00000-00099.json:1#/records/20/definition",
-    "status": "QUALIFIED",
-    "scope": "complete original SOURCE well + six reward-claim contract; separate authored supplement remains BLOCKED",
+    "status": "IN_PROGRESS",
+    "scope": "Complete original source well and six-claim contract plus the previously unfinished chosen authored supplement.",
     "reward_claims": [
       {
         "claim": "oteryn:reward-claim.kv.deeperfibula1",
@@ -737,7 +737,7 @@
       }
     ],
     "authored_supplement": {
-      "status": "BLOCKED",
+      "status": "IN_PROGRESS",
       "scope": "separate chosen Oteryn recipe, not the original source contract",
       "first_unqualified_stage": {
         "key": "s1",
@@ -748,11 +748,22 @@
           "Key 3940"
         ]
       },
-      "missing_piece": "Key3940/expertise access route and credited eight-Dragon/DragonLord personal encounter require the shared qengine encounter/access owner; the source well and six caches do not implement this chosen supplement.",
+      "missing_piece": "Active implementation: compose the paid keyed-NPC acquisition, expertise route, eight credited native cavern deaths and final completion using generic reusable owners. The two source key-door startup bindings are implemented in the current batch.",
       "evidence": [
         "content/quests/definitions/quests-00000-00099.json:1#/records/20/definition",
         ".questpc6/NOTE-coordination.md:16"
-      ]
+      ],
+      "remaining_work": [
+        "Reuse qengine2 native fee participant; support exact keyed NPC rewards and repeated paid source key acquisition.",
+        "Prove the expertise route and earned Key3980 acquisition alongside the restored exact keyed access.",
+        "Implement reusable one-shot participant-bound kill goals on the existing lethal queue, including pre-activation refusal and replay.",
+        "Compose the eight-death goal and terminal source reward path into authored supplement completion with PostgreSQL proof."
+      ],
+      "keyed_access": {
+        "status": "QUALIFIED_MECHANISM",
+        "evidence": "cloud-fibula-keys-verification.json",
+        "scope": "Exact source key3940/3980 doors only; NPC acquisition, expertise and native-kill completion remain active work."
+      }
     },
     "qualification": {
       "test": "questpc6_source_deeper_fibula_well_and_complete_reward_inventory",
@@ -768,13 +779,20 @@
       "repository_checks": "5 passed,53.50s",
       "scope": "Shared repository gate only; inherited quest qualification unchanged."
     },
-    "continuation_scope_review": {
+    "source_contract_status": "QUALIFIED",
+    "historical_continuation_scope_review": {
       "date": "2026-11-07",
       "head_checked": "2e42d08fa463eaa47045274ed5a41bd5b28a07b3",
       "decision": "Retain the original source qualification and current lane allocation; no new qualification of the separate authored supplement.",
       "scope_authority": "LANE-QUESTPC6.json /entries/0 and owner instruction: do not redo finished work.",
       "checked_contract": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc6_access.rs:429",
       "limitation": "The nested authored_supplement remains BLOCKED. No implementation or PostgreSQL proof for the chosen key/expertise/eight-dragon storyline is claimed by this metadata checkpoint."
+    },
+    "continuation_scope_decision": {
+      "decision": "The repeated owner continuation instruction requires finishing the nested authored obligation. Retain source qualification as evidence, but do not treat it as completion of the authored supplement.",
+      "basis": "Owner continuation instruction and the explicit authored_supplement obligation retained in this ledger.",
+      "source_contract_unchanged": true,
+      "runtime_evidence": "cloud-fibula-keys-verification.json"
     }
   },
   {

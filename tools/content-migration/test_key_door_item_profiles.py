@@ -13,7 +13,8 @@ class KeyDoorProfileTests(unittest.TestCase):
         rows = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())['records']
         profiles = {r['production_definition']['production_key']: r for r in rows}
         for item, kind, solid in [(1628, 'DOOR', True), (1629, 'DOOR', True),
-                                  (1630, 'DOOR', False), (1646, 'DOOR', True),
+                                  (1630, 'DOOR', False), (1631, 'DOOR', True),
+                                  (1632, 'DOOR', True), (1633, 'DOOR', False), (1646, 'DOOR', True),
                                   (1647, 'DOOR', False), (2967, 'KEY', False),
                                   (2968, 'KEY', False)]:
             with self.subTest(item=item):

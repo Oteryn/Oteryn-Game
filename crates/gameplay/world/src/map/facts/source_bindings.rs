@@ -18,10 +18,14 @@ struct Binding {
 pub(super) fn apply(position: TilePos, appearance: u16, house: u32, attrs: &mut Attrs) {
     static CAPTURE: OnceLock<Option<Capture>> = OnceLock::new();
     let Some(capture) = CAPTURE.get_or_init(|| {
-        serde_json::from_str(include_str!(
+        let mut capture: Capture = serde_json::from_str(include_str!(
             "../../../../../../tools/content-schema/world-authoring/samples/quest-access-bindings.json"
-        ))
-        .ok()
+        )).ok()?;
+        let key_doors: Capture = serde_json::from_str(include_str!(
+            "../../../../../../tools/content-schema/world-authoring/samples/quest-key-door-bindings.json"
+        )).ok()?;
+        capture.bindings.extend(key_doors.bindings);
+        Some(capture)
     }) else {
         return;
     };
@@ -51,6 +55,32 @@ pub(super) fn apply(position: TilePos, appearance: u16, house: u32, attrs: &mut 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn source_key_doors_bind_only_the_exact_locked_native_item() {
+        for (x, y, floor, action) in [(32190, 32432, -8, 3940), (32277, 32420, -10, 3980)] {
+            let pos = TilePos { x, y, floor };
+            let mut attrs = Attrs::default();
+            apply(pos, 1631, 0, &mut attrs);
+            assert_eq!(attrs.action, Some(action));
+            for (position, appearance, house) in [
+                (TilePos { x: x + 1, ..pos }, 1631, 0),
+                (pos, 1632, 0),
+                (pos, 1631, 1),
+            ] {
+                let mut untouched = Attrs::default();
+                apply(position, appearance, house, &mut untouched);
+                assert_eq!(untouched.action, None);
+            }
+            let mut conflicting = Attrs {
+                action: Some(42),
+                ..Attrs::default()
+            };
+            apply(pos, 1631, 0, &mut conflicting);
+            assert_eq!(conflicting.action, Some(42));
+        }
+    }
+
     #[test]
     fn pinned_selector_requires_exact_position_item_and_no_house() {
         let pos = TilePos {

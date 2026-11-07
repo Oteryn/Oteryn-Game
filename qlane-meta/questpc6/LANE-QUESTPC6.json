@@ -1,18 +1,18 @@
 {
   "lane": "questpc6",
   "branch": "claude/happy-davinci-ijz3wy-questpc6",
-  "scope": "Committed lane ledger minus explicitly verified foreign ownership and owner exclusions.",
+  "scope": "Committed lane ledger minus verified foreign ownership and owner exclusions; finish the retained authored Fibula supplement.",
   "entries": [
     {
       "title": "Deeper Fibula Quest",
       "canonical": "oteryn:quest.deeper_fibula_quest",
-      "status": "QUALIFIED"
+      "status": "IN_PROGRESS"
     }
   ],
   "counts": {
+    "SKIPPED_OTHER_LANE": 31,
     "EXCLUDED": 1,
-    "QUALIFIED": 1,
-    "SKIPPED_OTHER_LANE": 31
+    "IN_PROGRESS": 1
   },
   "ownership_evidence": "cloud-scope-ownership.json",
   "status_file": "QUEST-STATUS.json"

@@ -1,3 +1,37 @@
+# Active questpc6 continuation — authored Fibula obligation
+
+The owner's repeated continuation instruction supersedes the previous narrow
+scope decision. One owned entry is IN_PROGRESS: Deeper Fibula's retained authored
+supplement. Its original source well and six-claim contract remains QUALIFIED;
+that evidence is not full supplement completion. The 31 verified foreign titles
+and Dawnport exclusion remain unchanged. Do not stop at the top-level historical
+source qualification or repeat another ownership-only checkpoint.
+
+Current batch restores the exact source key3940 door at32190,32432,8 and
+key3980 door at32277,32420,10. Both raw native doors are Item1631 without action
+attributes. The pinned source startup table supplies the exact actions, and the
+existing importer adds only the missing native locked1631 profile. Binary maps
+and all previous native profiles are unchanged. Focused real PostgreSQL18.6
+RED2 failed ItemReference in102.77s; GREEN2 passed in108.76s, with completion
+markers55.342866373s and40.963891839s. All-target check and all-target/all-feature Clippy on dispatch/world/content,
+formatting, content123/123, World repository5/5, source-binding units3/3,
+native-profile Python2/2, original key wire PG1/1 (46.03s; marker42.10553814s),
+and tool-only pin refresh/check passed. Exact proof is in
+cloud-fibula-keys-verification.json. Commit and push this green batch, then
+continue the remaining authored supplement; do not end on this mechanism slice.
+
+Next: reuse qengine2 commit33b640335's generic native fee/MINT participant (do not
+reimplement its payments), add exact keyed root rewards and explicitly paid
+repeatability, and bind the source key seller. Then compose expertise/key3980
+acquisition, generic native-death goals and eight-kill supplement completion.
+The source Dermot sale is repeatable: Crystal9f5a72c data-global/npc/dermot.lua:
+66-81, key2968/action3940 for2000 including bank funds. Do not invent a once-only
+NPC flag to restrict source sales. Existing MINT already persists key numbers.
+No missing shared mechanism is being deferred to another lane. No PR.
+
+---
+Historical continuation records below do not describe the active queue.
+
 ## Owner-requested continuation checkpoint — 2026-11-07
 
 Fetched the task branch at 2e42d08fa and all five recorded foreign owner branches.

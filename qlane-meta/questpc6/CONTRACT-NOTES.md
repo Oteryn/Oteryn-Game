@@ -21,3 +21,18 @@ instruction not to redo finished work, no new implementation entry is added.
 All 31 foreign assignments were checked against freshly fetched packet pointers;
 latest immutable revisions are in cloud-scope-ownership.json. No runtime tests
 were rerun for this metadata-only checkpoint.
+
+## Active authored supplement decision — 2026-11-07
+
+The repeated owner instruction requires completing the retained nested Fibula
+obligation, rather than treating its source-only qualification as whole-entry
+completion. Reopen that owned entry as IN_PROGRESS and retain the original source
+qualification explicitly. This supersedes both earlier no-new-scope decisions.
+Foreign allocations and owner exclusions remain unchanged.
+
+The two exact native doors are1631 at32190,32432,8 and32277,32420,10; source
+Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d startup/tables/door_key.lua:
+148-155 and lib/core/storages.lua:362-363 resolve their key numbers3940/3980.
+Capture tooling verifies the archive's source blob hashes and exact map cells;
+no binary map or conflicting attribute is overwritten. Existing Item profiles
+are unchanged, and only missing native locked door1631 is admitted by tooling.
