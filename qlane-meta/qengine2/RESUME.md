@@ -231,7 +231,7 @@ sha4e9e42e8daf616fe8c5ef71cfd0a4ac0ae0ae5d7bd786c80ccb2c26286d40466.
 Base:IceQuestline39+4obelisk5,take7289;questline40,mission12=6,yakdoor1;
 General NorsemanOutfit1/DefaultStart1 sameatomicparticipant. Then5shards7290
 questline40->41,reward->42/Norseman2/addon1;10shards42->43,reward->44/
-Norseman3/addon2. Spiritcontainer7289 onlymissingphysicalprofile;7290exists.
+Norseman3/addon2. Frostcharm7289 onlymissingphysicalprofile;7290exists.
 Only preoutfitparentQ39/obelisk5 arranged;neverseedNorsemanstages.
 
 Pinrefresh81deec82ff426ee357fa1c79a01d4730c8a566cc70123136bb45c685080bb5d7.
@@ -264,3 +264,15 @@ Generic sourceparticipants/nativecreationsex+catalogueinitialadvisoryfix ready;
 commit/pushimmediately. Checks18Python6.122s,3Rust1.17s,check1m02s+54.94s,
 clippy2m55s+1m16s,fmt,repro,pinrefresh81deec82ff426ee357fa1c79a01d4730c8a566cc70123136bb45c685080bb5d7.
 Follow-on123content/5world/pincheckpending aftersourcepush;thenNorsemanRED.
+
+Orientalsourcepushed6ad33a4b1.123content2.15s/5world45.22sPASS;pincheck73238
+stillrunning. Norseman+Formorgar testAPPLIED (productionNOTapplied);PGREDmust
+runafterpinfinishes. Newtest5stages validatesexact1frostcharm/5+10shards,
+lateitemrefusalrollbackofforeignstages,andall3foreignreceipts/sameR/owners.
+Do not apply /tmp/qengine2-next-norseman-author.py until actualPGRED.
+
+Oriental followonCOMPLETE:123content2.15s,5world45.22s,pincheck81deec82ff426ee357fa1c79a01d4730c8a566cc70123136bb45c685080bb5d7.
+NorsemanPGRED72333 running /tmp/qengine2-batch5-norseman-red.log.
+7289 namecorrectedfromearliernote:sourceCanaryXMLidentifiesFROSTCHARM,19oz,
+questitemwithoutcharges/timer/fluid;physicaladmission straightforward. IDs/costs
+unchanged. Productionauthor script NOTapplied;waitactualREDfirst.
