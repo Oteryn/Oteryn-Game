@@ -715,3 +715,13 @@ cells and the source boss, entry, lever and exit positions. The current loader
 including exact source bounds, frame, tile count (2833), digest and closure.
 A separate provenance-qualified Crystal region must be admitted; replacing
 those checks with permissive bounds would invalidate the existing source proof.
+
+### Primal source region capture
+
+`capture_primal_region.py` verifies the exact Crystal `201189f` map Git blob
+`e61658ec0ab7b70ec35025ae969426d6fc57ae75` before parsing. Bounds and required
+placements come from the generated donor lever capture. The generated region
+contains 510 tiles: 504 arena cells plus required source entry/exit cells outside
+that rectangle. Unknown selected attributes, duplicate cells, substituted bytes,
+missing placements and capacity overflow are rejected. This is source capture,
+not active map admission or creature qualification.
