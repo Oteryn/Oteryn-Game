@@ -1,0 +1,109 @@
+{
+  "schema": 1,
+  "counterparts": [
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-morguthis-flame-1",
+      "native": {
+        "position": {
+          "x": 33163,
+          "y": 32691,
+          "floor": -14
+        },
+        "ordinal": 0,
+        "appearance": 417
+      },
+      "entry_effect": 13
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-morguthis-flame-2",
+      "native": {
+        "position": {
+          "x": 33166,
+          "y": 32691,
+          "floor": -14
+        },
+        "ordinal": 0,
+        "appearance": 417
+      },
+      "entry_effect": 13
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-morguthis-flame-3",
+      "native": {
+        "position": {
+          "x": 33168,
+          "y": 32691,
+          "floor": -14
+        },
+        "ordinal": 0,
+        "appearance": 417
+      },
+      "entry_effect": 13
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-morguthis-flame-4",
+      "native": {
+        "position": {
+          "x": 33163,
+          "y": 32692,
+          "floor": -14
+        },
+        "ordinal": 0,
+        "appearance": 423
+      },
+      "entry_effect": 13
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-morguthis-flame-5",
+      "native": {
+        "position": {
+          "x": 33165,
+          "y": 32692,
+          "floor": -14
+        },
+        "ordinal": 0,
+        "appearance": 417
+      },
+      "entry_effect": 13
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-morguthis-flame-6",
+      "native": {
+        "position": {
+          "x": 33167,
+          "y": 32692,
+          "floor": -14
+        },
+        "ordinal": 0,
+        "appearance": 423
+      },
+      "entry_effect": 13
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-morguthis-flame-7",
+      "native": {
+        "position": {
+          "x": 33169,
+          "y": 32692,
+          "floor": -14
+        },
+        "ordinal": 0,
+        "appearance": 417
+      },
+      "entry_effect": 13
+    },
+    {
+      "callback": "oteryn:quest-callback/ancient-tombs-morguthis-seven-flame-gate",
+      "native": {
+        "position": {
+          "x": 33163,
+          "y": 32695,
+          "floor": -14
+        },
+        "ordinal": 0,
+        "appearance": 417
+      },
+      "teleport_effect": 11
+    }
+  ]
+}

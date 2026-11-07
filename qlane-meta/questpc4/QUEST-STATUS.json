@@ -6607,7 +6607,7 @@
       "remote_verified": true
     },
     "native_room_batch_21": {
-      "status": "GREEN_READY_TO_FF_PUSH",
+      "status": "GREEN_PUSHED",
       "previous_pushed_head": "455366efaa353d9cd42038d9d713142859d1065f",
       "scope": "5exactnativeRoomSTEP counterpart cases:missingDefaultStart/refusal+11cue, legitimateRooteligibilitysetup, literallanding/monotoneprogress, exactreceipt/noopguard/replay; notfullmaze",
       "facts": [
@@ -6843,7 +6843,20 @@
         "room_source": "1passed0failed1.34s",
         "duplicates_diff": "PASS"
       },
-      "next": "CommitallGREEN/freshlane fetch/inspect/FFpush immediately, continue remainingTombsnative/source/NPCcomposition. Whole17 remain active, nextSQL1259."
+      "next": "CommitallGREEN/freshlane fetch/inspect/FFpush immediately, continue remainingTombsnative/source/NPCcomposition. Whole17 remain active, nextSQL1259.",
+      "pushed_head": "7d4378886272ae7306c3afd0a20f953fabe36106",
+      "remote_verified": true
+    },
+    "flame_native_batch_22": {
+      "status": "UNWIRED_METADATA_COMPILED_WIP",
+      "previous_pushed_head": "7d4378886272ae7306c3afd0a20f953fabe36106",
+      "metadata": "content/quests/native-counterparts.json",
+      "records": 8,
+      "input_validation": "8originalplainB3tiles/SHA/knowncallbackkeys/uniqueentries PASS",
+      "compilation": "RustunchangedfromallGREEN7d4378886; metadata notloadedyet. Do notclaimruntimeimplemented.",
+      "next": "Pushreviewablecompiledmetadatacheckpoint, author5actualPGcomposedflame/gatecases RED, wire genericclosed sparse metadata loader withoutrewritinggeneratedstatecallbacks, all5PGGREEN+source/frozen/security/compilerchecks thenpush",
+      "next_own_sql": 1259,
+      "whole_entries_remaining": 17
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",
