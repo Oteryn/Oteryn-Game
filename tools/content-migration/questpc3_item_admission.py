@@ -1,8 +1,10 @@
-"""Admit Rapier's exact existing portable, nonstacking Item facts for its chest.
+"""Retain questpc3's source-qualified Item facts through tree regeneration.
 
 Crystal201189f rookgaard/rapier_quest.lua:4-11 grants one 3272. Canonical Item
 facts already prove its 15 oz weight, portability and nonstackability. Preserve
 all existing equipment/weapon facts and reject contradictory core facts.
+Tutorial corpse and food admissions share this seam with their own closed
+source policies; unrelated partial R–S fixtures remain independent.
 """
 
 import hashlib
@@ -80,3 +82,7 @@ def apply_admissions(definitions):
                 or reward['stack_class'] != 'NonStackable'):
             raise ValueError(f'R–S charged core facts changed: {key}')
         reward['materializable'] = True
+
+    # Tutorial corpse/food facts share this retained Item materializer seam.
+    from questpc3_tutorial_item_admission import apply_admissions as apply_tutorial_admissions
+    apply_tutorial_admissions(definitions)

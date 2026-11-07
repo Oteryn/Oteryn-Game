@@ -141,7 +141,13 @@ fn scenario() -> TestResult {
         let mut admitted = deps.admitted;
         owner.admit_progression_session(&mut admitted).await;
         owner.admit_quest_session(&admitted).await;
-        super::item_look::seed_main_backpack(&h, &[(LEGS, 2)]).await?;
+        super::item_look::seed_main_backpack(&h, &[(LEGS, 1), (LEGS, 1)]).await?;
+        let leg_instances: Vec<i64> = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1 ORDER BY item_instance_id").bind(LEGS).fetch_all(&h.pool).await?;
+        assert_eq!(
+            leg_instances,
+            vec![1, 1],
+            "source legs are distinct nonstackable Items"
+        );
         let [santiago, zirella] = super::classic_quests::install(
             &owner,
             &admitted,
@@ -253,7 +259,7 @@ fn scenario() -> TestResult {
                     .await?;
                 sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($4,'hex')::uuid)")
                     .bind(id(80).as_slice()).bind(id(42).as_slice()).bind(LEGS).bind(id(81).as_slice()).execute(&mut *tx).await?;
-                sqlx::query("INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,2,encode($5,'hex')::uuid)")
+                sqlx::query("INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,3,encode($5,'hex')::uuid)")
                     .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(70).as_slice()).bind(id(80).as_slice()).bind(id(81).as_slice()).execute(&mut *tx).await?;
                 tx.commit().await?;
                 super::classic_quests::talk(&mut owner, &admitted, npc, command + 2, "bye").await?;

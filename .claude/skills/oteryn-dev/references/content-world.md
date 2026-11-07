@@ -20,10 +20,16 @@ content digests are derived from committed inputs.
   With `OTERYN_SPELL_SOURCE_ROOT` pointing to `canary/` and `crystal/` Git sources
   or extracted snapshots verified against the pinned input digests, this command also regenerates the field source catalogue
   before materializing the native Item provider.
-- The Item tree materializer reapplies the accepted Summer corpse/loot overlay before
+- The Item tree materializer reapplies accepted corpse and lane-owned Item overlays before
   hashing its output. After materializing an Item admission change, regenerate the native loot facts
   with `python3 tools/content-schema/native-gameplay/build_full_spell_artifact.py --refresh-loot-tables`
   and run `python3 tools/content-migration/register_spell_families.py` to pin those facts in the manifest.
+  An exactly identified native Item admission takes precedence over navigation-only fallback rows.
+  Keep sealed source cohorts unchanged and update exact current navigation counts for superseded rows.
+  If an unrelated Item changes a shard pinned by a native profile, run
+  `python3 tools/content-migration/refresh_native_profile_shards.py <profile.json> --base <commit>`
+  and its `--check`. It requires the committed shard witnesses, unchanged selected Item rows
+  (including JSON types), and unchanged profile terms; a selected-row change needs its source producer.
 - For native-provider changes with unchanged World package inputs, use
   `python3 tools/content-migration/regenerate_content.py --native-only`; it regenerates
   native providers and their registry pins without rebuilding the World package.

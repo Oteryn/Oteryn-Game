@@ -839,18 +839,61 @@
       }
     ],
     "current_batch": {
-      "id": "blessing-zirella-merge",
+      "id": "tutorial-native-corpses-01",
       "phase": "GREEN",
       "entries": [
-        "oteryn:quest.the_beginning_quest",
-        "oteryn:quest.pilgrimage_of_ashes"
+        "oteryn:quest.the_beginning_quest"
+      ],
+      "mechanism_entries": [
+        "Cockroach ordinary corpse and guaranteed physical leg",
+        "Rabbit source corpse/food",
+        "Deer source corpse/food"
       ],
       "whole_entry_qualifications": 0,
-      "local_commit": "c52468d50",
-      "incoming": "01a2019f667a6e1e645a655597e0f4987137e493",
-      "scope": "Merge green Zirella6instructions with generic canonical quest blessing/Premium/reward-value binding support;45callbacks retained. Material source merge requires combined verification before commit/push.",
-      "publication": "Commit merge and fast-forward push immediately; native physical tests remain separate unstaged RED batch.",
-      "checks": "Five changed crates strict check/Clippy; reward-binding/parser/conditional tag units; targeted real PG Zirella/rewards/Pilgrimage; content123/repository5; final pin check."
+      "red": {
+        "duration_seconds": 55.2,
+        "cases": 3,
+        "failure": "source corpse_item_inadmissible; Cockroach0 physical bodies vs1, Rabbit/Deer no ordinary loot queue",
+        "sha256": "985957da56ff08d290e2e5974d30bbc8a9b200f98ab19d07b6d8f695c6595322"
+      },
+      "red_log": "/tmp/questpc3-tutorial-corpse-red.log",
+      "implementation": "Reuse questpc2 corpse_definition helper/refactor with identical existing Primal output. New source-backed Item admission through existing questpc3 materializer/roundtrip seam:9corpse stages, exact XML capacities/timing/weights and appearance movement/pickup flags; ordinary legs/meat/ham. Strengthen leg fixture to2distinct nonstackable rows plus thirdordinal3. Native kill test verifies legitimate corpse loot never substitutes for unstarted quest hand-in.",
+      "reuse": "origin/claude/happy-davinci-ijz3wy-questpc2 f1c59a37c primal_corpse_items.py:113; source policies already verified in isolated read-only preview. No private reward-boss loot changes or unowned data imported.",
+      "assumptions": "Omitted corpse weights0 and non-pausing decay reuse source defaults already proved by Primal helper; stackable food uses existing engine ceiling100. No source chances/counts or XP changed; all3creatures0XP.",
+      "regeneration": "Complete Antlers closure materializer PASS, loot106d8e120650132dcd1e5f63177f1413855059b883b140e4607f9bcef649b150; actual Prey15cases/776creatures+4outputs PASS; native producer/check running88760. Exact11existing Item definition changes; no unrelated Item facts or identities. Grizzly own source recapture/check53admitted+3rejected pass.",
+      "workflow_repairs": {
+        "navigation": "derive_row guards unchanged; build_navigation excludes an exactly identified materializable Item with known stack class. Tests retain source265seal, exact262profilecounts/120absent labels, exact3nativeIDs and malformed native identity/stack rejection.",
+        "canonical_shard_rebind": "Verified repo rebind now covers6condition-potion Items and53admitted+3rejected Grizzly Items. Source/profile terms and every selected canonical definition including JSON types match committed cd3a50dd3 witnesses; only canonical_inputs shard hashes refreshed. Rejected-item and bool/int mismatch regressions RED then GREEN;6unit tests passed. Normal producer admission checks unchanged.",
+        "practices": ".claude/skills/oteryn-dev/references/content-world.md updated with native precedence and verified whole-shard refresh procedure."
+      },
+      "first_pg_positive": {
+        "log": "/tmp/questpc3-tutorial-corpse-green-before-antlers.log",
+        "duration_seconds": 76.57,
+        "passed": [
+          "Cockroach actual corpse/3distinct guaranteed legs",
+          "Rabbit actual corpse/source food"
+        ],
+        "failed": "Deer loot_item_inadmissible: original closure missed its third source drop, antlers10297. Real native_capture marker71932ms. This is not a GREEN batch."
+      },
+      "additional_item": {
+        "key": "oteryn:item.tibia.i10297",
+        "source": "imports/canary/items-xml/items.xml:26747-26750@04b83b512114bfd888000d6e1433ed8ecaec7c5b; Crystal201189f data-global/monster/mammals/deer.lua:80; pinned appearances.dat10297 containerfalse/cumulativetrue/unmovefalse/taketrue/corpsefalse.",
+        "facts": "weight90, stackabletrue, existing engine ceiling100; exactcanonical binding retained. Known conflicting stack facts reject; UNKNOWN is filled from verified source facts. Source dropchance8700ppm,quantity1 unchanged.",
+        "cross_entry": "Same existing Antlers needed by owned Tainted Soul recipe; no duplicate identity."
+      },
+      "green": {
+        "log": "/tmp/questpc3-tutorial-corpse-green-final.log",
+        "sha256": "5cd6a79d07f880aa603d4d070ec442a863d6591061e31a56677ee64f6b79543e",
+        "passed": 3,
+        "duration_seconds": 84.53,
+        "completion_ms": {
+          "Cockroach": 79664,
+          "Deer": 83566,
+          "Rabbit": 84508
+        },
+        "proof": "Actual native deaths and duplicate captures, physical source corpse per death, three distinct guaranteed leg instances, complete source food/antler identities and bounded quantities,0XP,noQuestreceipts,no fabricated hand-in."
+      },
+      "publication": "Commit source corpse/loot batch and integrate fetched remote completedPilgrimage before fast-forward push."
     },
     "effective_entries": [
       "oteryn:quest.the_beginning_quest",
@@ -1905,6 +1948,259 @@
           "tools/content-schema/quest-authoring/test_questpc3_pilgrimage.py": "3f725e5a60328b84757cfa61fdef478bc820bec56de5f83473b3014795d47768"
         },
         "review": "Generic canonical Service/NPC blessing match, held provenance preservation, current transaction-aware Premium gate, full reward-term binding hashed with distinct tag8. Existing conditional7 and both tutorial callback/reward cohorts retained and real-PG verified. Five whole entries remain active."
+      },
+      "tutorial_native_corpses_01": {
+        "status": "GREEN",
+        "red": "Real PostgreSQL3cases55.20s; native_capture markers; source corpse admission absent.",
+        "python": "Navigation8passed25.638s; verified shard rebind6passed with selected/rejected/type/pin negatives; Primal unchanged output/check and tutorial overlay/check pass.",
+        "regeneration": "Fulltree/loot/Prey15cases776creatures/native41producer+check PASS.",
+        "pending": "Repo pin-refresh, PG3GREEN and focused regressions, changed-crate strict check/Clippy, content/pin checks.",
+        "sessions": {
+          "pin_refresh": 24703,
+          "callback_profiles": 19544,
+          "tree_roundtrip": 75493,
+          "pg3_then_regressions": 41671,
+          "content_and_world": 35339,
+          "pin_check": 64138
+        },
+        "initial_checks": "Before Antlers: fmt/check51.33s, strictClippy1m16s PASS; callbackprofiles14/160.427s; tree roundtripPASS; content123/4.58s and repository5/76.17s PASS. These prove prior slice; final affected checks must use complete Antlers closure.",
+        "final_passed": {
+          "fmt": "PASS",
+          "rust_check": "PASS25.85s",
+          "clippy": "PASS2m26s changeddispatch/all features/all targets -Dwarnings",
+          "callback_profile_regressions": "14passed175.840s",
+          "full_tree_roundtrip": "PASS34111Items/12249taxonomy/393Services",
+          "source_capture": "Grizzly own producer/check53admitted3rejected; exact pinned public source bytes retained onlyoutside checkout.",
+          "pin_refresh": {
+            "inputs_digest": "3eac163718f01cf4ca2ee1d6795c2608cc729e143a5a4a57c53c3ec9f2637ff9",
+            "world_digest": "1aaf5e3b5400be0098e441e20a92ef55e1a222d210f87f640743ef3f4af4b2aa"
+          }
+        },
+        "final_regressions": {
+          "inactive": "PG1/88.66s completion88645ms; ordinary loot does not create unstarted quest progress/hand-in",
+          "burst": "PG1/61.57s completion61552ms; same-start epoch retained through3deaths",
+          "handin": "PG1/106.16s completion106152ms;2distinct nonstackable legs shortfall, thirdinstance then exact3/100XP;fish/Zirella50XP;exactreplays;tamperedXP rejected.",
+          "content": "123passed6.56s",
+          "world_repository": "5passed110.16s",
+          "pin_check": "PASS3eac1637inputs/1aaf5e3bworld31101874bytes."
+        },
+        "logs": {
+          "red": {
+            "log": "/tmp/questpc3-tutorial-corpse-red.log",
+            "sha256": "985957da56ff08d290e2e5974d30bbc8a9b200f98ab19d07b6d8f695c6595322",
+            "evidence": [
+              "test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 2557 filtered out; finished in 55.20s"
+            ]
+          },
+          "green-before-antlers": {
+            "log": "/tmp/questpc3-tutorial-corpse-green-before-antlers.log",
+            "sha256": "837d9a7a632e5773197d74095154ee7d6e379931a8655b6b60075b3b3d76de8d",
+            "evidence": [
+              "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.rabbit mode=Physical duration_ms=76310",
+              "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.cockroach mode=Physical duration_ms=76561",
+              "test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 2558 filtered out; finished in 76.57s"
+            ]
+          },
+          "green-final": {
+            "log": "/tmp/questpc3-tutorial-corpse-green-final.log",
+            "sha256": "5cd6a79d07f880aa603d4d070ec442a863d6591061e31a56677ee64f6b79543e",
+            "evidence": [
+              "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.cockroach mode=Physical duration_ms=79664",
+              "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.deer mode=Physical duration_ms=83566",
+              "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.rabbit mode=Physical duration_ms=84508",
+              "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 2558 filtered out; finished in 84.53s"
+            ]
+          },
+          "inactive-final": {
+            "log": "/tmp/questpc3-tutorial-corpse-inactive-final.log",
+            "sha256": "2fe704f068e6b497d45be8b7dc52a89a648d61890eb2fed44653cb5bb71a38c9",
+            "evidence": [
+              "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.cockroach mode=Normal duration_ms=88645",
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2560 filtered out; finished in 88.66s"
+            ]
+          },
+          "burst-final": {
+            "log": "/tmp/questpc3-tutorial-corpse-burst-final.log",
+            "sha256": "11ee1b2d4e5e50add69dad7492932ad9c634196a6407336ad12d59fcbfdd5c19",
+            "evidence": [
+              "QUEST_L4_COUNTERS POSTGRES_CASE_COMPLETED creature=oteryn:creature.cockroach mode=TutorialBurst duration_ms=61552",
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2560 filtered out; finished in 61.57s"
+            ]
+          },
+          "handin-final": {
+            "log": "/tmp/questpc3-tutorial-corpse-handin-final.log",
+            "sha256": "026b778bb141a8fea9f630f406122090e635e8991ac754001a0aa80e8f77fe49",
+            "evidence": [
+              "QUESTPC3_BEGINNING_REWARDS POSTGRES_CASE_COMPLETED duration_ms=106152",
+              "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2560 filtered out; finished in 106.16s"
+            ]
+          },
+          "fmt-final": {
+            "log": "/tmp/questpc3-tutorial-corpse-fmt-final.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "evidence": []
+          },
+          "check-final": {
+            "log": "/tmp/questpc3-tutorial-corpse-check-final.log",
+            "sha256": "9c77466a1ca53003473c0181cb9c3edae52e6ba416bf436a1b0f7d18583fe775",
+            "evidence": [
+              "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 25.85s"
+            ]
+          },
+          "clippy-final": {
+            "log": "/tmp/questpc3-tutorial-corpse-clippy-final.log",
+            "sha256": "2822889eaa35bbda7ec52b8b67afdcc287e64d437e8dee9bb370453129e44ec3",
+            "evidence": [
+              "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2m 26s"
+            ]
+          },
+          "content-final": {
+            "log": "/tmp/questpc3-tutorial-corpse-content-final.log",
+            "sha256": "f528fcfdf8f3db6de408b6eb9e3e52349f5e5b75eba35ccf45624cff248e0a41",
+            "evidence": [
+              "test result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 6.56s"
+            ]
+          },
+          "world-final": {
+            "log": "/tmp/questpc3-tutorial-corpse-world-final.log",
+            "sha256": "31a38dd8bc62a032780508841395f6b6ca1a05052bcd80dfa1aa3ed2410c2662",
+            "evidence": [
+              "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 110.16s"
+            ]
+          },
+          "pin-refresh-final": {
+            "log": "/tmp/questpc3-tutorial-corpse-pin-refresh-final.log",
+            "sha256": "0689444c39bdb97954381a364167bbd5768150d0d1a57e33a166d7d0d6c64f57",
+            "evidence": [
+              "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 14.05s",
+              "  \"inputs_digest\": \"3eac163718f01cf4ca2ee1d6795c2608cc729e143a5a4a57c53c3ec9f2637ff9\",",
+              "      \"digest\": \"1aaf5e3b5400be0098e441e20a92ef55e1a222d210f87f640743ef3f4af4b2aa\","
+            ]
+          },
+          "pin-final": {
+            "log": "/tmp/questpc3-tutorial-corpse-pin-final.log",
+            "sha256": "ce6d9bcd48b1f6cdeeebc8d544468f6f7b5ba70d205016f858d1b4462cfe7282",
+            "evidence": [
+              "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.35s",
+              "  \"inputs_digest\": \"3eac163718f01cf4ca2ee1d6795c2608cc729e143a5a4a57c53c3ec9f2637ff9\",",
+              "      \"digest\": \"1aaf5e3b5400be0098e441e20a92ef55e1a222d210f87f640743ef3f4af4b2aa\","
+            ]
+          },
+          "navigation-red": {
+            "log": "/tmp/questpc3-tutorial-corpse-navigation-red.log",
+            "sha256": "eafd5e94197f1bf434c4d18ea31c7fa1fb652aa01de7dd3420d83535bd5dd7d3",
+            "evidence": [
+              "Ran 7 tests in 25.209s"
+            ]
+          },
+          "navigation-green": {
+            "log": "/tmp/questpc3-tutorial-corpse-navigation-green.log",
+            "sha256": "5eee4924b44cee464a4e33624d220989974c40e699fc269b9018089d7c9af284",
+            "evidence": [
+              "Ran 8 tests in 25.638s",
+              "OK"
+            ]
+          },
+          "rebind-units": {
+            "log": "/tmp/questpc3-tutorial-corpse-rebind-units.log",
+            "sha256": "a25b5619af971eae96a8c9d37ebc69133b4c28e990455e210be0507206df182c",
+            "evidence": [
+              "Ran 6 tests in 0.008s",
+              "OK"
+            ]
+          },
+          "potion-rebind": {
+            "log": "/tmp/questpc3-tutorial-corpse-potion-rebind.log",
+            "sha256": "0991d997b84be8a3d0ce61c7d458de784c447d38dd361fa029fb199137c2fd90",
+            "evidence": [
+              "PASS native profile shard witnesses; selected Item rows and terms unchanged; base=cd3a50dd38113be8652f3ef918a11cba08dc10fc",
+              "PASS native profile shard witnesses; selected Item rows and terms unchanged; base=cd3a50dd38113be8652f3ef918a11cba08dc10fc",
+              "PASS native profile shard witnesses; selected Item rows and terms unchanged; base=cd3a50dd38113be8652f3ef918a11cba08dc10fc"
+            ]
+          },
+          "grizzly-recapture": {
+            "log": "/tmp/questpc3-tutorial-corpse-grizzly-recapture.log",
+            "sha256": "d66ede524f8d0f4647e15d9d40c303a56978c2c37ef0308c6642a8c7d8ff2934",
+            "evidence": []
+          },
+          "tree-antlers": {
+            "log": "/tmp/questpc3-tutorial-corpse-tree-antlers.log",
+            "sha256": "4da9522dbc10ea47f5165089a997aff482a919289106590a8dd3f3e976804358",
+            "evidence": [
+              "PASS imbuement static import: 24 families, 72 tiers; runtime admission blocked",
+              "PASS item_conversion records=129 check=False",
+              "PASS items=34111 creatures=1863 creature_records=28758 creature_profiles=27616 item_shards=69 mounts=252 authoring=700 taxonomy=12249 relation_sources=880 relations=1093 npcs=1282 encounters=108 npc_bindings=2747 dialogues=836 service_trade=324 service_travel=56"
+            ]
+          },
+          "loot-antlers": {
+            "log": "/tmp/questpc3-tutorial-corpse-loot-antlers.log",
+            "sha256": "d06c4f99930f85919fa9ea0a2a707c3509ce6a96dfe9a8c2921cb155314b4e58",
+            "evidence": []
+          },
+          "prey-antlers": {
+            "log": "/tmp/questpc3-tutorial-corpse-prey-antlers.log",
+            "sha256": "483fe64962aea9e03b85c62e7e449c3e01cd768ace13fa2283a0db582668d045",
+            "evidence": [
+              "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 35.66s",
+              "PREY_DIFF_SIMULATION_COMPLETED cases=15 creatures=776",
+              "PREY_DIFF_CONTENT_GENERATED written 4"
+            ]
+          },
+          "regen-antlers": {
+            "log": "/tmp/questpc3-tutorial-corpse-regen-antlers.log",
+            "sha256": "b9cfaee5c12a30f2088b432476ec22d3e5d21fdd0776edd716d8812480dce754",
+            "evidence": [
+              "PASS registered spell import files=41 activation=false",
+              "PASS registered spell import files=41 activation=false"
+            ]
+          },
+          "callback-profiles-final": {
+            "log": "/tmp/questpc3-tutorial-corpse-callback-profiles-final.log",
+            "sha256": "c9f3047eb6d89003287925a1d8d46786e3229a042519b4ff635d9a38c395640c",
+            "evidence": [
+              "Ran 14 tests in 175.840s",
+              "OK"
+            ]
+          },
+          "tree-validation-final": {
+            "log": "/tmp/questpc3-tutorial-corpse-tree-validation-final.log",
+            "sha256": "6d40e4626ba35bfa0953197f9e82696c77f1ebc91d79e66d8dd1fece409f5440",
+            "evidence": [
+              "PASS imbuement static import: 24 families, 72 tiers; runtime admission blocked",
+              "PASS item_conversion records=129 check=True",
+              "PASS items=34111 mounts=252 item_editors=165 mount_editors=252 item_bindings=476 mount_bindings=252 item_authoring=700 taxonomy=12249 relations=1093 provenance_facts=1022 creature_records=28758 creature_profiles=27508 creature_bindings=1863 npc_records=1282 npc_bindings=2747 service_records=393 dialogue_records=836 encounter_records=108 charm_records=25 proficiency_records=443 proficiency_bindings=665 reward_claim_records=338 starter_kit_records=1"
+            ]
+          }
+        },
+        "review": "Exact11existing Item definition changes verified, no identity additions/unrelated Item fact changes. Reused Primal output unchanged. Native loot complete, including antlers. NAV265seal unchanged; exact3native supersessions asserted. Rebind requires committed hashes and unchanged typed selected/rejected rows/source terms; actual selected Antler change uses original pinned source producer instead. Root/session fences, duplicate capture/drain/replay and no quest-grant substitution retained. No binaries/reference dumps or forbidden paths.",
+        "validated_inputs": {
+          ".claude/skills/oteryn-dev/references/content-world.md": "7fcd4ba592aae27aad902c3cc8488791c258e97b71b8a04776f12365a3210add",
+          "content/content.lock.json": "eb48cd77ac14584b4593653c22a31bcbee26812e6cf1d071b3f8c68b599a6ae2",
+          "content/creatures/prey-slot-values.json": "684fa6c73a24fe81adaecc0ae4da174e12396bbe05a495876e23db696eb363ba",
+          "content/items/definitions/items-00000-00499.json": "66a6b6a115c7e765d13c869b2dc3aa0b9adff83670c16db7f550752b6adac142",
+          "content/items/definitions/items-24500-24999.json": "7dab4de13c5ad7c385adf4f47b0510f485dc2e9975126f0d3ec6329fc1d25d07",
+          "content/items/definitions/items-25000-25499.json": "2ebb969263e7c761971fffce1e19dad463e32877534e315cef0883b41c0fc9ce",
+          "content/items/definitions/items-29500-29999.json": "4e3f3b692238e308348add66d97d2526c0f483a09a1fbf611409a9064fbdcca6",
+          "content/items/definitions/items-31500-31999.json": "0b02329cfbab7ea18535f7a847a49e5622fbd57884e7d406e3807dd2e4eba875",
+          "content/items/taxonomy/items.json": "2374e347ad8480de09523549d53a41b75ea02fddb0effa2d3aa54ceaae330e8a",
+          "content/spells.manifest.json": "e6e9d683639fb71aacf83e7d56ae16c40fbd4a59c687ec69a73d65047e22f2f6",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l4_counters.rs": "025e444382261b19e9a4027bff5b689ef21589a62d628968312b6a85fc96f437",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_l4_counters/physical.rs": "2df9c87d043f9b4477504f99f96435fd94bcad041710a0c3992b87d590976d57",
+          "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc3_beginning_rewards.rs": "c3d1ebe55a72455465f7e73c9fa2e9276fb244c908ad6429796c33b3c801e41c",
+          "docs/balance/PREY-SLOT-VALUE-2026-11-01.md": "c2ea21a02d0448c59f8a5cc4080d0c71f05c9f44798f7bd1cb7bbc01e643cd5d",
+          "docs/balance/PREY-TIME-SIM-2026-11-01.md": "28dced3bdfa9a8cac03a23b3f3ee16387caec13bf655ded1e5028513cbb00b3e",
+          "tools/content-migration/item_engine_navigation.py": "4ea36f2d4610a093aee4cf703b2dc27edf2b860618c9ad067c32530e0f807dfe",
+          "tools/content-migration/questpc3_item_admission.py": "6338dd06b24f6b101a0bb6024120f73262435605cd5920c5da8fb46cb1a553b6",
+          "tools/content-migration/questpc3_tutorial_item_admission.py": "4c9d7999777b4a474e08290427c8875d5ac34cfae3c829c27e67d3337c9b4077",
+          "tools/content-migration/refresh_native_profile_shards.py": "beb87be50b46954e49d9bf41bc6c2f0326a9298e83480f04709706222f88c325",
+          "tools/content-migration/test_item_engine_navigation.py": "8bddb1662a5aa22a793a2d85da2dea7d70cc82b4ac7f3a60012e57edc401f43a",
+          "tools/content-migration/test_refresh_native_profile_shards.py": "e0f8b8f0782d820a1f1ecf72e41f5d8b195a9c0c6e336152b3cf0c6f46b6b716",
+          "tools/content-schema/native-gameplay/condition-potion-profiles.json": "897c80ed1ffccc25d21d61b951dae2f0ca0be740625ae034fc770022d3838e77",
+          "tools/content-schema/native-gameplay/grizzly-shop-profiles.json": "7e85cb6a5d120d4b710d9bef81d2713078ca167ee7f1277493174951ed352e63",
+          "tools/content-schema/native-gameplay/loot-tables.json": "106d8e120650132dcd1e5f63177f1413855059b883b140e4607f9bcef649b150",
+          "tools/content-schema/native-gameplay/prey-model-results.json": "24e5109c73f58e8e04a72b7632421f99d720d5bb77fa441601a5a1b0b995ef2c",
+          "tools/content-schema/native-gameplay/primal_corpse_items.py": "ebea14bd33838904de680629dd727f82e0ad2eb3bf9dfb49e12918526dbc8cee"
+        }
       }
     },
     "source_corrections": [
@@ -1932,7 +2228,7 @@
       "wvar": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
     },
     "shared_feature_owner": "questpc3: reuse existing implementations; implement every remaining engine, binding, NPC, Item and world-mechanic gap locally. No external dependency wait.",
-    "updated_at": "2026-11-07T02:18:45.787570+00:00",
+    "updated_at": "2026-11-07T03:26:55.430365+00:00",
     "publication_native_counters_01": {
       "commit": "5e72a3f0b0e16803bc5cd999298e4ec83f05eed9",
       "pushed": true,
@@ -2273,8 +2569,68 @@
         "local_commit": "c52468d50",
         "incoming": "01a2019f667a6e1e645a655597e0f4987137e493",
         "scope": "Merge green Zirella6instructions with generic canonical quest blessing/Premium/reward-value binding support;45callbacks retained. Material source merge requires combined verification before commit/push.",
-        "publication": "Commit merge and fast-forward push immediately; native physical tests remain separate unstaged RED batch.",
+        "publication": {
+          "status": "PUSHED_REMOTE_VERIFIED",
+          "commit": "cd3a50dd38113be8652f3ef918a11cba08dc10fc"
+        },
         "checks": "Five changed crates strict check/Clippy; reward-binding/parser/conditional tag units; targeted real PG Zirella/rewards/Pilgrimage; content123/repository5; final pin check."
+      },
+      "tutorial-native-corpses-01": {
+        "id": "tutorial-native-corpses-01",
+        "phase": "GREEN",
+        "entries": [
+          "oteryn:quest.the_beginning_quest"
+        ],
+        "mechanism_entries": [
+          "Cockroach ordinary corpse and guaranteed physical leg",
+          "Rabbit source corpse/food",
+          "Deer source corpse/food"
+        ],
+        "whole_entry_qualifications": 0,
+        "red": {
+          "duration_seconds": 55.2,
+          "cases": 3,
+          "failure": "source corpse_item_inadmissible; Cockroach0 physical bodies vs1, Rabbit/Deer no ordinary loot queue",
+          "sha256": "985957da56ff08d290e2e5974d30bbc8a9b200f98ab19d07b6d8f695c6595322"
+        },
+        "red_log": "/tmp/questpc3-tutorial-corpse-red.log",
+        "implementation": "Reuse questpc2 corpse_definition helper/refactor with identical existing Primal output. New source-backed Item admission through existing questpc3 materializer/roundtrip seam:9corpse stages, exact XML capacities/timing/weights and appearance movement/pickup flags; ordinary legs/meat/ham. Strengthen leg fixture to2distinct nonstackable rows plus thirdordinal3. Native kill test verifies legitimate corpse loot never substitutes for unstarted quest hand-in.",
+        "reuse": "origin/claude/happy-davinci-ijz3wy-questpc2 f1c59a37c primal_corpse_items.py:113; source policies already verified in isolated read-only preview. No private reward-boss loot changes or unowned data imported.",
+        "assumptions": "Omitted corpse weights0 and non-pausing decay reuse source defaults already proved by Primal helper; stackable food uses existing engine ceiling100. No source chances/counts or XP changed; all3creatures0XP.",
+        "regeneration": "Complete Antlers closure materializer PASS, loot106d8e120650132dcd1e5f63177f1413855059b883b140e4607f9bcef649b150; actual Prey15cases/776creatures+4outputs PASS; native producer/check running88760. Exact11existing Item definition changes; no unrelated Item facts or identities. Grizzly own source recapture/check53admitted+3rejected pass.",
+        "workflow_repairs": {
+          "navigation": "derive_row guards unchanged; build_navigation excludes an exactly identified materializable Item with known stack class. Tests retain source265seal, exact262profilecounts/120absent labels, exact3nativeIDs and malformed native identity/stack rejection.",
+          "canonical_shard_rebind": "Verified repo rebind now covers6condition-potion Items and53admitted+3rejected Grizzly Items. Source/profile terms and every selected canonical definition including JSON types match committed cd3a50dd3 witnesses; only canonical_inputs shard hashes refreshed. Rejected-item and bool/int mismatch regressions RED then GREEN;6unit tests passed. Normal producer admission checks unchanged.",
+          "practices": ".claude/skills/oteryn-dev/references/content-world.md updated with native precedence and verified whole-shard refresh procedure."
+        },
+        "first_pg_positive": {
+          "log": "/tmp/questpc3-tutorial-corpse-green-before-antlers.log",
+          "duration_seconds": 76.57,
+          "passed": [
+            "Cockroach actual corpse/3distinct guaranteed legs",
+            "Rabbit actual corpse/source food"
+          ],
+          "failed": "Deer loot_item_inadmissible: original closure missed its third source drop, antlers10297. Real native_capture marker71932ms. This is not a GREEN batch."
+        },
+        "additional_item": {
+          "key": "oteryn:item.tibia.i10297",
+          "source": "imports/canary/items-xml/items.xml:26747-26750@04b83b512114bfd888000d6e1433ed8ecaec7c5b; Crystal201189f data-global/monster/mammals/deer.lua:80; pinned appearances.dat10297 containerfalse/cumulativetrue/unmovefalse/taketrue/corpsefalse.",
+          "facts": "weight90, stackabletrue, existing engine ceiling100; exactcanonical binding retained. Known conflicting stack facts reject; UNKNOWN is filled from verified source facts. Source dropchance8700ppm,quantity1 unchanged.",
+          "cross_entry": "Same existing Antlers needed by owned Tainted Soul recipe; no duplicate identity."
+        },
+        "green": {
+          "log": "/tmp/questpc3-tutorial-corpse-green-final.log",
+          "sha256": "5cd6a79d07f880aa603d4d070ec442a863d6591061e31a56677ee64f6b79543e",
+          "passed": 3,
+          "duration_seconds": 84.53,
+          "completion_ms": {
+            "Cockroach": 79664,
+            "Deer": 83566,
+            "Rabbit": 84508
+          },
+          "proof": "Actual native deaths and duplicate captures, physical source corpse per death, three distinct guaranteed leg instances, complete source food/antler identities and bounded quantities,0XP,noQuestreceipts,no fabricated hand-in."
+        },
+        "publication": "Commit source corpse/loot batch and integrate fetched remote completedPilgrimage before fast-forward push."
       }
     },
     "completed_batches": [
@@ -2564,6 +2920,13 @@
         "preview": "Read-only outputs(previewroot) passed:5Itemshards,1557916bytes; pinned XML policies9corpse stages; sourceflags3portableItems checked. No repository Item production change yet.",
         "application": "After material merge is GREEN/pushed, backport helper/refactor, copy admission module, call it from existing questpc3_item_admission.apply_admissions (materializer+roundtrip already share that seam). Correct leg fixture to2distinct rows+thirdordinal3, preserve shortfall/replay/XP amount checks. Regenerate actual data via repo tools; native loot facts and world pins only repo tooling."
       }
+    },
+    "remote_qualified_pending_integration": {
+      "head": "4c1c920f2",
+      "entry": "oteryn:quest.pilgrimage_of_ashes",
+      "qualification_commit": "c23eddfc8",
+      "scope": "Complete native route/MINT/NPCplacement proof alreadyQUALIFIED remotely. Do not redo; integrate after this green native corpse slice. Net11files inclplacements18new, classic_quests helper/fullPilgrimagePG, pins andmetadata. Remote sparse-index restoration is net-normal source tree; inspect netdiff, preserve all ours.",
+      "remaining_owned_after_integration": 4
     }
   }
 }
