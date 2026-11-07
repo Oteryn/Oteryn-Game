@@ -102,6 +102,8 @@ pub struct RewardCallback {
     pub achievement_once: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cooldown: Option<RewardCooldown>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub cooldown_reply: Vec<String>,
     pub reply: Vec<String>,
     pub sources: Vec<String>,
 }
@@ -223,6 +225,11 @@ fn parse_document(text: &str) -> Result<Document, String> {
                     || clock.seconds > 31_536_000
                     || tracks.contains(&clock.track)
                     || requires.contains(&clock.track)
+            })
+            || (!c.cooldown_reply.is_empty() && c.cooldown.is_none())
+            || c.cooldown_reply.len() > 8
+            || c.cooldown_reply.iter().any(|line| {
+                line.is_empty() || line.len() > 512 || line.chars().any(|c| c.is_control())
             })
             || c.present.len() > 8
             || evidence.len() != c.present.len()

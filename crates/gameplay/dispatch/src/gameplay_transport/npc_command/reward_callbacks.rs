@@ -1,6 +1,6 @@
 //! Content selects a bounded exchange; the shared quest transaction owns every effect.
 use super::super::{ComposedFreshAdmission, connection::UseCommand};
-use super::quest_dialogue::{self, Choice, Step, Topic};
+use super::quest_dialogue::{self, Choice, Step as DialogueStep, Topic};
 use super::*;
 use oteryn_gameplay_quests::quest::reward_callbacks;
 use oteryn_gameplay_quests::quest::world_callbacks::Storage;
@@ -25,6 +25,11 @@ struct Offer {
     reply: Vec<String>,
 }
 
+pub(super) struct Step {
+    dialogue: DialogueStep,
+    guard: Option<(quest_dialogue::Context, reward_callbacks::RewardCallback)>,
+}
+
 pub(super) fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -41,7 +46,8 @@ pub(super) fn prepare(
         return None;
     }
     let catalogue = admission.quest_catalogue.as_deref()?;
-    quest_dialogue::prepare(
+    let mut guard = None;
+    let dialogue = quest_dialogue::prepare(
         admission,
         actor,
         command,
@@ -68,6 +74,9 @@ pub(super) fn prepare(
                 if selected.next().is_some() {
                     return None;
                 }
+                if callback.cooldown.is_some() && !callback.cooldown_reply.is_empty() {
+                    guard = Some((context.clone(), callback.clone()));
+                }
                 return Some(Choice {
                     transition: Some(callback.key.clone()),
                     next_topic: Some(Topic::from(callback.next_topic)),
@@ -87,5 +96,68 @@ pub(super) fn prepare(
                 reply: offer.reply.clone(),
             })
         },
-    )
+    )?;
+    Some(Step { dialogue, guard })
+}
+
+/// Clock advice is a fresh read; the value writer independently rechecks every grant.
+pub(super) async fn apply(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: NpcTalkIntent,
+    step: Step,
+) -> NpcTalkOutcome {
+    use crate::durability::quest_state::RewardReadiness;
+    let Some((context, callback)) = step.guard else {
+        return quest_dialogue::apply(admission, actor, command, intent, step.dialogue).await;
+    };
+    let Some(catalogue) = admission.quest_catalogue.as_ref() else {
+        return NpcTalkOutcome::only(NpcIntentDisposition::Rejected);
+    };
+    let Ok(Some(fence)) = admission.current_quest_fence(command.game_session_id).await else {
+        return NpcTalkOutcome::only(NpcIntentDisposition::Rejected);
+    };
+    let observed = admission
+        .root
+        .read_quest_reward_readiness(
+            admission.character,
+            fence,
+            std::sync::Arc::clone(catalogue),
+            callback.key.clone(),
+        )
+        .await;
+    match observed {
+        Ok(RewardReadiness::Ready) => {
+            quest_dialogue::apply(admission, actor, command, intent, step.dialogue).await
+        }
+        Ok(RewardReadiness::Cooldown) => {
+            let runtime = admission.runtime.lock().await;
+            let reply = quest_dialogue::prepare(
+                admission,
+                actor,
+                command,
+                &intent,
+                &runtime,
+                |current, topic, _, _| {
+                    if current != &context || topic.number != callback.topic {
+                        return None;
+                    }
+                    Some(Choice {
+                        transition: None,
+                        next_topic: Some(Topic::from(callback.next_topic)),
+                        reply: callback.cooldown_reply.clone(),
+                    })
+                },
+            );
+            drop(runtime);
+            match reply {
+                Some(reply) => {
+                    quest_dialogue::apply(admission, actor, command, intent, reply).await
+                }
+                None => NpcTalkOutcome::only(NpcIntentDisposition::Rejected),
+            }
+        }
+        _ => NpcTalkOutcome::only(NpcIntentDisposition::Rejected),
+    }
 }

@@ -544,6 +544,7 @@ pub mod grizzly;
 pub mod grizzly_boss;
 mod hero_of_bounac;
 mod observations;
+pub use observations::RewardReadiness;
 mod planegazer_finale;
 pub mod rotten_blood;
 pub mod rotten_blood_access;

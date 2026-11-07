@@ -127,13 +127,30 @@ fn scenario(npc: &str, key: &str, input: Option<u16>, output: u16) -> TestResult
                 for (offset, word) in words.iter().enumerate().take(words.len()-1) { talk(&mut owner, &admitted, actor, 30 + u64::try_from(offset)?, word).await?; }
                 let fence = owner.current_quest_fence(admitted.game_session_id).await.map_err(|()| "fence")?.ok_or("fence")?;
                 owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
+                {
+                    let permit = owner.spell_lane_permit().await.ok_or("physical lane")?;
+                    assert!(owner.states.player_trades.physical_service(admitted.game_session_id));
+                    let native = owner.active_generation.and_then(|generation| generation.native_gameplay()).ok_or("native generation")?;
+                    let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native).with_wheel(owner.premium_coordinator);
+                    let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+                    let result = slot.commit_quest_reward(owner.root, owner.character, owner.holder, fence,
+                        QuestTransitionRequest { transition_key: key.into(), cause: QuestCause::Command(CommandRef::new(admitted.game_session_id, CommandId::new(39).map_err(debug)?)) },
+                        Arc::clone(&catalogue), crate::durability::reward_claim_mint::QuestRewardAdmission { permit: &permit, native, weights: &weights }).await.map_err(debug)?;
+                    assert!(matches!(result, crate::durability::quest_state::QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch)), "the durable owner independently refuses an early grant");
+                }
                 let refused = owner.npc_talk(deps.actor, UseCommand { game_session_id: admitted.game_session_id, command_id: 40, item_fence: Some(fence.item_fence()) }, NpcTalkIntent { npc_actor: actor, text: "awaken".into() }).await;
-                assert_eq!(refused.disposition, NpcIntentDisposition::Rejected, "twenty real database hours must elapse");
+                assert_eq!(refused.disposition, NpcIntentDisposition::Ok, "the source cooldown is a literal NPC response");
+                let cooldown_reply = "... I'm sorry... my tears are not ready yet... my soul needs time to grieve...";
+                assert_eq!(refused.conversation.ok_or("cooldown conversation")?.lines, [cooldown_reply]);
+                owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
+                let fresh = owner.current_quest_fence(admitted.game_session_id).await.map_err(|()| "fence")?.ok_or("fence")?;
+                let no_story = owner.npc_talk(deps.actor, UseCommand { game_session_id: admitted.game_session_id, command_id: 41, item_fence: Some(fresh.item_fence()) }, NpcTalkIntent { npc_actor: actor, text: "awaken".into() }).await;
+                assert!(!no_story.conversation.is_some_and(|reply| reply.lines == [cooldown_reply]), "cooldown refusal resets the topic to zero");
                 assert_eq!(count(&h, output).await?, 1);
                 // The typed fixture transition advances only the source clock fact.
                 let fence = owner.current_quest_fence(admitted.game_session_id).await.map_err(|()| "fence")?.ok_or("fence")?;
                 let advanced = h.root.commit_character_quest_transition(&authority, &h.node, fence, QuestTransitionRequest {
-                    transition_key: lapse.into(), cause: QuestCause::Command(CommandRef::new(admitted.game_session_id, CommandId::new(41).map_err(debug)?)) }, Arc::clone(&catalogue)).await.map_err(debug)?;
+                    transition_key: lapse.into(), cause: QuestCause::Command(CommandRef::new(admitted.game_session_id, CommandId::new(42).map_err(debug)?)) }, Arc::clone(&catalogue)).await.map_err(debug)?;
                 assert!(matches!(advanced, crate::durability::quest_state::QuestTransitionOutcome::Committed(_)));
                 owner.refresh_quest_session(admitted.game_session_id, false).await;
                 for (offset, word) in words.iter().enumerate() { talk(&mut owner, &admitted, actor, 50 + u64::try_from(offset)?, word).await?; }
