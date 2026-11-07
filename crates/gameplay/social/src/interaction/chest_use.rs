@@ -644,6 +644,7 @@ mod tests {
                 revision_ref: "definition-r1".into(),
             },
             quantity: 1,
+            additional_items: Vec::new(),
             achievement: None,
             quest_transition: None,
             key_number: None,

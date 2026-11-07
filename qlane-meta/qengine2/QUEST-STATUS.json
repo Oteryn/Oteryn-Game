@@ -2788,7 +2788,7 @@
     "finding": "The questpc5/6/7/8 NPC source executor provides bounded sorted foreign storage reads, source defaults and atomic Father-specific inventory operations; it still supplies empty outfit snapshots and uses storage-only planning elsewhere. No general shared-reward parent predicate or replacement general outfit owner was found. Reuse existing QuestComparison semantics and the established lock/fresh-default pattern with the already delivered shared value participant. Preserve Father atomicity and avoid unrelated lane data."
   },
   "delivery_rule": "Owner 2026-11-07: push every green step and at least every15minutes; if no green step, push compiling WIP naming the exact red point. Fetch/merge before each push, never force or rebase.",
-  "active_batch": "L1-13 complete; continue additional S06/W15b shared scope and24remaining owned entries; 15-minute push rule",
+  "active_batch": "L1-13 complete; shared S06/W15b qualification and22 remaining entries; push every green step and at most15minutes",
   "active_batch_progress": {
     "batch": "L1-09B",
     "status": "QUALIFIED",
@@ -3046,8 +3046,22 @@
           "point": "Two reward items refuse before all claim, quest, item and XP outputs; expected complete atomic bundle.",
           "log": "/tmp/qengine2-w15b-multi-red.log"
         },
-        "progress": "Generic additional top-level reward plan implemented across canonical/native chest routes and fenced claim MINT; independent frozen IDs, complete intent, shared item/metadata writer, fresh slot/weight checks and complete SQL proof. Legacy requests initialize empty additional plans. Fourcrate checkGREEN1m25; focused PG rerun compiling.",
-        "check_log": "/tmp/qengine2-w15b-check1.log"
+        "progress": "Multi-item atomic step GREEN; both real-dispatch PG cases85.51s; retained nine container/key/text/charge/capacity PG regressions419.17s. Four-crate check1m25s and strict all-targets/features Clippy3m59s GREEN. Continue cooldown/random and remaining source variants; no whole-row qualification claimed.",
+        "check_log": "/tmp/qengine2-w15b-check1.log",
+        "multi_item_step": {
+          "status": "GREEN",
+          "postgres": "18.6",
+          "markers": [
+            "POSTGRES_CASE_COMPLETED W15B_NO_ROOM duration=85.463268425s success=true",
+            "POSTGRES_CASE_COMPLETED W15B_MULTIPLE_ROOTS duration=85.504930994s success=true"
+          ],
+          "log": "/tmp/qengine2-w15b-multi-green3.log",
+          "regression_log": "/tmp/qengine2-w15b-container-regression.log",
+          "regression_cases": 9,
+          "regression_seconds": 419.17,
+          "clippy_log": "/tmp/qengine2-w15b-clippy1.log",
+          "remaining": "Cooldown/random variants and remaining source variants; final content auxiliaries executing."
+        }
       }
     ]
   }

@@ -871,3 +871,15 @@ IDs, not placement ordinals (quantity2 was read before quantity10). Marker
 67.443390279s in /tmp/qengine2-w15b-multi-green1.log. Production four-crate
 check remains GREEN. Corrected ordinal-based assertion and a real-MINT
 19-input capacity-refusal test are rebuilding; neither is claimed GREEN.
+
+W15b multi-item step GREEN: real-dispatch PostgreSQL18.6 delivery/replay
+85.504930994s; one-free-slot refusal85.463268425s, complete run85.51s.
+Capacity refusal preserves all19 existing entries and writes zero target
+reservations/receipts, quest progress or XP. Documented canonical chest wire
+contract maps capacity refusal to Rejected; corrected that expectation, retained
+all atomicity checks. Nine existing container/key/text/full-charge/weight/slot
+PG regressions GREEN419.17s. Four-crate strict Clippy alltargets/features
+GREEN3m59s; source producer check and fmtGREEN. Legacy single-item regression
+and required content auxiliaries executing. Whole W15b remainsAUTHORING for
+cooldown/random and remaining source variants. Next: S06 seven-piece glider
+RED test prepared, not yet run. Counts44QUALIFIED/22UNFINISHED.
