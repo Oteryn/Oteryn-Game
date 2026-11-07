@@ -234,6 +234,28 @@
       "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
       "proof": "qlane-meta/questpc7/REWARD-ENGINE-PG-PROOF.json",
       "scope": "Generic owner only; not this quest's route qualification"
+    },
+    "current_batch": {
+      "state": "Generic opt-in world reward bundle and achievements implemented; full native story running",
+      "postgres_red_seconds": 41.469268453,
+      "postgres_red_log": "/tmp/questpc7-ferumbras-red.log",
+      "unit_red": "unknown achievements field",
+      "unit_green": "22 world callback tests including new ten-case bundle guard test; all existing legacy refusals retained",
+      "mechanisms": "Reuses same-TX fenced account_achievement::grant_missing, existing item MINT and appearance writers. No new migration, generic-caller bypass or callback effect-bound increase.",
+      "expanded_red": [
+        {
+          "seconds": 44.343084621,
+          "reason": "fixture second offering MINT rejected"
+        },
+        {
+          "seconds": 43.456666898,
+          "reason": "diagnostic identifies input MINT; placeholder-vs-real ground binding mismatch proven at ground_cell_limit.rs:304-306; fixture corrected without changing owner guard"
+        },
+        {
+          "seconds": 44.125205511,
+          "reason": "two separate ground stacks do not satisfy one physical ten-essence offering; story now gathers via fenced pickup, ordinary carried merge, and drop10; all refusal assertions retained"
+        }
+      ]
     }
   },
   {

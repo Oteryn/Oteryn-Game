@@ -334,3 +334,54 @@ content/dialogues/quest-rules/quest-batch3-b-hero_of_rathleton.json:1;
 Crystal201189 strange_pipe.lua:62/storage declaration:195. Preserve already
 earned1 and all original gate/transport callbacks; no guessed numeric alias.
 PG now asserts the real entitlement absent initially and1 after completion.
+
+## Ferumbras selected seals and reusable world reward bundles
+
+Whole selected recipe: ten Demonic Essences, ordered Plagirath/Zamulosh/
+Mazoran/Razzagorn/Ragiaz/Tarbaz/Shulgrax/MortalShell, five Silver Tokens,
+Rift Warrior and Hat Hunter. Actual PG18.6 RED41.469268453s proves missing
+entry. Generic world bundle unit RED unknown achievements field, then GREEN;
+all22 world-callback tests GREEN with every old mixed-field refusal retained.
+Explicit reward_bundle opt-in allows simultaneous item/outfit only on a
+once-only completing USE. Achievements are unique canonical keys, max8,
+stateful once-only USE; use existing fenced account grant_missing inside the
+same root transaction. Generic context-less callers remain refused.
+
+Donor Crystal9f actions_reward.lua:15-23 uses4073 and gives Silver22516x5,
+Hat Hunter and full outfit bits3. Existing Native Rift Warrior semantic mapping
+wins over conflicting donor look IDs; no duplicate Source-item look aliases.
+Physical retained4073 chest is(33388,31409,-14), region-z14-x130-y122.b3:1.
+Darashia entry(33275,32390,-8)409; ritual flame1949 at(33275,32388,-8),
+exact10 essence offering at(33275,32389,-8), region-z08-x129-y126.b3:1.
+Selected god-slaying preparation is a durable ritual-readiness milestone;
+no unsupported physical Godbreaker item or seven-part crafting is claimed.
+This explicitly conservative finite recipe does not certify the donor raid's
+other phases, parties, global levers/cooldowns or ordinary corpse loot.
+
+Source boss anchors come from the eight retained actions scripts (exact hashes
+in generated callbacks/objectives). Use nearest admitted clear floor cells by
+those anchors, rather than forcing actors onto retained fields/decorations.
+Mortal Shell uses the final Ferumbras arena anchor; no source phase-transform
+mechanic is inferred. Original map bytes, no-logout/protection flags and source
+raid callbacks remain unchanged. Earned personal passages connect the actual
+arenas. Each passage requires its own native kill, advances a bounded passage
+track and initializes only the next objective. Final passage8 therefore proves
+all eight seals; no increase to the eight-effect callback bound is needed.
+Silver22516 is admitted by the existing exact source physical qualifier.
+
+Ferumbras expanded PG44.343084621s / diagnostic43.456666898s exposed a
+fixture error before the tenth essence: input_item minted Ground using
+placeholder content-1/vec[1], then moved previous input with the real content/
+frame binding. ground_cell_limit.rs:304-306 correctly refuses mixed bindings
+in one cell. Fix fixture MINT Ground metadata to the same actual channel pin
+and frame used by its loop drop. Keep the production compatibility guard and
+all short-offering assertions unchanged. The rerun adds exact native passage
+position assertions and uses actual account appearance unlock facts.
+
+The next actual PG44.125205511s reaches the repaired fixture but correctly
+refuses two separate Ground stacks9+1: the existing ritual consumer requires
+one physical stack with the exact offering amount. Keep that contract.
+The story now performs fenced pickup9, normal carried merge with the tenth
+essence, and fenced drop10 before ritual USE. Short9 refusal/non-consumption
+assertions remain; add one-live-stack and actual pickup/drop proof. No Ground
+consumer guard or SQL proof is weakened, and no new migration is needed.

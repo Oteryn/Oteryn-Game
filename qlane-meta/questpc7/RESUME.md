@@ -983,3 +983,43 @@ already admitted. Implement reusable world achievement grants first (reuse
 existing account-achievement writer/NPC grant proof, preserve those callers),
 then the selected ritual/seal/boss/reward route. Current peer qengine2e7867e061
 has not QUALIFIED this overlap. No ownership questions or engine deferrals.
+
+## Ferumbras generic mechanisms and complete native route in progress
+
+Latest pushed1f4789272 qualifies Hero;9 ACTIVE. Ferumbras actual PG18.6
+RED41.469268453s proves absent native entry. Generic world reward_bundle
+opt-in and bounded achievements implemented using existing fenced value
+writers in one transaction. Unit RED then GREEN; all22 world-callback tests
+pass before route generation, with old mixed-field refusal tests unchanged.
+Source route now authored:10essences,8 real native bosses/earned passages,
+physical4073 chest, exact5Silver/fullRift/HatHunter atomic completion.
+Full PG run /tmp/questpc7-ferumbras-green.log is active; check its exact
+result, fix failures, then required checks/pins/fmt and push source. Tests
+include freshPremium/full-backpack refusal across all three reward kinds.
+Do not rerun source investigation; arena/physical facts and conservative
+ritual-readiness interpretation are recorded in CONTRACT-NOTES.md.
+
+## Ferumbras precise fixture/ritual corrections before next push
+
+No product qualification claimed yet. Actual expanded PG RED44.343084621s,
+diagnostic43.456666898s isolates fixture Ground binding mismatch; use actual
+content/frame metadata for MINT as for loop drop, preserving owner guard.
+Next PG44.125205511s correctly refuses two ground stacks9+1. Story now uses
+real fenced pickup, carried merge, drop10 and exact same ritual assertion.
+All early short9/no-charge assertions retained. Native passage destination
+assertions and source clear-cell authoring check added. Full rerun is active
+/tmp/questpc7-ferumbras-green4.log. Finish it, then14 focused validation gates
+including retained Hero PG (/tmp/questpc7-ferumbras-validation.py), fmt/pins,
+status/proof, commit/push immediately. Still9 ACTIVE. Next push deadline10:33UTC;
+checkpoint metadata if required checks are still running, without QUALIFIED.
+
+## Ferumbras full native path reached; combined reward persistence diagnosis
+
+Latest actual PG52.093024636s proves the corrected exact10 offering, all eight
+native bosses and passage positions, freshPremium refusal, full-backpack
+all-value refusal and freeing a slot by real food USE. Final combined reward
+returns no command result (underlying persistence error is hidden by pending
+callback reconciliation). Add test-only root outcome diagnostic, preserve all
+assertions and fix the exact underlying error. New run green5.log is next.
+Keep ACTIVE. Push this truthful checkpoint before10:33UTC while diagnosing;
+no engine deferral or completion claim. Product staged/working locally.
