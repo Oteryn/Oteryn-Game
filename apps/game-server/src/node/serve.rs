@@ -706,7 +706,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                     &commands.client_certificate_file,
                 )?);
             }
-            if let Some(public) = &platform.public_projections {
+            if let Some(public) = platform.public_projections.as_ref().filter(|p| p.enabled) {
                 others.push(chain(
                     "platform.public_projections.client_certificate_file",
                     &public.client_certificate_file,

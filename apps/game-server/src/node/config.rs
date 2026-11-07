@@ -1476,7 +1476,11 @@ epoch_fence_file = "/var/lib/oteryn/public-projection/epoch-fence"
                     .collect::<Vec<_>>()
                     .join("\n")
             );
-            let invalid = valid.replace(&format!("{field} = "), &format!("{field} = false # "));
+            let invalid = format!(
+                "{}{}",
+                &valid[..at],
+                valid[at..].replace(&format!("{field} = "), &format!("{field} = false # "))
+            );
             for document in [without, invalid] {
                 let rejected = NodeConfig::parse(document.as_bytes()).expect_err(field);
                 let boot =

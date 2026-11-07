@@ -3,6 +3,8 @@
 Owner authorization: 2026-11-07, “1 tak, 2 zgoda”. Base: `d34807f5b`.
 Branch: `claude/happy-davinci-ijz3wy-pubproj`; migration allocation: 1350–1359;
 new numeric identifiers use next free on the base plus 50. None allocated yet.
+Owner extended the task on 2026-11-07 with G-12 world_daily and both G-8
+statistics families; migrations 1360–1369 are additionally reserved if needed.
 
 ## Part A
 
@@ -10,6 +12,14 @@ The parser already has `PublicProjectionsConfig`, default-disabled gating,
 purpose-separated credential/fence validation, and a production caller in
 `node/serve/supervision.rs`. Install the disabled table in the Synology template
 and node boot fixture. No gameplay rule changes or donor rules in this step.
+
+The disabled table exposed eager certificate reads by Bazaar and T94. Those
+reads now require public_projections.enabled, while configuration path-identity
+validation remains active. The existing publisher itself was already gated.
+The new missing/mistyped-field negative test passed (first build 9m14s;
+execution 0.01s). Server check passed (4m15s); all-target server clippy passed.
+Full changed-crate tests, pin and architecture checks remain pending in this
+checkpoint. No claim of completed Part A qualification is made yet.
 
 ## Part B reconciliation
 
