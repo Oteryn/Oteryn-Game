@@ -290,6 +290,7 @@ def build():
     selected.append_friends(ROOT, callbacks, offers, inputs, PIN)
     selected.append_eligibility_starts(ROOT, callbacks, inputs, PIN)
     programmes.append(ROOT, callbacks, inputs, PIN)
+    formal_worlds = programmes.append_formal(ROOT, callbacks, inputs, PIN)
     callbacks.sort(key=lambda c:c['key'])
     offers.sort(key=lambda c:(c['npc'],c['topic'],c['keywords']))
     validate_callbacks({'schema':1,'callbacks':callbacks})
@@ -301,6 +302,7 @@ def build():
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'callbacks':callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
+    generated['content/quests/questpc7-world-callbacks.json'] = encoded({'schema':1,'callbacks':formal_worlds})
     greetings=[]
     for npc in sorted({c['npc'] for c in callbacks}):
         path='data-global/npc/'+npc.removeprefix('oteryn:npc.')+'.lua'

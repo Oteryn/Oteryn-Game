@@ -589,12 +589,30 @@ impl RevisionSlot {
         context: super::quest_world_callback::QuestWorldContext,
         native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
     ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.commit_world_callback_with_native_and_gate(root,authority,node,fence,request,catalogue,permit,context,native,&super::quest_state::grizzly::NoGrizzlyPremium).await
+    }
+
+    /// World callback storage and altar inputs share one revision slot and transaction.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_world_callback_with_native_and_gate<G: super::quest_state::grizzly::GrizzlyPremiumGate>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        context: super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
+        gate: &G,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
         self.sequenced(
             root_revision(root, authority),
             fence,
             Expect::Cursor(OnMismatch::RetryOnce),
             |fence| {
-                root.commit_character_world_callback_with_native(
+                root.commit_character_world_callback_with_native_and_gate(
                     authority,
                     node,
                     fence,
@@ -603,6 +621,7 @@ impl RevisionSlot {
                     permit,
                     context.clone(),
                     native,
+                    gate,
                 )
             },
         )

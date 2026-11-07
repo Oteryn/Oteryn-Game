@@ -65,6 +65,23 @@ impl DurabilityRoot {
         context: super::super::quest_world_callback::QuestWorldContext,
         native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
     ) -> Result<QuestTransitionOutcome> {
+        self.commit_character_world_callback_with_native_and_gate(authority,node,fence,request,catalogue,permit,context,native,&grizzly::NoGrizzlyPremium).await
+    }
+
+    /// A content-bound world callback uses the same fenced quest writer and receipt.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_character_world_callback_with_native_and_gate<G: grizzly::GrizzlyPremiumGate>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::super::spell_owner_commit::SpellLanePermit,
+        context: super::super::quest_world_callback::QuestWorldContext,
+        native: Option<&oteryn_gameplay_content::content::native_gameplay::NativeGameplayState>,
+        gate: &G,
+    ) -> Result<QuestTransitionOutcome> {
         self.commit_quest_inner::<_, 0>(
             authority,
             node,
@@ -75,7 +92,7 @@ impl DurabilityRoot {
             None,
             None,
             None,
-            &grizzly::NoGrizzlyPremium,
+            gate,
             None,
             None,
             None,
@@ -257,7 +274,8 @@ impl DurabilityRoot {
                                 || c.experience.is_some()
                                 || c.monk_reward.is_some()
                                 || c.native_rule.is_some()
-                                || c.outfit_reward.is_some())
+                                || c.outfit_reward.is_some()
+                                || c.requirements.is_some())
                     }))
         {
             return Err(CharacterProgressionError::InvalidInput);
@@ -410,7 +428,8 @@ impl DurabilityRoot {
                     {
                         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
                     }
-                    if let Some(requirements) = reward_callback.as_ref().and_then(|callback| callback.requirements.as_ref()) {
+                    if let Some(requirements) = reward_callback.as_ref().and_then(|callback| callback.requirements.as_ref())
+                        .or_else(|| callback.as_ref().and_then(|callback| callback.requirements.as_ref())) {
                         if state.try_get::<i64,_>("level")? < i64::from(requirements.min_level) {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
@@ -424,7 +443,8 @@ impl DurabilityRoot {
                         }
                         if !requirements.owned_cosmetics.is_empty()
                             && !super::owned_cosmetics::holds(&mut tx, fence.character_id,
-                                reward_admission.as_ref().map(|admission| admission.native),
+                                reward_admission.as_ref().map(|admission| admission.native)
+                                    .or_else(|| context.as_ref().and_then(|(_,_,native)|*native)),
                                 &requirements.owned_cosmetics).await?
                         {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));

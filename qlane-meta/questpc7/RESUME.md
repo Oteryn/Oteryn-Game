@@ -598,3 +598,21 @@ resolved the second RED. Both tokens consumed, premature stages refused, final
 completion/achievement and ordinary full-outfit selection pass. Metadata-only
 proof checkpoint preserves push cadence while source checks continue. Source
 remains uncommitted and ledger ACTIVE until hoist/compiler/pins checks finish.
+
+## Formal Dress source fully green and ready to push
+
+Complete selected Formal Dress route is QUALIFIED: PG18.6 RED74.63448665s
+then GREEN76.808861878s, plus all three read-only hoist floors,17 world units,
+reward units,authoring17/generator reproduction,cargo check,strict clippy,
+content123/world5 and repository pin refresh/check/fmt. Proof retains fixture
+repairs and the immediate world-to-NPC projection RED/fix. Semantic-only lint
+return simplification was rechecked with strict clippy; no assertion weakened.
+16 ACTIVE ledger entries remain. Continue generic native kill-objective/guardian
+reuse from questpc8 7eeee8fb152806de66af062831f94c2183c915ee, then owned encounter
+routes. Qengine2 refreshed36927f208066d6c83608621fb554ef41c7d80420 has no additional
+qualified overlap; it is preparing sex-qualified Hunter/Mage/Dream Warden work.
+Do not wait or ask ownership questions. Whole Hunting for Tokens route is also
+ready for a small source composition: canonical20tokens19083 -> Abacus19151;
+pinned Jorge61,115,125-128 SHA127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0.
+Reuse physical qualifier and source placement tooling; never commit raw donor.
+Raw source and concise next-slice notes are under /tmp/questpc7-next-*.

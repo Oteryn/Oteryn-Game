@@ -60,6 +60,46 @@ pub struct RewardRequirements {
     pub owned_cosmetics: Vec<OutfitReward>,
 }
 
+impl RewardRequirements {
+    pub(super) fn valid(&self) -> bool {
+        let slug = |value: &str, prefix: &str, maximum| {
+            value.len() <= maximum
+                && value.strip_prefix(prefix).is_some_and(|tail| {
+                    !tail.is_empty()
+                        && tail.bytes().all(|b| {
+                            b.is_ascii_lowercase() || b.is_ascii_digit() || b"._/:-".contains(&b)
+                        })
+                })
+        };
+        self.min_level <= 1_000_000
+            && self.completed_quests.len() <= 8
+            && self.completed_quests.iter().collect::<BTreeSet<_>>().len()
+                == self.completed_quests.len()
+            && self
+                .completed_quests
+                .iter()
+                .all(|key| slug(key, "oteryn:quest.", 128))
+            && self.owned_cosmetics.len() <= 8
+            && self
+                .owned_cosmetics
+                .iter()
+                .map(|o| &o.outfit)
+                .collect::<BTreeSet<_>>()
+                .len()
+                == self.owned_cosmetics.len()
+            && self.owned_cosmetics.iter().all(|o| {
+                o.addons <= 3
+                    && o.outfit.len() <= 160
+                    && o.outfit.strip_prefix("oteryn:outfit.").is_some_and(|tail| {
+                        !tail.is_empty()
+                            && tail
+                                .bytes()
+                                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+                    })
+            })
+    }
+}
+
 /// A read-only prerequisite: its original quest retains ownership and writes.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -173,25 +213,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                     || tracks.contains(&counter.track)
                     || requires.contains(&counter.track)
             })
-            || c.requirements.as_ref().is_some_and(|r| {
-                r.owned_cosmetics.len() > 8
-                    || r.owned_cosmetics
-                        .iter()
-                        .map(|o| &o.outfit)
-                        .collect::<BTreeSet<_>>()
-                        .len()
-                        != r.owned_cosmetics.len()
-                    || r.owned_cosmetics
-                        .iter()
-                        .any(|o| !slug(&o.outfit, "oteryn:outfit.", b"_", 160) || o.addons > 3)
-                    || r.min_level > 1_000_000
-                    || r.completed_quests.len() > 8
-                    || r.completed_quests.iter().collect::<BTreeSet<_>>().len()
-                        != r.completed_quests.len()
-                    || r.completed_quests
-                        .iter()
-                        .any(|key| !slug(key, "oteryn:quest.", b"._/:-", 128))
-            })
+            || c.requirements.as_ref().is_some_and(|r| !r.valid())
             || c.present.len() > 8
             || evidence.len() != c.present.len()
             || c.present

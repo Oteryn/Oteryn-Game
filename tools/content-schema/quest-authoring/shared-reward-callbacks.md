@@ -93,3 +93,10 @@ identities and provenance to admitted cosmetic targets. This lets a quest base
 and an item-earned addon satisfy the same canonical ownership predicate while
 retaining the independent receipt and consumption owners. The producer declares
 the exact look pairs; it does not infer authority from names or numeric suffixes.
+
+World callbacks can declare the same bounded `requirements` as NPC rewards.
+The fenced writer checks current level, Current Premium authority, completed
+prerequisite quests and explicit cosmetic ownership before committing any
+world effect. Legacy callers without Premium authority refuse Premium-gated
+callbacks. Canonical source citations include the definition path and SHA256;
+these describe selected Oteryn adaptations rather than donor script locations.

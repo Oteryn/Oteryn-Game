@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/questpc7-formal-entry",
+      "quest": "oteryn:quest.formal_dress_outfits_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32314,
+          "y": 32170,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 464
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/formal/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "minimum_level": 20,
+      "requirements": {
+        "min_level": 20,
+        "premium": true,
+        "completed_quests": []
+      },
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "Ask the king about the anniversary exhibition first.",
+      "success_message": "You have found the Formal Dress anniversary exhibition.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:46422fadaad9def3b2abdf15595fcaf33e01941475773cb248e80d5500cfd1cf"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/questpc7-formal-display",
+      "quest": "oteryn:quest.formal_dress_outfits_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32315,
+          "y": 32170,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2110
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/formal/programme",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "minimum_level": 20,
+      "requirements": {
+        "min_level": 20,
+        "premium": true,
+        "completed_quests": []
+      },
+      "experience": null,
+      "monk_reward": null,
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "Ask the king about the anniversary exhibition first.",
+      "success_message": "You have earned the Formal Dress outfit. Ask the king for a formal brass button.",
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:46422fadaad9def3b2abdf15595fcaf33e01941475773cb248e80d5500cfd1cf"
+      ],
+      "outfit_reward": {
+        "outfit": "oteryn:outfit.formal_dress",
+        "addons": 0
+      }
+    }
+  ]
+}

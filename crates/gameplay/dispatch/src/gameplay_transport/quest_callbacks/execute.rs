@@ -246,7 +246,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             let outcome = slot
-                .commit_world_callback_with_native(
+                .commit_world_callback_with_native_and_gate(
                     self.root,
                     self.character,
                     self.holder,
@@ -260,6 +260,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     context,
                     self.active_generation
                         .and_then(|generation| generation.native_gameplay()),
+                    &crate::gameplay_transport::spell_premium_coordinator::QuestRewardPremium(
+                        self.premium_coordinator,
+                    ),
                 )
                 .await;
             let fresh = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
@@ -276,10 +279,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return UseDisposition::Rejected;
                     }
                     self.states.loop_ground.invalidate();
-                    // Shrine bonuses must see the committed flag before the next swing;
-                    // the cadence still reloads the durable copy for recovery and XP.
-                    if callback.quest == "oteryn:quest.the_way_of_the_monk_quest"
-                        && let Ok(mut sessions) = self.states.quest_sessions.lock()
+                    // The next NPC or world command must see this committed stage.
+                    // The cadence still reloads the durable copy for recovery and XP.
+                    if let Ok(mut sessions) = self.states.quest_sessions.lock()
                         && let Some(entry) = sessions.get_mut(&session)
                     {
                         entry.copy = entry.copy.take().and_then(|mut copy| {

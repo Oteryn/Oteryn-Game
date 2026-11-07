@@ -1216,6 +1216,173 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/questpc7-formal-admission",
+      "quest": "oteryn:quest.formal_dress_outfits_quest",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "anniversary exhibition",
+        "formal commission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/formal/programme",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "requirements": {
+        "min_level": 20,
+        "premium": true,
+        "completed_quests": []
+      },
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "completes": false,
+      "reply": [
+        "Visit our anniversary exhibition beside the northeastern palace display, then use the display to claim your Formal Dress."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:46422fadaad9def3b2abdf15595fcaf33e01941475773cb248e80d5500cfd1cf",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:1-497:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-formal-button",
+      "quest": "oteryn:quest.formal_dress_outfits_quest",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "formal brass button"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/formal/programme",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "requirements": {
+        "min_level": 20,
+        "premium": true,
+        "completed_quests": [],
+        "owned_cosmetics": [
+          {
+            "outfit": "oteryn:outfit.formal_dress",
+            "addons": 0
+          }
+        ]
+      },
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i37604",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "completes": false,
+      "reply": [
+        "Attach this Brass Button, then ask me for a {formal decorative plume}."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:46422fadaad9def3b2abdf15595fcaf33e01941475773cb248e80d5500cfd1cf",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:1-497:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-formal-complete",
+      "quest": "oteryn:quest.formal_dress_outfits_quest",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "complete formal dress"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/formal/programme",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "requirements": {
+        "min_level": 20,
+        "premium": true,
+        "completed_quests": [],
+        "owned_cosmetics": [
+          {
+            "outfit": "oteryn:outfit.formal_dress",
+            "addons": 3
+          }
+        ]
+      },
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/sharp_dressed",
+      "completes": true,
+      "reply": [
+        "Your Formal Dress exhibition programme is complete. You are Sharp Dressed!"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:46422fadaad9def3b2abdf15595fcaf33e01941475773cb248e80d5500cfd1cf",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:1-497:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-formal-plume",
+      "quest": "oteryn:quest.formal_dress_outfits_quest",
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "formal decorative plume"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/formal/programme",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "requirements": {
+        "min_level": 20,
+        "premium": true,
+        "completed_quests": [],
+        "owned_cosmetics": [
+          {
+            "outfit": "oteryn:outfit.formal_dress",
+            "addons": 2
+          }
+        ]
+      },
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i37605",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "completes": false,
+      "reply": [
+        "Attach this Decorative Plume, then ask me to {complete formal dress}."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:46422fadaad9def3b2abdf15595fcaf33e01941475773cb248e80d5500cfd1cf",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:1-497:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/questpc7-friends-blessing",
       "quest": "oteryn:quest.friends_and_traders",
       "npc": "oteryn:npc.quentin",

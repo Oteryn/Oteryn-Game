@@ -44,7 +44,7 @@ fn scenario_case(
         );
     let rotten_purchase = name == "rotten-blood-access-purchase";
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if name == "l1-warmaster-wardrobe" { name } else if classic_npc {
+    let mut callback = callback(if name == "questpc7-outfits-formal" { "questpc7-formal-display" } else if name == "l1-warmaster-wardrobe" { name } else if classic_npc {
         "behemoth"
     } else if rotten_purchase {
         "rotten-blood/sacrifice"
@@ -71,7 +71,15 @@ fn scenario_case(
     if stateless_destination.is_some() {
         assert_eq!(callback.selector.position, Some(trigger));
     }
-    let world = world(&callback, trigger)?;
+    let world = if name == "questpc7-outfits-formal" {
+        // The fixture includes the same admitted entry appearance as the real palace.
+        let mut physical = callback.clone();
+        physical.passages.push(oteryn_gameplay_quests::quest::world_callbacks::Passage {
+            position: Position { x:32314, y:32170, floor:-6 }, appearance:464,
+            replacement:None, require_state:false,
+        });
+        world(&physical, trigger)?
+    } else { world(&callback, trigger)? };
     run(async |admin| {
         let h = if shared_rewards {
             Harness::create_quest_reward(admin, "quest_rewards", !name.ends_with("pirate")).await?
@@ -95,6 +103,7 @@ fn scenario_case(
         let generation = controller.active().ok_or("generation")?;
         let initial_level: Option<u32> = match name {
             "questpc7-eligibility-high" => Some(1000),
+            "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
             _ => None,
         };
@@ -266,7 +275,9 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if name.starts_with("questpc7-outfits-") {
+        if name == "questpc7-outfits-formal" {
+            super::super::questpc7_formal::exercise(&mut owner, &mut admitted, &h, &callback).await?;
+        } else if name.starts_with("questpc7-outfits-") {
             super::super::questpc7_outfit_items::exercise(&mut owner, &mut admitted, &h, name).await?;
         } else if name == "l1-warmaster-wardrobe" {
             super::super::questpc7_world_outfit::exercise(&mut owner, &mut admitted, &h, &callback, deps.actor).await?;

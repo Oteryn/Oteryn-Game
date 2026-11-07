@@ -30,6 +30,20 @@ class QuestRewards(unittest.TestCase):
             for addon in range(row['addon_count']+1):
                 self.assertEqual(sum(m['grant_key']==f"{row['key']}/quest-grant/{addon}" for m in mappings),1)
 
+    def test_formal_exhibition_requires_current_premium_and_consumed_button(self):
+        worlds=json.loads(self.outputs['content/quests/questpc7-world-callbacks.json'])['callbacks']
+        self.assertEqual(len(worlds),2)
+        for callback in worlds:
+            self.assertEqual(callback['requirements'], {'min_level':20, 'premium':True, 'completed_quests':[]})
+        entry=next(c for c in worlds if c['key'].endswith('-entry'))
+        display=next(c for c in worlds if c['key'].endswith('-display'))
+        self.assertEqual(entry['selector']['position'], {'x':32314,'y':32170,'floor':-6})
+        self.assertEqual(entry['selector']['appearance'],464)
+        self.assertEqual(display['selector']['appearance'],2110)
+        self.assertEqual(display['outfit_reward'],{'outfit':'oteryn:outfit.formal_dress','addons':0})
+        plume=next(c for c in self.callbacks['callbacks'] if c['key']=='oteryn:quest-reward/questpc7-formal-plume')
+        self.assertEqual(plume['requirements']['owned_cosmetics'],[{'outfit':'oteryn:outfit.formal_dress','addons':2}])
+
     def test_cosmetics_revision_matches_the_character_gameplay_content(self):
         gameplay=json.loads(self.outputs['content/spells.manifest.json'])
         self.assertEqual(self.author['document']['content_revision'],

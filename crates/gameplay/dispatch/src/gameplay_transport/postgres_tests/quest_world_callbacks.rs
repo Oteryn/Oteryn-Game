@@ -337,9 +337,11 @@ fn world_ordinal(
                 family: bundle::Family::Terrain,
                 id: index,
                 terrain: Some(bundle::Terrain {
-                    kind: bundle::TerrainKind::Wall,
-                    walkable: None,
-                    ground_speed: None,
+                    kind: if callback.key == "oteryn:quest-callback/questpc7-formal-display" && passage.appearance == 464 {
+                        bundle::TerrainKind::Ground
+                    } else { bundle::TerrainKind::Wall },
+                    walkable: (callback.key == "oteryn:quest-callback/questpc7-formal-display" && passage.appearance == 464).then_some(true),
+                    ground_speed: (callback.key == "oteryn:quest-callback/questpc7-formal-display" && passage.appearance == 464).then_some(150),
                 }),
             });
             index

@@ -41,7 +41,7 @@ fn questpc7_inquisition_personal_tokens_require_actual_native_addons() -> TestRe
     run_case("questpc7-outfits-inquisition")
 }
 
-async fn talk(
+pub(super) async fn talk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
@@ -56,12 +56,12 @@ async fn talk(
     super::qengine_rewards::talk(owner, admitted, npc, command, words).await
 }
 
-async fn quantity(h: &Harness, item: u32) -> TestResult<i64> {
+pub(super) async fn quantity(h: &Harness, item: u32) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1")
         .bind(format!("oteryn:item.tibia.i{item}")).fetch_one(&h.pool).await?)
 }
 
-async fn use_token(
+pub(super) async fn use_token(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     item: u32,

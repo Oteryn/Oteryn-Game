@@ -141,6 +141,8 @@ pub struct Callback {
     pub native_rule: Option<NativeRule>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outfit_reward: Option<super::reward_callbacks::OutfitReward>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requirements: Option<super::reward_callbacks::RewardRequirements>,
     pub sources: Vec<String>,
 }
 
@@ -164,6 +166,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/shared-outfit-callbacks.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/questpc7-world-callbacks.json"
     ))?);
     callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
     let keys: BTreeSet<_> = callbacks.iter().map(|callback| &callback.key).collect();
@@ -216,7 +221,9 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()
                     || callback.outfit_reward.is_some()
+                    || callback.requirements.is_some()
                     || callback.storage.iter().any(|storage| storage.preserve)))
+            || callback.requirements.as_ref().is_some_and(|r| !r.valid())
             || callback.outfit_reward.as_ref().is_some_and(|reward| {
                 callback.trigger != Trigger::Use
                     || callback.storage.is_empty()
@@ -265,7 +272,14 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback.sources.is_empty()
             || !callback.sources.iter().any(|source| {
                 // Dryad Garden uses the pinned Crystal donor; the earlier callbacks use Canary.
-                source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
+                (source.starts_with("canonical:content/quests/definitions/")
+                    && source.rsplit_once(":sha256:").is_some_and(|(_, hash)| {
+                        hash.len() == 64
+                            && hash
+                                .bytes()
+                                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+                    }))
+                    || source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
                     || (callback.outfit_reward.is_some()
                         && source.starts_with("crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:"))
                     || source.starts_with("crystal:201189f871d23597b82caf88fd611454a2ddefb8:")

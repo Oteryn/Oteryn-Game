@@ -77,3 +77,62 @@ def append(root, callbacks, inputs, pin):
         add('first token', 0, 1, give=items[0], owned=0)
         add('second token', 1, 2, give=items[1], owned=bits[0])
         add('complete', 2, 3, owned=3, completes=True)
+
+def append_formal(root, callbacks, inputs, pin):
+    """The chosen personal exhibition uses exact existing palace map objects."""
+    path = 'content/quests/definitions/quests-00200-00299.json'
+    raw = (root / path).read_bytes()
+    index, definition = next((i, r['definition']) for i, r in enumerate(json.loads(raw)['records'])
+                             if r['definition']['identity']['key'] == 'oteryn:quest.formal_dress_outfits_quest')
+    recipe = definition['oteryn_recipe']['payload']['recipe']
+    if ([s['kind'] for s in recipe['stages']] != ['explore', 'use', 'collect', 'use', 'collect', 'use', 'complete']
+            or any(s['count'] != 1 for s in recipe['stages']) or recipe['repeat']['kind'] != 'once'):
+        raise ValueError('QUESTPC7_FORMAL_SELECTED_RECIPE_DRIFT')
+    quest = definition['identity']['key']
+    track = 'oteryn:quest-progress/questpc7/formal/programme'
+    outfit = 'oteryn:outfit.formal_dress'
+    canonical = f'canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}'
+    requirements = {'min_level': recipe['requirements']['min_level'], 'premium': recipe['requirements']['premium'], 'completed_quests': []}
+    npc_source = 'data-global/npc/king_tibianus.lua'
+    npc_citation = f'crystal:{pin}:{npc_source}:1-{len(inputs[npc_source].splitlines())}:sha256:{hashlib.sha256(inputs[npc_source]).hexdigest()}'
+
+    def state(before, after):
+        return {'track': track, 'minimum': before, 'maximum': before, 'set': after}
+
+    def add(name, before, after, words, reply, *, give=None, owned=None, completes=False):
+        req = dict(requirements)
+        if owned is not None:
+            req['owned_cosmetics'] = [{'outfit': outfit, 'addons': owned}]
+        callbacks.append({'key': f'oteryn:quest-reward/questpc7-formal-{name}', 'quest': quest,
+            'npc': 'oteryn:npc.king_tibianus', 'keywords': words, 'topic': 0, 'next_topic': 0,
+            'storage': [state(before, after)], 'requirements': req, 'take': [],
+            'give': None if give is None else {'item': f'oteryn:item.tibia.i{give}', 'count': 1, 'contents': []},
+            'outfit': None, 'achievement': 'oteryn:achievement/sharp_dressed' if completes else None,
+            'completes': completes, 'reply': [reply], 'sources': [canonical, npc_citation]})
+
+    add('admission', -1, 0, ['anniversary exhibition', 'formal commission'],
+        'Visit our anniversary exhibition beside the northeastern palace display, then use the display to claim your Formal Dress.')
+    add('button', 2, 3, ['formal brass button'],
+        'Attach this Brass Button, then ask me for a {formal decorative plume}.', give=37604, owned=0)
+    add('plume', 3, 4, ['formal decorative plume'],
+        'Attach this Decorative Plume, then ask me to {complete formal dress}.', give=37605, owned=2)
+    add('complete', 4, 5, ['complete formal dress'],
+        'Your Formal Dress exhibition programme is complete. You are Sharp Dressed!', owned=3, completes=True)
+    worlds = []
+    for name, trigger, position, appearance, before, after, message, reward in [
+        ('entry', 'step_in', {'x':32314,'y':32170,'floor':-6}, 464, 0, 1,
+         'You have found the Formal Dress anniversary exhibition.', None),
+        ('display', 'use', {'x':32315,'y':32170,'floor':-6}, 2110, 1, 2,
+         'You have earned the Formal Dress outfit. Ask the king for a formal brass button.', {'outfit':outfit,'addons':0}),
+    ]:
+        row = {'key':f'oteryn:quest-callback/questpc7-formal-{name}', 'quest':quest,
+            'trigger':trigger, 'selector':{'position':position,'unique':None,'action':None,'appearance':appearance},
+            'lever':None,'reversible':False,'passages':[],'teleport':None,'storage':[state(before,after)],
+            'minimum_level':20,'requirements':requirements,'experience':None,'monk_reward':None,
+            'offerings':[],'item_on_target':None,'return_on_failure':False,
+            'failure_message':'Ask the king about the anniversary exhibition first.',
+            'success_message':message,'sources':[canonical]}
+        if reward is not None:
+            row['outfit_reward'] = reward
+        worlds.append(row)
+    return worlds

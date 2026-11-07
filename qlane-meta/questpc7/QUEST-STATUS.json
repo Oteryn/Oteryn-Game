@@ -543,36 +543,10 @@
     "title": "Formal Dress Outfits Quest",
     "canonical": "oteryn:quest.formal_dress_outfits_quest",
     "definition": "content/quests/definitions/quests-00200-00299.json:1#/records/75/definition",
-    "status": "ACTIVE",
+    "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "queued_stage_binding": {
-      "stage": "s1",
-      "native_dispatch_binding": null,
-      "runtime_enabled": false
-    },
-    "first_unqualified_stage": {
-      "key": "s1",
-      "kind": "explore",
-      "objective": "Visit the anniversary exhibition and locate the formal-dress display.",
-      "targets": [
-        "25 Years of Tibia exhibition"
-      ]
-    },
     "owner": "questpc7",
-    "remaining_work": {
-      "kind": "lane_implementation_work",
-      "missing_piece": "Formal Dress Outfits, Formal Dress first addon, Formal Dress second addon: the reusable fenced NPC outfit/addon and account appearance mapping owner is implemented. Compose the full pinned route and exact owned NPC/physical/encounter bindings; implement remaining guard or currency mechanisms here and qualify the whole route with real PostgreSQL proof.",
-      "evidence": [
-        "content/quests/definitions/quests-00200-00299.json:1#/records/75/definition",
-        "crates/gameplay/durability/src/durability/character_appearance/quest_grants.rs:11",
-        "crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:351"
-      ],
-      "attempts": [
-        "Read every selected outfit milestone and its source/recipe references; traced QuestOutfitGrant and its production callers plus the generic NPC storage-only evaluator. Kept reward-claim evidence separate from outfit ownership."
-      ],
-      "boundary": "Current user assigns missing Game mechanisms to questpc7; previous qengine/qengine2 deferral is superseded."
-    },
     "shared_reward_mechanism": {
       "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
       "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
@@ -584,12 +558,31 @@
       "proof": "qlane-meta/questpc7/WORLD-OUTFIT-PG-PROOF.json",
       "remaining": "Compose selected exhibition entry/display, accessory acquisition/use and final achievement/completion here."
     },
-    "current_batch": {
-      "mechanism": "fresh fenced world requirements with existing Current Premium authority",
+    "qualification": {
+      "kind": "complete selected Formal Dress native exhibition route",
       "proof": "qlane-meta/questpc7/FORMAL-PG-PROOF.json",
-      "postgres_red_seconds": 74.63448665,
-      "checks": "Whole selected PostgreSQL route GREEN; remaining required checks running before source commit.",
-      "postgres_green_seconds": 76.808861878
+      "test": "questpc7_formal_exhibition_display_and_consumptive_accessories",
+      "postgres": "18.6",
+      "red_seconds": 74.63448665,
+      "green_seconds": 76.808861878,
+      "scope": [
+        "fresh programme without quest-state seeds",
+        "native level20 and Current Premium",
+        "initial display refusal before admission",
+        "real world StepIn exploration",
+        "fresh Premium authority refusal without effects",
+        "native display base grant",
+        "immediate world-to-NPC stage visibility",
+        "premature second token and completion refused",
+        "actual button and plume item consumption",
+        "durable completion and Sharp Dressed achievement",
+        "normal full-outfit appearance selection"
+      ],
+      "bindings": [
+        "content/quests/shared-reward-callbacks.json",
+        "content/quests/questpc7-world-callbacks.json"
+      ],
+      "generic_owner": "Fresh fenced world requirements reuse NPC bounds, semantic ownership and existing Current Premium authority; immediate committed quest copy supports world-to-NPC sequences."
     }
   },
   {
