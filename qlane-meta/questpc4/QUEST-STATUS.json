@@ -7254,7 +7254,7 @@
       "reuse": "No shared-count/personal OR implementation found. PC3 conditional effects concern already-locked Quest operands rather than shared World leases, and published enum tags conflict; retain local published tags unchanged.",
       "tests": "Three composed native cases: 6 switches+7 ordered signs refuse; 7 switches alone open; 8 ordered signs alone open. All USE/STEP real; sealed pocket setup only, no SQL-seeded flags/counts; source landing11/Rootprogress/replay. Existing native threshold gate regression and source-expiry regression.",
       "scope": "Exact interaction pockets only, not complete maze or whole quest qualification. Do not implement until batch24 green pushed.",
-      "status": "COMPILED_BEHAVIORAL_RED_WIP_CHECKPOINT",
+      "status": "COMPILED_MECHANISM_RED_WIP_CHECKPOINT",
       "previous_pushed_head": "806b8370e13c9fcb9eef8445c98ca8a173dba903",
       "red_session": 56106,
       "red_log": "/tmp/questpc4-diprath-room-red3.log",
@@ -7269,7 +7269,7 @@
         "cause": "Selected switches at y32507 belong to adjacent source region y126, not y127. Correct per-tile source region; preserve original tile presence assertion.",
         "log": "/tmp/questpc4-diprath-room-red.log"
       },
-      "checkpoint_head": "c6cc06e20",
+      "checkpoint_head": "7cffecb78",
       "fixture_correction": {
         "status": "SOURCE_VERIFIED_RERUN_COMPILING",
         "resolver": "Reuse l6_shared_gate_native::region by full (z,x/256,y/256), exposed to sibling fixture. No duplicate region routing.",
@@ -7289,7 +7289,36 @@
         "actual": "Eight real ordered native sign USEs commit; native STEP remains33093,32589,z15",
         "expected": "Literal source goal33092,32590,z15 via personal completion alternative",
         "log": "/tmp/questpc4-diprath-room-red3.log"
-      }
+      },
+      "implementation": "Canonical Gate now owns quest, optional one-way personal completion and optional monotone progress. Root request names canonical gate; one fenced PG statement reads World count and current character+quest-owned flag. Existing count-only expiry bridge unchanged. Exact native40083 counterpart added; source treasure track reused, RaiseTo3.",
+      "green_session": 83556,
+      "green_log": "/tmp/questpc4-diprath-room-green.log",
+      "gate_session": 95608,
+      "gate_script": "/tmp/questpc4-diprath-room-gates.sh",
+      "first_green_attempt": {
+        "postgres_version": "18.6",
+        "marker": "POSTGRES_DATABASE_READY l6_diprath_room",
+        "cases_passed": 1,
+        "cases_failed": 2,
+        "seconds": 93.14,
+        "closed_seconds": 93.143576439,
+        "actual_red": "Both eligible alternatives restore origin; new progress callback lacks physical admission binding for the protected timer-owned treasure track.",
+        "fix": "requires_world_admission=gate.progress.is_some(); preserve protected-track writer and existing count-only gates.",
+        "log": "/tmp/questpc4-diprath-room-green.log"
+      },
+      "regressions": {
+        "legacy_50137_closed": {
+          "passed": 1,
+          "seconds": 97.904646906,
+          "postgres_version": "18.6"
+        },
+        "diprath_expiry": {
+          "passed": 1,
+          "seconds": 74.482663594,
+          "postgres_version": "18.6"
+        }
+      },
+      "gates": "Stopped obsolete owned wrapper153231 before source repair; no check/clippy result claimed."
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context.",

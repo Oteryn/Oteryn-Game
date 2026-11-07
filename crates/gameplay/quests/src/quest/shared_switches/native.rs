@@ -72,12 +72,22 @@ const GATE_50138: &[NativeSwitchBinding] = &[NativeSwitchBinding {
     ordinal: 0,
     appearance: 417,
 }];
+const GATE_40083: &[NativeSwitchBinding] = &[NativeSwitchBinding {
+    position: Position {
+        x: 33093,
+        y: 32589,
+        floor: -15,
+    },
+    ordinal: 0,
+    appearance: 423,
+}];
 pub fn bindings(key: &str) -> &'static [NativeSwitchBinding] {
     match recipe(key).map(|r| r.action) {
         Some(12121) => BINDINGS_12121,
         Some(12122) => BINDINGS_12122,
         Some(12123) => BINDINGS_12123,
         _ => match gate(key).map(|g| g.unique) {
+            Some(40083) => GATE_40083,
             Some(50135) => GATE_50135,
             Some(50137) => GATE_50137,
             Some(50138) => GATE_50138,

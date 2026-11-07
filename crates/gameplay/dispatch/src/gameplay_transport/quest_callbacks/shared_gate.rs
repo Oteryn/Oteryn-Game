@@ -65,12 +65,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
                 native,
                 crate::durability::quest_world_callback::shared_count::Request {
-                    counter_recipe: gate.counter_recipe.into(),
+                    gate: callback.key.clone(),
                     context,
                 },
             )
             .await;
         let decision = match result {
+            // The optional flag is a canonical one-way completion fact observed
+            // for this actor in the same fenced statement snapshot as the count.
+            Ok(Some(observed)) if observed.personal_completion => Some(true),
             Ok(Some(observed)) => {
                 let elapsed = self.owner_now().get().saturating_sub(started);
                 // Anchor the bridge before the RPC, conservatively subtracting all
