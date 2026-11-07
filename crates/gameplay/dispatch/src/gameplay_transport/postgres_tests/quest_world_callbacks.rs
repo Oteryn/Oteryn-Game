@@ -59,6 +59,20 @@ pub(super) async fn input_item(
     };
     let facts = generation_item_facts(native, &definition).map_err(debug)?;
     let map = owner.bundle_map().ok_or("map")?;
+    let (digest, frame) = {
+        let r = owner.runtime.lock().await;
+        (
+            r.content_pin().server_artifact_digest(),
+            r.content_pin().frame_binding_digest(),
+        )
+    };
+    let revision = format!(
+        "sha256:{}",
+        digest
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>()
+    );
     let mut candidate = owner
         .root
         .freeze_item_mint(
@@ -90,8 +104,8 @@ pub(super) async fn input_item(
                         ),
                     corpse_ref: id(3).to_vec(),
                     map_revision: crate::map::overlay::map_revision(map.overlay.base()),
-                    content_revision: "content-1".into(),
-                    native_room_placement_context: vec![1],
+                    content_revision: revision.clone(),
+                    native_room_placement_context: frame.to_vec(),
                 },
                 content_revision: "content-1".into(),
                 ruleset_revision: "ruleset-1".into(),
@@ -161,20 +175,6 @@ pub(super) async fn input_item(
     if carried {
         return Ok(());
     }
-    let (digest, frame) = {
-        let r = owner.runtime.lock().await;
-        (
-            r.content_pin().server_artifact_digest(),
-            r.content_pin().frame_binding_digest(),
-        )
-    };
-    let revision = format!(
-        "sha256:{}",
-        digest
-            .iter()
-            .map(|b| format!("{b:02x}"))
-            .collect::<String>()
-    );
     let moved = owner
         .root
         .commit_item_loop_move(

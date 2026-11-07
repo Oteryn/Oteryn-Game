@@ -3120,12 +3120,13 @@
     ],
     "counts": {
       "qualified": 1,
-      "unfinished": 22,
-      "blocked": 0
+      "unfinished": 20,
+      "blocked": 0,
+      "skipped_external_owner": 2
     },
     "scope_note": "All LANE-L6 input source blockers remain obligations. Differences from selected recipe approximations are not authority to drop a blocker. Historical qengine ownership language is not treated as a reason to defer work now owned by L6.",
     "publication_branch": "claude/happy-davinci-ijz3wy-questpc4",
-    "latest_batch": "cloud-exact-tools-02",
+    "latest_batch": "cloud-floor-profiles-03",
     "mechanisms": {
       "reusable_tools_and_atomic_counters": {
         "status": "QUALIFIED",
@@ -3181,6 +3182,41 @@
           "result": "1 passed / 0 failed",
           "marker": "POSTGRES_CASE_COMPLETED qcb3_consuming_tool_regression"
         }
+      },
+      "floor_operand_physical_admission": {
+        "status": "QUALIFIED",
+        "scope": "Only physical native admission and custody/drop/replay for eight exact existing Items3222..3229; no assembly or whole-quest qualification.",
+        "red": {
+          "test": "l6_floor_assembly_final_drop_consumes_seven_and_creates_one_helmet",
+          "marker": "POSTGRES_DATABASE_READY l6_floor_assembly",
+          "duration_seconds": 48.01,
+          "result": "0 passed / 1 failed",
+          "error": "DefinitionNotFound at shared first input preparation"
+        },
+        "green": {
+          "test": "l6_floor_profiles_eight_exact_items_survive_custody_drop_and_replay",
+          "marker": "POSTGRES_CASE_COMPLETED l6_floor_profiles",
+          "duration_seconds": 48.790537128,
+          "result": "1 passed / 0 failed"
+        },
+        "source": {
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "data/items/items.xml",
+          "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+          "lines": {
+            "3222": 8032,
+            "3223": 8037,
+            "3224": 8042,
+            "3225": 8047,
+            "3226": 8052,
+            "3227": 8061,
+            "3228": 8066,
+            "3229": 8071
+          }
+        },
+        "existing_native_profiles_unchanged": true,
+        "native_profile_count_before": 3590,
+        "native_profile_count_after": 3598
       }
     },
     "active_counts": {
@@ -3192,13 +3228,56 @@
     "latest_batch_checks": {
       "result": "PASS",
       "cargo_fmt": true,
-      "cargo_check_changed_crates": "exit0,20.43s",
-      "clippy_all_targets_all_features_D_warnings": "exit0,57.00s",
-      "callback_units": "15 passed / 0 failed",
-      "focused_postgres": "two tool variants and consuming regression; all passed with nonzero duration markers",
-      "content_integration": "123 passed / 0 failed,2.50s",
-      "pin_refresh_and_check": "PASS; unchanged world bundle ec1fc25ee29632c23012be0191f7a3fdcd609ccdd23214286238c953e8a6caab",
-      "generated_files": "No World/provider inputs changed; only the authored embedded callback gained an exact alternative."
+      "cargo_check": "content + dispatch, exit0,11.41s",
+      "clippy": "content + dispatch, all targets/features, -D warnings, exit0,2m12s",
+      "focused_postgres": "1 passed / 0 failed,48.790537128s, completion marker after cleanup",
+      "provider_check": "PASS registered spell import files=41",
+      "profile_capture_check": "PASS exact pinned XML + client bank",
+      "pin_refresh_and_check": "PASS; unchanged World bundle ec1fc25ee29632c23012be0191f7a3fdcd609ccdd23214286238c953e8a6caab",
+      "existing_native_delta": "Exactly eight additions; every prior native profile unchanged; no charges or timed state granted"
+    },
+    "current_attempt": {
+      "name": "cloud-floor-assembly-prerequisites-03",
+      "state": "IN_PROGRESS",
+      "base_sha": "db95b72d3d8659a9f0a884f8169ea9da3a39c9fe",
+      "whole_entries_newly_qualified": 0,
+      "published": false,
+      "baseline_check": "cargo check --locked -p oteryn-gameplay-dispatch: exit0, 2m19s",
+      "baseline_postgres": {
+        "test": "l6_reusable_tool_preserves_instance_and_refuses_missing_tool",
+        "marker": "POSTGRES_CASE_COMPLETED l6-reusable-tool",
+        "duration_seconds": 48.028804504,
+        "result": "1 passed / 0 failed"
+      },
+      "floor_assembly_red": {
+        "marker": "POSTGRES_DATABASE_READY l6_floor_assembly",
+        "duration_seconds": 48.01,
+        "result": "0 passed / 1 failed",
+        "error": "DefinitionNotFound"
+      },
+      "worktree_changes": [
+        "Eight source-derived native profiles for Items3222..3229, generated through a new bounded provider composer; profile source SHA8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509; exact XML lines in overlay.",
+        "Real drop regression retains the seven-to-one assertion. Native profile admission alone does not implement assembly.",
+        "Shared PG input fixture now uses actual content/frame pins so several real dropped inputs can coexist on one tile."
+      ],
+      "validation": "Profile capture --check, provider generation, pin-refresh, cargo fmt --all --check and git diff --check passed. Later PG fixture probes remain RED; no green feature batch or full-quest qualification.",
+      "next_action": "Publish cloud-floor-profiles-03, then immediately restore /tmp/questpc4-floor-runtime-draft and implement/test the generic atomic floor assembly; the original seven-to-one RED remains strict and uncommitted.",
+      "floor_assembly_red_after_admission": {
+        "test": "l6_floor_assembly_final_drop_consumes_seven_and_creates_one_helmet",
+        "marker": "POSTGRES_DATABASE_READY l6_floor_assembly",
+        "duration_seconds": 48.07,
+        "result": "0 passed / 1 failed",
+        "actual_live_pieces_and_helmets": [
+          7,
+          0
+        ],
+        "expected_live_pieces_and_helmets": [
+          0,
+          1
+        ],
+        "log": "/tmp/questpc4-floor-assembly-capabilities-red.log",
+        "wire_drop_result": "Moved; real connection next_command_id=2"
+      }
     }
   },
   "active_scope": "L6 canonical entries in LANE-L6.json; retained 100-title records are historical context."
