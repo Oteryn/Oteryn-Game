@@ -385,6 +385,22 @@ NPC-specific transactional owner are necessary. The reviewed agreeing native
 placement is32796,31558,z2; PG transport uses a controlled scene separately.
 The original frozen NPC programme and greeting cohorts retain their boundaries.
 
+### Draconia native level25 gate (2026-11-07)
+Primary selector: https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/door_level.lua#L16-L23
+SHA256 d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc;
+Git blob0d1a38cf3b0309d81ce8a08c6fc495df74c86444. Its action1025 group selects
+native door5102 at32804,31583,z2. The other source level25 location remains outside
+this capture. The existing generic level-door owner interprets action minus1000,
+reads canonical actor facts under the owner lock, and refuses key bypass.
+Closed/open profiles5102/5103 reuse the pinned native item importer:
+https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data/items/items.xml
+XML SHA256 bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85;
+appearances SHA25617a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1.
+Source-derived closed physics block movement/projectiles; open physics block neither.
+The focused PG scene supplies only initial canonical actor levels24/25/26 and
+unbound source door identity/position; the production source binder and wire owner
+must establish the action and evaluate the predicate. It does not certify XP gains.
+
 ## Active Corym WorksDoor source contract — 2026-11-07
 
 Canonical source is Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b:

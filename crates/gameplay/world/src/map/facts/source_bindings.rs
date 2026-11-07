@@ -22,7 +22,8 @@ pub(super) fn apply(position: TilePos, appearance: u16, house: u32, attrs: &mut 
         let stock = parse(include_str!("../../../../../../tools/content-schema/world-authoring/samples/quest-stock-key-bindings.json"))?;
         let doors = parse(include_str!("../../../../../../tools/content-schema/world-authoring/samples/quest-route-key-door-bindings.json"))?;
         let callbacks = parse(include_str!("../../../../../../tools/content-schema/world-authoring/samples/quest-route-callback-bindings.json"))?;
-        combine(combine(stock, doors)?, callbacks)
+        let levels = parse(include_str!("../../../../../../tools/content-schema/world-authoring/samples/quest-route-level-door-bindings.json"))?;
+        combine(combine(combine(stock, doors)?, callbacks)?, levels)
     }) else {
         return;
     };

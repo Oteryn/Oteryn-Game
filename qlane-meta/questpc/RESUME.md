@@ -1,3 +1,27 @@
+Ownership refresh: Hidden Threats Quest is QUALIFIED in questpc7 at ee0f48730d3e864796dfa69f691fd643f1284c5a (HIDDEN-PG-PROOF.json, actual PostgreSQL18.6 RED43.512682362s/GREEN45.593580772s). Apply owner SKIP rule; room drafts are uncommitted /tmp files and must not be implemented as duplicate lane work. Current owner snapshots recorded for questpc2–8 and qengine2. Next select other unfinished owned entries after level-gate integration push.
+
+GREEN integration:5b3d0a14e native Draconia level25 gate merged with Corym doors and Dragonlord exchange. Combined fmt/check/strict clippy,5source-binding/2profile units, source/profile generation and pins passed. Evidence: cloud-hidden-level-integration-validation.json. Parent real-PG proofs retained; imported logs normalized only at EOF with raw hashes preserved. Publish fast-forward, then source research/RED for next owned batch; Hidden Threats is SKIP under current questpc7 qualification.
+
+## Native Draconia level25 gate GREEN — 2026-11-07
+Exact source binding5102/action1025 at32804,31583,z2 reuses existing generic owner.
+Only5102/5103 profiles added with pinned importer; all old profiles byte-equivalent.
+Actual PostgreSQL18.6 RED3=133.17s, GREEN3=138.28s for canonical levels24/25/26;
+key cannot bypass, direct USE evaluates25, replay does not mutate, opened gate closes.
+Check1m20s/strict Clippy3m35s/fmt, world binding5/profile2 units, generation/pins PASS.
+No binary maps or existing stock5/door10/callback9 captures changed. World digest
+bb0700fefb815beadb1a64e5b1ae0a46d2183197c4aeb56875902f2effe59a0c unchanged;
+inputs digest07c1872b44ee4043cdb655bc57217a4507e84d48726b1e0cf929d7f078dd07b1.
+Evidence cloud-draconia-level-gate-validation.json; review no remaining findings.
+Counts60QUALIFIED/117UNFINISHED/1excludedDawnportBLOCKED; no whole-title promotion.
+
+NEXT Elathriel5000 cash/bank ->copper2970 immutable3012, exactyes/topic1 only,
+repeatable source sales and no/insufficient refusal. Reuse qpc6 paid enginee30938891
+(coherent importedengine2123b7871); plan/tmp/questpc-elathriel-reuse-plan.md.
+Freshqengine2d44f015c1/qpc6head53d5648b8 fetched09:00. Current branch lacks shared
+rewardcallbacks modules/SQL0999+1096. Select reusable engine hunks preserving local
+Corym participant, Dragonlord, world callbacks and atomicFather11; no new handoff.
+Then generic shared skeleton5972 stockkey3001, final complete route composition.
+
 GREEN integration: fed544841 Dragonlord greeting exchange and45th NPC placement merged with156de0c70 Corym doors/Draconia routes. Combined fmt/check/strict clippy, exact catalogue history, greeting/custody units, generation and pins passed. Parent real-PG proofs retained; all44 prior placements unchanged. Evidence: cloud-hidden-dragonlord-integration-validation.json. Next: draft room scene/tests enter real PostgreSQL RED before generic source-room implementation.
 
 ## Dragonlord slice GREEN — 2026-11-07
