@@ -839,3 +839,18 @@ Primal reachability case ran for 72.94s and remains red with
 unit regression; an end-to-end Instance death/reward case is not yet proven.
 The transport's endgame Channel-only cast, Soul War/Rotten Blood consumers,
 Instance corpse custody and native Primal hook composition remain unfinished.
+
+### Shared endgame tagged-death receipt checkpoint
+
+Migration 1151 preserves the existing Soul War/Rotten Blood receipt predicates
+and additionally accepts the native owner's existing 53-byte Instance framing
+only with tag 2. The transport no longer narrows endgame deaths to a 52-byte
+Channel array. Soul War and Rotten Blood reuse the same scope/generation decoder
+as Primal; native source receipt, membership, transaction-origin and session
+fences remain required. Legacy occurrence bytes are unchanged.
+
+The Rotten Blood occurrence regression failed before the slice API (E0308) and
+passes after implementation; dispatch/server check passed in 19.62s. This is a
+compiling WIP: migration 1151 and focused PostgreSQL regressions still need to
+run. Native hook composition and physical Instance corpse custody remain
+unimplemented. No new command, capability or mechanic identifier is allocated.
