@@ -57,6 +57,7 @@ fn catalogue_with(step: i64, content: &str) -> TestResult<Arc<QuestStateCatalogu
     use QuestComparison as From;
     use QuestEffectKind as Effect;
     let rats = |name: &str, effects: Vec<QuestEffect>, completes: bool| QuestTransition {
+        world_change: None,
         key: transition_key(name),
         quest: QUEST.into(),
         effects,
@@ -118,6 +119,7 @@ fn catalogue_with(step: i64, content: &str) -> TestResult<Arc<QuestStateCatalogu
                     false,
                 ),
                 QuestTransition {
+                    world_change: None,
                     key: transition_key("other"),
                     quest: OTHER.into(),
                     effects: vec![effect(FLAG, From::Eq(0), Effect::Set(1))],
@@ -1210,12 +1212,14 @@ fn quest_guards_reject_rows_without_their_receipt() -> TestResult {
         for relation in [
             // Include the FK-dependent offering evidence, Monk entitlements (0548),
             // Rotten Blood fees (0710), Grizzly obligations (0760-0761) and the
-            // QENGINE2 source/fee/participant chain (0999-1001). The explicit FK
+            // QENGINE2 source/fee/participant chain (0999-1001) and NPC program
+            // responses/input sources (1310/1312). The explicit FK
             // closure lets PostgreSQL reach the receipt's 23514 no-truncate guard.
             "game_character_quest_receipts, game_quest_callback_consumptions, \
              game_character_monk_reward_entitlements, game_rotten_blood_access_fees, \
              game_character_grizzly_reward_entitlements, game_character_grizzly_boss_entries, \
-             game_quest_reward_sources, game_quest_reward_fees, game_quest_reward_participants",
+             game_quest_reward_sources, game_quest_reward_fees, game_quest_reward_participants, \
+             game_quest_npc_program_receipts, game_quest_npc_item_sources",
             "game_character_quest_tracks",
             "game_character_quest_states",
             "game_character_quest_obligations",
