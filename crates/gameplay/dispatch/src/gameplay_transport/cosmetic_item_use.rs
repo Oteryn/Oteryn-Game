@@ -466,6 +466,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
             let mut selected = bound.into_iter().filter(|c| {
                 eligible(&c.storage)
+                    && c.state_ops
+                        .iter()
+                        .all(|op| op.advisory_holds(catalogue, tracks))
+                    && c.participants.iter().all(|p| {
+                        eligible(&p.storage)
+                            && p.state_ops
+                                .iter()
+                                .all(|op| op.advisory_holds(catalogue, tracks))
+                    })
+                    && c.requires.iter().all(|r| r.holds(catalogue, tracks))
                     && if c.carried_target_npc {
                         target_key.as_deref() == Some(c.npc.as_str())
                     } else {
@@ -504,7 +514,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .revision_sequencer
             .acquire(fence.character_id)
             .await
-            .commit_quest_reward_with_premium(
+            .commit_quest_reward(
                 self.root,
                 self.character,
                 self.holder,
@@ -517,6 +527,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 QuestRewardAdmission {
                     native,
                     weights: &weights,
+                    fee_payment: None,
+                    actor_conditions: None,
                     carried_use: Some(&use_),
                 },
                 &super::spell_premium_coordinator::QuestPremium(self.premium_coordinator),

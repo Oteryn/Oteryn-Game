@@ -16,8 +16,9 @@ class NoodlesProgramme(unittest.TestCase):
         self.assertEqual(report['give'],dict(item='oteryn:item.tibia.i3035',count=5,contents=[]))
         self.assertEqual(report['experience'],1000);self.assertEqual(report['achievement'],'oteryn:achievement/dog_sitter');self.assertTrue(report['completes'])
         self.assertEqual(world[0]['storage'],[dict(track=n.TRACK,minimum=0,maximum=0,set=1)])
-        packet=json.loads((n.ROOT/'tools/content-schema/native-gameplay/qengine-reward-item-profiles.json').read_text())
+        packet=json.loads((n.ROOT/'content/items/definitions/spell-native-profiles.json').read_text())
         profile,=[r for r in packet['records'] if r['production_definition']['production_key']=='oteryn:item.tibia.i14156']
+        self.assertEqual(profile['production_binding']['disposition'],'EXACT')
         self.assertEqual(profile['admission']['stack_class'],'NonStackable')
         self.assertEqual(profile['semantics']['physical']['value']['weight'],dict(state='KNOWN',value=110))
         placements=[]

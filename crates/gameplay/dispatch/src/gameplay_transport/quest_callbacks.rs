@@ -48,6 +48,7 @@ struct Pending {
 }
 
 struct ReadOnlyGate {
+    ground: Option<std::sync::Arc<super::loop_move::LoopGroundOverlay>>,
     actor: ExactActorRef,
     session: GameSessionId,
     expected: MovementPositionSnapshot,
@@ -539,6 +540,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let optional_pvp = self
                 .special_movement_policy(&permit, actor, command.game_session_id)
                 .await;
+            let ground = if callback.remote_teleport.is_some() {
+                let Some(ground) = self.quest_callback_ground(map).await else {
+                    return UseDisposition::Rejected;
+                };
+                Some(ground)
+            } else { None };
             let read_only_gate = if callback.is_read_only() {
                 let (Some(fence), Some(catalogue)) = (fence, self.quest_catalogue.as_ref()) else {
                     return UseDisposition::Rejected;
@@ -580,6 +587,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return UseDisposition::Rejected;
                 }
                 Some(ReadOnlyGate {
+                    ground,
                     actor, session: command.game_session_id, expected, callback: callback.key.clone(),
                 })
             } else {
@@ -649,6 +657,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
     }
 
+    async fn quest_callback_ground(
+        &self,
+        map: &BundleMap,
+    ) -> Option<std::sync::Arc<super::loop_move::LoopGroundOverlay>> {
+        let index = {
+            let runtime = self.runtime.lock().await;
+            super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+        };
+        super::loop_move::loop_ground(self, map.overlay.base(), index).await
+    }
+
     /// The ordinary step already holds the spell lane. Release its runtime guard before
     /// acquiring the quest revision slot, then compare the movement snapshot on re-entry.
     pub(super) async fn step_quest_callback(
@@ -689,12 +708,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(map) = self.bundle_map() else {
             return entered;
         };
-        let observed = if trigger == Trigger::StepOut {
-            origin
+        let selected_position = if trigger == Trigger::StepOut {
+            origin.position()
         } else {
-            entered
+            entered.position()
         };
-        let Some(at) = native(observed.position()) else {
+        let Some(at) = native(selected_position) else {
             return entered;
         };
         let Some(base) = map.overlay.base().tile(at.x, at.y, at.floor) else {
@@ -728,7 +747,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .collect::<Vec<_>>();
         // Ambiguous content never chooses one action by incidental registration order.
         let [(callback, key)] = selected.as_slice() else {
-            if selected.is_empty() {
+            if selected.is_empty() && trigger == Trigger::StepIn {
                 return self
                     .step_daily_world_gate(permit, actor, session, origin, entered)
                     .await;
@@ -751,6 +770,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None => None,
             };
             let optional_pvp = self.special_movement_policy(permit, actor, session).await;
+            let ground = if callback.remote_teleport.is_some() {
+                let Some(ground) = self.quest_callback_ground(map).await else {
+                    return entered;
+                };
+                Some(ground)
+            } else {
+                None
+            };
             let read_only_gate = if callback.is_read_only() {
                 let context = {
                     let runtime = self.runtime.lock().await;
@@ -787,6 +814,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         ) =>
                     {
                         Some(ReadOnlyGate {
+                            ground,
                             actor,
                             session,
                             expected: entered,

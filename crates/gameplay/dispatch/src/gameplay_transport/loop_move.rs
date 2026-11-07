@@ -266,6 +266,9 @@ pub struct LoopGroundFacts<'a, F> {
 }
 
 impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
+    fn movement_items(&self, pos: TilePos) -> Vec<view::ComposedEntry> {
+        self.inner.movement_items(pos)
+    }
     fn base_hidden(&self, key: u64) -> bool {
         self.inner.base_hidden(key)
     }

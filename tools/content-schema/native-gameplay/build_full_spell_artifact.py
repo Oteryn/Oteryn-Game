@@ -386,6 +386,11 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARA
             facts[definition['identity']['key']] = {
                 'item': definition['identity'], 'materializable': definition['materializable'] is True,
                 'container_capacity': capacity['value'] if capacity.get('state') == 'KNOWN' else None}
+            stack = definition.get('semantics', {}).get('stack', {})
+            stackable = stack.get('value', {}).get('stackable', {}) if stack.get('state') == 'KNOWN' else {}
+            if (definition['materializable'] is True and stackable.get('state') == 'KNOWN'
+                    and type(stackable.get('value')) is bool):
+                facts[definition['identity']['key']]['stackable'] = stackable['value']
             if charge_count.get('state') == 'KNOWN' and charge_count['value'] > 0:
                 facts[definition['identity']['key']]['charges'] = charge_count['value']
                 stack = definition.get('semantics', {}).get('stack', {})

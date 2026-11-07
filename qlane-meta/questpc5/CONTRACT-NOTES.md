@@ -236,3 +236,27 @@ The selected recipe's pearl reward must consume the existing once-only source cl
 ## Main merge: exact collectible facts supersede fallback
 
 Main `bbb3e06d0` brings ITEMHOLD-Q's exact bottled dragon breath44179 admission. Its retained Wiki revision1041565/page103946 has SHA256 `eb5189ea4ef782741a3b67bd2794c5e5e72f2f6ed7bc86ad553cba1ccd9ac929` and weight0.60oz (60centioz): `imports/tibiawiki/facts/items-stats.json:1`, verified by `tools/content-migration/itemhold_q_remaining.py:22,65-97`. URL https://tibia.fandom.com/index.php?curid=103946&oldid=1041565 . This exact established native owner supersedes the earlier documented10oz unknown-weight carrying assumption. The generic collectible producer emits no fallback for a canonical materializable admission; an empty fallback packet grants no identities. The unknown-canonical regression still proves the original own namespace/10oz bounded fallback using a synthetic canonical fixture, and the active-provider regression now requires the exact Wiki binding and60centioz. No charges, actions or timers are inferred.
+
+### QENGINE2 main migration tree discrepancy (2026-11-07)
+
+Fetched main 1ae39c7fb9bef09c3cd50d16410374f4134b1676 has QENGINE2 0999-1008 but no QBASE 1200-1205 paths (`git ls-tree --name-only origin/main apps/game-server/migrations/`). Preserve the existing QBASE reserved names/content and lane-only 1270-1272; do not remove required schema on the basis of the announcement alone. Canonical main QENGINE2 bytes remain authoritative.
+
+### Coordinator correction applied; distinct lane schema retained in 127x
+
+Removed all 1200-1205 migration paths. Main 1006 only extends `game_quest_reward_value_only_complete`, 1007 repairs fee-burn reapplication, and 1008 replaces `game_quest_callback_carried`; they do not define fluid/charge initialization, NPC program receipts, Falcon/Viola cycles, corruptor lifecycle, or Father guards. Those required lane mechanisms move to 1272-1277, with Father XP repair 1278. Main's 0999-1008 remain byte-identical. No second table/column copy is created; existing eleven-track Father write remains atomic.
+
+### Canonical collar provider after main merge
+
+Main ITEMHOLD-Q already admits native dog collar 14156 from exact retained XML facts (110 centioz). Remove the lane's duplicate QENGINE profile admission and use that canonical provider. Noodles continues to assert the active native profile's exact identity/binding/weight; the assertion moves with the provider, not to a fabricated fallback.
+
+### Dropped-item remote predicates and portable source pot
+
+The prior PG REDs are in `/tmp/questpc5-serpentine-ground-pot-red.log`: a genuinely dropped coin was omitted by the remote predicate, and native pot 3465 was absent. The read-only callback now prepares the existing durable Ground overlay before its final fenced Character admission, then composes the remote tile under the runtime lock with forwarded Channel movement items. Static hidden/replaced/created entries and durable drops therefore share one view. Pot 3465 is admitted by the existing portable fluid-container provider, using imports/canary/items-xml/items.xml:10854-10858, SHA256 1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2: pickupable, weight 5250 centioz. No fill callback is invented. Existing twenty fluid identities remain asserted together with the pot. Whole Serpentine remains unqualified until its selected source route is exercised.
+
+### Main integration declaration order
+
+Native Newhaven goals declare their phase/counter before reward consumers; canonical main reward declarations still precede main's native death-counter transitions. Each registry is loaded once. This preserves the goal counter's initial zero and the existing negative activation phase without relaxing conflicting-track validation. Canonical main storage-free carried tools retain their negative ownership guard; the lane's extra NPC-target plan witness applies only to its NPC-targeted tools and Premium extensions.
+
+### Newhaven regression after canonical merge: regenerate ordinary loot admission
+
+The complete ten-case PG integration run reported nine PASS and one Newhaven failure: ordinary Troll deaths emitted `corpse_item_inadmissible`, leaving XP at 100 instead of the expected 140. The active native profile and canonical item 5960 already agree on exact Ground-only seven-slot corpse admission; the committed loot packet still marked it unmaterializable. `build_full_spell_artifact.py --refresh-loot-tables` is the existing authoritative producer. Its generic `item_facts` now also retains known `stackable: false` for already-admitted non-stackable definitions, matching the existing corpse/loot unit assertions. No XP expectation or refusal guard is changed. The derived prey model was refreshed with `prey_difficulty.py --simulate` (15 cases, 776 creatures), then native providers regenerated and repinned. The focused five corpse/loot unit tests pass; the whole Newhaven PG rerun supplies the final regression proof.

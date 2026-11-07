@@ -6,13 +6,16 @@ large amphora 2904, which the World reference does not know as pickupable: they 
 fixtures and are filled from, not carried. A container's content is the item's durable fluid
 sub-type (migration 0560), not part of its definition, so `fluid` is KNOWN with
 `fluid_type` NOT_APPLICABLE. Physical facts stay the World's; fluid containers do not stack.
+
+The portable pot 3465 is also admitted from retained items.xml:10854-10858
+for ordinary custody and quest transport; no new fluid action is inferred.
 """
 import copy
 import hashlib
 import json
 
 IDS = {2873, 2874, 2875, 2876, 2877, 2879, 2880, 2881, 2882, 2883, 2884, 2885, 2893, 2901,
-       2902, 2903, 3477, 3478, 3479, 3480}
+       2902, 2903, 3465, 3477, 3478, 3479, 3480}
 
 
 def known(value):

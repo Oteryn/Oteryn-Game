@@ -730,7 +730,7 @@
     "title": "Serpentine Tower Quest",
     "mechanism": "paired_portals_stepout_remote_predicates",
     "status": "UNFINISHED",
-    "blocker": "Source requires placing a pot on fire to enable a teleport before its reward. The pot-conditioned world trigger remains missing; do not grant the pearl through an unconditional chest.",
+    "blocker": "Selected whole physical trial and existing once-only pearl claim gate are the next active implementation batch; source selectors, durable Ground predicates and portable pot are now qualified.",
     "from_lanes": [
       "questpc3"
     ],
@@ -782,7 +782,10 @@
         "oteryn-world-bundle-compiler"
       ],
       "full_test_log": "/tmp/questpc5-main-dependent-baseline.log"
-    }
+    },
+    "current_batch": "Ground/pot component and main integration GREEN; ten distinct actual PG18.6 cases passed, workspace/all-target check, strict changed-crate Clippy, fmt, duplicate and pin/generated checks passed. Commit/push this batch, then whole trial remains active.",
+    "migration_registry": "Main 0999-1008 unchanged; no 1200-1205 paths; lane distinct mechanisms 1270-1278, peer canonical 1300. Fresh PG checksum proof pending.",
+    "component_proof": "qlane-meta/questpc5/cloud-main-merge-proof.json"
   },
   {
     "canonical": "oteryn:quest.thais_lighthouse_quest",

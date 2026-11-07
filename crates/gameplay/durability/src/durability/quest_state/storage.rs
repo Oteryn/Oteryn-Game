@@ -10,9 +10,7 @@ impl DurabilityRoot {
         command: CommandRef,
         intent: Vec<u8>,
     ) -> Result<Option<bool>> {
-        let recovery = authority
-            .record_for(self)
-            .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let recovery=authority.record_for(self).map_err(|_|CharacterProgressionError::AuthorityRejected)?;
         self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;

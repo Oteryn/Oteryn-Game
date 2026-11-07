@@ -27,6 +27,7 @@ struct TaskSnapshot {
     lease_generation: u64,
     observed_revision: u64,
     active_tasks: Vec<u8>,
+    native_counters: Vec<&'static str>,
     active_goals: Vec<String>,
 }
 
@@ -45,6 +46,7 @@ struct Recipient {
 pub(super) struct FrozenGrizzlyDeath {
     source: Option<PartySnapshot>,
     recipients: Vec<Recipient>,
+    pub(super) native: Vec<super::quest_kills::Recipient>,
     native_goals: Option<native_goals::Recipient>,
 }
 
@@ -113,6 +115,8 @@ fn freeze(
         boss.creature_key == creature || boss.creature_name.eq_ignore_ascii_case(creature)
     });
     let mut recipients = Vec::new();
+    let mut native = Vec::new();
+    let native_source = Arc::new(source.clone());
     for character in members {
         let Some(snapshot) = snapshots
             .iter()
@@ -123,6 +127,24 @@ fn freeze(
         if snapshot.observed_revision == 0 || snapshot.active_tasks.len() > quest::ACTIVE_TASK_LIMIT
         {
             continue;
+        }
+        for transition in &snapshot.native_counters {
+            if oteryn_gameplay_quests::quest::native_kills::counter(transition)
+                .is_some_and(|counter| counter.creature == creature)
+            {
+                native.push(super::quest_kills::Recipient {
+                    actor: snapshot.actor,
+                    session: snapshot.session,
+                    character,
+                    lease_generation: snapshot.lease_generation,
+                    death: crate::durability::quest_state::native_kills::NativeQuestDeath {
+                        transition: (*transition).into(),
+                        creature: creature.into(),
+                        observed_revision: snapshot.observed_revision,
+                        source: Arc::clone(&native_source),
+                    },
+                });
+            }
         }
         let mut actions: Vec<_> = snapshot
             .active_tasks
@@ -159,6 +181,7 @@ fn freeze(
     FrozenGrizzlyDeath {
         source: Some(source),
         recipients,
+        native,
         native_goals: None,
     }
 }
@@ -286,6 +309,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         lease_generation: lease.generation(),
                         observed_revision: revision,
                         active_tasks,
+                        native_counters: oteryn_gameplay_quests::quest::native_kills::active(
+                            copy.tracks(),
+                        ),
                         active_goals: native_goals::active(copy.tracks()),
                     })
                 })
@@ -398,7 +424,9 @@ pub(super) async fn settle(
     entry: &PendingKillSettlement,
     ordinary: impl std::future::Future<Output = SettleReport>,
 ) -> SettleReport {
-    if !native_goals::settle(admission, entry).await || !admission.credit_grizzly_death(entry).await
+    if !native_goals::settle(admission, entry).await
+        || !super::quest_kills::settle(admission, entry).await
+        || !admission.credit_grizzly_death(entry).await
     {
         return SettleReport {
             verdict: SettleVerdict::Retry,

@@ -182,9 +182,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // transformed and newly placed objects must all affect the same decision.
         let mut destination = callback.teleport;
         if let Some(remote) = &callback.remote_teleport {
-            let Ok(Some(remote_tile)) =
-                crate::map::view::compose_tile(&map.overlay, &map.facts, tile(remote.position))
-            else {
+            let Some(ground) = read_only_gate.and_then(|gate| gate.ground.as_ref()) else {
+                return UseDisposition::Rejected;
+            };
+            let Ok(Some(remote_tile)) = crate::map::view::compose_tile(
+                ground.overlay(),
+                &ground.facts(&map.facts),
+                tile(remote.position),
+            ) else {
                 return UseDisposition::Rejected;
             };
             if remote_tile
@@ -293,6 +298,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     permit,
                     context,
                     crate::durability::reward_claim_mint::QuestRewardAdmission {
+                        fee_payment: None,
+                        actor_conditions: None,
                         carried_use: None,
                         native,
                         weights: &weights,

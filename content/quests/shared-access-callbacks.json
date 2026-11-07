@@ -640,7 +640,7 @@
       },
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world-npc.xml:2184-2185:sha256:db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:a6dbb079c0682cdc3e2de9ef034de8759a817b71279799945bb3e045b19601a8",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:4dfb2080a7dce045c63348fbe728ec9cdc780888e31086668b14b057d0e3b606",
         "oteryn:source-map:content/world/placements/region-z07-x127-y126.b3:sha256:32f787d0400a876b3382cee79a19901c4193f65df19037657aaa385f34df3af3"
       ],
       "minimum_level": 2,
@@ -692,7 +692,7 @@
       },
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world-npc.xml:2161-2163:sha256:db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
-        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:a6dbb079c0682cdc3e2de9ef034de8759a817b71279799945bb3e045b19601a8",
+        "oteryn:selected-recipe:content/quests/definitions/quests-00200-00299.json:/records/78/definition:sha256:4dfb2080a7dce045c63348fbe728ec9cdc780888e31086668b14b057d0e3b606",
         "oteryn:source-map:content/world/placements/region-z07-x127-y126.b3:sha256:32f787d0400a876b3382cee79a19901c4193f65df19037657aaa385f34df3af3"
       ],
       "minimum_level": 2,

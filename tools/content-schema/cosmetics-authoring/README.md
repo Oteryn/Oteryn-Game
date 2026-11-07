@@ -66,3 +66,19 @@ An absent mapping authorizes nothing. Matching the active content revision is
 not a compatibility rule, and grant keys are never derived from cosmetic keys.
 The runtime reads only declared keys for the fenced Character's account. Store
 remains unavailable; premium metadata retains the V1 D61 behavior.
+
+## Combined NX-5 and QENGINE2 catalogue
+
+`nx5-authoring.json` retains NX-5's maintained, field-promoted source document.
+`quest-authoring/qengine_rewards.py` validates it and combines its outfit identities,
+mounts and item-grant mappings with the donor quest catalogue. Shared grant keys
+use the quest identity with the same source looks, addon effect and provenance;
+NX-5 identities remain available for existing appearance state. The combined
+`content/cosmetics/outfits/authoring.json` and native descriptor are generated.
+Run `python3 tools/content-schema/quest-authoring/qengine_rewards.py` before the
+normal content regeneration; `--check` verifies the combined outputs.
+
+Shared mappings explicitly list `outfit_aliases` to retain prior selected keys.
+Aliases require the same female and male look IDs and source-record digests, and
+must support the granted addon. They retain the mapping's sex and provenance
+checks; aliases never create an account grant or bypass its receipt.

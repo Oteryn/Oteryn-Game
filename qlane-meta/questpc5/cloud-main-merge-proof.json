@@ -1,0 +1,138 @@
+{
+  "status": "GREEN_FOCUSED_BATCH",
+  "main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+  "owner_rule": "Focused mechanic PG tests, workspace all-target check, changed-crate strict Clippy, fmt, generated/pin tooling. No full reverse-dependency suite.",
+  "migration_files": [
+    "1270_spell_static_map_fields.sql",
+    "1271_quest_world_reward_sources.sql",
+    "1272_quest_finish.sql",
+    "1273_corruptor_lifecycle.sql",
+    "1274_questpc_npc_revision.sql",
+    "1275_questpc_viola.sql",
+    "1276_questpc_viola_book.sql",
+    "1277_fathers_burden_items.sql",
+    "1278_fathers_burden_xp_guard.sql"
+  ],
+  "canonical_0999_1008": "byte-identical to origin/main",
+  "retired_1200_1205": [],
+  "focused_callback_tests": {
+    "passed": 39,
+    "duration_seconds": 6.133,
+    "log": "/tmp/questpc5-qengine-focused-units5.log"
+  },
+  "python_modules": [
+    {
+      "test": "tools/content-migration/test_fluid_container_profiles.py",
+      "exit": 0,
+      "duration_seconds": 0.356,
+      "log": "/tmp/questpc5-python-focused/content-migration-test_fluid_container_profiles.py.log",
+      "tests": 1
+    },
+    {
+      "test": "tools/content-migration/test_qengine_reward_item_profiles.py",
+      "exit": 0,
+      "duration_seconds": 17.716,
+      "log": "/tmp/questpc5-python-focused/content-migration-test_qengine_reward_item_profiles.py.log",
+      "tests": 2
+    },
+    {
+      "test": "tools/content-migration/test_itemhold_q.py",
+      "exit": 0,
+      "duration_seconds": 20.534,
+      "log": "/tmp/questpc5-python-focused/content-migration-test_itemhold_q.py.log",
+      "tests": 9
+    },
+    {
+      "test": "tools/content-schema/quest-authoring/test_qengine_rewards.py",
+      "exit": 0,
+      "duration_seconds": 42.797,
+      "log": "/tmp/questpc5-python-focused/quest-authoring-test_qengine_rewards.py.log",
+      "tests": 30
+    },
+    {
+      "test": "tools/content-schema/quest-authoring/test_noodles_programme.py",
+      "exit": 0,
+      "duration_seconds": 0.241,
+      "log": "/tmp/questpc5-python-focused/quest-authoring-test_noodles_programme.py.log",
+      "tests": 1
+    },
+    {
+      "test": "tools/content-schema/npc-authoring/test_convert_placements.py",
+      "exit": 0,
+      "duration_seconds": 0.337,
+      "log": "/tmp/questpc5-python-focused/npc-authoring-test_convert_placements.py.log",
+      "tests": 11
+    },
+    {
+      "test": "tools/content-schema/world-authoring/test_serpentine_startup_bindings.py",
+      "exit": 0,
+      "duration_seconds": 1.768,
+      "log": "/tmp/questpc5-python-focused/world-authoring-test_serpentine_startup_bindings.py.log",
+      "tests": 1
+    }
+  ],
+  "pg": {
+    "distinct_cases_passed": 10,
+    "initial_run": "9 PASS, 1 Newhaven failure; all failures collected before repair",
+    "newhaven_rerun": "PASS, XP expectations unchanged",
+    "server_version": "PostgreSQL 18.6",
+    "red_proof": "/tmp/questpc5-serpentine-ground-pot-red.log",
+    "ground_green_seconds": 43.521033665,
+    "pot_green_seconds": 40.654561082,
+    "migration_green_seconds": 4.958015669
+  },
+  "clippy": {
+    "result": "PASS",
+    "changed_crates": 12,
+    "all_targets": true,
+    "all_features": true,
+    "deny_warnings": true,
+    "duration": "5m53s",
+    "log": "/tmp/questpc5-main-changed-clippy4.log"
+  },
+  "workspace_check": {
+    "result": "PASS",
+    "command": "cargo check --workspace --all-targets",
+    "duration": "10m05s including build-lock wait",
+    "log": "/tmp/questpc5-owner-workspace-check-postloot.log"
+  },
+  "world_pin": {
+    "inputs_digest": "ecc8e5bdd0626b911dad7a62be19c73a1105e5f8b62c183ef2042b82286c62d2",
+    "pins": [
+      {
+        "bytes": 32840204,
+        "digest": "b3ebfe6ba25fdbc9de4e6c7dbb7bc468f9792796f709b72367247a5aeb522a21",
+        "world": "oteryn"
+      }
+    ]
+  },
+  "pg_initial_integration": {
+    "passed": 9,
+    "failed": 1,
+    "duration_seconds": 391.272,
+    "failure": "Newhaven corpse_item_inadmissible; stale derived loot packet",
+    "log": "/tmp/questpc5-main-focused-pg2.log"
+  },
+  "newhaven_regression_fix": {
+    "producer": "build_full_spell_artifact.py --refresh-loot-tables",
+    "known_nonstackable_facts": "preserve explicit false for admitted canonical definitions",
+    "corpse_unit_tests": {
+      "passed": 5,
+      "duration_seconds": 8.005
+    },
+    "prey_regeneration": {
+      "cases": 15,
+      "creatures": 776
+    },
+    "pg_rerun": {
+      "result": "PASS",
+      "server_version": "PostgreSQL 18.6",
+      "duration_seconds": 93.558775019,
+      "route_duration_seconds": 50.447098569,
+      "log": "/tmp/questpc5-newhaven-loot-green.log"
+    }
+  },
+  "fmt": "PASS /tmp/questpc5-main-final-fmt.log",
+  "duplicate_migrations": "PASS: empty output /tmp/questpc5-main-final-duplicates.log",
+  "loot_packet_sha256": "84eab8af5c73ae0cc16e66f1f67c529268ec6c1440628a7094042cdaed2cfade"
+}

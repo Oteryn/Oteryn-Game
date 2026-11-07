@@ -34,6 +34,7 @@ pub mod loader;
 pub mod log;
 pub mod monk_shrines;
 pub mod native_kill_goals;
+pub mod native_kills;
 pub mod native_rules;
 pub mod npc_rules;
 pub mod planegazer_finale;
@@ -323,7 +324,11 @@ impl QuestStateCatalogue {
             if transition.effects.len() > QUESTSTATE0_RL_02 {
                 return Err(E::TooManyEffects(transition.key));
             }
-            if transition.effects.is_empty() && !transition.completes {
+            if transition.effects.is_empty()
+                && !transition.completes
+                && !(transition.key.starts_with("oteryn:quest-reward/")
+                    && transition.experience.is_none())
+            {
                 return Err(E::InvalidEffect(transition.key));
             }
             if transition

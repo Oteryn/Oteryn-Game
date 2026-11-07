@@ -14,7 +14,7 @@ class FluidContainerProfiles(unittest.TestCase):
         cls.profiles = {r['production_definition']['production_key']: r for r in rows}
 
     def test_fluid_containers_are_carried_non_stackable_and_hold_an_instance_fluid(self):
-        self.assertEqual(len(fluids.IDS), 20)
+        self.assertEqual(fluids.IDS, {2873,2874,2875,2876,2877,2879,2880,2881,2882,2883,2884,2885,2893,2901,2902,2903,3477,3478,3479,3480} | {3465})
         self.assertNotIn(2524, fluids.IDS)
         for number in sorted(fluids.IDS):
             row = self.profiles[f'oteryn:item.tibia.i{number}']

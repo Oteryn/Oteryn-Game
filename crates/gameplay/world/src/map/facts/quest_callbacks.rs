@@ -199,6 +199,8 @@ impl CallbackStates {
             + self.movement_speech.len()
             + self.portals.len()
             + self.solid_items.len()
+            + self.portals.len()
+            + self.solid_items.len()
             + self.occupancy_items.len()
             + self.movement_items.values().map(Vec::len).sum::<usize>();
         used.saturating_add(additional) < super::super::overlay::OVERLAY_BUDGET_BYTES / 512
@@ -206,36 +208,6 @@ impl CallbackStates {
 }
 
 impl BundleFacts {
-    /// Read the existing movement-item owner index; no separate occupancy truth is cached.
-    pub fn quest_occupancy_items_match(
-        &self,
-        owner: u64,
-        entries: &[(TilePos, EntryFacts)],
-        close: bool,
-    ) -> bool {
-        let Ok(states) = self.callbacks.lock() else {
-            return false;
-        };
-        let owned = states.occupancy_items.get(&owner);
-        if close {
-            return owned.is_none();
-        }
-        owned.is_some_and(|owned| {
-            owned.len() == entries.len()
-                && owned
-                    .iter()
-                    .zip(entries)
-                    .all(|((pos, id), (wanted, facts))| {
-                        pos == wanted
-                            && states.movement_items.get(pos).is_some_and(|items| {
-                                items.iter().any(|entry| {
-                                    entry.source == view::EntrySource::Added(*id)
-                                        && entry.facts == *facts
-                                })
-                            })
-                    })
-        })
-    }
     /// A transformed/removed callback entry changes floor routing with its visible stack.
     /// Unchanged tiles keep the compact boot-time table and incur no stack scan.
     pub(crate) fn quest_callback_floor_mask(
@@ -282,6 +254,36 @@ impl BundleFacts {
         Some(mask)
     }
 
+    /// Read the existing movement-item owner index; no separate occupancy truth is cached.
+    pub fn quest_occupancy_items_match(
+        &self,
+        owner: u64,
+        entries: &[(TilePos, EntryFacts)],
+        close: bool,
+    ) -> bool {
+        let Ok(states) = self.callbacks.lock() else {
+            return false;
+        };
+        let owned = states.occupancy_items.get(&owner);
+        if close {
+            return owned.is_none();
+        }
+        owned.is_some_and(|owned| {
+            owned.len() == entries.len()
+                && owned
+                    .iter()
+                    .zip(entries)
+                    .all(|((pos, id), (wanted, facts))| {
+                        pos == wanted
+                            && states.movement_items.get(pos).is_some_and(|items| {
+                                items.iter().any(|entry| {
+                                    entry.source == view::EntrySource::Added(*id)
+                                        && entry.facts == *facts
+                                })
+                            })
+                    })
+        })
+    }
     /// Records a committed monster step for the dispatch-owned trap pass.
     pub fn record_monster_step(&self, step: MonsterStep) -> bool {
         let Ok(mut steps) = self.monster_steps.lock() else {
