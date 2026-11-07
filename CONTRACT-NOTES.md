@@ -684,3 +684,19 @@ Fury Gates selects/realizes at startup; donor content is not an accepted Game re
 ## QNPCFX integration facts (2026-11-07)
 
 The shared durable NPC executor is imported from questpc-pc2, rather than duplicated. Its source planner currently rejects non-storage effects except the bounded plain-item exchange and the existing Tereban XP participant. Calendar input now derives from the supplied epoch seconds; locked evaluation obtains those from PostgreSQL transaction time. NPC months use UTC, matching the existing daily reward month ledger; raid scheduling separately uses Europe/Berlin. qengine2 retains outfit/addon ownership. No QNPCFX title is qualified by this import alone.
+
+Baseline evidence for 718571ec7: `cargo check -p oteryn-gameplay-dispatch`
+completed in 6m58s; `catalogue_npc_source_acceptance_is_atomic_and_replay_bound`
+ran against the retained PostgreSQL cluster and passed in 67.58s (acceptance,
+rollback-safe receipt, replay and session fencing). The epoch month boundary unit
+case passed in 0.00s. These cases do not qualify any title in the QNPCFX list.
+The next integration batch must replace the zero-delay-only EndConversation
+handling in `npc_program/items.rs`, expand the value participant beyond its
+single GiveItem, and admit the corresponding effects only after each durable
+participant is wired. `npc_program.rs` also currently treats empty track changes
+as read-only; repeatable value-only exchanges require an atomic receipt path.
+Restoring the two pc2 source documents changes the embedded registry from 13
+programs / 1123 rules / 78 NPCs to 15 / 1167 / 89; the dispatch assertion records
+those exact counts.
+
+The restored 15-program registry passed the same real-dispatch PostgreSQL case in 62.16s. Focused all-target/all-feature clippy with `-D warnings`, including game-server, passed in 3m07s. Pin refresh retained the existing world pin.

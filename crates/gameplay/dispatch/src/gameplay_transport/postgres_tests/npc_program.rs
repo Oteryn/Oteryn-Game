@@ -47,21 +47,21 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     let source = NpcRuleCatalog::load_embedded().map_err(debug)?;
-    assert_eq!(source.programs().len(), 13);
+    assert_eq!(source.programs().len(), 15);
     assert_eq!(
         source
             .programs()
             .iter()
             .map(|p| p.document.rules.len())
             .sum::<usize>(),
-        1123
+        1167
     );
     let unique = source
         .programs()
         .iter()
         .flat_map(|p| p.document.rules.iter().map(|r| r.npc.as_str()))
         .collect::<std::collections::BTreeSet<_>>();
-    assert_eq!(unique.len(), 78);
+    assert_eq!(unique.len(), 89);
     let [kesar, demeron] =
         super::classic_quests::install(owner, admitted, [KESAR, DEMERON]).await?;
     super::classic_quests::talk(owner, admitted, kesar, 2400, "hi").await?;
