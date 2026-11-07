@@ -1,5 +1,14 @@
 # Shared NPC quest rewards
 
+Optional `fee: {"gold": 1000, "include_bank": false}` reuses the native coin
+fee owner, including change and exact-source audit proof, in the same Type2
+transaction as quest progress and reward. The runtime retains stable payment
+identities and checks the selected backpack. Fee terms enter the definition hash
+only when present; legacy bindings remain unchanged. A fee cannot coexist with
+coin `take` rows or a value-free `repeatable_check`. Set `include_bank` from the
+source: held money checks use false. Only a matching configured confirmation
+can start payment.
+
 `content/quests/shared-reward-callbacks.json` is loaded by the Quest catalogue and
 the real NPC talk dispatcher. Author records against
 `shared-reward-callbacks.schema.json`. The Rust loader checks cross-field bounds,

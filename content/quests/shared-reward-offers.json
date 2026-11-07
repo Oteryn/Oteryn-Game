@@ -576,6 +576,35 @@
       "reply": [
         "Do you still have meat or ham? Ask me for a trade to sell it."
       ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "fur"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01/poacher_notes",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "A wolf whelp fur? Well, some months ago a hunter came here - a rather scruffy, smelly guy. I would have thrown him out instantly, but he had to offer some fine pelts. One of them was the fur of a very young wolf. ...",
+        "I was not delighted that he obviously killed such a young animal. When I confronted him, he said he wanted to raise it as a companion but it unfortunately died. A sad story. In the end, I bought some of his pelts, among them the whelp fur. ...",
+        "You can have it if this is important for you. I would sell it for 1000 gold. Are you interested?"
+      ]
     }
   ]
 }

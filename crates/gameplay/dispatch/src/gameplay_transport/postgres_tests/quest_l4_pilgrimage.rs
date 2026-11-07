@@ -299,6 +299,7 @@ fn scenario(full_route: bool) -> TestResult {
                     crate::durability::reward_claim_mint::QuestRewardAdmission {
                         native,
                         weights: &weights,
+                        fee_payment: None,
                     },
                     &crate::durability::quest_state::grizzly::NoGrizzlyPremium,
                 )

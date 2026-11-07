@@ -1701,6 +1701,64 @@
             "result": "PASS"
           }
         }
+      },
+      {
+        "batch": "threatened_irmana_12",
+        "result": "GREEN",
+        "pg_red_ms": 96779,
+        "pg_green_ms": 102325,
+        "entries": [
+          "source offer/prerequisites",
+          "exact1000 held-gold atomic exchange",
+          "nonmatching/insufficient/repeated refusal"
+        ],
+        "proofs": {
+          "pg_red": {
+            "log": "/tmp/questpc3-irmana-red.log",
+            "sha256": "1fe8614d412ec3228808d784b3db6bbe8323be0caa8403d19049616df2d229e6",
+            "result": "expected RED"
+          },
+          "pg_green": {
+            "log": "/tmp/questpc3-irmana-green.log",
+            "sha256": "71ac3fcca971f130a1a10830940118d03facdb65ccdf065e8c33594eb23c6d95",
+            "result": "PASS"
+          },
+          "fmt": {
+            "log": "/tmp/questpc3-irmana-fmt.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "result": "PASS"
+          },
+          "cargo_check": {
+            "log": "/tmp/questpc3-irmana-check.log",
+            "sha256": "2a1a34ee11b87394a0c56896c7b999dd0ffd3103fe520fb3d00c9bdd7903a190",
+            "result": "PASS"
+          },
+          "clippy": {
+            "log": "/tmp/questpc3-irmana-clippy.log",
+            "sha256": "98127deebb8b838ffff988e66a0b6258d24dd36bb7dbf03b5821dea01723bc2d",
+            "result": "PASS"
+          },
+          "reward_units": {
+            "log": "/tmp/questpc3-irmana-units.log",
+            "sha256": "f090cb6d3da666dcfc3d555d271f149aac8fb682d44a8ba54f735a947f060c47",
+            "result": "PASS"
+          },
+          "authoring": {
+            "log": "/tmp/questpc3-irmana-authoring.log",
+            "sha256": "cbe4b84d897ac017db0552ccb3a31855ff0fb172bc344c967c4c4c92eb19e624",
+            "result": "PASS"
+          },
+          "native_profiles": {
+            "log": "/tmp/questpc3-irmana-native-check.log",
+            "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+            "result": "PASS"
+          },
+          "pins": {
+            "log": "/tmp/questpc3-irmana-pins.log",
+            "sha256": "88692f49250789009449289dfdcb16b7faa9fc8dc1b321b947f8580e8db2124a",
+            "result": "PASS"
+          }
+        }
       }
     ],
     "completed_mechanism_batches": {
@@ -3251,9 +3309,9 @@
         "exact1000 held-gold atomic exchange",
         "nonmatching/insufficient/repeated refusal"
       ],
-      "phase": "PG RED96779ms confirmed fur0/gold1000/stage7/fees0; qengine2 fee core reused and Irmana program/placement APPLIED. Units7/nativecheck41/corecheck PASS; final checks and PGGREEN next.",
+      "phase": "GREEN; commit and fast-forward publish immediately",
       "previous_published": "6005cae67",
-      "reused_implementation": "qengine2 commit33b640335067df5d5582460bf06ce818d39b9d4d native quest reward fees; selective core patch prepared /tmp/questpc3-qengine-fee-core.patch, not applied until genuine RED",
+      "reused_implementation": "Selective reusable core applied from qengine2 commit33b640335067df5d5582460bf06ce818d39b9d4d; existing local health/premium and callback binding behavior preserved.",
       "source": "irmana.lua:208-218,247-253 git-blob76f53aa5ae2e04daabf1a8cca74b63f3ad13e751 SHA25608e9d63f771a43f2fa147e58f7fb474deef6b541a3a749258ec9a040c8993c03",
       "owner_exact_match": "Only exact yes after source fur offer may charge. Donor topic8 catch-all narrowed by owner exact-match rule.",
       "test_priors": "Animals7 and notes0 then1;999heldgold thenoneextra gold. No payment,fur,earnedphase or successful receipt seeded.",
@@ -3269,7 +3327,68 @@
         "native_profiles": "PASS41 --check; no changed Item policy",
         "core_check": "PASS2m49s"
       },
-      "publication": "DOC checkpoint only; fee core/Irmana implementation and test are local staged WIP, not published or qualified. Await real PGGREEN before implementation commit."
+      "publication": "Implementation GREEN; source checkpoint758e9b3b0 already published. Fee core, program, placement and focused proofs now ready for implementation commit.",
+      "postgres_green": {
+        "duration_ms": 102325,
+        "fur": 1,
+        "held_gold": 0,
+        "stage": 8,
+        "fees": 1,
+        "exact_consent_insufficient_funds_and_replay": true
+      },
+      "proofs": {
+        "pg_red": {
+          "log": "/tmp/questpc3-irmana-red.log",
+          "sha256": "1fe8614d412ec3228808d784b3db6bbe8323be0caa8403d19049616df2d229e6",
+          "result": "expected RED"
+        },
+        "pg_green": {
+          "log": "/tmp/questpc3-irmana-green.log",
+          "sha256": "71ac3fcca971f130a1a10830940118d03facdb65ccdf065e8c33594eb23c6d95",
+          "result": "PASS"
+        },
+        "fmt": {
+          "log": "/tmp/questpc3-irmana-fmt.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "result": "PASS"
+        },
+        "cargo_check": {
+          "log": "/tmp/questpc3-irmana-check.log",
+          "sha256": "2a1a34ee11b87394a0c56896c7b999dd0ffd3103fe520fb3d00c9bdd7903a190",
+          "result": "PASS"
+        },
+        "clippy": {
+          "log": "/tmp/questpc3-irmana-clippy.log",
+          "sha256": "98127deebb8b838ffff988e66a0b6258d24dd36bb7dbf03b5821dea01723bc2d",
+          "result": "PASS"
+        },
+        "reward_units": {
+          "log": "/tmp/questpc3-irmana-units.log",
+          "sha256": "f090cb6d3da666dcfc3d555d271f149aac8fb682d44a8ba54f735a947f060c47",
+          "result": "PASS"
+        },
+        "authoring": {
+          "log": "/tmp/questpc3-irmana-authoring.log",
+          "sha256": "cbe4b84d897ac017db0552ccb3a31855ff0fb172bc344c967c4c4c92eb19e624",
+          "result": "PASS"
+        },
+        "native_profiles": {
+          "log": "/tmp/questpc3-irmana-native-check.log",
+          "sha256": "a98c8f29270f3162ecdc0203d05e206114193e121b93a8ef3eccf8076d0bc29f",
+          "result": "PASS"
+        },
+        "pins": {
+          "log": "/tmp/questpc3-irmana-pins.log",
+          "sha256": "88692f49250789009449289dfdcb16b7faa9fc8dc1b321b947f8580e8db2124a",
+          "result": "PASS"
+        }
+      },
+      "generated_world_pin": {
+        "tool": "oteryn-world-bundle-compiler pin-refresh .",
+        "exit_code": 0,
+        "digest": "1865fcd7463963db22b043c0770c52e50e9ecd973899a8bacd0b4916c6ef139f",
+        "deploy_mirror_included": true
+      }
     },
     "diagnosis": {
       "log": "/tmp/questpc3-counter-diagnosis.log",

@@ -33,6 +33,14 @@ pub struct OutfitReward {
     pub addons: u8,
 }
 
+/// Exact source price, consumed only by the existing durable coin fee owner.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct MonetaryFee {
+    pub gold: u64,
+    pub include_bank: bool,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RewardCallback {
@@ -47,6 +55,8 @@ pub struct RewardCallback {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub experience: Option<i64>,
     pub take: Vec<ItemAmount>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fee: Option<MonetaryFee>,
     /// Carried evidence checked under the same locks, without consuming it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub present: Vec<ItemAmount>,
@@ -131,6 +141,10 @@ fn reward_binding(callback: &RewardCallback) -> Result<[u8; 32], String> {
         digest
             .update(serde_json::to_vec(&callback.present_any).map_err(|error| error.to_string())?);
     }
+    if let Some(fee) = &callback.fee {
+        digest.update(b"\0quest-reward-fee-v1\0");
+        digest.update(serde_json::to_vec(fee).map_err(|error| error.to_string())?);
+    }
     Ok(digest.finalize().into())
 }
 
@@ -185,6 +199,7 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                     .all(|s| s.preserve || (s.minimum..=s.maximum).contains(&s.set)))
             || (c.repeatable_check
                 && (!c.take.is_empty()
+                    || c.fee.is_some()
                     || c.give.is_some()
                     || c.outfit.is_some()
                     || c.achievement.is_some()
@@ -216,6 +231,18 @@ fn parse(text: &str) -> Result<Vec<RewardCallback>, String> {
                 .iter()
                 .any(|s| !slug(&s.item, "oteryn:item.", b"._/:-", 256) || s.count == 0)
             || c.take.len() > 8
+            || c.fee.as_ref().is_some_and(|fee| {
+                fee.gold == 0
+                    || fee.gold > 1_000_000_000_000
+                    || c.take.iter().any(|item| {
+                        matches!(
+                            item.item.as_str(),
+                            "oteryn:item.tibia.i3031"
+                                | "oteryn:item.tibia.i3035"
+                                | "oteryn:item.tibia.i3043"
+                        )
+                    })
+            })
             || inputs.len() != c.take.len()
             || c.take
                 .iter()
@@ -331,6 +358,55 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn monetary_fees_are_bounded_source_bound_and_excluded_from_value_free_checks()
+    -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.fee.is_some())
+            .ok_or("paid callback")?;
+        let document =
+            |c: &RewardCallback| serde_json::json!({"schema":1,"callbacks":[c]}).to_string();
+        let original = reward_binding(&callback)?;
+        let mut changed = callback.clone();
+        changed.fee.as_mut().ok_or("fee")?.gold += 1;
+        assert_ne!(reward_binding(&changed)?, original);
+        assert!(parse(&document(&changed)).is_ok());
+        changed = callback.clone();
+        changed.fee.as_mut().ok_or("fee")?.include_bank = true;
+        assert_ne!(reward_binding(&changed)?, original);
+        changed = callback.clone();
+        changed.fee = None;
+        assert_ne!(reward_binding(&changed)?, original);
+        for gold in [0, 1_000_000_000_001] {
+            changed = callback.clone();
+            changed.fee.as_mut().ok_or("fee")?.gold = gold;
+            assert!(parse(&document(&changed)).is_err());
+        }
+        changed = callback.clone();
+        changed.take.push(ItemAmount {
+            item: "oteryn:item.tibia.i3031".into(),
+            count: 1,
+        });
+        assert!(parse(&document(&changed)).is_err());
+        changed = callback;
+        changed.repeatable_check = true;
+        changed.give = None;
+        changed.outfit = None;
+        changed.achievement = None;
+        changed.blessing = None;
+        changed.experience = None;
+        changed.health_loss = None;
+        changed.completes = false;
+        changed.take.clear();
+        for storage in &mut changed.storage {
+            storage.preserve = true;
+        }
+        assert!(parse(&document(&changed)).is_err());
+        changed.fee = None;
+        assert!(parse(&document(&changed)).is_ok());
+        Ok(())
+    }
     #[test]
     fn alternative_evidence_is_bounded_distinct_positive_and_content_bound() -> Result<(), String> {
         let callback = load()?
