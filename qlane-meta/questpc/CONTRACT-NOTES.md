@@ -517,3 +517,11 @@ Retain and rerun `world_reset_atomic_activation_calendar_house_refusal_and_dispa
 for the production reset lifecycle. Never label a seeded activation pointer as a
 full production reset. The observer probe uses a distinct admitted runtime actor,
 session and character lease, following the existing pressure-gate fixture.
+
+### An Uneasy Alliance damaging-player death source
+Source: https://github.com/otservbr/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua
+Pinned corpus blob8d1ecd7810b863df6f44e9e4aead98264fe50395 invokes
+onDeathForDamagingPlayers and changes explicit QuestDoor0 to1. Conservative
+absence rule: no stored flag means inactive, matching Lua absent storage -1;
+do not infer eligibility from the lowered catalogue initial0. This slice does
+not establish NPC-start or timed crystal-reset qualification.

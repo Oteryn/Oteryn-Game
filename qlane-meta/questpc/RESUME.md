@@ -1,3 +1,14 @@
+## Renegade Orc intake checkpoint — 2026-11-07
+No runtime edits since green4f151ba81. Exact missing point: generic damaging-player
+quest death handler is absent; focusedPG RED not yet authored, not falsely reported
+as run. Source Crystal9f5a72c, blob8d1ecd7810b863df6f44e9e4aead98264fe50395:
+RenegadeOrcDeath credits each damaging player whose explicit QuestDoor storage
+is0, sets1. Existing declared transition creature_event_1 and kill queue are reusable.
+Next author literal native-death PG cases, then reusable frozen-recipient callback.
+Do not credit absent storage by treating canonical initial0 as an active quest.
+PR3020 remainsOPEN at13:28; migration registry unchanged/green.
+Owner cadence now15minutes maximum; push each green slice immediately.
+
 ## Draconia complete source route QUALIFIED — 2026-11-07
 Final framedPG3 GREEN55.00s wall: open54.999564781s,pickup54.999509768s,
 replay54.965967191s; actualPostgreSQL18.6. Native map snapshot ->baseordinal

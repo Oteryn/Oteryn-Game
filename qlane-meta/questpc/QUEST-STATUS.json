@@ -7980,7 +7980,7 @@
       "first_unqualified_stage": {
         "key": "s10",
         "kind": "collect",
-        "objective": "Zdobądź Winning Lottery Ticket do żeńskiego Mage potion belt.",
+        "objective": "Zdob\u0105d\u017a Winning Lottery Ticket do \u017ce\u0144skiego Mage potion belt.",
         "targets": [
           "Winning Lottery Ticket"
         ]
@@ -8600,7 +8600,7 @@
       "first_unqualified_stage": {
         "key": "s2",
         "kind": "collect",
-        "objective": "Odszukaj świątynię Inukayi i odbierz pierwszy fragment statuy.",
+        "objective": "Odszukaj \u015bwi\u0105tyni\u0119 Inukayi i odbierz pierwszy fragment statuy.",
         "targets": [
           "Fragment of a Statue (1st)",
           "Inukaya Shrine"
@@ -8633,20 +8633,11 @@
     "whole_title_promoted": false
   },
   "continuation": {
-    "base": "9bf74b42d",
-    "earlier_snapshot_merged": "6c09e0365110db6683f938dd08d5d584744cbf37",
-    "merge_resolution": "Retained the current newer tree in all 86 overlapping paths. Earlier snapshot retained in ancestry.",
-    "owner_rule": "All shared engine features remain in scope; historical outside-lane engine blockers are nonterminal and must be implemented or reused.",
-    "active": "Publish green Corym door batch plus remote Draconia integrations fast-forward. Hidden Threats is QUALIFIED in questpc7 ee0f48730: SKIP remaining room/gate work under owner rule. Select next unfinished owned batch from fresh cross-lane snapshots; keep all generic engine support in scope.",
-    "concurrent_remote_head": "5b3d0a14e8ff04c1da8a13f9258c6a04cc560980",
-    "validation": {
-      "command": "cargo test --locked -p oteryn-gameplay-dispatch --lib elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal -- --nocapture",
-      "result": "1 passed; 0 failed; 2540 filtered out",
-      "marker": "POSTGRES_CASE_COMPLETED elvenbane_all_four_native_chests_and_drawers_once_replay_and_refusal duration=63.295355405s",
-      "log": "qlane-meta/questpc/cloud-replacement-elvenbane.log",
-      "sha256": "05aa791fc57d0126485958d19c6f2d4d4fdc648a8cc9e7d91743c5de9ef3e0c5"
-    },
-    "owner_pressure": "Push every completed tested slice immediately and at least every 30 minutes; cap each investigation at 10 minutes and document conservative decisions in CONTRACT-NOTES.md."
+    "next": "Implement generic source-qualified damaging-player creature-death callbacks, beginning with Renegade Orc / An Uneasy Alliance.",
+    "runtime_change_since_4f151ba81": false,
+    "red_point": "Kill settlement has no handler for RenegadeOrcDeath; focused PG RED not yet authored. No claim of a failed PostgreSQL test.",
+    "source": "Crystal 9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data-global/scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua, blob 8d1ecd7810b863df6f44e9e4aead98264fe50395",
+    "upstream_pr_3020": "OPEN, inspected 2026-11-07T13:28Z; retain exact shared migrations until merged."
   },
   "engine_progress": {
     "stateless_departure": {
