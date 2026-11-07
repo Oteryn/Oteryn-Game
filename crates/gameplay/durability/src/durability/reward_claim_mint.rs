@@ -120,7 +120,6 @@ pub mod boss_reward;
 mod charges;
 mod contents;
 pub mod falcon;
-pub(in crate::durability) mod fathers_burden;
 mod fluid;
 mod grizzly;
 mod monk;
@@ -2332,3 +2331,7 @@ mod tests {
         );
     }
 }
+
+pub(super) mod npc_program;
+pub(super) mod fathers_burden;
+pub(super) mod marlin_trophy;

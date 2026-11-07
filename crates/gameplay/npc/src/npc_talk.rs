@@ -391,6 +391,22 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if native_npcs.contains(&reference.key.as_str()) && npc.dialogue.is_some() {
+                // Conditional native greeting rules own the text. An absent literal
+                // greeting still admits focus so that their reply or dismissal runs.
+                let greeting = npc
+                    .bank_dialogue
+                    .as_ref()
+                    .and_then(|dialogue| dialogue.greet.first())
+                    .cloned()
+                    .unwrap_or_default();
+                let farewell = npc
+                    .bank_dialogue
+                    .as_ref()
+                    .and_then(|dialogue| dialogue.farewell.first())
+                    .cloned()
+                    .unwrap_or_else(|| "Farewell.".into());
+                (greeting, farewell, None, Vec::new())
             } else if native_quest
                 && matches!(
                     reference.key.as_str(),
@@ -412,22 +428,19 @@ impl NpcTalkBook {
             } else if native_quest && npc.dialogue.is_some() {
                 // The closed native caller supplies conditional replies and writes
                 // after this existing conversation owner admits the speaker.
-                let Some(dialogue) = &npc.bank_dialogue else {
-                    continue;
-                };
-                let Some(greeting) = dialogue.greet.first() else {
-                    continue;
-                };
-                (
-                    greeting.clone(),
-                    dialogue
-                        .farewell
-                        .first()
-                        .cloned()
-                        .unwrap_or_else(|| "Farewell.".into()),
-                    None,
-                    Vec::new(),
-                )
+                let greeting = npc
+                    .bank_dialogue
+                    .as_ref()
+                    .and_then(|d| d.greet.first())
+                    .cloned()
+                    .unwrap_or_default();
+                let farewell = npc
+                    .bank_dialogue
+                    .as_ref()
+                    .and_then(|d| d.farewell.first())
+                    .cloned()
+                    .unwrap_or_else(|| "Farewell.".into());
+                (greeting, farewell, None, Vec::new())
             } else {
                 continue;
             };

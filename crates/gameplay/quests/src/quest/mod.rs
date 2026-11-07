@@ -285,8 +285,14 @@ pub struct QuestStateCatalogue {
     tracks: BTreeMap<String, QuestTrack>,
     transitions: BTreeMap<String, QuestTransition>,
     hashes: BTreeMap<String, [u8; 32]>,
-    // Read-compatible NPC activation retains historical pins and absent-track meanings.
     npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
+    predecessors: BTreeMap<String, Vec<NpcDefinitionPredecessor>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct NpcDefinitionPredecessor {
+    hash: [u8; 32],
+    defaults: BTreeMap<String, i64>,
 }
 
 impl QuestStateCatalogue {
@@ -403,6 +409,7 @@ impl QuestStateCatalogue {
             transitions: transition_map,
             hashes,
             npc_legacy: BTreeMap::new(),
+            predecessors: BTreeMap::new(),
         })
     }
 
@@ -429,6 +436,7 @@ impl QuestStateCatalogue {
                 .collect(),
         )?;
         extended.npc_legacy.clone_from(&self.npc_legacy);
+        extended.predecessors.clone_from(&self.predecessors);
         Ok(extended)
     }
 

@@ -1,8 +1,13 @@
 //! Source-qualified, bounded NPC programs consumed by the fenced NPC quest owner.
 //! Crystal source references and source-order branches are retained in each program.
 
+mod admission;
+mod bounds;
 mod evaluate;
+mod hidden_threats;
+mod item_exchange;
 mod keyword;
+mod marlin_trophy;
 mod validate;
 
 // Directory-scanned source programs retain their exact source custody.
@@ -276,6 +281,9 @@ pub struct NpcSourceFile {
 #[serde(deny_unknown_fields)]
 pub struct NpcRuleDocument {
     pub schema: u32,
+    /// Independent source programmes may share one canonical aggregate quest.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub program_key: Option<String>,
     pub quest: String,
     pub tracks: Vec<NpcTrackDefinition>,
     pub rules: Vec<NpcRule>,
@@ -349,6 +357,14 @@ pub struct NpcRulePlan {
 }
 
 impl NpcRuleCatalog {
+    /// Resolve only programmes explicitly bound into this catalogue for this NPC.
+    pub fn admitted_for_npc(
+        &self,
+        npc: &str,
+        native: &super::QuestStateCatalogue,
+    ) -> Result<Option<Self>, NpcRuleError> {
+        admission::for_npc(self, npc, native)
+    }
     pub fn from_json_documents(documents: &[&str]) -> Result<Self, NpcRuleError> {
         let mut programs = Vec::with_capacity(documents.len());
         for source in documents {
@@ -373,6 +389,7 @@ impl NpcRuleCatalog {
         native: &super::QuestStateCatalogue,
     ) -> Result<Self, NpcRuleError> {
         for program in &mut self.programs {
+            let writes = bounds::literal_write_bounds(program);
             for track in &mut program.document.tracks {
                 let definition = native
                     .track(&track.key)
@@ -385,8 +402,9 @@ impl NpcRuleCatalog {
                                 .npc_legacy
                                 .get(&track.quest)
                                 .is_some_and(|(_, defaults)| defaults.get(&track.key) == Some(&0))))
-                    || definition.min > track.min
-                    || definition.max < track.max
+                    || writes
+                        .get(&track.key)
+                        .is_some_and(|&(min, max)| definition.min > min || definition.max < max)
                 {
                     return Err(NpcRuleError::Invalid(format!(
                         "native NPC track refinement: {}",
@@ -421,17 +439,27 @@ impl NpcRuleCatalog {
         RUNTIME
             .get_or_init(|| {
                 let mut catalogue = Self::load_embedded()?;
+                let supplemental = Self::from_json_documents(&[include_str!(
+                    "../../../../../content/dialogues/quest-rules-supplemental/draconia.json"
+                )])?;
+                catalogue.programs.extend(supplemental.programs);
+                validate::catalogue(&catalogue)?;
                 catalogue.programs.retain(|p| {
-                    matches!(
-                        p.document.quest.as_str(),
-                        "oteryn:quest.a_father_s_burden_quest"
-                            | "oteryn:quest.a_pirates_tail"
-                            | "oteryn:quest.bigfoot_s_burden_quest"
-                            | "oteryn:quest.hero_of_rathleton_quest"
-                            | "oteryn:quest.hot_cuisine_quest"
-                            | "oteryn:quest.in_service_of_yalahar_quest"
-                            | "oteryn:quest.the_order_of_the_stag_quest"
-                    )
+                    p.document.program_key.as_deref() == Some(hidden_threats::PROGRAM)
+                        || p.document.program_key.as_deref()
+                            == Some("oteryn:quest-npc-program.draconia")
+                        || matches!(
+                            p.document.quest.as_str(),
+                            "oteryn:quest.a_father_s_burden_quest"
+                                | "oteryn:quest.a_pirates_tail"
+                                | "oteryn:quest.bigfoot_s_burden_quest"
+                                | "oteryn:quest.hero_of_rathleton_quest"
+                                | "oteryn:quest.hot_cuisine_quest"
+                                | "oteryn:quest.in_service_of_yalahar_quest"
+                                | "oteryn:quest.marlin_trophy_quest"
+                                | "oteryn:quest.the_hidden_city_of_beregar_quest"
+                                | "oteryn:quest.the_order_of_the_stag_quest"
+                        )
                 });
                 Ok(catalogue)
             })
@@ -532,7 +560,7 @@ impl NpcRuleCatalog {
     }
 }
 
-/// Refine only original source-qualified tracks; preserve every wider native bound.
+/// Extend native bounds only for source writes; preserve existing absent values.
 pub(super) fn extend(
     catalogue: super::QuestStateCatalogue,
     source_tracks: &BTreeMap<String, String>,
@@ -561,6 +589,7 @@ pub(super) fn extend(
     let mut tracks = catalogue.tracks.clone();
     let mut transitions = catalogue.transitions.clone();
     for program in source.programs() {
+        let writes = bounds::literal_write_bounds(program);
         for track in &program.document.tracks {
             if let Some(native) = tracks.get_mut(&track.key) {
                 let original = track
@@ -576,8 +605,10 @@ pub(super) fn extend(
                 }
                 // Keep the old catalogue's absent value for every existing native
                 // consumer. Only source NPC planning uses its donor absent value.
-                native.min = native.min.min(track.min);
-                native.max = native.max.max(track.max);
+                if let Some(&(min, max)) = writes.get(&track.key) {
+                    native.min = native.min.min(min);
+                    native.max = native.max.max(max);
+                }
             } else {
                 tracks.insert(
                     track.key.clone(),
@@ -598,12 +629,7 @@ pub(super) fn extend(
             .tracks
             .first()
             .ok_or("NPC program has no tracks")?;
-        let digest = program
-            .digest
-            .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect::<String>();
-        let key = format!("oteryn:quest-npc-pin/{digest}");
+        let key = admission::binding_key(program);
         if transitions
             .insert(
                 key.clone(),
@@ -635,7 +661,7 @@ pub(super) fn extend(
     Ok(active)
 }
 
-/// Only an exact pre-activation definition can retain its old absent-track values.
+/// Only an exact registered predecessor retains its old absent-track values.
 /// Existing rows, their values, pins and receipts are never rewritten.
 pub fn legacy_defaults<'a>(
     catalogue: &'a super::QuestStateCatalogue,
@@ -647,7 +673,34 @@ pub fn legacy_defaults<'a>(
         .get(quest)
         .filter(|(hash, _)| hash == stored_hash)
         .map(|(_, defaults)| defaults)
+        .or_else(|| {
+            catalogue
+                .predecessors
+                .get(quest)?
+                .iter()
+                .find(|entry| &entry.hash == stored_hash)
+                .map(|entry| &entry.defaults)
+        })
 }
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod draconia_source_tests {
+    use super::*;
+    const DATA: &str =
+        include_str!("../../../../../content/dialogues/quest-rules-supplemental/draconia.json");
+    #[test]
+    fn draconia_programme_rejects_source_substitution() -> Result<(), String> {
+        NpcRuleCatalog::from_json_documents(&[DATA]).map_err(|e| format!("{e:?}"))?;
+        assert!(
+            NpcRuleCatalog::from_json_documents(&[&DATA.replace(
+                "85016cc08856f49d94c507f43bc84f54801d3a2844946ae391015a0d8c84a052",
+                "0000000000000000000000000000000000000000000000000000000000000000"
+            )])
+            .is_err()
+        );
+        Ok(())
+    }
+}

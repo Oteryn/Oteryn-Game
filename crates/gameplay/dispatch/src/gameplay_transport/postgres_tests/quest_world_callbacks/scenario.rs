@@ -36,6 +36,7 @@ fn scenario_case(
                 | "catalogue-npc-hero"
                 | "catalogue-npc-legacy"
                 | "catalogue-npc-scoped"
+                | "catalogue-npc-end" | "catalogue-npc-calendar" | "catalogue-npc-xp"
                 | "classic-quests-npc"
                 | "classic-rottin-disrepair"
                 | "threatened-dreams-npc"
@@ -337,7 +338,15 @@ fn scenario_case(
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if paired_plate {
+        if name == "catalogue-npc-xp" {
+            super::super::npc_program::exercise_xp(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if name == "catalogue-npc-calendar" {
+            super::super::npc_program::exercise_calendar(&mut owner, &mut admitted, &h).await?;
+        } else if name == "catalogue-npc-end" {
+            super::super::npc_program::exercise_end(&mut owner, &mut admitted).await?;
+        } else if name == "catalogue-npc" {
+            super::super::npc_program::exercise(&mut owner, &mut admitted, &h, &authority).await?;
+        } else if paired_plate {
             super::super::questpc5_l5::exercise_plate(
                 &owner,
                 &mut admitted,

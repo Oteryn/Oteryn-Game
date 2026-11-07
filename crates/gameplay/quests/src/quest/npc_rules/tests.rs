@@ -580,8 +580,88 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     }
     let active = extend(old.catalogue().clone(), &bindings)?;
     let runtime = NpcRuleCatalog::runtime().map_err(|e| e.to_string())?;
-    assert_eq!(runtime.programs().len(), 7);
-    assert_eq!(active.npc_legacy.len(), 6);
+    // Exact activation closure: Hot Cuisine is intentional for authoritative
+    // calendar/dismissal execution, alongside the independently bound programmes.
+    let expected_programmes = std::collections::BTreeSet::from([
+        "oteryn:quest.a_father_s_burden_quest",
+        "oteryn:quest.a_pirates_tail",
+        "oteryn:quest.bigfoot_s_burden_quest",
+        "oteryn:quest.draconia_quest",
+        "oteryn:quest.hero_of_rathleton_quest",
+        "oteryn:quest.hot_cuisine_quest",
+        "oteryn:quest.in_service_of_yalahar_quest",
+        "oteryn:quest.marlin_trophy_quest",
+        "oteryn:quest.the_hidden_city_of_beregar_quest",
+        "oteryn:quest.the_order_of_the_stag_quest",
+        "oteryn:quest.tibia_tales",
+    ]);
+    assert_eq!(
+        runtime
+            .programs()
+            .iter()
+            .map(|p| p.document.quest.as_str())
+            .collect::<std::collections::BTreeSet<_>>(),
+        expected_programmes
+    );
+    assert_eq!(runtime.programs().len(), expected_programmes.len());
+    let hot_cuisine = "oteryn:quest.hot_cuisine_quest";
+    assert_eq!(
+        active.npc_legacy.get(hot_cuisine).map(|(hash, _)| *hash),
+        old.catalogue().definition_hash(hot_cuisine)
+    );
+    assert!(active.npc_legacy.contains_key(hot_cuisine));
+    assert_eq!(
+        runtime
+            .program("oteryn:quest.draconia_quest")
+            .ok_or("Dragonlord programme")?
+            .document
+            .program_key
+            .as_deref(),
+        Some("oteryn:quest-npc-program.draconia")
+    );
+    assert!(
+        runtime
+            .program("oteryn:quest.marlin_trophy_quest")
+            .is_some()
+    );
+    let corym = runtime
+        .program("oteryn:quest.tibia_tales")
+        .ok_or("Corym programme")?;
+    assert_eq!(
+        corym.document.program_key.as_deref(),
+        Some(hidden_threats::PROGRAM)
+    );
+    assert!(
+        corym
+            .document
+            .rules
+            .iter()
+            .all(|rule| rule.npc.starts_with("oteryn:npc.corym_"))
+    );
+    // The historical frozen catalogue has no Draconia definition to alias.
+    let expected_legacy = expected_programmes
+        .iter()
+        .copied()
+        .filter(|quest| {
+            !matches!(
+                *quest,
+                "oteryn:quest.draconia_quest" | "oteryn:quest.the_order_of_the_stag_quest"
+            )
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(
+        active
+            .npc_legacy
+            .keys()
+            .map(String::as_str)
+            .collect::<std::collections::BTreeSet<_>>(),
+        expected_legacy
+    );
+    assert!(
+        !active
+            .npc_legacy
+            .contains_key("oteryn:quest.draconia_quest")
+    );
     let mut defaults = BTreeMap::new();
     for track in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
@@ -591,7 +671,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     {
         *defaults.entry(track.initial).or_insert(0usize) += 1;
     }
-    assert_eq!(defaults, BTreeMap::from([(-1, 180), (0, 50)]));
+    assert_eq!(defaults, BTreeMap::from([(-1, 192), (0, 52)]));
     for program in NpcRuleCatalog::embedded()
         .map_err(|e| e.to_string())?
         .programs()
@@ -647,7 +727,33 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
         .map_err(|e| e.to_string())?;
     let loaded = super::super::loader::load_embedded_quest_state("npc-legacy")
         .map_err(|e| format!("{e:?}"))?;
-    assert_eq!(loaded.catalogue().npc_legacy.len(), 6);
+    let expected_loaded_legacy = expected_legacy;
+    assert_eq!(
+        loaded
+            .catalogue()
+            .npc_legacy
+            .keys()
+            .map(String::as_str)
+            .collect::<std::collections::BTreeSet<_>>(),
+        expected_loaded_legacy
+    );
+    // Draconia is a newly introduced programme, not a historical definition.
+    // It must never acquire a fabricated legacy hash/default mapping.
+    let draconia = "oteryn:quest.draconia_quest";
+    assert!(old.catalogue().definition_hash(draconia).is_none());
+    assert!(loaded.catalogue().definition_hash(draconia).is_some());
+    assert!(!loaded.catalogue().npc_legacy.contains_key(draconia));
+    assert!(
+        legacy_defaults(
+            old.catalogue(),
+            draconia,
+            &loaded
+                .catalogue()
+                .definition_hash(draconia)
+                .ok_or("new Draconia hash")?
+        )
+        .is_none()
+    );
     Ok(())
 }
 
@@ -667,5 +773,69 @@ fn storage_owner_commits_exact_father_acceptance_without_raising_general_cap()
         vec!["oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-accept"]
     );
     assert!(facts.tracks.is_empty());
+    Ok(())
+}
+
+#[test]
+fn native_bounds_preserve_source_absence_without_accepting_out_of_range_rows() -> Result<(), String>
+{
+    let native = super::super::loader::load_embedded_quest_state("npc-bounds")
+        .map_err(|error| format!("{error:?}"))?;
+    let source = NpcRuleCatalog::runtime()
+        .map_err(|error| error.to_string())?
+        .clone()
+        .with_native_bounds(native.catalogue())
+        .map_err(|error| error.to_string())?;
+    let mut facts = Facts::empty();
+    let plan = source
+        .plan_storage(&facts.input("oteryn:npc.tereban", "yes", 1))
+        .map_err(|error| error.to_string())?
+        .ok_or("Father acceptance")?;
+    assert_eq!(plan.track_changes.len(), 11);
+    assert!(plan.track_changes.iter().all(|change| change.before == -1));
+    assert_eq!(
+        source
+            .plan_item_exchange(&facts.input("oteryn:npc.tereban", "yes", 1))
+            .map_err(|error| error.to_string())?
+            .ok_or("inventory-backed acceptance")?
+            .track_changes,
+        plan.track_changes
+    );
+    let quest_log = "oteryn:quest-progress/quest/u8_6/afathers_burden/quest_log";
+    for invalid in [-1, 2] {
+        facts.tracks.insert(quest_log.into(), invalid);
+        assert!(
+            matches!(source.plan_storage(&facts.input("oteryn:npc.tereban", "yes", 1)),
+            Err(NpcRuleError::Invalid(message)) if message.contains("track outside bounds"))
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn shipped_npc_source_does_not_claim_an_unbound_native_catalogue() -> Result<(), String> {
+    let source = NpcRuleCatalog::runtime().map_err(|error| error.to_string())?;
+    let frozen = super::super::loader::parse_quest_state(
+        include_str!("../../../../../../content/quests/missions/quest-state.json"),
+        "npc-binding",
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    assert!(
+        source
+            .admitted_for_npc("oteryn:npc.palimuth", frozen.catalogue())
+            .map_err(|error| error.to_string())?
+            .is_none()
+    );
+    let loaded = super::super::loader::load_embedded_quest_state("npc-binding")
+        .map_err(|error| format!("{error:?}"))?;
+    let bound = source
+        .admitted_for_npc("oteryn:npc.tereban", loaded.catalogue())
+        .map_err(|error| error.to_string())?
+        .ok_or("bound Father programme")?;
+    assert_eq!(bound.programs().len(), 1);
+    assert_eq!(
+        bound.programs()[0].document.quest,
+        "oteryn:quest.a_father_s_burden_quest"
+    );
     Ok(())
 }
