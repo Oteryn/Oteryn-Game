@@ -78,9 +78,16 @@ pub(super) async fn exercise(
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
     assert_eq!(progress(h, "stage").await?, 1);
-    assert!(owner.quest_guardian_for_test("oteryn:quest-death/authored-kormarak-guardian").await.is_none());
+    assert!(
+        owner
+            .quest_guardian_for_test("oteryn:quest-death/authored-kormarak-guardian")
+            .await
+            .is_none()
+    );
     step(owner, admitted, 2, StepDirection::East).await?;
-    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
     let guardian = owner
         .quest_guardian_for_test("oteryn:quest-death/authored-kormarak-guardian")
         .await
@@ -130,16 +137,49 @@ pub(super) async fn exercise(
     for (item, _) in outputs {
         before.push(quantity(h, &format!("oteryn:item.tibia.i{item}")).await?);
     }
-    assert_eq!(use_target(owner, admitted, 4, &target).await?, UseDisposition::Committed);
+    assert_eq!(
+        use_target(owner, admitted, 4, &target).await?,
+        UseDisposition::Committed
+    );
     assert_eq!(progress(h, "stage").await?, 3);
     for ((item, amount), initial) in outputs.into_iter().zip(&before) {
-        assert_eq!(quantity(h, &format!("oteryn:item.tibia.i{item}")).await? - initial, amount);
+        assert_eq!(
+            quantity(h, &format!("oteryn:item.tibia.i{item}")).await? - initial,
+            amount
+        );
     }
-    assert_eq!(use_target(owner, admitted, 4, &target).await?, UseDisposition::Committed);
+    assert_eq!(
+        use_target(owner, admitted, 4, &target).await?,
+        UseDisposition::Committed
+    );
     let target = object_target(owner, position, 2)?;
-    assert_eq!(use_target(owner, admitted, 5, &target).await?, UseDisposition::Rejected);
+    assert_eq!(
+        use_target(owner, admitted, 5, &target).await?,
+        UseDisposition::Rejected
+    );
     for ((item, amount), initial) in outputs.into_iter().zip(&before) {
-        assert_eq!(quantity(h, &format!("oteryn:item.tibia.i{item}")).await? - initial, amount);
+        assert_eq!(
+            quantity(h, &format!("oteryn:item.tibia.i{item}")).await? - initial,
+            amount
+        );
+    }
+    owner
+        .states
+        .quest_sessions
+        .lock()
+        .map_err(|_| "quest cache")?
+        .remove(&admitted.game_session_id);
+    owner.admit_quest_session(admitted).await;
+    let target = object_target(owner, position, 2)?;
+    assert_eq!(
+        use_target(owner, admitted, 6, &target).await?,
+        UseDisposition::Rejected
+    );
+    for ((item, amount), initial) in outputs.into_iter().zip(&before) {
+        assert_eq!(
+            quantity(h, &format!("oteryn:item.tibia.i{item}")).await? - initial,
+            amount
+        );
     }
     let completed: bool = sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.authored.kingdom_of_kormarak_quest'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert!(completed);

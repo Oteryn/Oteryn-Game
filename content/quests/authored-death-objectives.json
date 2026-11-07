@@ -57,6 +57,30 @@
       }
     },
     {
+      "key": "oteryn:quest-death/authored-voodoo",
+      "quest": "oteryn:quest.authored.voodoo_doll_quest",
+      "creature": "oteryn:creature.witch",
+      "stage": "oteryn:quest-progress/chosen/voodoo/stage",
+      "stage_value": 1,
+      "counter": "oteryn:quest-progress/chosen/voodoo/kills",
+      "required": 3,
+      "minimum": {
+        "x": 32740,
+        "y": 31943,
+        "floor": -9
+      },
+      "maximum": {
+        "x": 32758,
+        "y": 31959,
+        "floor": -9
+      },
+      "sources": [
+        "oteryn-authored:chosen-recipe:voodoo:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=5234&oldid=1106155",
+        "Conservative native chamber bounds in CONTRACT-NOTES.md; actual frozen native death and present principal only."
+      ]
+    },
+    {
       "key": "oteryn:quest-death/authored-kormarak-guardian",
       "quest": "oteryn:quest.authored.kingdom_of_kormarak_quest",
       "creature": "oteryn:creature.demon_skeleton",
@@ -88,31 +112,6 @@
         },
         "respawn_ms": 90000
       }
-    },
-    {
-      "key": "oteryn:quest-death/authored-voodoo-witches",
-      "quest": "oteryn:quest.authored.voodoo_doll_quest",
-      "creature": "oteryn:creature.witch",
-      "stage": "oteryn:quest-progress/chosen/voodoo/stage",
-      "stage_value": 1,
-      "counter": "oteryn:quest-progress/chosen/voodoo/kills",
-      "required": 3,
-      "minimum": {
-        "x": 32740,
-        "y": 31945,
-        "floor": -9
-      },
-      "maximum": {
-        "x": 32760,
-        "y": 31960,
-        "floor": -9
-      },
-      "sources": [
-        "oteryn-authored:chosen-recipe:voodoo-doll:quest-r1",
-        "https://tibia.fandom.com/index.php?curid=5235&oldid=749496",
-        "https://tibia.fandom.com/index.php?curid=5234&oldid=1106155",
-        "Retained boxes32757,31953/31957,z9 appearance2473 ordinal1; three retained source Witch spawns nearby; king doll3209 and unlit wand3046 from pinned Canary XML. See qlane-meta/questpc8/CONTRACT-NOTES.md."
-      ]
     }
   ]
 }

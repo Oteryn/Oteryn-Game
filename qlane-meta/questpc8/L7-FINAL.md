@@ -1,3 +1,6 @@
+Merged retrieval/NPC verification PASS; native Grizzly and weekday placements retained.
+Mastermind final201gold/cold-replay semantics preserved. See cloud-mastermind-merge-proof.json.
+
 Mastermind chosen programme now QUALIFIED: PG RED2.91s/GREEN40.803601885s,
 Voodoo regression40.665800954s, final checks/Clippy/fmt/40-file drift/pins passed.
 Eleven of23 L7 entries QUALIFIED,12 remain. See current QUEST-STATUS.json
@@ -89,3 +92,8 @@ Unit: 1 passed, 0 failed, 0.01s. No full PG suite. No active cargo sessions.
 - Killing in the Name of... Quest (oteryn:quest.killing_in_the_name_of_quest): The chosen Crocodile-kill progression and final 10000-XP/5000-gold completion are not composed; the existing source hunting programme pays different rewards.
 
 The 20 unfinished entries are unimplemented obligations, not external authority blockers. The full round was not completed. The agent ran no Git mutation command, spawned no agent, and did not access credentials, Docker or excluded content.
+
+Native NPC integration checkpoint: Hunting placement gap closed; counts8here +3elsewhere,
+12active entries remain. Compiled Grizzly/Captain/Rashid, real PG join/task/replay,
+live weekday NPC units and all selected checks pass; see npc-placement-validation.json.
+This is a progress checkpoint, not a final lane completion or release claim.

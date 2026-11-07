@@ -338,9 +338,9 @@
         "exact three achievements and no additional reward on a subsequent report"
       ]
     },
-    "disposition": "dispatch-pg-qualified",
+    "disposition": "qualified-current-lane",
     "qualified_elsewhere": [],
-    "mechanism": "none",
+    "mechanism": "native ordered task/rank/boss/report programme, exact once-only10000XP/5000gold completion, compiled Grizzly placement and real NPC join/task/replay",
     "round": "L7",
     "qualification": {
       "scope": "complete chosen eleven-stage programme plus retained native source task/rank/portal/report obligations",
@@ -378,15 +378,29 @@
         "immutable successful report receipts for Snapper, Deathbine and The Many are required by the same fenced transaction",
         "premature claim leaves ordered progress at phase 7",
         "quest session reload retains exactly one final payout"
-      ]
+      ],
+      "native_placement_proof": "npc-placement-validation.json"
     },
     "qualified_components": [
       {
         "scope": "incoming source task/boss reports and atomic final payout, before ordered-phase reconciliation",
         "duration_seconds": 179.886708384,
         "proof": "qlane-meta/questpc8/cloud-hunting-campaign-proof.json"
+      },
+      {
+        "scope": "Production placement/native NPC join/task/replay",
+        "proof": "npc-placement-validation.json",
+        "test": "questpc8_grizzly_production_placement_native_join_and_task",
+        "duration_seconds": 47.402370339,
+        "red_duration_seconds": 2.01
       }
-    ]
+    ],
+    "native_placement_probe": {
+      "artifact_digest": "dd0a866904036a1823db30d042fcfd9eb4db89b21ad7ea93b1916cdc52265a04",
+      "compiled_npc_count": 29,
+      "grizzly_adams_present": false,
+      "log_sha256": "145bb737d8f88ea6d1ece1a51c5f0743d6b0e97ba4e9149594350852c1086a03"
+    }
   },
   {
     "title": "Kilmaresh Quest",
@@ -437,7 +451,7 @@
     "qualified_elsewhere": [],
     "mechanism": "ordered exploration, actual shared guardian, native ordinal body cache and atomic four-item backpack outputs",
     "round": "L7",
-    "proof": "cloud-kormarak-proof.json",
+    "proof": "kormarak-consolidation-validation.json",
     "qualification_scope": "Complete chosen Oteryn recipe only; conservative native route/body restoration documented in CONTRACT-NOTES.md.",
     "qualified_components": [
       {
@@ -447,6 +461,18 @@
         "duration_seconds": 36.476644642,
         "red_duration_seconds": 2.52,
         "proof": "cloud-kormarak-proof.json"
+      },
+      {
+        "scope": "Merged conditional guardian and cold quest-session repeat refusal",
+        "tests": [
+          "questpc8_kormarak_native_guardian_body_and_four_outputs",
+          "questpc8_retrieval_kormarak_native_guardian_body_outputs_once"
+        ],
+        "case_seconds": [
+          26.280744943,
+          25.648903113
+        ],
+        "proof": "kormarak-consolidation-validation.json"
       }
     ]
   },
@@ -1133,10 +1159,9 @@
     "status": "QUALIFIED",
     "scope": "complete pinned quest path",
     "reward_claims": [],
-    "blocker": null,
     "disposition": "qualified-here",
     "qualified_elsewhere": [],
-    "mechanism": "ordered native two-cache journey, live Premium gates and exact atomic bounded 201-gold output",
+    "mechanism": "ordered native two-cache programme, live Premium gates and exact final201-gold atomic payout",
     "round": "L7",
     "qualified_components": [
       {
@@ -1152,16 +1177,23 @@
         "green_log_sha256": "d4b2067afeec1f3c5e9a9414f370bf01533afff7ce17a089de57baf7e16c5dd1"
       },
       {
-        "scope": "Complete chosen two-cache/Premium/reward/completion/replay programme",
+        "scope": "Premium refusal/admission, both native route anchors and cache ordinals, exact7440x2/gold201/7159x1/7158x2, legal gold stacks and no extra bag, replay and cold quest copy.",
+        "test": "questpc8_retrieval_mastermind_two_routes_exact_outputs_once",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_retrieval_mastermind",
+        "duration_seconds": 168.413264571,
+        "proof": "retrieval-routes-validation.json"
+      },
+      {
+        "scope": "Merged two-cache programme, final Premium refusal, no early gold, cold-cache replay; concurrent NPC work retained",
         "test": "questpc8_mastermind_two_native_caches_premium_and_exact_201_gold",
-        "marker": "POSTGRES_CASE_COMPLETED questpc8_mastermind_two_native_caches_premium_and_exact_201_gold",
-        "duration_seconds": 40.803601885,
-        "red_duration_seconds": 2.91,
-        "proof": "cloud-mastermind-proof.json"
+        "duration_seconds": 40.769679054,
+        "proof": "cloud-mastermind-merge-proof.json"
       }
     ],
-    "proof": "cloud-mastermind-proof.json",
-    "qualification_scope": "Complete chosen Oteryn recipe only; conservative native fire-cache alias documented in CONTRACT-NOTES.md."
+    "qualification_scope": "Complete selected once-only Oteryn programme at the documented native counterparts; canonical Source remains unchanged.",
+    "local_merge_validation": "cloud-mastermind-merge-proof.json",
+    "blocker": null,
+    "proof": "cloud-mastermind-proof.json"
   },
   {
     "title": "Measuring Tibia Quest",
@@ -1486,10 +1518,9 @@
     "canonical": "oteryn:quest.authored.voodoo_doll_quest",
     "title": "Voodoo Doll Quest",
     "status": "QUALIFIED",
-    "disposition": "qualified-here",
+    "disposition": "qualified-current-lane",
     "qualified_elsewhere": [],
-    "mechanism": "native three-Witch death objective and ordered two-box once-only reward programme",
-    "blocker": null,
+    "mechanism": "native chosen stage graph, current-owner events and existing atomic reward owner",
     "round": "L7",
     "qualified_components": [
       {
@@ -1505,16 +1536,14 @@
         "green_log_sha256": "d4b2067afeec1f3c5e9a9414f370bf01533afff7ce17a089de57baf7e16c5dd1"
       },
       {
-        "scope": "Complete native three-death/two-box/reward/completion/replay programme",
-        "test": "questpc8_voodoo_three_native_witches_two_boxes_and_replay",
-        "marker": "POSTGRES_CASE_COMPLETED questpc8_voodoo_three_native_witches_two_boxes_and_replay",
-        "duration_seconds": 40.271014027,
-        "red_duration_seconds": 2.85,
-        "proof": "cloud-voodoo-proof.json"
+        "scope": "Three native chamber Witch deaths, both exact native boxes, King doll3209 and inactive wand3046, fresh/replayed claims and cold quest copy.",
+        "test": "questpc8_retrieval_voodoo_three_witches_both_boxes_once",
+        "marker": "POSTGRES_CASE_COMPLETED questpc8_retrieval_voodoo",
+        "duration_seconds": 40.260110753,
+        "proof": "retrieval-routes-validation.json"
       }
     ],
-    "proof": "cloud-voodoo-proof.json",
-    "qualification_scope": "Complete chosen Oteryn recipe; retained native box ordinals and existing Witch population, exact king doll3209 and unlit wand3046."
+    "qualification_scope": "Complete selected once-only Oteryn programme at the documented native counterparts; canonical Source remains unchanged."
   },
   {
     "canonical": "oteryn:quest.wrath_of_the_emperor_quest",

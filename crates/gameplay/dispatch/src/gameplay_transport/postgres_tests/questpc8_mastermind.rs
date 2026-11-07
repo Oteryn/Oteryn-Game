@@ -126,6 +126,26 @@ pub(super) async fn exercise(
     }
     let completed:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.authored.mastermind_potion_quest'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert!(completed);
+    {
+        let mut sessions = owner
+            .states
+            .quest_sessions
+            .lock()
+            .map_err(|_| "quest cache")?;
+        sessions.remove(&admitted.game_session_id);
+    }
+    owner.admit_quest_session(admitted).await;
+    let target = object_target(owner, second, 1)?;
+    assert_eq!(
+        use_target(owner, admitted, 14, &target).await?,
+        UseDisposition::Rejected
+    );
+    for ((item, amount), initial) in [(7440, 2), (7159, 1), (7158, 2), (3031, 201)]
+        .into_iter()
+        .zip(&before)
+    {
+        assert_eq!(quantity(h, item).await? - initial, amount);
+    }
     Ok(())
 }
 async fn quantity(h: &Harness, item: u16) -> TestResult<i64> {

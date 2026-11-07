@@ -1,3 +1,30 @@
+# Current merged retrieval/NPC slice — AUTHORING
+
+Merged0f5cb0a62 native NPC placements, live UTC Rashid schedule and Voodoo/
+Kormarak routes with the local Mastermind final201-gold programme. All tests
+preserved; both Mastermind names delegate to the stronger exercise, including
+final Premium refusal, no early gold, exact outputs and cold quest-cache replay.
+Do not restore the incoming first100/final101 payout: it contradicts the chosen
+recipe's one consolidated final201-gold adaptation. No duplicate callback keys.
+
+Merged PG: primary Mastermind40.769679054s; three retrieval cases PASS51.84s
+total, native Grizzly placement/join/task PASS66.961891753s. Merged all-feature
+check69s, strict all-target Clippy, fmt, Item/NPC generator drift and pin refresh
+passed. See cloud-mastermind-merge-proof.json; it supersedes the older isolated
+proof where code changed in this merge. Keep all incoming NPC/runtime changes.
+World digest noweef8f279e03d6ca5944d1ea5986b7364d95e1f82eba36f8c30a8db2be1af4012.
+
+Next work owned by this session: Life Ring atomic scene/actor relocation, then
+its chosen reward programme. No Life Ring code applied yet; avoid overlapping
+this work. Existing bundle collision already reads scene overlays dynamically.
+Pinned Lua teleports each bridge tile's top creature in both lever directions.
+All six actual bridge cells x32410..12,y32231/32232,z10 contain water4598; the
+4601 variant is outside the bridge, on y32230. Retain columns4788 on x32410.
+Safe landing32409,32231,z10 is bare351; lever32413,32230,z10 is2772 ordinal1,
+no AID. Bare right shore32413/32414,32231 supports the initial scene fixture.
+Source Life Ring cache is32443,32238,z11, box2469, UID6131 in donor only,
+bag2853 with3052x1 and3085 subtype200. Exact-charge output support must reuse
+existing reward variant/MINT owners, never infer200 from the necklace name.
 # questpc8 — AUTHORING
 
 Continue directly on claude/happy-davinci-ijz3wy-questpc8; read git log first.
