@@ -1,3 +1,16 @@
+# Live reward engine checkpoint — 2026-11-07
+
+Five focused PG cases are GREEN on18.6; exact durations and RED are in
+REWARD-ENGINE-PG-PROOF.json. The five-crate check and world pin-check pass.
+Strict Clippy and queued content/world checks are still running in session6149
+(`/tmp/questpc7-outfit-tail-validation.py`). No full workspace/PG suite is run.
+The NPC unit's old Palimuth-unavailable expectation was updated to exact
+qualified source replies; Spectulus remains refused. Its focused GREEN is39.37s.
+Product changes are staged but not yet claimed fully validated or published.
+Publish the coupled engine as soon as the remaining checks pass; do not end.
+This evidence checkpoint keeps the owner's30-minute push cadence while the
+required lint completes. The previous product batch a056392a4 is already pushed.
+
 ## Reward engine integration in progress
 
 PG RED executed: qengine_rewards_knight_outfit,73.19329316s, NoConversation

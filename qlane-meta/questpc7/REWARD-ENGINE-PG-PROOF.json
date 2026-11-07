@@ -1,0 +1,48 @@
+{
+  "slice": "reused NPC reward/outfit owner integration",
+  "state": "executed PG proof; product validation still running",
+  "source_branch": "claude/happy-davinci-ijz3wy-qengine2",
+  "source_sha": "9d3c3869f03a523601d5567cdb352d40854f3517",
+  "postgres_version": "18.6",
+  "red": {
+    "test": "qengine_rewards_knight_outfit",
+    "seconds": 73.19329316,
+    "error": "NoConversation instead of source reward greeting",
+    "log": "/tmp/questpc7-outfit-owner-red.log"
+  },
+  "green": [
+    {
+      "case": "knight outfit and selection",
+      "seconds": 74.707547273
+    },
+    {
+      "case": "backpack exact container exchange",
+      "seconds": 74.63794649
+    },
+    {
+      "case": "outfox capacity rollback",
+      "seconds": 75.423096089
+    },
+    {
+      "case": "Father atomic acceptance and eight hand-ins",
+      "seconds": 77.840778948
+    },
+    {
+      "case": "three ordered Hot Cuisine recipes",
+      "seconds": 43.469673565
+    }
+  ],
+  "logs": [
+    "/tmp/questpc7-outfit-owner-green2.log",
+    "/tmp/questpc7-outfit-final-regression-pg.log"
+  ],
+  "check": "five changed crates passed7.23s",
+  "pin_check": "PASS324f7a5dafd005847cb27854c77d3f47cb61c865c559b1a03356c8c992bd0665",
+  "authoring_tests": 12,
+  "npc_units": "17 retained successes plus corrected exact source qualification case GREEN39.37s",
+  "pending": [
+    "strict all-target/all-feature Clippy",
+    "server content/world regression completion"
+  ],
+  "whole_quests_promoted_locally": 0
+}

@@ -15,3 +15,13 @@
 - No donor fact has been invented in this slice. Investigation is capped at
   ten minutes per fact; any later conservative authored rule must be recorded
   here before its focused PostgreSQL proof and publication.
+
+- Wire-level outfit integration uses qengine2's fresh-character fixture with a
+  creation-bound sex and the appearance packet rebound to the fixture content
+  revision. Historical sex-less characters are not valid appearance-capability
+  test actors. Keep the normal capability25, catalogue delivery and selection
+  assertions; do not bypass the appearance owner or disable the capability.
+
+- Palimuth is now globally qualified by the reused reward catalogue. Its older
+  unavailable-greeting expectation becomes exact source greeting/farewell/
+  walkaway assertions; the unrequested Spectulus refusal remains unchanged.
