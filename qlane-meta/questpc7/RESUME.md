@@ -1,3 +1,17 @@
+# Golden fee regression and payment reuse — 2026-11-07
+
+Golden fresh-start PostgreSQL 18.6 RED executed in 76.55003838s:
+an unfunded confirmation incorrectly returned Ok rather than Rejected.
+Evidence: /tmp/questpc7-golden-red-executed.log. Compilation-only failures
+and the earlier disk-full attempt are not counted as PG proof.
+
+Reusing qengine2 payment owner from 33b640335 / e06058c74 selectively,
+with migration renumbered 1099 and selected Golden prices 100000/50000/50000.
+The product changes are uncommitted pending GREEN, strict checks and pins.
+Glooth Engineer is QUALIFIED externally; exact qualification copied from the
+qengine2 ledger. Scope is now 23 ACTIVE entries. Continue without ownership
+questions; retain original quest ownership and skip only exact external proofs.
+
 # Current green reward/outfit mechanism — 2026-11-07
 
 The coupled NPC reward/outfit owner is GREEN and ready for immediate commit/push.
