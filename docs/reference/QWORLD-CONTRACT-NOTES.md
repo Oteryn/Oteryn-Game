@@ -770,3 +770,11 @@ module; the shell had continued to later successful commands. Replaced the calls
 with error propagation and moved the existing helper definitions above the test
 module. The fail-fast rerun passed Clippy `-D warnings` in 0.54 seconds, both
 recovery tests in 0.02 seconds, formatting and whitespace checks.
+
+### Catalogue persistence contract regression
+Focused catalogue tests prove canonical ordering preserves persisted bytes and
+SHA-256 identity through decoding, and reject duplicate keys plus removal or
+replacement of each required native rule. Both cases passed in 0.00 seconds
+(build 0.92 seconds); test-target Clippy `-D warnings` passed in 0.31 seconds.
+Formatting and whitespace checks passed. This adds regression coverage without
+changing production behavior or migrations.

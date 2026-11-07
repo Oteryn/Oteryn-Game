@@ -233,3 +233,61 @@ impl Catalogue {
         self.digest
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn catalogue_order_does_not_change_persisted_identity() -> Result<(), String> {
+        let original = Catalogue::embedded().map_err(|error| format!("{error:?}"))?;
+        let mut reordered = original.definitions().to_vec();
+        reordered.reverse();
+        let restored =
+            Catalogue::from_definitions(reordered).map_err(|error| format!("{error:?}"))?;
+        assert_eq!(original.encoded(), restored.encoded());
+        assert_eq!(original.digest(), restored.digest());
+        let decoded =
+            Catalogue::decode(restored.encoded()).map_err(|error| format!("{error:?}"))?;
+        assert_eq!(decoded.digest(), original.digest());
+        Ok(())
+    }
+
+    #[test]
+    fn catalogue_rejects_duplicate_and_rebound_native_rules() -> Result<(), String> {
+        let original = Catalogue::embedded().map_err(|error| format!("{error:?}"))?;
+        let mut duplicate = original.definitions().to_vec();
+        duplicate.extend_from_slice(original.definitions());
+        assert_eq!(
+            Catalogue::from_definitions(duplicate).err(),
+            Some(RuleError::Definition)
+        );
+        for key in ["fury_gates", "grimvale", "their_masters_voice"] {
+            let mut modified = original.definitions().to_vec();
+            for definition in &mut modified {
+                if definition.key == key {
+                    definition.schedule = Schedule::AtReset {
+                        chance_permille: 1000,
+                    };
+                }
+            }
+            assert_eq!(
+                Catalogue::from_definitions(modified).err(),
+                Some(RuleError::NativeBinding),
+                "accepted rebound native rule {key}"
+            );
+            let missing = original
+                .definitions()
+                .iter()
+                .filter(|definition| definition.key != key)
+                .cloned()
+                .collect();
+            assert_eq!(
+                Catalogue::from_definitions(missing).err(),
+                Some(RuleError::NativeBinding),
+                "accepted missing native rule {key}"
+            );
+        }
+        Ok(())
+    }
+}
