@@ -1,3 +1,16 @@
+## Shared container stock source / actual PG RED checkpoint — 2026-11-07
+Verified native empty5972 root32794,31572,z7, ordinal1; source2969 number3001.
+Pinned Canary CONTAINER capacity10, Lua/B3/source hashes checked by
+quest_container_stock.py /tmp/questpc-door-profile-source --check.
+Actual PostgreSQL18.6 RED3: shared49.006610635s,forged49.058150532s,
+replay49.125472649s: source skeleton opens None, before runtime changes.
+Proof cloud-container-stock-red-validation.json; no qualification/promotion.
+Generic source-stock runtime and expanded PG tests are local AUTHORING, not yet green.
+Next finish check,3PG GREEN,world selector units,strictClippy/fmt/generation/pins;
+commit/push mechanic immediately, then real shared/reset/full-route proof.
+Existing green Elathriel02014a56a retained. Before EVERYpush fetch target and
+merge FETCH_HEAD, never force/rebase/main/PR.
+
 ## Elathriel exact paid-key slice GREEN — 2026-11-07
 Final actualPostgreSQL18.6 GREEN3=267.43s: bank88.380181574s,coins90.700002496s,
 full88.347256761s. Two5000 sales ->two copper2970 keys with immutable3012, replay,

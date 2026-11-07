@@ -1,0 +1,66 @@
+{
+  "bindings": [
+    {
+      "capacity": 10,
+      "container": 5972,
+      "count": 1,
+      "item": 2969,
+      "key_line": 9,
+      "key_number": 3001,
+      "map_path": "content/world/placements/region-z07-x128-y123.b3",
+      "map_sha256": "865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d",
+      "ordinal": 1,
+      "position": [
+        32794,
+        31572,
+        7
+      ],
+      "source_line": 451,
+      "stock_ordinal": 63
+    }
+  ],
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "schema": 1,
+  "sources": [
+    {
+      "git_blob_sha1": "fbb988e2f836cc3b5a2ca611e2dbe38ee0b28bef",
+      "path": "data-global/startup/tables/container_misc.lua",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "da146858a7bfbef47f601e02fc2b621c5e639ec2d096a6831446800277129bca"
+    },
+    {
+      "git_blob_sha1": "0fdc9b91ef9b9205a6337478a9eecbcb41c5fb0d",
+      "path": "data-global/startup/others/functions.lua",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "897c4ea5572c6adef1d2b300fd75c141910d608a093ca15c3d3bf65fcf56826c"
+    },
+    {
+      "git_blob_sha1": "af3e5b1317ef73e2eb6e870835a785f2cf10212a",
+      "path": "data-global/lib/core/storages.lua",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "27923eec5f2dd8fa7dba2e56439f36cd3e1703d53ae93b6f57da29834df9afdf"
+    },
+    {
+      "git_blob_sha1": "61414780c50287cb7982e4286eafa1224b7e2b65",
+      "path": "data-global/startup/tables/door_key.lua",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "sha256": "e5368703030072fcb400980274408ee2cbcfa51a6bf7d435da3dc2c9fcd2438b"
+    },
+    {
+      "path": "data/items/items.xml",
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85"
+    },
+    {
+      "path": "data/items/appearances.dat",
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1"
+    }
+  ]
+}

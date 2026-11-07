@@ -492,3 +492,18 @@ Repurchases must retain the existing once-only MINT claim owner. Reuse QENGINE
 extending the selector to positive repeatable monetary fees. Each new exact paid
 CommandRef is a distinct claim; replay stays the same claim. Do not replace this
 with a free repeatable quest reward or waive the MINT claim ledger.
+
+### Shared source container stock (Draconia key3001)
+Primary source: https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/container_misc.lua#L451-L458
+and https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/door_key.lua#L9-L20 .
+The empty native5972 root at32794,31572,z7 receives one silver2969 numbered3001.
+Use shared world/channel/base-digest/reset-epoch MINT ownership, with no personal
+quest claim. A reserved, otherwise absent base ordinal names the contained stock;
+it is shown only inside its parent pane and never as a loose Ground key. Validate
+parent identity, ordinal, emptiness, non-house status and reserved-slot collision
+before admitting stock. Existing nonempty containers retain their native contents.
+Bounded source-stock containers support withdrawal; accepting deposits is outside
+this mechanic. Parent5972 capacity10 comes from the existing pinned Canary importer
+at99902524e052f37574194466c2949c576e4ab269, without hand-authored item overrides.
+Fresh qengine2 9c581fd10 and questpc2–8 refs contain no MapBase container opener;
+reuse existing views, map MINT, replay and reset ownership and implement that gap here.

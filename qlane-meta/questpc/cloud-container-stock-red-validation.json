@@ -1,0 +1,28 @@
+{
+  "scope": "source-declared shared container stock3001; opening boundary before implementation",
+  "cases": [
+    {
+      "case": "draconia_container_stock_shared",
+      "postgres": "18.6",
+      "result": "RED",
+      "duration_seconds": 49.006610635
+    },
+    {
+      "case": "draconia_container_stock_forged",
+      "postgres": "18.6",
+      "result": "RED",
+      "duration_seconds": 49.058150532
+    },
+    {
+      "case": "draconia_container_stock_replay",
+      "postgres": "18.6",
+      "result": "RED",
+      "duration_seconds": 49.125472649
+    }
+  ],
+  "raw_log": "cloud-container-stock-red.log",
+  "raw_sha256": "0c930527635b0729397d8bd49a715dcc2ca4a6009a53d40752576c7d83507e68",
+  "source_capture": "tools/content-schema/world-authoring/samples/quest-container-stock.json",
+  "capture_check": "PASS: pinned Lua table/blob hashes, native B3 empty non-house root/ordinal, Canary CONTAINER capacity10",
+  "qualification": "No quest or runtime feature promoted; implementation and full withdrawal GREEN pending"
+}
