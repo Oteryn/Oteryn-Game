@@ -241,7 +241,7 @@
       "scope": "Freshly compiled exact merged source; all54 physical/native assertions passed."
     },
     "latest_checked_source": {
-      "source_commit": "68df59b318006726e3d98365ffb72063a6f7a657",
+      "source_commit": "359b49aaea40d6b08d8af88d686b1821ac3c4b39",
       "production_snapshot": "aed13d05c14a66cfce5c2508aef0b984f1ad5865",
       "parity_report": "/tmp/npcfix-evidence/fluid-registry-parity.json",
       "check": "Five changed crates alltargets/allfeatures PASS; fluid-registry-check.log",
@@ -265,32 +265,32 @@
   },
   "incoming_cooldown_delivery": {},
   "active_physical_batch": {
-    "name": "retail-population-qualification-37",
+    "name": "retail-population-qualification-38",
     "state": "QUALIFIED",
     "entries": [
-      "Demonguard",
-      "Dustrunner",
-      "Eustacio",
-      "Frank The Plank",
-      "Frans",
-      "George The Boyscout"
+      "Guide Elena",
+      "Jean Claude",
+      "Julian",
+      "Lightfoot",
+      "Livielle",
+      "Lorbas"
     ],
-    "source_commit": "fc2f7163d3e0e70ebe550cbcf26a45619da64848",
+    "source_commit": "50338f10a42a44f0979ae5cd62e7c1d9ff321d04",
     "scope": "Existing authored placement only; exact source name/cell and normal native/map admission. No service behavior claimed.",
     "red": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 160.83,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-37-red.log",
-      "sha256": "863e1f24162e060c1fd9b52b8ee4461b19721e46a760524a7daa0e8f08a9b71f"
+      "seconds": 80.06,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-38-red.log",
+      "sha256": "6a452b312a5682f99117a16c3bba50d8bb4d13fd3c9451727790056506555bbc"
     },
     "green": {
       "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
-      "seconds": 138.19,
-      "log": "/tmp/npcfix-evidence/retail-population-qualification-37-green.log",
-      "sha256": "a20ab4e4e18a51ff1aab953c16e5c2eee2d24fb733ea30f2625f84672251d4f0"
+      "seconds": 156.02,
+      "log": "/tmp/npcfix-evidence/retail-population-qualification-38-green.log",
+      "sha256": "b46b1a86e23a4e23bd962da203884806928e6d46ffce9e3f0fc8ec92ee9050ef"
     },
     "source_certificate": {
-      "source_commit": "68df59b318006726e3d98365ffb72063a6f7a657",
+      "source_commit": "359b49aaea40d6b08d8af88d686b1821ac3c4b39",
       "production_snapshot": "aed13d05c14a66cfce5c2508aef0b984f1ad5865",
       "parity_report": "/tmp/npcfix-evidence/fluid-registry-parity.json",
       "check": "Five changed crates alltargets/allfeatures PASS; fluid-registry-check.log",
@@ -353,10 +353,10 @@
     "final_pg_log": "/tmp/npcfix-evidence/refusal-final-paid-clock-pg.log"
   },
   "counts": {
-    "QUALIFIED": 223,
+    "QUALIFIED": 229,
     "EXCLUDED": 24,
     "PENDING": 7,
-    "AUTHORED; QUALIFICATION PENDING": 63,
+    "AUTHORED; QUALIFICATION PENDING": 57,
     "SUPERSEDED": 2,
     "QUALIFIED_OTHER_LANE": 1
   },
@@ -4506,8 +4506,15 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/153",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-38",
+        "postgres_red_seconds": 80.06,
+        "postgres_green_seconds": 156.02,
+        "scope": "Existing authored placement only; exact source name/cell and normal native/map admission. No service behavior claimed.",
+        "source_certificate": "359b49aaea40d6b08d8af88d686b1821ac3c4b39"
+      }
     },
     {
       "npc": "H.L.",
@@ -4553,8 +4560,15 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/179",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-38",
+        "postgres_red_seconds": 80.06,
+        "postgres_green_seconds": 156.02,
+        "scope": "Existing authored placement only; exact source name/cell and normal native/map admission. No service behavior claimed.",
+        "source_certificate": "359b49aaea40d6b08d8af88d686b1821ac3c4b39"
+      }
     },
     {
       "npc": "Julian",
@@ -4562,8 +4576,15 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/183",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-38",
+        "postgres_red_seconds": 80.06,
+        "postgres_green_seconds": 156.02,
+        "scope": "Existing authored placement only; exact source name/cell and normal native/map admission. No service behavior claimed.",
+        "source_certificate": "359b49aaea40d6b08d8af88d686b1821ac3c4b39"
+      }
     },
     {
       "npc": "Leopold",
@@ -4580,8 +4601,15 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/199",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-38",
+        "postgres_red_seconds": 80.06,
+        "postgres_green_seconds": 156.02,
+        "scope": "Existing authored placement only; exact source name/cell and normal native/map admission. No service behavior claimed.",
+        "source_certificate": "359b49aaea40d6b08d8af88d686b1821ac3c4b39"
+      }
     },
     {
       "npc": "Livielle",
@@ -4589,8 +4617,15 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/202",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-38",
+        "postgres_red_seconds": 80.06,
+        "postgres_green_seconds": 156.02,
+        "scope": "Existing authored placement only; exact source name/cell and normal native/map admission. No service behavior claimed.",
+        "source_certificate": "359b49aaea40d6b08d8af88d686b1821ac3c4b39"
+      }
     },
     {
       "npc": "Lorbas",
@@ -4598,8 +4633,15 @@
       "audit_status": "DIFF",
       "work": "Retail placement authored.",
       "evidence": "content/world/npc-placements/placements-00000-00344.json:1#/records/207",
-      "test": "test_npcfix_retail_population_has_each_audited_cell",
-      "status": "AUTHORED; QUALIFICATION PENDING"
+      "test": "npcfix_fading_and_retained_placements_postgres",
+      "status": "QUALIFIED",
+      "qualification": {
+        "batch": "retail-population-qualification-38",
+        "postgres_red_seconds": 80.06,
+        "postgres_green_seconds": 156.02,
+        "scope": "Existing authored placement only; exact source name/cell and normal native/map admission. No service behavior claimed.",
+        "source_certificate": "359b49aaea40d6b08d8af88d686b1821ac3c4b39"
+      }
     },
     {
       "npc": "Maria",
@@ -6976,6 +7018,54 @@
         },
         "native_provider": "All3627 prior native profiles unchanged; fluid canonical facts only2 Item fields and3 offers; full other record arrays retained (taxonomy119 canonical provenance hashes refreshed)."
       }
+    },
+    {
+      "name": "retail-population-qualification-38",
+      "state": "QUALIFIED",
+      "entries": [
+        "Guide Elena",
+        "Jean Claude",
+        "Julian",
+        "Lightfoot",
+        "Livielle",
+        "Lorbas"
+      ],
+      "source_commit": "50338f10a42a44f0979ae5cd62e7c1d9ff321d04",
+      "scope": "Existing authored placement only; exact source name/cell and normal native/map admission. No service behavior claimed.",
+      "red": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 80.06,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-38-red.log",
+        "sha256": "6a452b312a5682f99117a16c3bba50d8bb4d13fd3c9451727790056506555bbc"
+      },
+      "green": {
+        "marker": "POSTGRES_STARTED NPCFIX retained source placement batches",
+        "seconds": 156.02,
+        "log": "/tmp/npcfix-evidence/retail-population-qualification-38-green.log",
+        "sha256": "b46b1a86e23a4e23bd962da203884806928e6d46ffce9e3f0fc8ec92ee9050ef"
+      },
+      "source_certificate": {
+        "source_commit": "359b49aaea40d6b08d8af88d686b1821ac3c4b39",
+        "production_snapshot": "aed13d05c14a66cfce5c2508aef0b984f1ad5865",
+        "parity_report": "/tmp/npcfix-evidence/fluid-registry-parity.json",
+        "check": "Five changed crates alltargets/allfeatures PASS; fluid-registry-check.log",
+        "clippy": "Five changed crates alltargets/allfeatures strict -D warnings PASS; fluid-registry-clippy.log",
+        "format": "cargo fmt --all -- --check PASS",
+        "repository": "Default repository regeneration completed; focused repository5 tests and materialized97/97, semantic validator, Python checks PASS",
+        "authoring": "Four exact-before/late-fluid atomicity tests PASS; shape unit and NPC catalogue repair test PASS",
+        "postgres": "Fresh migration-embedded binary: Ahmet RED139.14 -> GREEN300.85s, oil197.15s, Father11-track40.94s, retained204NPC205actors216.33s; all actual PG markers present",
+        "world_pin": {
+          "inputs_digest": "9a2a5db0021b35fd5a5dada9ac50e7d41b12d35138d34725d0de8008690b5250",
+          "pins": [
+            {
+              "bytes": 31812443,
+              "digest": "9e77d39c2877f3151a5f02df91e8a8dd342fd44ef74e093d98233fb27f356c7c",
+              "world": "oteryn"
+            }
+          ]
+        },
+        "native_provider": "All3627 prior native profiles unchanged; fluid canonical facts only2 Item fields and3 offers; full other record arrays retained (taxonomy119 canonical provenance hashes refreshed)."
+      }
     }
   ],
   "shared_engine_lookup": {
@@ -7818,7 +7908,7 @@
     },
     {
       "name": "retail-population-qualification-38",
-      "state": "PG_RED_GREEN_COMPLETE; STRICT_SOURCE_GATES_PENDING",
+      "state": "QUALIFIED",
       "entries": [
         "Guide Elena",
         "Jean Claude",
@@ -7840,6 +7930,28 @@
         "seconds": 156.02,
         "log": "/tmp/npcfix-evidence/retail-population-qualification-38-green.log",
         "sha256": "b46b1a86e23a4e23bd962da203884806928e6d46ffce9e3f0fc8ec92ee9050ef"
+      },
+      "source_certificate": {
+        "source_commit": "359b49aaea40d6b08d8af88d686b1821ac3c4b39",
+        "production_snapshot": "aed13d05c14a66cfce5c2508aef0b984f1ad5865",
+        "parity_report": "/tmp/npcfix-evidence/fluid-registry-parity.json",
+        "check": "Five changed crates alltargets/allfeatures PASS; fluid-registry-check.log",
+        "clippy": "Five changed crates alltargets/allfeatures strict -D warnings PASS; fluid-registry-clippy.log",
+        "format": "cargo fmt --all -- --check PASS",
+        "repository": "Default repository regeneration completed; focused repository5 tests and materialized97/97, semantic validator, Python checks PASS",
+        "authoring": "Four exact-before/late-fluid atomicity tests PASS; shape unit and NPC catalogue repair test PASS",
+        "postgres": "Fresh migration-embedded binary: Ahmet RED139.14 -> GREEN300.85s, oil197.15s, Father11-track40.94s, retained204NPC205actors216.33s; all actual PG markers present",
+        "world_pin": {
+          "inputs_digest": "9a2a5db0021b35fd5a5dada9ac50e7d41b12d35138d34725d0de8008690b5250",
+          "pins": [
+            {
+              "bytes": 31812443,
+              "digest": "9e77d39c2877f3151a5f02df91e8a8dd342fd44ef74e093d98233fb27f356c7c",
+              "world": "oteryn"
+            }
+          ]
+        },
+        "native_provider": "All3627 prior native profiles unchanged; fluid canonical facts only2 Item fields and3 offers; full other record arrays retained (taxonomy119 canonical provenance hashes refreshed)."
       }
     },
     {

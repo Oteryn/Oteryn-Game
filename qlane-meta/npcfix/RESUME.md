@@ -315,3 +315,5 @@ Next held-ground slice: Javala, John The Carpenter and Toffee physical component
 Ahmet exact filled-container service QUALIFIED: fresh real PG RED139.14s -> GREEN300.85s, oil compatibility197.15s, retained actors216.33s, Father11-track40.94s; all source/strict/repository/pin gates PASS. Continue immediately.
 
 retail-population-qualification-37 QUALIFIED: Demonguard, Dustrunner, Eustacio, Frank The Plank, Frans, George The Boyscout. Actual PG RED160.83s -> GREEN138.19s. Every prior cumulative case retained; current production snapshot byte-identical to fully checked source. All strict/source/repository/pin gates PASS. Continue immediately.
+
+retail-population-qualification-38 QUALIFIED: Guide Elena, Jean Claude, Julian, Lightfoot, Livielle, Lorbas. Actual PG RED80.06s -> GREEN156.02s. Every prior cumulative case retained; current production snapshot byte-identical to fully checked source. All strict/source/repository/pin gates PASS. Continue immediately.
