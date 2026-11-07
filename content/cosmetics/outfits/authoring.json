@@ -2669,6 +2669,36 @@
         }
       },
       {
+        "key": "oteryn:outfit.jungle_explorer",
+        "revision": "crystal-9f5a72c-r1",
+        "female": {
+          "id": 620,
+          "source_record_sha256": "2f816c939189a8d70c7cdb23171bf9f010fff9079f1c6750c24a941a619b87aa"
+        },
+        "male": {
+          "id": 621,
+          "source_record_sha256": "974364c55b10b66ab954a91afaca6c9cec6e1f6d77a51870aa9c255ce0ceb85b"
+        },
+        "addon_count": 0,
+        "starter_female": false,
+        "starter_male": false,
+        "starter_addons_female": 0,
+        "starter_addons_male": 0,
+        "premium": true,
+        "unlock_sources": [
+          {
+            "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
+          }
+        ],
+        "source": {
+          "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
+        }
+      },
+      {
         "key": "oteryn:outfit.knight",
         "revision": "crystal-9f5a72c-r1",
         "female": {
@@ -10433,6 +10463,16 @@
         ]
       },
       {
+        "grant_key": "oteryn:outfit.jungle_explorer/quest-grant/0",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.jungle_explorer"
+        },
+        "compatible_provenance": [
+          "crystal-9f5a72c-quest-rewards-v1"
+        ]
+      },
+      {
         "grant_key": "oteryn:outfit.knight/quest-grant/0",
         "target": {
           "kind": "Outfit",
@@ -12859,6 +12899,38 @@
         ]
       },
       {
+        "grant_key": "oteryn:item-grant.outfit.577-578.addon1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.dream_warden",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.577-578.addon2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.dream_warden",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.577-578.base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.dream_warden"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
         "grant_key": "oteryn:item-grant.outfit.144-148.addon1",
         "target": {
           "kind": "Addon",
@@ -13051,6 +13123,38 @@
         ]
       },
       {
+        "grant_key": "oteryn:item-grant.outfit.610-618.addon1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.glooth_engineer",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.610-618.addon2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.glooth_engineer",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.610-618.base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.glooth_engineer"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
         "grant_key": "oteryn:item-grant.outfit.1243-1244.addon1",
         "target": {
           "kind": "Addon",
@@ -13205,6 +13309,16 @@
         "target": {
           "kind": "Outfit",
           "outfit_key": "oteryn:outfit.jester"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.outfit.620-621.base",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.jungle_explorer"
         },
         "compatible_provenance": [
           "crystal-item-cosmetics-201189f-v1"
@@ -17129,6 +17243,16 @@
           ]
         },
         {
+          "grant_key": "oteryn:outfit.jungle_explorer/quest-grant/0",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.jungle_explorer"
+          },
+          "compatible_provenance": [
+            "crystal-9f5a72c-quest-rewards-v1"
+          ]
+        },
+        {
           "grant_key": "oteryn:outfit.knight/quest-grant/0",
           "target": {
             "kind": "Outfit",
@@ -19555,6 +19679,38 @@
           ]
         },
         {
+          "grant_key": "oteryn:item-grant.outfit.577-578.addon1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.dream_warden",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.577-578.addon2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.dream_warden",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.577-578.base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.dream_warden"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
           "grant_key": "oteryn:item-grant.outfit.144-148.addon1",
           "target": {
             "kind": "Addon",
@@ -19747,6 +19903,38 @@
           ]
         },
         {
+          "grant_key": "oteryn:item-grant.outfit.610-618.addon1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.glooth_engineer",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.610-618.addon2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.glooth_engineer",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.610-618.base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.glooth_engineer"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
           "grant_key": "oteryn:item-grant.outfit.1243-1244.addon1",
           "target": {
             "kind": "Addon",
@@ -19901,6 +20089,16 @@
           "target": {
             "kind": "Outfit",
             "outfit_key": "oteryn:outfit.jester"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.outfit.620-621.base",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.jungle_explorer"
           },
           "compatible_provenance": [
             "crystal-item-cosmetics-201189f-v1"
@@ -41923,8 +42121,8 @@
     {
       "path": "/outfits/100/female",
       "value": {
-        "id": 965,
-        "source_record_sha256": "0e41d37c12976fe80356552bd2366f77960a21f1c03f4aada4761a2a2e78651c"
+        "id": 967,
+        "source_record_sha256": "894cdfdce46bd762f4d3abe19dedae555666eac400181a8bded396a1bc41b8f6"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -41937,7 +42135,7 @@
     },
     {
       "path": "/outfits/100/key",
-      "value": "oteryn:outfit.retro_summoner",
+      "value": "oteryn:outfit.retro_nobleman",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -41950,8 +42148,8 @@
     {
       "path": "/outfits/100/male",
       "value": {
-        "id": 964,
-        "source_record_sha256": "318d2e6c280dd957a7fe0b9799fca26ed121b1fa3c039b78761b26693c754f11"
+        "id": 966,
+        "source_record_sha256": "2793d08e2b4cc7e81223e82670ed06d8f37ad546764a3f51d568e77d30e7b1df"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -42083,8 +42281,8 @@
     {
       "path": "/outfits/101/female",
       "value": {
-        "id": 963,
-        "source_record_sha256": "30a2561904c9daf8c4d3b489237645cf9375eed9bcd5a171e2c9187528c4e5cb"
+        "id": 965,
+        "source_record_sha256": "0e41d37c12976fe80356552bd2366f77960a21f1c03f4aada4761a2a2e78651c"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -42097,7 +42295,7 @@
     },
     {
       "path": "/outfits/101/key",
-      "value": "oteryn:outfit.retro_warrior",
+      "value": "oteryn:outfit.retro_summoner",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -42110,8 +42308,8 @@
     {
       "path": "/outfits/101/male",
       "value": {
-        "id": 962,
-        "source_record_sha256": "d96a1c895f963cfd35d01e4f78684916156abe622bb47a37d95fb01a33201c4a"
+        "id": 964,
+        "source_record_sha256": "318d2e6c280dd957a7fe0b9799fca26ed121b1fa3c039b78761b26693c754f11"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -42230,7 +42428,7 @@
     },
     {
       "path": "/outfits/102/addon_count",
-      "value": 2,
+      "value": 0,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -42243,8 +42441,8 @@
     {
       "path": "/outfits/102/female",
       "value": {
-        "id": 1323,
-        "source_record_sha256": "1f88f7e2bbb6f390bd22d9b867aecf48623d3fb85c2369ba38d01bcba084797c"
+        "id": 963,
+        "source_record_sha256": "30a2561904c9daf8c4d3b489237645cf9375eed9bcd5a171e2c9187528c4e5cb"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -42257,7 +42455,7 @@
     },
     {
       "path": "/outfits/102/key",
-      "value": "oteryn:outfit.revenant",
+      "value": "oteryn:outfit.retro_warrior",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -42270,8 +42468,8 @@
     {
       "path": "/outfits/102/male",
       "value": {
-        "id": 1322,
-        "source_record_sha256": "eea6c497a7b785d0850e5d84d5ff8357589cab18ba15631ccc68eb0c7ed53d41"
+        "id": 962,
+        "source_record_sha256": "d96a1c895f963cfd35d01e4f78684916156abe622bb47a37d95fb01a33201c4a"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -42284,7 +42482,7 @@
     },
     {
       "path": "/outfits/102/premium",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -42403,8 +42601,8 @@
     {
       "path": "/outfits/103/female",
       "value": {
-        "id": 845,
-        "source_record_sha256": "cbb41614164ba7100f19230b7d4e55975cb317c27d427c4833558b9811059a28"
+        "id": 1323,
+        "source_record_sha256": "1f88f7e2bbb6f390bd22d9b867aecf48623d3fb85c2369ba38d01bcba084797c"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -42417,7 +42615,7 @@
     },
     {
       "path": "/outfits/103/key",
-      "value": "oteryn:outfit.rift_warrior",
+      "value": "oteryn:outfit.revenant",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -42430,8 +42628,8 @@
     {
       "path": "/outfits/103/male",
       "value": {
-        "id": 846,
-        "source_record_sha256": "88b2d341c014acd947a16a277867a62bed3ebd2ab0ad075357bf84693ca2ce04"
+        "id": 1322,
+        "source_record_sha256": "eea6c497a7b785d0850e5d84d5ff8357589cab18ba15631ccc68eb0c7ed53d41"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -42563,8 +42761,8 @@
     {
       "path": "/outfits/104/female",
       "value": {
-        "id": 1775,
-        "source_record_sha256": "fddd87ab1ae43c98184c5a9cba806c702a588af70438c75afb40577aa8c1e2e8"
+        "id": 845,
+        "source_record_sha256": "cbb41614164ba7100f19230b7d4e55975cb317c27d427c4833558b9811059a28"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -42577,7 +42775,7 @@
     },
     {
       "path": "/outfits/104/key",
-      "value": "oteryn:outfit.rootwalker",
+      "value": "oteryn:outfit.rift_warrior",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -42590,8 +42788,8 @@
     {
       "path": "/outfits/104/male",
       "value": {
-        "id": 1774,
-        "source_record_sha256": "9fae344866e8e2f34aaa693fad27fc2c443d730c49342939fefe9a7a8e8226ed"
+        "id": 846,
+        "source_record_sha256": "88b2d341c014acd947a16a277867a62bed3ebd2ab0ad075357bf84693ca2ce04"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -42604,7 +42802,7 @@
     },
     {
       "path": "/outfits/104/premium",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -42723,8 +42921,8 @@
     {
       "path": "/outfits/105/female",
       "value": {
-        "id": 1437,
-        "source_record_sha256": "d30b752d84634185cc262cfa6fbc7870cc967dd6f63fef550840c2a7cd55a017"
+        "id": 1775,
+        "source_record_sha256": "fddd87ab1ae43c98184c5a9cba806c702a588af70438c75afb40577aa8c1e2e8"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -42737,7 +42935,7 @@
     },
     {
       "path": "/outfits/105/key",
-      "value": "oteryn:outfit.royal_bounacean_advisor",
+      "value": "oteryn:outfit.rootwalker",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -42750,8 +42948,8 @@
     {
       "path": "/outfits/105/male",
       "value": {
-        "id": 1436,
-        "source_record_sha256": "8391a2457afde8f6b81cf653839825dedb0e2fa66792f89acf91457914c1296e"
+        "id": 1774,
+        "source_record_sha256": "9fae344866e8e2f34aaa693fad27fc2c443d730c49342939fefe9a7a8e8226ed"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -42764,7 +42962,7 @@
     },
     {
       "path": "/outfits/105/premium",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -42883,8 +43081,8 @@
     {
       "path": "/outfits/106/female",
       "value": {
-        "id": 1456,
-        "source_record_sha256": "358c933b87dcc46df02cfab17e983461e9f9fde85ada665c804b9a849dc917d4"
+        "id": 1437,
+        "source_record_sha256": "d30b752d84634185cc262cfa6fbc7870cc967dd6f63fef550840c2a7cd55a017"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -42897,7 +43095,7 @@
     },
     {
       "path": "/outfits/106/key",
-      "value": "oteryn:outfit.royal_costume",
+      "value": "oteryn:outfit.royal_bounacean_advisor",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -42910,8 +43108,8 @@
     {
       "path": "/outfits/106/male",
       "value": {
-        "id": 1457,
-        "source_record_sha256": "99cde2a9f5c594831ed160261cdd353ac63830a805ba7c4f1d04bb09da5e2a41"
+        "id": 1436,
+        "source_record_sha256": "8391a2457afde8f6b81cf653839825dedb0e2fa66792f89acf91457914c1296e"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -42924,7 +43122,7 @@
     },
     {
       "path": "/outfits/106/premium",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -43043,8 +43241,8 @@
     {
       "path": "/outfits/107/female",
       "value": {
-        "id": 759,
-        "source_record_sha256": "3f5c3f498ce3c515f8ce0133f72b4f42b5e4eb1d8d28bd2c9fd1328dd032e472"
+        "id": 1456,
+        "source_record_sha256": "358c933b87dcc46df02cfab17e983461e9f9fde85ada665c804b9a849dc917d4"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -43057,7 +43255,7 @@
     },
     {
       "path": "/outfits/107/key",
-      "value": "oteryn:outfit.royal_pumpkin",
+      "value": "oteryn:outfit.royal_costume",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -43070,8 +43268,8 @@
     {
       "path": "/outfits/107/male",
       "value": {
-        "id": 760,
-        "source_record_sha256": "e519c7a964c8c7ddb9469fecb9daeb12b8e3b09a57fe6851619068a1b98e50ee"
+        "id": 1457,
+        "source_record_sha256": "99cde2a9f5c594831ed160261cdd353ac63830a805ba7c4f1d04bb09da5e2a41"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -43203,8 +43401,8 @@
     {
       "path": "/outfits/108/female",
       "value": {
-        "id": 1385,
-        "source_record_sha256": "9797bd10bfce22e79f833742c53e4835b725285c5c40f38888dfd3beddfa3b36"
+        "id": 759,
+        "source_record_sha256": "3f5c3f498ce3c515f8ce0133f72b4f42b5e4eb1d8d28bd2c9fd1328dd032e472"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -43217,7 +43415,7 @@
     },
     {
       "path": "/outfits/108/key",
-      "value": "oteryn:outfit.rune_master",
+      "value": "oteryn:outfit.royal_pumpkin",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -43230,8 +43428,8 @@
     {
       "path": "/outfits/108/male",
       "value": {
-        "id": 1384,
-        "source_record_sha256": "1bd982a9ed2755bfe954acc1608468d76a222f45b29943be1ecde69660b4ef74"
+        "id": 760,
+        "source_record_sha256": "e519c7a964c8c7ddb9469fecb9daeb12b8e3b09a57fe6851619068a1b98e50ee"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -43363,8 +43561,8 @@
     {
       "path": "/outfits/109/female",
       "value": {
-        "id": 749,
-        "source_record_sha256": "e248e8f50c7961dbe1c847bbec85096896f0103c71c34249e90a424cc79e681d"
+        "id": 1385,
+        "source_record_sha256": "9797bd10bfce22e79f833742c53e4835b725285c5c40f38888dfd3beddfa3b36"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -43377,7 +43575,7 @@
     },
     {
       "path": "/outfits/109/key",
-      "value": "oteryn:outfit.sea_dog",
+      "value": "oteryn:outfit.rune_master",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -43390,8 +43588,8 @@
     {
       "path": "/outfits/109/male",
       "value": {
-        "id": 750,
-        "source_record_sha256": "7774172c3cc23075db19461ab6f240e198d2364037903b9ea48e134ff68568f1"
+        "id": 1384,
+        "source_record_sha256": "1bd982a9ed2755bfe954acc1608468d76a222f45b29943be1ecde69660b4ef74"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -43683,8 +43881,8 @@
     {
       "path": "/outfits/110/female",
       "value": {
-        "id": 732,
-        "source_record_sha256": "a8b28a97e09ab0afd3820ce606285b59e0dd6334f2fb3d65921fa9dde85bdc9b"
+        "id": 749,
+        "source_record_sha256": "e248e8f50c7961dbe1c847bbec85096896f0103c71c34249e90a424cc79e681d"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -43697,7 +43895,7 @@
     },
     {
       "path": "/outfits/110/key",
-      "value": "oteryn:outfit.seaweaver",
+      "value": "oteryn:outfit.sea_dog",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -43710,8 +43908,8 @@
     {
       "path": "/outfits/110/male",
       "value": {
-        "id": 733,
-        "source_record_sha256": "bb3425c08c7e3fdbb04d70b2c8c9ab0605fb7e8f9a2212d4f892a78d28258384"
+        "id": 750,
+        "source_record_sha256": "7774172c3cc23075db19461ab6f240e198d2364037903b9ea48e134ff68568f1"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -43843,8 +44041,8 @@
     {
       "path": "/outfits/111/female",
       "value": {
-        "id": 1582,
-        "source_record_sha256": "63ce9b485a98881c95075271703a48e8d1f668be06e4c28a5297bad805f2bf4d"
+        "id": 732,
+        "source_record_sha256": "a8b28a97e09ab0afd3820ce606285b59e0dd6334f2fb3d65921fa9dde85bdc9b"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -43857,7 +44055,7 @@
     },
     {
       "path": "/outfits/111/key",
-      "value": "oteryn:outfit.shadowlotus_disciple",
+      "value": "oteryn:outfit.seaweaver",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -43870,8 +44068,8 @@
     {
       "path": "/outfits/111/male",
       "value": {
-        "id": 1581,
-        "source_record_sha256": "8a8ebb87798c9ba8961806e1e089801b904e2fe263e5b0fa61bd1187c47abdd8"
+        "id": 733,
+        "source_record_sha256": "bb3425c08c7e3fdbb04d70b2c8c9ab0605fb7e8f9a2212d4f892a78d28258384"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -44003,8 +44201,8 @@
     {
       "path": "/outfits/112/female",
       "value": {
-        "id": 158,
-        "source_record_sha256": "25ae8583416e0001fd9a9b5e75981ce2d1b565608ce236bf0d302fa3b7f3ad26"
+        "id": 1582,
+        "source_record_sha256": "63ce9b485a98881c95075271703a48e8d1f668be06e4c28a5297bad805f2bf4d"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -44017,7 +44215,7 @@
     },
     {
       "path": "/outfits/112/key",
-      "value": "oteryn:outfit.shaman",
+      "value": "oteryn:outfit.shadowlotus_disciple",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -44030,8 +44228,8 @@
     {
       "path": "/outfits/112/male",
       "value": {
-        "id": 154,
-        "source_record_sha256": "899071dffb8fc766c65e929826c41e69ef623cce1711a4b4496cf8bf90a1e2d7"
+        "id": 1581,
+        "source_record_sha256": "8a8ebb87798c9ba8961806e1e089801b904e2fe263e5b0fa61bd1187c47abdd8"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -44044,7 +44242,7 @@
     },
     {
       "path": "/outfits/112/premium",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -44163,8 +44361,8 @@
     {
       "path": "/outfits/113/female",
       "value": {
-        "id": 1050,
-        "source_record_sha256": "5ff85a33c0890436c60ec162d22d1193f8a6f52128b158bb46dd335082081ea4"
+        "id": 158,
+        "source_record_sha256": "25ae8583416e0001fd9a9b5e75981ce2d1b565608ce236bf0d302fa3b7f3ad26"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -44177,7 +44375,7 @@
     },
     {
       "path": "/outfits/113/key",
-      "value": "oteryn:outfit.siege_master",
+      "value": "oteryn:outfit.shaman",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -44190,8 +44388,8 @@
     {
       "path": "/outfits/113/male",
       "value": {
-        "id": 1051,
-        "source_record_sha256": "ef49382bef4186633af66424b97fd35630e7fb9f3d1dfbeaaf635a950ceb9202"
+        "id": 154,
+        "source_record_sha256": "899071dffb8fc766c65e929826c41e69ef623cce1711a4b4496cf8bf90a1e2d7"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -44204,7 +44402,7 @@
     },
     {
       "path": "/outfits/113/premium",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -44323,8 +44521,8 @@
     {
       "path": "/outfits/114/female",
       "value": {
-        "id": 1103,
-        "source_record_sha256": "8f48131a72f1313068e737502b35f5865ccf890341b7270ff6a6b379c25ac050"
+        "id": 1050,
+        "source_record_sha256": "5ff85a33c0890436c60ec162d22d1193f8a6f52128b158bb46dd335082081ea4"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -44337,7 +44535,7 @@
     },
     {
       "path": "/outfits/114/key",
-      "value": "oteryn:outfit.sinister_archer",
+      "value": "oteryn:outfit.siege_master",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -44350,8 +44548,8 @@
     {
       "path": "/outfits/114/male",
       "value": {
-        "id": 1102,
-        "source_record_sha256": "8c796896090aa56813236e2fa5abb8b2fe234846a9de424ae82537c1aeddc46e"
+        "id": 1051,
+        "source_record_sha256": "ef49382bef4186633af66424b97fd35630e7fb9f3d1dfbeaaf635a950ceb9202"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -44483,8 +44681,8 @@
     {
       "path": "/outfits/115/female",
       "value": {
-        "id": 514,
-        "source_record_sha256": "5967ea3c7f78d2d26a0987d6c15c4b1fce497b26acb1b06424237907f4b30fd6"
+        "id": 1103,
+        "source_record_sha256": "8f48131a72f1313068e737502b35f5865ccf890341b7270ff6a6b379c25ac050"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -44497,7 +44695,7 @@
     },
     {
       "path": "/outfits/115/key",
-      "value": "oteryn:outfit.soil_guardian",
+      "value": "oteryn:outfit.sinister_archer",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -44510,8 +44708,8 @@
     {
       "path": "/outfits/115/male",
       "value": {
-        "id": 516,
-        "source_record_sha256": "c04774e5de1e01717a6f0c6d45fe530b00efdd3a237652da5240c463fc7e9839"
+        "id": 1102,
+        "source_record_sha256": "8c796896090aa56813236e2fa5abb8b2fe234846a9de424ae82537c1aeddc46e"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -44524,7 +44722,7 @@
     },
     {
       "path": "/outfits/115/premium",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -44643,8 +44841,8 @@
     {
       "path": "/outfits/116/female",
       "value": {
-        "id": 698,
-        "source_record_sha256": "8416a07eda4a91742af8f3360cf990fcbf013f197069e4cea77bd4c34cf74068"
+        "id": 514,
+        "source_record_sha256": "5967ea3c7f78d2d26a0987d6c15c4b1fce497b26acb1b06424237907f4b30fd6"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -44657,7 +44855,7 @@
     },
     {
       "path": "/outfits/116/key",
-      "value": "oteryn:outfit.spirit_caller",
+      "value": "oteryn:outfit.soil_guardian",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -44670,8 +44868,8 @@
     {
       "path": "/outfits/116/male",
       "value": {
-        "id": 699,
-        "source_record_sha256": "711752a00a02cbea74255df177010b859a36ffc6db190e2216b561b3dce23e42"
+        "id": 516,
+        "source_record_sha256": "c04774e5de1e01717a6f0c6d45fe530b00efdd3a237652da5240c463fc7e9839"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -44684,7 +44882,7 @@
     },
     {
       "path": "/outfits/116/premium",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -44803,8 +45001,8 @@
     {
       "path": "/outfits/117/female",
       "value": {
-        "id": 141,
-        "source_record_sha256": "db410c8d602d7b02d762c1d308e8c0f286a8762b86ee4cc56ec9a02256607cc7"
+        "id": 698,
+        "source_record_sha256": "8416a07eda4a91742af8f3360cf990fcbf013f197069e4cea77bd4c34cf74068"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -44817,7 +45015,7 @@
     },
     {
       "path": "/outfits/117/key",
-      "value": "oteryn:outfit.summoner",
+      "value": "oteryn:outfit.spirit_caller",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -44830,8 +45028,8 @@
     {
       "path": "/outfits/117/male",
       "value": {
-        "id": 133,
-        "source_record_sha256": "5a5399e075465aa8cf5d5b8ea7551cf9491f518bb6b53766acaa33e0653e1991"
+        "id": 699,
+        "source_record_sha256": "711752a00a02cbea74255df177010b859a36ffc6db190e2216b561b3dce23e42"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -44844,7 +45042,7 @@
     },
     {
       "path": "/outfits/117/premium",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -44908,7 +45106,7 @@
     },
     {
       "path": "/outfits/117/starter_female",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -44920,7 +45118,7 @@
     },
     {
       "path": "/outfits/117/starter_male",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -44963,8 +45161,8 @@
     {
       "path": "/outfits/118/female",
       "value": {
-        "id": 1024,
-        "source_record_sha256": "51568a97b31ff8419cfbc6420f5f9a9d281e02b0c35131e4ed48f59535da4da8"
+        "id": 141,
+        "source_record_sha256": "db410c8d602d7b02d762c1d308e8c0f286a8762b86ee4cc56ec9a02256607cc7"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -44977,7 +45175,7 @@
     },
     {
       "path": "/outfits/118/key",
-      "value": "oteryn:outfit.sun_priest",
+      "value": "oteryn:outfit.summoner",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -44990,8 +45188,8 @@
     {
       "path": "/outfits/118/male",
       "value": {
-        "id": 1023,
-        "source_record_sha256": "eec9f4e446c551208483ab154e0c907f78497760406eee2ad407fc3b50980464"
+        "id": 133,
+        "source_record_sha256": "5a5399e075465aa8cf5d5b8ea7551cf9491f518bb6b53766acaa33e0653e1991"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -45004,7 +45202,7 @@
     },
     {
       "path": "/outfits/118/premium",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -45068,7 +45266,7 @@
     },
     {
       "path": "/outfits/118/starter_female",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -45080,7 +45278,7 @@
     },
     {
       "path": "/outfits/118/starter_male",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -45123,8 +45321,8 @@
     {
       "path": "/outfits/119/female",
       "value": {
-        "id": 1293,
-        "source_record_sha256": "422748078298f86024b37f8e2b3e5becb5cc2a8983889606865c81d7bd66d898"
+        "id": 1024,
+        "source_record_sha256": "51568a97b31ff8419cfbc6420f5f9a9d281e02b0c35131e4ed48f59535da4da8"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -45137,7 +45335,7 @@
     },
     {
       "path": "/outfits/119/key",
-      "value": "oteryn:outfit.trailblazer",
+      "value": "oteryn:outfit.sun_priest",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -45150,8 +45348,8 @@
     {
       "path": "/outfits/119/male",
       "value": {
-        "id": 1292,
-        "source_record_sha256": "66f14fbcc16eb56b679312d7f961de7eb9d3d30e048efffba22690ce40583c94"
+        "id": 1023,
+        "source_record_sha256": "eec9f4e446c551208483ab154e0c907f78497760406eee2ad407fc3b50980464"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -45443,8 +45641,8 @@
     {
       "path": "/outfits/120/female",
       "value": {
-        "id": 958,
-        "source_record_sha256": "a74a7e4afcc7b5c3405d0ebeb6d4e62e0b42668971b6688c3e1c9d8aed5a58dd"
+        "id": 1293,
+        "source_record_sha256": "422748078298f86024b37f8e2b3e5becb5cc2a8983889606865c81d7bd66d898"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -45457,7 +45655,7 @@
     },
     {
       "path": "/outfits/120/key",
-      "value": "oteryn:outfit.trophy_hunter",
+      "value": "oteryn:outfit.trailblazer",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -45470,8 +45668,8 @@
     {
       "path": "/outfits/120/male",
       "value": {
-        "id": 957,
-        "source_record_sha256": "d1c95245d37015cd234e15e4f5a95dc858b3a8466e412bd2335b892e482bbbd3"
+        "id": 1292,
+        "source_record_sha256": "66f14fbcc16eb56b679312d7f961de7eb9d3d30e048efffba22690ce40583c94"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -45603,8 +45801,8 @@
     {
       "path": "/outfits/121/female",
       "value": {
-        "id": 1205,
-        "source_record_sha256": "13f3881abe123be2a0e4e612df0294f987970cf55890f64119bedd7ecea309c3"
+        "id": 958,
+        "source_record_sha256": "a74a7e4afcc7b5c3405d0ebeb6d4e62e0b42668971b6688c3e1c9d8aed5a58dd"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -45617,7 +45815,7 @@
     },
     {
       "path": "/outfits/121/key",
-      "value": "oteryn:outfit.veteran_paladin",
+      "value": "oteryn:outfit.trophy_hunter",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -45630,8 +45828,8 @@
     {
       "path": "/outfits/121/male",
       "value": {
-        "id": 1204,
-        "source_record_sha256": "fe05c7456048a41d988959d731d6c2a97a62abee77b9c433fcdc095d90d725d1"
+        "id": 957,
+        "source_record_sha256": "d1c95245d37015cd234e15e4f5a95dc858b3a8466e412bd2335b892e482bbbd3"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -45763,8 +45961,8 @@
     {
       "path": "/outfits/122/female",
       "value": {
-        "id": 1203,
-        "source_record_sha256": "32d948cecc876878fc67d70831e6e2726cc45737bc93fe16884435e4e6e38c91"
+        "id": 1205,
+        "source_record_sha256": "13f3881abe123be2a0e4e612df0294f987970cf55890f64119bedd7ecea309c3"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -45777,7 +45975,7 @@
     },
     {
       "path": "/outfits/122/key",
-      "value": "oteryn:outfit.void_master",
+      "value": "oteryn:outfit.veteran_paladin",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -45790,8 +45988,8 @@
     {
       "path": "/outfits/122/male",
       "value": {
-        "id": 1202,
-        "source_record_sha256": "d0c1f5d8f72f01393044f47ac3aedd1d14521ad587cd2a158d618fee64781ce9"
+        "id": 1204,
+        "source_record_sha256": "fe05c7456048a41d988959d731d6c2a97a62abee77b9c433fcdc095d90d725d1"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -45923,8 +46121,8 @@
     {
       "path": "/outfits/123/female",
       "value": {
-        "id": 336,
-        "source_record_sha256": "7d6175168fc2fd021d310c0fffde419c2eb716ec6579e8bcac764eb58899dab2"
+        "id": 1203,
+        "source_record_sha256": "32d948cecc876878fc67d70831e6e2726cc45737bc93fe16884435e4e6e38c91"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -45937,7 +46135,7 @@
     },
     {
       "path": "/outfits/123/key",
-      "value": "oteryn:outfit.warmaster",
+      "value": "oteryn:outfit.void_master",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -45950,8 +46148,8 @@
     {
       "path": "/outfits/123/male",
       "value": {
-        "id": 335,
-        "source_record_sha256": "ff23607af27aae3a06b19b9c9eff37c3fc7e7461d406a81c220cf71109be3ff8"
+        "id": 1202,
+        "source_record_sha256": "d0c1f5d8f72f01393044f47ac3aedd1d14521ad587cd2a158d618fee64781ce9"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -45964,7 +46162,7 @@
     },
     {
       "path": "/outfits/123/premium",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -46083,8 +46281,8 @@
     {
       "path": "/outfits/124/female",
       "value": {
-        "id": 142,
-        "source_record_sha256": "c4d21f22cf47bb861840abaea2bdab0e128645656a071375cfa9bf6ffe18cf8f"
+        "id": 336,
+        "source_record_sha256": "7d6175168fc2fd021d310c0fffde419c2eb716ec6579e8bcac764eb58899dab2"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -46097,7 +46295,7 @@
     },
     {
       "path": "/outfits/124/key",
-      "value": "oteryn:outfit.warrior",
+      "value": "oteryn:outfit.warmaster",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -46110,8 +46308,8 @@
     {
       "path": "/outfits/124/male",
       "value": {
-        "id": 134,
-        "source_record_sha256": "585d9c2fce96a75756b93b3122f7bbd144808b27886c63edca68288e231cd955"
+        "id": 335,
+        "source_record_sha256": "ff23607af27aae3a06b19b9c9eff37c3fc7e7461d406a81c220cf71109be3ff8"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -46188,7 +46386,7 @@
     },
     {
       "path": "/outfits/124/starter_female",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -46200,7 +46398,7 @@
     },
     {
       "path": "/outfits/124/starter_male",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -46243,8 +46441,8 @@
     {
       "path": "/outfits/125/female",
       "value": {
-        "id": 366,
-        "source_record_sha256": "23fdc6ce4b6b8901c181ec1cc31a91a9696a1682eb914c714899bf804840767a"
+        "id": 142,
+        "source_record_sha256": "c4d21f22cf47bb861840abaea2bdab0e128645656a071375cfa9bf6ffe18cf8f"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -46257,7 +46455,7 @@
     },
     {
       "path": "/outfits/125/key",
-      "value": "oteryn:outfit.wayfarer",
+      "value": "oteryn:outfit.warrior",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -46270,8 +46468,8 @@
     {
       "path": "/outfits/125/male",
       "value": {
-        "id": 367,
-        "source_record_sha256": "2134ff49914d2b8716c02b7872ac60aa73e03967d9e3afbfb6d1173e78bd7d18"
+        "id": 134,
+        "source_record_sha256": "585d9c2fce96a75756b93b3122f7bbd144808b27886c63edca68288e231cd955"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -46348,7 +46546,7 @@
     },
     {
       "path": "/outfits/125/starter_female",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -46360,7 +46558,7 @@
     },
     {
       "path": "/outfits/125/starter_male",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -46403,8 +46601,8 @@
     {
       "path": "/outfits/126/female",
       "value": {
-        "id": 1832,
-        "source_record_sha256": "67ef56fc56ee66e66db4e3f2846a1bbebf043e1b0b064535888c7be8b15a4dfa"
+        "id": 366,
+        "source_record_sha256": "23fdc6ce4b6b8901c181ec1cc31a91a9696a1682eb914c714899bf804840767a"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -46417,7 +46615,7 @@
     },
     {
       "path": "/outfits/126/key",
-      "value": "oteryn:outfit.winged_druid",
+      "value": "oteryn:outfit.wayfarer",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -46430,8 +46628,8 @@
     {
       "path": "/outfits/126/male",
       "value": {
-        "id": 1831,
-        "source_record_sha256": "96325b25c190940c58edca0efe37f4bb0596cd1934c1d40d740daa4aa30ff7a1"
+        "id": 367,
+        "source_record_sha256": "2134ff49914d2b8716c02b7872ac60aa73e03967d9e3afbfb6d1173e78bd7d18"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -46444,7 +46642,7 @@
     },
     {
       "path": "/outfits/126/premium",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -46563,8 +46761,8 @@
     {
       "path": "/outfits/127/female",
       "value": {
-        "id": 852,
-        "source_record_sha256": "f451ec93011d2b0c990d75693a3f1b0fca2e4cdca00bdba7237bbc4c149bccff"
+        "id": 1832,
+        "source_record_sha256": "67ef56fc56ee66e66db4e3f2846a1bbebf043e1b0b064535888c7be8b15a4dfa"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -46577,7 +46775,7 @@
     },
     {
       "path": "/outfits/127/key",
-      "value": "oteryn:outfit.winter_warden",
+      "value": "oteryn:outfit.winged_druid",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -46590,8 +46788,8 @@
     {
       "path": "/outfits/127/male",
       "value": {
-        "id": 853,
-        "source_record_sha256": "e870c16879d0c93d60053a6236e40805844e8f2c805fee088a9ed1783be575ae"
+        "id": 1831,
+        "source_record_sha256": "96325b25c190940c58edca0efe37f4bb0596cd1934c1d40d740daa4aa30ff7a1"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -46723,8 +46921,8 @@
     {
       "path": "/outfits/128/female",
       "value": {
-        "id": 149,
-        "source_record_sha256": "7cc77b9f6e7a8265ce8bc45c7ca9eccfda73c1ada8f27a2d9577860488d74d16"
+        "id": 852,
+        "source_record_sha256": "f451ec93011d2b0c990d75693a3f1b0fca2e4cdca00bdba7237bbc4c149bccff"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -46737,7 +46935,7 @@
     },
     {
       "path": "/outfits/128/key",
-      "value": "oteryn:outfit.wizard",
+      "value": "oteryn:outfit.winter_warden",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -46750,8 +46948,8 @@
     {
       "path": "/outfits/128/male",
       "value": {
-        "id": 145,
-        "source_record_sha256": "a4267cc4228845b1f343796377930fc79429c7e7a0313a85276b4538c7d01c19"
+        "id": 853,
+        "source_record_sha256": "e870c16879d0c93d60053a6236e40805844e8f2c805fee088a9ed1783be575ae"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -46764,7 +46962,7 @@
     },
     {
       "path": "/outfits/128/premium",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -46828,7 +47026,7 @@
     },
     {
       "path": "/outfits/128/starter_female",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -46840,7 +47038,7 @@
     },
     {
       "path": "/outfits/128/starter_male",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -46883,8 +47081,8 @@
     {
       "path": "/outfits/129/female",
       "value": {
-        "id": 324,
-        "source_record_sha256": "a224fde11151e09e21a79724bb26ee97a50ed3cf8e8591349e551f7074c1ca34"
+        "id": 149,
+        "source_record_sha256": "7cc77b9f6e7a8265ce8bc45c7ca9eccfda73c1ada8f27a2d9577860488d74d16"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -46897,7 +47095,7 @@
     },
     {
       "path": "/outfits/129/key",
-      "value": "oteryn:outfit.yalaharian",
+      "value": "oteryn:outfit.wizard",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -46910,8 +47108,8 @@
     {
       "path": "/outfits/129/male",
       "value": {
-        "id": 325,
-        "source_record_sha256": "3ab67ad6189fc09368756b7bba43234760d659e8b5e129a89d358a9d42a8060a"
+        "id": 145,
+        "source_record_sha256": "a4267cc4228845b1f343796377930fc79429c7e7a0313a85276b4538c7d01c19"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -46988,7 +47186,7 @@
     },
     {
       "path": "/outfits/129/starter_female",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -47000,7 +47198,7 @@
     },
     {
       "path": "/outfits/129/starter_male",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -47172,6 +47370,166 @@
     },
     {
       "path": "/outfits/13/unlock_sources",
+      "value": [
+        {
+          "reference": "crystal:data/XML/outfits.xml",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        }
+      ],
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/130/addon_count",
+      "value": 2,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/130/female",
+      "value": {
+        "id": 324,
+        "source_record_sha256": "a224fde11151e09e21a79724bb26ee97a50ed3cf8e8591349e551f7074c1ca34"
+      },
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/130/key",
+      "value": "oteryn:outfit.yalaharian",
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/130/male",
+      "value": {
+        "id": 325,
+        "source_record_sha256": "3ab67ad6189fc09368756b7bba43234760d659e8b5e129a89d358a9d42a8060a"
+      },
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/130/premium",
+      "value": true,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/130/revision",
+      "value": "crystal-9f5a72c-r1",
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/130/source",
+      "value": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      },
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/130/starter_addons_female",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/130/starter_addons_male",
+      "value": 0,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/130/starter_female",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/130/starter_male",
+      "value": false,
+      "state": "PROMOTED",
+      "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
+      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source": {
+        "reference": "crystal:data/XML/outfits.xml",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+      }
+    },
+    {
+      "path": "/outfits/130/unlock_sources",
       "value": [
         {
           "reference": "crystal:data/XML/outfits.xml",
@@ -56310,68 +56668,68 @@
     },
     {
       "path": "/outfits/66/addon_count",
-      "value": 2,
+      "value": 0,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
       "source": {
-        "reference": "crystal:data/XML/outfits.xml",
+        "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
         "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
       }
     },
     {
       "path": "/outfits/66/female",
       "value": {
-        "id": 139,
-        "source_record_sha256": "91b090778fc3aee3339a25c8faa90f7357d8f41526b37938efbadda764e4fc5b"
+        "id": 620,
+        "source_record_sha256": "2f816c939189a8d70c7cdb23171bf9f010fff9079f1c6750c24a941a619b87aa"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
       "source": {
-        "reference": "crystal:data/XML/outfits.xml",
+        "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
         "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
       }
     },
     {
       "path": "/outfits/66/key",
-      "value": "oteryn:outfit.knight",
+      "value": "oteryn:outfit.jungle_explorer",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
       "source": {
-        "reference": "crystal:data/XML/outfits.xml",
+        "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
         "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
       }
     },
     {
       "path": "/outfits/66/male",
       "value": {
-        "id": 131,
-        "source_record_sha256": "39779ce7a58cc7196ba98cfbf8bc28328994a621e73eb20110f4160fc9a67dbb"
+        "id": 621,
+        "source_record_sha256": "974364c55b10b66ab954a91afaca6c9cec6e1f6d77a51870aa9c255ce0ceb85b"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
       "source": {
-        "reference": "crystal:data/XML/outfits.xml",
+        "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
         "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
       }
     },
     {
       "path": "/outfits/66/premium",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
-      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source_kind": "OWNER_DECISION",
       "source": {
-        "reference": "crystal:data/XML/outfits.xml",
+        "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
         "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
       }
     },
     {
@@ -56381,25 +56739,25 @@
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
       "source": {
-        "reference": "crystal:data/XML/outfits.xml",
+        "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
         "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
       }
     },
     {
       "path": "/outfits/66/source",
       "value": {
-        "reference": "crystal:data/XML/outfits.xml",
+        "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
         "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
       "source": {
-        "reference": "crystal:data/XML/outfits.xml",
+        "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
         "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
       }
     },
     {
@@ -56407,11 +56765,11 @@
       "value": 0,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
-      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source_kind": "OWNER_DECISION",
       "source": {
-        "reference": "crystal:data/XML/outfits.xml",
+        "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
         "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
       }
     },
     {
@@ -56419,53 +56777,53 @@
       "value": 0,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
-      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source_kind": "OWNER_DECISION",
       "source": {
-        "reference": "crystal:data/XML/outfits.xml",
+        "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
         "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
       }
     },
     {
       "path": "/outfits/66/starter_female",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
-      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source_kind": "OWNER_DECISION",
       "source": {
-        "reference": "crystal:data/XML/outfits.xml",
+        "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
         "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
       }
     },
     {
       "path": "/outfits/66/starter_male",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
-      "source_kind": "STRUCTURED_REFERENCE_DATA",
+      "source_kind": "OWNER_DECISION",
       "source": {
-        "reference": "crystal:data/XML/outfits.xml",
+        "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
         "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
       }
     },
     {
       "path": "/outfits/66/unlock_sources",
       "value": [
         {
-          "reference": "crystal:data/XML/outfits.xml",
+          "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
           "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-          "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+          "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
         }
       ],
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
       "source": {
-        "reference": "crystal:data/XML/outfits.xml",
+        "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
         "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
-        "sha256": "02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757"
+        "sha256": "22e79e4b533cd8f5a342ed51829772d3c38d3c1d14c66f519523f47c5b786757"
       }
     },
     {
@@ -56483,8 +56841,8 @@
     {
       "path": "/outfits/67/female",
       "value": {
-        "id": 1207,
-        "source_record_sha256": "19d1774862c79461703b5798aff70b4eb2e9854cea3042181d6f0a00ce1fda36"
+        "id": 139,
+        "source_record_sha256": "91b090778fc3aee3339a25c8faa90f7357d8f41526b37938efbadda764e4fc5b"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -56497,7 +56855,7 @@
     },
     {
       "path": "/outfits/67/key",
-      "value": "oteryn:outfit.lion_of_war",
+      "value": "oteryn:outfit.knight",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -56510,8 +56868,8 @@
     {
       "path": "/outfits/67/male",
       "value": {
-        "id": 1206,
-        "source_record_sha256": "2957746a9b3cfc987a1e324a03190e9eec4b3b3dd745a0027e69bffa73669c56"
+        "id": 131,
+        "source_record_sha256": "39779ce7a58cc7196ba98cfbf8bc28328994a621e73eb20110f4160fc9a67dbb"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -56588,7 +56946,7 @@
     },
     {
       "path": "/outfits/67/starter_female",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -56600,7 +56958,7 @@
     },
     {
       "path": "/outfits/67/starter_male",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -56643,8 +57001,8 @@
     {
       "path": "/outfits/68/female",
       "value": {
-        "id": 900,
-        "source_record_sha256": "19e730d83cc0763ae4d1338e61cbdbb6550fe3f00dd19d754c8388b58ac82532"
+        "id": 1207,
+        "source_record_sha256": "19d1774862c79461703b5798aff70b4eb2e9854cea3042181d6f0a00ce1fda36"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -56657,7 +57015,7 @@
     },
     {
       "path": "/outfits/68/key",
-      "value": "oteryn:outfit.lupine_warden",
+      "value": "oteryn:outfit.lion_of_war",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -56670,8 +57028,8 @@
     {
       "path": "/outfits/68/male",
       "value": {
-        "id": 899,
-        "source_record_sha256": "63a4ec7e72d442d17907ec7c9e0dbccc514147376470d6bcd24cccce948c3f49"
+        "id": 1206,
+        "source_record_sha256": "2957746a9b3cfc987a1e324a03190e9eec4b3b3dd745a0027e69bffa73669c56"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -56803,8 +57161,8 @@
     {
       "path": "/outfits/69/female",
       "value": {
-        "id": 138,
-        "source_record_sha256": "171b3293e0242bc39cb409a9863c349d65db5c247f71128880936e5b52a4a4fd"
+        "id": 900,
+        "source_record_sha256": "19e730d83cc0763ae4d1338e61cbdbb6550fe3f00dd19d754c8388b58ac82532"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -56817,7 +57175,7 @@
     },
     {
       "path": "/outfits/69/key",
-      "value": "oteryn:outfit.mage",
+      "value": "oteryn:outfit.lupine_warden",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -56830,8 +57188,8 @@
     {
       "path": "/outfits/69/male",
       "value": {
-        "id": 130,
-        "source_record_sha256": "055611b0f91008942e2c6c93d48319c4f93d096995a405b3ec5e13357f3df3e9"
+        "id": 899,
+        "source_record_sha256": "63a4ec7e72d442d17907ec7c9e0dbccc514147376470d6bcd24cccce948c3f49"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -56908,7 +57266,7 @@
     },
     {
       "path": "/outfits/69/starter_female",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -56920,7 +57278,7 @@
     },
     {
       "path": "/outfits/69/starter_male",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -57123,8 +57481,8 @@
     {
       "path": "/outfits/70/female",
       "value": {
-        "id": 1043,
-        "source_record_sha256": "c082502989dfc9bffa0b829c05fcdc111e471cf407d54089df30aad1ba8467dc"
+        "id": 138,
+        "source_record_sha256": "171b3293e0242bc39cb409a9863c349d65db5c247f71128880936e5b52a4a4fd"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -57137,7 +57495,7 @@
     },
     {
       "path": "/outfits/70/key",
-      "value": "oteryn:outfit.makeshift_warrior",
+      "value": "oteryn:outfit.mage",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -57150,8 +57508,8 @@
     {
       "path": "/outfits/70/male",
       "value": {
-        "id": 1042,
-        "source_record_sha256": "74fac2d8e7bb85f5393fd2a52e358057c6622022118faf643866394f64c77dc2"
+        "id": 130,
+        "source_record_sha256": "055611b0f91008942e2c6c93d48319c4f93d096995a405b3ec5e13357f3df3e9"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -57164,7 +57522,7 @@
     },
     {
       "path": "/outfits/70/premium",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -57228,7 +57586,7 @@
     },
     {
       "path": "/outfits/70/starter_female",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -57240,7 +57598,7 @@
     },
     {
       "path": "/outfits/70/starter_male",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -57283,8 +57641,8 @@
     {
       "path": "/outfits/71/female",
       "value": {
-        "id": 1838,
-        "source_record_sha256": "f6a92ac151ec1ca901632fc32732b2673c83f9f30cc029471bb3a8ef78e92ad5"
+        "id": 1043,
+        "source_record_sha256": "c082502989dfc9bffa0b829c05fcdc111e471cf407d54089df30aad1ba8467dc"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -57297,7 +57655,7 @@
     },
     {
       "path": "/outfits/71/key",
-      "value": "oteryn:outfit.martial_artist",
+      "value": "oteryn:outfit.makeshift_warrior",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -57310,8 +57668,8 @@
     {
       "path": "/outfits/71/male",
       "value": {
-        "id": 1837,
-        "source_record_sha256": "4052b864bb80b496683053fc94c1d85a868b3554f41030338673674345a68b2a"
+        "id": 1042,
+        "source_record_sha256": "74fac2d8e7bb85f5393fd2a52e358057c6622022118faf643866394f64c77dc2"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -57324,7 +57682,7 @@
     },
     {
       "path": "/outfits/71/premium",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -57443,8 +57801,8 @@
     {
       "path": "/outfits/72/female",
       "value": {
-        "id": 1057,
-        "source_record_sha256": "94c43d419dfe0c2230964c61eb0116437c085e503d6c09e9b85667b131344a70"
+        "id": 1838,
+        "source_record_sha256": "f6a92ac151ec1ca901632fc32732b2673c83f9f30cc029471bb3a8ef78e92ad5"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -57457,7 +57815,7 @@
     },
     {
       "path": "/outfits/72/key",
-      "value": "oteryn:outfit.mercenary",
+      "value": "oteryn:outfit.martial_artist",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -57470,8 +57828,8 @@
     {
       "path": "/outfits/72/male",
       "value": {
-        "id": 1056,
-        "source_record_sha256": "84a49d683414ba7760db4e4817a2b03d8fc56e4851859ba1b132e0ace0325429"
+        "id": 1837,
+        "source_record_sha256": "4052b864bb80b496683053fc94c1d85a868b3554f41030338673674345a68b2a"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -57603,8 +57961,8 @@
     {
       "path": "/outfits/73/female",
       "value": {
-        "id": 1383,
-        "source_record_sha256": "8e8ea31016166b0d062badc4eb50ba76046dc350442a8fba30b5ee697c6cc333"
+        "id": 1057,
+        "source_record_sha256": "94c43d419dfe0c2230964c61eb0116437c085e503d6c09e9b85667b131344a70"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -57617,7 +57975,7 @@
     },
     {
       "path": "/outfits/73/key",
-      "value": "oteryn:outfit.merry_garb",
+      "value": "oteryn:outfit.mercenary",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -57630,8 +57988,8 @@
     {
       "path": "/outfits/73/male",
       "value": {
-        "id": 1382,
-        "source_record_sha256": "19f6e22fc11519da2e3d0376736d3a6c554f6d042ad694a24c76c0ca8bba5082"
+        "id": 1056,
+        "source_record_sha256": "84a49d683414ba7760db4e4817a2b03d8fc56e4851859ba1b132e0ace0325429"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -57750,7 +58108,7 @@
     },
     {
       "path": "/outfits/74/addon_count",
-      "value": 0,
+      "value": 2,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -57763,8 +58121,8 @@
     {
       "path": "/outfits/74/female",
       "value": {
-        "id": 1825,
-        "source_record_sha256": "01c7508f4a9a3a436ef2fc4b221bb98fd29b1e7d81f73b8c4caed6b6673df2a9"
+        "id": 1383,
+        "source_record_sha256": "8e8ea31016166b0d062badc4eb50ba76046dc350442a8fba30b5ee697c6cc333"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -57777,7 +58135,7 @@
     },
     {
       "path": "/outfits/74/key",
-      "value": "oteryn:outfit.monk",
+      "value": "oteryn:outfit.merry_garb",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -57790,8 +58148,8 @@
     {
       "path": "/outfits/74/male",
       "value": {
-        "id": 1824,
-        "source_record_sha256": "36eb65f373925529436d8de9d14554e8261a64943c285f0a3d84856ea878ae17"
+        "id": 1382,
+        "source_record_sha256": "19f6e22fc11519da2e3d0376736d3a6c554f6d042ad694a24c76c0ca8bba5082"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -57868,7 +58226,7 @@
     },
     {
       "path": "/outfits/74/starter_female",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -57880,7 +58238,7 @@
     },
     {
       "path": "/outfits/74/starter_male",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -57910,7 +58268,7 @@
     },
     {
       "path": "/outfits/75/addon_count",
-      "value": 2,
+      "value": 0,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -57923,8 +58281,8 @@
     {
       "path": "/outfits/75/female",
       "value": {
-        "id": 1339,
-        "source_record_sha256": "e69a7f890079e71e6d93ef12573c531d0cf72026814c1bf2d3b21b466318ccc0"
+        "id": 1825,
+        "source_record_sha256": "01c7508f4a9a3a436ef2fc4b221bb98fd29b1e7d81f73b8c4caed6b6673df2a9"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -57937,7 +58295,7 @@
     },
     {
       "path": "/outfits/75/key",
-      "value": "oteryn:outfit.moth_cape",
+      "value": "oteryn:outfit.monk",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -57950,8 +58308,8 @@
     {
       "path": "/outfits/75/male",
       "value": {
-        "id": 1338,
-        "source_record_sha256": "ef44746f1210cb0223231992cf2469b8f6354f7944303bffb31691f117241a46"
+        "id": 1824,
+        "source_record_sha256": "36eb65f373925529436d8de9d14554e8261a64943c285f0a3d84856ea878ae17"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -58028,7 +58386,7 @@
     },
     {
       "path": "/outfits/75/starter_female",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -58040,7 +58398,7 @@
     },
     {
       "path": "/outfits/75/starter_male",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -58083,8 +58441,8 @@
     {
       "path": "/outfits/76/female",
       "value": {
-        "id": 1846,
-        "source_record_sha256": "1a40ea53884e99a0a694265bf29ae5dd8d2692bf5aa2f9987a0692f9f56ed1a0"
+        "id": 1339,
+        "source_record_sha256": "e69a7f890079e71e6d93ef12573c531d0cf72026814c1bf2d3b21b466318ccc0"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -58097,7 +58455,7 @@
     },
     {
       "path": "/outfits/76/key",
-      "value": "oteryn:outfit.necromancer",
+      "value": "oteryn:outfit.moth_cape",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -58110,8 +58468,8 @@
     {
       "path": "/outfits/76/male",
       "value": {
-        "id": 1845,
-        "source_record_sha256": "4d0aa62a3f9794bf8d32b911c5785706adfd37711da9b5ce4cf0923d576605f1"
+        "id": 1338,
+        "source_record_sha256": "ef44746f1210cb0223231992cf2469b8f6354f7944303bffb31691f117241a46"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -58230,7 +58588,7 @@
     },
     {
       "path": "/outfits/77/addon_count",
-      "value": 0,
+      "value": 2,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -58243,8 +58601,8 @@
     {
       "path": "/outfits/77/female",
       "value": {
-        "id": 329,
-        "source_record_sha256": "c57e42f3e7fafbc69c2b17527af524d58e73321744b7b0be8065019512a5efc7"
+        "id": 1846,
+        "source_record_sha256": "1a40ea53884e99a0a694265bf29ae5dd8d2692bf5aa2f9987a0692f9f56ed1a0"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -58257,7 +58615,7 @@
     },
     {
       "path": "/outfits/77/key",
-      "value": "oteryn:outfit.newly_wed",
+      "value": "oteryn:outfit.necromancer",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -58270,8 +58628,8 @@
     {
       "path": "/outfits/77/male",
       "value": {
-        "id": 328,
-        "source_record_sha256": "46269031edc59403c24712d85c231ae30d85b6c25b8ae527db430860891c6869"
+        "id": 1845,
+        "source_record_sha256": "4d0aa62a3f9794bf8d32b911c5785706adfd37711da9b5ce4cf0923d576605f1"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -58390,7 +58748,7 @@
     },
     {
       "path": "/outfits/78/addon_count",
-      "value": 2,
+      "value": 0,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -58403,8 +58761,8 @@
     {
       "path": "/outfits/78/female",
       "value": {
-        "id": 269,
-        "source_record_sha256": "d9797d0fc97374484a00bed8377f0c7f7a266bbe1508fafef01bc69a922c1f57"
+        "id": 329,
+        "source_record_sha256": "c57e42f3e7fafbc69c2b17527af524d58e73321744b7b0be8065019512a5efc7"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -58417,7 +58775,7 @@
     },
     {
       "path": "/outfits/78/key",
-      "value": "oteryn:outfit.nightmare",
+      "value": "oteryn:outfit.newly_wed",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -58430,8 +58788,8 @@
     {
       "path": "/outfits/78/male",
       "value": {
-        "id": 268,
-        "source_record_sha256": "e54232b76352c7808f233aaa8424ed33c21bd893ecd90cf40081d7ec29204bdf"
+        "id": 328,
+        "source_record_sha256": "46269031edc59403c24712d85c231ae30d85b6c25b8ae527db430860891c6869"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -58444,7 +58802,7 @@
     },
     {
       "path": "/outfits/78/premium",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -58563,8 +58921,8 @@
     {
       "path": "/outfits/79/female",
       "value": {
-        "id": 140,
-        "source_record_sha256": "53b457e05e0b8f0dbb4e28bd1b971a01c1c76d0d5335faccd087d7e5659f66cb"
+        "id": 269,
+        "source_record_sha256": "d9797d0fc97374484a00bed8377f0c7f7a266bbe1508fafef01bc69a922c1f57"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -58577,7 +58935,7 @@
     },
     {
       "path": "/outfits/79/key",
-      "value": "oteryn:outfit.nobleman",
+      "value": "oteryn:outfit.nightmare",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -58590,8 +58948,8 @@
     {
       "path": "/outfits/79/male",
       "value": {
-        "id": 132,
-        "source_record_sha256": "925978000f5071535b76a707db4ae5f0c6815f5e83e7527a0a499a3f866601bf"
+        "id": 268,
+        "source_record_sha256": "e54232b76352c7808f233aaa8424ed33c21bd893ecd90cf40081d7ec29204bdf"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -58668,7 +59026,7 @@
     },
     {
       "path": "/outfits/79/starter_female",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -58680,7 +59038,7 @@
     },
     {
       "path": "/outfits/79/starter_male",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -58883,8 +59241,8 @@
     {
       "path": "/outfits/80/female",
       "value": {
-        "id": 1501,
-        "source_record_sha256": "ddde6d4a9594d8099174618b72723638245fa74d84f64fd85376dc35044173d1"
+        "id": 140,
+        "source_record_sha256": "53b457e05e0b8f0dbb4e28bd1b971a01c1c76d0d5335faccd087d7e5659f66cb"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -58897,7 +59255,7 @@
     },
     {
       "path": "/outfits/80/key",
-      "value": "oteryn:outfit.nordic_chieftain",
+      "value": "oteryn:outfit.nobleman",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -58910,8 +59268,8 @@
     {
       "path": "/outfits/80/male",
       "value": {
-        "id": 1500,
-        "source_record_sha256": "28977b28f93545cfe07b12158b68548b55bb6d0762a3f7c1764b938b52b40cdc"
+        "id": 132,
+        "source_record_sha256": "925978000f5071535b76a707db4ae5f0c6815f5e83e7527a0a499a3f866601bf"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -58988,7 +59346,7 @@
     },
     {
       "path": "/outfits/80/starter_female",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -59000,7 +59358,7 @@
     },
     {
       "path": "/outfits/80/starter_male",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -59043,8 +59401,8 @@
     {
       "path": "/outfits/81/female",
       "value": {
-        "id": 252,
-        "source_record_sha256": "7e2def85e228dc5676c35eb7eb1e31727ac0fcd06cf81afa1ad6afbc28f5b671"
+        "id": 1501,
+        "source_record_sha256": "ddde6d4a9594d8099174618b72723638245fa74d84f64fd85376dc35044173d1"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -59057,7 +59415,7 @@
     },
     {
       "path": "/outfits/81/key",
-      "value": "oteryn:outfit.norseman",
+      "value": "oteryn:outfit.nordic_chieftain",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -59070,8 +59428,8 @@
     {
       "path": "/outfits/81/male",
       "value": {
-        "id": 251,
-        "source_record_sha256": "397e5f3f2f173304986656d4272783540f310a80b98363e478a762ce3f0bd707"
+        "id": 1500,
+        "source_record_sha256": "28977b28f93545cfe07b12158b68548b55bb6d0762a3f7c1764b938b52b40cdc"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -59203,8 +59561,8 @@
     {
       "path": "/outfits/82/female",
       "value": {
-        "id": 1252,
-        "source_record_sha256": "2a83f058e2aa5e80183fcd0df1ff7eff934ce8ae9be380d3b4a6081d416266f5"
+        "id": 252,
+        "source_record_sha256": "7e2def85e228dc5676c35eb7eb1e31727ac0fcd06cf81afa1ad6afbc28f5b671"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -59217,7 +59575,7 @@
     },
     {
       "path": "/outfits/82/key",
-      "value": "oteryn:outfit.orcsoberfest_garb",
+      "value": "oteryn:outfit.norseman",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -59230,8 +59588,8 @@
     {
       "path": "/outfits/82/male",
       "value": {
-        "id": 1251,
-        "source_record_sha256": "6f4c8c8f9539fb6c1b458b82ffde285fc8955c2f75df37b2d7d6e6af726d871c"
+        "id": 251,
+        "source_record_sha256": "397e5f3f2f173304986656d4272783540f310a80b98363e478a762ce3f0bd707"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -59363,8 +59721,8 @@
     {
       "path": "/outfits/83/female",
       "value": {
-        "id": 150,
-        "source_record_sha256": "3822b1358cec65b1cebdd6de8916e72400bd4e9297379b942595e857817bd721"
+        "id": 1252,
+        "source_record_sha256": "2a83f058e2aa5e80183fcd0df1ff7eff934ce8ae9be380d3b4a6081d416266f5"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -59377,7 +59735,7 @@
     },
     {
       "path": "/outfits/83/key",
-      "value": "oteryn:outfit.oriental",
+      "value": "oteryn:outfit.orcsoberfest_garb",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -59390,8 +59748,8 @@
     {
       "path": "/outfits/83/male",
       "value": {
-        "id": 146,
-        "source_record_sha256": "1ad1472db47cfad742c3b19e8e6015ff410d3f1374ab141904985595b32e970e"
+        "id": 1251,
+        "source_record_sha256": "6f4c8c8f9539fb6c1b458b82ffde285fc8955c2f75df37b2d7d6e6af726d871c"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -59468,7 +59826,7 @@
     },
     {
       "path": "/outfits/83/starter_female",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -59480,7 +59838,7 @@
     },
     {
       "path": "/outfits/83/starter_male",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -59523,8 +59881,8 @@
     {
       "path": "/outfits/84/female",
       "value": {
-        "id": 1174,
-        "source_record_sha256": "310a58ae8dff5000f7021374db990df9bfe629ac7b1a8dbe3b669f412d63ba55"
+        "id": 150,
+        "source_record_sha256": "3822b1358cec65b1cebdd6de8916e72400bd4e9297379b942595e857817bd721"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -59537,7 +59895,7 @@
     },
     {
       "path": "/outfits/84/key",
-      "value": "oteryn:outfit.owl_keeper",
+      "value": "oteryn:outfit.oriental",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -59550,8 +59908,8 @@
     {
       "path": "/outfits/84/male",
       "value": {
-        "id": 1173,
-        "source_record_sha256": "efabc275d203604cf76147095303576ac66be5c9e96c66583b3304b171cf9095"
+        "id": 146,
+        "source_record_sha256": "1ad1472db47cfad742c3b19e8e6015ff410d3f1374ab141904985595b32e970e"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -59564,7 +59922,7 @@
     },
     {
       "path": "/outfits/84/premium",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -59628,7 +59986,7 @@
     },
     {
       "path": "/outfits/84/starter_female",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -59640,7 +59998,7 @@
     },
     {
       "path": "/outfits/84/starter_male",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -59683,8 +60041,8 @@
     {
       "path": "/outfits/85/female",
       "value": {
-        "id": 1162,
-        "source_record_sha256": "a04d5acec584e5f94b9e931ca854afc64cc6b988622ad6e8c5fa6542017bd1c7"
+        "id": 1174,
+        "source_record_sha256": "310a58ae8dff5000f7021374db990df9bfe629ac7b1a8dbe3b669f412d63ba55"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -59697,7 +60055,7 @@
     },
     {
       "path": "/outfits/85/key",
-      "value": "oteryn:outfit.percht_raider",
+      "value": "oteryn:outfit.owl_keeper",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -59710,8 +60068,8 @@
     {
       "path": "/outfits/85/male",
       "value": {
-        "id": 1161,
-        "source_record_sha256": "e5bacd7bd3dad561b78f89bac9081c49e9b66dd65115b33c656388f20c844bbe"
+        "id": 1173,
+        "source_record_sha256": "efabc275d203604cf76147095303576ac66be5c9e96c66583b3304b171cf9095"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -59724,7 +60082,7 @@
     },
     {
       "path": "/outfits/85/premium",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -59843,8 +60201,8 @@
     {
       "path": "/outfits/86/female",
       "value": {
-        "id": 956,
-        "source_record_sha256": "381c1e2b91edaa2b25e880da3d0ad3f893bb1cab3eea3f421f635e0e45cd442e"
+        "id": 1162,
+        "source_record_sha256": "a04d5acec584e5f94b9e931ca854afc64cc6b988622ad6e8c5fa6542017bd1c7"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -59857,7 +60215,7 @@
     },
     {
       "path": "/outfits/86/key",
-      "value": "oteryn:outfit.pharaoh",
+      "value": "oteryn:outfit.percht_raider",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -59870,8 +60228,8 @@
     {
       "path": "/outfits/86/male",
       "value": {
-        "id": 955,
-        "source_record_sha256": "51afdb4c7ba2c04dad55dad9e80a509d015706e5cc4d8340acf8ff77a1910e3c"
+        "id": 1161,
+        "source_record_sha256": "e5bacd7bd3dad561b78f89bac9081c49e9b66dd65115b33c656388f20c844bbe"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -59884,7 +60242,7 @@
     },
     {
       "path": "/outfits/86/premium",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -60003,8 +60361,8 @@
     {
       "path": "/outfits/87/female",
       "value": {
-        "id": 874,
-        "source_record_sha256": "40f14ad9376ca26d2427e5a5f0384236fc88e50062de798d22d3cb5014ddd86a"
+        "id": 956,
+        "source_record_sha256": "381c1e2b91edaa2b25e880da3d0ad3f893bb1cab3eea3f421f635e0e45cd442e"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -60017,7 +60375,7 @@
     },
     {
       "path": "/outfits/87/key",
-      "value": "oteryn:outfit.philosopher",
+      "value": "oteryn:outfit.pharaoh",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -60030,8 +60388,8 @@
     {
       "path": "/outfits/87/male",
       "value": {
-        "id": 873,
-        "source_record_sha256": "43440142cd38a9f4ebeb8dc3cd2fd7fc4fc71d08c63fff8f4f20e17c7499eb15"
+        "id": 955,
+        "source_record_sha256": "51afdb4c7ba2c04dad55dad9e80a509d015706e5cc4d8340acf8ff77a1910e3c"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -60163,8 +60521,8 @@
     {
       "path": "/outfits/88/female",
       "value": {
-        "id": 155,
-        "source_record_sha256": "4fd04d4c53fce122d2b8e51bd7b51c861a9636910de3514e20160db8c543541f"
+        "id": 874,
+        "source_record_sha256": "40f14ad9376ca26d2427e5a5f0384236fc88e50062de798d22d3cb5014ddd86a"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -60177,7 +60535,7 @@
     },
     {
       "path": "/outfits/88/key",
-      "value": "oteryn:outfit.pirate",
+      "value": "oteryn:outfit.philosopher",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -60190,8 +60548,8 @@
     {
       "path": "/outfits/88/male",
       "value": {
-        "id": 151,
-        "source_record_sha256": "fac8c416a1e016d4b8cd495f1455d415e83a759c45078be430c4a1e1aebf7b50"
+        "id": 873,
+        "source_record_sha256": "43440142cd38a9f4ebeb8dc3cd2fd7fc4fc71d08c63fff8f4f20e17c7499eb15"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -60204,7 +60562,7 @@
     },
     {
       "path": "/outfits/88/premium",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -60323,8 +60681,8 @@
     {
       "path": "/outfits/89/female",
       "value": {
-        "id": 1271,
-        "source_record_sha256": "42aab58b0c80e5142a2023fa97be3d5816f56c274d1777b12d6e2c270bf3d71c"
+        "id": 155,
+        "source_record_sha256": "4fd04d4c53fce122d2b8e51bd7b51c861a9636910de3514e20160db8c543541f"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -60337,7 +60695,7 @@
     },
     {
       "path": "/outfits/89/key",
-      "value": "oteryn:outfit.poltergeist",
+      "value": "oteryn:outfit.pirate",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -60350,8 +60708,8 @@
     {
       "path": "/outfits/89/male",
       "value": {
-        "id": 1270,
-        "source_record_sha256": "d800212426caa23e50f44a4e32da14832cfa54ff1b651ef0bcacbc1e266c46c0"
+        "id": 151,
+        "source_record_sha256": "fac8c416a1e016d4b8cd495f1455d415e83a759c45078be430c4a1e1aebf7b50"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -60643,8 +61001,8 @@
     {
       "path": "/outfits/90/female",
       "value": {
-        "id": 1128,
-        "source_record_sha256": "3ca299948efe5ec7f26d76af8ef416f8ba3a11af2c3f1ed6c0c830534b335280"
+        "id": 1271,
+        "source_record_sha256": "42aab58b0c80e5142a2023fa97be3d5816f56c274d1777b12d6e2c270bf3d71c"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -60657,7 +61015,7 @@
     },
     {
       "path": "/outfits/90/key",
-      "value": "oteryn:outfit.pumpkin_mummy",
+      "value": "oteryn:outfit.poltergeist",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -60670,8 +61028,8 @@
     {
       "path": "/outfits/90/male",
       "value": {
-        "id": 1127,
-        "source_record_sha256": "f2e55d00edf4b236a65d227cd65f83f61d1c79501a52119b330febab6f5a09dd"
+        "id": 1270,
+        "source_record_sha256": "d800212426caa23e50f44a4e32da14832cfa54ff1b651ef0bcacbc1e266c46c0"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -60684,7 +61042,7 @@
     },
     {
       "path": "/outfits/90/premium",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -60803,8 +61161,8 @@
     {
       "path": "/outfits/91/female",
       "value": {
-        "id": 696,
-        "source_record_sha256": "7b1d1700d0942cebad8a5c8b1babf67e982ae7704b728fa7ff54884cf5525d8f"
+        "id": 1128,
+        "source_record_sha256": "3ca299948efe5ec7f26d76af8ef416f8ba3a11af2c3f1ed6c0c830534b335280"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -60817,7 +61175,7 @@
     },
     {
       "path": "/outfits/91/key",
-      "value": "oteryn:outfit.puppeteer",
+      "value": "oteryn:outfit.pumpkin_mummy",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -60830,8 +61188,8 @@
     {
       "path": "/outfits/91/male",
       "value": {
-        "id": 697,
-        "source_record_sha256": "a22f336a0d5e29ed9bb980d1a4a63141b8f5d7841160fa4b601a4267d6f94ce0"
+        "id": 1127,
+        "source_record_sha256": "f2e55d00edf4b236a65d227cd65f83f61d1c79501a52119b330febab6f5a09dd"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -60963,8 +61321,8 @@
     {
       "path": "/outfits/92/female",
       "value": {
-        "id": 683,
-        "source_record_sha256": "56777ca6f2d7252dc5287990c797c522e4df7e24665f3043a0273803c0d490cc"
+        "id": 696,
+        "source_record_sha256": "7b1d1700d0942cebad8a5c8b1babf67e982ae7704b728fa7ff54884cf5525d8f"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -60977,7 +61335,7 @@
     },
     {
       "path": "/outfits/92/key",
-      "value": "oteryn:outfit.ranger",
+      "value": "oteryn:outfit.puppeteer",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -60990,8 +61348,8 @@
     {
       "path": "/outfits/92/male",
       "value": {
-        "id": 684,
-        "source_record_sha256": "574b74a9da2a525265aaaa3d6b41f5470d83ad538157c13fffece4ba3a904454"
+        "id": 697,
+        "source_record_sha256": "a22f336a0d5e29ed9bb980d1a4a63141b8f5d7841160fa4b601a4267d6f94ce0"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -61123,8 +61481,8 @@
     {
       "path": "/outfits/93/female",
       "value": {
-        "id": 1372,
-        "source_record_sha256": "41d6b8a78c3d41c8b3560c90d558b8ab42adc591f755e64beb8c244525458244"
+        "id": 683,
+        "source_record_sha256": "56777ca6f2d7252dc5287990c797c522e4df7e24665f3043a0273803c0d490cc"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -61137,7 +61495,7 @@
     },
     {
       "path": "/outfits/93/key",
-      "value": "oteryn:outfit.rascoohan",
+      "value": "oteryn:outfit.ranger",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -61150,8 +61508,8 @@
     {
       "path": "/outfits/93/male",
       "value": {
-        "id": 1371,
-        "source_record_sha256": "8b86c0027328adc3630e2db3c0a3d0a848ad43269c1faa9dd475bb11458a141e"
+        "id": 684,
+        "source_record_sha256": "574b74a9da2a525265aaaa3d6b41f5470d83ad538157c13fffece4ba3a904454"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -61164,7 +61522,7 @@
     },
     {
       "path": "/outfits/93/premium",
-      "value": true,
+      "value": false,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -61283,8 +61641,8 @@
     {
       "path": "/outfits/94/female",
       "value": {
-        "id": 745,
-        "source_record_sha256": "0427785430c1eeed9cf26bd233365bd4560416884a483e31eb6b1c3e5a0445ea"
+        "id": 1372,
+        "source_record_sha256": "41d6b8a78c3d41c8b3560c90d558b8ab42adc591f755e64beb8c244525458244"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -61297,7 +61655,7 @@
     },
     {
       "path": "/outfits/94/key",
-      "value": "oteryn:outfit.recruiter",
+      "value": "oteryn:outfit.rascoohan",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -61310,8 +61668,8 @@
     {
       "path": "/outfits/94/male",
       "value": {
-        "id": 746,
-        "source_record_sha256": "2c61495d87fed5421f47d2821ef3fd05b78cf23f0669aa7e0f55bccb16f09f8a"
+        "id": 1371,
+        "source_record_sha256": "8b86c0027328adc3630e2db3c0a3d0a848ad43269c1faa9dd475bb11458a141e"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -61324,7 +61682,7 @@
     },
     {
       "path": "/outfits/94/premium",
-      "value": false,
+      "value": true,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -61430,7 +61788,7 @@
     },
     {
       "path": "/outfits/95/addon_count",
-      "value": 0,
+      "value": 2,
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -61443,8 +61801,8 @@
     {
       "path": "/outfits/95/female",
       "value": {
-        "id": 975,
-        "source_record_sha256": "7b0357d15fec1b1b73d413109dc2261354348c288f0d8d64f44aae52a4399794"
+        "id": 745,
+        "source_record_sha256": "0427785430c1eeed9cf26bd233365bd4560416884a483e31eb6b1c3e5a0445ea"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -61457,7 +61815,7 @@
     },
     {
       "path": "/outfits/95/key",
-      "value": "oteryn:outfit.retro_citizen",
+      "value": "oteryn:outfit.recruiter",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -61470,8 +61828,8 @@
     {
       "path": "/outfits/95/male",
       "value": {
-        "id": 974,
-        "source_record_sha256": "6f2db29dda68d49145bdf4583246e7259791a5752b70cd9de6e0da3749cea6c4"
+        "id": 746,
+        "source_record_sha256": "2c61495d87fed5421f47d2821ef3fd05b78cf23f0669aa7e0f55bccb16f09f8a"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -61603,8 +61961,8 @@
     {
       "path": "/outfits/96/female",
       "value": {
-        "id": 973,
-        "source_record_sha256": "986fc73d499acc6b4739f3917ae93524779803c6942ff95ddd302faf407c14b4"
+        "id": 975,
+        "source_record_sha256": "7b0357d15fec1b1b73d413109dc2261354348c288f0d8d64f44aae52a4399794"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -61617,7 +61975,7 @@
     },
     {
       "path": "/outfits/96/key",
-      "value": "oteryn:outfit.retro_hunter",
+      "value": "oteryn:outfit.retro_citizen",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -61630,8 +61988,8 @@
     {
       "path": "/outfits/96/male",
       "value": {
-        "id": 972,
-        "source_record_sha256": "773de2f63f04cdf4b67eff6d03aa1ca8b3405fe451a293ae13f86f82e19ef086"
+        "id": 974,
+        "source_record_sha256": "6f2db29dda68d49145bdf4583246e7259791a5752b70cd9de6e0da3749cea6c4"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -61763,8 +62121,8 @@
     {
       "path": "/outfits/97/female",
       "value": {
-        "id": 971,
-        "source_record_sha256": "86bcf791823de304fcc82b79e6bdd4b01575bb7591dcae6b2a9122e34681c839"
+        "id": 973,
+        "source_record_sha256": "986fc73d499acc6b4739f3917ae93524779803c6942ff95ddd302faf407c14b4"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -61777,7 +62135,7 @@
     },
     {
       "path": "/outfits/97/key",
-      "value": "oteryn:outfit.retro_knight",
+      "value": "oteryn:outfit.retro_hunter",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -61790,8 +62148,8 @@
     {
       "path": "/outfits/97/male",
       "value": {
-        "id": 970,
-        "source_record_sha256": "f088889ce0db4c2e796ca444cd0e71c9fed43eb49a55c61dadf49c5cdaec28c8"
+        "id": 972,
+        "source_record_sha256": "773de2f63f04cdf4b67eff6d03aa1ca8b3405fe451a293ae13f86f82e19ef086"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -61923,8 +62281,8 @@
     {
       "path": "/outfits/98/female",
       "value": {
-        "id": 969,
-        "source_record_sha256": "6a76139ab1551e107febf54eae8beb981f970361a3254b80d536a0be5679da7a"
+        "id": 971,
+        "source_record_sha256": "86bcf791823de304fcc82b79e6bdd4b01575bb7591dcae6b2a9122e34681c839"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -61937,7 +62295,7 @@
     },
     {
       "path": "/outfits/98/key",
-      "value": "oteryn:outfit.retro_mage",
+      "value": "oteryn:outfit.retro_knight",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -61950,8 +62308,8 @@
     {
       "path": "/outfits/98/male",
       "value": {
-        "id": 968,
-        "source_record_sha256": "532e59def3898a3561a086f0171adc6997bb6bb2c68cec029c3d09a5f1c9b234"
+        "id": 970,
+        "source_record_sha256": "f088889ce0db4c2e796ca444cd0e71c9fed43eb49a55c61dadf49c5cdaec28c8"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -62083,8 +62441,8 @@
     {
       "path": "/outfits/99/female",
       "value": {
-        "id": 967,
-        "source_record_sha256": "894cdfdce46bd762f4d3abe19dedae555666eac400181a8bded396a1bc41b8f6"
+        "id": 969,
+        "source_record_sha256": "6a76139ab1551e107febf54eae8beb981f970361a3254b80d536a0be5679da7a"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -62097,7 +62455,7 @@
     },
     {
       "path": "/outfits/99/key",
-      "value": "oteryn:outfit.retro_nobleman",
+      "value": "oteryn:outfit.retro_mage",
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
       "source_kind": "STRUCTURED_REFERENCE_DATA",
@@ -62110,8 +62468,8 @@
     {
       "path": "/outfits/99/male",
       "value": {
-        "id": 966,
-        "source_record_sha256": "2793d08e2b4cc7e81223e82670ed06d8f37ad546764a3f51d568e77d30e7b1df"
+        "id": 968,
+        "source_record_sha256": "532e59def3898a3561a086f0171adc6997bb6bb2c68cec029c3d09a5f1c9b234"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",

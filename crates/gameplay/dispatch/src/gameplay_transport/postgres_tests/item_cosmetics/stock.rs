@@ -7,9 +7,59 @@ use std::num::NonZeroU32;
 pub(super) async fn random_outfit(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
-    admitted: AdmittedSession,
+    mut admitted: AdmittedSession,
     reference: impl Fn(&str) -> Option<NonZeroU32>,
+    wanted: Option<&str>,
 ) -> TestResult {
+    let catalogue = item_cosmetics::catalogue().ok_or("item catalogue")?;
+    let rule = item_cosmetics::rule("oteryn:item.tibia.i6579").ok_or("doll rule")?;
+    let mut command = admitted.continuity.next_command_id;
+    if let Some(wanted) = wanted {
+        let harmless = encode_item_use_intent(&UseIntent {
+            target: UseTarget::ItemByDefinition(
+                reference("oteryn:item.tibia.i3031").ok_or("coin definition")?,
+            ),
+            use_with: None,
+            use_with_map_item: None,
+            use_with_position: None,
+        })
+        .map_err(debug)?;
+        let mut matched = false;
+        for _ in 0..1024 {
+            let choice = item_cosmetics::select_for_command(
+                rule,
+                *admitted.game_session_id.as_bytes(),
+                command,
+                id(71),
+            )
+            .ok_or("source choice")?;
+            if choice
+                .feedback
+                .as_deref()
+                .is_some_and(|text| text.contains(&format!("the {wanted} outfit")))
+            {
+                matched = true;
+                break;
+            }
+            // Advance through ordinary refused coin USE commands. No invented
+            // continuity or source receipt is used to force the desired draw.
+            let (next, result, _) = super::super::rust_lottery::exchange(
+                owner, admitted, command, &harmless, None, None,
+            )
+            .await?;
+            assert_ne!(result, UseDisposition::Committed);
+            admitted = next;
+            command = admitted.continuity.next_command_id;
+        }
+        assert!(matched, "bounded deterministic source family");
+    }
+    let selected = item_cosmetics::select_for_command(
+        rule,
+        *admitted.game_session_id.as_bytes(),
+        command,
+        id(71),
+    )
+    .ok_or("selected source choice")?;
     let payload = encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("handle")?),
         use_with: None,
@@ -20,7 +70,7 @@ pub(super) async fn random_outfit(
     let (mut admitted, result, actual) = super::super::rust_lottery::exchange(
         owner,
         admitted,
-        1,
+        command,
         &payload,
         reference("oteryn:item.tibia.i6579"),
         None,
@@ -34,22 +84,12 @@ pub(super) async fn random_outfit(
     let grants: Vec<(String, String)> = sqlx::query_as(
         "SELECT unlock_key,content_revision FROM game_account_appearance_unlocks ORDER BY unlock_key",
     ).fetch_all(&h.pool).await?;
-    let catalogue = item_cosmetics::catalogue().ok_or("item catalogue")?;
-    let rule = item_cosmetics::rule("oteryn:item.tibia.i6579").ok_or("doll rule")?;
     let keys: Vec<_> = grants.iter().map(|(key, _)| key.clone()).collect();
-    let choices: Vec<_> = rule
-        .choices
-        .iter()
-        .filter(|choice| {
-            let mut wanted = choice.grants.clone();
-            wanted.sort();
-            wanted == keys
-        })
-        .collect();
+    let mut expected = selected.grants.clone();
+    expected.sort();
     assert_eq!(
-        choices.len(),
-        1,
-        "exactly one whole source choice, without mixing outcomes"
+        keys, expected,
+        "the exact selected source outcome, without mixing draws"
     );
     assert!(
         grants
@@ -59,8 +99,8 @@ pub(super) async fn random_outfit(
     let addon = catalogue
         .grants
         .iter()
-        .find(|g| keys.contains(&g.key) && g.kind == GrantKind::Addon)
-        .ok_or("source addon")?;
+        .find(|g| keys.contains(&g.key) && g.kind == GrantKind::Outfit)
+        .ok_or("source base")?;
     let observation = owner
         .appearance_observation(
             admitted.runtime_actor.ok_or("actor")?,
@@ -75,7 +115,12 @@ pub(super) async fn random_outfit(
         .iter()
         .find(|o| addon.look_types.contains(&o.look_type))
         .ok_or("earned source look offered")?;
-    let bit = 1 << (addon.addon.ok_or("addon ordinal")? - 1);
+    let bit = catalogue
+        .grants
+        .iter()
+        .find(|g| keys.contains(&g.key) && g.kind == GrantKind::Addon)
+        .and_then(|g| g.addon)
+        .map_or(0, |ordinal| 1 << (ordinal - 1));
     assert_eq!(option.permitted_addons, bit);
     let selection = oteryn_protocol_oteryn::appearance::Selection {
         outfit_key: option.key.clone(),
@@ -84,7 +129,7 @@ pub(super) async fn random_outfit(
         mount_key: None,
     };
     let (next, replayed, _) =
-        super::super::rust_lottery::exchange(owner, admitted, 1, &actual, None, None).await?;
+        super::super::rust_lottery::exchange(owner, admitted, command, &actual, None, None).await?;
     admitted = next;
     assert_eq!(replayed, UseDisposition::Committed);
     let consumed: i64 =

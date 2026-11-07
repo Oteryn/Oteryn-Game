@@ -810,3 +810,14 @@ explicit admitted XML/client facts, then run deterministic actual-dispatch cases
 Four targeted source-family PG cases now compile/run separately. Last strict
 clippy needs rerun after stable test files; no dead-code allow was added.
 Serial pin-check PASSED unchanged24ab; retain prior SIGKILL evidence separately.
+
+Native acquisition compiling WIP: immutable capture retained; generated native
+packet201grants,131outfits,250mounts. Two numeric source pairs corrected by
+explicit family plus pinned XML; Jungle Explorer added from exact Lua female/
+male row620/621; Wedding/Jungle addonless patterns deliver base only while
+preserving family weights. This supersedes the earlier Jersey assumption.
+All31authoring testsGREEN93.254s. Real dispatch acquired all four selected
+families, then assertion SQL failed because provenance lives on receipts, not
+unlock facts. Current exact redpoint: column content_revision does not exist.
+Fix query + starter-base expectations and rerun focused PG. Stock taming cases
+remain running; no qualification claimed for unfinished assertions.

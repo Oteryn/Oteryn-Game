@@ -34,11 +34,21 @@ fn run_case(ground: bool, afflicted: bool) -> TestResult {
 }
 
 fn run_all(ground: bool, afflicted: bool, case: Option<positive::Case>) -> TestResult {
-    run_configuration(ground, afflicted, case, false)
+    run_configuration(ground, afflicted, case, false, None)
 }
 
 pub(super) fn run_stock_random_outfit() -> TestResult {
-    run_configuration(false, false, Some(positive::Case::RandomOutfit), true)
+    run_configuration(false, false, Some(positive::Case::RandomOutfit), true, None)
+}
+
+pub(super) fn run_stock_named_outfit(name: &'static str) -> TestResult {
+    run_configuration(
+        false,
+        false,
+        Some(positive::Case::RandomOutfit),
+        true,
+        Some(name),
+    )
 }
 
 fn run_configuration(
@@ -46,6 +56,7 @@ fn run_configuration(
     afflicted: bool,
     case: Option<positive::Case>,
     stock: bool,
+    wanted: Option<&'static str>,
 ) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         eprintln!("W19 POSTGRES_CASE_COMPLETED status=SKIPPED no_admin_url");
@@ -53,7 +64,9 @@ fn run_configuration(
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(ground, afflicted, case, stock).map_err(|error| error.to_string()))?
+        .spawn(move || {
+            scenario(ground, afflicted, case, stock, wanted).map_err(|error| error.to_string())
+        })?
         .join()
         .map_err(|_| "cosmetic scenario thread")??;
     Ok(())
@@ -64,6 +77,7 @@ fn scenario(
     afflicted: bool,
     case: Option<positive::Case>,
     stock: bool,
+    wanted: Option<&'static str>,
 ) -> TestResult {
     let key = match case {
         Some(
@@ -278,9 +292,15 @@ fn scenario(
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
-        admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
-                .ok_or("offers")?;
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            if stock {
+                &[4, 6, 11, 15, 18, 25]
+            } else {
+                &[4, 6, 11, 15, 18]
+            },
+        )
+        .ok_or("offers")?;
         let source = id(71);
         if ground {
             let target = {
@@ -330,7 +350,11 @@ fn scenario(
             tx.commit().await?;
         }
         if let Some(case) = case {
-            positive::execute(&owner, &harness, admitted, case, reference).await?;
+            if let Some(name) = wanted {
+                stock::random_outfit(&owner, &harness, admitted, reference, Some(name)).await?;
+            } else {
+                positive::execute(&owner, &harness, admitted, case, reference).await?;
+            }
             drop(owner);
             drop(authority);
             drop(seal);

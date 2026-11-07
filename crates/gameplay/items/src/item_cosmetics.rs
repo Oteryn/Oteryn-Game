@@ -98,7 +98,7 @@ pub fn catalogue() -> Option<&'static Catalogue> {
     CATALOGUE
         .get_or_init(|| {
             let c: Catalogue = serde_json::from_str(include_str!(
-                "../../../../tools/content-schema/native-gameplay/item-cosmetic-actions.json"
+                "../../../../tools/content-schema/native-gameplay/item-cosmetic-actions-native.json"
             ))
             .ok()?;
             if c.schema != "OTERYN_ITEM_COSMETICS/v1"

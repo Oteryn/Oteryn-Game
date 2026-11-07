@@ -11,22 +11,33 @@ class QuestRewards(unittest.TestCase):
         doc=self.author['document']
         outfits={r['key']:r for r in doc['outfits']}
         mappings={r['grant_key']:r for r in doc['grant_mappings']}
-        self.assertEqual(len(outfits),130)
-        packet=json.loads((q.ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes())
+        self.assertEqual(len(outfits),131)
+        packet=json.loads(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json'])
+        self.assertEqual(len(packet['grants']),201)
         for grant in packet['grants']:
-            if grant['kind']=='mount':continue
-            outfit=next((r for r in outfits.values() if sorted([r['female']['id'],r['male']['id']])==grant['look_types']),None)
-            if outfit is None:
-                self.assertIn(grant['look_types'],[[578,579],[618,619],[620,621]])
-                self.assertNotIn(grant['key'],mappings)
-                continue
-            if grant['kind']=='addon' and grant['addon']>outfit['addon_count']:
-                self.assertNotIn(grant['key'],mappings)
-                continue
             mapping=mappings[grant['key']]
-            self.assertEqual(sorted([outfit['female']['id'],outfit['male']['id']]),grant['look_types'])
             self.assertEqual(mapping['compatible_provenance'],[packet['provenance']])
+            if grant['kind']=='mount':continue
+            outfit=outfits[mapping['target']['outfit_key']]
+            self.assertEqual(sorted([outfit['female']['id'],outfit['male']['id']]),grant['look_types'])
             if grant['kind']=='addon':self.assertEqual(mapping['target']['addon'],grant['addon'])
+        admission=packet['native_admission']
+        self.assertEqual(len(admission['corrections']),8)
+        self.assertEqual({r['family'] for r in admission['corrections']},{'Dream Warden','Glooth Engineer','Wedding','Jungle Explorer'})
+        capture=(q.ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes()
+        self.assertEqual(admission['source_packet_sha256'],q.sha(capture))
+        original=json.loads(capture)
+        self.assertEqual([r['item_id'] for r in packet['rules']],[r['item_id'] for r in original['rules']])
+        old=next(r for r in original['rules'] if r['mode']=='random_outfit')
+        native=next(r for r in packet['rules'] if r['mode']=='random_outfit')
+        self.assertEqual(len(native['choices']),len(old['choices']))
+        wedding=[r for r in native['choices'] if 'Wedding outfit' in r.get('feedback','')]
+        self.assertEqual(len(wedding),2)
+        self.assertTrue(all(r['grants']==['oteryn:item-grant.outfit.328-329.base'] for r in wedding))
+        jungle=outfits['oteryn:outfit.jungle_explorer']
+        self.assertEqual((jungle['female']['id'],jungle['male']['id']),(620,621))
+        self.assertFalse(jungle['starter_female'] or jungle['starter_male'])
+        self.assertTrue(jungle['premium'])
 
     def test_stock_mounts_bind_every_taming_and_item_acquisition(self):
         doc=self.author['document']

@@ -30,7 +30,7 @@ def sha(value):
 
 
 def donor_inputs():
-    paths = ['data/XML/outfits.xml', 'data/XML/mounts.xml', 'data-global/scripts/actions/mounts/mounts.lua', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
+    paths = ['data/XML/outfits.xml', 'data/XML/mounts.xml', 'data-crystal/scripts/special/addon_doll.lua', 'data-global/scripts/actions/mounts/mounts.lua', 'data/npclib/npc_system/npc_handler.lua'] + [f'data-global/npc/{n}.lua' for n in (
         'morgan', 'navigator', 'costello', 'budrik', 'sam', 'cael', 'cranky_lizard_crone', 'palimuth', 'yalahari',
         'dedoras', 'muriel', 'the_first_dragon', 'broken_servant_sentry', 'avar_tar', 'ezebeth', 'irmana', 'percybald', 'raymond_striker', 'duncan', 'ariella', 'ishina', 'habdel', 'miraia', 'razan', 'hjaern', 'tom', 'amber', 'norma', 'hugo', 'simon_the_beggar', 'gregor', 'ustan', 'ceiron', 'a_majestic_warwolf', 'vescu', 'erayo', 'atrad', 'elane', 'legola', 'zoltan', 'lynda', 'sandra', 'myra', 'angelina', 'eruaran', 'gnomally', 'ottokar', 'king_tibianus', 'the_bone_master', 'the_dream_master', 'vanys', 'eshaya', 'gnomadness', 'a_sweaty_cyclops', 'gnommander', 'flickering_soul', 'bloodshade_rotten', 'cledwyn')]
     paths += ['data/scripts/actions/items/usable_outfit_items.lua', 'data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua', 'data-global/scripts/actions/valuables/random_items.lua',
@@ -100,20 +100,24 @@ def build():
             'starter_male': male['unlocked'] == 'yes', 'starter_addons_female': 0,
             'starter_addons_male': 0, 'premium': female['premium'] == 'yes',
             'unlock_sources': [source], 'source': source})
-        for addon in range(addons + 1):
-            target = {'kind': 'Outfit', 'outfit_key': key} if addon == 0 else {
-                'kind': 'Addon', 'outfit_key': key, 'addon': addon}
-            mappings.append({'grant_key': f'{key}/quest-grant/{addon}', 'target': target,
-                             'compatible_provenance': [PROVENANCE]})
-    # Reuse the existing source item-action owner. Matching both source look
-    # identities is required; a source label alone never admits a grant.
-    item_packet=json.loads((ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes())
+    item_capture_raw=(ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes()
+    item_admission=load_module('qengine_item_admission','tools/content-schema/quest-authoring/qengine_item_acquisitions.py')
+    table_parser=load_module('qengine_cosmetic_source_tables','tools/content-migration/event_item_actions.py')
+    acquisition_path='data-crystal/scripts/special/addon_doll.lua'
+    acquisition_source={'reference':'crystal:'+acquisition_path,'revision':PIN,'sha256':sha(inputs[acquisition_path])}
+    source_rows,_=table_parser.table(inputs[acquisition_path].decode(),'outfits')
+    item_admission.extend_catalogue(outfits,source_rows,looks,addon_patterns,acquisition_source)
+    item_packet=item_admission.build(json.loads(item_capture_raw),outfits,source,sha(item_capture_raw))
+    for outfit in outfits:
+        key=outfit['key']
+        for addon in range(outfit['addon_count']+1):
+            target={'kind':'Outfit','outfit_key':key} if addon==0 else {'kind':'Addon','outfit_key':key,'addon':addon}
+            mappings.append({'grant_key':f'{key}/quest-grant/{addon}','target':target,'compatible_provenance':[PROVENANCE]})
+    # Every native source grant must match the complete admitted sex pair.
     for outfit in outfits:
         outfit_looks=sorted([outfit['female']['id'],outfit['male']['id']])
         for grant in item_packet['grants']:
             if grant['kind'] not in ('outfit','addon') or grant.get('look_types')!=outfit_looks:continue
-            if grant['kind']=='addon' and grant['addon']>outfit['addon_count']:
-                continue  # Unrenderable source addon choices refuse without charging.
             target={'kind':'Outfit','outfit_key':outfit['key']} if grant['kind']=='outfit' else {
                 'kind':'Addon','outfit_key':outfit['key'],'addon':grant['addon']}
             mappings.append({'grant_key':grant['key'],'target':target,'compatible_provenance':[item_packet['provenance']]})
@@ -156,12 +160,18 @@ def build():
         'client_version': manifest['client_version'], 'document': doc, 'promotions': []}
     for path in sorted(cosmetics.promotion_paths(doc)):
         citation=palette_source if path == '/palette' else mount_source if path.startswith('/mounts/') else source
+        source_kind='OWNER_DECISION' if path.startswith('/fallbacks/') or path=='/grant_mappings' else 'STRUCTURED_REFERENCE_DATA'
+        if path.startswith('/outfits/'):
+            row=outfits[int(path.split('/')[2])]
+            citation=row['source']
+            if citation==acquisition_source and (path.rsplit('/',1)[-1]=='premium' or path.rsplit('/',1)[-1].startswith('starter_')):
+                source_kind='OWNER_DECISION'
         if path in ('/source_manifest_sha256','/source_appearances_sha256'):
             citation={'reference': 'imports/cipsoft-appearances/outfits/manifest.json',
                       'revision':manifest['client_version'],'sha256':sha(manifest_raw)}
         author['promotions'].append({'path': path, 'value': cosmetics.pointer(doc, path),
             'state': 'PROMOTED', 'decision': DECISION,
-            'source_kind': 'OWNER_DECISION' if path.startswith('/fallbacks/') or path=='/grant_mappings' else 'STRUCTURED_REFERENCE_DATA',
+            'source_kind': source_kind,
             'source': citation})
     callbacks = []
     def storage(track, before, after, maximum=None, preserve=False):
@@ -901,7 +911,8 @@ def build():
     native_cosmetics=cosmetics.build(author, appearance/'manifest.json')
     gameplay['schema']='OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6'
     gameplay['cosmetics']={'path':'cosmetics/outfits/native-cosmetics.json','sha256':sha(native_cosmetics)}
-    generated = {'content/cosmetics/outfits/authoring.json': encoded(author),
+    generated = {'tools/content-schema/native-gameplay/item-cosmetic-actions-native.json':encoded(item_packet),
+            'content/cosmetics/outfits/authoring.json': encoded(author),
             'content/cosmetics/outfits/native-cosmetics.json': native_cosmetics,
             'content/spells.manifest.json': (json.dumps(gameplay,indent=2,sort_keys=True)+'\n').encode(),
             'content/quests/shared-reward-callbacks.json': encoded({'schema':1,'tracks':declarations,'callbacks':callbacks}),

@@ -3004,6 +3004,16 @@
           "check": "3crate allfeature GREEN3m57s",
           "red_point": "Whole-rule qualification refuses the addon doll because three source look pairs cross canonical families and Newly Wed has no addon patterns; normalize source intents before final GREEN.",
           "postgres_red_seconds": 65.354410807
+        },
+        "native_acquisition_step": {
+          "status": "COMPILES",
+          "outfits": 131,
+          "mounts": 250,
+          "native_grants": 201,
+          "authoring_tests": 31,
+          "authoring_seconds": 93.254,
+          "current_pg_point": "Four actual source acquisitions returned Committed, then test SQL incorrectly read content_revision from unlock facts instead of receipt provenance. Fix assertion query; no production guard weakening.",
+          "log": "/tmp/qengine2-s06-native-items-green1.log"
         }
       },
       {
