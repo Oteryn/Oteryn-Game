@@ -661,6 +661,16 @@ impl ChannelAttackStates {
             return AttackIntentDisposition::TargetNotVisible;
         };
         let Some(facts) = target_facts(runtime, room, actor, session, creature, now) else {
+            #[cfg(test)]
+            eprintln!(
+                "NATIVE_ATTACK_REFUSED target_facts from={:?} to={:?}",
+                runtime
+                    .read_actor_position(actor)
+                    .map(|s| (s.position(), in_protection_zone(room, s.position()))),
+                runtime
+                    .read_actor_position(creature)
+                    .map(|s| (s.position(), in_protection_zone(room, s.position())))
+            );
             return AttackIntentDisposition::Rejected;
         };
         let previous = entry.state.target();

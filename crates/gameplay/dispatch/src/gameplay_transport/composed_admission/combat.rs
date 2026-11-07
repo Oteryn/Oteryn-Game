@@ -10,6 +10,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
         let permit = if target.is_some() {
             let Some(permit) = self.spell_lane_permit().await else {
+                #[cfg(test)]
+                eprintln!("NATIVE_ATTACK_REFUSED no_spell_lane");
                 return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
             };
             Some(permit)
@@ -19,6 +21,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let now = self.owner_now();
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
+        #[cfg(test)]
+        eprintln!(
+            "NATIVE_ATTACK_CONTEXT spell_state={} room={} control={:?} reentry={:?}",
+            states.get(&runtime, actor, game_session_id).is_some(),
+            self.rooms.gate_attack_target().is_some(),
+            runtime
+                .player_control_facts(actor, game_session_id)
+                .map(|_| ()),
+            runtime.current_player_reentry_protection(actor, game_session_id, now.get())
+        );
         let Some(state) = states.get(&runtime, actor, game_session_id) else {
             return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
         };
