@@ -2995,6 +2995,15 @@
           "marker": "POSTGRES_CASE_COMPLETED S06_STOCK_RANDOM_OUTFIT",
           "point": "Ordinary addon doll USE returns NotPossible with stock grant mappings.",
           "log": "/tmp/qengine2-s06-outfit-red2.log"
+        },
+        "outfit_population_step": {
+          "outfits": 130,
+          "mounts": 250,
+          "status": "COMPILES",
+          "authoring": "30 retained tests pass; full-population contract corrected and passes14.526s",
+          "check": "3crate allfeature GREEN3m57s",
+          "red_point": "Whole-rule qualification refuses the addon doll because three source look pairs cross canonical families and Newly Wed has no addon patterns; normalize source intents before final GREEN.",
+          "postgres_red_seconds": 65.354410807
         }
       },
       {

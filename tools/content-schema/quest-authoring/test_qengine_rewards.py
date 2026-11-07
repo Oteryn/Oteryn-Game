@@ -7,6 +7,27 @@ import qengine_rewards as q
 
 
 class QuestRewards(unittest.TestCase):
+    def test_full_source_outfit_population_and_item_acquisition_bindings(self):
+        doc=self.author['document']
+        outfits={r['key']:r for r in doc['outfits']}
+        mappings={r['grant_key']:r for r in doc['grant_mappings']}
+        self.assertEqual(len(outfits),130)
+        packet=json.loads((q.ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes())
+        for grant in packet['grants']:
+            if grant['kind']=='mount':continue
+            outfit=next((r for r in outfits.values() if sorted([r['female']['id'],r['male']['id']])==grant['look_types']),None)
+            if outfit is None:
+                self.assertIn(grant['look_types'],[[578,579],[618,619],[620,621]])
+                self.assertNotIn(grant['key'],mappings)
+                continue
+            if grant['kind']=='addon' and grant['addon']>outfit['addon_count']:
+                self.assertNotIn(grant['key'],mappings)
+                continue
+            mapping=mappings[grant['key']]
+            self.assertEqual(sorted([outfit['female']['id'],outfit['male']['id']]),grant['look_types'])
+            self.assertEqual(mapping['compatible_provenance'],[packet['provenance']])
+            if grant['kind']=='addon':self.assertEqual(mapping['target']['addon'],grant['addon'])
+
     def test_stock_mounts_bind_every_taming_and_item_acquisition(self):
         doc=self.author['document']
         mounts={row['key']:row for row in doc['mounts']}

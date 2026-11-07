@@ -318,3 +318,14 @@ Fabled Construction/Natural Born Cowboy; :230..250 checks actual target name
 and additionally consumes loco37398. Source action sha is recorded above.
 Implement missing construction checks and atomic recipe/target composition in a
 shared owner; these four rows cannot be qualified by the creature-only proof.
+
+S06 source outfit inconsistencies: the captured addon-doll table pairs578/579,
+618/619 and620/621, but pinned outfits.xml:64..66 and196..198 explicitly pairs
+Dream Warden577/578, Glooth Engineer610/618 and Jersey619/620. XML sha
+02a4f73b60237946109da1ec6ccb34257b246d9f3f746b5935caeacf2e9a0757.
+Newly Wed328/329 has zero addon patterns in the admitted client appearance
+records. Entire-rule qualification correctly refuses before charging when any
+choice is unbound. Keep that guard. Native admission will retain each explicit
+source family draw, use the XML's exact sex pair, and deliver base only for an
+addonless family. The immutable capture is preserved; corrected native material
+carries source packet digest, XML citation and explicit owner decisions.

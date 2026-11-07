@@ -799,3 +799,14 @@ Markers/logs recorded in status. Tests compile and retain original cases.
 Prior mount step strictclippy passed7m22s; world repository5passed177.50s;
 pin-refresh unchanged24ab. First pin-check was SIGKILL during concurrent
 large test build; rerun serially after current compilation. Do not call it GREEN.
+
+Compiling full-population WIP: all130 enabled source outfit families (paired
+sexes),250mounts, all currently valid exact item mappings. Check3m57GREEN;
+new authoring full-population test14.526sGREEN, retained30testsGREEN.
+Stock addon doll still RED65.354410807s: qualify_rule intentionally checks every
+choice, exposing three erroneous numeric pairs and addonless Newly Wed.
+Do not weaken qualification. Materialize corrected source-family intents against
+explicit admitted XML/client facts, then run deterministic actual-dispatch cases.
+Four targeted source-family PG cases now compile/run separately. Last strict
+clippy needs rerun after stable test files; no dead-code allow was added.
+Serial pin-check PASSED unchanged24ab; retain prior SIGKILL evidence separately.

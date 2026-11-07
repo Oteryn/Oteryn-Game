@@ -64,12 +64,12 @@ def build():
               'sha256': sha(inputs['data/XML/outfits.xml'])}
     xml = ET.fromstring(inputs['data/XML/outfits.xml'])
     # Explicit identities for the two sex-specific donor display names.
-    aliases = {'Noblewoman': 'Nobleman', 'Norsewoman': 'Norseman'}
+    aliases = {'Noblewoman': 'Nobleman', 'Norsewoman': 'Norseman', 'Retro Noblewoman': 'Retro Nobleman'}
     groups = {}
     for row in xml:
         name = aliases.get(row.get('name'), row.get('name'))
-        # Explicit owner-selected quest rewards may use admitted looks labelled store by the donor.
-        if row.get('enabled') == 'yes' and (row.get('from') != 'store' or name in ('Royal Costume', 'Dragon Slayer')):
+        # S06 admits source definitions; ownership still requires an acquisition receipt.
+        if row.get('enabled') == 'yes':
             groups.setdefault(name, {})[row.get('type')] = row.attrib
     appearance = ROOT / 'imports/cipsoft-appearances/outfits'
     manifest_raw = (appearance / 'manifest.json').read_bytes()
@@ -108,12 +108,12 @@ def build():
     # Reuse the existing source item-action owner. Matching both source look
     # identities is required; a source label alone never admits a grant.
     item_packet=json.loads((ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes())
-    scoped={'oteryn:outfit.afflicted','oteryn:outfit.soil_guardian','oteryn:outfit.crystal_warlord'}
     for outfit in outfits:
-        if outfit['key'] not in scoped:continue
         outfit_looks=sorted([outfit['female']['id'],outfit['male']['id']])
         for grant in item_packet['grants']:
             if grant['kind'] not in ('outfit','addon') or grant.get('look_types')!=outfit_looks:continue
+            if grant['kind']=='addon' and grant['addon']>outfit['addon_count']:
+                continue  # Unrenderable source addon choices refuse without charging.
             target={'kind':'Outfit','outfit_key':outfit['key']} if grant['kind']=='outfit' else {
                 'kind':'Addon','outfit_key':outfit['key'],'addon':grant['addon']}
             mappings.append({'grant_key':grant['key'],'target':target,'compatible_provenance':[item_packet['provenance']]})

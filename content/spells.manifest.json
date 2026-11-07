@@ -11,7 +11,7 @@
   },
   "cosmetics": {
     "path": "cosmetics/outfits/native-cosmetics.json",
-    "sha256": "18ec89f7dfd30d9a771f9eb3cf4211c2b86c00c633fd726397008cda7651b254"
+    "sha256": "17b7847badd5083dc8f795e21a9238f06630dc4e9c9c97c3a7d596e1b5b509da"
   },
   "creature_profiles": {
     "path": "creatures/definitions/spell-native-profiles.json",
