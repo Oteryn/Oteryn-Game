@@ -763,8 +763,8 @@ All eight cases ran against the configured PostgreSQL route with migrations
 
 | Test suffix | Seconds |
 | --- | ---: |
-| `soulpit_native_item_use_entry_return_and_animus_query_postgres` | 43.872 |
-| `soulpit_production_owner_spawns_native_wave_and_timeout_returns_without_mastery_postgres` | 40.846 |
+| `soulpit_native_item_use_entry_return_and_animus_query_postgres` | 40.424 |
+| `soulpit_production_owner_spawns_native_wave_and_timeout_returns_without_mastery_postgres` | 39.750 |
 | `soulpit_native_entry_refuses_insufficient_wave_capacity_without_burning_core_postgres` | 40.269 |
 | `soulpit_shared_entry_debits_core_and_commits_real_instance_session_postgres` | 44.128 |
 | `soulpit_terminal_return_requires_checkpoint_and_interrupt_never_grants_mastery_postgres` | 52.329 |
@@ -788,7 +788,7 @@ with `-D warnings` (166.078 seconds); formatting (14.934 seconds), architecture
 The final parity sweep repaired the donor GM level exemption using the existing
 current Game staff projection. The staff producer remains outside this lane;
 the Soulpit consumer proves the current group at its locked entry. The focused
-GM, forged-hint and unconfigured restarted-owner proof passes in 41.244 seconds.
+GM, forged-hint and unconfigured restarted-owner proof passes in 41.241 seconds.
 It proves each owner's exact session/fence through the normal durable status
 reader before checking exemptions. The immutable signed roster is hash-bound;
 only current group/head rows are share-locked. Direct checks under
@@ -814,13 +814,14 @@ and refreshed-World pin-check (27.388 seconds; earlier pin-refresh 36.642 second
 The native entry/mastery/return PostgreSQL case passes again in 40.424 seconds,
 and generic shared-owner enter/return/replay/fences passes in 5.067 seconds.
 
-Client proof includes `pc05_boss_activity_refusal_and_reconnect_scenario` and
+Client proof includes `soulpit_native_core_obelisk_scope_and_exit_walkthrough` and
 `soulpit_same_generation_entry_and_return_reset_revisions_and_map_handles`,
 within the 1,510 passing frontend tests (42.219 seconds). W08 completion and
 post-Animus rollback use real shared entry rather than fabricated admission.
 Primary fixtures use the existing test-admin root; the restarted negative GM
 owner uses `oteryn_game_runtime`, with positive lookup privileges checked
-separately under that same runtime role. Independent review is the remaining gate.
+separately under that same runtime role. The initial independent review's clock
+finding and its completed repair review are recorded below.
 
 ### Review repair: serialized encounter clock
 
@@ -837,3 +838,26 @@ The deterministic tests `soulpit_tick_clock_waits_for_entry_transition` and
 the original sampling order and both pass after the fix (80.702 seconds including
 compilation). They use a real async mutex, queued waiter and domain encounter,
 without timing sleeps. Existing cadence and deadline validation are unchanged.
+
+### W07/W08 acceptance
+
+- **W07 DONE, server and client:** the shared production owner atomically consumes
+  the selected core and admits the private Instance, drives physical native waves
+  and returns members through the same owner. Native client core/obelisk/exit use,
+  full snapshot adoption, fresh handles/revisions and acknowledgement fencing have
+  passing tests. Current GM exemption and entry/exit tick contention are covered.
+- **W08 DONE, server with retained native presentation:** the real shared-entry
+  completion grants mastery atomically; replay cannot duplicate it and injected
+  post-Animus failure rolls everything back. Native entry/query/return and client
+  presentation paths have passing tests.
+
+Independent repair review of
+`c69d75069dbdae2b3f35587420b67ee38ec35c48` against the originally reviewed source
+reports no relevant findings and confirms the P1 clock race is resolved. The
+production wave/timeout PostgreSQL regression passes again in 39.75 seconds;
+post-repair dispatch/server check (103.065 seconds), all-target clippy with
+warnings denied (150.826 seconds), formatting (14.660 seconds), and architecture
+(3.557 seconds) pass. The other changed-crate, content, generator and pin gates
+recorded above remain applicable to their unchanged sources and artifacts.
+No additional numbers were allocated after command 710, return reason 52, and
+migrations 1140/1141. Final acceptance changes only these lane notes.
