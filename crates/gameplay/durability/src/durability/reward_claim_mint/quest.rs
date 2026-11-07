@@ -235,7 +235,7 @@ pub(crate) async fn give_world(
     callback: &oteryn_gameplay_quests::quest::world_callbacks::Callback,
     admission: QuestRewardAdmission<'_>,
 ) -> std::result::Result<bool, DurabilityError> {
-    let (super::super::quest_state::QuestCause::Use(command), Some(reward)) = (request.cause, callback.effects.item_reward.as_ref()) else { return Ok(false); };
+    let (super::super::quest_state::QuestCause::Use(command) | super::super::quest_state::QuestCause::Step(command), Some(reward)) = (request.cause, callback.effects.item_reward.as_ref()) else { return Ok(false); };
     if admission.weights.generation_digest() != admission.native.source_digest() { return Ok(false); }
     let Some(transaction) = mint(tx,tuple,node,fence,command,&callback.key,callback.repeatable_reward,reward,admission).await? else { return Ok(false); };
     let take = if callback.trigger == oteryn_gameplay_quests::quest::world_callbacks::Trigger::UseCarriedOnTarget {

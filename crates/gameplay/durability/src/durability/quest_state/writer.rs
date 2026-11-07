@@ -397,7 +397,7 @@ impl DurabilityRoot {
                         super::super::reward_claim_mint::lock_cause(&mut tx,command).await?;
                     }
                     if callback.as_ref().is_some_and(|c| c.effects.item_reward.is_some())
-                        && let QuestCause::Use(command) = request.cause {
+                        && let QuestCause::Use(command) | QuestCause::Step(command) = request.cause {
                         super::super::reward_claim_mint::lock_cause(&mut tx, command).await?;
                     }
                     if let Some(row) = load_receipt(&mut tx, character, &request).await? {

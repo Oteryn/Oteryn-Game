@@ -15173,6 +15173,296 @@
       ]
     },
     {
+      "key": "oteryn:quest-transition/questpc3/threatened-feather/1",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 25024,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 14,
+          "preserve": false,
+          "set_when_at_least": {
+            "other_effect": 1,
+            "minimum": 4
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 0,
+          "preserve": false,
+          "increment": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/feathers1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i25244",
+          "count": 1
+        }
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You found some more feathers on the grass near the wheat. Now you should have enough for an entire cloak.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua:1-51 git-blob=4688b9d0a5fb77b7c1633b598622563f3326b208 sha256=87e97ad7e527b47bc70a312ec5ea7d74121ddffbbf9fd55c71359dd8a35cd8be"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-feather/2",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 25025,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 14,
+          "preserve": false,
+          "set_when_at_least": {
+            "other_effect": 1,
+            "minimum": 4
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 0,
+          "preserve": false,
+          "increment": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/feathers2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i25244",
+          "count": 1
+        }
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You found some beautiful swan feathers in the dustbin.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua:1-51 git-blob=4688b9d0a5fb77b7c1633b598622563f3326b208 sha256=87e97ad7e527b47bc70a312ec5ea7d74121ddffbbf9fd55c71359dd8a35cd8be"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-feather/3",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 25026,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 14,
+          "preserve": false,
+          "set_when_at_least": {
+            "other_effect": 1,
+            "minimum": 4
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 0,
+          "preserve": false,
+          "increment": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/feathers3",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i25244",
+          "count": 1
+        }
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You found some beautiful swan feathers entangled in the cactus stings.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua:1-51 git-blob=4688b9d0a5fb77b7c1633b598622563f3326b208 sha256=87e97ad7e527b47bc70a312ec5ea7d74121ddffbbf9fd55c71359dd8a35cd8be"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-feather/4",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 25027,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 14,
+          "preserve": false,
+          "set_when_at_least": {
+            "other_effect": 1,
+            "minimum": 4
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 0,
+          "preserve": false,
+          "increment": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/feathers4",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i25244",
+          "count": 1
+        }
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You found some beautiful swan feathers beneath the dragon skull.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua:1-51 git-blob=4688b9d0a5fb77b7c1633b598622563f3326b208 sha256=87e97ad7e527b47bc70a312ec5ea7d74121ddffbbf9fd55c71359dd8a35cd8be"
+      ]
+    },
+    {
+      "key": "oteryn:quest-transition/questpc3/threatened-feather/5",
+      "quest": "oteryn:quest.threatened_dreams_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 25028,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 14,
+          "preserve": false,
+          "set_when_at_least": {
+            "other_effect": 1,
+            "minimum": 4
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 0,
+          "preserve": false,
+          "increment": 1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/feathers5",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1,
+          "preserve": false
+        }
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i25244",
+          "count": 1
+        }
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You found some more feaathers under the dead tree. Now you should have enough for an entire cloak.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua canonical quest-state declaration",
+        "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz#trees/crystalserver-9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d.json",
+        "data-global/scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua:1-51 git-blob=4688b9d0a5fb77b7c1633b598622563f3326b208 sha256=87e97ad7e527b47bc70a312ec5ea7d74121ddffbbf9fd55c71359dd8a35cd8be"
+      ]
+    },
+    {
       "key": "oteryn:quest-transition/questpc3/threatened-light/moon-cosmetic",
       "quest": "oteryn:quest.threatened_dreams_quest",
       "trigger": "use_carried",

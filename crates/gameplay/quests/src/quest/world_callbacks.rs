@@ -57,6 +57,14 @@ pub struct Offering {
     pub count: u16,
 }
 
+/// Read one other effect's original locked value; reuse the quest engine's conditional set.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct SetWhenAtLeast {
+    pub other_effect: u8,
+    pub minimum: i64,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Storage {
@@ -67,6 +75,8 @@ pub struct Storage {
     /// Normal world callbacks may add to the locked value instead of setting it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub increment: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub set_when_at_least: Option<SetWhenAtLeast>,
     /// A read-only gate: validate the locked value without resetting later progress.
     #[serde(default, skip_serializing_if = "is_false")]
     pub preserve: bool,
@@ -297,6 +307,16 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                         || storage.maximum.checked_add(delta).is_none()
                 })
             })
+            || callback.storage.iter().enumerate().any(|(index, storage)| {
+                storage.set_when_at_least.is_some_and(|condition| {
+                    storage.preserve
+                        || storage.increment.is_some()
+                        || callback.native_rule.is_some()
+                        || callback.carried_use.is_some()
+                        || usize::from(condition.other_effect) >= callback.storage.len()
+                        || usize::from(condition.other_effect) == index
+                })
+            })
             || (callback.repeatable_reward
                 && (callback.effects.item_reward.is_none()
                     || !callback
@@ -315,15 +335,20 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 .is_some_and(|level| level == 0 || callback.storage.is_empty())
             || callback.effects.item_reward.as_ref().is_some_and(|reward| {
                 !super::reward_callbacks::valid_item_reward(reward)
-                    || !matches!(callback.trigger, Trigger::Use | Trigger::UseCarriedOnTarget)
+                    || !matches!(
+                        callback.trigger,
+                        Trigger::Use | Trigger::StepIn | Trigger::UseCarriedOnTarget
+                    )
                     || callback.storage.is_empty()
                     || callback.reversible
                     || callback.lever.is_some()
                     || !callback.passages.is_empty()
                     || callback.teleport.is_some()
                     || !callback.offerings.is_empty()
-                    || (callback.trigger == Trigger::Use && callback.item_on_target.is_some())
-                    || (callback.trigger == Trigger::Use && callback.carried_use.is_some())
+                    || (callback.trigger != Trigger::UseCarriedOnTarget
+                        && callback.item_on_target.is_some())
+                    || (callback.trigger != Trigger::UseCarriedOnTarget
+                        && callback.carried_use.is_some())
                     || callback.native_rule.is_some()
                     || callback.monk_reward.is_some()
                     || callback.experience.is_some()
@@ -495,13 +520,18 @@ fn extend_callbacks(
                 .map(|s| QuestEffect {
                     track: s.track.clone(),
                     from: QuestComparison::Between(s.minimum, s.maximum),
-                    effect: match callback.native_rule {
-                        Some(rule) => QuestEffectKind::Native(rule),
-                        None if s.preserve => QuestEffectKind::Add(0),
-                        None if s.increment.is_some() => {
+                    effect: match (callback.native_rule, s.set_when_at_least) {
+                        (Some(rule), _) => QuestEffectKind::Native(rule),
+                        (None, _) if s.preserve => QuestEffectKind::Add(0),
+                        (None, Some(condition)) => QuestEffectKind::SetWhenAtLeast {
+                            other_effect: condition.other_effect,
+                            minimum: condition.minimum,
+                            value: s.set,
+                        },
+                        (None, None) if s.increment.is_some() => {
                             QuestEffectKind::Add(s.increment.unwrap_or(0))
                         }
-                        None => match carried_binding {
+                        (None, None) => match carried_binding {
                             Some(binding) => QuestEffectKind::SetWithBinding {
                                 value: s.set,
                                 binding,
@@ -700,6 +730,102 @@ mod tests {
     }
 
     #[test]
+    fn step_reward_conditional_storage_uses_the_original_locked_counter() -> Result<(), String> {
+        let callback = load()?
+            .into_iter()
+            .find(|c| c.storage.iter().any(|s| s.set_when_at_least.is_some()))
+            .ok_or("conditional source")?;
+        let tracks = callback
+            .storage
+            .iter()
+            .map(|s| QuestTrack {
+                key: s.track.clone(),
+                quest: callback.quest.clone(),
+                initial: 0,
+                min: -1,
+                max: s.maximum.max(s.set),
+            })
+            .collect();
+        let base =
+            QuestStateCatalogue::new("fixture", tracks, vec![]).map_err(|e| format!("{e:?}"))?;
+        let catalogue = extend_callbacks(base, std::slice::from_ref(&callback))?;
+        let transition = catalogue.transition(&callback.key).ok_or("transition")?;
+        let stage = &callback.storage[0].track;
+        let counter = &callback.storage[1].track;
+        let flag = &callback.storage[2].track;
+        let mut stored = std::collections::BTreeMap::from([
+            (stage.clone(), 13),
+            (counter.clone(), 0),
+            (flag.clone(), -1),
+        ]);
+        for before in 0..=4 {
+            stored.insert(counter.clone(), before);
+            let changes = catalogue
+                .evaluate(transition, &stored, 0)
+                .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(
+                changes
+                    .iter()
+                    .find(|c| &c.track == counter)
+                    .ok_or("counter")?
+                    .after,
+                before + 1
+            );
+            assert_eq!(
+                changes
+                    .iter()
+                    .find(|c| &c.track == stage)
+                    .ok_or("stage")?
+                    .after,
+                if before == 4 { 14 } else { 13 }
+            );
+            assert_eq!(
+                changes
+                    .iter()
+                    .find(|c| &c.track == flag)
+                    .ok_or("flag")?
+                    .after,
+                1
+            );
+        }
+        stored.insert(counter.clone(), 5);
+        assert!(
+            catalogue.evaluate(transition, &stored, 0).is_err(),
+            "cap gate protects the sixth grant"
+        );
+        stored.insert(counter.clone(), 0);
+        stored.insert(flag.clone(), 1);
+        assert!(
+            catalogue.evaluate(transition, &stored, 0).is_err(),
+            "same tile cannot grant twice"
+        );
+        for mode in 0..4 {
+            let mut bad = callback.clone();
+            match mode {
+                0 => {
+                    bad.storage[0].set_when_at_least = Some(SetWhenAtLeast {
+                        other_effect: 0,
+                        minimum: 4,
+                    })
+                }
+                1 => {
+                    bad.storage[0].set_when_at_least = Some(SetWhenAtLeast {
+                        other_effect: 255,
+                        minimum: 4,
+                    })
+                }
+                2 => bad.storage[0].increment = Some(1),
+                _ => bad.storage[0].preserve = true,
+            }
+            assert!(
+                parse(&serde_json::json!({"schema":1,"callbacks":[bad]}).to_string()).is_err(),
+                "conditional mode{mode} must refuse"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn world_item_rewards_are_bounded_and_cannot_enter_carried_or_unfenced_modes()
     -> Result<(), String> {
         let callback = load()?
@@ -720,7 +846,17 @@ mod tests {
         for mode in 0..8 {
             let mut bad = callback.clone();
             match mode {
-                0 => bad.trigger = Trigger::StepIn,
+                0 => {
+                    // Plain StepIn rewards now use the complete MINT owner, but
+                    // selected carried inputs still require native USE_WITH.
+                    bad.trigger = Trigger::StepIn;
+                    bad.item_on_target = Some(ItemOnTarget {
+                        item: "oteryn:item.tibia.i25244".into(),
+                        count: 1,
+                        replacement: None,
+                        target_replacement: None,
+                    });
+                }
                 1 => bad.trigger = Trigger::UseCarried,
                 2 => bad.trigger = Trigger::UseCarriedOnTarget,
                 3 => bad.storage.clear(),

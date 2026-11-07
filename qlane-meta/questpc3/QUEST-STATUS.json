@@ -4920,7 +4920,7 @@
     },
     "current_batch": {
       "batch": "threatened_feathers_17",
-      "phase": "Compiling WIP fixture: first PG attempt ended before quest assertions with no command result; consecutive native IDs corrected; baseline PG retry rebuilding",
+      "phase": "Compiling WIP implementation: real5-entry PG RED66791ms captured, conditional world binding and StepIn MINT implemented; full PG binary codegen still running",
       "entries": [
         "feather step AID25024",
         "feather step AID25025",
@@ -4944,16 +4944,27 @@
         "sha256": "7723c462a4854bf39e5b93e1a45b3603dc8003bcdb195651b9d572b290a123e7"
       },
       "latest_checks": {
-        "check": "3 crates PASS2m37 on restored baseline",
-        "test_compile": "first fixture compiled3m58; consecutive-ID correction now rebuilding",
-        "pg": "genuine source RED still pending; do not qualify fixture error"
+        "check": "PASS3crates38.85s",
+        "domain": "PASS11tests3.29s including conditional counter0\u20134/cap/once/invalid index/mixed operation",
+        "fmt": "PASS",
+        "authoring": "PASS",
+        "native": "PASS41files",
+        "duplicates": "PASS staged migration tree",
+        "postgres": "GREEN attempt codegen running, selected present regression queued",
+        "clippy": "queued behind test build",
+        "pins": "not started; serialize after heavy test codegen"
       },
       "draft": {
-        "production_patch": "/tmp/questpc3-feather-production.pending.patch",
-        "migration": "/tmp/questpc3-feather-1229.pending.sql",
-        "authoring": "tools/content-schema/quest-authoring/questpc3_threatened_feathers.py untracked; data not applied",
-        "rule": "Apply saved production patch/new1229 only after genuine five-entry PostgreSQL RED",
-        "source_reuse": "existing SetWhenAtLeast262618b3cd; latest QENGINE2f3a01112daeadb63188f35d85596708481a1baac inspected"
+        "state": "APPLIED; do not reapply temporary pending patch",
+        "source_reuse": "existing generic SetWhenAtLeast262618b3cd; QENGINE2f3a01112daeadb63188f35d85596708481a1baac inspected"
+      },
+      "pg_red_ms": 66791,
+      "red_proof": {
+        "postgres": "18.6",
+        "duration_ms": 66791,
+        "log": "/tmp/questpc3-feathers-red-native-sequence.log",
+        "sha256": "143138eddfb76aacc83e4e0af20ad4d5bb42e03a50a4ba55273a06278e2e63ae",
+        "result": "all5 literal source tiles reached,0feathers/receipts/counter,stage13; wrong stage and actual native movement verified"
       }
     },
     "diagnosis": {
@@ -10375,9 +10386,10 @@
       "1225_quest_world_reward_participants.sql",
       "1226_quest_carried_exchange_inputs.sql",
       "1227_quest_earned_repeat_occurrences.sql",
-      "1228_quest_carried_world_rewards.sql"
+      "1228_quest_carried_world_rewards.sql",
+      "1229_quest_movement_world_rewards.sql"
     ],
-    "status": "QUALIFIED: lane1220\u20131228; canonical shared files unchanged; three selected present deliveries PostgreSQL18.6 PASS",
+    "status": "1220\u20131228 QUALIFIED;1229 StepIn MINT proof authored/compiled, focused PG qualification pending",
     "red_point": "Registry and treasure slice complete; whole four-quest scope remains active.",
     "post_rename_postgresql": {
       "marker": "REWARD-CLAIM-MINT-PG server_version_num=180006; POSTGRES_CASE_COMPLETED questl2-peer-outputs",
